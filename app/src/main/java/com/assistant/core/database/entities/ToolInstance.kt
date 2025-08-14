@@ -21,8 +21,6 @@ data class ToolInstance(
     val id: String = UUID.randomUUID().toString(),
     val zone_id: String,
     val tool_type: String, // "tracking", "objective", etc.
-    val name: String,
-    val description: String? = null,
     val config_json: String, // Configuration spécifique à l'outil
     val config_metadata_json: String, // Métadonnées décrivant la config
     val order_index: Int = 0,
