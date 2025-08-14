@@ -1,0 +1,107 @@
+app/
+├── src/main/
+│   ├── java/com/assistant/
+│   │   ├── core/                                    # Système central de l'app
+│   │   │   ├── coordinator/                         # Orchestration et machine à états
+│   │   │   │   ├── Coordinator.kt                   # Machine à états principale, gestion des priorités
+│   │   │   │   ├── OperationManager.kt              # Enregistrement et suivi des opérations
+│   │   │   │   ├── StateManager.kt                  # Gestion des états (idle, dialogue_ia, etc.)
+│   │   │   │   └── ValidationManager.kt             # Règles de validation par source et contexte
+│   │   │   ├── database/                            # Couche de persistance
+│   │   │   │   ├── AppDatabase.kt                   # Configuration Room database
+│   │   │   │   ├── dao/                             # Data Access Objects pour chaque entité
+│   │   │   │   ├── entities/                        # Entités: Zone, ToolInstance, données par type
+│   │   │   │   └── migrations/                      # Scripts de migration de schéma
+│   │   │   ├── services/                            # Services core singleton
+│   │   │   │   ├── BackupService.kt                 # Service de sauvegarde automatique/manuelle
+│   │   │   │   ├── SyncService.kt                   # Synchronisation des données (futur)
+│   │   │   │   ├── MaintenanceService.kt            # Nettoyage, optimisation db
+│   │   │   │   └── MigrationService.kt              # Migration de données entre versions
+│   │   │   ├── commands/                            # Interface de commandes JSON
+│   │   │   │   ├── CommandParser.kt                 # Parse les commandes JSON entrantes
+│   │   │   │   ├── CommandExecutor.kt               # Route et exécute les commandes
+│   │   │   │   └── CommandResponse.kt               # Formate les réponses (success/error/etc)
+│   │   │   └── verbalization/                       # Système de verbalisation des actions
+│   │   │       ├── VerbalizationEngine.kt           # Moteur de génération de phrases
+│   │   │       └── templates/                       # Templates de verbalisation par type d'action
+│   │   ├── ai/                                      # Gestion de l'IA
+│   │   │   ├── prompts/                             # Système de prompts modulaires
+│   │   │   │   ├── PromptManager.kt                 # Assemblage contextuel des fragments
+│   │   │   │   ├── fragments/                       # Fragments de prompts
+│   │   │   │   │   ├── base/                        # Prompts de base et instructions
+│   │   │   │   │   ├── context/                     # Contexte dynamique de session
+│   │   │   │   │   └── documentation/               # Documentation interface de commandes
+│   │   │   │   └── hierarchy/                       # Cascade de prompts selon contexte
+│   │   │   ├── sessions/                            # Gestion des discussions
+│   │   │   │   ├── SessionManager.kt                # Gestion état session, tokens, contexte
+│   │   │   │   └── DiscussionHandler.kt             # Logique de discussion et résumés
+│   │   │   └── queue/                               # File d'attente offline
+│   │   │       └── RequestQueue.kt                  # Gestion requêtes IA en attente
+│   │   ├── tools/                                   # Outils modulaires
+│   │   │   ├── base/                                # Classes abstraites et contrats
+│   │   │   │   ├── Tool.kt                          # Classe abstraite de base pour tous les outils
+│   │   │   │   ├── ToolInstance.kt                  # Instance configurée d'un outil
+│   │   │   │   └── ToolContract.kt                  # Interface obligatoire (métadonnées, config, etc.)
+│   │   │   ├── tracking/                            # Outil de suivi
+│   │   │   │   ├── TrackingTool.kt                  # Logique principale de l'outil
+│   │   │   │   ├── config/                          # Configuration de l'outil
+│   │   │   │   │   └── TrackingConfig.kt            # Parsing et validation config JSON
+│   │   │   │   ├── ui/                              # Interface utilisateur
+│   │   │   │   │   ├── TrackingWidget.kt            # Affichage d'une instance de suivi dans une zone
+│   │   │   │   │   ├── TrackingScreen.kt            # Écran principal d'une instance de suivi
+│   │   │   │   │   ├── TrackingConfigScreen.kt      # Écran de configuration d'une instance de suivi
+│   │   │   │   │   ├── TrackingsScreen.kt           # Écran principal de tous les suivis
+│   │   │   │   │   └── TrackingsConfigScreen.kt     # Écran de configuration de tous les suivis
+│   │   │   │   ├── data/                            # Accès aux données
+│   │   │   │   │   └── TrackingRepository.kt        # CRUD pour tracking_data
+│   │   │   │   ├── i18n/                            # Traductions de l'outil
+│   │   │   │   │   ├── fr/                          # Français
+│   │   │   │   │   │   └── strings.json             # Chaînes traduites
+│   │   │   │   │   ├── en/                          # Anglais
+│   │   │   │   │   │   └── strings.json             # Chaînes traduites
+│   │   │   │   │   └── es/                          # Espagnol
+│   │   │   │   │       └── strings.json             # Chaînes traduites
+│   │   │   │   └── metadata.json                    # Description de l'outil pour l'IA
+│   │   │   ├── objective/                           # Outil objectifs
+│   │   │   ├── journal/                             # Outil journal
+│   │   │   ├── message/                             # Outil messages/rappels
+│   │   │   ├── alert/                               # Outil alertes automatiques
+│   │   │   ├── list/                                # Outil listes à cocher
+│   │   │   ├── note/                                # Outil notes
+│   │   │   ├── calculation/                         # Outil calculs
+│   │   │   ├── statistic/                           # Outil statistiques
+│   │   │   ├── graph/                               # Outil graphiques
+│   │   │   ├── analysis/                            # Outil analyses IA
+│   │   │   └── auto_actions/                        # Outil automatisations
+│   │   ├── zones/                                   # Gestion des zones thématiques
+│   │   │   ├── ZoneManager.kt                       # Création, organisation des zones
+│   │   │   └── ZoneRepository.kt                    # Accès données zones
+│   │   ├── ui/                                      # Interface utilisateur globale
+│   │   │   ├── screens/                             # Écrans principaux
+│   │   │   │   ├── MainScreen.kt                    # Écran d'accueil avec tuiles zones
+│   │   │   │   ├── ZoneScreen.kt                    # Vue d'une zone avec ses outils
+│   │   │   │   ├── QueueScreen.kt                   # File d'attente des actions
+│   │   │   │   └── DiscussionsScreen.kt             # Historique discussions IA
+│   │   │   ├── components/                          # Composants réutilisables
+│   │   │   │   ├── Terminal.kt                      # Affichage actions en arrière-plan
+│   │   │   │   ├── AiCallZone.kt                    # Zone d'appel IA permanente
+│   │   │   │   └── shared/                          # Composants partagés (boutons, cards, etc.)
+│   │   │   ├── navigation/                          # Logique de navigation
+│   │   │   └── validation/                          # Dialogues de validation
+│   │   │       └── ValidationDialog.kt              # Fenêtre validation actions critiques
+│   │   └── themes/                                  # Système de thèmes modulaires
+│   │       ├── base/                                # Encapsulation composants Android
+│   │       │   └── UI.kt                            # Wrapper UI.* pour tous composants
+│   │       ├── default/                             # Thème par défaut
+│   │       │   ├── Colors.kt                        # Palette de couleurs
+│   │       │   ├── Typography.kt                    # Styles de texte
+│   │       │   └── Components.kt                    # Style des composants
+│   │       ├── dark/                                # Thème sombre
+│   │       └── retro_8bit/                          # Thème rétro pixelisé
+│   └── res/
+│       ├── values/
+│       │   └── strings.xml                          # Chaînes core uniquement
+│       ├── values-en/
+│       │   └── strings.xml                          # Chaînes core en anglais
+│       └── values-es/
+│           └── strings.xml                          # Chaînes core en espagnol

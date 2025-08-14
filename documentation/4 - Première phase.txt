@@ -1,0 +1,103 @@
+## Ordre de développement pour version minimale avec outil Suivi
+
+1. Core minimal
+- `AppDatabase.kt` avec tables: `zones`, `tool_instances`, `tracking_data`
+- `Coordinator.kt` simplifié: juste états `idle` et `operation_en_cours`
+- DAOs basiques pour CRUD
+
+2. Structure Tool de base
+- `Tool.kt` classe abstraite
+- `ToolContract.kt` interface
+- `ToolInstance.kt` modèle
+
+3. Outil Suivi minimal
+- `TrackingTool.kt` avec opérations: `add_entry`, `get_entries`
+- `TrackingScreen.kt` UI basique: liste + ajout
+- `config_json` minimal: nom, unité, type de valeur
+- `metadata.json` pour structure
+
+4. Interface commandes simplifiée
+- `CommandParser.kt` pour parser JSON basique
+- Support commandes: `add->tools->tracking->add_entry`
+- Réponses success/error simples
+
+5. UI minimale
+- Écran principal avec liste des zones
+- Navigation vers zone → outil suivi
+- Pas de thèmes pour l'instant
+
+## Ce qu'on ignore temporairement
+- IA et prompts
+- Validation
+- Services (backup, sync)
+- Autres types d'outils
+- Internationalisation
+- Thèmes graphiques
+
+## On implémente dès le départ le flux complet avec des stubs/mocks
+
+
+1. Core avec tous les points d'entrée
+```kotlin
+// Coordinator.kt
+class Coordinator {
+    fun processUserAction(action: String) {
+        // TODO: validation rules
+        executeOperation(action)
+    }
+
+    fun processAICommand(json: String) {
+        // TODO: AI validation
+        executeOperation(json)
+    }
+
+    fun processScheduledTask(task: String) {
+        // TODO: scheduler logic
+        executeOperation(task)
+    }
+}
+```
+
+2. Services en mode stub
+```kotlin
+// BackupService.kt
+class BackupService {
+    fun performBackup() {
+        Log.d("Backup", "TODO: implement backup")
+        // Structure présente, implémentation vide
+    }
+}
+```
+
+3. IA avec réponses mockées
+```kotlin
+// PromptManager.kt
+class PromptManager {
+    fun buildPrompt(context: Context): String {
+        return "TODO: assemble fragments"
+    }
+
+    fun processAIResponse(response: String) {
+        // Pour l'instant, réponses hardcodées pour tests
+    }
+}
+```
+
+4. Validation toujours "approved"
+```kotlin
+// ValidationManager.kt
+class ValidationManager {
+    fun requiresValidation(action: String, source: String): Boolean {
+        return false // TODO: implement rules
+    }
+}
+```
+
+5. Interface commandes complète mais simplifiée
+
+
+## Avantages
+- Tous les chemins de code existent
+- Tests d'intégration possibles immédiatement
+- Remplacement progressif des TODOs sans casser le flux
+- Architecture validée dès le début
