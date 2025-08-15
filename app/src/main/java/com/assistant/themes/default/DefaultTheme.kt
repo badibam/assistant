@@ -3,11 +3,13 @@ package com.assistant.themes.default
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.Text as MaterialText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.themes.base.TextFieldType
 
 /**
  * Default theme implementation - clean Material 3 design
@@ -124,14 +126,14 @@ object DefaultTheme : ThemeContract {
                 value = value,
                 onValueChange = onValueChange,
                 modifier = modifier.fillMaxWidth(),
-                placeholder = { Text(placeholder) }
+                placeholder = { MaterialText(placeholder) }
             )
             
             TextFieldType.SEARCH -> OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = modifier.fillMaxWidth(),
-                placeholder = { Text(placeholder) },
+                placeholder = { MaterialText(placeholder) },
                 shape = RoundedCornerShape(50.dp)
             )
             
@@ -139,14 +141,14 @@ object DefaultTheme : ThemeContract {
                 value = value,
                 onValueChange = onValueChange,
                 modifier = modifier.fillMaxWidth(),
-                placeholder = { Text(placeholder) }
+                placeholder = { MaterialText(placeholder) }
             )
             
             TextFieldType.MULTILINE -> OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = modifier.fillMaxWidth(),
-                placeholder = { Text(placeholder) },
+                placeholder = { MaterialText(placeholder) },
                 minLines = 3,
                 maxLines = 6
             )
@@ -161,32 +163,32 @@ object DefaultTheme : ThemeContract {
         modifier: Modifier
     ) {
         when (type) {
-            TextType.TITLE -> Text(
+            TextType.TITLE -> MaterialText(
                 text = text,
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = modifier
             )
             
-            TextType.SUBTITLE -> Text(
+            TextType.SUBTITLE -> MaterialText(
                 text = text,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = modifier
             )
             
-            TextType.BODY -> Text(
+            TextType.BODY -> MaterialText(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = modifier
             )
             
-            TextType.CAPTION -> Text(
+            TextType.CAPTION -> MaterialText(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = modifier
             )
             
-            TextType.LABEL -> Text(
+            TextType.LABEL -> MaterialText(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = modifier
@@ -194,6 +196,8 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    // TopAppBar uses experimental Material3 API
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun TopBar(
         type: TopBarType,
@@ -201,7 +205,7 @@ object DefaultTheme : ThemeContract {
         modifier: Modifier
     ) {
         TopAppBar(
-            title = { Text(title) },
+            title = { MaterialText(title) },
             modifier = modifier,
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -247,10 +251,9 @@ object DefaultTheme : ThemeContract {
                 onClick = onClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
+                MaterialText(
                     text = zoneName,
-                    type = TextType.SUBTITLE,
-                    semantic = "zone-name"
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
         }
@@ -275,15 +278,14 @@ object DefaultTheme : ThemeContract {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column {
-                    Text(
+                    MaterialText(
                         text = instanceName,
-                        type = TextType.BODY,
-                        semantic = "tool-instance-name"
+                        style = MaterialTheme.typography.bodyMedium
                     )
-                    Text(
+                    MaterialText(
                         text = toolType,
-                        type = TextType.CAPTION,
-                        semantic = "tool-type"
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -300,10 +302,10 @@ object DefaultTheme : ThemeContract {
             semantic = "terminal",
             modifier = modifier
         ) {
-            Text(
+            MaterialText(
                 text = content,
-                type = TextType.CAPTION,
-                semantic = "terminal-output"
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
