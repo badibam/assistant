@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.debug.DebugManager
@@ -11,6 +12,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.R
 import kotlinx.coroutines.launch
 
 /**
@@ -51,7 +53,7 @@ fun ZoneScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 UI.Text(
-                    text = "Informations de la zone",
+                    text = stringResource(R.string.zone_info_section),
                     type = TextType.TITLE,
                     semantic = "section-title"
                 )
@@ -64,7 +66,7 @@ fun ZoneScreen(
                 ) {
                     UI.Column {
                         UI.Text(
-                            text = "Nom",
+                            text = stringResource(R.string.zone_info_name),
                             type = TextType.SUBTITLE,
                             semantic = "field-label"
                         )
@@ -86,7 +88,7 @@ fun ZoneScreen(
                     ) {
                         UI.Column {
                             UI.Text(
-                                text = "Description",
+                                text = stringResource(R.string.zone_info_description),
                                 type = TextType.SUBTITLE,
                                 semantic = "field-label"
                             )
@@ -110,7 +112,7 @@ fun ZoneScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 UI.Text(
-                    text = "Outils de cette zone",
+                    text = stringResource(R.string.zone_tools_section),
                     type = TextType.TITLE,
                     semantic = "section-title"
                 )
@@ -124,7 +126,7 @@ fun ZoneScreen(
                     ) {
                         UI.Column {
                             UI.Text(
-                                text = "Aucun outil configuré dans cette zone",
+                                text = stringResource(R.string.no_tools_configured),
                                 type = TextType.BODY,
                                 semantic = "empty-state"
                             )
@@ -140,7 +142,7 @@ fun ZoneScreen(
                                 }
                             ) {
                                 UI.Text(
-                                    text = "Ajouter un outil",
+                                    text = stringResource(R.string.add_tool),
                                     type = TextType.LABEL,
                                     semantic = "button-label"
                                 )
@@ -157,7 +159,7 @@ fun ZoneScreen(
                         ) {
                             UI.Column {
                                 UI.Text(
-                                    text = formatToolType(toolInstance.tool_type),
+                                    text = toolInstance.tool_type.replaceFirstChar { it.uppercase() },
                                     type = TextType.SUBTITLE,
                                     semantic = "tool-type"
                                 )
@@ -168,7 +170,7 @@ fun ZoneScreen(
                                 val configPreview = toolInstance.config_json.take(100) + 
                                     if (toolInstance.config_json.length > 100) "..." else ""
                                 UI.Text(
-                                    text = "Configuration: $configPreview",
+                                    text = stringResource(R.string.tool_config_preview, configPreview),
                                     type = TextType.CAPTION,
                                     semantic = "tool-config"
                                 )
@@ -188,7 +190,7 @@ fun ZoneScreen(
                         }
                     ) {
                         UI.Text(
-                            text = "Ajouter un outil",
+                            text = stringResource(R.string.add_tool),
                             type = TextType.LABEL,
                             semantic = "button-label"
                         )
@@ -211,7 +213,7 @@ fun ZoneScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 UI.Text(
-                    text = "Retour",
+                    text = stringResource(R.string.back),
                     type = TextType.LABEL,
                     semantic = "button-label"
                 )
@@ -220,23 +222,3 @@ fun ZoneScreen(
     }
 }
 
-/**
- * Format tool type for display
- */
-private fun formatToolType(toolType: String): String {
-    return when (toolType) {
-        "tracking" -> "Suivi"
-        "objective" -> "Objectif"
-        "calculation" -> "Calcul"
-        "statistic" -> "Statistique"
-        "graphic" -> "Graphique"
-        "list" -> "Liste"
-        "journal" -> "Journal"
-        "note" -> "Note"
-        "message" -> "Message"
-        "alert" -> "Alerte"
-        "analysis" -> "Analyse"
-        "auto_action" -> "Action automatique"
-        else -> toolType.replaceFirstChar { it.uppercase() }
-    }
-}

@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.debug.DebugManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
+import com.assistant.R
 import kotlinx.coroutines.launch
 
 /**
@@ -97,7 +99,7 @@ fun MainScreen() {
         // Top bar
         UI.TopBar(
             type = TopBarType.DEFAULT,
-            title = "Assistant Personnel"
+            title = stringResource(R.string.main_screen_title)
         )
         
         UI.Spacer(modifier = Modifier.height(16.dp))
@@ -105,7 +107,7 @@ fun MainScreen() {
         // Zones section
         UI.Container(type = ContainerType.PRIMARY) {
             UI.Text(
-                text = "Zones",
+                text = stringResource(R.string.zones_section),
                 type = TextType.TITLE,
                 semantic = "section-title"
             )
@@ -121,7 +123,7 @@ fun MainScreen() {
                 ) {
                     Column {
                         UI.Text(
-                            text = "Aucune zone configurée",
+                            text = stringResource(R.string.no_zones),
                             type = TextType.BODY,
                             semantic = "empty-state"
                         )
@@ -137,7 +139,7 @@ fun MainScreen() {
                             }
                         ) {
                             UI.Text(
-                                text = "Créer une zone",
+                                text = stringResource(R.string.create_zone),
                                 type = TextType.LABEL,
                                 semantic = "button-label"
                             )
@@ -171,7 +173,7 @@ fun MainScreen() {
                     }
                 ) {
                     UI.Text(
-                        text = "Ajouter une zone",
+                        text = stringResource(R.string.add_zone),
                         type = TextType.LABEL,
                         semantic = "button-label"
                     )
@@ -184,7 +186,7 @@ fun MainScreen() {
         // Terminal section
         UI.Container(type = ContainerType.SECONDARY) {
             UI.Text(
-                text = "Terminal",
+                text = stringResource(R.string.terminal_title),
                 type = TextType.SUBTITLE,
                 semantic = "section-title"
             )
@@ -192,7 +194,7 @@ fun MainScreen() {
             UI.Spacer(modifier = Modifier.height(8.dp))
             
             UI.Terminal(
-                content = "Assistant démarré. En attente de commandes...",
+                content = stringResource(R.string.assistant_ready),
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -210,7 +212,7 @@ fun MainScreen() {
                 }
             ) {
                 UI.Text(
-                    text = "Appel IA",
+                    text = stringResource(R.string.ai_call_zone),
                     type = TextType.LABEL,
                     semantic = "ai-call-label"
                 )

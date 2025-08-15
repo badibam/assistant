@@ -3,9 +3,11 @@ package com.assistant.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.debug.DebugManager
+import com.assistant.R
 
 /**
  * Screen for creating a new zone
@@ -27,7 +29,7 @@ fun CreateZoneScreen(
         // Top bar avec navigation retour
         UI.TopBar(
             type = TopBarType.DEFAULT,
-            title = "Nouvelle zone"
+            title = stringResource(R.string.create_zone_title)
         )
         
         UI.Spacer(modifier = Modifier.height(16.dp))
@@ -39,7 +41,7 @@ fun CreateZoneScreen(
             ) {
                 // Name field (required)
                 UI.Text(
-                    text = "Nom de la zone",
+                    text = stringResource(R.string.zone_name_label),
                     type = TextType.SUBTITLE,
                     semantic = "field-label"
                 )
@@ -49,7 +51,7 @@ fun CreateZoneScreen(
                     value = name,
                     onValueChange = { name = it },
                     semantic = "zone-name-input",
-                    placeholder = "Entrez le nom de la zone",
+                    placeholder = stringResource(R.string.zone_name_hint),
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -57,7 +59,7 @@ fun CreateZoneScreen(
                 
                 // Description field (optional)
                 UI.Text(
-                    text = "Description (optionnel)",
+                    text = stringResource(R.string.zone_description_label),
                     type = TextType.SUBTITLE,
                     semantic = "field-label"
                 )
@@ -67,7 +69,7 @@ fun CreateZoneScreen(
                     value = description,
                     onValueChange = { description = it },
                     semantic = "zone-description-input",
-                    placeholder = "Décrivez cette zone thématique...",
+                    placeholder = stringResource(R.string.zone_description_hint),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
@@ -75,7 +77,7 @@ fun CreateZoneScreen(
                 
                 // Info text
                 UI.Text(
-                    text = "Les zones permettent d'organiser vos outils par thématique (Santé, Productivité, etc.)",
+                    text = stringResource(R.string.zone_help_text),
                     type = TextType.CAPTION,
                     semantic = "help-text"
                 )
@@ -99,7 +101,7 @@ fun CreateZoneScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     UI.Text(
-                        text = "Annuler",
+                        text = stringResource(R.string.cancel),
                         type = TextType.LABEL,
                         semantic = "button-label"
                     )
@@ -120,7 +122,7 @@ fun CreateZoneScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     UI.Text(
-                        text = "Créer la zone",
+                        text = stringResource(R.string.create_zone_button),
                         type = TextType.LABEL,
                         semantic = "button-label"
                     )
