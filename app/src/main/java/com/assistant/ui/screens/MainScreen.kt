@@ -22,6 +22,7 @@ fun MainScreen() {
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     var showCreateZone by remember { mutableStateOf(false) }
+    var selectedZone by remember { mutableStateOf<Zone?>(null) }
     
     // Observe zones in real-time
     val database = remember { AppDatabase.getDatabase(context) }
@@ -30,6 +31,40 @@ fun MainScreen() {
     // Message debug initial
     LaunchedEffect(Unit) {
         DebugManager.debug("🚀 MainScreen chargé")
+    }
+    
+    // Zone Debug - toujours en premier, visible partout
+    UI.Card(
+        type = CardType.SYSTEM,
+        semantic = "debug-zone",
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        UI.Column {
+            // Affichage des 3 derniers messages
+            val messages by remember { derivedStateOf { DebugManager.debugMessages.take(3) } }
+            
+            repeat(3) { index ->
+                UI.Text(
+                    text = messages.getOrNull(index) ?: "",
+                    type = TextType.CAPTION,
+                    semantic = "debug-line-$index",
+                    modifier = Modifier.padding(vertical = 1.dp)
+                )
+            }
+        }
+    }
+    
+    UI.Spacer(modifier = Modifier.height(8.dp))
+    
+    // Show ZoneScreen when a zone is selected
+    selectedZone?.let { zone ->
+        ZoneScreen(
+            zone = zone,
+            onBack = {
+                selectedZone = null
+            }
+        )
+        return // Exit MainScreen composition when showing ZoneScreen
     }
     
     // Show CreateZoneScreen when requested
@@ -58,28 +93,6 @@ fun MainScreen() {
         )
     } else {
         UI.Screen(type = ScreenType.MAIN) {
-        // Zone Debug - en haut pour visibilité
-        UI.Card(
-            type = CardType.SYSTEM,
-            semantic = "debug-zone",
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            UI.Column {
-                // Affichage des 3 derniers messages
-                val messages by remember { derivedStateOf { DebugManager.debugMessages.take(3) } }
-                
-                repeat(3) { index ->
-                    UI.Text(
-                        text = messages.getOrNull(index) ?: "",
-                        type = TextType.CAPTION,
-                        semantic = "debug-line-$index",
-                        modifier = Modifier.padding(vertical = 1.dp)
-                    )
-                }
-            }
-        }
-        
-        UI.Spacer(modifier = Modifier.height(8.dp))
         
         // Top bar
         UI.TopBar(
@@ -134,27 +147,16 @@ fun MainScreen() {
             } else {
                 // Show zones list
                 zones.forEach { zone ->
-                    UI.Card(
-                        type = CardType.ZONE,
-                        semantic = "zone-${zone.id}",
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                    ) {
-                        Column {
-                            UI.Text(
-                                text = zone.name,
-                                type = TextType.SUBTITLE,
-                                semantic = "zone-name"
-                            )
-                            zone.description?.let { description ->
-                                UI.Spacer(modifier = Modifier.height(4.dp))
-                                UI.Text(
-                                    text = description,
-                                    type = TextType.CAPTION,
-                                    semantic = "zone-description"
-                                )
-                            }
-                        }
-                    }
+                    UI.ZoneCard(
+                        zoneName = zone.name,
+                        onClick = {
+                            DebugManager.debugButtonClick("Navigation vers zone: ${zone.name}")
+                            selectedZone = zone
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    )
                 }
                 
                 UI.Spacer(modifier = Modifier.height(8.dp))
