@@ -1,0 +1,50 @@
+[
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/home/simon/.gradle/daemon/8.2/com.assistant.app-merged_res-54:/xml_backup_rules.xml.flat",
+        "source": "/home/simon/.gradle/daemon/8.2/com.assistant.app-main-56:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "/home/simon/.gradle/daemon/8.2/com.assistant.app-merged_res-54:/xml_data_extraction_rules.xml.flat",
+        "source": "/home/simon/.gradle/daemon/8.2/com.assistant.app-main-56:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.assistant.app-merged_res-54:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.assistant.app-main-56:/mipmap-mdpi/ic_launcher.png"
+    }
+]

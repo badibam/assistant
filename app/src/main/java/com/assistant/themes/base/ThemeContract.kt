@@ -1,6 +1,8 @@
 package com.assistant.themes.base
 
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
@@ -9,7 +11,34 @@ import androidx.compose.ui.Modifier
  */
 interface ThemeContract {
     
-    // LAYOUT COMPONENTS
+    // BASIC LAYOUT COMPONENTS
+    @Composable
+    fun Column(
+        modifier: Modifier,
+        verticalArrangement: Arrangement.Vertical,
+        horizontalAlignment: Alignment.Horizontal,
+        content: @Composable ColumnScope.() -> Unit
+    )
+    
+    @Composable
+    fun Row(
+        modifier: Modifier,
+        horizontalArrangement: Arrangement.Horizontal,
+        verticalAlignment: Alignment.Vertical,
+        content: @Composable RowScope.() -> Unit
+    )
+    
+    @Composable
+    fun Box(
+        modifier: Modifier,
+        contentAlignment: Alignment,
+        content: @Composable BoxScope.() -> Unit
+    )
+    
+    @Composable
+    fun Spacer(modifier: Modifier)
+    
+    // SEMANTIC LAYOUT COMPONENTS
     @Composable
     fun Screen(
         type: ScreenType,

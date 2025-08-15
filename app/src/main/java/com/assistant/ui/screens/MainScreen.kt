@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.core.debug.DebugManager
 
 /**
  * Main screen - entry point of the application
@@ -12,14 +13,41 @@ import com.assistant.themes.base.*
  */
 @Composable
 fun MainScreen() {
+    // Message debug initial
+    LaunchedEffect(Unit) {
+        DebugManager.debug("🚀 MainScreen chargé")
+    }
     UI.Screen(type = ScreenType.MAIN) {
+        // Zone Debug - en haut pour visibilité
+        UI.Card(
+            type = CardType.SYSTEM,
+            semantic = "debug-zone",
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            UI.Column {
+                // Affichage des 3 derniers messages
+                val messages by remember { derivedStateOf { DebugManager.debugMessages.take(3) } }
+                
+                repeat(3) { index ->
+                    UI.Text(
+                        text = messages.getOrNull(index) ?: "",
+                        type = TextType.CAPTION,
+                        semantic = "debug-line-$index",
+                        modifier = Modifier.padding(vertical = 1.dp)
+                    )
+                }
+            }
+        }
+        
+        UI.Spacer(modifier = Modifier.height(8.dp))
+        
         // Top bar
         UI.TopBar(
             type = TopBarType.DEFAULT,
             title = "Assistant Personnel"
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        UI.Spacer(modifier = Modifier.height(16.dp))
         
         // Zones section
         UI.Container(type = ContainerType.PRIMARY) {
@@ -29,7 +57,7 @@ fun MainScreen() {
                 semantic = "section-title"
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
+            UI.Spacer(modifier = Modifier.height(12.dp))
             
             // TODO: Replace with actual zones from database
             // For now, show placeholder message
@@ -45,12 +73,13 @@ fun MainScreen() {
                         semantic = "empty-state"
                     )
                     
-                    Spacer(modifier = Modifier.height(8.dp))
+                    UI.Spacer(modifier = Modifier.height(8.dp))
                     
                     UI.Button(
                         type = ButtonType.PRIMARY,
                         semantic = "create-zone",
                         onClick = { 
+                            DebugManager.debugButtonClick("Créer une zone")
                             // TODO: Navigate to zone creation
                         }
                     ) {
@@ -64,7 +93,7 @@ fun MainScreen() {
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        UI.Spacer(modifier = Modifier.height(24.dp))
         
         // Terminal section
         UI.Container(type = ContainerType.SECONDARY) {
@@ -74,7 +103,7 @@ fun MainScreen() {
                 semantic = "section-title"
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            UI.Spacer(modifier = Modifier.height(8.dp))
             
             UI.Terminal(
                 content = "Assistant démarré. En attente de commandes...",
@@ -82,7 +111,7 @@ fun MainScreen() {
             )
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        UI.Spacer(modifier = Modifier.height(24.dp))
         
         // AI Call Zone (permanent toggle)
         UI.Container(type = ContainerType.FLOATING) {
@@ -90,6 +119,7 @@ fun MainScreen() {
                 type = ButtonType.SECONDARY,
                 semantic = "ai-toggle",
                 onClick = {
+                    DebugManager.debugButtonClick("Appel IA")
                     // TODO: Toggle AI dialogue interface
                 }
             ) {

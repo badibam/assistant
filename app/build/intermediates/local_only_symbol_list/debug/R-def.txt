@@ -1,0 +1,20 @@
+R_DEF: Internal format may change without notice
+local
+mipmap ic_launcher
+mipmap ic_launcher_round
+string add
+string ai_call_zone
+string app_name
+string cancel
+string create_zone
+string delete
+string edit
+string loading
+string main_screen_title
+string no_zones
+string save
+string terminal_title
+string zones_section
+style Theme.AssistantPersonnel
+xml backup_rules
+xml data_extraction_rules

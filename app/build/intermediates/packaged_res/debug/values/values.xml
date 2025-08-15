@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add">Ajouter</string>
+    <string name="ai_call_zone">Appel IA</string>
+    <string name="app_name">Assistant Personnel</string>
+    <string name="cancel">Annuler</string>
+    <string name="create_zone">Créer une zone</string>
+    <string name="delete">Supprimer</string>
+    <string name="edit">Modifier</string>
+    <string name="loading">Chargement…</string>
+    <string name="main_screen_title">Assistant Personnel</string>
+    <string name="no_zones">Aucune zone configurée</string>
+    <string name="save">Enregistrer</string>
+    <string name="terminal_title">Terminal</string>
+    <string name="zones_section">Zones</string>
+    <style name="Theme.AssistantPersonnel" parent="android:Theme.Material.Light.NoActionBar"/>
+</resources>

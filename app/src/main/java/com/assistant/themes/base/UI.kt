@@ -1,6 +1,8 @@
 package com.assistant.themes.base
 
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
@@ -21,7 +23,51 @@ import androidx.compose.ui.Modifier
  */
 object UI {
     
-    // LAYOUT COMPONENTS
+    // BASIC LAYOUT COMPONENTS
+    
+    /**
+     * Column layout - vertical arrangement of components
+     * Delegates to current theme for customization (spacing, animations, etc.)
+     */
+    @Composable
+    fun Column(
+        modifier: Modifier = Modifier,
+        verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+        horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+        content: @Composable ColumnScope.() -> Unit
+    ) = CurrentTheme.current.Column(modifier, verticalArrangement, horizontalAlignment, content)
+    
+    /**
+     * Row layout - horizontal arrangement of components
+     * Delegates to current theme for customization
+     */
+    @Composable
+    fun Row(
+        modifier: Modifier = Modifier,
+        horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+        verticalAlignment: Alignment.Vertical = Alignment.Top,
+        content: @Composable RowScope.() -> Unit
+    ) = CurrentTheme.current.Row(modifier, horizontalArrangement, verticalAlignment, content)
+    
+    /**
+     * Box layout - overlay/stacked arrangement of components
+     * Delegates to current theme for customization
+     */
+    @Composable
+    fun Box(
+        modifier: Modifier = Modifier,
+        contentAlignment: Alignment = Alignment.TopStart,
+        content: @Composable BoxScope.() -> Unit
+    ) = CurrentTheme.current.Box(modifier, contentAlignment, content)
+    
+    /**
+     * Spacer - creates empty space between components
+     * Delegates to current theme (themes could add visual dividers, etc.)
+     */
+    @Composable
+    fun Spacer(modifier: Modifier) = CurrentTheme.current.Spacer(modifier)
+    
+    // SEMANTIC LAYOUT COMPONENTS
     
     /**
      * Main screen container - defines overall screen layout and padding

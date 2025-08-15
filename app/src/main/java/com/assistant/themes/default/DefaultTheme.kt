@@ -5,24 +5,79 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.Text as MaterialText
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.themes.base.TextFieldType
+import androidx.compose.foundation.layout.Column as ComposeColumn
+import androidx.compose.foundation.layout.Row as ComposeRow
+import androidx.compose.foundation.layout.Box as ComposeBox
+import androidx.compose.foundation.layout.Spacer as ComposeSpacer
 
 /**
  * Default theme implementation - clean Material 3 design
  */
 object DefaultTheme : ThemeContract {
     
+    // BASIC LAYOUT COMPONENTS
+    @Composable
+    override fun Column(
+        modifier: Modifier,
+        verticalArrangement: Arrangement.Vertical,
+        horizontalAlignment: Alignment.Horizontal,
+        content: @Composable ColumnScope.() -> Unit
+    ) {
+        ComposeColumn(
+            modifier = modifier,
+            verticalArrangement = verticalArrangement,
+            horizontalAlignment = horizontalAlignment,
+            content = content
+        )
+    }
+    
+    @Composable
+    override fun Row(
+        modifier: Modifier,
+        horizontalArrangement: Arrangement.Horizontal,
+        verticalAlignment: Alignment.Vertical,
+        content: @Composable RowScope.() -> Unit
+    ) {
+        ComposeRow(
+            modifier = modifier,
+            horizontalArrangement = horizontalArrangement,
+            verticalAlignment = verticalAlignment,
+            content = content
+        )
+    }
+    
+    @Composable
+    override fun Box(
+        modifier: Modifier,
+        contentAlignment: Alignment,
+        content: @Composable BoxScope.() -> Unit
+    ) {
+        ComposeBox(
+            modifier = modifier,
+            contentAlignment = contentAlignment,
+            content = content
+        )
+    }
+    
+    @Composable
+    override fun Spacer(modifier: Modifier) {
+        ComposeSpacer(modifier = modifier)
+    }
+    
+    // SEMANTIC LAYOUT COMPONENTS
     @Composable
     override fun Screen(
         type: ScreenType,
         modifier: Modifier,
         content: @Composable () -> Unit
     ) {
-        Column(
+        ComposeColumn(
             modifier = modifier
                 .fillMaxSize()
                 .padding(16.dp)
@@ -44,7 +99,7 @@ object DefaultTheme : ThemeContract {
             ContainerType.FLOATING -> modifier.padding(16.dp)
         }
         
-        Column(modifier = containerModifier) {
+        ComposeColumn(modifier = containerModifier) {
             content()
         }
     }
@@ -68,7 +123,7 @@ object DefaultTheme : ThemeContract {
             colors = cardColors,
             shape = RoundedCornerShape(12.dp)
         ) {
-            Box(modifier = Modifier.padding(16.dp)) {
+            ComposeBox(modifier = Modifier.padding(16.dp)) {
                 content()
             }
         }
@@ -277,7 +332,7 @@ object DefaultTheme : ThemeContract {
                 onClick = onClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
+                ComposeColumn {
                     MaterialText(
                         text = instanceName,
                         style = MaterialTheme.typography.bodyMedium
@@ -318,7 +373,7 @@ object DefaultTheme : ThemeContract {
         when (type) {
             LoadingType.DEFAULT -> CircularProgressIndicator(modifier = modifier)
             LoadingType.MINIMAL -> LinearProgressIndicator(modifier = modifier.fillMaxWidth())
-            LoadingType.FULL_SCREEN -> Box(modifier = modifier.fillMaxSize()) {
+            LoadingType.FULL_SCREEN -> ComposeBox(modifier = modifier.fillMaxSize()) {
                 CircularProgressIndicator()
             }
         }
