@@ -3,9 +3,12 @@ package com.assistant.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.debug.DebugManager
+import com.assistant.core.coordinator.Coordinator
+import kotlinx.coroutines.launch
 
 /**
  * Main screen - entry point of the application
@@ -13,11 +16,42 @@ import com.assistant.core.debug.DebugManager
  */
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    val coordinator = remember { Coordinator(context) }
+    val coroutineScope = rememberCoroutineScope()
+    var showCreateZone by remember { mutableStateOf(false) }
+    
     // Message debug initial
     LaunchedEffect(Unit) {
         DebugManager.debug("🚀 MainScreen chargé")
     }
-    UI.Screen(type = ScreenType.MAIN) {
+    
+    // Show CreateZoneScreen when requested
+    if (showCreateZone) {
+        CreateZoneScreen(
+            onCancel = {
+                showCreateZone = false
+            },
+            onCreate = { name, description ->
+                coroutineScope.launch {
+                    try {
+                        val result = coordinator.processUserAction(
+                            "create->zone",
+                            mapOf(
+                                "name" to name,
+                                "description" to (description ?: "")
+                            )
+                        )
+                        DebugManager.debug("Zone création: ${result.status}")
+                        showCreateZone = false
+                    } catch (e: Exception) {
+                        DebugManager.debug("Erreur création zone: ${e.message}")
+                    }
+                }
+            }
+        )
+    } else {
+        UI.Screen(type = ScreenType.MAIN) {
         // Zone Debug - en haut pour visibilité
         UI.Card(
             type = CardType.SYSTEM,
@@ -80,7 +114,7 @@ fun MainScreen() {
                         semantic = "create-zone",
                         onClick = { 
                             DebugManager.debugButtonClick("Créer une zone")
-                            // TODO: Navigate to zone creation
+                            showCreateZone = true
                         }
                     ) {
                         UI.Text(
@@ -129,6 +163,7 @@ fun MainScreen() {
                     semantic = "ai-call-label"
                 )
             }
+        }
         }
     }
 }

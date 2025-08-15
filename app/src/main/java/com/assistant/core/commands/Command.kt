@@ -21,6 +21,7 @@ data class CommandResult(
     val status: CommandStatus,
     val message: String? = null,
     val requestedData: Map<String, Any>? = null, // Data requested by command
+    val data: Map<String, Any>? = null,   // Result data from operation
     val error: String? = null
 )
 
@@ -30,6 +31,7 @@ data class CommandResult(
 enum class CommandStatus {
     SUCCESS,                  // Command executed successfully
     ERROR,                   // Command failed with error
+    CANCELLED,               // Command was cancelled
     VALIDATION_REQUIRED,     // User validation needed before execution
     PERMISSION_DENIED,       // Command not allowed
     INVALID_FORMAT,          // Malformed command

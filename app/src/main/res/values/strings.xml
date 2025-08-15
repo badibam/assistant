@@ -13,4 +13,16 @@
     <string name="cancel">Annuler</string>
     <string name="save">Enregistrer</string>
     <string name="loading">Chargement…</string>
+    
+    <!-- Zone creation -->
+    <string name="create_zone_title">Nouvelle zone</string>
+    <string name="zone_name_label">Nom de la zone</string>
+    <string name="zone_name_hint">Entrez le nom de la zone</string>
+    <string name="zone_description_label">Description (optionnel)</string>
+    <string name="zone_description_hint">Décrivez cette zone thématique…</string>
+    <string name="zone_help_text">Les zones permettent d\'organiser vos outils par thématique (Santé, Productivité, etc.)</string>
+    <string name="create_zone_button">Créer la zone</string>
+    <string name="zone_name_required">Zone name is required</string>
+    <string name="zone_not_found">Zone not found</string>
+    <string name="zone_id_required">Zone ID is required</string>
 </resources>
