@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.debug.DebugManager
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.database.AppDatabase
+import com.assistant.core.database.entities.Zone
 import kotlinx.coroutines.launch
 
 /**
@@ -20,6 +22,10 @@ fun MainScreen() {
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     var showCreateZone by remember { mutableStateOf(false) }
+    
+    // Observe zones in real-time
+    val database = remember { AppDatabase.getDatabase(context) }
+    val zones by database.zoneDao().getAllZones().collectAsState(initial = emptyList())
     
     // Message debug initial
     LaunchedEffect(Unit) {
@@ -93,36 +99,80 @@ fun MainScreen() {
             
             UI.Spacer(modifier = Modifier.height(12.dp))
             
-            // TODO: Replace with actual zones from database
-            // For now, show placeholder message
-            UI.Card(
-                type = CardType.SYSTEM,
-                semantic = "placeholder",
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column {
-                    UI.Text(
-                        text = "Aucune zone configurée",
-                        type = TextType.BODY,
-                        semantic = "empty-state"
-                    )
-                    
-                    UI.Spacer(modifier = Modifier.height(8.dp))
-                    
-                    UI.Button(
-                        type = ButtonType.PRIMARY,
-                        semantic = "create-zone",
-                        onClick = { 
-                            DebugManager.debugButtonClick("Créer une zone")
-                            showCreateZone = true
-                        }
-                    ) {
+            if (zones.isEmpty()) {
+                // Show placeholder when no zones
+                UI.Card(
+                    type = CardType.SYSTEM,
+                    semantic = "placeholder",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
                         UI.Text(
-                            text = "Créer une zone",
-                            type = TextType.LABEL,
-                            semantic = "button-label"
+                            text = "Aucune zone configurée",
+                            type = TextType.BODY,
+                            semantic = "empty-state"
                         )
+                        
+                        UI.Spacer(modifier = Modifier.height(8.dp))
+                        
+                        UI.Button(
+                            type = ButtonType.PRIMARY,
+                            semantic = "create-zone",
+                            onClick = { 
+                                DebugManager.debugButtonClick("Créer une zone")
+                                showCreateZone = true
+                            }
+                        ) {
+                            UI.Text(
+                                text = "Créer une zone",
+                                type = TextType.LABEL,
+                                semantic = "button-label"
+                            )
+                        }
                     }
+                }
+            } else {
+                // Show zones list
+                zones.forEach { zone ->
+                    UI.Card(
+                        type = CardType.ZONE,
+                        semantic = "zone-${zone.id}",
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        Column {
+                            UI.Text(
+                                text = zone.name,
+                                type = TextType.SUBTITLE,
+                                semantic = "zone-name"
+                            )
+                            zone.description?.let { description ->
+                                UI.Spacer(modifier = Modifier.height(4.dp))
+                                UI.Text(
+                                    text = description,
+                                    type = TextType.CAPTION,
+                                    semantic = "zone-description"
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                UI.Spacer(modifier = Modifier.height(8.dp))
+                
+                // Add zone button
+                UI.Button(
+                    type = ButtonType.SECONDARY,
+                    semantic = "add-zone",
+                    onClick = { 
+                        DebugManager.debugButtonClick("Ajouter une zone")
+                        showCreateZone = true
+                    }
+                ) {
+                    UI.Text(
+                        text = "Ajouter une zone",
+                        type = TextType.LABEL,
+                        semantic = "button-label"
+                    )
                 }
             }
         }
