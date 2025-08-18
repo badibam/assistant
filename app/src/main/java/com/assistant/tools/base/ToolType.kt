@@ -1,22 +1,44 @@
 package com.assistant.tools.base
 
-import kotlin.reflect.KClass
+import com.assistant.core.database.entities.ToolInstance
 
-interface ToolType {
-    /**
-     * Retourne les entités Room que ce type d'outil utilise
-     * Ces entités seront automatiquement ajoutées à la base de données
-     */
-    fun getEntities(): List<KClass<*>>
+/**
+ * Abstract base class for all tool types
+ * Provides common functionality and enforces the contract
+ */
+abstract class ToolType : ToolTypeContract {
     
     /**
-     * Nom unique du type d'outil (ex: "tracking", "objective")
+     * Initialize the tool type with a specific instance configuration
      */
-    fun getToolTypeName(): String
+    open suspend fun initialize(instance: ToolInstance) {
+        // TODO: Load and parse configuration
+        // TODO: Initialize tool type-specific state
+        // TODO: Validate configuration against schema
+    }
     
     /**
-     * Version du schéma de données de cet outil
-     * Utilisé pour les migrations spécifiques à l'outil
+     * Clean up tool type resources
      */
-    fun getSchemaVersion(): Int = 1
+    open suspend fun cleanup() {
+        // TODO: Clean up any tool type-specific resources
+        // TODO: Close database connections
+        // TODO: Clear caches
+    }
+    
+    /**
+     * Handle tool type-specific settings or preferences
+     */
+    open fun getSettings(): Map<String, Any> {
+        // TODO: Return tool type-specific settings
+        return emptyMap()
+    }
+    
+    /**
+     * Update tool settings
+     */
+    open suspend fun updateSettings(settings: Map<String, Any>): OperationResult {
+        // TODO: Validate and apply settings
+        return OperationResult.success("Settings updated (stub)")
+    }
 }
