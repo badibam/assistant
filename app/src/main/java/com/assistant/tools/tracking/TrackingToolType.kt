@@ -1,6 +1,5 @@
 package com.assistant.tools.tracking
 
-import com.assistant.core.tools.base.ToolType
 import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.tools.tracking.entities.TrackingData
 
@@ -8,10 +7,6 @@ import com.assistant.tools.tracking.entities.TrackingData
  * Tracking Tool Type implementation
  * Provides static metadata for tracking tool instances
  */
-@ToolType(
-    id = "tracking",
-    entities = [TrackingData::class]
-)
 object TrackingToolType : ToolTypeContract {
     
     override fun getDisplayName(): String = "Suivi"

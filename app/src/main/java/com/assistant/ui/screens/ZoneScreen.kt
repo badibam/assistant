@@ -12,7 +12,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
-import com.assistant.core.tools.ToolTypeRegistry
+import com.assistant.core.tools.ToolTypeManager
 import com.assistant.R
 import kotlinx.coroutines.launch
 
@@ -39,10 +39,7 @@ fun ZoneScreen(
         DebugManager.debug("🏷️ ZoneScreen chargé: ${zone.name}")
     }
     
-    // Initialize tool names manager for lightweight tool name access
-    LaunchedEffect(Unit) {
-        // TODO: Initialize ToolTypeRegistry if needed
-    }
+    // Tool type manager is automatically initialized through annotation processing
     
     UI.Screen(type = ScreenType.MAIN) {
         // Top bar with back navigation
@@ -165,7 +162,7 @@ fun ZoneScreen(
                         ) {
                             UI.Column {
                                 UI.Text(
-                                    text = ToolTypeRegistry.getToolTypeName(toolInstance.tool_type),
+                                    text = ToolTypeManager.getToolTypeName(toolInstance.tool_type),
                                     type = TextType.SUBTITLE,
                                     semantic = "tool-type"
                                 )
