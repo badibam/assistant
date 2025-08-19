@@ -1,0 +1,17 @@
+package com.assistant.core.tools
+
+import com.assistant.core.tools.base.ToolTypeContract
+import com.assistant.tools.tracking.TrackingToolType
+
+/**
+ * Simple registry that lists known tool types
+ * TODO: Replace with annotation processor scanning later
+ */
+object ToolTypeScanner {
+    
+    fun scanForToolTypes(): Map<String, ToolTypeContract> {
+        return mapOf(
+            "tracking" to TrackingToolType
+        )
+    }
+}

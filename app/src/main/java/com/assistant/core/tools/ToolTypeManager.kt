@@ -1,17 +1,16 @@
 package com.assistant.core.tools
 
 import com.assistant.core.tools.base.ToolTypeContract
-import com.assistant.tools.tracking.TrackingToolType
 
 /**
- * Manual ToolTypeManager for now
- * TODO: Replace with generated version from annotation processor
+ * ToolTypeManager with automatic discovery via runtime scanning
+ * Automatically discovers all @ToolType annotated classes
  */
 object ToolTypeManager {
     
-    private val toolTypes = mapOf<String, ToolTypeContract>(
-        "tracking" to TrackingToolType
-    )
+    private val toolTypes: Map<String, ToolTypeContract> by lazy {
+        ToolTypeScanner.scanForToolTypes()
+    }
     
     fun getToolType(id: String): ToolTypeContract? = toolTypes[id]
     
