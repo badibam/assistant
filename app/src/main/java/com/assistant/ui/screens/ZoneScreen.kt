@@ -34,6 +34,9 @@ fun ZoneScreen(
     val toolInstances by database.toolInstanceDao().getToolInstancesByZone(zone.id)
         .collectAsState(initial = emptyList())
     
+    // State for showing/hiding available tools list
+    var showAvailableTools by remember { mutableStateOf(false) }
+    
     // Debug message
     LaunchedEffect(Unit) {
         DebugManager.debug("🏷️ ZoneScreen chargé: ${zone.name}")
@@ -141,7 +144,7 @@ fun ZoneScreen(
                                 semantic = "add-tool",
                                 onClick = { 
                                     DebugManager.debugButtonClick("Ajouter un outil à ${zone.name}")
-                                    // TODO: Implement tool creation/addition
+                                    showAvailableTools = !showAvailableTools
                                 }
                             ) {
                                 UI.Text(
@@ -149,6 +152,47 @@ fun ZoneScreen(
                                     type = TextType.LABEL,
                                     semantic = "button-label"
                                 )
+                            }
+                            
+                            // Available tools list (shown conditionally)
+                            if (showAvailableTools) {
+                                UI.Spacer(modifier = Modifier.height(12.dp))
+                                
+                                UI.Card(
+                                    type = CardType.SYSTEM,
+                                    semantic = "available-tools-list",
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    UI.Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        // List all available tool types
+                                        ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
+                                            UI.Button(
+                                                type = ButtonType.GHOST,
+                                                semantic = "select-tool-$toolTypeId",
+                                                onClick = {
+                                                    DebugManager.debugButtonClick("Sélectionner outil: ${toolType.getDisplayName()}")
+                                                    // TODO: Navigate to tool configuration screen
+                                                    showAvailableTools = false
+                                                },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                UI.Card(
+                                                    type = CardType.ZONE,
+                                                    semantic = "available-tool-$toolTypeId",
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    UI.Text(
+                                                        text = toolType.getDisplayName(),
+                                                        type = TextType.BODY,
+                                                        semantic = "tool-name"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -189,7 +233,7 @@ fun ZoneScreen(
                         semantic = "add-tool",
                         onClick = { 
                             DebugManager.debugButtonClick("Ajouter un outil à ${zone.name}")
-                            // TODO: Implement tool creation/addition
+                            showAvailableTools = !showAvailableTools
                         }
                     ) {
                         UI.Text(
@@ -197,6 +241,47 @@ fun ZoneScreen(
                             type = TextType.LABEL,
                             semantic = "button-label"
                         )
+                    }
+                    
+                    // Available tools list (shown conditionally)
+                    if (showAvailableTools) {
+                        UI.Spacer(modifier = Modifier.height(12.dp))
+                        
+                        UI.Card(
+                            type = CardType.SYSTEM,
+                            semantic = "available-tools-list",
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            UI.Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // List all available tool types
+                                ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
+                                    UI.Button(
+                                        type = ButtonType.GHOST,
+                                        semantic = "select-tool-$toolTypeId",
+                                        onClick = {
+                                            DebugManager.debugButtonClick("Sélectionner outil: ${toolType.getDisplayName()}")
+                                            // TODO: Navigate to tool configuration screen
+                                            showAvailableTools = false
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        UI.Card(
+                                            type = CardType.ZONE,
+                                            semantic = "available-tool-$toolTypeId",
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            UI.Text(
+                                                text = toolType.getDisplayName(),
+                                                type = TextType.BODY,
+                                                semantic = "tool-name"
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

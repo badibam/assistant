@@ -224,7 +224,7 @@ object UI {
 enum class ScreenType { MAIN, ZONE_DETAIL, TOOL_INSTANCE, SETTINGS }
 enum class ContainerType { PRIMARY, SECONDARY, SIDEBAR, FLOATING }
 enum class CardType { ZONE, TOOL, DATA_ENTRY, SYSTEM }
-enum class ButtonType { PRIMARY, SECONDARY, DANGER, GHOST, ICON }
+enum class ButtonType { PRIMARY, SECONDARY, TERTIARY, DANGER, GHOST, ICON }
 enum class TextFieldType { STANDARD, SEARCH, NUMERIC, MULTILINE }
 enum class TextType { TITLE, SUBTITLE, BODY, CAPTION, LABEL }
 enum class TopBarType { DEFAULT, ZONE, TOOL }

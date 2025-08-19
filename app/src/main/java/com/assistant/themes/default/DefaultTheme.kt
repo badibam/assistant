@@ -155,6 +155,11 @@ object DefaultTheme : ThemeContract {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) { content() }
             
+            ButtonType.TERTIARY -> FilledTonalButton(
+                onClick = onClick,
+                modifier = modifier
+            ) { content() }
+            
             ButtonType.GHOST -> TextButton(
                 onClick = onClick,
                 modifier = modifier
