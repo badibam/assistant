@@ -2,7 +2,7 @@
   "type": {
     "_meta": {
       "type": "string",
-      "description": "Tool type identifier"
+      "description": "Tool identifier"
     },
     "value": "tracking"
   },

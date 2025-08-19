@@ -12,6 +12,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.tools.ToolTypeRegistry
 import com.assistant.R
 import kotlinx.coroutines.launch
 
@@ -36,6 +37,11 @@ fun ZoneScreen(
     // Debug message
     LaunchedEffect(Unit) {
         DebugManager.debug("🏷️ ZoneScreen chargé: ${zone.name}")
+    }
+    
+    // Initialize tool names manager for lightweight tool name access
+    LaunchedEffect(Unit) {
+        // TODO: Initialize ToolTypeRegistry if needed
     }
     
     UI.Screen(type = ScreenType.MAIN) {
@@ -159,7 +165,7 @@ fun ZoneScreen(
                         ) {
                             UI.Column {
                                 UI.Text(
-                                    text = toolInstance.tool_type.replaceFirstChar { it.uppercase() },
+                                    text = ToolTypeRegistry.getToolTypeName(toolInstance.tool_type),
                                     type = TextType.SUBTITLE,
                                     semantic = "tool-type"
                                 )

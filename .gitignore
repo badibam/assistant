@@ -8,3 +8,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+claude.txt
+
+# Android build files
+app/build/
+*/build/
+
+# Gradle files
+.gradle/
+gradle/
+
+# Generated files
+**/generated/
+**/build/
