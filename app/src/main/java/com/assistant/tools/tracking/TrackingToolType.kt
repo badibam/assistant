@@ -46,7 +46,7 @@ object TrackingToolType : ToolTypeContract {
             },
             "type": {
                 "type": "enum",
-                "values": ["numeric", "text", "scale", "boolean"],
+                "values": ["numeric", "text", "scale", "boolean", "duration"],
                 "required": true,
                 "description": "Data type for all items in this tracking instance"
             },
@@ -77,6 +77,11 @@ object TrackingToolType : ToolTypeContract {
             "max_value": {
                 "type": "number",
                 "description": "Maximum allowed value for numeric type"
+            },
+            "auto_switch": {
+                "type": "boolean",
+                "default": true,
+                "description": "For duration type: automatically stop previous activity when starting a new one"
             },
             "groups": {
                 "type": "array",
@@ -121,7 +126,10 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getAvailableOperations(): List<String> {
-        return listOf("add_entry", "get_entries", "update_entry", "delete_entry")
+        return listOf(
+            "add_entry", "get_entries", "update_entry", "delete_entry",
+            "start_activity", "stop_activity", "stop_all"
+        )
     }
     
     @Composable

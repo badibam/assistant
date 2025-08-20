@@ -53,6 +53,7 @@ fun TrackingConfigScreen(
     var itemMode by remember { mutableStateOf("free") }
     var saveNewItems by remember { mutableStateOf(false) }
     var defaultUnit by remember { mutableStateOf("") }
+    var autoSwitch by remember { mutableStateOf(true) }
     
     // Groups and items state
     var groups by remember { 
@@ -90,6 +91,7 @@ fun TrackingConfigScreen(
             put("default_unit", defaultUnit)
             put("min_value", null)
             put("max_value", null)
+            put("auto_switch", autoSwitch)
             put("groups", JSONArray().apply {
                 groups.forEach { group ->
                     put(JSONObject().apply {
@@ -246,9 +248,10 @@ fun TrackingConfigScreen(
                         
                         listOf(
                             "numeric" to "Numérique",
-                            "text" to "Texte",
+                            "text" to "Texte", 
                             "scale" to "Échelle",
-                            "boolean" to "Oui/Non"
+                            "boolean" to "Oui/Non",
+                            "duration" to "Durée"
                         ).forEach { (value, label) ->
                             UI.Button(
                                 type = if (trackingType == value) ButtonType.PRIMARY else ButtonType.GHOST,
@@ -311,6 +314,43 @@ fun TrackingConfigScreen(
                         placeholder = "Unité par défaut (kg, cm, etc.)",
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+                
+                // Auto-switch (only for duration)
+                if (trackingType == "duration") {
+                    UI.Card(
+                        type = CardType.SYSTEM,
+                        semantic = "auto-switch-selection",
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        UI.Column {
+                            UI.Text(
+                                text = "Basculement automatique",
+                                type = TextType.SUBTITLE,
+                                semantic = "field-label"
+                            )
+                            UI.Spacer(modifier = Modifier.height(8.dp))
+                            
+                            listOf(
+                                true to "Activé (stoppe l'activité précédente)",
+                                false to "Désactivé (tracking parallèle possible)"
+                            ).forEach { (value, label) ->
+                                UI.Button(
+                                    type = if (autoSwitch == value) ButtonType.PRIMARY else ButtonType.GHOST,
+                                    semantic = "auto-switch-$value",
+                                    onClick = { autoSwitch = value },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    enabled = true
+                                ) {
+                                    UI.Text(
+                                        text = label,
+                                        type = TextType.LABEL,
+                                        semantic = "button-label"
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -630,6 +670,7 @@ private fun AddItemForm(
                 "text" -> TextItemProperties(properties, onPropertiesChange)
                 "scale" -> ScaleItemProperties(properties, onPropertiesChange)
                 "boolean" -> BooleanItemProperties(properties, onPropertiesChange)
+                "duration" -> DurationItemProperties(properties, onPropertiesChange)
             }
             
             UI.Spacer(modifier = Modifier.height(8.dp))
@@ -886,5 +927,30 @@ private fun BooleanItemProperties(
                 modifier = Modifier.weight(1f)
             )
         }
+    }
+}
+
+/**
+ * Properties form for duration tracking items (activities)
+ */
+@Composable
+private fun DurationItemProperties(
+    properties: MutableMap<String, Any>,
+    onPropertiesChange: (MutableMap<String, Any>) -> Unit
+) {
+    // Duration items don't need specific properties - just the activity name
+    // The activity name is handled by the parent form
+    
+    UI.Card(
+        type = CardType.ZONE,
+        semantic = "duration-item-info",
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        UI.Text(
+            text = "Les activités de durée n'ont pas de propriétés spécifiques. " +
+                    "Seul le nom de l'activité est nécessaire pour le tracking temporel.",
+            type = TextType.CAPTION,
+            semantic = "info-text"
+        )
     }
 }
