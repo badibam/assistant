@@ -121,7 +121,7 @@ fun MainScreen() {
                     semantic = "placeholder",
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column {
+                    UI.Column {
                         UI.Text(
                             text = stringResource(R.string.no_zones),
                             type = TextType.BODY,
@@ -136,7 +136,8 @@ fun MainScreen() {
                             onClick = { 
                                 DebugManager.debugButtonClick("Créer une zone")
                                 showCreateZone = true
-                            }
+                            },
+                            enabled = true
                         ) {
                             UI.Text(
                                 text = stringResource(R.string.create_zone),
@@ -170,7 +171,8 @@ fun MainScreen() {
                     onClick = { 
                         DebugManager.debugButtonClick("Ajouter une zone")
                         showCreateZone = true
-                    }
+                    },
+                    enabled = true
                 ) {
                     UI.Text(
                         text = stringResource(R.string.add_zone),
@@ -209,7 +211,8 @@ fun MainScreen() {
                 onClick = {
                     DebugManager.debugButtonClick("Appel IA")
                     // TODO: Toggle AI dialogue interface
-                }
+                },
+                enabled = true
             ) {
                 UI.Text(
                     text = stringResource(R.string.ai_call_zone),
@@ -222,22 +225,3 @@ fun MainScreen() {
     }
 }
 
-// TODO: Add when database is ready
-/*
-@Composable
-private fun ZonesList(zones: List<Zone>) {
-    LazyColumn {
-        items(zones) { zone ->
-            UI.ZoneCard(
-                zoneName = zone.name,
-                onClick = {
-                    // TODO: Navigate to zone detail
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
-        }
-    }
-}
-*/

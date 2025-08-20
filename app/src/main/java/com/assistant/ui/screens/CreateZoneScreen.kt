@@ -98,7 +98,8 @@ fun CreateZoneScreen(
                         DebugManager.debugButtonClick("Annuler création zone")
                         onCancel()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = true
                 ) {
                     UI.Text(
                         text = stringResource(R.string.cancel),
@@ -119,7 +120,8 @@ fun CreateZoneScreen(
                             )
                         }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = name.isNotBlank()
                 ) {
                     UI.Text(
                         text = stringResource(R.string.create_zone_button),
