@@ -25,8 +25,30 @@ interface ToolTypeContract {
     fun getDefaultConfig(): String  
     fun getConfigSchema(): String
     fun getAvailableOperations(): List<String>
+    
+    @Composable
+    fun getConfigScreen(
+        zoneId: String,
+        onSave: (config: String) -> Unit,
+        onCancel: () -> Unit
+    )
 }
 ```
+
+## Configuration des Outils
+
+**Chaque outil fournit son écran de configuration via `getConfigScreen()`.**
+
+**Champs communs recommandés :**
+- Nom (obligatoire)
+- Description 
+- Mode de gestion (Manuel/IA/Collaboratif)
+- Mode d'affichage (Minimal/Condensé/Détaillé)
+
+**Organisation des écrans :**
+- Chaque outil a son dossier : `tools/[outil]/ui/ConfigScreen.kt`
+- Interface custom pour flexibilité maximale
+- Callbacks `onSave`/`onCancel` centralisés dans ZoneScreen
 
 ## Utilisation
 
