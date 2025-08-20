@@ -115,8 +115,9 @@ object UI {
         semantic: String = "",
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
+        enabled: Boolean = true,
         content: @Composable () -> Unit
-    ) = CurrentTheme.current.Button(type, semantic, onClick, modifier, content)
+    ) = CurrentTheme.current.Button(type, semantic, onClick, modifier, enabled, content)
     
     /**
      * Text input field - for user text entry

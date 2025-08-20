@@ -1,5 +1,7 @@
 package com.assistant.core.tools.base
 
+import androidx.compose.runtime.Composable
+
 /**
  * Contract for tool type implementations
  * Defines the mandatory static metadata that each tool type must provide
@@ -26,4 +28,16 @@ interface ToolTypeContract {
      * List of operations this tool type supports
      */
     fun getAvailableOperations(): List<String>
+    
+    /**
+     * Configuration screen for this tool type
+     * @param zoneId ID of the zone where the tool will be created
+     * @param onSave Called when configuration is saved with the config JSON
+     * @param onCancel Called when configuration is cancelled
+     */
+    fun getConfigScreen(
+        zoneId: String,
+        onSave: (config: String) -> Unit,
+        onCancel: () -> Unit
+    ): @Composable () -> Unit
 }

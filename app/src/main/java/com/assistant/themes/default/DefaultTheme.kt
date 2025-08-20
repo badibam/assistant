@@ -135,39 +135,46 @@ object DefaultTheme : ThemeContract {
         semantic: String,
         onClick: () -> Unit,
         modifier: Modifier,
+        enabled: Boolean,
         content: @Composable () -> Unit
     ) {
         when (type) {
             ButtonType.PRIMARY -> Button(
                 onClick = onClick,
                 modifier = modifier,
+                enabled = enabled,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) { content() }
             
             ButtonType.SECONDARY -> OutlinedButton(
                 onClick = onClick,
-                modifier = modifier
+                modifier = modifier,
+                enabled = enabled
             ) { content() }
             
             ButtonType.DANGER -> Button(
                 onClick = onClick,
                 modifier = modifier,
+                enabled = enabled,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
             ) { content() }
             
             ButtonType.TERTIARY -> FilledTonalButton(
                 onClick = onClick,
-                modifier = modifier
+                modifier = modifier,
+                enabled = enabled
             ) { content() }
             
             ButtonType.GHOST -> TextButton(
                 onClick = onClick,
-                modifier = modifier
+                modifier = modifier,
+                enabled = enabled
             ) { content() }
             
             ButtonType.ICON -> IconButton(
                 onClick = onClick,
-                modifier = modifier
+                modifier = modifier,
+                enabled = enabled
             ) { content() }
         }
     }
@@ -309,7 +316,8 @@ object DefaultTheme : ThemeContract {
                 type = ButtonType.GHOST,
                 semantic = "zone-navigation",
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = true
             ) {
                 MaterialText(
                     text = zoneName,
@@ -335,7 +343,8 @@ object DefaultTheme : ThemeContract {
                 type = ButtonType.GHOST,
                 semantic = "tool-navigation",
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = true
             ) {
                 ComposeColumn {
                     MaterialText(

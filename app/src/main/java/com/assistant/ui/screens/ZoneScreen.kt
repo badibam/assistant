@@ -37,6 +37,35 @@ fun ZoneScreen(
     // State for showing/hiding available tools list
     var showAvailableTools by remember { mutableStateOf(false) }
     
+    // State for tool configuration screen
+    var showingConfigFor by remember { mutableStateOf<String?>(null) }
+    
+    // Configuration callbacks (shared logic for all tool types)
+    val onSaveConfig = { config: String ->
+        showingConfigFor?.let { toolTypeId ->
+            coroutineScope.launch {
+                try {
+                    val toolInstance = ToolInstance(
+                        zone_id = zone.id,
+                        tool_type = toolTypeId,
+                        config_json = config,
+                        config_metadata_json = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema() ?: "{}"
+                    )
+                    database.toolInstanceDao().insertToolInstance(toolInstance)
+                    DebugManager.debug("✅ Outil $toolTypeId créé dans zone ${zone.name}")
+                    showingConfigFor = null
+                } catch (e: Exception) {
+                    DebugManager.debug("❌ Erreur création outil: ${e.message}")
+                }
+            }
+        }
+    }
+    
+    val onCancelConfig = {
+        DebugManager.debug("❌ Configuration annulée")
+        showingConfigFor = null
+    }
+    
     // Debug message
     LaunchedEffect(Unit) {
         DebugManager.debug("🏷️ ZoneScreen chargé: ${zone.name}")
@@ -44,12 +73,25 @@ fun ZoneScreen(
     
     // Tool type manager is automatically initialized through annotation processing
     
-    UI.Screen(type = ScreenType.MAIN) {
-        // Top bar with back navigation
-        UI.TopBar(
-            type = TopBarType.DEFAULT,
-            title = zone.name
-        )
+    // Show configuration screen if requested, otherwise show zone screen
+    if (showingConfigFor != null) {
+        val toolTypeId = showingConfigFor!!
+        val toolType = ToolTypeManager.getToolType(toolTypeId)
+        if (toolType != null) {
+            toolType.getConfigScreen(
+                zoneId = zone.id,
+                onSave = onSaveConfig,
+                onCancel = onCancelConfig
+            ).invoke()
+        }
+    } else {
+        // Normal zone screen
+        UI.Screen(type = ScreenType.MAIN) {
+            // Top bar with back navigation
+            UI.TopBar(
+                type = TopBarType.DEFAULT,
+                title = zone.name
+            )
         
         UI.Spacer(modifier = Modifier.height(16.dp))
         
@@ -173,7 +215,7 @@ fun ZoneScreen(
                                                 semantic = "select-tool-$toolTypeId",
                                                 onClick = {
                                                     DebugManager.debugButtonClick("Sélectionner outil: ${toolType.getDisplayName()}")
-                                                    // TODO: Navigate to tool configuration screen
+                                                    showingConfigFor = toolTypeId
                                                     showAvailableTools = false
                                                 },
                                                 modifier = Modifier.fillMaxWidth()
@@ -262,7 +304,7 @@ fun ZoneScreen(
                                         semantic = "select-tool-$toolTypeId",
                                         onClick = {
                                             DebugManager.debugButtonClick("Sélectionner outil: ${toolType.getDisplayName()}")
-                                            // TODO: Navigate to tool configuration screen
+                                            showingConfigFor = toolTypeId
                                             showAvailableTools = false
                                         },
                                         modifier = Modifier.fillMaxWidth()
@@ -307,6 +349,7 @@ fun ZoneScreen(
                 )
             }
         }
-    }
+    } // End of normal zone screen UI.Screen
+    } // End of else block
 }
 

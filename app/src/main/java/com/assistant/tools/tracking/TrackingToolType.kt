@@ -1,7 +1,9 @@
 package com.assistant.tools.tracking
 
+import androidx.compose.runtime.Composable
 import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.tools.tracking.ui.TrackingConfigScreen
 
 /**
  * Tracking Tool Type implementation
@@ -120,5 +122,19 @@ object TrackingToolType : ToolTypeContract {
     
     override fun getAvailableOperations(): List<String> {
         return listOf("add_entry", "get_entries", "update_entry", "delete_entry")
+    }
+    
+    override fun getConfigScreen(
+        zoneId: String,
+        onSave: (config: String) -> Unit,
+        onCancel: () -> Unit
+    ): @Composable () -> Unit {
+        return {
+            TrackingConfigScreen(
+                zoneId = zoneId,
+                onSave = onSave,
+                onCancel = onCancel
+            )
+        }
     }
 }

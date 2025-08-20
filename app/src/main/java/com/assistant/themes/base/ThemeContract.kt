@@ -68,6 +68,7 @@ interface ThemeContract {
         semantic: String,
         onClick: () -> Unit,
         modifier: Modifier,
+        enabled: Boolean,
         content: @Composable () -> Unit
     )
     
