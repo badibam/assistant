@@ -35,9 +35,10 @@ interface ToolTypeContract {
      * @param onSave Called when configuration is saved with the config JSON
      * @param onCancel Called when configuration is cancelled
      */
+    @Composable
     fun getConfigScreen(
         zoneId: String,
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit
-    ): @Composable () -> Unit
+    )
 }

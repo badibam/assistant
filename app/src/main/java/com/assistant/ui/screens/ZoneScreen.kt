@@ -74,17 +74,13 @@ fun ZoneScreen(
     // Tool type manager is automatically initialized through annotation processing
     
     // Show configuration screen if requested, otherwise show zone screen
-    if (showingConfigFor != null) {
-        val toolTypeId = showingConfigFor!!
-        val toolType = ToolTypeManager.getToolType(toolTypeId)
-        if (toolType != null) {
-            toolType.getConfigScreen(
-                zoneId = zone.id,
-                onSave = onSaveConfig,
-                onCancel = onCancelConfig
-            ).invoke()
-        }
-    } else {
+    showingConfigFor?.let { toolTypeId ->
+        ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
+            zoneId = zone.id,
+            onSave = onSaveConfig,
+            onCancel = onCancelConfig
+        )
+    } ?: run {
         // Normal zone screen
         UI.Screen(type = ScreenType.MAIN) {
             // Top bar with back navigation
@@ -350,6 +346,6 @@ fun ZoneScreen(
             }
         }
     } // End of normal zone screen UI.Screen
-    } // End of else block
+    } // End of run block
 }
 

@@ -37,6 +37,8 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += "-opt-in=kotlin.ExperimentalUnsignedTypes"
+        freeCompilerArgs += "-XXLanguage:+UnitConversionsOnArbitraryExpressions"
     }
     buildFeatures {
         compose = true

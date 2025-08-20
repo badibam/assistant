@@ -124,17 +124,16 @@ object TrackingToolType : ToolTypeContract {
         return listOf("add_entry", "get_entries", "update_entry", "delete_entry")
     }
     
+    @Composable
     override fun getConfigScreen(
         zoneId: String,
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit
-    ): @Composable () -> Unit {
-        return {
-            TrackingConfigScreen(
-                zoneId = zoneId,
-                onSave = onSave,
-                onCancel = onCancel
-            )
-        }
+    ) {
+        TrackingConfigScreen(
+            zoneId = zoneId,
+            onSave = onSave,
+            onCancel = onCancel
+        )
     }
 }
