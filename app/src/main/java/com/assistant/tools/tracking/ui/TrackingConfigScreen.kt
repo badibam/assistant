@@ -386,11 +386,60 @@ fun TrackingConfigScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                UI.Text(
-                                    text = group.name,
-                                    type = TextType.SUBTITLE,
-                                    semantic = "group-name"
-                                )
+                                UI.Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    // Group reorder buttons
+                                    UI.Column {
+                                        UI.Button(
+                                            type = ButtonType.GHOST,
+                                            semantic = "move-group-up-$groupIndex",
+                                            onClick = { 
+                                                if (groupIndex > 0) {
+                                                    val newGroups = groups.toMutableList()
+                                                    val temp = newGroups[groupIndex]
+                                                    newGroups[groupIndex] = newGroups[groupIndex - 1]
+                                                    newGroups[groupIndex - 1] = temp
+                                                    groups = newGroups
+                                                }
+                                            },
+                                            enabled = groupIndex > 0
+                                        ) {
+                                            UI.Text(
+                                                text = "↑",
+                                                type = TextType.CAPTION,
+                                                semantic = "button-label"
+                                            )
+                                        }
+                                        
+                                        UI.Button(
+                                            type = ButtonType.GHOST,
+                                            semantic = "move-group-down-$groupIndex",
+                                            onClick = { 
+                                                if (groupIndex < groups.size - 1) {
+                                                    val newGroups = groups.toMutableList()
+                                                    val temp = newGroups[groupIndex]
+                                                    newGroups[groupIndex] = newGroups[groupIndex + 1]
+                                                    newGroups[groupIndex + 1] = temp
+                                                    groups = newGroups
+                                                }
+                                            },
+                                            enabled = groupIndex < groups.size - 1
+                                        ) {
+                                            UI.Text(
+                                                text = "↓",
+                                                type = TextType.CAPTION,
+                                                semantic = "button-label"
+                                            )
+                                        }
+                                    }
+                                    
+                                    UI.Text(
+                                        text = group.name,
+                                        type = TextType.SUBTITLE,
+                                        semantic = "group-name"
+                                    )
+                                }
                                 
                                 UI.Row {
                                     UI.Button(
@@ -442,18 +491,73 @@ fun TrackingConfigScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        UI.Column {
-                                            UI.Text(
-                                                text = item.name,
-                                                type = TextType.BODY,
-                                                semantic = "item-name"
-                                            )
-                                            if (item.properties.isNotEmpty()) {
+                                        UI.Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            // Item reorder buttons
+                                            UI.Column {
+                                                UI.Button(
+                                                    type = ButtonType.GHOST,
+                                                    semantic = "move-item-up-$groupIndex-$itemIndex",
+                                                    onClick = { 
+                                                        if (itemIndex > 0) {
+                                                            val newGroups = groups.toMutableList()
+                                                            val currentGroup = newGroups[groupIndex]
+                                                            val newItems = currentGroup.items.toMutableList()
+                                                            val temp = newItems[itemIndex]
+                                                            newItems[itemIndex] = newItems[itemIndex - 1]
+                                                            newItems[itemIndex - 1] = temp
+                                                            newGroups[groupIndex] = currentGroup.copy(items = newItems)
+                                                            groups = newGroups
+                                                        }
+                                                    },
+                                                    enabled = itemIndex > 0
+                                                ) {
+                                                    UI.Text(
+                                                        text = "↑",
+                                                        type = TextType.CAPTION,
+                                                        semantic = "button-label"
+                                                    )
+                                                }
+                                                
+                                                UI.Button(
+                                                    type = ButtonType.GHOST,
+                                                    semantic = "move-item-down-$groupIndex-$itemIndex",
+                                                    onClick = { 
+                                                        if (itemIndex < group.items.size - 1) {
+                                                            val newGroups = groups.toMutableList()
+                                                            val currentGroup = newGroups[groupIndex]
+                                                            val newItems = currentGroup.items.toMutableList()
+                                                            val temp = newItems[itemIndex]
+                                                            newItems[itemIndex] = newItems[itemIndex + 1]
+                                                            newItems[itemIndex + 1] = temp
+                                                            newGroups[groupIndex] = currentGroup.copy(items = newItems)
+                                                            groups = newGroups
+                                                        }
+                                                    },
+                                                    enabled = itemIndex < group.items.size - 1
+                                                ) {
+                                                    UI.Text(
+                                                        text = "↓",
+                                                        type = TextType.CAPTION,
+                                                        semantic = "button-label"
+                                                    )
+                                                }
+                                            }
+                                            
+                                            UI.Column {
                                                 UI.Text(
-                                                    text = item.properties.entries.joinToString(", ") { "${it.key}: ${it.value}" },
-                                                    type = TextType.CAPTION,
-                                                    semantic = "item-properties"
+                                                    text = item.name,
+                                                    type = TextType.BODY,
+                                                    semantic = "item-name"
                                                 )
+                                                if (item.properties.isNotEmpty()) {
+                                                    UI.Text(
+                                                        text = item.properties.entries.joinToString(", ") { "${it.key}: ${it.value}" },
+                                                        type = TextType.CAPTION,
+                                                        semantic = "item-properties"
+                                                    )
+                                                }
                                             }
                                         }
                                         
