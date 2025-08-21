@@ -24,31 +24,14 @@ Zones (conteneurs thématiques)
 
 ## Philosophie
 - **Immutabilité** : Les enregistrements copient les valeurs (pas de références, sauf leur tool instance id)
-- **Miroir metadata** : Chaque JSON a sa description parallèle
+- **Schémas JSON** : Validation et description via schémas JSON standards
 - **Config centralisée** : Pour les instances : tout dans `config_json`, pas de tables auxiliaires
 
 ---
 
-# MIROIR METADATA
+# SCHEMA JSON
 
-- Structure avec `_meta` systématique (récusrsive):
-
-```json
-"field_name": {
-  "_meta": {
-    "type": "string",
-    "required": true,
-    "description": "..."
-  }
-  "sub_field":{
-    "_meta": {
-      "type": "string",
-      "required": true,
-      "description": "..."
-    }
-  }
-}
-```
+Les données utilisent des schémas JSON standards pour la validation et la description, permettant à l'IA de comprendre la structure sans accéder aux données elles-mêmes.
 
 # LE COORDINATEUR = Machine à états centralisée
 
@@ -79,61 +62,6 @@ Zones (conteneurs thématiques)
 - Processus passifs : monitoring capteurs, etc.
 
 
-# SYSTÈME D'OPÉRATIONS
-
-- Toute action utilisant ou modifiant des données est une "opération".
-
-## Sources d'opérations
-
-- Tools (instances) : identifiés par instance_id
-- Services Core (singletons) : `backup_service`, `sync_service`, `maintenance_service`, `migration_service`, etc.
-
-
-## Cycle de vie des opérations
-
-1. Commande JSON arrive
-
-{
-  "action": "execute->tools->tracking->rebuild_totals",
-  "params": {
-    "instance_id": "uuid-1234",
-    "year": 2024,
-    "force": true
-  }
-}
-
-2. Coordinateur parse et enregistre
-val opId = coordinator.registerOperation(
-    source_type = "tool",
-    source_id = params["instance_id"],
-    operation = "rebuild_totals",
-    params = params,  // Le JSON complet
-    initiated_by = "user"
-)
-
-3. Coordinateur route vers le tool
-val tool = toolManager.getTool("tracking")
-val token = coordinator.getToken(opId)
-tool.execute(
-    operation = "rebuild_totals",
-    params = params,  // Passe le JSON
-    token = token
-)
-
-4. Tool exécute avec les params
-fun execute(operation: String, params: JsonObject, token: CancellationToken) {
-    when(operation) {
-        "rebuild_totals" -> {
-            val year = params["year"].asInt
-            rebuildTotals(year, token)
-        }
-    }
-}
-
-## Points clés
-- Coordinateur génère l'ID et garde les tokens
-- Tool/Service vérifie régulièrement `token.isCancelled`
-- Un seul pattern pour tous les tools et services
 
 
 # INTERFACE DE COMMANDE
@@ -165,81 +93,9 @@ fun execute(operation: String, params: JsonObject, token: CancellationToken) {
 ```
 
 
-# SYSTÈME DE VALIDATION
-
-## Flux complet
-1. **Déclencheur** : Action initiée (user/ai/scheduler...)
-2. **Analyse** : Coordinateur détermine si besoin de validation
-3. **Délégation** : Si oui : Coordinateur → UI "Affiche fenêtre validation"
-4. **Attente** : État `validation_requise`
-5. **Réponse** : UI → Coordinateur confirmation
-6. **Exécution** : Action effectuée ou annulée
-
-## Règles configurables
-- `always` - Toujours valider
-- `never` - Jamais
-- etc. (extensible, ex envisagés : `if_has_data` `if_multiple` `in_dialogue`)
-
-## Règles de validation par source
-```json
-"delete_group": {
-  "_meta": {
-    "requires_validation": {
-      "ai": "always",
-      "user": "always",
-      "scheduler": "never"
-    }
-  }
-}
-```
 
 
-# ARCHITECTURE SYSTÈMES
-
-```
-                    COORDINATEUR
-            (orchestre opérations & états)
-                         |
-        ┌────────────────┼────────────────┐
-        |                |                |
-   [User ↔ App]    [App Core]       [App ↔ IA]
-    - UI            - Services       - Prompts
-    - Validation    - Tools          - Commandes
-                    - Données        - File attente
-
-              [Systèmes transversaux]
-         - Verbalisation - Réseau - Thèmes
-
-              [Processus parallèles]
-         - Monitoring - Terminal - ...
-```
 
 
-# 📝 EXEMPLES DE FLUX
-
-## Opération tool avec interruption
-1. User lance recalcul dans Suivi
-2. Tool enregistre opération au Coordinateur
-3. Tool signale `phase: "interruptible"`
-4. User veut ajouter donnée
-5. Coordinateur → UI "Interrompre recalcul?"
-6. Si oui → token.cancel() → tool s'arrête
-7. Action user s'exécute
-
-## Opération service core
-1. Scheduler déclenche backup quotidien
-2. `backup_service` enregistre opération
-3. Service lit toutes les instances
-4. Phase `critical` pendant écriture fichier
-5. User tente action → "Patientez 3 sec"
-6. Backup termine → état `idle`
-
-## Validation selon source
-1. IA envoie `delete_group`
-2. Coordinateur vérifie metadata.json
-3. Voit `"ai": "always"`
-4. Demande validation à User
-5. User refuse
-6. Coordinateur retourne `status: "cancelled"` à IA
 
 

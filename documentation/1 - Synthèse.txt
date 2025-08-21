@@ -39,10 +39,6 @@
 ▪ Architecture logique : système d'interfaces/contrats pour garantir les éléments communs obligatoires (métadonnées JSON, structure config JSON, page config, comportement clic, etc.) tout en laissant liberté d'implémentation
 ▪ Composants de base réutilisables disponibles (mais non contraints) pour la manière dont l'outil proprement dit s'affiche (le graphique, le journal, la notif, etc.)
 
-═══ Système de thèmes graphiques ═══
-▪ Structure modulaire : 1 nouveau thème = 1 nouveau dossier dans le projet
-▪ Encapsulation complète des composants Android (import via `UI.*` pour clarté)
-▪ Contrôle graphique total : des couleurs de base jusqu'aux détails d'interaction (sélection texte, curseurs) pour permettre des thèmes extrêmes (8-bit, pixelisé)
 
 
 ╔══════════════════════════════╗
@@ -100,9 +96,7 @@ Automatisations programmées (calculs, statistique, analyse IA etc)
 
 ═══ Généralités ═══
 
-▪ La navigation est cohérente parmi les différents écrans : clic = accès au contenu; clic long = accès aux paramètres
 ▪ Différents écrans permettent d'accéder de différentes façon aux données / fonctionnalités
-▪ Les outils peuvent être configurés pour être plus ou moins denses : Minimal, Condensé, Détaillé (réglages par défaut + spécifiques)
 ▪  Zone "Appel IA" disponible en permanence (toggle), qui indique quelques mots de contexte
 
 
@@ -219,21 +213,17 @@ Automatisations programmées (calculs, statistique, analyse IA etc)
 
 ═══ Base auto-descriptive ═══
 
-── Structure miroir data/metadata ──
-▪ Tous les champs en db (+ données étendues JSON) ont leur description dans structure JSON parallèle
-▪ Hiérarchie identique
-▪ Descriptions générées par IA/utilisateur/système
-▪ Permet navigation par IA sans avoir besoin d'accéder aux données elles-mêmes.
-▪ Champs du genre "_self": {"description": "Outil de suivi du poids corporel", "source":"system"}
+── Schémas JSON ──
+▪ Validation et description des données via schémas JSON standards
+▪ Permet navigation par IA sans avoir besoin d'accéder aux données elles-mêmes
 
 ── Event sourcing ──
 ▪ Toutes modifications passent par événements
-▪ Synchronisation auto de la structure data/metadata
 ▪ Logging des modifications
 ▪ Evite synchronisation manuelle
 
 ── Gestion des cascades d'actions ──
-▪ Automatiques (App gère) ex: synchronisation structure data/metadata
+▪ Automatiques (App gère) ex: contraintes de cohérence
 ▪ Validation (App peut gérer) ex: suppression outil → suppression données ?
 ▪ IA gère (Humain en théorie peut gérer) : Modifs subséquentes sur la base des modifs effectuées (cf logs, contexte, etc.)
 
