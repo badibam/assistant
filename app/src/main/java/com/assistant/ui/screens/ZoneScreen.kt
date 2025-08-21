@@ -1,5 +1,7 @@
 package com.assistant.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,6 +22,7 @@ import kotlinx.coroutines.launch
  * Zone detail screen - shows zone information and its tools
  * Follows established UI patterns from MainScreen and CreateZoneScreen
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ZoneScreen(
     zone: Zone,
@@ -39,10 +42,27 @@ fun ZoneScreen(
     
     // State for tool configuration screen
     var showingConfigFor by remember { mutableStateOf<String?>(null) }
+    var editingToolInstance by remember { mutableStateOf<ToolInstance?>(null) }
     
     // Configuration callbacks (shared logic for all tool types)
     val onSaveConfig = { config: String ->
-        showingConfigFor?.let { toolTypeId ->
+        editingToolInstance?.let { existingTool ->
+            // Update existing tool
+            coroutineScope.launch {
+                try {
+                    val updatedTool = existingTool.copy(
+                        config_json = config,
+                        config_metadata_json = ToolTypeManager.getToolType(existingTool.tool_type)?.getConfigSchema() ?: "{}"
+                    )
+                    database.toolInstanceDao().updateToolInstance(updatedTool)
+                    DebugManager.debug("✅ Outil ${existingTool.tool_type} modifié dans zone ${zone.name}")
+                    editingToolInstance = null
+                } catch (e: Exception) {
+                    DebugManager.debug("❌ Erreur modification outil: ${e.message}")
+                }
+            }
+        } ?: showingConfigFor?.let { toolTypeId ->
+            // Create new tool
             coroutineScope.launch {
                 try {
                     val toolInstance = ToolInstance(
@@ -64,6 +84,7 @@ fun ZoneScreen(
     val onCancelConfig = {
         DebugManager.debug("❌ Configuration annulée")
         showingConfigFor = null
+        editingToolInstance = null
     }
     
     // Debug message
@@ -74,11 +95,21 @@ fun ZoneScreen(
     // Tool type manager is automatically initialized through annotation processing
     
     // Show configuration screen if requested, otherwise show zone screen
-    showingConfigFor?.let { toolTypeId ->
+    editingToolInstance?.let { toolInstance ->
+        // Edit existing tool
+        ToolTypeManager.getToolType(toolInstance.tool_type)?.getConfigScreen(
+            zoneId = zone.id,
+            onSave = onSaveConfig,
+            onCancel = onCancelConfig,
+            existingConfig = toolInstance.config_json
+        )
+    } ?: showingConfigFor?.let { toolTypeId ->
+        // Create new tool
         ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
             zoneId = zone.id,
             onSave = onSaveConfig,
-            onCancel = onCancelConfig
+            onCancel = onCancelConfig,
+            existingConfig = null
         )
     } ?: run {
         // Normal zone screen
@@ -240,7 +271,19 @@ fun ZoneScreen(
                         UI.Card(
                             type = CardType.ZONE,
                             semantic = "tool-${toolInstance.id}",
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .combinedClickable(
+                                    onClick = {
+                                        DebugManager.debugButtonClick("Clic simple sur outil ${toolInstance.tool_type}")
+                                        // TODO: Naviguer vers l'écran d'utilisation de l'outil
+                                    },
+                                    onLongClick = {
+                                        DebugManager.debugButtonClick("Clic long sur outil ${toolInstance.tool_type} - Édition")
+                                        editingToolInstance = toolInstance
+                                    }
+                                )
                         ) {
                             UI.Column {
                                 UI.Text(

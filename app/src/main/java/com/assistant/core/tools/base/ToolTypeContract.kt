@@ -34,11 +34,13 @@ interface ToolTypeContract {
      * @param zoneId ID of the zone where the tool will be created
      * @param onSave Called when configuration is saved with the config JSON
      * @param onCancel Called when configuration is cancelled
+     * @param existingConfig Optional existing configuration JSON for editing
      */
     @Composable
     fun getConfigScreen(
         zoneId: String,
         onSave: (config: String) -> Unit,
-        onCancel: () -> Unit
+        onCancel: () -> Unit,
+        existingConfig: String?
     )
 }

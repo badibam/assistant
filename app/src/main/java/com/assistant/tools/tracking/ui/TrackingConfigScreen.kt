@@ -36,7 +36,8 @@ data class TrackingGroup(
 fun TrackingConfigScreen(
     zoneId: String,
     onSave: (config: String) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    existingConfig: String? = null
 ) {
     val context = LocalContext.current
     
@@ -67,9 +68,66 @@ fun TrackingConfigScreen(
     var newItemName by remember { mutableStateOf("") }
     var newItemProperties: MutableMap<String, Any> by remember { mutableStateOf(mutableMapOf<String, Any>()) }
     
-    // Debug message
-    LaunchedEffect(Unit) {
-        DebugManager.debug("🔧 TrackingConfigScreen ouvert pour zone: $zoneId")
+    // Load existing config if provided
+    LaunchedEffect(existingConfig) {
+        existingConfig?.let { configJson ->
+            try {
+                val config = JSONObject(configJson)
+                
+                // Common fields
+                name = config.optString("name", "")
+                description = config.optString("description", "")
+                management = config.optString("management", "Manuel")
+                configValidation = config.optBoolean("config_validation", true)
+                dataValidation = config.optBoolean("data_validation", true)
+                displayMode = config.optString("display_mode", "Condensé")
+                
+                // Tracking-specific fields
+                trackingType = config.optString("type", "numeric")
+                showValue = config.optBoolean("show_value", true)
+                itemMode = config.optString("item_mode", "free")
+                saveNewItems = config.optBoolean("save_new_items", false)
+                autoSwitch = config.optBoolean("auto_switch", true)
+                
+                // Groups and items
+                val groupsArray = config.optJSONArray("groups")
+                if (groupsArray != null) {
+                    val loadedGroups = mutableListOf<TrackingGroup>()
+                    for (i in 0 until groupsArray.length()) {
+                        val groupObj = groupsArray.getJSONObject(i)
+                        val groupName = groupObj.getString("name")
+                        val itemsArray = groupObj.optJSONArray("items")
+                        val items = mutableListOf<TrackingItem>()
+                        
+                        if (itemsArray != null) {
+                            for (j in 0 until itemsArray.length()) {
+                                val itemObj = itemsArray.getJSONObject(j)
+                                val itemName = itemObj.getString("name")
+                                val properties = mutableMapOf<String, Any>()
+                                
+                                // Load all properties except name
+                                itemObj.keys().forEach { key ->
+                                    if (key != "name") {
+                                        properties[key] = itemObj.get(key)
+                                    }
+                                }
+                                
+                                items.add(TrackingItem(itemName, properties))
+                            }
+                        }
+                        
+                        loadedGroups.add(TrackingGroup(groupName, items))
+                    }
+                    groups = loadedGroups
+                }
+                
+                DebugManager.debug("🔧 TrackingConfigScreen - Config existante chargée: $name")
+            } catch (e: Exception) {
+                DebugManager.debug("❌ Erreur parsing config existante: ${e.message}")
+            }
+        } ?: run {
+            DebugManager.debug("🔧 TrackingConfigScreen ouvert pour zone: $zoneId (nouveau)")
+        }
     }
     
     // Save function

@@ -121,12 +121,14 @@ object TrackingToolType : ToolTypeContract {
     override fun getConfigScreen(
         zoneId: String,
         onSave: (config: String) -> Unit,
-        onCancel: () -> Unit
+        onCancel: () -> Unit,
+        existingConfig: String?
     ) {
         TrackingConfigScreen(
             zoneId = zoneId,
             onSave = onSave,
-            onCancel = onCancel
+            onCancel = onCancel,
+            existingConfig = existingConfig
         )
     }
 }
