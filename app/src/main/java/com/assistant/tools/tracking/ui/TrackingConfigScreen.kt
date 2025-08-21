@@ -52,7 +52,6 @@ fun TrackingConfigScreen(
     var showValue by remember { mutableStateOf(true) }
     var itemMode by remember { mutableStateOf("free") }
     var saveNewItems by remember { mutableStateOf(false) }
-    var defaultUnit by remember { mutableStateOf("") }
     var autoSwitch by remember { mutableStateOf(true) }
     
     // Groups and items state
@@ -88,9 +87,6 @@ fun TrackingConfigScreen(
             put("show_value", showValue)
             put("item_mode", itemMode)
             put("save_new_items", saveNewItems)
-            put("default_unit", defaultUnit)
-            put("min_value", null)
-            put("max_value", null)
             put("auto_switch", autoSwitch)
             put("groups", JSONArray().apply {
                 groups.forEach { group ->
@@ -251,7 +247,9 @@ fun TrackingConfigScreen(
                             "text" to "Texte", 
                             "scale" to "Échelle",
                             "boolean" to "Oui/Non",
-                            "duration" to "Durée"
+                            "duration" to "Durée",
+                            "choice" to "Choix",
+                            "counter" to "Compteur"
                         ).forEach { (value, label) ->
                             UI.Button(
                                 type = if (trackingType == value) ButtonType.PRIMARY else ButtonType.GHOST,
@@ -302,18 +300,6 @@ fun TrackingConfigScreen(
                             }
                         }
                     }
-                }
-                
-                // Default unit (only for numeric)
-                if (trackingType == "numeric") {
-                    UI.TextField(
-                        type = TextFieldType.STANDARD,
-                        semantic = "default-unit",
-                        value = defaultUnit,
-                        onValueChange = { defaultUnit = it },
-                        placeholder = "Unité par défaut (kg, cm, etc.)",
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
                 
                 // Auto-switch (only for duration)
@@ -671,6 +657,8 @@ private fun AddItemForm(
                 "scale" -> ScaleItemProperties(properties, onPropertiesChange)
                 "boolean" -> BooleanItemProperties(properties, onPropertiesChange)
                 "duration" -> DurationItemProperties(properties, onPropertiesChange)
+                "choice" -> ChoiceItemProperties(properties, onPropertiesChange)
+                "counter" -> CounterItemProperties(properties, onPropertiesChange)
             }
             
             UI.Spacer(modifier = Modifier.height(8.dp))
@@ -717,9 +705,7 @@ private fun NumericItemProperties(
     onPropertiesChange: (MutableMap<String, Any>) -> Unit
 ) {
     var unit by remember { mutableStateOf(properties["unit"]?.toString() ?: "") }
-    var defaultAmount by remember { mutableStateOf(properties["default_amount"]?.toString() ?: "") }
-    var minValue by remember { mutableStateOf(properties["min_value"]?.toString() ?: "") }
-    var maxValue by remember { mutableStateOf(properties["max_value"]?.toString() ?: "") }
+    var defaultValue by remember { mutableStateOf(properties["default_value"]?.toString() ?: "") }
     
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -733,52 +719,26 @@ private fun NumericItemProperties(
                 properties["unit"] = it
                 onPropertiesChange(properties)
             },
-            placeholder = "Unité (kg, cm, etc.)",
+            placeholder = "Unité (kg, cm, €, etc.)",
             modifier = Modifier.fillMaxWidth()
         )
         
         UI.TextField(
             type = TextFieldType.NUMERIC,
-            semantic = "item-default-amount",
-            value = defaultAmount,
+            semantic = "item-default-value",
+            value = defaultValue,
             onValueChange = { 
-                defaultAmount = it
-                properties["default_amount"] = it.toDoubleOrNull() ?: 0.0
+                defaultValue = it
+                if (it.isNotBlank()) {
+                    properties["default_value"] = it.toDoubleOrNull() ?: 0.0
+                } else {
+                    properties.remove("default_value")
+                }
                 onPropertiesChange(properties)
             },
-            placeholder = "Valeur par défaut",
+            placeholder = "Valeur par défaut (optionnelle)",
             modifier = Modifier.fillMaxWidth()
         )
-        
-        UI.Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            UI.TextField(
-                type = TextFieldType.NUMERIC,
-                semantic = "item-min-value",
-                value = minValue,
-                onValueChange = { 
-                    minValue = it
-                    if (it.toDoubleOrNull() != null) properties["min_value"] = it.toDoubleOrNull()!! else properties.remove("min_value")
-                    onPropertiesChange(properties)
-                },
-                placeholder = "Min",
-                modifier = Modifier.weight(1f)
-            )
-            
-            UI.TextField(
-                type = TextFieldType.NUMERIC,
-                semantic = "item-max-value",
-                value = maxValue,
-                onValueChange = { 
-                    maxValue = it
-                    if (it.toDoubleOrNull() != null) properties["max_value"] = it.toDoubleOrNull()!! else properties.remove("max_value")
-                    onPropertiesChange(properties)
-                },
-                placeholder = "Max",
-                modifier = Modifier.weight(1f)
-            )
-        }
     }
 }
 
@@ -790,36 +750,18 @@ private fun TextItemProperties(
     properties: MutableMap<String, Any>,
     onPropertiesChange: (MutableMap<String, Any>) -> Unit
 ) {
-    var defaultText by remember { mutableStateOf(properties["default_text"]?.toString() ?: "") }
-    var maxLength by remember { mutableStateOf(properties["max_length"]?.toString() ?: "") }
+    // Text items don't need specific properties - just free text input
     
-    UI.Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    UI.Card(
+        type = CardType.ZONE,
+        semantic = "text-item-info",
+        modifier = Modifier.fillMaxWidth()
     ) {
-        UI.TextField(
-            type = TextFieldType.STANDARD,
-            semantic = "item-default-text",
-            value = defaultText,
-            onValueChange = { 
-                defaultText = it
-                properties["default_text"] = it
-                onPropertiesChange(properties)
-            },
-            placeholder = "Texte par défaut",
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        UI.TextField(
-            type = TextFieldType.NUMERIC,
-            semantic = "item-max-length",
-            value = maxLength,
-            onValueChange = { 
-                maxLength = it
-                if (it.toIntOrNull() != null) properties["max_length"] = it.toIntOrNull()!! else properties.remove("max_length")
-                onPropertiesChange(properties)
-            },
-            placeholder = "Longueur maximale",
-            modifier = Modifier.fillMaxWidth()
+        UI.Text(
+            text = "Les éléments de type texte permettent la saisie libre sans contraintes. " +
+                    "Seul le nom de l'élément est nécessaire.",
+            type = TextType.CAPTION,
+            semantic = "info-text"
         )
     }
 }
@@ -939,7 +881,6 @@ private fun DurationItemProperties(
     onPropertiesChange: (MutableMap<String, Any>) -> Unit
 ) {
     // Duration items don't need specific properties - just the activity name
-    // The activity name is handled by the parent form
     
     UI.Card(
         type = CardType.ZONE,
@@ -951,6 +892,195 @@ private fun DurationItemProperties(
                     "Seul le nom de l'activité est nécessaire pour le tracking temporel.",
             type = TextType.CAPTION,
             semantic = "info-text"
+        )
+    }
+}
+
+/**
+ * Properties form for choice tracking items
+ */
+@Composable
+private fun ChoiceItemProperties(
+    properties: MutableMap<String, Any>,
+    onPropertiesChange: (MutableMap<String, Any>) -> Unit
+) {
+    var options by remember { 
+        mutableStateOf(
+            (properties["options"] as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList() ?: mutableListOf()
+        )
+    }
+    var defaultValue by remember { mutableStateOf(properties["default_value"]?.toString() ?: "") }
+    var newOption by remember { mutableStateOf("") }
+    
+    UI.Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Options list
+        UI.Text(
+            text = "Options disponibles",
+            type = TextType.SUBTITLE,
+            semantic = "options-label"
+        )
+        
+        if (options.isEmpty()) {
+            UI.Text(
+                text = "Aucune option définie",
+                type = TextType.CAPTION,
+                semantic = "no-options"
+            )
+        } else {
+            options.forEachIndexed { index, option ->
+                UI.Card(
+                    type = CardType.ZONE,
+                    semantic = "option-$index",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    UI.Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        UI.Text(
+                            text = option,
+                            type = TextType.BODY,
+                            semantic = "option-text"
+                        )
+                        
+                        UI.Button(
+                            type = ButtonType.DANGER,
+                            semantic = "delete-option-$index",
+                            onClick = {
+                                options.removeAt(index)
+                                properties["options"] = options.toList()
+                                onPropertiesChange(properties)
+                            },
+                            enabled = true
+                        ) {
+                            UI.Text(
+                                text = "×",
+                                type = TextType.CAPTION,
+                                semantic = "button-label"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Add new option
+        UI.Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            UI.TextField(
+                type = TextFieldType.STANDARD,
+                semantic = "new-option",
+                value = newOption,
+                onValueChange = { newOption = it },
+                placeholder = "Nouvelle option",
+                modifier = Modifier.weight(1f)
+            )
+            
+            UI.Button(
+                type = ButtonType.SECONDARY,
+                semantic = "add-option",
+                onClick = {
+                    if (newOption.isNotBlank() && !options.contains(newOption)) {
+                        options.add(newOption)
+                        properties["options"] = options.toList()
+                        onPropertiesChange(properties)
+                        newOption = ""
+                    }
+                },
+                enabled = newOption.isNotBlank() && !options.contains(newOption)
+            ) {
+                UI.Text(
+                    text = "Ajouter",
+                    type = TextType.LABEL,
+                    semantic = "button-label"
+                )
+            }
+        }
+        
+        // Default value selection
+        if (options.isNotEmpty()) {
+            UI.Spacer(modifier = Modifier.height(8.dp))
+            
+            UI.Text(
+                text = "Valeur par défaut (optionnelle)",
+                type = TextType.SUBTITLE,
+                semantic = "default-label"
+            )
+            
+            // Add "None" option for no default
+            val allOptions = listOf("" to "Aucune") + options.map { it to it }
+            
+            allOptions.forEach { (value, label) ->
+                UI.Button(
+                    type = if (defaultValue == value) ButtonType.PRIMARY else ButtonType.GHOST,
+                    semantic = "default-$value",
+                    onClick = {
+                        defaultValue = value
+                        if (value.isEmpty()) {
+                            properties.remove("default_value")
+                        } else {
+                            properties["default_value"] = value
+                        }
+                        onPropertiesChange(properties)
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                ) {
+                    UI.Text(
+                        text = label,
+                        type = TextType.LABEL,
+                        semantic = "button-label"
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Properties form for counter tracking items
+ */
+@Composable
+private fun CounterItemProperties(
+    properties: MutableMap<String, Any>,
+    onPropertiesChange: (MutableMap<String, Any>) -> Unit
+) {
+    var step by remember { mutableStateOf(properties["step"]?.toString() ?: "1") }
+    var unit by remember { mutableStateOf(properties["unit"]?.toString() ?: "") }
+    
+    UI.Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        UI.TextField(
+            type = TextFieldType.NUMERIC,
+            semantic = "item-step",
+            value = step,
+            onValueChange = { 
+                step = it
+                properties["step"] = it.toIntOrNull() ?: 1
+                onPropertiesChange(properties)
+            },
+            placeholder = "Pas d'incrémentation (défaut: 1)",
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        UI.TextField(
+            type = TextFieldType.STANDARD,
+            semantic = "item-unit",
+            value = unit,
+            onValueChange = { 
+                unit = it
+                if (it.isNotBlank()) {
+                    properties["unit"] = it
+                } else {
+                    properties.remove("unit")
+                }
+                onPropertiesChange(properties)
+            },
+            placeholder = "Unité d'affichage (verres, pages, etc.)",
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

@@ -21,9 +21,6 @@ object TrackingToolType : ToolTypeContract {
             "show_value": true,
             "item_mode": "free",
             "save_new_items": false,
-            "default_unit": "",
-            "min_value": null,
-            "max_value": null,
             "groups": [
                 {
                     "name": "Default",
@@ -46,7 +43,7 @@ object TrackingToolType : ToolTypeContract {
             },
             "type": {
                 "type": "enum",
-                "values": ["numeric", "text", "scale", "boolean", "duration"],
+                "values": ["numeric", "text", "scale", "boolean", "duration", "choice", "counter"],
                 "required": true,
                 "description": "Data type for all items in this tracking instance"
             },
@@ -65,18 +62,6 @@ object TrackingToolType : ToolTypeContract {
                 "type": "boolean",
                 "default": false,
                 "description": "Whether to save new free-text items to predefined list"
-            },
-            "default_unit": {
-                "type": "string",
-                "description": "Default unit for numeric values"
-            },
-            "min_value": {
-                "type": "number",
-                "description": "Minimum allowed value for numeric type"
-            },
-            "max_value": {
-                "type": "number",
-                "description": "Maximum allowed value for numeric type"
             },
             "auto_switch": {
                 "type": "boolean",
