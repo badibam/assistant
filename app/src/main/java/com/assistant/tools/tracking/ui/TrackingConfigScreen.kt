@@ -1,8 +1,9 @@
 package com.assistant.tools.tracking.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +56,7 @@ fun TrackingConfigScreen(
     var autoSwitch by remember { mutableStateOf(true) }
     
     // Groups and items state
-    var groups by remember { 
+    var groups: MutableList<TrackingGroup> by remember { 
         mutableStateOf(mutableListOf(TrackingGroup("Default"))) 
     }
     
@@ -64,7 +65,7 @@ fun TrackingConfigScreen(
     var showAddItem by remember { mutableStateOf<Int?>(null) } // Index du groupe
     var newGroupName by remember { mutableStateOf("") }
     var newItemName by remember { mutableStateOf("") }
-    var newItemProperties by remember { mutableStateOf(mutableMapOf<String, Any>()) }
+    var newItemProperties: MutableMap<String, Any> by remember { mutableStateOf(mutableMapOf<String, Any>()) }
     
     // Debug message
     LaunchedEffect(Unit) {
@@ -778,6 +779,14 @@ private fun ScaleItemProperties(
     var minLabel by remember { mutableStateOf(properties["min_label"]?.toString() ?: "") }
     var maxLabel by remember { mutableStateOf(properties["max_label"]?.toString() ?: "") }
     
+    // Initialize default scale_size if not set
+    LaunchedEffect(Unit) {
+        if (properties["scale_size"] == null) {
+            properties["scale_size"] = 5
+            onPropertiesChange(properties)
+        }
+    }
+    
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -836,6 +845,17 @@ private fun BooleanItemProperties(
 ) {
     var trueLabel by remember { mutableStateOf(properties["true_label"]?.toString() ?: "Oui") }
     var falseLabel by remember { mutableStateOf(properties["false_label"]?.toString() ?: "Non") }
+    
+    // Initialize default labels if not set
+    LaunchedEffect(Unit) {
+        if (properties["true_label"] == null) {
+            properties["true_label"] = "Oui"
+        }
+        if (properties["false_label"] == null) {
+            properties["false_label"] = "Non"
+        }
+        onPropertiesChange(properties)
+    }
     
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -904,7 +924,7 @@ private fun ChoiceItemProperties(
     properties: MutableMap<String, Any>,
     onPropertiesChange: (MutableMap<String, Any>) -> Unit
 ) {
-    var options by remember { 
+    var options: MutableList<String> by remember { 
         mutableStateOf(
             (properties["options"] as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList() ?: mutableListOf()
         )
@@ -1049,6 +1069,14 @@ private fun CounterItemProperties(
 ) {
     var step by remember { mutableStateOf(properties["step"]?.toString() ?: "1") }
     var unit by remember { mutableStateOf(properties["unit"]?.toString() ?: "") }
+    
+    // Initialize default step if not set
+    LaunchedEffect(Unit) {
+        if (properties["step"] == null) {
+            properties["step"] = 1
+            onPropertiesChange(properties)
+        }
+    }
     
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
