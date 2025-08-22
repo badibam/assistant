@@ -1,5 +1,7 @@
 package com.assistant.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -7,7 +9,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
-import com.assistant.core.debug.DebugManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
  * Main screen - entry point of the application
  * Uses purely semantic UI components
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
@@ -25,38 +27,27 @@ fun MainScreen() {
     val coroutineScope = rememberCoroutineScope()
     var showCreateZone by remember { mutableStateOf(false) }
     var selectedZone by remember { mutableStateOf<Zone?>(null) }
+    var configZone by remember { mutableStateOf<Zone?>(null) }
     
     // Observe zones in real-time
     val database = remember { AppDatabase.getDatabase(context) }
     val zones by database.zoneDao().getAllZones().collectAsState(initial = emptyList())
     
-    // Message debug initial
-    LaunchedEffect(Unit) {
-        DebugManager.debug("🚀 MainScreen chargé")
-    }
     
-    // Zone Debug - toujours en premier, visible partout
-    UI.Card(
-        type = CardType.SYSTEM,
-        semantic = "debug-zone",
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        UI.Column {
-            // Affichage des 3 derniers messages
-            val messages by remember { derivedStateOf { DebugManager.debugMessages.take(3) } }
-            
-            repeat(3) { index ->
-                UI.Text(
-                    text = messages.getOrNull(index) ?: "",
-                    type = TextType.CAPTION,
-                    semantic = "debug-line-$index",
-                    modifier = Modifier.padding(vertical = 1.dp)
-                )
+    
+    // Show CreateZoneScreen in edit mode when zone config is requested
+    configZone?.let { zone ->
+        CreateZoneScreen(
+            existingZone = zone,
+            onCancel = {
+                configZone = null
+            },
+            onUpdate = {
+                configZone = null
             }
-        }
+        )
+        return // Exit MainScreen composition when showing zone config
     }
-    
-    UI.Spacer(modifier = Modifier.height(8.dp))
     
     // Show ZoneScreen when a zone is selected
     selectedZone?.let { zone ->
@@ -75,20 +66,19 @@ fun MainScreen() {
             onCancel = {
                 showCreateZone = false
             },
-            onCreate = { name, description ->
+            onCreate = { name, description, color ->
                 coroutineScope.launch {
                     try {
                         val result = coordinator.processUserAction(
                             "create->zone",
                             mapOf(
                                 "name" to name,
-                                "description" to (description ?: "")
+                                "description" to (description ?: ""),
+                                "color" to (color ?: "")
                             )
                         )
-                        DebugManager.debug("Zone création: ${result.status}")
                         showCreateZone = false
                     } catch (e: Exception) {
-                        DebugManager.debug("Erreur création zone: ${e.message}")
                     }
                 }
             }
@@ -134,7 +124,6 @@ fun MainScreen() {
                             type = ButtonType.PRIMARY,
                             semantic = "create-zone",
                             onClick = { 
-                                DebugManager.debugButtonClick("Créer une zone")
                                 showCreateZone = true
                             },
                             enabled = true
@@ -150,16 +139,38 @@ fun MainScreen() {
             } else {
                 // Show zones list
                 zones.forEach { zone ->
-                    UI.ZoneCard(
-                        zoneName = zone.name,
-                        onClick = {
-                            DebugManager.debugButtonClick("Navigation vers zone: ${zone.name}")
-                            selectedZone = zone
-                        },
+                    UI.Card(
+                        type = CardType.ZONE,
+                        semantic = "zone-${zone.id}",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
-                    )
+                            .combinedClickable(
+                                onClick = {
+                                    selectedZone = zone
+                                },
+                                onLongClick = {
+                                    configZone = zone
+                                }
+                            )
+                    ) {
+                        UI.Column {
+                            UI.Text(
+                                text = zone.name,
+                                type = TextType.SUBTITLE,
+                                semantic = "zone-name"
+                            )
+                            
+                            zone.description?.let { description ->
+                                UI.Spacer(modifier = Modifier.height(4.dp))
+                                UI.Text(
+                                    text = description,
+                                    type = TextType.CAPTION,
+                                    semantic = "zone-description"
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 UI.Spacer(modifier = Modifier.height(8.dp))
@@ -169,7 +180,6 @@ fun MainScreen() {
                     type = ButtonType.SECONDARY,
                     semantic = "add-zone",
                     onClick = { 
-                        DebugManager.debugButtonClick("Ajouter une zone")
                         showCreateZone = true
                     },
                     enabled = true
@@ -209,7 +219,6 @@ fun MainScreen() {
                 type = ButtonType.SECONDARY,
                 semantic = "ai-toggle",
                 onClick = {
-                    DebugManager.debugButtonClick("Appel IA")
                     // TODO: Toggle AI dialogue interface
                 },
                 enabled = true

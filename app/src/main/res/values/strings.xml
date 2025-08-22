@@ -39,6 +39,19 @@
     <!-- Navigation -->
     <string name="add_zone">Ajouter une zone</string>
     
+    <!-- Zone configuration -->
+    <string name="zone_config_title">Configuration de la zone</string>
+    <string name="zone_name_placeholder">Nom de la zone</string>
+    <string name="zone_name_error">Le nom de la zone est obligatoire</string>
+    <string name="zone_description_placeholder">Description de la zone (optionnel)</string>
+    <string name="zone_color_label">Couleur</string>
+    <string name="zone_color_placeholder">Couleur de la zone (optionnel)</string>
+    <string name="zone_color_hint">Format: #RRGGBB ou nom de couleur</string>
+    <string name="zone_timestamps_label">Informations</string>
+    <string name="zone_created_at">Créée le</string>
+    <string name="zone_updated_at">Modifiée le</string>
+    <string name="update">Mettre à jour</string>
+
     <!-- Terminal -->
     <string name="assistant_ready">Assistant démarré. En attente de commandes…</string>
 </resources>

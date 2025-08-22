@@ -7,6 +7,7 @@ public final class MainScreenKt {
      * Main screen - entry point of the application
      * Uses purely semantic UI components
      */
+    @kotlin.OptIn(markerClass = {androidx.compose.foundation.ExperimentalFoundationApi.class})
     @androidx.compose.runtime.Composable()
     public static final void MainScreen() {
     }

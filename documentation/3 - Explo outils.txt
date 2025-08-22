@@ -8,48 +8,6 @@
 6. **GRAPHIQUE** (configuré par IA, Gestion automatique par App) → visualisations nutrition utilisant #5 + #2 pour références AJR
 7. **ALERTES** → (configuré par IA, déclenchement auto par App sur la base de critères) déclenchement sur carences/excès détectées
 
-# APPARENCE DES OUTILS DANS LES ZONES - 3 MODES
-
-**Minimal (1 ligne, 1/2 col)** :
-- **SUIVI** : "Poids: 73.2kg"
-- **OBJECTIF** : "Perdre 10kg"
-- **GRAPHIQUE** : "Graphiques nutrition"
-- **LISTE** : "Courses [3/8]"
-- **JOURNAL** : "Rêves - 15/08"
-- **NOTE** : "Titre de la note"
-- **MESSAGE** : "09:00 - Rappel vitamine"
-- **ALERTE** : "Poids max ⚠️"
-- **CALCUL** : "IMC - 23.4"
-- **STATISTIQUE** : "Corrélation sommeil"
-- **DONNÉES STRUCTURÉES** : "Nutrition"
-
-**Condensé (carré 1/2 largeur, ~4-5 lignes)** :
-- **SUIVI** : Quelques boutons de saisie (premiers items + champ libre)
-- **OBJECTIF** : "Perdre 10kg [████▫▫▫] 60%"
-- **GRAPHIQUE** : 1 graphique redimensionné + titre
-- **LISTE** : Items visibles + cases à cocher
-- **JOURNAL** : Dernière entrée tronquée + bouton ajouter
-- **NOTE** : Titre + contenu tronqué
-- **MESSAGE** : Contenu du message + moment (texte tronqué)
-- **ALERTE** : Critère + valeur actuelle
-- **CALCUL** : Résultat + date
-- **STATISTIQUE** : Résultat principal + date
-- **DONNÉES STRUCTURÉES** : Catégories + nombre d'entrées
-
-
-**Étendu (pleine largeur dans la zone)** :
-- **SUIVI** : Tous les boutons de saisie + quelques derniers enregistrements
-- **OBJECTIF** : Arborescence complète des critères + validation finale
-- **GRAPHIQUE** : Tous les graphiques du groupe + légendes
-- **LISTE** : Tous les items + cases à cocher
-- **JOURNAL** : Plusieurs entrées récentes + bouton ajouter
-- **NOTE** : Contenu complet
-- **MESSAGE** : Tout le message + moment
-- **ALERTE** : Critère + valeur actuelle (pleine largeur)
-- **CALCUL** : Dernier résultat + date + bouton exécuter
-- **STATISTIQUE** : Détails du résultat + date + bouton exécuter
-- **DONNÉES STRUCTURÉES** : Structure visuelle (arborescence + champs) sans les données
-
 # 1 INSTANCE = ?
 
 - **SUIVI** : 1 métrique spécifique (poids, humeur, alimentation, etc.)

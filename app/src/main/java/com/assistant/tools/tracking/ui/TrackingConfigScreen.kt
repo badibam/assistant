@@ -10,7 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
-import com.assistant.core.debug.DebugManager
 import com.assistant.R
 import org.json.JSONArray
 import org.json.JSONObject
@@ -121,12 +120,9 @@ fun TrackingConfigScreen(
                     groups = loadedGroups
                 }
                 
-                DebugManager.debug("🔧 TrackingConfigScreen - Config existante chargée: $name")
             } catch (e: Exception) {
-                DebugManager.debug("❌ Erreur parsing config existante: ${e.message}")
             }
         } ?: run {
-            DebugManager.debug("🔧 TrackingConfigScreen ouvert pour zone: $zoneId (nouveau)")
         }
     }
     
@@ -166,7 +162,6 @@ fun TrackingConfigScreen(
             })
         }
         
-        DebugManager.debug("💾 Sauvegarde config tracking: ${config.toString(2)}")
         onSave(config.toString())
     }
     
@@ -741,7 +736,6 @@ fun TrackingConfigScreen(
                     type = ButtonType.SECONDARY,
                     semantic = "cancel-button",
                     onClick = {
-                        DebugManager.debugButtonClick("Annuler config tracking")
                         onCancel()
                     },
                     modifier = Modifier.weight(1f)
@@ -757,7 +751,6 @@ fun TrackingConfigScreen(
                     type = ButtonType.PRIMARY,
                     semantic = "save-button",
                     onClick = {
-                        DebugManager.debugButtonClick("Sauvegarder config tracking")
                         handleSave()
                     },
                     enabled = name.isNotBlank(),
