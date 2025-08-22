@@ -82,9 +82,6 @@ Notifications et rappels (= messages planifiés, conçus par l'utilisateur ex: r
 ── Alerte ──
 Déclenchement automatique sur valeurs limites (= messages non planifiés à déclenchement auto par l'app)
 
-── Analyse ──
-Insights et analyses générées par l'IA qui donnent lieu notamment à des Rapports
-
 ── Actions auto ──
 Automatisations programmées (calculs, statistique, analyse IA etc)
 

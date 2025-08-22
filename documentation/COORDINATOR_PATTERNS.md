@@ -1,6 +1,6 @@
 # Coordinator Patterns
 
-## Pattern utilisé : UI → Coordinator → Service
+## Pattern : UI → Coordinator → Service
 
 ```kotlin
 // UI appelle
@@ -10,10 +10,14 @@ coordinator.processUserAction("create->zone", mapOf("name" to name))
 executeServiceOperation(command, "zone_service", "create")
 ```
 
-## Flow utilisé
-1. UI appelle `processUserAction()`
-2. Coordinator génère token + route vers service
-3. Service execute avec token
+## Flow
+1. UI → `processUserAction()`
+2. Coordinator → génère token + route vers service découvert
+3. Service → execute avec token  
 4. Retour `CommandResult` à UI
 
-**Règle** : Modifications données (ou calcul qui dépend de donées) passent par Coordinator.
+## Services intégrés
+- **Core services** : ZoneService, ToolInstanceService (hardcodés)
+- **Tool services** : TrackingService, etc. (découverts via ToolTypeManager)
+
+**Règle** : Toute modification données passe par Coordinator pour cohérence IA/scheduler.

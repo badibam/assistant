@@ -1,5 +1,6 @@
 package com.assistant.core.tools
 
+import android.content.Context
 import com.assistant.core.tools.base.ToolTypeContract
 
 /**
@@ -19,4 +20,33 @@ object ToolTypeManager {
     fun getAllToolTypes(): Map<String, ToolTypeContract> = toolTypes
     
     fun isValidToolType(id: String): Boolean = toolTypes.containsKey(id)
+    
+    /**
+     * Get service instance for a tool type
+     * @param toolTypeId Tool type identifier (e.g., "tracking")
+     * @param context Android context for service creation
+     * @return Service instance or null if tool type doesn't have a service
+     */
+    fun getServiceForToolType(toolTypeId: String, context: Context): Any? {
+        return getToolType(toolTypeId)?.getService(context)
+    }
+    
+    /**
+     * Get DAO instance for a tool type
+     * @param toolTypeId Tool type identifier (e.g., "tracking")
+     * @param context Android context for DAO creation
+     * @return DAO instance or null if tool type doesn't have a DAO
+     */
+    fun getDaoForToolType(toolTypeId: String, context: Context): Any? {
+        return getToolType(toolTypeId)?.getDao(context)
+    }
+    
+    /**
+     * Get all database entities from discovered tool types
+     * Used for Room database setup via discovery
+     * @return List of all entity classes from all tool types
+     */
+    fun getAllDatabaseEntities(): List<Class<*>> {
+        return toolTypes.values.flatMap { it.getDatabaseEntities() }
+    }
 }

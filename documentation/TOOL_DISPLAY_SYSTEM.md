@@ -28,23 +28,26 @@
 
 ### SUIVI (Tracking)
 
+**ICON** (1/4 × 1/4) :
+- Icône (titre inclus dessous)
+
 **MINIMAL** (1/2 × 1/4) :
-- "+\nPoids" *(titre + 1 bouton saisie rapide)*
+- Icône + Titre +  bouton "+" (autres items)
 
 **CONDENSED** (1/2 × 1/2) :
-- "Poids" *(titre)*
-- 3 boutons de saisie (ex: "70kg", "75kg", "+")
+- titre + bouton "+" (autres items)
+- 3 boutons de saisie
 
 **EXTENDED** (1 × 1/2) :
-- "Poids" *(titre)*
-- 7 boutons (dont champ libre si configuré)
+- titre
+- Ligne 2 : boutons de saisie + champ libre si configuré
 
 **FULL** (1 × ∞) :
-- "Poids" *(titre)*
-- Tous les boutons de saisie configurés
+- Titre
+- Tous les boutons de saisie/champ libre configurés
 
 **Page dédiée** :
-- Tous les boutons + données récentes avec dates
+- Tous les boutons + données récentes avec dates, option de suppression
 
 ### AUTRES OUTILS
 Les autres types d'outils (OBJECTIFS, GRAPHIQUE, LISTE, JOURNAL, NOTE, MESSAGE, ALERTE, CALCUL, STATISTIQUE, DONNÉES STRUCTURÉES) seront spécifiés ultérieurement.

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
+import com.assistant.core.coordinator.Coordinator
 import com.assistant.R
 import kotlinx.coroutines.launch
 
@@ -26,6 +27,7 @@ fun CreateZoneScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val database = remember { AppDatabase.getDatabase(context) }
+    val coordinator = remember { Coordinator(context) }
     
     // Form state - initialize with existing zone values if editing
     var name by remember { mutableStateOf(existingZone?.name ?: "") }
@@ -235,13 +237,12 @@ fun CreateZoneScreen(
                                 // Mode édition
                                 coroutineScope.launch {
                                     try {
-                                        val updatedZone = existingZone.copy(
-                                            name = trimmedName,
-                                            description = description.trim().ifEmpty { null },
-                                            color = color.trim().ifEmpty { null },
-                                            updated_at = System.currentTimeMillis()
-                                        )
-                                        database.zoneDao().updateZone(updatedZone)
+                                        coordinator.processUserAction("update->zone", mapOf(
+                                            "zone_id" to existingZone.id,
+                                            "name" to trimmedName,
+                                            "description" to (description.trim().ifEmpty { null } ?: ""),
+                                            "color" to (color.trim().ifEmpty { null } ?: "")
+                                        ))
                                         onUpdate()
                                     } catch (e: Exception) {
                                         // TODO: Gestion d'erreur

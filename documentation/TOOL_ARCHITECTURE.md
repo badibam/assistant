@@ -27,11 +27,12 @@ interface ToolTypeContract {
     fun getAvailableOperations(): List<String>
     
     @Composable
-    fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit
-    )
+    fun getConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () -> Unit)
+    
+    // Discovery pattern
+    fun getService(context: Context): Any?           // TrackingService
+    fun getDao(context: Context): Any?               // TrackingDao  
+    fun getDatabaseEntities(): List<Class<*>>        // TrackingData
 }
 ```
 
@@ -56,6 +57,10 @@ interface ToolTypeContract {
 // Récupérer un tool type
 val toolType = ToolTypeManager.getToolType("tracking")
 
+// Discovery service/DAO
+val service = ToolTypeManager.getServiceForToolType("tracking", context)
+val dao = ToolTypeManager.getDaoForToolType("tracking", context)
+
 // Nom d'affichage
 val name = ToolTypeManager.getToolTypeName("tracking") // "Suivi"
 
@@ -65,15 +70,23 @@ val allTypes = ToolTypeManager.getAllToolTypes()
 
 ## Ajouter un nouveau tool type
 
-1. **Créer l'objet** :
+1. **Créer l'objet avec discovery** :
 ```kotlin
 object MonToolType : ToolTypeContract {
     override fun getDisplayName() = "Mon Outil"
-    // ... autres méthodes
+    override fun getService(context: Context) = MonService(context)
+    override fun getDao(context: Context) = MonDatabase.getDatabase(context).monDao()
+    override fun getDatabaseEntities() = listOf(MonData::class.java)
 }
 ```
 
-2. **L'enregistrer** dans `ToolTypeScanner` :
+2. **Créer database standalone** :
+```kotlin
+@Database(entities = [MonData::class], version = 1)
+abstract class MonDatabase : RoomDatabase()
+```
+
+3. **L'enregistrer dans ToolTypeScanner** :
 ```kotlin
 fun scanForToolTypes() = mapOf(
     "tracking" to TrackingToolType,
@@ -81,9 +94,9 @@ fun scanForToolTypes() = mapOf(
 )
 ```
 
-## Flux
+## Flux avec discovery
 
-1. Scanner découvre les tool types → ToolTypeManager
-2. UI utilise ToolTypeManager pour lister/configurer  
-3. Instances sauvées comme ToolInstance (Room)
-4. Affichage via métadonnées du tool type
+1. Scanner → ToolTypeManager  
+2. UI → ToolTypeManager (config)
+3. Coordinator → ServiceManager → ToolTypeManager → Service découvert
+4. Service → ToolTypeManager → DAO découvert → Database standalone

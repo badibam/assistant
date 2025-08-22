@@ -8,6 +8,7 @@ import com.assistant.core.commands.CommandParser
 import com.assistant.core.commands.ParseResult
 import com.assistant.core.services.ServiceManager
 import com.assistant.core.services.ZoneService
+import com.assistant.core.services.ToolInstanceService
 import com.assistant.core.services.OperationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,6 +143,12 @@ class Coordinator(context: Context) {
         
         return try {
             val service = serviceManager.getService(serviceName)
+                ?: return CommandResult(
+                    commandId = command.id,
+                    status = CommandStatus.ERROR,
+                    error = "Service not found: $serviceName"
+                )
+            
             val params = JSONObject().apply {
                 command.params.forEach { (key, value) ->
                     put(key, value)
@@ -150,8 +157,22 @@ class Coordinator(context: Context) {
             
             val result = when (service) {
                 is ZoneService -> service.execute(operation, params, token)
-                // Add other service types as needed
-                else -> OperationResult.error("Unknown service type: $serviceName")
+                is ToolInstanceService -> service.execute(operation, params, token)
+                // Tool services follow same pattern - they all have execute() method
+                else -> {
+                    // Try to call execute method via reflection for tool services
+                    try {
+                        val executeMethod = service.javaClass.getMethod(
+                            "execute", 
+                            String::class.java, 
+                            JSONObject::class.java, 
+                            CancellationToken::class.java
+                        )
+                        executeMethod.invoke(service, operation, params, token) as OperationResult
+                    } catch (e: Exception) {
+                        OperationResult.error("Unknown service type or invalid service interface: $serviceName - ${e.message}")
+                    }
+                }
             }
             
             CommandResult(
@@ -178,6 +199,8 @@ class Coordinator(context: Context) {
     private suspend fun handleCreateCommand(command: Command): CommandResult {
         return when {
             command.action == "create->zone" -> executeServiceOperation(command, "zone_service", "create")
+            command.action == "create->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "create")
+            command.action == "create->tracking_data" -> executeServiceOperation(command, "tracking_service", "create")
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,
@@ -195,19 +218,27 @@ class Coordinator(context: Context) {
     }
     
     private suspend fun handleUpdateCommand(command: Command): CommandResult {
-        return CommandResult(
-            commandId = command.id,
-            status = CommandStatus.SUCCESS,
-            message = "Update command (TODO: implement)"
-        )
+        return when {
+            command.action == "update->zone" -> executeServiceOperation(command, "zone_service", "update")
+            command.action == "update->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "update")
+            else -> CommandResult(
+                commandId = command.id,
+                status = CommandStatus.SUCCESS,
+                message = "Update command (TODO: implement other types)"
+            )
+        }
     }
     
     private suspend fun handleDeleteCommand(command: Command): CommandResult {
-        return CommandResult(
-            commandId = command.id,
-            status = CommandStatus.SUCCESS,
-            message = "Delete command (TODO: implement)"
-        )
+        return when {
+            command.action == "delete->zone" -> executeServiceOperation(command, "zone_service", "delete")
+            command.action == "delete->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "delete")
+            else -> CommandResult(
+                commandId = command.id,
+                status = CommandStatus.SUCCESS,
+                message = "Delete command (TODO: implement other types)"
+            )
+        }
     }
     
     /**

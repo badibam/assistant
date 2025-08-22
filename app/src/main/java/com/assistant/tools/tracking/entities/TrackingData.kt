@@ -1,21 +1,13 @@
 package com.assistant.tools.tracking.entities
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.assistant.core.database.entities.ToolInstance
 import java.util.UUID
 
 @Entity(
     tableName = "tracking_data",
-    foreignKeys = [
-        ForeignKey(
-            entity = ToolInstance::class,
-            parentColumns = ["id"],
-            childColumns = ["tool_instance_id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
+    indices = [Index(value = ["tool_instance_id"])]  // Performance index
 )
 data class TrackingData(
     @PrimaryKey

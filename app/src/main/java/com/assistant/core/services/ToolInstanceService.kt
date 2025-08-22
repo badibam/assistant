@@ -1,0 +1,131 @@
+package com.assistant.core.services
+
+import android.content.Context
+import com.assistant.core.database.AppDatabase
+import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.coordinator.CancellationToken
+import org.json.JSONObject
+
+/**
+ * ToolInstance Service - Core service for tool instance operations
+ * Implements the standard service pattern with cancellation token
+ */
+class ToolInstanceService(private val context: Context) {
+    private val database by lazy { AppDatabase.getDatabase(context) }
+    private val toolInstanceDao by lazy { database.toolInstanceDao() }
+    
+    /**
+     * Execute tool instance operation with cancellation support
+     */
+    suspend fun execute(
+        operation: String, 
+        params: JSONObject, 
+        token: CancellationToken
+    ): OperationResult {
+        return try {
+            when (operation) {
+                "create" -> handleCreate(params, token)
+                "update" -> handleUpdate(params, token)
+                "delete" -> handleDelete(params, token)
+                else -> OperationResult.error("Unknown tool instance operation: $operation")
+            }
+        } catch (e: Exception) {
+            OperationResult.error("Tool instance operation failed: ${e.message}")
+        }
+    }
+    
+    /**
+     * Create a new tool instance
+     */
+    private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val zoneId = params.optString("zone_id")
+        val toolType = params.optString("tool_type")
+        val configJson = params.optString("config_json", "{}")
+        val configMetadataJson = params.optString("config_metadata_json", "{}")
+        
+        if (zoneId.isBlank() || toolType.isBlank()) {
+            return OperationResult.error("Zone ID and tool type are required")
+        }
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val newToolInstance = ToolInstance(
+            zone_id = zoneId,
+            tool_type = toolType,
+            config_json = configJson,
+            config_metadata_json = configMetadataJson
+        )
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        toolInstanceDao.insertToolInstance(newToolInstance)
+        
+        return OperationResult.success(mapOf(
+            "tool_instance_id" to newToolInstance.id,
+            "zone_id" to newToolInstance.zone_id,
+            "tool_type" to newToolInstance.tool_type
+        ))
+    }
+    
+    /**
+     * Update existing tool instance
+     */
+    private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        val configJson = params.optString("config_json")
+        val configMetadataJson = params.optString("config_metadata_json")
+        
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
+            ?: return OperationResult.error("Tool instance not found")
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val updatedTool = existingTool.copy(
+            config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
+            config_metadata_json = configMetadataJson.takeIf { it.isNotBlank() } ?: existingTool.config_metadata_json,
+            updated_at = System.currentTimeMillis()
+        )
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        toolInstanceDao.updateToolInstance(updatedTool)
+        
+        return OperationResult.success(mapOf(
+            "tool_instance_id" to updatedTool.id,
+            "updated_at" to updatedTool.updated_at
+        ))
+    }
+    
+    /**
+     * Delete tool instance
+     */
+    private suspend fun handleDelete(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
+            ?: return OperationResult.error("Tool instance not found")
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        toolInstanceDao.deleteToolInstanceById(toolInstanceId)
+        
+        return OperationResult.success(mapOf(
+            "tool_instance_id" to toolInstanceId,
+            "deleted_at" to System.currentTimeMillis()
+        ))
+    }
+}

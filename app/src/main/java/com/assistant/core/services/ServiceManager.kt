@@ -1,6 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
+import com.assistant.core.tools.ToolTypeManager
 
 /**
  * Service Manager - manages core services
@@ -23,10 +24,18 @@ class ServiceManager(private val context: Context) {
      */
     private fun createService(serviceName: String): Any {
         return when (serviceName) {
+            // Core services (hardcoded)
             "zone_service" -> ZoneService(context)
+            "tool_instance_service" -> ToolInstanceService(context)
             "backup_service" -> BackupService()
-            // Add other services as needed
-            else -> throw IllegalArgumentException("Unknown service: $serviceName")
+            
+            // Tool services (discovered via ToolTypeManager)
+            else -> {
+                // Convert "tracking_service" -> "tracking"
+                val toolTypeId = serviceName.removeSuffix("_service")
+                ToolTypeManager.getServiceForToolType(toolTypeId, context)
+                    ?: throw IllegalArgumentException("Unknown service: $serviceName")
+            }
         }
     }
     

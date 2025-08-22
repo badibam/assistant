@@ -49,11 +49,12 @@ fun ZoneScreen(
             // Update existing tool
             coroutineScope.launch {
                 try {
-                    val updatedTool = existingTool.copy(
-                        config_json = config,
-                        config_metadata_json = ToolTypeManager.getToolType(existingTool.tool_type)?.getConfigSchema() ?: "{}"
-                    )
-                    database.toolInstanceDao().updateToolInstance(updatedTool)
+                    val configMetadata = ToolTypeManager.getToolType(existingTool.tool_type)?.getConfigSchema() ?: "{}"
+                    coordinator.processUserAction("update->tool_instance", mapOf(
+                        "tool_instance_id" to existingTool.id,
+                        "config_json" to config,
+                        "config_metadata_json" to configMetadata
+                    ))
                     editingToolInstance = null
                 } catch (e: Exception) {
                     // TODO: Gestion d'erreur
@@ -63,13 +64,13 @@ fun ZoneScreen(
             // Create new tool
             coroutineScope.launch {
                 try {
-                    val toolInstance = ToolInstance(
-                        zone_id = zone.id,
-                        tool_type = toolTypeId,
-                        config_json = config,
-                        config_metadata_json = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema() ?: "{}"
-                    )
-                    database.toolInstanceDao().insertToolInstance(toolInstance)
+                    val configMetadata = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema() ?: "{}"
+                    coordinator.processUserAction("create->tool_instance", mapOf(
+                        "zone_id" to zone.id,
+                        "tool_type" to toolTypeId,
+                        "config_json" to config,
+                        "config_metadata_json" to configMetadata
+                    ))
                     showingConfigFor = null
                 } catch (e: Exception) {
                     // TODO: Gestion d'erreur

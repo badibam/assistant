@@ -1,7 +1,11 @@
 package com.assistant.tools.tracking
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.tools.base.ToolTypeContract
+import com.assistant.core.services.TrackingService
+import com.assistant.tools.tracking.data.TrackingDao
+import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
 
@@ -130,5 +134,17 @@ object TrackingToolType : ToolTypeContract {
             onCancel = onCancel,
             existingConfig = existingConfig
         )
+    }
+    
+    override fun getService(context: Context): Any {
+        return TrackingService(context)
+    }
+    
+    override fun getDao(context: Context): Any {
+        return TrackingDatabase.getDatabase(context).trackingDao()
+    }
+    
+    override fun getDatabaseEntities(): List<Class<*>> {
+        return listOf(TrackingData::class.java)
     }
 }
