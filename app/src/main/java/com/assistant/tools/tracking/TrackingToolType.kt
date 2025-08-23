@@ -127,13 +127,17 @@ object TrackingToolType : ToolTypeContract {
         zoneId: String,
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
-        existingConfig: String?
+        existingConfig: String?,
+        existingToolId: String?,
+        onDelete: (() -> Unit)?
     ) {
         TrackingConfigScreen(
             zoneId = zoneId,
             onSave = onSave,
             onCancel = onCancel,
-            existingConfig = existingConfig
+            existingConfig = existingConfig,
+            existingToolId = existingToolId,
+            onDelete = onDelete
         )
     }
     

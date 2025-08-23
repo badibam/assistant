@@ -84,6 +84,21 @@ fun ZoneScreen(
         editingToolInstance = null
     }
     
+    val onDeleteConfig = {
+        editingToolInstance?.let { toolToDelete ->
+            coroutineScope.launch {
+                try {
+                    coordinator.processUserAction("delete->tool_instance", mapOf(
+                        "tool_instance_id" to toolToDelete.id
+                    ))
+                    editingToolInstance = null
+                } catch (e: Exception) {
+                    // TODO: Gestion d'erreur
+                }
+            }
+        }
+    }
+    
     
     // Tool type manager is automatically initialized through annotation processing
     
@@ -94,7 +109,9 @@ fun ZoneScreen(
             zoneId = zone.id,
             onSave = onSaveConfig,
             onCancel = onCancelConfig,
-            existingConfig = toolInstance.config_json
+            existingConfig = toolInstance.config_json,
+            existingToolId = toolInstance.id,
+            onDelete = onDeleteConfig
         )
     } ?: showingConfigFor?.let { toolTypeId ->
         // Create new tool
@@ -102,7 +119,9 @@ fun ZoneScreen(
             zoneId = zone.id,
             onSave = onSaveConfig,
             onCancel = onCancelConfig,
-            existingConfig = null
+            existingConfig = null,
+            existingToolId = null,
+            onDelete = null
         )
     } ?: run {
         // Normal zone screen
