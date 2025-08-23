@@ -7,8 +7,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.themes.base.ThemeIconManager
+import com.assistant.ui.components.ToolInstanceDisplayComponent
+import com.assistant.ui.components.ToolIcon
+import com.assistant.ui.components.DisplayMode
+import org.json.JSONObject
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
@@ -226,39 +232,80 @@ fun ZoneScreen(
             
             UI.Spacer(modifier = Modifier.height(16.dp))
             
-            // À partir de ligne 3 : Les outils directement
-            toolInstances.forEach { toolInstance ->
-                UI.Card(
-                    type = CardType.ZONE,
-                    semantic = "tool-${toolInstance.id}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .combinedClickable(
+            // À partir de ligne 3 : Les outils avec système de grille
+            BoxWithConstraints {
+                val availableWidth = maxWidth - 32.dp // Moins padding container
+                val gridUnit = availableWidth / 4 // Base : 1/4 d'écran
+                val currentTheme = "default" // TODO: val currentTheme = ThemeManager.getCurrentThemeName()
+                
+                // Grid layout pour les outils
+                UI.Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    toolInstances.forEach { toolInstance ->
+                        // Récupérer le mode d'affichage depuis la config
+                        val config = try {
+                            JSONObject(toolInstance.config_json)
+                        } catch (e: Exception) {
+                            JSONObject()
+                        }
+                        
+                        val displayModeStr = config.optString("display_mode", "Icône")
+                        val displayMode = when (displayModeStr) {
+                            "Icône" -> DisplayMode.ICON
+                            "Minimal" -> DisplayMode.MINIMAL
+                            "Ligne" -> DisplayMode.LINE
+                            "Condensé" -> DisplayMode.CONDENSED
+                            "Étendu" -> DisplayMode.EXTENDED
+                            "Complet" -> DisplayMode.FULL
+                            else -> DisplayMode.ICON
+                        }
+                        
+                        // Calculer la taille selon le mode
+                        val toolSize = when (displayMode) {
+                            DisplayMode.ICON -> DpSize(gridUnit, gridUnit) // 1/4 × 1/4
+                            DisplayMode.MINIMAL -> DpSize(gridUnit * 2, gridUnit) // 1/2 × 1/4
+                            DisplayMode.LINE -> DpSize(availableWidth, gridUnit) // 1 × 1/4
+                            DisplayMode.CONDENSED -> DpSize(gridUnit * 2, gridUnit * 2) // 1/2 × 1/2
+                            DisplayMode.EXTENDED -> DpSize(availableWidth, gridUnit * 2) // 1 × 1/2
+                            DisplayMode.FULL -> DpSize(availableWidth, gridUnit * 4) // 1 × 1 (pour test)
+                        }
+                        
+                        // Récupérer le nom de l'outil et l'icône depuis la config
+                        val toolName = config.optString("name").ifEmpty { 
+                            ToolTypeManager.getToolTypeName(toolInstance.tool_type)
+                        }
+                        
+                        // Récupérer le nom de l'icône (config ou défaut du ToolType)
+                        val iconName = config.optString("icon_name").ifEmpty {
+                            ToolTypeManager.getToolType(toolInstance.tool_type)?.getDefaultIconName() ?: "activity"
+                        }
+                        
+                        // Récupérer l'icône depuis le thème
+                        val iconResource = try {
+                            ThemeIconManager.getIconResource(context, currentTheme, iconName)
+                        } catch (e: IllegalArgumentException) {
+                            // Log error et utiliser l'icône par défaut du tool type
+                            println("Icon not found: $iconName for theme $currentTheme, using default")
+                            ThemeIconManager.getIconResource(context, currentTheme, "activity")
+                        }
+                        
+                        ToolInstanceDisplayComponent(
+                            displayMode = displayMode,
+                            size = toolSize,
+                            icon = {
+                                ToolIcon(
+                                    iconResource = iconResource,
+                                    size = 32.dp
+                                )
+                            },
+                            title = toolName,
                             onClick = {
                                 // TODO: Naviguer vers l'écran d'utilisation de l'outil
                             },
                             onLongClick = {
                                 editingToolInstance = toolInstance
                             }
-                        )
-                ) {
-                    UI.Column {
-                        UI.Text(
-                            text = ToolTypeManager.getToolTypeName(toolInstance.tool_type),
-                            type = TextType.SUBTITLE,
-                            semantic = "tool-type"
-                        )
-                        
-                        UI.Spacer(modifier = Modifier.height(4.dp))
-                        
-                        // Tool configuration preview (first 100 chars)
-                        val configPreview = toolInstance.config_json.take(100) + 
-                            if (toolInstance.config_json.length > 100) "..." else ""
-                        UI.Text(
-                            text = stringResource(R.string.tool_config_preview, configPreview),
-                            type = TextType.CAPTION,
-                            semantic = "tool-config"
                         )
                     }
                 }

@@ -210,6 +210,35 @@ fun CreateZoneScreen(
         
         // Boutons d'action
         UI.Container(type = ContainerType.FLOATING) {
+            if (isEditing && existingZone != null) {
+                // Mode édition : bouton supprimer en premier
+                UI.Button(
+                    type = ButtonType.DANGER,
+                    semantic = "delete-button",
+                    onClick = {
+                        coroutineScope.launch {
+                            try {
+                                coordinator.processUserAction("delete->zone", mapOf(
+                                    "zone_id" to existingZone.id
+                                ))
+                                onCancel() // Retour après suppression
+                            } catch (e: Exception) {
+                                // TODO: Gestion d'erreur
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    UI.Text(
+                        text = stringResource(R.string.delete),
+                        type = TextType.LABEL,
+                        semantic = "button-label"
+                    )
+                }
+                
+                UI.Spacer(modifier = Modifier.height(12.dp))
+            }
+            
             UI.Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

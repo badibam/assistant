@@ -24,8 +24,14 @@ class MainActivity : ComponentActivity() {
         // Initialize coordinator
         coordinator = Coordinator(this)
         
+        // TODO: Preload icons for current theme
+        // CoroutineScope(Dispatchers.IO).launch {
+        //     val currentTheme = ThemeManager.getCurrentThemeName()
+        //     IconManager.preloadThemeIcons(this@MainActivity, currentTheme)
+        // }
+        
         // Test multi-step operations (uncomment to test)
-        testMultiStepOperations()
+        //testMultiStepOperations()
         
         setContent {
             MaterialTheme {

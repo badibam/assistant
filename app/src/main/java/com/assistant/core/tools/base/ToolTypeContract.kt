@@ -32,6 +32,11 @@ interface ToolTypeContract {
     fun getAvailableOperations(): List<String>
     
     /**
+     * Default icon name for this tool type (corresponds to SVG file name in themes)
+     */
+    fun getDefaultIconName(): String
+    
+    /**
      * Configuration screen for this tool type
      * @param zoneId ID of the zone where the tool will be created
      * @param onSave Called when configuration is saved with the config JSON

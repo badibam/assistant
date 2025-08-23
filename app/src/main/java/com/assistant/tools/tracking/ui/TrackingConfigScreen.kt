@@ -36,9 +36,14 @@ fun TrackingConfigScreen(
     zoneId: String,
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
-    existingConfig: String? = null
+    existingConfig: String? = null,
+    existingToolId: String? = null,
+    onDelete: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    
+    // Mode detection
+    val isEditing = existingConfig != null && existingToolId != null
     
     // Configuration state
     var name by remember { mutableStateOf("") }
@@ -46,7 +51,7 @@ fun TrackingConfigScreen(
     var management by remember { mutableStateOf("Manuel") }
     var configValidation by remember { mutableStateOf(true) }
     var dataValidation by remember { mutableStateOf(true) }
-    var displayMode by remember { mutableStateOf("Condensé") }
+    var displayMode by remember { mutableStateOf("Icône") }
     
     // Tracking-specific state
     var trackingType by remember { mutableStateOf("numeric") }
@@ -79,7 +84,7 @@ fun TrackingConfigScreen(
                 management = config.optString("management", "Manuel")
                 configValidation = config.optBoolean("config_validation", true)
                 dataValidation = config.optBoolean("data_validation", true)
-                displayMode = config.optString("display_mode", "Condensé")
+                displayMode = config.optString("display_mode", "Icône")
                 
                 // Tracking-specific fields
                 trackingType = config.optString("type", "numeric")
@@ -250,7 +255,7 @@ fun TrackingConfigScreen(
                         )
                         UI.Spacer(modifier = Modifier.height(8.dp))
                         
-                        listOf("Minimal", "Condensé", "Détaillé").forEach { mode ->
+                        listOf("Icône", "Minimal", "Ligne", "Condensé", "Étendu", "Complet").forEach { mode ->
                             UI.Button(
                                 type = if (displayMode == mode) ButtonType.PRIMARY else ButtonType.GHOST,
                                 semantic = "display-$mode",
@@ -729,6 +734,26 @@ fun TrackingConfigScreen(
         
         // Action buttons
         UI.Container(type = ContainerType.FLOATING) {
+            if (isEditing && onDelete != null) {
+                // Mode édition : bouton supprimer en premier
+                UI.Button(
+                    type = ButtonType.DANGER,
+                    semantic = "delete-button",
+                    onClick = {
+                        onDelete()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    UI.Text(
+                        text = stringResource(R.string.delete),
+                        type = TextType.LABEL,
+                        semantic = "button-label"
+                    )
+                }
+                
+                UI.Spacer(modifier = Modifier.height(12.dp))
+            }
+            
             UI.Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {

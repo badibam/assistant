@@ -122,6 +122,10 @@ object TrackingToolType : ToolTypeContract {
         )
     }
     
+    override fun getDefaultIconName(): String {
+        return "activity"
+    }
+    
     @Composable
     override fun getConfigScreen(
         zoneId: String,
