@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.themes.base.ThemeIconManager
+import com.assistant.ui.components.ToolIcon
 import com.assistant.R
 import org.json.JSONArray
 import org.json.JSONObject
@@ -52,6 +55,7 @@ fun TrackingConfigScreen(
     var configValidation by remember { mutableStateOf(true) }
     var dataValidation by remember { mutableStateOf(true) }
     var displayMode by remember { mutableStateOf("Icône") }
+    var iconName by remember { mutableStateOf("activity") }
     
     // Tracking-specific state
     var trackingType by remember { mutableStateOf("numeric") }
@@ -72,6 +76,14 @@ fun TrackingConfigScreen(
     var newItemName by remember { mutableStateOf("") }
     var newItemProperties: MutableMap<String, Any> by remember { mutableStateOf(mutableMapOf<String, Any>()) }
     
+    // État pour le sélecteur d'icônes
+    var showIconSelector by remember { mutableStateOf(false) }
+    
+    // Liste des icônes disponibles (hardcodée pour l'instant)
+    val availableIcons = listOf("activity", "trending-up")
+    
+    // TODO: Remplacer par ThemeIconManager.getAvailableIcons("default") quand implémenté
+    
     // Load existing config if provided
     LaunchedEffect(existingConfig) {
         existingConfig?.let { configJson ->
@@ -85,6 +97,7 @@ fun TrackingConfigScreen(
                 configValidation = config.optBoolean("config_validation", true)
                 dataValidation = config.optBoolean("data_validation", true)
                 displayMode = config.optString("display_mode", "Icône")
+                iconName = config.optString("icon_name").ifEmpty { "activity" }
                 
                 // Tracking-specific fields
                 trackingType = config.optString("type", "numeric")
@@ -141,6 +154,7 @@ fun TrackingConfigScreen(
             put("config_validation", configValidation)
             put("data_validation", dataValidation)
             put("display_mode", displayMode)
+            put("icon_name", iconName)
             
             // Tracking-specific fields
             put("type", trackingType)
@@ -190,15 +204,39 @@ fun TrackingConfigScreen(
                     semantic = "section-title"
                 )
                 
-                // Name field
-                UI.TextField(
-                    type = TextFieldType.STANDARD,
-                    semantic = "tool-name",
-                    value = name,
-                    onValueChange = { name = it },
-                    placeholder = "Nom de l'outil de suivi",
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Name field with icon
+                UI.Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    UI.TextField(
+                        type = TextFieldType.STANDARD,
+                        semantic = "tool-name",
+                        value = name,
+                        onValueChange = { name = it },
+                        placeholder = "Nom de l'outil de suivi",
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    UI.Button(
+                        type = ButtonType.GHOST,
+                        semantic = "icon-selector",
+                        onClick = { showIconSelector = true }
+                    ) {
+                        val context = LocalContext.current
+                        val iconResource = try {
+                            ThemeIconManager.getIconResource(context, "default", iconName)
+                        } catch (e: IllegalArgumentException) {
+                            ThemeIconManager.getIconResource(context, "default", "activity")
+                        }
+                        
+                        ToolIcon(
+                            iconResource = iconResource,
+                            size = 24.dp
+                        )
+                    }
+                }
                 
                 // Description field
                 UI.TextField(
@@ -787,6 +825,37 @@ fun TrackingConfigScreen(
                         semantic = "button-label"
                     )
                 }
+            }
+        }
+        
+        // Dialogue sélecteur d'icônes
+        UI.SelectionDialog(
+            isVisible = showIconSelector,
+            title = "Choisir une icône",
+            items = availableIcons,
+            selectedItem = iconName,
+            onItemSelected = { selectedIconName ->
+                iconName = selectedIconName
+            },
+            onDismiss = { showIconSelector = false }
+        ) { availableIconName ->
+            UI.Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val context = LocalContext.current
+                val iconResource = ThemeIconManager.getIconResource(context, "default", availableIconName)
+                
+                ToolIcon(
+                    iconResource = iconResource,
+                    size = 24.dp
+                )
+                
+                UI.Text(
+                    text = availableIconName,
+                    type = TextType.BODY,
+                    semantic = "icon-name"
+                )
             }
         }
     }

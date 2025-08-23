@@ -395,4 +395,56 @@ object DefaultTheme : ThemeContract {
             }
         }
     }
+    
+    @Composable
+    override fun <T> SelectionDialog(
+        isVisible: Boolean,
+        title: String,
+        items: List<T>,
+        selectedItem: T?,
+        onItemSelected: (T) -> Unit,
+        onDismiss: () -> Unit,
+        modifier: Modifier,
+        itemContent: @Composable (T) -> Unit
+    ) {
+        if (isVisible) {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = {
+                    MaterialText(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    ComposeColumn {
+                        items.forEach { item ->
+                            Button(
+                                onClick = { onItemSelected(item) },
+                                colors = if (item == selectedItem) {
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    ButtonDefaults.textButtonColors()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp)
+                            ) {
+                                itemContent(item)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        MaterialText("Fermer")
+                    }
+                },
+                modifier = modifier
+            )
+        }
+    }
 }

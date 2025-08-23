@@ -219,6 +219,33 @@ object UI {
         type: LoadingType = LoadingType.DEFAULT,
         modifier: Modifier = Modifier
     ) = CurrentTheme.current.LoadingIndicator(type, modifier)
+    
+    // DIALOG COMPONENTS
+    
+    /**
+     * Selection dialog - modal selection UI for choosing from a list of items
+     * Generic component that can handle any type T with custom item rendering
+     */
+    @Composable
+    fun <T> SelectionDialog(
+        isVisible: Boolean,
+        title: String,
+        items: List<T>,
+        selectedItem: T? = null,
+        onItemSelected: (T) -> Unit,
+        onDismiss: () -> Unit,
+        modifier: Modifier = Modifier,
+        itemContent: @Composable (T) -> Unit
+    ) = CurrentTheme.current.SelectionDialog(
+        isVisible = isVisible,
+        title = title,
+        items = items,
+        selectedItem = selectedItem,
+        onItemSelected = onItemSelected,
+        onDismiss = onDismiss,
+        modifier = modifier,
+        itemContent = itemContent
+    )
 }
 
 // SEMANTIC TYPES

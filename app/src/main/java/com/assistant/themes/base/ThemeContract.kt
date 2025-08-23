@@ -136,4 +136,17 @@ interface ThemeContract {
         type: LoadingType,
         modifier: Modifier
     )
+    
+    // DIALOG COMPONENTS
+    @Composable
+    fun <T> SelectionDialog(
+        isVisible: Boolean,
+        title: String,
+        items: List<T>,
+        selectedItem: T?,
+        onItemSelected: (T) -> Unit,
+        onDismiss: () -> Unit,
+        modifier: Modifier,
+        itemContent: @Composable (T) -> Unit
+    )
 }
