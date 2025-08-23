@@ -6,14 +6,8 @@
 
 ## Pattern Discovery
 
-### ToolTypeContract étendu
-```kotlin
-interface ToolTypeContract {
-    fun getService(context: Context): Any?           // TrackingService, etc.
-    fun getDao(context: Context): Any?               // TrackingDao, etc.  
-    fun getDatabaseEntities(): List<Class<*>>        // TrackingData, etc.
-}
-```
+### Interfaces standardisées
+- `ToolTypeContract` et `ExecutableService` : voir TOOL_ARCHITECTURE.md
 
 ### ServiceManager générique
 ```kotlin
@@ -22,12 +16,8 @@ val toolTypeId = serviceName.removeSuffix("_service")
 return ToolTypeManager.getServiceForToolType(toolTypeId, context)
 ```
 
-### Coordinator avec reflection
-```kotlin
-// Services découverts appellent execute() via reflection
-val executeMethod = service.javaClass.getMethod("execute", ...)
-executeMethod.invoke(service, operation, params, token)
-```
+### Coordinator integration
+- Pattern UI → Coordinator → Service : voir COORDINATOR_PATTERNS.md
 
 ## Standalone Databases
 
@@ -54,6 +44,9 @@ executeMethod.invoke(service, operation, params, token)
 
 ## Extension
 
-**Nouveau tool type** = implémenter `ToolTypeContract` + ajouter au scanner → discovery automatique.
+**Nouveau tool type** : 
+1. Service implémente `ExecutableService`
+2. ToolType implémente `ToolTypeContract` 
+3. Ajouter au `ToolTypeScanner`
 
-**Aucune modification** Core nécessaire.
+→ **Discovery automatique, aucune modification Core nécessaire.**

@@ -2,6 +2,7 @@ package com.assistant.core.tools.base
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import com.assistant.core.services.ExecutableService
 
 /**
  * Contract for tool type implementations
@@ -50,7 +51,7 @@ interface ToolTypeContract {
      * Returns null if this tool type doesn't have an associated service
      * @param context Android context for service creation
      */
-    fun getService(context: Context): Any?
+    fun getService(context: Context): ExecutableService?
     
     /**
      * Create DAO instance for this tool type

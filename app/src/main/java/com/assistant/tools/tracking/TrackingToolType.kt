@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.core.services.TrackingService
+import com.assistant.core.services.ExecutableService
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
@@ -136,7 +137,7 @@ object TrackingToolType : ToolTypeContract {
         )
     }
     
-    override fun getService(context: Context): Any {
+    override fun getService(context: Context): ExecutableService {
         return TrackingService(context)
     }
     

@@ -26,4 +26,7 @@ interface TrackingDao {
 
     @Query("SELECT * FROM tracking_data WHERE tool_instance_id = :instanceId AND recorded_at BETWEEN :startTime AND :endTime ORDER BY recorded_at DESC")
     fun getEntriesByDateRange(instanceId: String, startTime: Long, endTime: Long): Flow<List<TrackingData>>
+
+    @Query("SELECT * FROM tracking_data WHERE tool_instance_id = :instanceId ORDER BY recorded_at DESC")
+    suspend fun getEntriesForToolInstance(instanceId: String): List<TrackingData>
 }

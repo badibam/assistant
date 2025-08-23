@@ -22,7 +22,10 @@ data class CommandResult(
     val message: String? = null,
     val requestedData: Map<String, Any>? = null, // Data requested by command
     val data: Map<String, Any>? = null,   // Result data from operation
-    val error: String? = null
+    val error: String? = null,
+    // Multi-step operation support
+    val requiresBackground: Boolean = false,     // Phase 1 → 2: needs background processing
+    val requiresContinuation: Boolean = false    // Phase 2 → 3: needs final step
 )
 
 /**

@@ -176,10 +176,18 @@ data class OperationResult(
     val success: Boolean,
     val data: Map<String, Any>? = null,
     val error: String? = null,
-    val cancelled: Boolean = false
+    val cancelled: Boolean = false,
+    // Multi-step operation support
+    val requiresBackground: Boolean = false,     // Phase 1 → 2: needs background processing
+    val requiresContinuation: Boolean = false    // Phase 2 → 3: needs final step
 ) {
     companion object {
-        fun success(data: Map<String, Any>? = null) = OperationResult(true, data)
+        fun success(
+            data: Map<String, Any>? = null, 
+            requiresBackground: Boolean = false,
+            requiresContinuation: Boolean = false
+        ) = OperationResult(true, data, requiresBackground = requiresBackground, requiresContinuation = requiresContinuation)
+        
         fun error(message: String) = OperationResult(false, error = message)
         fun cancelled() = OperationResult(false, cancelled = true)
     }

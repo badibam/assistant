@@ -30,9 +30,23 @@ interface ToolTypeContract {
     fun getConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () -> Unit)
     
     // Discovery pattern
-    fun getService(context: Context): Any?           // TrackingService
-    fun getDao(context: Context): Any?               // TrackingDao  
-    fun getDatabaseEntities(): List<Class<*>>        // TrackingData
+    fun getService(context: Context): ExecutableService?  // TrackingService (implémente ExecutableService)
+    fun getDao(context: Context): Any?                    // TrackingDao  
+    fun getDatabaseEntities(): List<Class<*>>             // TrackingData
+}
+```
+
+## Interface ExecutableService
+
+Tous les services découverts doivent implémenter cette interface :
+
+```kotlin
+interface ExecutableService {
+    suspend fun execute(
+        operation: String, 
+        params: JSONObject, 
+        token: CancellationToken
+    ): OperationResult
 }
 ```
 
@@ -70,23 +84,32 @@ val allTypes = ToolTypeManager.getAllToolTypes()
 
 ## Ajouter un nouveau tool type
 
-1. **Créer l'objet avec discovery** :
+1. **Créer le service** :
+```kotlin
+class MonService(context: Context) : ExecutableService {
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
+        // Implémentation du service
+    }
+}
+```
+
+2. **Créer l'objet ToolType avec discovery** :
 ```kotlin
 object MonToolType : ToolTypeContract {
     override fun getDisplayName() = "Mon Outil"
-    override fun getService(context: Context) = MonService(context)
+    override fun getService(context: Context): ExecutableService = MonService(context)
     override fun getDao(context: Context) = MonDatabase.getDatabase(context).monDao()
     override fun getDatabaseEntities() = listOf(MonData::class.java)
 }
 ```
 
-2. **Créer database standalone** :
+3. **Créer database standalone** :
 ```kotlin
 @Database(entities = [MonData::class], version = 1)
 abstract class MonDatabase : RoomDatabase()
 ```
 
-3. **L'enregistrer dans ToolTypeScanner** :
+4. **L'enregistrer dans ToolTypeScanner** :
 ```kotlin
 fun scanForToolTypes() = mapOf(
     "tracking" to TrackingToolType,
@@ -94,9 +117,7 @@ fun scanForToolTypes() = mapOf(
 )
 ```
 
-## Flux avec discovery
+## Discovery et Databases
 
-1. Scanner → ToolTypeManager  
-2. UI → ToolTypeManager (config)
-3. Coordinator → ServiceManager → ToolTypeManager → Service découvert
-4. Service → ToolTypeManager → DAO découvert → Database standalone
+- **Discovery flow complet** : voir DISCOVERY_ARCHITECTURE.md
+- **Databases standalone** : 1 database par tool type pour isolation

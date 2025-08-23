@@ -9,23 +9,41 @@ import com.assistant.core.commands.ParseResult
 import com.assistant.core.services.ServiceManager
 import com.assistant.core.services.ZoneService
 import com.assistant.core.services.ToolInstanceService
+import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+
+/**
+ * Represents a queued operation with its execution context
+ */
+data class QueuedOperation(
+    val command: Command,
+    val operationId: String = UUID.randomUUID().toString(),
+    val phase: Int = 1,
+    val source: OperationSource
+)
 
 /**
  * Central Coordinator - orchestrates all operations and maintains app state
- * Implements the single-operation principle: only one data-modifying operation at a time
+ * Implements multi-step operations with background processing slot
  */
 class Coordinator(context: Context) {
     private val _state = MutableStateFlow(CoordinatorState.IDLE)
     val state: StateFlow<CoordinatorState> = _state.asStateFlow()
     
-    private var currentOperation: Operation? = null
-    private val operationQueue = mutableListOf<Operation>()
+    // Queue system
+    private val normalQueue = ArrayDeque<QueuedOperation>()
+    private var backgroundSlot: QueuedOperation? = null
+    private var isBackgroundSlotBusy = false
+    
     private val commandParser = CommandParser()
     private val serviceManager = ServiceManager(context)
     private val tokens = ConcurrentHashMap<String, CancellationToken>()
@@ -35,7 +53,8 @@ class Coordinator(context: Context) {
      */
     suspend fun processUserAction(action: String, params: Map<String, Any> = emptyMap()): CommandResult {
         val command = convertToCommand(action, params, OperationSource.USER)
-        return executeCommand(command)
+        val queuedOp = QueuedOperation(command, source = OperationSource.USER)
+        return enqueueAndProcess(queuedOp)
     }
     
     /**
@@ -50,7 +69,8 @@ class Coordinator(context: Context) {
                 is ParseResult.Success -> {
                     // Execute all commands from AI
                     parseResult.data.mapIndexed { index, command ->
-                        executeCommand(command.copy()).copy(commandIndex = index)
+                        val queuedOp = QueuedOperation(command, source = OperationSource.AI)
+                        enqueueAndProcess(queuedOp).copy(commandIndex = index)
                     }
                 }
                 is ParseResult.Failure -> {
@@ -73,7 +93,8 @@ class Coordinator(context: Context) {
      */
     suspend fun processScheduledTask(task: String, params: Map<String, Any> = emptyMap()): CommandResult {
         val command = convertToCommand(task, params, OperationSource.SCHEDULER)
-        return executeCommand(command)
+        val queuedOp = QueuedOperation(command, source = OperationSource.SCHEDULER)
+        return enqueueAndProcess(queuedOp)
     }
     
     /**
@@ -90,14 +111,47 @@ class Coordinator(context: Context) {
     }
     
     /**
-     * Execute a command - unified internal execution
+     * Enqueue operation and process queue
      */
-    private suspend fun executeCommand(command: Command): CommandResult {
+    private suspend fun enqueueAndProcess(queuedOp: QueuedOperation): CommandResult {
+        normalQueue.addLast(queuedOp)
+        return processQueue()
+    }
+    
+    /**
+     * Process next operation from queue
+     */
+    private suspend fun processQueue(): CommandResult {
+        if (_state.value != CoordinatorState.IDLE) {
+            return CommandResult(
+                status = CommandStatus.ERROR,
+                error = "Coordinator busy"
+            )
+        }
+        
+        val queuedOp = normalQueue.removeFirstOrNull() ?: return CommandResult(
+            status = CommandStatus.ERROR,
+            error = "No operations in queue"
+        )
+        
+        return executeQueuedOperation(queuedOp)
+    }
+    
+    /**
+     * Execute a queued operation
+     */
+    private suspend fun executeQueuedOperation(queuedOp: QueuedOperation): CommandResult {
         _state.value = CoordinatorState.OPERATION_IN_PROGRESS
         
         return try {
-            // TODO: Route command to appropriate handler based on action pattern
-            when {
+            val command = queuedOp.command.copy(
+                params = queuedOp.command.params + mapOf(
+                    "operationId" to queuedOp.operationId,
+                    "phase" to queuedOp.phase
+                )
+            )
+            
+            val result = when {
                 command.action.startsWith("execute->tools->") -> handleToolCommand(command)
                 command.action.startsWith("create->") -> handleCreateCommand(command)
                 command.action.startsWith("get->") -> handleGetCommand(command)
@@ -109,14 +163,71 @@ class Coordinator(context: Context) {
                     error = "Unknown action pattern: ${command.action}"
                 )
             }
+            
+            // Handle multi-step operations
+            handleMultiStepResult(result, queuedOp)
+            
+            result
         } catch (e: Exception) {
             CommandResult(
-                commandId = command.id,
+                commandId = queuedOp.command.id,
                 status = CommandStatus.ERROR,
                 error = "Command execution failed: ${e.message}"
             )
         } finally {
             _state.value = CoordinatorState.IDLE
+        }
+    }
+    
+    /**
+     * Handle results that require additional steps
+     */
+    private suspend fun handleMultiStepResult(result: CommandResult, queuedOp: QueuedOperation) {
+        when {
+            result.requiresBackground -> {
+                // Phase 1 → 2: Queue background processing
+                if (isBackgroundSlotBusy) {
+                    // Slot busy, re-queue at end
+                    val requeued = queuedOp.copy(phase = 2)
+                    normalQueue.addLast(requeued)
+                } else {
+                    // Start background processing
+                    startBackgroundProcessing(queuedOp)
+                }
+            }
+            
+            result.requiresContinuation -> {
+                // Phase 2 → 3: Queue final step
+                val finalStep = queuedOp.copy(phase = 3)
+                normalQueue.addLast(finalStep)
+                
+                // Free background slot
+                isBackgroundSlotBusy = false
+                backgroundSlot = null
+            }
+        }
+    }
+    
+    /**
+     * Start background processing in dedicated slot
+     */
+    private suspend fun startBackgroundProcessing(queuedOp: QueuedOperation) {
+        isBackgroundSlotBusy = true
+        backgroundSlot = queuedOp.copy(phase = 2)
+        
+        // Launch background processing
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val bgResult = executeQueuedOperation(backgroundSlot!!)
+                if (bgResult.requiresContinuation) {
+                    // Queue final step
+                    val finalStep = queuedOp.copy(phase = 3)
+                    normalQueue.addLast(finalStep)
+                }
+            } finally {
+                isBackgroundSlotBusy = false
+                backgroundSlot = null
+            }
         }
     }
     
@@ -158,21 +269,8 @@ class Coordinator(context: Context) {
             val result = when (service) {
                 is ZoneService -> service.execute(operation, params, token)
                 is ToolInstanceService -> service.execute(operation, params, token)
-                // Tool services follow same pattern - they all have execute() method
-                else -> {
-                    // Try to call execute method via reflection for tool services
-                    try {
-                        val executeMethod = service.javaClass.getMethod(
-                            "execute", 
-                            String::class.java, 
-                            JSONObject::class.java, 
-                            CancellationToken::class.java
-                        )
-                        executeMethod.invoke(service, operation, params, token) as OperationResult
-                    } catch (e: Exception) {
-                        OperationResult.error("Unknown service type or invalid service interface: $serviceName - ${e.message}")
-                    }
-                }
+                is ExecutableService -> service.execute(operation, params, token)
+                else -> OperationResult.error("Service does not implement ExecutableService interface: $serviceName")
             }
             
             CommandResult(
@@ -183,7 +281,9 @@ class Coordinator(context: Context) {
                     else -> CommandStatus.ERROR
                 },
                 message = result.error ?: "Operation completed successfully",
-                data = result.data
+                data = result.data,
+                requiresBackground = result.requiresBackground,
+                requiresContinuation = result.requiresContinuation
             )
         } catch (e: Exception) {
             CommandResult(
@@ -201,6 +301,7 @@ class Coordinator(context: Context) {
             command.action == "create->zone" -> executeServiceOperation(command, "zone_service", "create")
             command.action == "create->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "create")
             command.action == "create->tracking_data" -> executeServiceOperation(command, "tracking_service", "create")
+            command.action == "create->correlation_analysis" -> executeServiceOperation(command, "tracking_service", "analyze_correlation")
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,
@@ -249,7 +350,13 @@ class Coordinator(context: Context) {
     }
     
     /**
-     * Get current operation info
+     * Get queue status info
      */
-    fun getCurrentOperation(): Operation? = currentOperation
+    fun getQueueInfo(): Map<String, Any> {
+        return mapOf(
+            "normal_queue_size" to normalQueue.size,
+            "background_slot_busy" to isBackgroundSlotBusy,
+            "current_state" to _state.value.name
+        )
+    }
 }
