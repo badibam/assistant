@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ZoneDao {
     @Query("SELECT * FROM zones ORDER BY order_index ASC")
-    fun getAllZones(): Flow<List<Zone>>
+    suspend fun getAllZones(): List<Zone>
 
     @Query("SELECT * FROM zones WHERE id = :id")
     suspend fun getZoneById(id: String): Zone?

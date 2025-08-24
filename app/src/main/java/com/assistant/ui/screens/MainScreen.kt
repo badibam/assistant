@@ -10,8 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
+import com.assistant.core.commands.CommandStatus
 import com.assistant.R
 import kotlinx.coroutines.launch
 
@@ -29,9 +29,69 @@ fun MainScreen() {
     var selectedZone by remember { mutableStateOf<Zone?>(null) }
     var configZone by remember { mutableStateOf<Zone?>(null) }
     
-    // Observe zones in real-time
-    val database = remember { AppDatabase.getDatabase(context) }
-    val zones by database.zoneDao().getAllZones().collectAsState(initial = emptyList())
+    // Load zones via command pattern
+    var zones by remember { mutableStateOf<List<Zone>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Load zones on first composition
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            val result = coordinator.processUserAction("get->zones")
+            if (result.status == CommandStatus.SUCCESS && result.data != null) {
+                val zonesData = result.data["zones"] as? List<Map<String, Any>> ?: emptyList()
+                zones = zonesData.mapNotNull { zoneMap ->
+                    try {
+                        Zone(
+                            id = zoneMap["id"] as String,
+                            name = zoneMap["name"] as String,
+                            description = zoneMap["description"] as? String,
+                            order_index = (zoneMap["order_index"] as Number).toInt(),
+                            created_at = (zoneMap["created_at"] as Number).toLong(),
+                            updated_at = (zoneMap["updated_at"] as Number).toLong()
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // TODO: Error handling
+        } finally {
+            isLoading = false
+        }
+    }
+    
+    // Function to reload zones after operations
+    val reloadZones = {
+        coroutineScope.launch {
+            isLoading = true
+            try {
+                val result = coordinator.processUserAction("get->zones")
+                if (result.status == CommandStatus.SUCCESS && result.data != null) {
+                    val zonesData = result.data["zones"] as? List<Map<String, Any>> ?: emptyList()
+                    zones = zonesData.mapNotNull { zoneMap ->
+                        try {
+                            Zone(
+                                id = zoneMap["id"] as String,
+                                name = zoneMap["name"] as String,
+                                description = zoneMap["description"] as? String,
+                                order_index = (zoneMap["order_index"] as Number).toInt(),
+                                created_at = (zoneMap["created_at"] as Number).toLong(),
+                                updated_at = (zoneMap["updated_at"] as Number).toLong()
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // TODO: Error handling
+            } finally {
+                isLoading = false
+            }
+        }
+    }
     
     
     
@@ -44,6 +104,7 @@ fun MainScreen() {
             },
             onUpdate = {
                 configZone = null
+                reloadZones()
             }
         )
         return // Exit MainScreen composition when showing zone config
@@ -78,6 +139,7 @@ fun MainScreen() {
                             )
                         )
                         showCreateZone = false
+                        reloadZones()
                     } catch (e: Exception) {
                     }
                 }

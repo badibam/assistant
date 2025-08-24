@@ -304,8 +304,19 @@ class Coordinator(context: Context) {
         return when {
             command.action == "create->zone" -> executeServiceOperation(command, "zone_service", "create")
             command.action == "create->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "create")
-            command.action == "create->tracking_data" -> executeServiceOperation(command, "tracking_service", "create")
-            command.action == "create->correlation_analysis" -> executeServiceOperation(command, "tracking_service", "analyze_correlation")
+            command.action == "create->tool_data" -> {
+                val toolType = command.params["tool_type"] as? String
+                val operation = command.params["operation"] as? String ?: "create"
+                if (toolType.isNullOrBlank()) {
+                    CommandResult(
+                        commandId = command.id,
+                        status = CommandStatus.ERROR,
+                        error = "create->tool_data requires 'tool_type' parameter"
+                    )
+                } else {
+                    executeServiceOperation(command, "${toolType}_service", operation)
+                }
+            }
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,
@@ -319,6 +330,19 @@ class Coordinator(context: Context) {
             command.action == "get->zones" -> executeServiceOperation(command, "zone_service", "get_all")
             command.action == "get->tool_instances" -> executeServiceOperation(command, "tool_instance_service", "get_by_zone")
             command.action == "get->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "get_by_id")
+            command.action == "get->tool_data" -> {
+                val toolType = command.params["tool_type"] as? String
+                val operation = command.params["operation"] as? String
+                if (toolType.isNullOrBlank() || operation.isNullOrBlank()) {
+                    CommandResult(
+                        commandId = command.id,
+                        status = CommandStatus.ERROR,
+                        error = "get->tool_data requires 'tool_type' and 'operation' parameters"
+                    )
+                } else {
+                    executeServiceOperation(command, "${toolType}_service", operation)
+                }
+            }
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,

@@ -27,6 +27,8 @@ class ToolInstanceService(private val context: Context) {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
+                "get_by_zone" -> handleGetByZone(params, token)
+                "get_by_id" -> handleGetById(params, token)
                 else -> OperationResult.error("Unknown tool instance operation: $operation")
             }
         } catch (e: Exception) {
@@ -126,6 +128,67 @@ class ToolInstanceService(private val context: Context) {
         return OperationResult.success(mapOf(
             "tool_instance_id" to toolInstanceId,
             "deleted_at" to System.currentTimeMillis()
+        ))
+    }
+    
+    /**
+     * Get tool instances by zone
+     */
+    private suspend fun handleGetByZone(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val zoneId = params.optString("zone_id")
+        if (zoneId.isBlank()) {
+            return OperationResult.error("Zone ID is required")
+        }
+        
+        val toolInstances = toolInstanceDao.getToolInstancesByZone(zoneId)
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceData = toolInstances.map { tool ->
+            mapOf(
+                "id" to tool.id,
+                "zone_id" to tool.zone_id,
+                "tool_type" to tool.tool_type,
+                "config_json" to tool.config_json,
+                "config_metadata_json" to tool.config_metadata_json,
+                "order_index" to tool.order_index,
+                "created_at" to tool.created_at,
+                "updated_at" to tool.updated_at
+            )
+        }
+        
+        return OperationResult.success(mapOf(
+            "tool_instances" to toolInstanceData,
+            "count" to toolInstanceData.size
+        ))
+    }
+    
+    /**
+     * Get tool instance by ID
+     */
+    private suspend fun handleGetById(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
+            ?: return OperationResult.error("Tool instance not found")
+        
+        return OperationResult.success(mapOf(
+            "tool_instance" to mapOf(
+                "id" to toolInstance.id,
+                "zone_id" to toolInstance.zone_id,
+                "tool_type" to toolInstance.tool_type,
+                "config_json" to toolInstance.config_json,
+                "config_metadata_json" to toolInstance.config_metadata_json,
+                "order_index" to toolInstance.order_index,
+                "created_at" to toolInstance.created_at,
+                "updated_at" to toolInstance.updated_at
+            )
         ))
     }
 }

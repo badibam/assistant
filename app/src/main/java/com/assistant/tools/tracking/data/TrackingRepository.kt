@@ -1,7 +1,6 @@
 package com.assistant.tools.tracking.data
 
 import com.assistant.tools.tracking.entities.TrackingData
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Repository for tracking data operations
@@ -12,14 +11,14 @@ class TrackingRepository(private val dao: TrackingDao) {
     /**
      * Get all entries for a specific tool instance
      */
-    fun getEntries(instanceId: String): Flow<List<TrackingData>> {
+    suspend fun getEntries(instanceId: String): List<TrackingData> {
         return dao.getEntriesByInstance(instanceId)
     }
     
     /**
      * Get entries within a date range
      */
-    fun getEntriesByDateRange(instanceId: String, startTime: Long, endTime: Long): Flow<List<TrackingData>> {
+    suspend fun getEntriesByDateRange(instanceId: String, startTime: Long, endTime: Long): List<TrackingData> {
         return dao.getEntriesByDateRange(instanceId, startTime, endTime)
     }
     

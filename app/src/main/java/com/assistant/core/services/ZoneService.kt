@@ -28,6 +28,7 @@ class ZoneService(private val context: Context) {
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
                 "get" -> handleGet(params, token)
+                "get_all" -> handleGetAll(params, token)
                 "list" -> handleList(params, token)
                 else -> OperationResult.error("Unknown zone operation: $operation")
             }
@@ -154,17 +155,54 @@ class ZoneService(private val context: Context) {
     }
     
     /**
+     * Get all zones
+     */
+    private suspend fun handleGetAll(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val zones = zoneDao.getAllZones()
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val zoneData = zones.map { zone ->
+            mapOf(
+                "id" to zone.id,
+                "name" to zone.name,
+                "description" to zone.description,
+                "order_index" to zone.order_index,
+                "created_at" to zone.created_at,
+                "updated_at" to zone.updated_at
+            )
+        }
+        
+        return OperationResult.success(mapOf(
+            "zones" to zoneData,
+            "count" to zoneData.size
+        ))
+    }
+    
+    /**
      * List all zones
      */
     private suspend fun handleList(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
         
-        // Note: For Flow<List<Zone>>, we'd need a different approach
-        // For now, this is a placeholder - real implementation would require
-        // collecting from the Flow or using a different method
+        val zones = zoneDao.getAllZones()
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val zoneData = zones.map { zone ->
+            mapOf(
+                "id" to zone.id,
+                "name" to zone.name,
+                "description" to zone.description,
+                "order_index" to zone.order_index,
+                "created_at" to zone.created_at,
+                "updated_at" to zone.updated_at
+            )
+        }
+        
         return OperationResult.success(mapOf(
-            "zones" to emptyList<Map<String, Any>>(),
-            "count" to 0
+            "zones" to zoneData,
+            "count" to zoneData.size
         ))
     }
 }

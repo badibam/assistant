@@ -35,6 +35,9 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
+                "get_entries" -> handleGetEntries(params, token)
+                "get_entries_by_date_range" -> handleGetEntriesByDateRange(params, token)
+                "get_entry_by_id" -> handleGetEntryById(params, token)
                 "analyze_correlation" -> handleCorrelationAnalysis(params, token)
                 else -> OperationResult.error("Unknown tracking operation: $operation")
             }
@@ -181,7 +184,7 @@ class TrackingService(private val context: Context) : ExecutableService {
         }
         
         // Simulate loading data from database
-        val entries = trackingDao.getEntriesForToolInstance(toolInstanceId)
+        val entries = trackingDao.getEntriesByInstance(toolInstanceId)
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -279,6 +282,111 @@ class TrackingService(private val context: Context) : ExecutableService {
             "correlation_entry_id" to correlationEntry.id,
             "correlation_value" to correlationResult,
             "completed_at" to System.currentTimeMillis()
+        ))
+    }
+
+    /**
+     * Get all entries for a tool instance
+     */
+    private suspend fun handleGetEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        val entries = trackingDao.getEntriesByInstance(toolInstanceId)
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val entriesData = entries.map { entry ->
+            mapOf(
+                "id" to entry.id,
+                "tool_instance_id" to entry.tool_instance_id,
+                "zone_name" to entry.zone_name,
+                "group_name" to entry.group_name,
+                "tool_instance_name" to entry.tool_instance_name,
+                "name" to entry.name,
+                "value" to entry.value,
+                "recorded_at" to entry.recorded_at,
+                "created_at" to entry.created_at,
+                "updated_at" to entry.updated_at
+            )
+        }
+        
+        return OperationResult.success(mapOf(
+            "entries" to entriesData,
+            "count" to entriesData.size
+        ))
+    }
+
+    /**
+     * Get entries by date range
+     */
+    private suspend fun handleGetEntriesByDateRange(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        val startTime = params.optLong("start_time", 0L)
+        val endTime = params.optLong("end_time", System.currentTimeMillis())
+        
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        val entries = trackingDao.getEntriesByDateRange(toolInstanceId, startTime, endTime)
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val entriesData = entries.map { entry ->
+            mapOf(
+                "id" to entry.id,
+                "tool_instance_id" to entry.tool_instance_id,
+                "zone_name" to entry.zone_name,
+                "group_name" to entry.group_name,
+                "tool_instance_name" to entry.tool_instance_name,
+                "name" to entry.name,
+                "value" to entry.value,
+                "recorded_at" to entry.recorded_at,
+                "created_at" to entry.created_at,
+                "updated_at" to entry.updated_at
+            )
+        }
+        
+        return OperationResult.success(mapOf(
+            "entries" to entriesData,
+            "count" to entriesData.size,
+            "start_time" to startTime,
+            "end_time" to endTime
+        ))
+    }
+
+    /**
+     * Get single entry by ID
+     */
+    private suspend fun handleGetEntryById(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val entryId = params.optString("entry_id")
+        if (entryId.isBlank()) {
+            return OperationResult.error("Entry ID is required")
+        }
+        
+        val entry = trackingDao.getEntryById(entryId)
+            ?: return OperationResult.error("Entry not found")
+        
+        return OperationResult.success(mapOf(
+            "entry" to mapOf(
+                "id" to entry.id,
+                "tool_instance_id" to entry.tool_instance_id,
+                "zone_name" to entry.zone_name,
+                "group_name" to entry.group_name,
+                "tool_instance_name" to entry.tool_instance_name,
+                "name" to entry.name,
+                "value" to entry.value,
+                "recorded_at" to entry.recorded_at,
+                "created_at" to entry.created_at,
+                "updated_at" to entry.updated_at
+            )
         ))
     }
 }

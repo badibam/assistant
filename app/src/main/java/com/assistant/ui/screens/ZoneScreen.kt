@@ -18,8 +18,8 @@ import org.json.JSONObject
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
-import com.assistant.core.state.AppState
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.commands.CommandStatus
 import com.assistant.R
 import kotlinx.coroutines.launch
 
@@ -37,8 +37,73 @@ fun ZoneScreen(
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     
-    // Observe tool instances for this zone in real-time via AppState
-    val toolInstances by appState.getToolInstancesForZone(zone.id).collectAsState()
+    // Load tool instances via command pattern
+    var toolInstances by remember { mutableStateOf<List<ToolInstance>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Load tool instances on first composition and when zone changes
+    LaunchedEffect(zone.id) {
+        isLoading = true
+        try {
+            val result = coordinator.processUserAction("get->tool_instances", mapOf("zone_id" to zone.id))
+            if (result.status == CommandStatus.SUCCESS && result.data != null) {
+                val instancesData = result.data["tool_instances"] as? List<Map<String, Any>> ?: emptyList()
+                toolInstances = instancesData.mapNotNull { instanceMap ->
+                    try {
+                        ToolInstance(
+                            id = instanceMap["id"] as String,
+                            zone_id = instanceMap["zone_id"] as String,
+                            tool_type = instanceMap["tool_type"] as String,
+                            config_json = instanceMap["config_json"] as String,
+                            config_metadata_json = instanceMap["config_metadata_json"] as String,
+                            order_index = (instanceMap["order_index"] as Number).toInt(),
+                            created_at = (instanceMap["created_at"] as Number).toLong(),
+                            updated_at = (instanceMap["updated_at"] as Number).toLong()
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // TODO: Error handling
+        } finally {
+            isLoading = false
+        }
+    }
+    
+    // Function to reload tool instances after operations
+    val reloadToolInstances = {
+        coroutineScope.launch {
+            isLoading = true
+            try {
+                val result = coordinator.processUserAction("get->tool_instances", mapOf("zone_id" to zone.id))
+                if (result.status == CommandStatus.SUCCESS && result.data != null) {
+                    val instancesData = result.data["tool_instances"] as? List<Map<String, Any>> ?: emptyList()
+                    toolInstances = instancesData.mapNotNull { instanceMap ->
+                        try {
+                            ToolInstance(
+                                id = instanceMap["id"] as String,
+                                zone_id = instanceMap["zone_id"] as String,
+                                tool_type = instanceMap["tool_type"] as String,
+                                config_json = instanceMap["config_json"] as String,
+                                config_metadata_json = instanceMap["config_metadata_json"] as String,
+                                order_index = (instanceMap["order_index"] as Number).toInt(),
+                                created_at = (instanceMap["created_at"] as Number).toLong(),
+                                updated_at = (instanceMap["updated_at"] as Number).toLong()
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // TODO: Error handling
+            } finally {
+                isLoading = false
+            }
+        }
+    }
     
     // State for showing/hiding available tools list
     var showAvailableTools by remember { mutableStateOf(false) }
@@ -78,6 +143,7 @@ fun ZoneScreen(
                         "config_metadata_json" to configMetadata
                     ))
                     editingToolInstance = null
+                    reloadToolInstances()
                 } catch (e: Exception) {
                     // TODO: Gestion d'erreur
                 }
@@ -94,6 +160,7 @@ fun ZoneScreen(
                         "config_metadata_json" to configMetadata
                     ))
                     showingConfigFor = null
+                    reloadToolInstances()
                 } catch (e: Exception) {
                     // TODO: Gestion d'erreur
                 }
@@ -114,6 +181,7 @@ fun ZoneScreen(
                         "tool_instance_id" to toolToDelete.id
                     ))
                     editingToolInstance = null
+                    reloadToolInstances()
                 } catch (e: Exception) {
                     // TODO: Gestion d'erreur
                 }

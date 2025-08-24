@@ -7,7 +7,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
-import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.R
@@ -26,7 +25,6 @@ fun CreateZoneScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val database = remember { AppDatabase.getDatabase(context) }
     val coordinator = remember { Coordinator(context) }
     
     // Form state - initialize with existing zone values if editing

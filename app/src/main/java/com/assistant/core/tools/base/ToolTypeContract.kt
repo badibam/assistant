@@ -75,4 +75,19 @@ interface ToolTypeContract {
      * @return List of entity classes for this tool type
      */
     fun getDatabaseEntities(): List<Class<*>>
+    
+    /**
+     * Usage screen for this tool type
+     * @param toolInstanceId ID of the tool instance
+     * @param configJson Configuration JSON of the tool instance
+     * @param onNavigateBack Called when user wants to navigate back
+     * @param onLongClick Called when user long-clicks for configuration access
+     */
+    @Composable
+    fun getUsageScreen(
+        toolInstanceId: String,
+        configJson: String,
+        onNavigateBack: () -> Unit,
+        onLongClick: () -> Unit
+    )
 }
