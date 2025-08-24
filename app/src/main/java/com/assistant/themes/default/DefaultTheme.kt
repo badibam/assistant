@@ -488,4 +488,32 @@ object DefaultTheme : ThemeContract {
             )
         }
     }
+    
+    @Composable
+    override fun FormDialog(
+        isVisible: Boolean,
+        title: String,
+        onDismiss: () -> Unit,
+        modifier: Modifier,
+        content: @Composable () -> Unit
+    ) {
+        if (isVisible) {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = {
+                    MaterialText(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    content()
+                },
+                confirmButton = {
+                    // No default confirm button, content should provide its own buttons
+                },
+                modifier = modifier
+            )
+        }
+    }
 }

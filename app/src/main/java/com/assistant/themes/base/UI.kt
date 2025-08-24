@@ -271,6 +271,25 @@ object UI {
         onCancel = onCancel,
         modifier = modifier
     )
+    
+    /**
+     * Form dialog - modal dialog with custom content
+     * Shows a title and allows custom form content
+     */
+    @Composable
+    fun FormDialog(
+        isVisible: Boolean,
+        title: String,
+        onDismiss: () -> Unit,
+        modifier: Modifier = Modifier,
+        content: @Composable () -> Unit
+    ) = CurrentTheme.current.FormDialog(
+        isVisible = isVisible,
+        title = title,
+        onDismiss = onDismiss,
+        modifier = modifier,
+        content = content
+    )
 }
 
 // SEMANTIC TYPES

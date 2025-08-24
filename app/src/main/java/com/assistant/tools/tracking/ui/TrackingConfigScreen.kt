@@ -394,7 +394,18 @@ fun TrackingConfigScreen(
                             UI.Button(
                                 type = if (itemMode == value) ButtonType.PRIMARY else ButtonType.GHOST,
                                 semantic = "item-mode-$value",
-                                onClick = { itemMode = value },
+                                onClick = { 
+                                    // Close AddItemForm dialog if open when mode changes
+                                    if (showAddItem && itemMode != value) {
+                                        showAddItem = false
+                                        editingItemIndex = null
+                                        newItemName = ""
+                                        editItemName = ""
+                                        newItemProperties.clear()
+                                    }
+                                    
+                                    itemMode = value 
+                                },
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
                             ) {
                                 UI.Text(
@@ -597,6 +608,9 @@ fun TrackingConfigScreen(
                                             onClick = { 
                                                 editingItemIndex = itemIndex
                                                 editItemName = item.name
+                                                // Pre-fill properties for editing
+                                                newItemProperties.clear()
+                                                newItemProperties.putAll(item.properties)
                                             },
                                             enabled = true
                                         ) {
@@ -645,103 +659,7 @@ fun TrackingConfigScreen(
                         }
                     }
                     
-                    // Add item dialog
-                    if (showAddItem) {
-                        AddItemForm(
-                            trackingType = trackingType,
-                            itemName = newItemName,
-                            onItemNameChange = { newItemName = it },
-                            properties = newItemProperties,
-                            onPropertiesChange = { newItemProperties = it },
-                            onSave = {
-                                if (newItemName.isNotBlank()) {
-                                    val newItems = items.toMutableList()
-                                    newItems.add(TrackingItem(newItemName, newItemProperties.toMutableMap()))
-                                    items = newItems
-                                    showAddItem = false
-                                    newItemName = ""
-                                    newItemProperties.clear()
-                                }
-                            },
-                            onCancel = { 
-                                showAddItem = false
-                                newItemName = ""
-                                newItemProperties.clear()
-                            }
-                        )
-                    }
                     
-                    // Edit item dialog
-                    editingItemIndex?.let { index ->
-                        UI.Card(
-                            type = CardType.ZONE,
-                            semantic = "edit-item-form",
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            UI.Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                UI.Text(
-                                    text = "Modifier l'élément",
-                                    type = TextType.SUBTITLE,
-                                    semantic = "form-title"
-                                )
-                                
-                                UI.TextField(
-                                    type = TextFieldType.STANDARD,
-                                    semantic = "edit-item-name",
-                                    value = editItemName,
-                                    onValueChange = { editItemName = it },
-                                    placeholder = "Nom de l'élément",
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                
-                                UI.Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    UI.Button(
-                                        type = ButtonType.PRIMARY,
-                                        semantic = "save-edit-item",
-                                        onClick = {
-                                            if (editItemName.isNotBlank()) {
-                                                val newItems = items.toMutableList()
-                                                val oldItem = newItems[index]
-                                                newItems[index] = oldItem.copy(name = editItemName)
-                                                items = newItems
-                                                editingItemIndex = null
-                                                editItemName = ""
-                                            }
-                                        },
-                                        enabled = editItemName.isNotBlank(),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        UI.Text(
-                                            text = "Sauvegarder",
-                                            type = TextType.LABEL,
-                                            semantic = "button-label"
-                                        )
-                                    }
-                                    
-                                    UI.Button(
-                                        type = ButtonType.SECONDARY,
-                                        semantic = "cancel-edit-item",
-                                        onClick = {
-                                            editingItemIndex = null
-                                            editItemName = ""
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        UI.Text(
-                                            text = "Annuler",
-                                            type = TextType.LABEL,
-                                            semantic = "button-label"
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
             
@@ -824,9 +742,19 @@ fun TrackingConfigScreen(
             }
         )
         
-        // Dialogs and modals for additional functionality
-        if (showAddItem || editingItemIndex != null) {
-            AddItemForm(
+        // Form dialog for adding/editing items
+        UI.FormDialog(
+            isVisible = showAddItem || editingItemIndex != null,
+            title = if (editingItemIndex != null) "Modifier l'élément" else "Nouvel élément",
+            onDismiss = {
+                showAddItem = false
+                editingItemIndex = null
+                newItemName = ""
+                editItemName = ""
+                newItemProperties.clear()
+            }
+        ) {
+            AddItemFormContent(
                 trackingType = trackingType,
                 itemName = if (editingItemIndex != null) editItemName else newItemName,
                 onItemNameChange = { name ->
@@ -834,6 +762,7 @@ fun TrackingConfigScreen(
                 },
                 properties = newItemProperties,
                 onPropertiesChange = { newItemProperties = it },
+                isEditing = editingItemIndex != null,
                 onSave = {
                     val itemName = if (editingItemIndex != null) editItemName else newItemName
                     
@@ -906,33 +835,21 @@ fun TrackingConfigScreen(
 }
 
 /**
- * Form for adding items with type-specific properties
+ * Form content for adding/editing items with type-specific properties
  */
 @Composable
-private fun AddItemForm(
+private fun AddItemFormContent(
     trackingType: String,
     itemName: String,
     onItemNameChange: (String) -> Unit,
     properties: MutableMap<String, Any>,
     onPropertiesChange: (MutableMap<String, Any>) -> Unit,
     onSave: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    isEditing: Boolean = false
 ) {
-    UI.Card(
-        type = CardType.ZONE,
-        semantic = "add-item-form",
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        UI.Column {
-            UI.Text(
-                text = "Nouvel élément",
-                type = TextType.SUBTITLE,
-                semantic = "form-title"
-            )
-            
-            UI.Spacer(modifier = Modifier.height(8.dp))
-            
-            // Item name field
+    UI.Column {
+        // Item name field
             UI.TextField(
                 type = TextFieldType.STANDARD,
                 semantic = "new-item-name",
@@ -988,7 +905,7 @@ private fun AddItemForm(
                     enabled = itemName.isNotBlank()
                 ) {
                     UI.Text(
-                        text = "Ajouter",
+                        text = if (isEditing) "Sauvegarder" else "Ajouter",
                         type = TextType.LABEL,
                         semantic = "button-label"
                     )
@@ -996,7 +913,6 @@ private fun AddItemForm(
             }
         }
     }
-}
 
 /**
  * Properties form for numeric tracking items

@@ -161,4 +161,13 @@ interface ThemeContract {
         onCancel: () -> Unit,
         modifier: Modifier
     )
+    
+    @Composable
+    fun FormDialog(
+        isVisible: Boolean,
+        title: String,
+        onDismiss: () -> Unit,
+        modifier: Modifier,
+        content: @Composable () -> Unit
+    )
 }
