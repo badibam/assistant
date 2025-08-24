@@ -33,8 +33,7 @@ object TrackingToolType : ToolTypeContract {
             "show_value": true,
             "item_mode": "",
             "save_new_items": false,
-            "auto_switch": false,
-            "groups": []
+            "auto_switch": false
         }
         """.trimIndent()
     }
@@ -75,44 +74,6 @@ object TrackingToolType : ToolTypeContract {
                 "type": "boolean",
                 "default": true,
                 "description": "For duration type: automatically stop previous activity when starting a new one"
-            },
-            "groups": {
-                "type": "array",
-                "required": true,
-                "min_items": 1,
-                "description": "Groups containing predefined items",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "required": true,
-                            "description": "Group display name"
-                        },
-                        "items": {
-                            "type": "array",
-                            "description": "Predefined items in this group",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "required": true,
-                                        "description": "Item display name"
-                                    },
-                                    "unit": {
-                                        "type": "string",
-                                        "description": "Unit for this specific item"
-                                    },
-                                    "default_amount": {
-                                        "type": "number",
-                                        "description": "Default amount/value for this item"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
         """.trimIndent()

@@ -26,7 +26,6 @@ fun TrackingInput(
     
     // Extract tracking configuration
     val trackingType = config.optString("type", "numeric")
-    val groups = config.optJSONArray("groups")
     
     // Common state
     var isLoading by remember { mutableStateOf(false) }
@@ -80,27 +79,23 @@ fun TrackingInput(
         if (successMessage != null) {
             UI.Card(
                 type = CardType.SYSTEM,
-                semantic = "success-message",
                 modifier = Modifier.fillMaxWidth()
             ) {
                 UI.Text(
                     text = successMessage!!,
-                    type = TextType.BODY,
-                    semantic = "success-text"
+                    type = TextType.BODY
                 )
             }
         }
         
         if (errorMessage != null) {
             UI.Card(
-                type = CardType.SYSTEM, // TODO: Add ERROR card type for better styling
-                semantic = "error-message",
+                type = CardType.SYSTEM,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 UI.Text(
                     text = errorMessage!!,
-                    type = TextType.BODY,
-                    semantic = "error-text"
+                    type = TextType.BODY
                 )
             }
         }
@@ -109,43 +104,42 @@ fun TrackingInput(
         when (trackingType) {
             "numeric" -> NumericTrackingInput(
                 config = config,
-                groups = groups,
                 onSave = saveEntry,
                 isLoading = isLoading
             )
 //            "text" -> TextTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
 //            "scale" -> ScaleTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
 //            "boolean" -> BooleanTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
 //            "duration" -> DurationTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
 //            "choice" -> ChoiceTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
 //            "counter" -> CounterTrackingInput(
 //                config = config,
-//                groups = groups,
+//                config = config,
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
@@ -167,7 +161,6 @@ interface TrackingInputComponent {
     @Composable
     fun Content(
         config: JSONObject,
-        groups: org.json.JSONArray?,
         onSave: (value: Any, itemName: String?) -> Unit,
         isLoading: Boolean
     )

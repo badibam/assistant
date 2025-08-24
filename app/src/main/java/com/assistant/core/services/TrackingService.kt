@@ -38,7 +38,6 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "get_entries" -> handleGetEntries(params, token)
                 "get_entries_by_date_range" -> handleGetEntriesByDateRange(params, token)
                 "get_entry_by_id" -> handleGetEntryById(params, token)
-                "analyze_correlation" -> handleCorrelationAnalysis(params, token)
                 else -> OperationResult.error("Unknown tracking operation: $operation")
             }
         } catch (e: Exception) {
@@ -54,7 +53,6 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         val toolInstanceId = params.optString("tool_instance_id")
         val zoneName = params.optString("zone_name")
-        val groupName = params.optString("group_name").takeIf { it.isNotBlank() }
         val toolInstanceName = params.optString("tool_instance_name")
         val name = params.optString("name")
         val value = params.optString("value")
@@ -70,7 +68,6 @@ class TrackingService(private val context: Context) : ExecutableService {
         val newEntry = TrackingData(
             tool_instance_id = toolInstanceId,
             zone_name = zoneName,
-            group_name = groupName,
             tool_instance_name = toolInstanceName,
             name = name,
             value = value,
@@ -149,141 +146,6 @@ class TrackingService(private val context: Context) : ExecutableService {
             "deleted_at" to System.currentTimeMillis()
         ))
     }
-    
-    /**
-     * Handle correlation analysis - example of multi-step operation
-     * Phase 1: Load data, Phase 2: Heavy calculation, Phase 3: Save results
-     */
-    private suspend fun handleCorrelationAnalysis(params: JSONObject, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        val operationId = params.optString("operationId")
-        val phase = params.optInt("phase", 1)
-        val toolInstanceId = params.optString("tool_instance_id")
-        
-        if (operationId.isBlank()) {
-            return OperationResult.error("Operation ID is required for multi-step operations")
-        }
-        
-        return when (phase) {
-            1 -> handleCorrelationPhase1(operationId, toolInstanceId, token)
-            2 -> handleCorrelationPhase2(operationId, token)
-            3 -> handleCorrelationPhase3(operationId, token)
-            else -> OperationResult.error("Invalid phase: $phase")
-        }
-    }
-    
-    /**
-     * Phase 1: Load tracking data from database
-     */
-    private suspend fun handleCorrelationPhase1(operationId: String, toolInstanceId: String, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        if (toolInstanceId.isBlank()) {
-            return OperationResult.error("Tool instance ID is required")
-        }
-        
-        // Simulate loading data from database
-        val entries = trackingDao.getEntriesByInstance(toolInstanceId)
-        
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        // Store data for next phase
-        tempData[operationId] = mapOf(
-            "entries" to entries,
-            "tool_instance_id" to toolInstanceId,
-            "loaded_at" to System.currentTimeMillis()
-        )
-        
-        // Return result indicating we need background processing
-        return OperationResult.success(
-            data = mapOf("phase" to 1, "entries_count" to entries.size),
-            requiresBackground = true
-        )
-    }
-    
-    /**
-     * Phase 2: Heavy correlation calculation (background)
-     */
-    private suspend fun handleCorrelationPhase2(operationId: String, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        val storedData = tempData[operationId] as? Map<String, Any>
-            ?: return OperationResult.error("No data found for operation $operationId")
-        
-        @Suppress("UNCHECKED_CAST")
-        val entries = storedData["entries"] as? List<TrackingData>
-            ?: return OperationResult.error("Invalid data format")
-        
-        // Simulate heavy calculation
-        delay(3000) // 3 second calculation
-        
-        if (token.isCancelled) {
-            tempData.remove(operationId) // Cleanup on cancel
-            return OperationResult.cancelled()
-        }
-        
-        // Simulate correlation calculation result
-        val correlationResult = entries.size * 0.85 // Mock correlation value
-        
-        // Update stored data with result
-        tempData[operationId] = storedData + mapOf(
-            "correlation_result" to correlationResult,
-            "calculated_at" to System.currentTimeMillis()
-        )
-        
-        // Return result indicating we need continuation
-        return OperationResult.success(
-            data = mapOf("phase" to 2, "correlation" to correlationResult),
-            requiresContinuation = true
-        )
-    }
-    
-    /**
-     * Phase 3: Save correlation results to database
-     */
-    private suspend fun handleCorrelationPhase3(operationId: String, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        val storedData = tempData[operationId] as? Map<String, Any>
-            ?: return OperationResult.error("No data found for operation $operationId")
-        
-        val correlationResult = storedData["correlation_result"] as? Double
-            ?: return OperationResult.error("No correlation result found")
-        
-        val toolInstanceId = storedData["tool_instance_id"] as? String
-            ?: return OperationResult.error("No tool instance ID found")
-        
-        if (token.isCancelled) {
-            tempData.remove(operationId) // Cleanup on cancel
-            return OperationResult.cancelled()
-        }
-        
-        // Create a special tracking entry to store the correlation result
-        val correlationEntry = TrackingData(
-            tool_instance_id = toolInstanceId,
-            zone_name = "Statistics",
-            group_name = "Correlations",
-            tool_instance_name = "Auto-generated",
-            name = "correlation_analysis",
-            value = correlationResult.toString(),
-            recorded_at = System.currentTimeMillis()
-        )
-        
-        trackingDao.insertEntry(correlationEntry)
-        
-        // Cleanup temporary data
-        tempData.remove(operationId)
-        
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        return OperationResult.success(mapOf(
-            "phase" to 3,
-            "correlation_entry_id" to correlationEntry.id,
-            "correlation_value" to correlationResult,
-            "completed_at" to System.currentTimeMillis()
-        ))
-    }
 
     /**
      * Get all entries for a tool instance
@@ -304,7 +166,6 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "id" to entry.id,
                 "tool_instance_id" to entry.tool_instance_id,
                 "zone_name" to entry.zone_name,
-                "group_name" to entry.group_name,
                 "tool_instance_name" to entry.tool_instance_name,
                 "name" to entry.name,
                 "value" to entry.value,
@@ -342,7 +203,6 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "id" to entry.id,
                 "tool_instance_id" to entry.tool_instance_id,
                 "zone_name" to entry.zone_name,
-                "group_name" to entry.group_name,
                 "tool_instance_name" to entry.tool_instance_name,
                 "name" to entry.name,
                 "value" to entry.value,
@@ -379,7 +239,6 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "id" to entry.id,
                 "tool_instance_id" to entry.tool_instance_id,
                 "zone_name" to entry.zone_name,
-                "group_name" to entry.group_name,
                 "tool_instance_name" to entry.tool_instance_name,
                 "name" to entry.name,
                 "value" to entry.value,

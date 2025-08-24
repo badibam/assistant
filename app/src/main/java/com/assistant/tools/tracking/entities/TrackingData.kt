@@ -16,7 +16,6 @@ data class TrackingData(
     
     // Immutability: copy values at record time
     val zone_name: String,           // "Health" (copied from zone)
-    val group_name: String?,         // "Breakfast" (copied from config)
     val tool_instance_name: String,  // "Nutrition Tracking" (copied from config)
     
     val name: String,                // "Whole bread", "Mood", etc.
