@@ -16,9 +16,9 @@ import com.assistant.ui.components.ToolIcon
 import com.assistant.ui.components.DisplayMode
 import org.json.JSONObject
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.state.AppState
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.R
 import kotlinx.coroutines.launch
@@ -37,10 +37,8 @@ fun ZoneScreen(
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     
-    // Observe tool instances for this zone in real-time
-    val database = remember { AppDatabase.getDatabase(context) }
-    val toolInstances by database.toolInstanceDao().getToolInstancesByZone(zone.id)
-        .collectAsState(initial = emptyList())
+    // Observe tool instances for this zone in real-time via AppState
+    val toolInstances by appState.getToolInstancesForZone(zone.id).collectAsState()
     
     // State for showing/hiding available tools list
     var showAvailableTools by remember { mutableStateOf(false) }
@@ -48,6 +46,24 @@ fun ZoneScreen(
     // State for tool configuration screen
     var showingConfigFor by remember { mutableStateOf<String?>(null) }
     var editingToolInstance by remember { mutableStateOf<ToolInstance?>(null) }
+    
+    // State for tool dedicated screen
+    var showingToolScreen by remember { mutableStateOf<ToolInstance?>(null) }
+    
+    // Show tool usage screen via discovery (before main UI)
+    showingToolScreen?.let { toolInstance ->
+        val toolType = ToolTypeManager.getToolType(toolInstance.tool_type)
+        toolType?.getUsageScreen(
+            toolInstanceId = toolInstance.id,
+            configJson = toolInstance.config_json,
+            onNavigateBack = { showingToolScreen = null },
+            onLongClick = { 
+                editingToolInstance = toolInstance
+                showingToolScreen = null
+            }
+        )
+        return // Exit ZoneScreen composition when showing tool screen
+    }
     
     // Configuration callbacks (shared logic for all tool types)
     val onSaveConfig = { config: String ->
@@ -301,7 +317,8 @@ fun ZoneScreen(
                             },
                             title = toolName,
                             onClick = {
-                                // TODO: Naviguer vers l'écran d'utilisation de l'outil
+                                // Navigate to tool dedicated screen via discovery
+                                showingToolScreen = toolInstance
                             },
                             onLongClick = {
                                 editingToolInstance = toolInstance

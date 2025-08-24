@@ -11,9 +11,12 @@ import com.assistant.core.services.ZoneService
 import com.assistant.core.services.ToolInstanceService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
+import com.assistant.core.database.AppDatabase
+import com.assistant.core.database.entities.ToolInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
@@ -47,6 +50,7 @@ class Coordinator(context: Context) {
     private val commandParser = CommandParser()
     private val serviceManager = ServiceManager(context)
     private val tokens = ConcurrentHashMap<String, CancellationToken>()
+    private val database = AppDatabase.getDatabase(context)
     
     /**
      * Process user action from UI - simple interface for UI layer
@@ -311,11 +315,16 @@ class Coordinator(context: Context) {
     }
     
     private suspend fun handleGetCommand(command: Command): CommandResult {
-        return CommandResult(
-            commandId = command.id,
-            status = CommandStatus.SUCCESS,
-            message = "Get command (TODO: implement)"
-        )
+        return when {
+            command.action == "get->zones" -> executeServiceOperation(command, "zone_service", "get_all")
+            command.action == "get->tool_instances" -> executeServiceOperation(command, "tool_instance_service", "get_by_zone")
+            command.action == "get->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "get_by_id")
+            else -> CommandResult(
+                commandId = command.id,
+                status = CommandStatus.SUCCESS,
+                message = "Get command (TODO: implement other types)"
+            )
+        }
     }
     
     private suspend fun handleUpdateCommand(command: Command): CommandResult {
