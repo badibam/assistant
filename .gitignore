@@ -13,6 +13,8 @@ claude.txt
 # Android build files
 app/build/
 */build/
+build/
+**/build/
 
 # Gradle files
 .gradle/
@@ -20,4 +22,18 @@ gradle/
 
 # Generated files
 **/generated/
-**/build/
+**/kapt3/
+**/kotlin/
+**/tmp/
+**/intermediates/
+
+# Editor temporary files
+*.kate-swp
+*.swp
+*.tmp
+*~
+
+# Android specific
+*.apk
+*.dex
+*.class
