@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.themes.base.ThemeIconManager
 import com.assistant.ui.components.ToolIcon
+import com.assistant.core.utils.NumberFormatting
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.R
 import org.json.JSONArray
@@ -848,6 +849,8 @@ private fun AddItemFormContent(
     onCancel: () -> Unit,
     isEditing: Boolean = false
 ) {
+    // State for properties validation
+    var arePropertiesValid by remember { mutableStateOf(true) }
     UI.Column {
         // Item name field
             UI.TextField(
@@ -863,7 +866,11 @@ private fun AddItemFormContent(
             
             // Type-specific fields - only numeric for now
             when (trackingType) {
-                "numeric" -> NumericItemProperties(properties, onPropertiesChange)
+                "numeric" -> NumericItemProperties(
+                    properties = properties,
+                    onPropertiesChange = onPropertiesChange,
+                    onValidationChange = { arePropertiesValid = it }
+                )
                 else -> {
                     // For other types, just show a message for now
                     UI.Card(
@@ -902,7 +909,7 @@ private fun AddItemFormContent(
                     type = ButtonType.PRIMARY,
                     semantic = "save-item",
                     onClick = onSave,
-                    enabled = itemName.isNotBlank()
+                    enabled = itemName.isNotBlank() && arePropertiesValid
                 ) {
                     UI.Text(
                         text = if (isEditing) "Sauvegarder" else "Ajouter",
@@ -920,10 +927,19 @@ private fun AddItemFormContent(
 @Composable
 private fun NumericItemProperties(
     properties: MutableMap<String, Any>,
-    onPropertiesChange: (MutableMap<String, Any>) -> Unit
+    onPropertiesChange: (MutableMap<String, Any>) -> Unit,
+    onValidationChange: (Boolean) -> Unit
 ) {
     var unit by remember { mutableStateOf(properties["unit"]?.toString() ?: "") }
-    var defaultValue by remember { mutableStateOf(properties["default_value"]?.toString() ?: "") }
+    var defaultValue by remember { 
+        mutableStateOf(properties["default_value"]?.toString() ?: "")
+    }
+    
+    // Initialize validation state
+    LaunchedEffect(Unit) {
+        val isValid = defaultValue.isBlank() || NumberFormatting.isValidNumericInput(defaultValue)
+        onValidationChange(isValid)
+    }
     
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -947,11 +963,23 @@ private fun NumericItemProperties(
             value = defaultValue,
             onValueChange = { 
                 defaultValue = it
+                
+                // Same logic as NumericTrackingInput: only store if valid or empty
                 if (it.isNotBlank()) {
-                    properties["default_value"] = it.toDoubleOrNull() ?: 0.0
+                    val parsed = NumberFormatting.parseUserInput(it)
+                    if (parsed != null) {
+                        properties["default_value"] = parsed
+                    } else {
+                        properties.remove("default_value")
+                    }
                 } else {
                     properties.remove("default_value")
                 }
+                
+                // Update validation state
+                val isValid = it.isBlank() || NumberFormatting.isValidNumericInput(it)
+                onValidationChange(isValid)
+                
                 onPropertiesChange(properties)
             },
             placeholder = "Valeur par défaut (optionnelle)",
@@ -982,3 +1010,4 @@ private fun buildItemPropertiesText(properties: Map<String, Any>, trackingType: 
         }
     }
 }
+

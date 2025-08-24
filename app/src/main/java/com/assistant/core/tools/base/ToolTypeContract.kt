@@ -3,6 +3,7 @@ package com.assistant.core.tools.base
 import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.services.ExecutableService
+import com.assistant.core.validation.ValidationResult
 
 /**
  * Contract for tool type implementations
@@ -90,4 +91,12 @@ interface ToolTypeContract {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
+    
+    /**
+     * Validate data before storage operation
+     * @param data Complete data entry to validate (type depends on tool)
+     * @param operation Type of operation (create, update, delete)
+     * @return ValidationResult with success/error details
+     */
+    fun validateData(data: Any, operation: String): ValidationResult
 }

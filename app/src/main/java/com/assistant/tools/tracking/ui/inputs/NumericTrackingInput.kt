@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.core.utils.NumberFormatting
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -85,7 +86,7 @@ fun NumericTrackingInput(
                             put("amount", numValue)
                             put("unit", unitValue)
                             put("type", "numeric")
-                            put("raw", if (showValue) "$numValue${if (unitValue.isNotBlank()) " $unitValue" else ""}" else name)
+                            put("raw", if (showValue) NumberFormatting.formatRawValue(numValue, value, unitValue) else name)
                         }
                         onSave(jsonValue.toString(), name)
                         
@@ -175,7 +176,7 @@ fun NumericTrackingInput(
                             put("amount", numValue)
                             put("unit", unitValue)
                             put("type", "numeric")
-                            put("raw", if (showValue) "$numValue${if (unitValue.isNotBlank()) " $unitValue" else ""}" else name)
+                            put("raw", if (showValue) NumberFormatting.formatRawValue(numValue, value, unitValue) else name)
                         }
                         onSave(jsonValue.toString(), name)
                         
@@ -298,10 +299,13 @@ private fun FreeInputLine(
             UI.Button(
                 type = ButtonType.PRIMARY,
                 semantic = "add-free-item",
-                enabled = !isLoading && itemName.isNotBlank() && value.isNotBlank(),
+                enabled = !isLoading && itemName.isNotBlank() && NumberFormatting.isValidNumericInput(value),
                 onClick = {
-                    val numericValue = value.toDoubleOrNull() ?: 0.0
-                    onSave(itemName, numericValue, unit)
+                    val numericValue = NumberFormatting.parseUserInput(value)
+                    if (numericValue != null) {
+                        onSave(itemName, numericValue, unit)
+                    }
+                    // If null, nothing happens - button shouldn't be enabled anyway
                 }
             ) {
                 UI.Text(
@@ -373,7 +377,7 @@ private fun PredefinedItemLine(
             UI.Button(
                 type = ButtonType.PRIMARY,
                 semantic = "add-predefined-$itemName",
-                enabled = !isLoading && (!showValue || value.isNotBlank()),
+                enabled = !isLoading && (!showValue || NumberFormatting.isValidNumericInput(value)),
                 onClick = onSave
             ) {
                 UI.Text(

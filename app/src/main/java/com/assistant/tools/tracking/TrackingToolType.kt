@@ -5,11 +5,14 @@ import androidx.compose.runtime.Composable
 import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.core.services.TrackingService
 import com.assistant.core.services.ExecutableService
+import com.assistant.core.validation.ValidationResult
+import com.assistant.core.utils.NumberFormatting
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
 import com.assistant.tools.tracking.ui.TrackingScreen
+import org.json.JSONObject
 
 /**
  * Tracking Tool Type implementation
@@ -128,5 +131,87 @@ object TrackingToolType : ToolTypeContract {
             onNavigateBack = onNavigateBack,
             onLongClick = onLongClick
         )
+    }
+    
+    override fun validateData(data: Any, operation: String): ValidationResult {
+        if (data !is TrackingData) {
+            return ValidationResult.error("Expected TrackingData, got ${data::class.simpleName}")
+        }
+        
+        return when (operation) {
+            "create" -> validateCreate(data)
+            "update" -> validateUpdate(data)
+            "delete" -> validateDelete(data)
+            else -> ValidationResult.error("Unknown operation: $operation")
+        }
+    }
+    
+    private fun validateCreate(data: TrackingData): ValidationResult {
+        // Validation complète pour création
+        if (data.name.isBlank()) {
+            return ValidationResult.error("Entry name cannot be blank")
+        }
+        
+        if (data.tool_instance_id.isBlank()) {
+            return ValidationResult.error("Tool instance ID is required")
+        }
+        
+        if (data.zone_name.isBlank()) {
+            return ValidationResult.error("Zone name is required")
+        }
+        
+        if (data.tool_instance_name.isBlank()) {
+            return ValidationResult.error("Tool instance name is required")
+        }
+        
+        // Validation du format JSON de la valeur
+        return validateValueFormat(data.value)
+    }
+    
+    private fun validateUpdate(data: TrackingData): ValidationResult {
+        // Validation plus souple pour mise à jour
+        if (data.id.isBlank()) {
+            return ValidationResult.error("Entry ID is required for update")
+        }
+        
+        // Si on modifie la valeur, elle doit rester valide
+        return validateValueFormat(data.value)
+    }
+    
+    private fun validateDelete(data: TrackingData): ValidationResult {
+        // Validation minimale pour suppression
+        if (data.id.isBlank()) {
+            return ValidationResult.error("Entry ID is required for deletion")
+        }
+        
+        return ValidationResult.success()
+    }
+    
+    private fun validateValueFormat(value: String): ValidationResult {
+        return try {
+            val json = JSONObject(value)
+            
+            // Strict validation: 'type' field is required
+            if (!json.has("type")) {
+                return ValidationResult.error("Missing required 'type' field in value JSON")
+            }
+            
+            val type = json.getString("type")
+            
+            when (type) {
+                "numeric" -> {
+                    if (!json.has("amount")) {
+                        return ValidationResult.error("Missing required 'amount' field for numeric type")
+                    }
+                    
+                    val amount = json.getDouble("amount") // Strict: will throw if missing or invalid
+                    ValidationResult.success()
+                }
+                // TODO: Add validation for other tracking types when implemented
+                else -> ValidationResult.error("Unsupported tracking type: $type")
+            }
+        } catch (e: Exception) {
+            ValidationResult.error("Invalid JSON format in value field: ${e.message}")
+        }
     }
 }

@@ -28,7 +28,9 @@ abstract class TrackingDatabase : RoomDatabase() {
                     context.applicationContext,
                     TrackingDatabase::class.java,
                     "tracking_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Allow schema changes during development
+                .build()
                 INSTANCE = instance
                 instance
             }

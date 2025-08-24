@@ -1,8 +1,10 @@
 package com.assistant.core.services
 
 import android.content.Context
+import android.util.Log
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.ValidationResult
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
 import org.json.JSONObject
@@ -30,6 +32,7 @@ class TrackingService(private val context: Context) : ExecutableService {
         params: JSONObject, 
         token: CancellationToken
     ): OperationResult {
+        Log.d("TrackingService", "execute() called with operation: $operation, params: $params")
         return try {
             when (operation) {
                 "create" -> handleCreate(params, token)
@@ -38,9 +41,13 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "get_entries" -> handleGetEntries(params, token)
                 "get_entries_by_date_range" -> handleGetEntriesByDateRange(params, token)
                 "get_entry_by_id" -> handleGetEntryById(params, token)
-                else -> OperationResult.error("Unknown tracking operation: $operation")
+                else -> {
+                    Log.e("TrackingService", "Unknown operation: $operation")
+                    OperationResult.error("Unknown tracking operation: $operation")
+                }
             }
         } catch (e: Exception) {
+            Log.e("TrackingService", "Operation failed", e)
             OperationResult.error("Tracking operation failed: ${e.message}")
         }
     }
@@ -49,6 +56,7 @@ class TrackingService(private val context: Context) : ExecutableService {
      * Create a new tracking entry
      */
     private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
+        Log.d("TrackingService", "handleCreate() called with params: $params")
         if (token.isCancelled) return OperationResult.cancelled()
         
         val toolInstanceId = params.optString("tool_instance_id")
@@ -57,6 +65,8 @@ class TrackingService(private val context: Context) : ExecutableService {
         val name = params.optString("name")
         val value = params.optString("value")
         val recordedAt = params.optLong("recorded_at", System.currentTimeMillis())
+        
+        Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, value=$value")
         
         if (toolInstanceId.isBlank() || zoneName.isBlank() || toolInstanceName.isBlank() || 
             name.isBlank() || value.isBlank()) {
@@ -76,7 +86,19 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         if (token.isCancelled) return OperationResult.cancelled()
         
+        // Validate data before insertion
+        val toolType = ToolTypeManager.getToolType("tracking")
+        if (toolType != null) {
+            val validation = toolType.validateData(newEntry, "create")
+            if (!validation.isValid) {
+                Log.e("TrackingService", "Validation failed: ${validation.errorMessage}")
+                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            }
+        }
+        
+        Log.d("TrackingService", "Inserting entry into database: ${newEntry.id}")
         trackingDao.insertEntry(newEntry)
+        Log.d("TrackingService", "Entry inserted successfully")
         
         return OperationResult.success(mapOf(
             "entry_id" to newEntry.id,
@@ -151,14 +173,19 @@ class TrackingService(private val context: Context) : ExecutableService {
      * Get all entries for a tool instance
      */
     private suspend fun handleGetEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        Log.d("TrackingService", "handleGetEntries() called with params: $params")
         if (token.isCancelled) return OperationResult.cancelled()
         
         val toolInstanceId = params.optString("tool_instance_id")
+        Log.d("TrackingService", "Tool instance ID: $toolInstanceId")
         if (toolInstanceId.isBlank()) {
+            Log.e("TrackingService", "Tool instance ID is blank")
             return OperationResult.error("Tool instance ID is required")
         }
         
+        Log.d("TrackingService", "Calling DAO.getEntriesByInstance...")
         val entries = trackingDao.getEntriesByInstance(toolInstanceId)
+        Log.d("TrackingService", "DAO returned ${entries.size} entries")
         if (token.isCancelled) return OperationResult.cancelled()
         
         val entriesData = entries.map { entry ->

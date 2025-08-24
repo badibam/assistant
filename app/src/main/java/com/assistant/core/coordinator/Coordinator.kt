@@ -252,17 +252,22 @@ class Coordinator(context: Context) {
         serviceName: String,
         operation: String
     ): CommandResult {
+        android.util.Log.d("Coordinator", "executeServiceOperation: service=$serviceName, operation=$operation, params=${command.params}")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
         
         return try {
             val service = serviceManager.getService(serviceName)
-                ?: return CommandResult(
+            android.util.Log.d("Coordinator", "Service retrieved: $service")
+            if (service == null) {
+                android.util.Log.e("Coordinator", "Service not found: $serviceName")
+                return CommandResult(
                     commandId = command.id,
                     status = CommandStatus.ERROR,
                     error = "Service not found: $serviceName"
                 )
+            }
             
             val params = JSONObject().apply {
                 command.params.forEach { (key, value) ->
@@ -270,12 +275,14 @@ class Coordinator(context: Context) {
                 }
             }
             
+            android.util.Log.d("Coordinator", "Calling service.execute with params: $params")
             val result = when (service) {
                 is ZoneService -> service.execute(operation, params, token)
                 is ToolInstanceService -> service.execute(operation, params, token)
                 is ExecutableService -> service.execute(operation, params, token)
                 else -> OperationResult.error("Service does not implement ExecutableService interface: $serviceName")
             }
+            android.util.Log.d("Coordinator", "Service result: success=${result.success}, error=${result.error}, data=${result.data}")
             
             CommandResult(
                 commandId = command.id,
@@ -367,6 +374,19 @@ class Coordinator(context: Context) {
         return when {
             command.action == "delete->zone" -> executeServiceOperation(command, "zone_service", "delete")
             command.action == "delete->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "delete")
+            command.action == "delete->tool_data" -> {
+                val toolType = command.params["tool_type"] as? String
+                val operation = command.params["operation"] as? String ?: "delete"
+                if (toolType.isNullOrBlank()) {
+                    CommandResult(
+                        commandId = command.id,
+                        status = CommandStatus.ERROR,
+                        error = "delete->tool_data requires 'tool_type' parameter"
+                    )
+                } else {
+                    executeServiceOperation(command, "${toolType}_service", operation)
+                }
+            }
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,

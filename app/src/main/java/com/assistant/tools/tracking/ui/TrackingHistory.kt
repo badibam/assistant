@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,7 +11,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -27,6 +32,9 @@ fun TrackingHistory(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
+    // Coordinator
+    val coordinator = remember { Coordinator(context) }
+    
     // State
     var trackingData by remember { mutableStateOf<List<TrackingData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -42,16 +50,61 @@ fun TrackingHistory(
             errorMessage = null
             
             try {
-                // TODO: Call TrackingService or Repository to load data - use coordinator
-                // val data = ...
-                // trackingData = data.sortedByDescending { it.recorded_at }
+                // Use coordinator to get tracking entries
+                val result = coordinator.processUserAction(
+                    "get->tool_data",
+                    mapOf(
+                        "tool_type" to "tracking",
+                        "operation" to "get_entries",
+                        "tool_instance_id" to toolInstanceId
+                    )
+                )
                 
-                // Simulate data for now
-                kotlinx.coroutines.delay(500)
-                trackingData = emptyList() // Replace with actual data
+                // Debug: log result status and data
+                Log.d("TrackingHistory", "Command result status = ${result.status}")
+                Log.d("TrackingHistory", "Command result data = ${result.data}")
+                Log.d("TrackingHistory", "Command result error = ${result.error}")
+                Log.d("TrackingHistory", "Tool instance ID = $toolInstanceId")
+                
+                when (result.status) {
+                    CommandStatus.SUCCESS -> {
+                        val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
+                        Log.d("TrackingHistory", "Found ${entriesData.size} entries")
+                        
+                        trackingData = entriesData.mapNotNull { entryMap ->
+                            if (entryMap is Map<*, *>) {
+                                try {
+                                    val data = TrackingData(
+                                        id = entryMap["id"] as? String ?: "",
+                                        tool_instance_id = entryMap["tool_instance_id"] as? String ?: "",
+                                        zone_name = entryMap["zone_name"] as? String ?: "",
+                                        tool_instance_name = entryMap["tool_instance_name"] as? String ?: "",
+                                        name = entryMap["name"] as? String ?: "",
+                                        value = entryMap["value"] as? String ?: "",
+                                        recorded_at = (entryMap["recorded_at"] as? Number)?.toLong() ?: 0L,
+                                        created_at = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
+                                        updated_at = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L
+                                    )
+                                    Log.d("TrackingHistory", "Mapped entry: ${data.name} = ${data.value}")
+                                    data
+                                } catch (e: Exception) {
+                                    Log.e("TrackingHistory", "Failed to map entry", e)
+                                    null
+                                }
+                            } else null
+                        }.sortedByDescending { it.recorded_at }
+                        
+                        Log.d("TrackingHistory", "Final trackingData size = ${trackingData.size}")
+                    }
+                    else -> {
+                        errorMessage = "Status: ${result.status}, Error: ${result.error ?: "Erreur lors du chargement"}"
+                        Log.e("TrackingHistory", "Command failed - $errorMessage")
+                    }
+                }
                 
             } catch (e: Exception) {
-                errorMessage = "Erreur lors du chargement: ${e.message}" // TODO: Internationalization
+                errorMessage = "Erreur lors du chargement: ${e.message}"
+                Log.e("TrackingHistory", "Exception during data loading", e)
             } finally {
                 isLoading = false
             }
@@ -62,14 +115,31 @@ fun TrackingHistory(
     val deleteEntry = { entryId: String ->
         scope.launch {
             try {
-                // TODO: Call TrackingService to delete entry - use coordinator
-                // TrackingService.deleteEntry(entryId)
+                // Use coordinator to delete tracking entry
+                val result = coordinator.processUserAction(
+                    "delete->tool_data",
+                    mapOf(
+                        "tool_type" to "tracking",
+                        "operation" to "delete",
+                        "entry_id" to entryId
+                    )
+                )
                 
-                // Simulate delete
-                trackingData = trackingData.filter { it.id != entryId }
+                when (result.status) {
+                    CommandStatus.SUCCESS -> {
+                        // Remove from local state
+                        trackingData = trackingData.filter { it.id != entryId }
+                        Log.d("TrackingHistory", "Deleted entry $entryId successfully")
+                    }
+                    else -> {
+                        errorMessage = result.error ?: "Erreur lors de la suppression"
+                        Log.e("TrackingHistory", "Delete failed: $errorMessage")
+                    }
+                }
                 
             } catch (e: Exception) {
-                errorMessage = "Erreur lors de la suppression: ${e.message}" // TODO: Internationalization
+                errorMessage = "Erreur lors de la suppression: ${e.message}"
+                Log.e("TrackingHistory", "Exception during delete", e)
             }
         }
     }
@@ -156,7 +226,6 @@ fun TrackingHistory(
             TrackingHistoryItem(
                 entry = entry,
                 trackingType = trackingType,
-                dateFormatter = dateFormatter,
                 onDelete = { deleteEntry(entry.id) }
             )
         }
@@ -164,13 +233,12 @@ fun TrackingHistory(
 }
 
 /**
- * Individual history item component
+ * Individual history item component - Compact single-line display
  */
 @Composable
 private fun TrackingHistoryItem(
     entry: TrackingData,
     trackingType: String,
-    dateFormatter: SimpleDateFormat,
     onDelete: () -> Unit
 ) {
     UI.Card(
@@ -183,34 +251,13 @@ private fun TrackingHistoryItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Entry info
-            UI.Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Value display
-                UI.Text(
-                    text = formatTrackingValue(entry, trackingType),
-                    type = TextType.BODY,
-                    semantic = "entry-value"
-                )
-                
-                // Item name if present
-                if (entry.name.isNotBlank()) {
-                    UI.Text(
-                        text = entry.name,
-                        type = TextType.CAPTION,
-                        semantic = "entry-item-name"
-                    )
-                }
-                
-                // Timestamp
-                UI.Text(
-                    text = dateFormatter.format(Date(entry.recorded_at)),
-                    type = TextType.CAPTION,
-                    semantic = "entry-timestamp"
-                )
-            }
+            // Compact entry info on single line: name + value + date
+            UI.Text(
+                text = buildCompactEntryText(entry, trackingType),
+                type = TextType.BODY,
+                semantic = "entry-compact",
+                modifier = Modifier.weight(1f)
+            )
             
             // Delete button
             UI.Button(
@@ -229,27 +276,33 @@ private fun TrackingHistoryItem(
 }
 
 /**
+ * Build compact single-line text: "nom: valeur unité - JJ/MM/AA H:M"
+ */
+private fun buildCompactEntryText(entry: TrackingData, trackingType: String): String {
+    val name = if (entry.name.isNotBlank()) entry.name else "entrée"
+    val value = formatTrackingValue(entry, trackingType)
+    val date = formatCompactDate(entry.recorded_at)
+    
+    return "$name: $value - $date"
+}
+
+/**
  * Format tracking value for display based on type
  */
 private fun formatTrackingValue(entry: TrackingData, trackingType: String): String {
-    return when (trackingType) {
-        "numeric" -> {
-            // Parse JSON value to extract numeric value and unit
-            try {
-                val valueJson = org.json.JSONObject(entry.value)
-                val numericValue = valueJson.optDouble("value", 0.0)
-                val unit = valueJson.optString("unit", "")
-                
-                if (unit.isNotBlank()) {
-                    "${numericValue} $unit"
-                } else {
-                    numericValue.toString()
-                }
-            } catch (e: Exception) {
-                entry.value // Fallback to raw value
-            }
-        }
-        // TODO: Add other tracking types when implemented
-        else -> entry.value
+    // Just get the "raw" field from JSON - that's exactly what user typed
+    try {
+        val valueJson = org.json.JSONObject(entry.value)
+        return valueJson.optString("raw", entry.value)
+    } catch (e: Exception) {
+        return entry.value // Fallback to raw value
     }
+}
+
+/**
+ * Format date for compact display (JJ/MM/AA H:M)
+ */
+private fun formatCompactDate(timestamp: Long): String {
+    val dateFormat = java.text.SimpleDateFormat("dd/MM/yy HH:mm", java.util.Locale.getDefault())
+    return dateFormat.format(java.util.Date(timestamp))
 }

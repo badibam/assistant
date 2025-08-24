@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import org.json.JSONObject
 import kotlinx.coroutines.launch
 
@@ -23,6 +25,7 @@ fun TrackingInput(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val coordinator = remember { Coordinator(context) }
     
     // Extract tracking configuration
     val trackingType = config.optString("type", "numeric")
@@ -54,17 +57,38 @@ fun TrackingInput(
             errorMessage = null
             
             try {
-                // TODO: Call TrackingService to save entry
-                // val result = TrackingService.saveEntry(toolInstanceId, value, name)
+                // Get tool instance info from config or database
+                val toolInstanceName = config.optString("name", "Suivi")
                 
-                // Simulate save for now
-                kotlinx.coroutines.delay(500)
+                // Use value as-is (it's already the correct JSON from NumericTrackingInput)
+                val valueJson = value.toString()
                 
-                successMessage = "Entrée sauvegardée" // TODO: Internationalization
-                onEntrySaved()
+                // Use coordinator to save tracking entry
+                val result = coordinator.processUserAction(
+                    "create->tool_data",
+                    mapOf(
+                        "tool_type" to "tracking",
+                        "operation" to "create",
+                        "tool_instance_id" to toolInstanceId,
+                        "zone_name" to "Zone", // TODO: Get real zone name
+                        "tool_instance_name" to toolInstanceName,
+                        "name" to (name ?: "entrée"),
+                        "value" to valueJson
+                    )
+                )
+                
+                when (result.status) {
+                    CommandStatus.SUCCESS -> {
+                        successMessage = "Entrée sauvegardée"
+                        onEntrySaved()
+                    }
+                    else -> {
+                        errorMessage = result.error ?: "Erreur lors de la sauvegarde"
+                    }
+                }
                 
             } catch (e: Exception) {
-                errorMessage = "Erreur lors de la sauvegarde: ${e.message}" // TODO: Internationalization
+                errorMessage = "Erreur lors de la sauvegarde: ${e.message}"
             } finally {
                 isLoading = false
             }
