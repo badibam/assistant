@@ -149,4 +149,16 @@ interface ThemeContract {
         modifier: Modifier,
         itemContent: @Composable (T) -> Unit
     )
+    
+    @Composable
+    fun ConfirmDialog(
+        isVisible: Boolean,
+        title: String,
+        message: String,
+        confirmText: String,
+        cancelText: String,
+        onConfirm: () -> Unit,
+        onCancel: () -> Unit,
+        modifier: Modifier
+    )
 }

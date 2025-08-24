@@ -246,6 +246,31 @@ object UI {
         modifier = modifier,
         itemContent = itemContent
     )
+    
+    /**
+     * Confirmation dialog - modal dialog for confirming dangerous actions
+     * Shows a title, message, and confirm/cancel buttons
+     */
+    @Composable
+    fun ConfirmDialog(
+        isVisible: Boolean,
+        title: String,
+        message: String,
+        confirmText: String = "Confirmer",
+        cancelText: String = "Annuler",
+        onConfirm: () -> Unit,
+        onCancel: () -> Unit,
+        modifier: Modifier = Modifier
+    ) = CurrentTheme.current.ConfirmDialog(
+        isVisible = isVisible,
+        title = title,
+        message = message,
+        confirmText = confirmText,
+        cancelText = cancelText,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+        modifier = modifier
+    )
 }
 
 // SEMANTIC TYPES

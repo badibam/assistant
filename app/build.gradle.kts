@@ -53,6 +53,12 @@ android {
     }
 }
 
+// TODO: Add build script to auto-generate Vector Drawables from SVG
+// Script should read themes/*/icons/*.svg and generate res/drawable/theme_*_*.xml
+// This will replace manual XML conversion when scaling to multiple themes
+// Implementation: Gradle task that converts SVG → Vector Drawable XML maintaining
+// the {theme}_{icon_name} naming convention for seamless ThemeIconManager compatibility
+
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")

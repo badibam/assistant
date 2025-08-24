@@ -447,4 +447,45 @@ object DefaultTheme : ThemeContract {
             )
         }
     }
+    
+    @Composable
+    override fun ConfirmDialog(
+        isVisible: Boolean,
+        title: String,
+        message: String,
+        confirmText: String,
+        cancelText: String,
+        onConfirm: () -> Unit,
+        onCancel: () -> Unit,
+        modifier: Modifier
+    ) {
+        if (isVisible) {
+            AlertDialog(
+                onDismissRequest = onCancel,
+                title = {
+                    MaterialText(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                },
+                text = {
+                    MaterialText(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = onConfirm) {
+                        MaterialText(confirmText)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onCancel) {
+                        MaterialText(cancelText)
+                    }
+                },
+                modifier = modifier
+            )
+        }
+    }
 }

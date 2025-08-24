@@ -143,3 +143,4 @@ ValidationRequest {
 4. **Phase 4** : Critères de validation configurables
 5. **Phase 5** : Interface validation avancée avec détails/contexte
 6. **Phase 6** : Extensions apprentissage et automatisation
+
