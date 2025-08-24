@@ -66,13 +66,15 @@ fun TrackingConfigScreen(
     
     // Groups and items state
     var groups: MutableList<TrackingGroup> by remember { 
-        mutableStateOf(mutableListOf(TrackingGroup("Default"))) 
+        mutableStateOf(mutableListOf()) 
     }
     
     // UI state for adding items/groups
     var showAddGroup by remember { mutableStateOf(false) }
     var showAddItem by remember { mutableStateOf<Int?>(null) } // Index du groupe
+    var editingGroupIndex by remember { mutableStateOf<Int?>(null) } // Index du groupe en cours d'édition
     var newGroupName by remember { mutableStateOf("") }
+    var editGroupName by remember { mutableStateOf("") }
     var newItemName by remember { mutableStateOf("") }
     var newItemProperties: MutableMap<String, Any> by remember { mutableStateOf(mutableMapOf<String, Any>()) }
     
@@ -469,8 +471,21 @@ fun TrackingConfigScreen(
                     }
                 }
                 
-                // Groups list
-                groups.forEachIndexed { groupIndex, group ->
+                // Groups list or empty state
+                if (groups.isEmpty()) {
+                    UI.Card(
+                        type = CardType.SYSTEM,
+                        semantic = "no-groups",
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        UI.Text(
+                            text = "Aucun groupe défini. Cliquez sur '+ Groupe' pour commencer.",
+                            type = TextType.BODY,
+                            semantic = "empty-state-text"
+                        )
+                    }
+                } else {
+                    groups.forEachIndexed { groupIndex, group ->
                     UI.Card(
                         type = CardType.SYSTEM,
                         semantic = "group-$groupIndex",
@@ -530,6 +545,23 @@ fun TrackingConfigScreen(
                                         }
                                     }
                                     
+                                    // Edit button
+                                    UI.Button(
+                                        type = ButtonType.GHOST,
+                                        semantic = "edit-group-$groupIndex",
+                                        onClick = { 
+                                            editingGroupIndex = groupIndex
+                                            editGroupName = group.name
+                                        },
+                                        enabled = true
+                                    ) {
+                                        UI.Text(
+                                            text = "✎",
+                                            type = TextType.CAPTION,
+                                            semantic = "button-label"
+                                        )
+                                    }
+                                    
                                     UI.Text(
                                         text = group.name,
                                         type = TextType.SUBTITLE,
@@ -555,21 +587,21 @@ fun TrackingConfigScreen(
                                         )
                                     }
                                     
-                                    if (group.name != "Default") { // Can't delete default group
-                                        UI.Button(
-                                            type = ButtonType.DANGER,
-                                            semantic = "delete-group-$groupIndex",
-                                            onClick = { 
-                                                groups.removeAt(groupIndex)
-                                            },
-                                            enabled = true
-                                        ) {
-                                            UI.Text(
-                                                text = "×",
-                                                type = TextType.CAPTION,
-                                                semantic = "button-label"
-                                            )
-                                        }
+                                    UI.Button(
+                                        type = ButtonType.DANGER,
+                                        semantic = "delete-group-$groupIndex",
+                                        onClick = { 
+                                            val newGroups = groups.toMutableList()
+                                            newGroups.removeAt(groupIndex)
+                                            groups = newGroups
+                                        },
+                                        enabled = true
+                                    ) {
+                                        UI.Text(
+                                            text = "×",
+                                            type = TextType.CAPTION,
+                                            semantic = "button-label"
+                                        )
                                     }
                                 }
                             }
@@ -661,7 +693,12 @@ fun TrackingConfigScreen(
                                             type = ButtonType.DANGER,
                                             semantic = "delete-item-$groupIndex-$itemIndex",
                                             onClick = { 
-                                                group.items.removeAt(itemIndex)
+                                                val newGroups = groups.toMutableList()
+                                                val currentGroup = newGroups[groupIndex]
+                                                val newItems = currentGroup.items.toMutableList()
+                                                newItems.removeAt(itemIndex)
+                                                newGroups[groupIndex] = currentGroup.copy(items = newItems)
+                                                groups = newGroups
                                             },
                                             enabled = true
                                         ) {
@@ -693,8 +730,81 @@ fun TrackingConfigScreen(
                                     onCancel = { showAddItem = null }
                                 )
                             }
+                            
+                            // Show edit group form if this group is selected for editing
+                            if (editingGroupIndex == groupIndex) {
+                                UI.Spacer(modifier = Modifier.height(8.dp))
+                                UI.Card(
+                                    type = CardType.ZONE,
+                                    semantic = "edit-group-form-$groupIndex",
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    UI.Column {
+                                        UI.Text(
+                                            text = "Renommer le groupe",
+                                            type = TextType.SUBTITLE,
+                                            semantic = "form-title"
+                                        )
+                                        
+                                        UI.Spacer(modifier = Modifier.height(8.dp))
+                                        
+                                        UI.TextField(
+                                            type = TextFieldType.STANDARD,
+                                            semantic = "edit-group-name",
+                                            value = editGroupName,
+                                            onValueChange = { editGroupName = it },
+                                            placeholder = "Nom du groupe",
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        
+                                        UI.Spacer(modifier = Modifier.height(8.dp))
+                                        
+                                        UI.Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            UI.Button(
+                                                type = ButtonType.SECONDARY,
+                                                semantic = "cancel-edit-group",
+                                                onClick = { 
+                                                    editingGroupIndex = null
+                                                    editGroupName = ""
+                                                },
+                                                enabled = true
+                                            ) {
+                                                UI.Text(
+                                                    text = "Annuler",
+                                                    type = TextType.LABEL,
+                                                    semantic = "button-label"
+                                                )
+                                            }
+                                            
+                                            UI.Button(
+                                                type = ButtonType.PRIMARY,
+                                                semantic = "save-edit-group",
+                                                onClick = { 
+                                                    if (editGroupName.isNotBlank()) {
+                                                        val newGroups = groups.toMutableList()
+                                                        newGroups[groupIndex] = group.copy(name = editGroupName)
+                                                        groups = newGroups
+                                                        editingGroupIndex = null
+                                                        editGroupName = ""
+                                                    }
+                                                },
+                                                enabled = editGroupName.isNotBlank() && editGroupName != group.name
+                                            ) {
+                                                UI.Text(
+                                                    text = "Renommer",
+                                                    type = TextType.LABEL,
+                                                    semantic = "button-label"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+                }
                 }
                 
                 // Show add group form
@@ -1218,7 +1328,9 @@ private fun ChoiceItemProperties(
                             type = ButtonType.DANGER,
                             semantic = "delete-option-$index",
                             onClick = {
-                                options.removeAt(index)
+                                val newOptions = options.toMutableList()
+                                newOptions.removeAt(index)
+                                options = newOptions
                                 properties["options"] = options.toList()
                                 onPropertiesChange(properties)
                             },
