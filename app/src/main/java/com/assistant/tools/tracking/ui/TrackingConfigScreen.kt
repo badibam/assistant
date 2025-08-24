@@ -284,7 +284,7 @@ fun TrackingConfigScreen(
                         )
                         UI.Spacer(modifier = Modifier.height(8.dp))
                         
-                        listOf("Icône", "Minimal", "Ligne", "Condensé", "Étendu", "Complet").forEach { mode ->
+                        listOf("Icône", "Minimal", "Ligne", "Condensé", "Étendu", "Carré", "Complet").forEach { mode ->
                             UI.Button(
                                 type = if (displayMode == mode) ButtonType.PRIMARY else ButtonType.GHOST,
                                 semantic = "display-$mode",

@@ -18,17 +18,17 @@ enum class DisplayMode {
     MINIMAL,     // 1/2 × 1/4 - Icône + Titre côte à côte  
     LINE,        // 1 × 1/4 - Icône + Titre à gauche, contenu libre à droite
     CONDENSED,   // 1/2 × 1/2 - Icône + Titre en haut, reste libre en dessous
-    EXTENDED,    // 1 × 1/2 - Layout flexible selon stratégie
-    FULL         // 1 × ∞ - Layout flexible selon stratégie
+    EXTENDED,    // 1 × 1/2 - Icône + Titre en haut, reste libre en dessous
+    SQUARE,      // 1 × 1 - Icône + Titre en haut, grande zone libre en dessous
+    FULL         // 1 × ∞ - Icône + Titre en haut, zone libre infinie
 }
 
 /**
- * Layout strategies for EXTENDED and FULL modes
+ * Layout strategies for flexible modes
  */
 enum class LayoutStrategy {
-    HORIZONTAL_SPLIT, // Icône+titre à gauche (1/4), zone libre à droite (3/4)
-    VERTICAL_SPLIT,   // Icône+titre en haut (1/4), zone libre dessous (reste)
-    L_SHAPE          // Icône+titre haut-gauche, zone libre droite + dessous
+    HORIZONTAL_SPLIT, // Icône+titre à gauche, zone libre à droite
+    VERTICAL_SPLIT    // Icône+titre en haut, zone libre dessous
 }
 
 /**
@@ -161,148 +161,54 @@ fun ToolInstanceDisplayComponent(
             }
             
             DisplayMode.EXTENDED -> {
-                // Layout flexible selon stratégie pour EXTENDED
-                when (layoutStrategy) {
-                    LayoutStrategy.HORIZONTAL_SPLIT -> {
+                // 1 × 1/2 - Icône + Titre en haut, zone libre dessous
+                UI.Column(
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                ) {
+                    // Header : Icône + Titre (1 ligne)
+                    UI.Box(
+                        modifier = Modifier.fillMaxWidth().height(lineHeight)
+                    ) {
                         UI.Row(
-                            modifier = Modifier.fillMaxSize().padding(8.dp)
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Zone gauche : Icône + Titre (1/4 largeur)
-                            UI.Column(
-                                verticalArrangement = Arrangement.Top,
-                                modifier = Modifier.width(columnWidth).fillMaxHeight()
-                            ) {
-                                UI.Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    icon()
-                                    UI.Text(
-                                        text = title,
-                                        type = TextType.CAPTION,
-                                        semantic = "tool-instance-title"
-                                    )
-                                }
-                            }
-                            
-                            UI.Spacer(modifier = Modifier.width(8.dp))
-                            
-                            // Zone libre droite (3/4 largeur)
-                            UI.Box(
-                                modifier = Modifier.weight(1f).fillMaxHeight()
-                            ) {
-                                val freeSize = DpSize(
-                                    width = columnWidth * 3 - 8.dp,
-                                    height = size.height - 16.dp
-                                )
-                                freeContent("right", freeSize)
-                            }
+                            icon()
+                            UI.Text(
+                                text = title,
+                                type = TextType.SUBTITLE,
+                                semantic = "tool-instance-title"
+                            )
                         }
                     }
                     
-                    LayoutStrategy.VERTICAL_SPLIT -> {
-                        UI.Column(
-                            modifier = Modifier.fillMaxSize().padding(8.dp)
-                        ) {
-                            // Header : Icône + Titre (1 ligne)
-                            UI.Box(
-                                modifier = Modifier.fillMaxWidth().height(lineHeight)
-                            ) {
-                                UI.Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    icon()
-                                    UI.Text(
-                                        text = title,
-                                        type = if (displayMode == DisplayMode.FULL) TextType.TITLE else TextType.SUBTITLE,
-                                        semantic = "tool-instance-title"
-                                    )
-                                }
-                            }
-                            
-                            UI.Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Zone libre dessous
-                            UI.Box(
-                                modifier = Modifier.weight(1f).fillMaxWidth()
-                            ) {
-                                val freeSize = DpSize(
-                                    width = size.width - 16.dp,
-                                    height = size.height - lineHeight - 24.dp
-                                )
-                                freeContent("bottom", freeSize)
-                            }
-                        }
-                    }
+                    UI.Spacer(modifier = Modifier.height(8.dp))
                     
-                    LayoutStrategy.L_SHAPE -> {
-                        UI.Column(
-                            modifier = Modifier.fillMaxSize().padding(8.dp)
-                        ) {
-                            // Ligne haute
-                            UI.Row(
-                                modifier = Modifier.fillMaxWidth().height(lineHeight)
-                            ) {
-                                // Zone gauche : Icône + Titre
-                                UI.Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    icon()
-                                    UI.Text(
-                                        text = title,
-                                        type = if (displayMode == DisplayMode.FULL) TextType.TITLE else TextType.SUBTITLE,
-                                        semantic = "tool-instance-title"
-                                    )
-                                }
-                                
-                                UI.Spacer(modifier = Modifier.width(8.dp))
-                                
-                                // Zone libre droite haute
-                                UI.Box(
-                                    modifier = Modifier.weight(1f).fillMaxHeight()
-                                ) {
-                                    val freeSize = DpSize(
-                                        width = size.width / 2 - 12.dp,
-                                        height = lineHeight
-                                    )
-                                    freeContent("top-right", freeSize)
-                                }
-                            }
-                            
-                            UI.Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Zone libre dessous (toute la largeur)
-                            UI.Box(
-                                modifier = Modifier.weight(1f).fillMaxWidth()
-                            ) {
-                                val freeSize = DpSize(
-                                    width = size.width - 16.dp,
-                                    height = size.height - lineHeight - 24.dp
-                                )
-                                freeContent("bottom", freeSize)
-                            }
-                        }
+                    // Zone libre dessous (1 ligne)
+                    UI.Box(
+                        modifier = Modifier.fillMaxWidth().height(lineHeight)
+                    ) {
+                        val freeSize = DpSize(
+                            width = size.width - 16.dp,
+                            height = lineHeight
+                        )
+                        freeContent("bottom", freeSize)
                     }
                 }
             }
             
-            DisplayMode.FULL -> {
-                // Layout fixe pour FULL : haut droite + dessous complet
+            DisplayMode.SQUARE -> {
+                // 1 × 1 - Icône + Titre en haut, grande zone libre dessous
                 UI.Column(
                     modifier = Modifier.fillMaxSize().padding(8.dp)
                 ) {
-                    // Ligne haute
-                    UI.Row(
+                    // Header : Icône + Titre (1 ligne)
+                    UI.Box(
                         modifier = Modifier.fillMaxWidth().height(lineHeight)
                     ) {
-                        // Zone gauche : Icône + Titre
                         UI.Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             icon()
                             UI.Text(
@@ -311,24 +217,48 @@ fun ToolInstanceDisplayComponent(
                                 semantic = "tool-instance-title"
                             )
                         }
-                        
-                        UI.Spacer(modifier = Modifier.width(8.dp))
-                        
-                        // Zone libre haut droite (petit slot)
-                        UI.Box(
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                    }
+                    
+                    UI.Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Zone libre dessous (3 lignes)
+                    UI.Box(
+                        modifier = Modifier.fillMaxWidth().height(lineHeight * 3)
+                    ) {
+                        val freeSize = DpSize(
+                            width = size.width - 16.dp,
+                            height = lineHeight * 3
+                        )
+                        freeContent("bottom", freeSize)
+                    }
+                }
+            }
+            
+            DisplayMode.FULL -> {
+                // 1 × ∞ - Icône + Titre en haut, zone libre infinie dessous
+                UI.Column(
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                ) {
+                    // Header : Icône + Titre (1 ligne)
+                    UI.Box(
+                        modifier = Modifier.fillMaxWidth().height(lineHeight)
+                    ) {
+                        UI.Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            val freeSize = DpSize(
-                                width = size.width / 2 - 12.dp,
-                                height = lineHeight
+                            icon()
+                            UI.Text(
+                                text = title,
+                                type = TextType.TITLE,
+                                semantic = "tool-instance-title"
                             )
-                            freeContent("top-right", freeSize)
                         }
                     }
                     
                     UI.Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Zone libre dessous (pleine largeur, hauteur infinie)
+                    // Zone libre dessous (hauteur infinie)
                     UI.Box(
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     ) {

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.database.AppDatabase
 import org.json.JSONObject
 import kotlinx.coroutines.launch
 
@@ -57,7 +58,43 @@ fun TrackingInput(
             errorMessage = null
             
             try {
-                // Get tool instance info from config or database
+                // Get tool instance info via coordinator
+                val toolInstanceResult = coordinator.processUserAction(
+                    "get->tool_instance",
+                    mapOf("tool_instance_id" to toolInstanceId)
+                )
+                
+                if (toolInstanceResult.status != CommandStatus.SUCCESS) {
+                    errorMessage = "Impossible de récupérer les informations de l'outil"
+                    return@launch
+                }
+                
+                val toolInstanceData = toolInstanceResult.data?.get("tool_instance") as? Map<String, Any>
+                val zoneId = toolInstanceData?.get("zone_id") as? String
+                
+                if (zoneId == null) {
+                    errorMessage = "Zone introuvable pour cet outil"
+                    return@launch
+                }
+                
+                val zoneResult = coordinator.processUserAction(
+                    "get->zone",
+                    mapOf("zone_id" to zoneId)
+                )
+                
+                if (zoneResult.status != CommandStatus.SUCCESS) {
+                    errorMessage = "Impossible de récupérer les informations de la zone"
+                    return@launch
+                }
+                
+                val zoneData = zoneResult.data?.get("zone") as? Map<String, Any>
+                val zoneName = zoneData?.get("name") as? String
+                
+                if (zoneName == null) {
+                    errorMessage = "Nom de zone introuvable"
+                    return@launch
+                }
+                
                 val toolInstanceName = config.optString("name", "Suivi")
                 
                 // Use value as-is (it's already the correct JSON from NumericTrackingInput)
@@ -70,7 +107,7 @@ fun TrackingInput(
                         "tool_type" to "tracking",
                         "operation" to "create",
                         "tool_instance_id" to toolInstanceId,
-                        "zone_name" to "Zone", // TODO: Get real zone name
+                        "zone_name" to zoneName,
                         "tool_instance_name" to toolInstanceName,
                         "name" to (name ?: "entrée"),
                         "value" to valueJson

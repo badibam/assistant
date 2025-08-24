@@ -341,6 +341,7 @@ fun ZoneScreen(
                             "Ligne" -> DisplayMode.LINE
                             "Condensé" -> DisplayMode.CONDENSED
                             "Étendu" -> DisplayMode.EXTENDED
+                            "Carré" -> DisplayMode.SQUARE
                             "Complet" -> DisplayMode.FULL
                             else -> DisplayMode.ICON
                         }
@@ -352,7 +353,8 @@ fun ZoneScreen(
                             DisplayMode.LINE -> DpSize(availableWidth, gridUnit) // 1 × 1/4
                             DisplayMode.CONDENSED -> DpSize(gridUnit * 2, gridUnit * 2) // 1/2 × 1/2
                             DisplayMode.EXTENDED -> DpSize(availableWidth, gridUnit * 2) // 1 × 1/2
-                            DisplayMode.FULL -> DpSize(availableWidth, gridUnit * 4) // 1 × 1 (pour test)
+                            DisplayMode.SQUARE -> DpSize(availableWidth, gridUnit * 4) // 1 × 1
+                            DisplayMode.FULL -> DpSize(availableWidth, gridUnit * 6) // 1 × ∞ (pour test, 6 unités)
                         }
                         
                         // Récupérer le nom de l'outil et l'icône depuis la config

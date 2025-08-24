@@ -1,0 +1,109 @@
+═══════════════════════════════════════════════════════════════════════════════
+                         TODOS DU PROJET - ORGANISÉS PAR THÈME
+═══════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                IA & PROMPTS                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:16:        // TODO: Gather base prompt fragments
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:17:        // TODO: Add contextual information
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:18:        // TODO: Include relevant metadata
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:19:        // TODO: Apply token optimization
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:29:        // TODO: Parse response for JSON commands
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:30:        // TODO: Extract dialogue messages
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:31:        // TODO: Validate command structure
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:41:        // TODO: Load tool-specific documentation fragments
+./app/src/main/java/com/assistant/ai/prompts/PromptManager.kt:42:        // TODO: Include command interface docs
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           COORDINATEUR & VALIDATION                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/core/coordinator/Coordinator.kt:238:    // TODO: Implement command handlers
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:20:        // TODO: Load validation rules from metadata
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:21:        // TODO: Apply source-specific rules (AI vs User vs Scheduler)
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:22:        // TODO: Consider operation criticality
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:23:        // TODO: Check user preferences
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:37:        // TODO: Generate human-readable description
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:38:        // TODO: Include affected data summary
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:39:        // TODO: Show risks/consequences
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:54:        // TODO: Log validation decision
+./app/src/main/java/com/assistant/core/coordinator/ValidationManager.kt:55:        // TODO: Update validation preferences if needed
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              BACKUP & DONNÉES                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/core/services/BackupService.kt:16:        // TODO: Collect all data from database
+./app/src/main/java/com/assistant/core/services/BackupService.kt:17:        // TODO: Create backup archive
+./app/src/main/java/com/assistant/core/services/BackupService.kt:18:        // TODO: Store to configured backup location
+./app/src/main/java/com/assistant/core/services/BackupService.kt:28:        // TODO: Identify changes since last backup
+./app/src/main/java/com/assistant/core/services/BackupService.kt:29:        // TODO: Create incremental backup
+./app/src/main/java/com/assistant/core/services/BackupService.kt:39:        // TODO: Validate backup file
+./app/src/main/java/com/assistant/core/services/BackupService.kt:40:        // TODO: Restore database
+./app/src/main/java/com/assistant/core/services/BackupService.kt:41:        // TODO: Handle conflicts
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                            FORMATAGE & UTILS                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/core/utils/NumberFormatting.kt:9:    // TODO: Implement locale-based decimal separator detection based on Locale.getDefault()
+./app/src/main/java/com/assistant/core/utils/NumberFormatting.kt:28:        // TODO: Handle more complex cases:
+./app/src/main/java/com/assistant/core/utils/NumberFormatting.kt:45:            // TODO: Implement proper locale-aware parsing:
+./app/src/main/java/com/assistant/core/utils/NumberFormatting.kt:63:    // TODO: Add more formatting utilities as needed:
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              TRACKING TOOL                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/tools/tracking/TrackingToolType.kt:44:        // TODO: Define custom JSON Schema extension fields for AI and UI context
+./app/src/main/java/com/assistant/tools/tracking/TrackingToolType.kt:210:                // TODO: Add validation for other tracking types when implemented
+./app/src/main/java/com/assistant/tools/tracking/ui/inputs/TrackingInput.kt:172:                    text = "Type de suivi non supporté: $trackingType", // TODO: Internationalization
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingConfigScreen.kt:96:    // TODO: Remplacer par ThemeIconManager.getAvailableIcons("default") quand implémenté
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingHistory.kt:163:                text = "Historique des entrées", // TODO: Internationalization
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingHistory.kt:178:                        text = "↻", // TODO: Use proper refresh icon
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingHistory.kt:189:                type = CardType.SYSTEM, // TODO: Add ERROR card type
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingHistory.kt:217:                    text = "Aucune entrée enregistrée", // TODO: Internationalization
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingScreen.kt:95:                        text = "Type: $trackingType", // TODO: Internationalization - use stringResource
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingScreen.kt:111:                    text = "Nouvelle entrée", // TODO: Internationalization - use stringResource
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingScreen.kt:136:                    text = "Historique", // TODO: Internationalization - use stringResource
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingScreen.kt:162:                    text = "Retour", // TODO: Internationalization - use stringResource
+./app/src/main/java/com/assistant/tools/tracking/ui/TrackingScreen.kt:171:// TODO: Internationalization - Create strings.xml entries for tracking types and all UI text
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              INTERFACE UI                                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+./app/src/main/java/com/assistant/MainActivity.kt:27:        // TODO: Preload icons for current theme
+./app/src/main/java/com/assistant/ui/screens/CreateZoneScreen.kt:224:                                // TODO: Gestion d'erreur
+./app/src/main/java/com/assistant/ui/screens/CreateZoneScreen.kt:275:                                        // TODO: Gestion d'erreur
+./app/src/main/java/com/assistant/ui/screens/MainScreen.kt:59:            // TODO: Error handling
+./app/src/main/java/com/assistant/ui/screens/MainScreen.kt:89:                // TODO: Error handling
+./app/src/main/java/com/assistant/ui/screens/MainScreen.kt:284:                    // TODO: Toggle AI dialogue interface
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:69:            // TODO: Error handling
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:101:                // TODO: Error handling
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:148:                    // TODO: Gestion d'erreur
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:165:                    // TODO: Gestion d'erreur
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:186:                    // TODO: Gestion d'erreur
+./app/src/main/java/com/assistant/ui/screens/ZoneScreen.kt:323:                val currentTheme = "default" // TODO: val currentTheme = ThemeManager.getCurrentThemeName()
+
+═══════════════════════════════════════════════════════════════════════════════
+                                   RÉSUMÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+Total: 58 TODOs répartis en 6 thèmes principaux:
+• IA & PROMPTS: 9 tâches (système de prompts à implémenter)
+• COORDINATEUR & VALIDATION: 10 tâches (validation et gestion des commandes)
+• BACKUP & DONNÉES: 8 tâches (sauvegarde et restauration)
+• FORMATAGE & UTILS: 4 tâches (formatage des nombres et locale)
+• TRACKING TOOL: 15 tâches (internationalisation et fonctionnalités)
+• INTERFACE UI: 12 tâches (gestion d'erreurs et thèmes)
+
+Priorités suggérées:
+1. COORDINATEUR & VALIDATION (fonctionnalités core)
+2. IA & PROMPTS (architecture centrale)
+3. INTERFACE UI (amélioration UX)
+4. TRACKING TOOL (outil principal)
+5. FORMATAGE & UTILS (amélioration qualité)
+6. BACKUP & DONNÉES (fonctionnalité avancée)
