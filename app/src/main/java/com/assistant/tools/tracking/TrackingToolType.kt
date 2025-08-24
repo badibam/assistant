@@ -9,6 +9,7 @@ import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
+import com.assistant.tools.tracking.ui.TrackingScreen
 
 /**
  * Tracking Tool Type implementation
@@ -22,16 +23,18 @@ object TrackingToolType : ToolTypeContract {
         return """
         {
             "name": "",
-            "type": "numeric",
+            "description": "",
+            "management": "",
+            "config_validation": false,
+            "data_validation": false,
+            "display_mode": "",
+            "icon_name": "activity",
+            "type": "",
             "show_value": true,
-            "item_mode": "free",
+            "item_mode": "",
             "save_new_items": false,
-            "groups": [
-                {
-                    "name": "Default",
-                    "items": []
-                }
-            ]
+            "auto_switch": false,
+            "groups": []
         }
         """.trimIndent()
     }
@@ -155,5 +158,20 @@ object TrackingToolType : ToolTypeContract {
     
     override fun getDatabaseEntities(): List<Class<*>> {
         return listOf(TrackingData::class.java)
+    }
+    
+    @Composable
+    override fun getUsageScreen(
+        toolInstanceId: String,
+        configJson: String,
+        onNavigateBack: () -> Unit,
+        onLongClick: () -> Unit
+    ) {
+        TrackingScreen(
+            toolInstanceId = toolInstanceId,
+            configJson = configJson,
+            onNavigateBack = onNavigateBack,
+            onLongClick = onLongClick
+        )
     }
 }

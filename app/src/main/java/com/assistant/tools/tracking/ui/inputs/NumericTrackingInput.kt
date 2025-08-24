@@ -83,11 +83,15 @@ fun NumericTrackingInput(
         }
     }
     
+    // Extract item mode from config
+    val itemMode = config.optString("item_mode", "free")
+    
     UI.Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Free text entry line
-        UI.Card(type = CardType.DATA_ENTRY) {
+        // Free text entry line (show if mode is "free" or "both")
+        if (itemMode == "free" || itemMode == "both") {
+            UI.Card(type = CardType.DATA_ENTRY) {
             UI.Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -199,9 +203,11 @@ fun NumericTrackingInput(
                 }
             }
         }
+        }
         
-        // Groups sections with predefined items
-        groupsData.forEach { (groupName, items) ->
+        // Groups sections with predefined items (show if mode is "predefined" or "both")
+        if (itemMode == "predefined" || itemMode == "both") {
+            groupsData.forEach { (groupName, items) ->
             UI.Card(type = CardType.DATA_ENTRY) {
                 UI.Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -279,6 +285,7 @@ fun NumericTrackingInput(
                     }
                 }
             }
+        }
         }
     }
 }

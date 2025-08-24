@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.themes.base.*
 import com.assistant.themes.base.ThemeIconManager
 import com.assistant.ui.components.ToolIcon
+import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.R
 import org.json.JSONArray
 import org.json.JSONObject
@@ -48,21 +49,21 @@ fun TrackingConfigScreen(
     // Mode detection
     val isEditing = existingConfig != null && existingToolId != null
     
-    // Configuration state
+    // Configuration state - will be initialized from getDefaultConfig() or existing config
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var management by remember { mutableStateOf("Manuel") }
-    var configValidation by remember { mutableStateOf(true) }
-    var dataValidation by remember { mutableStateOf(true) }
-    var displayMode by remember { mutableStateOf("Icône") }
+    var management by remember { mutableStateOf("") }
+    var configValidation by remember { mutableStateOf(false) }
+    var dataValidation by remember { mutableStateOf(false) }
+    var displayMode by remember { mutableStateOf("") }
     var iconName by remember { mutableStateOf("activity") }
     
     // Tracking-specific state
-    var trackingType by remember { mutableStateOf("numeric") }
-    var showValue by remember { mutableStateOf(true) }
-    var itemMode by remember { mutableStateOf("free") }
+    var trackingType by remember { mutableStateOf("") }
+    var showValue by remember { mutableStateOf(false) }
+    var itemMode by remember { mutableStateOf("") }
     var saveNewItems by remember { mutableStateOf(false) }
-    var autoSwitch by remember { mutableStateOf(true) }
+    var autoSwitch by remember { mutableStateOf(false) }
     
     // Groups and items state
     var groups: MutableList<TrackingGroup> by remember { 
@@ -86,63 +87,63 @@ fun TrackingConfigScreen(
     
     // TODO: Remplacer par ThemeIconManager.getAvailableIcons("default") quand implémenté
     
-    // Load existing config if provided
+    // Load configuration - existing config or default config for new tools
     LaunchedEffect(existingConfig) {
-        existingConfig?.let { configJson ->
-            try {
-                val config = JSONObject(configJson)
-                
-                // Common fields
-                name = config.optString("name", "")
-                description = config.optString("description", "")
-                management = config.optString("management", "Manuel")
-                configValidation = config.optBoolean("config_validation", true)
-                dataValidation = config.optBoolean("data_validation", true)
-                displayMode = config.optString("display_mode", "Icône")
-                iconName = config.optString("icon_name").ifEmpty { "activity" }
-                
-                // Tracking-specific fields
-                trackingType = config.optString("type", "numeric")
-                showValue = config.optBoolean("show_value", true)
-                itemMode = config.optString("item_mode", "free")
-                saveNewItems = config.optBoolean("save_new_items", false)
-                autoSwitch = config.optBoolean("auto_switch", true)
-                
-                // Groups and items
-                val groupsArray = config.optJSONArray("groups")
-                if (groupsArray != null) {
-                    val loadedGroups = mutableListOf<TrackingGroup>()
-                    for (i in 0 until groupsArray.length()) {
-                        val groupObj = groupsArray.getJSONObject(i)
-                        val groupName = groupObj.getString("name")
-                        val itemsArray = groupObj.optJSONArray("items")
-                        val items = mutableListOf<TrackingItem>()
-                        
-                        if (itemsArray != null) {
-                            for (j in 0 until itemsArray.length()) {
-                                val itemObj = itemsArray.getJSONObject(j)
-                                val itemName = itemObj.getString("name")
-                                val properties = mutableMapOf<String, Any>()
-                                
-                                // Load all properties except name
-                                itemObj.keys().forEach { key ->
-                                    if (key != "name") {
-                                        properties[key] = itemObj.get(key)
-                                    }
+        val configToLoad = existingConfig ?: TrackingToolType.getDefaultConfig()
+        
+        try {
+            val config = JSONObject(configToLoad)
+            
+            // Common fields
+            name = config.optString("name", "")
+            description = config.optString("description", "")
+            management = config.optString("management", "")
+            configValidation = config.optBoolean("config_validation", false)
+            dataValidation = config.optBoolean("data_validation", false)
+            displayMode = config.optString("display_mode", "")
+            iconName = config.optString("icon_name", "activity")
+            
+            // Tracking-specific fields
+            trackingType = config.optString("type", "")
+            showValue = config.optBoolean("show_value", false)
+            itemMode = config.optString("item_mode", "")
+            saveNewItems = config.optBoolean("save_new_items", false)
+            autoSwitch = config.optBoolean("auto_switch", false)
+            
+            // Groups and items
+            val groupsArray = config.optJSONArray("groups")
+            if (groupsArray != null) {
+                val loadedGroups = mutableListOf<TrackingGroup>()
+                for (i in 0 until groupsArray.length()) {
+                    val groupObj = groupsArray.getJSONObject(i)
+                    val groupName = groupObj.getString("name")
+                    val itemsArray = groupObj.optJSONArray("items")
+                    val items = mutableListOf<TrackingItem>()
+                    
+                    if (itemsArray != null) {
+                        for (j in 0 until itemsArray.length()) {
+                            val itemObj = itemsArray.getJSONObject(j)
+                            val itemName = itemObj.getString("name")
+                            val properties = mutableMapOf<String, Any>()
+                            
+                            // Load all properties except name
+                            itemObj.keys().forEach { key ->
+                                if (key != "name") {
+                                    properties[key] = itemObj.get(key)
                                 }
-                                
-                                items.add(TrackingItem(itemName, properties))
                             }
+                            
+                            items.add(TrackingItem(itemName, properties))
                         }
-                        
-                        loadedGroups.add(TrackingGroup(groupName, items))
                     }
-                    groups = loadedGroups
+                    
+                    loadedGroups.add(TrackingGroup(groupName, items))
                 }
-                
-            } catch (e: Exception) {
+                groups = loadedGroups
             }
-        } ?: run {
+            
+        } catch (e: Exception) {
+            // Fallback to empty state if JSON parsing fails
         }
     }
     
@@ -401,6 +402,76 @@ fun TrackingConfigScreen(
                     }
                 }
                 
+                // Show value option
+                UI.Card(
+                    type = CardType.SYSTEM,
+                    semantic = "show-value-selection",
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    UI.Column {
+                        UI.Text(
+                            text = "Affichage des valeurs",
+                            type = TextType.SUBTITLE,
+                            semantic = "field-label"
+                        )
+                        UI.Spacer(modifier = Modifier.height(8.dp))
+                        
+                        listOf(
+                            true to "Afficher les champs de valeur",
+                            false to "Masquer les champs de valeur"
+                        ).forEach { (value, label) ->
+                            UI.Button(
+                                type = if (showValue == value) ButtonType.PRIMARY else ButtonType.GHOST,
+                                semantic = "show-value-$value",
+                                onClick = { showValue = value },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                            ) {
+                                UI.Text(
+                                    text = label,
+                                    type = TextType.LABEL,
+                                    semantic = "button-label"
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Save new items option (only if item mode allows free entry)
+                if (itemMode == "free" || itemMode == "both") {
+                    UI.Card(
+                        type = CardType.SYSTEM,
+                        semantic = "save-new-items-selection",
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        UI.Column {
+                            UI.Text(
+                                text = "Sauvegarde des nouveaux items",
+                                type = TextType.SUBTITLE,
+                                semantic = "field-label"
+                            )
+                            UI.Spacer(modifier = Modifier.height(8.dp))
+                            
+                            listOf(
+                                true to "Sauvegarder automatiquement les nouveaux items",
+                                false to "Ne pas sauvegarder les nouveaux items"
+                            ).forEach { (value, label) ->
+                                UI.Button(
+                                    type = if (saveNewItems == value) ButtonType.PRIMARY else ButtonType.GHOST,
+                                    semantic = "save-new-items-$value",
+                                    onClick = { saveNewItems = value },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                                ) {
+                                    UI.Text(
+                                        text = label,
+                                        type = TextType.LABEL,
+                                        semantic = "button-label"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // Auto-switch (only for duration)
                 if (trackingType == "duration") {
                     UI.Card(
@@ -570,21 +641,24 @@ fun TrackingConfigScreen(
                                 }
                                 
                                 UI.Row {
-                                    UI.Button(
-                                        type = ButtonType.GHOST,
-                                        semantic = "add-item-$groupIndex",
-                                        onClick = { 
-                                            showAddItem = groupIndex
-                                            newItemName = ""
-                                            newItemProperties.clear()
-                                        },
-                                        enabled = true
-                                    ) {
-                                        UI.Text(
-                                            text = "+ Item",
-                                            type = TextType.CAPTION,
-                                            semantic = "button-label"
-                                        )
+                                    // Add item button (only show if not in free mode)
+                                    if (itemMode != "free") {
+                                        UI.Button(
+                                            type = ButtonType.GHOST,
+                                            semantic = "add-item-$groupIndex",
+                                            onClick = { 
+                                                showAddItem = groupIndex
+                                                newItemName = ""
+                                                newItemProperties.clear()
+                                            },
+                                            enabled = true
+                                        ) {
+                                            UI.Text(
+                                                text = "+ Item",
+                                                type = TextType.CAPTION,
+                                                semantic = "button-label"
+                                            )
+                                        }
                                     }
                                     
                                     UI.Button(
@@ -608,8 +682,9 @@ fun TrackingConfigScreen(
                             
                             UI.Spacer(modifier = Modifier.height(8.dp))
                             
-                            // Items in group
-                            group.items.forEachIndexed { itemIndex, item ->
+                            // Items in group (only show if not in free mode)
+                            if (itemMode != "free") {
+                                group.items.forEachIndexed { itemIndex, item ->
                                 UI.Card(
                                     type = CardType.ZONE,
                                     semantic = "item-$groupIndex-$itemIndex",
@@ -711,9 +786,10 @@ fun TrackingConfigScreen(
                                     }
                                 }
                             }
+                            }
                             
-                            // Show add item form if this group is selected
-                            if (showAddItem == groupIndex) {
+                            // Show add item form if this group is selected (only if not in free mode)
+                            if (itemMode != "free" && showAddItem == groupIndex) {
                                 UI.Spacer(modifier = Modifier.height(8.dp))
                                 AddItemForm(
                                     trackingType = trackingType,
