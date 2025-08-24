@@ -27,6 +27,14 @@ data class TrackingItem(
 )
 
 /**
+ * Data class for icon selection
+ */
+data class IconOption(
+    val id: String,
+    val name: String
+)
+
+/**
  * Configuration screen for Tracking tool type
  * Handles common fields + tracking-specific configuration
  */
@@ -57,7 +65,6 @@ fun TrackingConfigScreen(
     var trackingType by remember { mutableStateOf("") }
     var showValue by remember { mutableStateOf(false) }
     var itemMode by remember { mutableStateOf("") }
-    var saveNewItems by remember { mutableStateOf(false) }
     var autoSwitch by remember { mutableStateOf(false) }
     
     // Items management state
@@ -80,7 +87,10 @@ fun TrackingConfigScreen(
     var pendingTrackingType by remember { mutableStateOf<String?>(null) }
     
     // Liste des icônes disponibles (hardcodée pour l'instant)
-    val availableIcons = listOf("activity", "trending-up")
+    val availableIcons = listOf(
+        IconOption("activity", "Activité"),
+        IconOption("trending-up", "Progression")
+    )
     
     // TODO: Remplacer par ThemeIconManager.getAvailableIcons("default") quand implémenté
     
@@ -104,7 +114,6 @@ fun TrackingConfigScreen(
             trackingType = config.optString("type", "")
             showValue = config.optBoolean("show_value", false)
             itemMode = config.optString("item_mode", "")
-            saveNewItems = config.optBoolean("save_new_items", false)
             autoSwitch = config.optBoolean("auto_switch", false)
             
             // Items
@@ -149,7 +158,6 @@ fun TrackingConfigScreen(
             put("type", trackingType)
             put("show_value", showValue)
             put("item_mode", itemMode)
-            put("save_new_items", saveNewItems)
             put("auto_switch", autoSwitch)
             put("items", JSONArray().apply {
                 items.forEach { item ->
@@ -342,6 +350,15 @@ fun TrackingConfigScreen(
                                         // No items or same type, change directly
                                         trackingType = value
                                     }
+                                    
+                                    // Close AddItemForm dialog if open when type changes
+                                    if (showAddItem && trackingType != value) {
+                                        showAddItem = false
+                                        editingItemIndex = null
+                                        newItemName = ""
+                                        editItemName = ""
+                                        newItemProperties.clear()
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
                             ) {
@@ -390,63 +407,29 @@ fun TrackingConfigScreen(
                     }
                 }
                 
-                // Show value option
-                UI.Card(
-                    type = CardType.SYSTEM,
-                    semantic = "show-value-selection",
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    UI.Column {
-                        UI.Text(
-                            text = "Affichage des valeurs",
-                            type = TextType.SUBTITLE,
-                            semantic = "field-label"
-                        )
-                        UI.Spacer(modifier = Modifier.height(8.dp))
-                        
-                        listOf(
-                            true to "Afficher les champs de valeur",
-                            false to "Masquer les champs de valeur"
-                        ).forEach { (value, label) ->
-                            UI.Button(
-                                type = if (showValue == value) ButtonType.PRIMARY else ButtonType.GHOST,
-                                semantic = "show-value-$value",
-                                onClick = { showValue = value },
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                            ) {
-                                UI.Text(
-                                    text = label,
-                                    type = TextType.LABEL,
-                                    semantic = "button-label"
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                // Save new items option (only if item mode allows free entry)
-                if (itemMode == "free" || itemMode == "both") {
+                // Show value option (only for predefined and mixed modes)
+                if (itemMode == "predefined" || itemMode == "both") {
                     UI.Card(
                         type = CardType.SYSTEM,
-                        semantic = "save-new-items-selection",
+                        semantic = "show-value-selection",
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         UI.Column {
                             UI.Text(
-                                text = "Sauvegarde des nouveaux items",
+                                text = "Affichage des valeurs",
                                 type = TextType.SUBTITLE,
                                 semantic = "field-label"
                             )
                             UI.Spacer(modifier = Modifier.height(8.dp))
                             
                             listOf(
-                                true to "Sauvegarder automatiquement les nouveaux items",
-                                false to "Ne pas sauvegarder les nouveaux items"
+                                true to "Afficher les champs de valeur",
+                                false to "Masquer les champs de valeur"
                             ).forEach { (value, label) ->
                                 UI.Button(
-                                    type = if (saveNewItems == value) ButtonType.PRIMARY else ButtonType.GHOST,
-                                    semantic = "save-new-items-$value",
-                                    onClick = { saveNewItems = value },
+                                    type = if (showValue == value) ButtonType.PRIMARY else ButtonType.GHOST,
+                                    semantic = "show-value-$value",
+                                    onClick = { showValue = value },
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
                                 ) {
                                     UI.Text(
@@ -825,6 +808,15 @@ fun TrackingConfigScreen(
                 }
                 showTypeChangeWarning = false
                 pendingTrackingType = null
+                
+                // Close AddItemForm dialog if open when type changes via confirmation
+                if (showAddItem) {
+                    showAddItem = false
+                    editingItemIndex = null
+                    newItemName = ""
+                    editItemName = ""
+                    newItemProperties.clear()
+                }
             },
             onCancel = {
                 showTypeChangeWarning = false
@@ -874,64 +866,40 @@ fun TrackingConfigScreen(
             )
         }
         
-        // Icon selector
-        if (showIconSelector) {
-            UI.Card(
-                type = CardType.ZONE,
-                semantic = "icon-selector",
-                modifier = Modifier.fillMaxWidth()
+        // Icon selector dialog
+        UI.SelectionDialog(
+            isVisible = showIconSelector,
+            title = "Choisir une icône",
+            items = availableIcons,
+            selectedItem = availableIcons.find { it.id == iconName },
+            onItemSelected = { selectedIcon ->
+                iconName = selectedIcon.id
+                showIconSelector = false
+            },
+            onDismiss = { showIconSelector = false }
+        ) { icon ->
+            UI.Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(8.dp)
             ) {
-                UI.Column {
-                    UI.Text(
-                        text = "Choisir une icône",
-                        type = TextType.SUBTITLE,
-                        semantic = "selector-title"
-                    )
-                    
-                    UI.Spacer(modifier = Modifier.height(8.dp))
-                    
-                    UI.Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        availableIcons.forEach { icon ->
-                            UI.Button(
-                                type = if (iconName == icon) ButtonType.PRIMARY else ButtonType.GHOST,
-                                semantic = "icon-$icon",
-                                onClick = { 
-                                    iconName = icon
-                                    showIconSelector = false
-                                }
-                            ) {
-                                val context = LocalContext.current
-                                val iconResource = try {
-                                    ThemeIconManager.getIconResource(context, "default", icon)
-                                } catch (e: IllegalArgumentException) {
-                                    ThemeIconManager.getIconResource(context, "default", "activity")
-                                }
-                                
-                                ToolIcon(
-                                    iconResource = iconResource,
-                                    size = 24.dp
-                                )
-                            }
-                        }
-                    }
-                    
-                    UI.Spacer(modifier = Modifier.height(8.dp))
-                    
-                    UI.Button(
-                        type = ButtonType.SECONDARY,
-                        semantic = "close-icon-selector",
-                        onClick = { showIconSelector = false },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        UI.Text(
-                            text = "Fermer",
-                            type = TextType.LABEL,
-                            semantic = "button-label"
-                        )
-                    }
+                val context = LocalContext.current
+                val iconResource = try {
+                    ThemeIconManager.getIconResource(context, "default", icon.id)
+                } catch (e: IllegalArgumentException) {
+                    ThemeIconManager.getIconResource(context, "default", "activity")
                 }
+                
+                ToolIcon(
+                    iconResource = iconResource,
+                    size = 24.dp
+                )
+                
+                UI.Text(
+                    text = icon.name,
+                    type = TextType.BODY,
+                    semantic = "icon-name"
+                )
             }
         }
     }

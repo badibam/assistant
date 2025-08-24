@@ -32,7 +32,6 @@ object TrackingToolType : ToolTypeContract {
             "type": "",
             "show_value": true,
             "item_mode": "",
-            "save_new_items": false,
             "auto_switch": false
         }
         """.trimIndent()
@@ -64,11 +63,6 @@ object TrackingToolType : ToolTypeContract {
                 "values": ["free", "predefined", "both"],
                 "default": "free",
                 "description": "Item input mode: free text, predefined list, or both"
-            },
-            "save_new_items": {
-                "type": "boolean",
-                "default": false,
-                "description": "Whether to save new free-text items to predefined list"
             },
             "auto_switch": {
                 "type": "boolean",
