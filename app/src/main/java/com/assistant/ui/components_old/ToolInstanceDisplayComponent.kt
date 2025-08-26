@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.assistant.themes.base.*
+import com.assistant.ui.core.*
 
 /**
  * Display modes for tool instances in zones

@@ -1,4 +1,4 @@
-package com.assistant.themes.base
+package com.assistant.ui.core
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable

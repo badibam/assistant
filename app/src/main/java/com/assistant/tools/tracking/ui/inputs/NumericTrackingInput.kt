@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.assistant.themes.base.*
+import com.assistant.ui.core.*
 import com.assistant.core.utils.NumberFormatting
 import org.json.JSONArray
 import org.json.JSONObject

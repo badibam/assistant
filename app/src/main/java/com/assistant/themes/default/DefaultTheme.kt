@@ -1,519 +1,355 @@
 package com.assistant.themes.default
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.Text as MaterialText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.assistant.themes.base.*
-import com.assistant.themes.base.TextFieldType
-import androidx.compose.foundation.layout.Column as ComposeColumn
-import androidx.compose.foundation.layout.Row as ComposeRow
-import androidx.compose.foundation.layout.Box as ComposeBox
-import androidx.compose.foundation.layout.Spacer as ComposeSpacer
+import com.assistant.ui.core.*
 
 /**
- * Default theme implementation - clean Material 3 design
+ * DefaultTheme - Implémentation par défaut du ThemeContract
+ * 
+ * Thème moderne basé sur Material 3 avec nos types sémantiques
+ * UNIQUEMENT les éléments convenus dans UI_DECISIONS.md
  */
 object DefaultTheme : ThemeContract {
     
-    // BASIC LAYOUT COMPONENTS
+    // =====================================
+    // LAYOUT
+    // =====================================
+    
     @Composable
-    override fun Column(
-        modifier: Modifier,
-        verticalArrangement: Arrangement.Vertical,
-        horizontalAlignment: Alignment.Horizontal,
-        content: @Composable ColumnScope.() -> Unit
-    ) {
-        ComposeColumn(
-            modifier = modifier,
-            verticalArrangement = verticalArrangement,
-            horizontalAlignment = horizontalAlignment,
-            content = content
-        )
+    override fun Column(content: @Composable ColumnScope.() -> Unit) {
+        androidx.compose.foundation.layout.Column(content = content)
     }
     
     @Composable
-    override fun Row(
-        modifier: Modifier,
-        horizontalArrangement: Arrangement.Horizontal,
-        verticalAlignment: Alignment.Vertical,
-        content: @Composable RowScope.() -> Unit
-    ) {
-        ComposeRow(
-            modifier = modifier,
-            horizontalArrangement = horizontalArrangement,
-            verticalAlignment = verticalAlignment,
-            content = content
-        )
+    override fun Row(content: @Composable RowScope.() -> Unit) {
+        androidx.compose.foundation.layout.Row(content = content)
     }
     
     @Composable
-    override fun Box(
-        modifier: Modifier,
-        contentAlignment: Alignment,
-        content: @Composable BoxScope.() -> Unit
-    ) {
-        ComposeBox(
-            modifier = modifier,
-            contentAlignment = contentAlignment,
-            content = content
-        )
+    override fun Box(content: @Composable BoxScope.() -> Unit) {
+        androidx.compose.foundation.layout.Box(content = content)
     }
     
     @Composable
     override fun Spacer(modifier: Modifier) {
-        ComposeSpacer(modifier = modifier)
+        androidx.compose.foundation.layout.Spacer(modifier = modifier)
     }
     
-    // SEMANTIC LAYOUT COMPONENTS
-    @Composable
-    override fun Screen(
-        type: ScreenType,
-        modifier: Modifier,
-        content: @Composable () -> Unit
-    ) {
-        ComposeColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            content()
-        }
-    }
-    
-    @Composable
-    override fun Container(
-        type: ContainerType,
-        modifier: Modifier,
-        content: @Composable () -> Unit
-    ) {
-        val containerModifier = when (type) {
-            ContainerType.PRIMARY -> modifier.fillMaxWidth()
-            ContainerType.SECONDARY -> modifier.fillMaxWidth().padding(8.dp)
-            ContainerType.SIDEBAR -> modifier.width(250.dp)
-            ContainerType.FLOATING -> modifier.padding(16.dp)
-        }
-        
-        ComposeColumn(modifier = containerModifier) {
-            content()
-        }
-    }
-    
-    @Composable
-    override fun Card(
-        type: CardType,
-        semantic: String,
-        modifier: Modifier,
-        content: @Composable () -> Unit
-    ) {
-        val cardColors = when (type) {
-            CardType.ZONE -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            CardType.TOOL -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-            CardType.DATA_ENTRY -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            CardType.SYSTEM -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        }
-        
-        Card(
-            modifier = modifier.padding(4.dp),
-            colors = cardColors,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            ComposeBox(modifier = Modifier.padding(16.dp)) {
-                content()
-            }
-        }
-    }
+    // =====================================
+    // INTERACTIVE
+    // =====================================
     
     @Composable
     override fun Button(
         type: ButtonType,
-        semantic: String,
+        size: Size,
+        state: ComponentState,
         onClick: () -> Unit,
-        modifier: Modifier,
-        enabled: Boolean,
         content: @Composable () -> Unit
     ) {
-        when (type) {
-            ButtonType.PRIMARY -> Button(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) { content() }
-            
-            ButtonType.SECONDARY -> OutlinedButton(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled
-            ) { content() }
-            
-            ButtonType.DANGER -> Button(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-            ) { content() }
-            
-            ButtonType.TERTIARY -> FilledTonalButton(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled
-            ) { content() }
-            
-            ButtonType.GHOST -> TextButton(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled
-            ) { content() }
-            
-            ButtonType.ICON -> IconButton(
-                onClick = onClick,
-                modifier = modifier,
-                enabled = enabled
-            ) { content() }
+        val buttonColors = when (type) {
+            ButtonType.SAVE -> ButtonDefaults.buttonColors()
+            ButtonType.DELETE -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ButtonType.CONFIRM_DELETE -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ButtonType.CANCEL -> ButtonDefaults.outlinedButtonColors()
+            ButtonType.ADD -> ButtonDefaults.buttonColors()
+            ButtonType.BACK -> ButtonDefaults.textButtonColors()
         }
-    }
-    
-    @Composable
-    override fun TextField(
-        type: TextFieldType,
-        value: String,
-        onValueChange: (String) -> Unit,
-        semantic: String,
-        modifier: Modifier,
-        placeholder: String
-    ) {
-        when (type) {
-            TextFieldType.STANDARD -> OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = modifier.fillMaxWidth(),
-                placeholder = { MaterialText(placeholder) }
-            )
-            
-            TextFieldType.SEARCH -> OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = modifier.fillMaxWidth(),
-                placeholder = { MaterialText(placeholder) },
-                shape = RoundedCornerShape(50.dp)
-            )
-            
-            TextFieldType.NUMERIC -> OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = modifier.fillMaxWidth(),
-                placeholder = { MaterialText(placeholder) }
-            )
-            
-            TextFieldType.MULTILINE -> OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = modifier.fillMaxWidth(),
-                placeholder = { MaterialText(placeholder) },
-                minLines = 3,
-                maxLines = 6
-            )
+        
+        val isEnabled = when (state) {
+            ComponentState.NORMAL, ComponentState.SUCCESS -> true
+            ComponentState.LOADING, ComponentState.DISABLED, ComponentState.ERROR, ComponentState.READONLY -> false
         }
-    }
-    
-    @Composable
-    override fun Text(
-        text: String,
-        type: TextType,
-        semantic: String,
-        modifier: Modifier
-    ) {
+        
         when (type) {
-            TextType.TITLE -> MaterialText(
-                text = text,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = modifier
-            )
-            
-            TextType.SUBTITLE -> MaterialText(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = modifier
-            )
-            
-            TextType.BODY -> MaterialText(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = modifier
-            )
-            
-            TextType.CAPTION -> MaterialText(
-                text = text,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = modifier
-            )
-            
-            TextType.LABEL -> MaterialText(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = modifier
-            )
-        }
-    }
-    
-    // TopAppBar uses experimental Material3 API
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun TopBar(
-        type: TopBarType,
-        title: String,
-        modifier: Modifier
-    ) {
-        TopAppBar(
-            title = { MaterialText(title) },
-            modifier = modifier,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
-    }
-    
-    @Composable
-    override fun NavigationItem(
-        type: NavigationItemType,
-        isSelected: Boolean,
-        onClick: () -> Unit,
-        modifier: Modifier,
-        content: @Composable () -> Unit
-    ) {
-        Button(
-            onClick = onClick,
-            modifier = modifier,
-            colors = if (isSelected) {
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            } else {
-                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+            ButtonType.CANCEL, ButtonType.BACK -> {
+                if (type == ButtonType.BACK) {
+                    TextButton(
+                        onClick = onClick,
+                        enabled = isEnabled,
+                        colors = buttonColors as ButtonColors,
+                        content = content
+                    )
+                } else {
+                    OutlinedButton(
+                        onClick = onClick,
+                        enabled = isEnabled,
+                        colors = buttonColors as ButtonColors,
+                        content = content
+                    )
+                }
             }
-        ) {
-            content()
-        }
-    }
-    
-    @Composable
-    override fun ZoneCard(
-        zoneName: String,
-        onClick: () -> Unit,
-        modifier: Modifier
-    ) {
-        Card(
-            type = CardType.ZONE,
-            semantic = "zone",
-            modifier = modifier
-        ) {
-            Button(
-                type = ButtonType.GHOST,
-                semantic = "zone-navigation",
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = true
-            ) {
-                MaterialText(
-                    text = zoneName,
-                    style = MaterialTheme.typography.titleMedium
+            else -> {
+                androidx.compose.material3.Button(
+                    onClick = onClick,
+                    enabled = isEnabled,
+                    colors = buttonColors,
+                    content = content
                 )
             }
         }
     }
     
     @Composable
-    override fun ToolWidget(
-        toolType: String,
-        instanceName: String,
-        onClick: () -> Unit,
-        modifier: Modifier
+    override fun TextField(
+        type: TextFieldType,
+        state: ComponentState,
+        value: String,
+        onChange: (String) -> Unit,
+        placeholder: String
     ) {
-        Card(
-            type = CardType.TOOL,
-            semantic = "tool-$toolType",
-            modifier = modifier
-        ) {
-            Button(
-                type = ButtonType.GHOST,
-                semantic = "tool-navigation",
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = true
-            ) {
-                ComposeColumn {
-                    MaterialText(
-                        text = instanceName,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    MaterialText(
-                        text = toolType,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        val isError = state == ComponentState.ERROR
+        val isReadOnly = state == ComponentState.READONLY
+        
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            placeholder = { androidx.compose.material3.Text(placeholder) },
+            isError = isError,
+            readOnly = isReadOnly,
+            enabled = state != ComponentState.DISABLED
+        )
+    }
+    
+    // =====================================
+    // DISPLAY
+    // =====================================
+    
+    @Composable
+    override fun Text(
+        text: String,
+        type: TextType
+    ) {
+        val style = when (type) {
+            TextType.TITLE -> MaterialTheme.typography.headlineMedium
+            TextType.SUBTITLE -> MaterialTheme.typography.headlineSmall
+            TextType.BODY -> MaterialTheme.typography.bodyMedium
+            TextType.CAPTION -> MaterialTheme.typography.bodySmall
+            TextType.LABEL -> MaterialTheme.typography.labelMedium
+            TextType.ERROR -> MaterialTheme.typography.bodyMedium
+            TextType.WARNING -> MaterialTheme.typography.bodyMedium
         }
+        
+        val color = when (type) {
+            TextType.ERROR -> MaterialTheme.colorScheme.error
+            TextType.WARNING -> MaterialTheme.colorScheme.primary // Pas de warning dans M3, utilise primary
+            else -> MaterialTheme.colorScheme.onSurface
+        }
+        
+        androidx.compose.material3.Text(
+            text = text,
+            style = style,
+            color = color
+        )
     }
     
     @Composable
-    override fun Terminal(
-        content: String,
-        modifier: Modifier
-    ) {
-        Card(
-            type = CardType.SYSTEM,
-            semantic = "terminal",
-            modifier = modifier
-        ) {
-            MaterialText(
-                text = content,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-    
-    @Composable
-    override fun LoadingIndicator(
-        type: LoadingType,
-        modifier: Modifier
-    ) {
-        when (type) {
-            LoadingType.DEFAULT -> CircularProgressIndicator(modifier = modifier)
-            LoadingType.MINIMAL -> LinearProgressIndicator(modifier = modifier.fillMaxWidth())
-            LoadingType.FULL_SCREEN -> ComposeBox(modifier = modifier.fillMaxSize()) {
-                CircularProgressIndicator()
-            }
-        }
-    }
-    
-    @Composable
-    override fun <T> SelectionDialog(
-        isVisible: Boolean,
-        title: String,
-        items: List<T>,
-        selectedItem: T?,
-        onItemSelected: (T) -> Unit,
-        onDismiss: () -> Unit,
-        modifier: Modifier,
-        itemContent: @Composable (T) -> Unit
-    ) {
-        if (isVisible) {
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = {
-                    MaterialText(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                text = {
-                    ComposeColumn {
-                        items.forEach { item ->
-                            Button(
-                                onClick = { onItemSelected(item) },
-                                colors = if (item == selectedItem) {
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
-                                } else {
-                                    ButtonDefaults.textButtonColors()
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 2.dp)
-                            ) {
-                                itemContent(item)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = onDismiss) {
-                        MaterialText("Fermer")
-                    }
-                },
-                modifier = modifier
-            )
-        }
-    }
-    
-    @Composable
-    override fun ConfirmDialog(
-        isVisible: Boolean,
-        title: String,
-        message: String,
-        confirmText: String,
-        cancelText: String,
-        onConfirm: () -> Unit,
-        onCancel: () -> Unit,
-        modifier: Modifier
-    ) {
-        if (isVisible) {
-            AlertDialog(
-                onDismissRequest = onCancel,
-                title = {
-                    MaterialText(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                text = {
-                    MaterialText(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = onConfirm) {
-                        MaterialText(confirmText)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onCancel) {
-                        MaterialText(cancelText)
-                    }
-                },
-                modifier = modifier
-            )
-        }
-    }
-    
-    @Composable
-    override fun FormDialog(
-        isVisible: Boolean,
-        title: String,
-        onDismiss: () -> Unit,
-        modifier: Modifier,
+    override fun Card(
+        type: CardType,
+        size: Size,
         content: @Composable () -> Unit
     ) {
-        if (isVisible) {
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = {
-                    MaterialText(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                },
-                text = {
-                    content()
-                },
-                confirmButton = {
-                    // No default confirm button, content should provide its own buttons
-                },
-                modifier = modifier
+        val elevation = when (size) {
+            Size.XS, Size.S -> CardDefaults.cardElevation(defaultElevation = 2.dp)
+            Size.M -> CardDefaults.cardElevation(defaultElevation = 4.dp)
+            Size.L, Size.XL, Size.XXL -> CardDefaults.cardElevation(defaultElevation = 8.dp)
+        }
+        
+        androidx.compose.material3.Card(
+            elevation = elevation,
+            content = { content() }
+        )
+    }
+    
+    // =====================================
+    // FEEDBACK SYSTEM
+    // =====================================
+    
+    @Composable
+    override fun Toast(
+        type: FeedbackType,
+        message: String,
+        duration: Duration
+    ) {
+        // TODO: Implémenter Toast (pas natif dans Compose, nécessite une lib externe)
+        // Pour l'instant, on simule avec une Card temporaire
+        androidx.compose.material3.Card(
+            colors = CardDefaults.cardColors(
+                containerColor = when (type) {
+                    FeedbackType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer
+                    FeedbackType.ERROR -> MaterialTheme.colorScheme.errorContainer
+                    FeedbackType.WARNING -> MaterialTheme.colorScheme.secondaryContainer
+                    FeedbackType.INFO -> MaterialTheme.colorScheme.surfaceVariant
+                }
             )
+        ) {
+            androidx.compose.material3.Text(
+                text = message,
+                modifier = Modifier.padding(16.dp),
+                color = when (type) {
+                    FeedbackType.SUCCESS -> MaterialTheme.colorScheme.onPrimaryContainer
+                    FeedbackType.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+                    FeedbackType.WARNING -> MaterialTheme.colorScheme.onSecondaryContainer
+                    FeedbackType.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
+    
+    @Composable
+    override fun Snackbar(
+        type: FeedbackType,
+        message: String,
+        action: String?,
+        onAction: (() -> Unit)?
+    ) {
+        androidx.compose.material3.Snackbar(
+            action = if (action != null && onAction != null) {
+                {
+                    TextButton(onClick = onAction) {
+                        androidx.compose.material3.Text(action)
+                    }
+                }
+            } else null,
+            containerColor = when (type) {
+                FeedbackType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer
+                FeedbackType.ERROR -> MaterialTheme.colorScheme.errorContainer
+                FeedbackType.WARNING -> MaterialTheme.colorScheme.secondaryContainer
+                FeedbackType.INFO -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        ) {
+            androidx.compose.material3.Text(message)
+        }
+    }
+    
+    // =====================================
+    // SYSTEM
+    // =====================================
+    
+    @Composable
+    override fun LoadingIndicator(size: Size) {
+        val indicatorSize = when (size) {
+            Size.XS -> 16.dp
+            Size.S -> 24.dp
+            Size.M -> 32.dp
+            Size.L -> 48.dp
+            Size.XL -> 64.dp
+            Size.XXL -> 80.dp
+        }
+        
+        CircularProgressIndicator(modifier = Modifier.size(indicatorSize))
+    }
+    
+    @Composable
+    override fun Dialog(
+        type: DialogType,
+        onConfirm: () -> Unit,
+        onCancel: () -> Unit,
+        content: @Composable () -> Unit
+    ) {
+        val (confirmText, cancelText) = when (type) {
+            DialogType.CONFIGURE -> "Valider" to "Annuler"
+            DialogType.CREATE -> "Créer" to "Annuler"
+            DialogType.EDIT -> "Sauvegarder" to "Annuler"
+            DialogType.CONFIRM -> "Confirmer" to "Annuler"
+            DialogType.DANGER -> "Supprimer" to "Annuler"
+            DialogType.SELECTION -> null to "Annuler"
+            DialogType.INFO -> "OK" to null
+        }
+        
+        AlertDialog(
+            onDismissRequest = onCancel,
+            text = { content() },
+            confirmButton = if (confirmText != null) {
+                {
+                    androidx.compose.material3.Button(
+                        onClick = onConfirm,
+                        colors = if (type == DialogType.DANGER) {
+                            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        }
+                    ) {
+                        androidx.compose.material3.Text(confirmText)
+                    }
+                }
+            } else {
+                {}
+            },
+            dismissButton = if (cancelText != null) {
+                {
+                    TextButton(onClick = onCancel) {
+                        androidx.compose.material3.Text(cancelText)
+                    }
+                }
+            } else null
+        )
+    }
+    
+    // =====================================
+    // CONTAINERS SPÉCIALISÉS (apparence uniquement)
+    // =====================================
+    
+    @Composable
+    override fun ZoneCardContainer(
+        onClick: () -> Unit,
+        content: @Composable () -> Unit
+    ) {
+        // Thème défini UNIQUEMENT l'apparence : bordures, couleurs, shadows, etc.
+        androidx.compose.material3.Card(
+            onClick = onClick,
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Le contenu vient de UI.ZoneCard()
+            Box(modifier = Modifier.padding(16.dp)) {
+                content()
+            }
+        }
+    }
+    
+    @Composable
+    override fun ToolCardContainer(
+        displayMode: DisplayMode,
+        onClick: () -> Unit,
+        onLongClick: () -> Unit,
+        content: @Composable () -> Unit
+    ) {
+        // Thème défini l'apparence selon le mode d'affichage
+        val cardModifier = when (displayMode) {
+            DisplayMode.ICON -> Modifier.size(64.dp)
+            DisplayMode.MINIMAL -> Modifier.height(48.dp).fillMaxWidth()
+            DisplayMode.LINE -> Modifier.height(64.dp).fillMaxWidth()
+            DisplayMode.CONDENSED -> Modifier.size(128.dp)
+            DisplayMode.EXTENDED -> Modifier.width(256.dp).height(128.dp)
+            DisplayMode.SQUARE -> Modifier.size(256.dp)
+            DisplayMode.FULL -> Modifier.fillMaxWidth().wrapContentHeight()
+        }
+        
+        val cardPadding = when (displayMode) {
+            DisplayMode.ICON -> 4.dp
+            DisplayMode.MINIMAL -> 8.dp
+            else -> 12.dp
+        }
+        
+        androidx.compose.material3.Card(
+            onClick = onClick,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = cardModifier
+        ) {
+            // Le contenu vient de UI.ToolCard()
+            Box(modifier = Modifier.padding(cardPadding)) {
+                content()
+            }
         }
     }
 }

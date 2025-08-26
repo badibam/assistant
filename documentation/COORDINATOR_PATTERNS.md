@@ -35,4 +35,4 @@ else -> ToolTypeManager.getServiceForToolType(toolTypeId, context)
 if (token.isCancelled) return OperationResult.cancelled()
 ```
 
-**Règle** : Toute modification données passe par Coordinator pour cohérence IA/scheduler.
+**Règle** : Toute modification / accès données passe par Coordinator pour cohérence IA/scheduler.

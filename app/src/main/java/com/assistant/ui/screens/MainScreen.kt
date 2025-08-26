@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.assistant.themes.base.*
+import com.assistant.ui.core.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.commands.CommandStatus
