@@ -1,9 +1,9 @@
 # TODO - Prochaines étapes après refactor UI
 
 ## 🔗 INTÉGRATION & COMPILATION (Priorité 1)
-- [ ] **Ajouter imports manquants** dans tous les fichiers ui/core/
-- [ ] **Corriger erreurs de compilation** (probablement des références manquantes)  
-- [ ] **Connecter entités réelles** : remplacer `zone: Any` par `zone: Zone`, `tool: Any` par `tool: ToolInstance`
+- [x] **Ajouter imports manquants** dans tous les fichiers ui/core/
+- [x] **Corriger erreurs de compilation** (probablement des références manquantes)  
+- [x] **Connecter entités réelles** : remplacer `zone: Any` par `zone: Zone`, `tool: Any` par `tool: ToolInstance`
 - [ ] **Tester rendu basique** : vérifier qu'un `UI.Button(ButtonType.SAVE)` s'affiche
 - [ ] **Tester changement thème** : `CurrentTheme.switchTheme()` fonctionne
 

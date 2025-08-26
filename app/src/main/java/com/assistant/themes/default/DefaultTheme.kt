@@ -1,11 +1,14 @@
 package com.assistant.themes.default
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.ThemeContract
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.Size
@@ -31,13 +34,27 @@ object DefaultTheme : ThemeContract {
     // =====================================
     
     @Composable
-    override fun Column(content: @Composable ColumnScope.() -> Unit) {
-        androidx.compose.foundation.layout.Column(content = content)
+    override fun Column(
+        spacing: Dp?,
+        content: @Composable ColumnScope.() -> Unit
+    ) {
+        androidx.compose.foundation.layout.Column(
+            verticalArrangement = spacing?.let { Arrangement.spacedBy(it) } ?: Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content
+        )
     }
     
     @Composable
-    override fun Row(content: @Composable RowScope.() -> Unit) {
-        androidx.compose.foundation.layout.Row(content = content)
+    override fun Row(
+        spacing: Dp?,
+        content: @Composable RowScope.() -> Unit
+    ) {
+        androidx.compose.foundation.layout.Row(
+            horizontalArrangement = spacing?.let { Arrangement.spacedBy(it) } ?: Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
     }
     
     @Composable
@@ -305,20 +322,26 @@ object DefaultTheme : ThemeContract {
     // CONTAINERS SPÉCIALISÉS (apparence uniquement)
     // =====================================
     
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun ZoneCardContainer(
         onClick: () -> Unit,
+        onLongClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
         // Thème défini UNIQUEMENT l'apparence : bordures, couleurs, shadows, etc.
         androidx.compose.material3.Card(
-            onClick = onClick,
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
         ) {
             // Le contenu vient de UI.ZoneCard()
             Box(modifier = Modifier.padding(16.dp)) {

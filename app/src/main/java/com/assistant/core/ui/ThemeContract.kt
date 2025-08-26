@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 
 /**
  * ThemeContract - Interface que tous les thèmes doivent implémenter
@@ -19,10 +20,16 @@ interface ThemeContract {
     // =====================================
     
     @Composable
-    fun Column(content: @Composable ColumnScope.() -> Unit)
+    fun Column(
+        spacing: Dp?,
+        content: @Composable ColumnScope.() -> Unit
+    )
     
     @Composable
-    fun Row(content: @Composable RowScope.() -> Unit)
+    fun Row(
+        spacing: Dp?,
+        content: @Composable RowScope.() -> Unit
+    )
     
     @Composable
     fun Box(content: @Composable BoxScope.() -> Unit)
@@ -110,6 +117,7 @@ interface ThemeContract {
     @Composable
     fun ZoneCardContainer(
         onClick: () -> Unit,
+        onLongClick: () -> Unit,
         content: @Composable () -> Unit
     )
     

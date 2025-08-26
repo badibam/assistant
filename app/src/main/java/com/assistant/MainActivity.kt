@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-// import com.assistant.ui.screens.MainScreen // Temporairement désactivé
+import com.assistant.screens.MainScreen
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.ui.UI
+import com.assistant.core.ui.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,8 +41,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // MainScreen() // Temporairement désactivé
-                    androidx.compose.material3.Text("App UI en cours de migration...")
+                    MainScreen()
                 }
             }
         }

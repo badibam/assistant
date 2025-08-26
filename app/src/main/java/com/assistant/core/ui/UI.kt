@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.themes.default.DefaultTheme
 import org.json.JSONObject
 
 /**
@@ -22,12 +24,16 @@ object UI {
     // =====================================
     
     @Composable
-    fun Column(content: @Composable ColumnScope.() -> Unit) = 
-        CurrentTheme.current.Column(content)
+    fun Column(
+        spacing: Dp? = null,
+        content: @Composable ColumnScope.() -> Unit
+    ) = CurrentTheme.current.Column(spacing, content)
     
     @Composable
-    fun Row(content: @Composable RowScope.() -> Unit) = 
-        CurrentTheme.current.Row(content)
+    fun Row(
+        spacing: Dp? = null,
+        content: @Composable RowScope.() -> Unit
+    ) = CurrentTheme.current.Row(spacing, content)
     
     @Composable
     fun Box(content: @Composable BoxScope.() -> Unit) = 
@@ -118,16 +124,16 @@ object UI {
     @Composable
     fun ZoneCard(
         zone: Zone,
-        onClick: () -> Unit
+        onClick: () -> Unit,
+        onLongClick: () -> Unit = { }
     ) {
-        // Contenu défini au niveau core avec UI.*
-        CurrentTheme.current.ZoneCardContainer(onClick = onClick) {
+        // Container thématisé + contenu standard avec UI.*
+        CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             Column {
                 Text(zone.name, TextType.TITLE)
                 zone.description?.let { desc ->
                     Text(desc, TextType.BODY)
                 }
-                // TODO: Stats, nombre d'outils, etc.
             }
         }
     }
