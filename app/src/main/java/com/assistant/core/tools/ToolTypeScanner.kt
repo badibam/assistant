@@ -1,6 +1,5 @@
 package com.assistant.core.tools
 
-import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.tools.tracking.TrackingToolType
 
 /**

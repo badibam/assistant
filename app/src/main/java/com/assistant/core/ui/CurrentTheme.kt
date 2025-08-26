@@ -1,4 +1,4 @@
-package com.assistant.ui.core
+package com.assistant.core.ui
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

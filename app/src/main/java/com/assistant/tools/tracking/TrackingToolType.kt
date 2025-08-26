@@ -2,7 +2,7 @@ package com.assistant.tools.tracking
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import com.assistant.core.tools.base.ToolTypeContract
+import com.assistant.core.tools.ToolTypeContract
 import com.assistant.tools.tracking.TrackingService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
@@ -10,8 +10,8 @@ import com.assistant.core.utils.NumberFormatting
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
-import com.assistant.tools.tracking.ui.TrackingConfigScreen
-import com.assistant.tools.tracking.ui.TrackingScreen
+// import com.assistant.tools.tracking.ui.TrackingConfigScreen
+// import com.assistant.tools.tracking.ui.TrackingScreen
 import org.json.JSONObject
 
 /**
@@ -96,14 +96,8 @@ object TrackingToolType : ToolTypeContract {
         existingToolId: String?,
         onDelete: (() -> Unit)?
     ) {
-        TrackingConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            onCancel = onCancel,
-            existingConfig = existingConfig,
-            existingToolId = existingToolId,
-            onDelete = onDelete
-        )
+        // TrackingConfigScreen temporairement désactivé
+        androidx.compose.material3.Text("Config UI en cours de migration...")
     }
     
     override fun getService(context: Context): ExecutableService {
@@ -125,12 +119,8 @@ object TrackingToolType : ToolTypeContract {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     ) {
-        TrackingScreen(
-            toolInstanceId = toolInstanceId,
-            configJson = configJson,
-            onNavigateBack = onNavigateBack,
-            onLongClick = onLongClick
-        )
+        // TrackingScreen temporairement désactivé
+        androidx.compose.material3.Text("Tracking UI en cours de migration...")
     }
     
     override fun validateData(data: Any, operation: String): ValidationResult {

@@ -1,4 +1,4 @@
-package com.assistant.ai.prompts
+package com.assistant.core.ai.prompts
 
 import android.util.Log
 

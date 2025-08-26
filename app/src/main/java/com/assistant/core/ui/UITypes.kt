@@ -1,4 +1,4 @@
-package com.assistant.ui.core
+package com.assistant.core.ui
 
 /**
  * Types unifiés pour la nouvelle architecture UI

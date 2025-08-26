@@ -6,7 +6,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.assistant.ui.core.*
+import com.assistant.core.ui.ThemeContract
+import com.assistant.core.ui.ButtonType
+import com.assistant.core.ui.Size
+import com.assistant.core.ui.ComponentState
+import com.assistant.core.ui.TextFieldType
+import com.assistant.core.ui.TextType
+import com.assistant.core.ui.CardType
+import com.assistant.core.ui.FeedbackType
+import com.assistant.core.ui.Duration
+import com.assistant.core.ui.DialogType
+import com.assistant.core.ui.DisplayMode
 
 /**
  * DefaultTheme - Implémentation par défaut du ThemeContract
@@ -73,14 +83,14 @@ object DefaultTheme : ThemeContract {
                         onClick = onClick,
                         enabled = isEnabled,
                         colors = buttonColors as ButtonColors,
-                        content = content
+                        content = { content() }
                     )
                 } else {
                     OutlinedButton(
                         onClick = onClick,
                         enabled = isEnabled,
                         colors = buttonColors as ButtonColors,
-                        content = content
+                        content = { content() }
                     )
                 }
             }
@@ -89,7 +99,7 @@ object DefaultTheme : ThemeContract {
                     onClick = onClick,
                     enabled = isEnabled,
                     colors = buttonColors,
-                    content = content
+                    content = { content() }
                 )
             }
         }

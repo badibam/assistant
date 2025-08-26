@@ -1,4 +1,4 @@
-package com.assistant.core.tools.base
+package com.assistant.core.tools
 
 import android.content.Context
 import androidx.compose.runtime.Composable

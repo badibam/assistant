@@ -1,7 +1,6 @@
 package com.assistant.core.tools
 
 import android.content.Context
-import com.assistant.core.tools.base.ToolTypeContract
 import com.assistant.core.services.ExecutableService
 import android.util.Log
 

@@ -1,9 +1,13 @@
-package com.assistant.ui.core
+package com.assistant.core.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.assistant.core.database.entities.Zone
+import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.tools.ToolTypeManager
+import org.json.JSONObject
 
 /**
  * UI - API publique unifiée
@@ -113,14 +117,16 @@ object UI {
     
     @Composable
     fun ZoneCard(
-        zone: Any, // TODO: import Zone type
+        zone: Zone,
         onClick: () -> Unit
     ) {
         // Contenu défini au niveau core avec UI.*
         CurrentTheme.current.ZoneCardContainer(onClick = onClick) {
             Column {
-                Text("Zone Name", TextType.TITLE) // TODO: zone.name
-                Text("Zone Description", TextType.BODY) // TODO: zone.description
+                Text(zone.name, TextType.TITLE)
+                zone.description?.let { desc ->
+                    Text(desc, TextType.BODY)
+                }
                 // TODO: Stats, nombre d'outils, etc.
             }
         }
@@ -128,7 +134,7 @@ object UI {
     
     @Composable
     fun ToolCard(
-        tool: Any, // TODO: import ToolInstance type
+        tool: ToolInstance,
         displayMode: DisplayMode,
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
@@ -147,7 +153,12 @@ object UI {
                 DisplayMode.MINIMAL -> {
                     Row {
                         Text("T", TextType.BODY) // TODO: Icône
-                        Text("Tool Name", TextType.BODY) // TODO: tool.name
+                        val toolInstanceName = try {
+                            JSONObject(tool.config_json).optString("name")
+                        } catch (e: Exception) {
+                            ""
+                        }
+                        Text(toolInstanceName, TextType.BODY)
                     }
                 }
                 DisplayMode.LINE -> {
@@ -155,7 +166,12 @@ object UI {
                         // Icône + titre à gauche (partie fixe)
                         Row {
                             Text("T", TextType.BODY) // TODO: Icône via tool type
-                            Text("Tool Name", TextType.BODY) // TODO: tool.name
+                            val toolInstanceName = try {
+                                JSONObject(tool.config_json).optString("name")
+                            } catch (e: Exception) {
+                                ""
+                            }
+                            Text(toolInstanceName, TextType.BODY)
                         }
                         // Zone libre à droite définie par tool type
                         Box {
@@ -169,7 +185,12 @@ object UI {
                             // Icône + titre à gauche (partie fixe)
                             Row {
                                 Text("T", TextType.BODY) // TODO: Icône via tool type
-                                Text("Tool Name", TextType.BODY) // TODO: tool.name
+                                val toolInstanceName = try {
+                                JSONObject(tool.config_json).optString("name")
+                            } catch (e: Exception) {
+                                ""
+                            }
+                            Text(toolInstanceName, TextType.BODY)
                             }
                             // Zone libre en haut à droite définie par tool type
                             Box {
