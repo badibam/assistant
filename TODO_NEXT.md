@@ -7,12 +7,36 @@
 - [x] **Layout optimisé** ZoneScreen avec header horizontal (← Titre +)
 - [x] **Compilation réussie** et app fonctionnelle
 
-## 🛠️ INTÉGRATION TOOL TYPES (Priorité 1)  
+## 🚨 TRATRACKINGCONFIGSCREEN - FONCTIONNALITÉS MANQUANTES (Priorité 1)
+En migrant vers le nouveau système UI, des fonctionnalités importantes ont été perdues :
+
+### **GESTION DES ITEMS**
+- [ ] **Dialog AddItemForm** pour ajouter/éditer des items de tracking
+- [ ] **Liste des items créés** avec leurs propriétés (nom, valeur défaut, unité, etc.)
+- [ ] **Édition inline** des items existants dans la liste
+- [ ] **Suppression individuelle** d'items avec confirmation
+
+### **GESTION DES ICÔNES** 
+- [ ] **Sélection d'icône** parmi liste prédéfinie (IconOption)
+- [ ] **Aperçu visuel** de l'icône sélectionnée
+- [ ] **Intégration** avec ThemeIconManager
+
+### **RÉORGANISATION & UX**
+- [ ] **Boutons ↑↓** pour réordonner les items 
+- [ ] **Warning changement type** si items existants (pendingTrackingType)
+- [ ] **States manquants** : showAddItem, editingItemIndex, etc.
+
+### **CONFIGURATIONS SPÉCIFIQUES**
+- [ ] **Config par type** : numeric (min/max/unité), scale (plages), choice (options)
+- [ ] **Propriétés d'items** différentes selon le type de tracking
+- [ ] **Validation** des champs obligatoires selon le contexte
+
+## 🛠️ INTÉGRATION TOOL TYPES (Priorité 2)  
 - [ ] **Étendre ToolTypeContract** pour définir le contenu des zones libres par DisplayMode
 - [ ] **Implémenter dans TrackingToolType** :
-  - `getContentForDisplayMode(LINE)` → boutons "+" etc.
-  - `getContentForDisplayMode(CONDENSED)` → dernière valeur + boutons
-  - `getContentForDisplayMode(EXTENDED)` → valeur + champs + boutons
+  - `getContentForDisplayMode(LINE)`
+  - `getContentForDisplayMode(CONDENSED)`
+  - `getContentForDisplayMode(EXTENDED)`
 - [ ] **Remplacer tous les TODO** dans UI.ToolCard() par appels tool type
 - [ ] **Connecter icônes** via ThemeIconManager + tool types
 
