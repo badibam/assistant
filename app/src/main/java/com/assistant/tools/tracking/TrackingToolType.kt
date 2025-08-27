@@ -10,7 +10,7 @@ import com.assistant.core.utils.NumberFormatting
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
-// import com.assistant.tools.tracking.ui.TrackingConfigScreen
+import com.assistant.tools.tracking.ui.TrackingConfigScreen
 // import com.assistant.tools.tracking.ui.TrackingScreen
 import org.json.JSONObject
 
@@ -28,14 +28,14 @@ object TrackingToolType : ToolTypeContract {
             "name": "",
             "description": "",
             "management": "",
-            "config_validation": false,
-            "data_validation": false,
+            "config_validation": "",
+            "data_validation": "",
             "display_mode": "",
             "icon_name": "activity",
             "type": "",
-            "show_value": true,
+            "show_value": "",
             "item_mode": "",
-            "auto_switch": false
+            "auto_switch": ""
         }
         """.trimIndent()
     }
@@ -96,8 +96,14 @@ object TrackingToolType : ToolTypeContract {
         existingToolId: String?,
         onDelete: (() -> Unit)?
     ) {
-        // TrackingConfigScreen temporairement désactivé
-        androidx.compose.material3.Text("Config UI en cours de migration...")
+        TrackingConfigScreen(
+            zoneId = zoneId,
+            onSave = onSave,
+            onCancel = onCancel,
+            existingConfig = existingConfig,
+            existingToolId = existingToolId,
+            onDelete = onDelete
+        )
     }
     
     override fun getService(context: Context): ExecutableService {

@@ -2,11 +2,17 @@ package com.assistant.themes.default
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.ThemeContract
@@ -20,6 +26,7 @@ import com.assistant.core.ui.FeedbackType
 import com.assistant.core.ui.Duration
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.ui.FieldType
 
 /**
  * DefaultTheme - Implémentation par défaut du ThemeContract
@@ -49,33 +56,76 @@ object DefaultTheme : ThemeContract {
         onClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
-        val buttonColors = when (type) {
-            ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
-            ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
-            ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
-        }
-        
         val isEnabled = when (state) {
             ComponentState.NORMAL, ComponentState.SUCCESS -> true
             ComponentState.LOADING, ComponentState.DISABLED, ComponentState.ERROR, ComponentState.READONLY -> false
         }
         
-        when (type) {
-            ButtonType.SECONDARY -> {
-                OutlinedButton(
-                    onClick = onClick,
-                    enabled = isEnabled,
-                    colors = buttonColors as ButtonColors,
-                    content = { content() }
-                )
+        // Pour Size.XS, utiliser Surface + clickable pour 0 padding absolu
+        if (size == Size.XS) {
+            val surfaceColors = when (type) {
+                ButtonType.PRIMARY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+                ButtonType.SECONDARY -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+                ButtonType.DEFAULT -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
             }
-            ButtonType.PRIMARY, ButtonType.DEFAULT -> {
-                androidx.compose.material3.Button(
-                    onClick = onClick,
-                    enabled = isEnabled,
-                    colors = buttonColors,
-                    content = { content() }
-                )
+            
+            Surface(
+                color = surfaceColors.first,
+                contentColor = surfaceColors.second,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                border = if (type == ButtonType.SECONDARY) {
+                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                } else null,
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp) // Dimensions minimales = hauteur d'une ligne de texte
+                    .wrapContentSize()
+                    .clickable(enabled = isEnabled) { 
+                        if (isEnabled) onClick() 
+                    }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
+                ) {
+                    content()
+                }
+            }
+        } else {
+            // Pour les autres tailles, utiliser les boutons Material normaux
+            val buttonColors = when (type) {
+                ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
+                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
+                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+            }
+            
+            val contentPadding = when (size) {
+                Size.XS -> PaddingValues(0.dp) // Ne sera pas utilisé vu le if au-dessus
+                Size.S -> PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                Size.M -> PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                Size.L -> PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                Size.XL -> PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+                Size.XXL -> PaddingValues(horizontal = 40.dp, vertical = 20.dp)
+            }
+            
+            when (type) {
+                ButtonType.SECONDARY -> {
+                    OutlinedButton(
+                        onClick = onClick,
+                        enabled = isEnabled,
+                        colors = buttonColors as ButtonColors,
+                        contentPadding = contentPadding,
+                        content = { content() }
+                    )
+                }
+                ButtonType.PRIMARY, ButtonType.DEFAULT -> {
+                    androidx.compose.material3.Button(
+                        onClick = onClick,
+                        enabled = isEnabled,
+                        colors = buttonColors,
+                        contentPadding = contentPadding,
+                        content = { content() }
+                    )
+                }
             }
         }
     }
@@ -231,6 +281,20 @@ object DefaultTheme : ThemeContract {
     }
     
     @Composable
+    override fun Icon(
+        resourceId: Int,
+        size: Dp,
+        contentDescription: String?
+    ) {
+        Icon(
+            painter = painterResource(id = resourceId),
+            contentDescription = contentDescription,
+            modifier = Modifier.size(size),
+            tint = Color(0xFF333333)
+        )
+    }
+    
+    @Composable
     override fun Dialog(
         type: DialogType,
         onConfirm: () -> Unit,
@@ -343,4 +407,218 @@ object DefaultTheme : ThemeContract {
             }
         }
     }
+    
+    // =====================================
+    // FORMULAIRES
+    // =====================================
+    
+    @Composable
+    override fun FormField(
+        label: String,
+        value: String,
+        onChange: (String) -> Unit,
+        type: TextFieldType,
+        state: ComponentState,
+        readonly: Boolean,
+        onClick: (() -> Unit)?,
+        contentDescription: String?,
+        required: Boolean,
+        fieldType: FieldType
+    ) {
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column {
+            Text(displayLabel, TextType.LABEL)
+            TextField(
+                type = type,
+                state = state,
+                value = value,
+                onChange = onChange,
+                placeholder = label
+            )
+        }
+    }
+    
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun FormSelection(
+        label: String,
+        options: List<String>,
+        selected: String,
+        onSelect: (String) -> Unit,
+        required: Boolean
+    ) {
+        var expanded by remember { mutableStateOf(false) }
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column {
+            Text(displayLabel, TextType.LABEL)
+            
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                TextField(
+                    value = selected,
+                    onValueChange = { },
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    colors = ExposedDropdownMenuDefaults.textFieldColors(),
+                    modifier = Modifier.menuAnchor()
+                )
+                
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { androidx.compose.material3.Text(option) },
+                            onClick = {
+                                onSelect(option)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
+    @Composable
+    override fun FormActions(
+        content: @Composable RowScope.() -> Unit
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
+    
+    // =====================================
+    // BOUTONS AVEC ICÔNES
+    // =====================================
+    
+    @Composable
+    override fun SaveButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("✅", TextType.LABEL) }
+    
+    @Composable
+    override fun EditButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("✏️", TextType.LABEL) }
+    
+    @Composable
+    override fun DeleteButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("🗑️", TextType.LABEL) }
+    
+    @Composable
+    override fun AddButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("➕", TextType.LABEL) }
+    
+    @Composable
+    override fun CancelButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("❌", TextType.LABEL) }
+    
+    @Composable
+    override fun ConfirmButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("✅", TextType.LABEL) }
+    
+    @Composable
+    override fun BackButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("←", TextType.LABEL) }
+    
+    @Composable
+    override fun PlayButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("▶️", TextType.LABEL) }
+    
+    @Composable
+    override fun StopButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("⏹️", TextType.LABEL) }
+    
+    @Composable
+    override fun PauseButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("⏸️", TextType.LABEL) }
+    
+    @Composable
+    override fun ConfigButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("⚙️", TextType.LABEL) }
+    
+    @Composable
+    override fun InfoButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("ℹ️", TextType.LABEL) }
+    
+    @Composable
+    override fun RefreshButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("🔄", TextType.LABEL) }
+    
+    @Composable
+    override fun UpButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("▲", TextType.LABEL) }
+    
+    @Composable
+    override fun DownButton(onClick: () -> Unit, size: Size) = Button(
+        type = ButtonType.DEFAULT,
+        size = size,
+        state = ComponentState.NORMAL,
+        onClick = onClick
+    ) { Text("▼", TextType.LABEL) }
 }

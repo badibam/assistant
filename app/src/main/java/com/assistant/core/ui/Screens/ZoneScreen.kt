@@ -1,4 +1,4 @@
-package com.assistant.screens
+package com.assistant.core.ui.Screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*

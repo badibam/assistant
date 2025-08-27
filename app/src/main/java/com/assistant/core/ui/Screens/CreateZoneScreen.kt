@@ -1,4 +1,4 @@
-package com.assistant.screens
+package com.assistant.core.ui.Screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -29,9 +29,9 @@ fun CreateZoneScreen(
     val coordinator = remember { Coordinator(context) }
     
     // Form state - initialize with existing zone values if editing
-    var name by remember { mutableStateOf(existingZone?.name ?: "") }
-    var description by remember { mutableStateOf(existingZone?.description ?: "") }
-    var color by remember { mutableStateOf("") } // Note: Zone entity doesn't have color field
+    var name by remember(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
+    var description by remember(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
+    var color by remember { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
     
     // Validation state
     var nameError by remember { mutableStateOf(false) }

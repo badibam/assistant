@@ -1,109 +1,52 @@
 # Décisions UI - Architecture Finale
 
-## 1. ARCHITECTURE DES COMPOSANTS UI
+## 1. ARCHITECTURE DES COMPOSANTS
 
-### Principe fondamental
-- **UI wrapper** : `UI.Component()` → délégation au thème actuel
-- **Types sémantiques précis** : `ButtonType.SAVE`, `TextType.TITLE`, etc.
-- **Paramètres métier uniquement** : taille, état, validation
-
-### Système d'états unifié
+### 📐 LAYOUTS : Compose natif
 ```kotlin
-enum class ComponentState { 
-    NORMAL,     // État standard
-    LOADING,    // Traitement en cours
-    DISABLED,   // Non interactif
-    ERROR,      // Erreur de validation/système
-    READONLY,   // Lecture seule
-    SUCCESS     // Feedback positif
-}
+// ✅ UTILISER DIRECTEMENT
+Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) { }
+Column(verticalArrangement = Arrangement.Center) { }
+Box(modifier = Modifier.fillMaxSize()) { }
+Spacer(modifier = Modifier.height(16.dp))
 ```
 
-### Tailles standardisées
+### 🎨 COMPOSANTS VISUELS : UI.*
 ```kotlin
-enum class Size { XS, S, M, L, XL, XXL }
+// ✅ UTILISER UI.*
+UI.Button(type = ButtonType.PRIMARY) { }
+UI.Text("Titre", TextType.TITLE)
+UI.TextField(type = TextFieldType.TEXT, value, onChange, placeholder)
+UI.Card(type = CardType.DEFAULT) { }
 ```
 
-### Validation intégrée
+### 🏗️ COMPOSANTS MÉTIER : UI.*
 ```kotlin
-enum class ValidationRule { 
-    NONE, EMAIL, NUMERIC, REQUIRED, MIN_LENGTH, MAX_LENGTH
-}
+// ✅ LOGIQUE + APPARENCE
+UI.ZoneCard(zone, onClick, onLongClick)
+UI.ToolCard(tool, displayMode, onClick, onLongClick)
 ```
 
-## 2. COMPOSANTS CORE
-
-### Layout
+## ❌ INTERDICTIONS
 ```kotlin
-UI.Column(content)
-UI.Row(content) 
-UI.Box(content)
-UI.Spacer(modifier)
+// Pas de wrappers layout dans UI.*
+UI.Column { }    // → Column { }
+UI.Row { }       // → Row { }
+UI.Box { }       // → Box { }
+UI.Spacer(..)    // → Spacer(..)
 ```
 
-### Interactive
-```kotlin
-UI.Button(
-    type: ButtonType,                    // SAVE, DELETE, CANCEL, ADD, BACK, CONFIRM_DELETE
-    size: Size = M,
-    state: ComponentState = NORMAL,
-    contentDescription: String? = null,   // Accessibilité
-    onClick, content
-)
+## 💡 PRINCIPE
+- **Layout = logique universelle** → Compose direct + modifiers
+- **Visuel = apparence thématique** → UI.* pour cohérence
+- **Métier = logique + apparence** → UI.* pour encapsulation
+- **⚠️ Initialisation état : JAMAIS LaunchedEffect** → Utiliser `remember(dependencies) { calcul immédiat }` sinon affichage conditionnel bugué au premier rendu
+- **⚠️ Valeurs par défaut : JAMAIS hardcodées** → Utiliser `.getDefaultConfig()`, `.orEmpty()` ou sources de vérité appropriées
+- **⚠️ FormSelection : TOUJOURS conversion bidirectionnelle** → `when(valeurInterne) → "Valeur Affichée"` + `when(valeurAffichée) → valeurInterne` avec `else` pour cohérence
+- **⚠️ FormSelection : JAMAIS de Boolean** → Utiliser String avec conversion ("show"/"hide" ↔ "Afficher"/"Masquer")
+- **⚠️ Validation élégante** → `required: Boolean` + `fieldType: FieldType` dans UI.FormField/FormSelection
 
-UI.TextField(
-    type: TextFieldType,                 // TEXT, NUMERIC, SEARCH, PASSWORD
-    state: ComponentState = NORMAL,
-    validation: ValidationRule = NONE,   // Validation intégrée
-    value, onChange, placeholder,
-    contentDescription: String? = null
-)
-```
-
-### Display
-```kotlin
-UI.Text(
-    type: TextType,                      // TITLE, SUBTITLE, BODY, CAPTION, LABEL, ERROR, WARNING
-    text,
-    contentDescription: String? = null
-)
-
-UI.Card(
-    type: CardType,                      // Types ajoutés selon besoins
-    size: Size = M,
-    content
-)
-```
-
-### Feedback System
-```kotlin
-UI.Toast(
-    type: FeedbackType,                  // SUCCESS, ERROR, WARNING, INFO
-    message: String,
-    duration: Duration = SHORT
-)
-
-UI.Snackbar(
-    type: FeedbackType,
-    message: String,
-    action: String? = null,
-    onAction: (() -> Unit)? = null
-)
-```
-
-### System
-```kotlin
-UI.LoadingIndicator(size: Size = M)
-
-UI.Dialog(
-    type: DialogType,                    // CONFIGURE, CREATE, EDIT, CONFIRM, DANGER, SELECTION, INFO
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit = { },
-    content
-)
-```
-
-## 3. COMPOSANTS SPÉCIALISÉS
+## 2. COMPOSANTS SPÉCIALISÉS
 
 ### Tool Instance Display Modes
 ```kotlin
@@ -208,7 +151,7 @@ if (type == "duration") {
 
 // Actions
 UI.FormActions {
-    UI.Button(type = SAVE, onClick = { save() }) { }
+    UI.Button(type = PRIMARY, onClick = { save() }) { }
     UI.Button(type = CANCEL, onClick = { cancel() }) { }
 }
 ```

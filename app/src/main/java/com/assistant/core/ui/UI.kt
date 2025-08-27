@@ -96,6 +96,13 @@ object UI {
         CurrentTheme.current.LoadingIndicator(size)
     
     @Composable
+    fun Icon(
+        resourceId: Int,
+        size: Dp = 24.dp,
+        contentDescription: String? = null
+    ) = CurrentTheme.current.Icon(resourceId, size, contentDescription)
+    
+    @Composable
     fun Dialog(
         type: DialogType,
         onConfirm: () -> Unit,
@@ -113,138 +120,93 @@ object UI {
         value: String,
         onChange: (String) -> Unit,
         type: TextFieldType = TextFieldType.TEXT,
-        validation: ValidationRule = ValidationRule.NONE,
+        required: Boolean = false,
+        fieldType: FieldType = FieldType.TEXT,
         state: ComponentState = ComponentState.NORMAL,
-        placeholder: String = ""
-    ) {
-        Column {
-            Text(label, TextType.LABEL)
-            TextField(
-                type = type,
-                state = state,
-                value = value,
-                onChange = onChange,
-                placeholder = placeholder.ifEmpty { label }
-            )
-        }
-    }
+        readonly: Boolean = false,
+        onClick: (() -> Unit)? = null,
+        contentDescription: String? = null
+    ) = CurrentTheme.current.FormField(
+        label = label,
+        value = value, 
+        onChange = onChange,
+        type = type,
+        state = state,
+        readonly = readonly,
+        onClick = onClick,
+        contentDescription = contentDescription,
+        required = required,
+        fieldType = fieldType
+    )
     
     @Composable
     fun FormSelection(
         label: String,
         options: List<String>,
         selected: String,
-        onSelect: (String) -> Unit
-    ) {
-        Column {
-            Text(label, TextType.LABEL)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                options.forEach { option ->
-                    Button(
-                        type = if (option == selected) ButtonType.PRIMARY else ButtonType.SECONDARY,
-                        onClick = { onSelect(option) }
-                    ) {
-                        Text(option, TextType.LABEL)
-                    }
-                }
-            }
-        }
-    }
+        onSelect: (String) -> Unit,
+        required: Boolean = false
+    ) = CurrentTheme.current.FormSelection(
+        label = label,
+        options = options,
+        selected = selected, 
+        onSelect = onSelect,
+        required = required
+    )
     
     @Composable
     fun FormActions(
         content: @Composable RowScope.() -> Unit
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content
-        )
-    }
+    ) = CurrentTheme.current.FormActions(content)
     
     // =====================================
     // BOUTONS AVEC ICÔNES AUTOMATIQUES
     // =====================================
     
     @Composable
-    fun SaveButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("✅", TextType.LABEL) }
+    fun SaveButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.SaveButton(onClick, size)
     
     @Composable
-    fun EditButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("✏️", TextType.LABEL) }
+    fun EditButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.EditButton(onClick, size)
     
     @Composable
-    fun DeleteButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("🗑️", TextType.LABEL) }
+    fun DeleteButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.DeleteButton(onClick, size)
     
     @Composable
-    fun AddButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("➕", TextType.LABEL) }
+    fun AddButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.AddButton(onClick, size)
     
     @Composable
-    fun CancelButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("❌", TextType.LABEL) }
+    fun CancelButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.CancelButton(onClick, size)
     
     @Composable
-    fun ConfirmButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("✅", TextType.LABEL) }
+    fun ConfirmButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.ConfirmButton(onClick, size)
     
     @Composable
-    fun BackButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("←", TextType.LABEL) }
+    fun BackButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.BackButton(onClick, size)
     
     @Composable
-    fun PlayButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("▶️", TextType.LABEL) }
+    fun PlayButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.PlayButton(onClick, size)
     
     @Composable
-    fun StopButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("⏹️", TextType.LABEL) }
+    fun StopButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.StopButton(onClick, size)
     
     @Composable
-    fun PauseButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("⏸️", TextType.LABEL) }
+    fun PauseButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.PauseButton(onClick, size)
     
     @Composable
-    fun ConfigButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("⚙️", TextType.LABEL) }
+    fun ConfigButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.ConfigButton(onClick, size)
     
     @Composable
-    fun InfoButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("ℹ️", TextType.LABEL) }
+    fun InfoButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.InfoButton(onClick, size)
     
     @Composable
-    fun RefreshButton(onClick: () -> Unit) = Button(
-        type = ButtonType.DEFAULT,
-        onClick = onClick
-    ) { Text("🔄", TextType.LABEL) }
+    fun RefreshButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.RefreshButton(onClick, size)
+    
+    @Composable
+    fun UpButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.UpButton(onClick, size)
+    
+    @Composable
+    fun DownButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.DownButton(onClick, size)
     
     // =====================================
     // COMPOSANTS SPÉCIALISÉS

@@ -37,10 +37,10 @@ enum class Size {
 // =====================================
 
 /**
- * Règles de validation de base
+ * Types de champs pour validation et comportement
  */
-enum class ValidationRule {
-    NONE, EMAIL, NUMERIC, REQUIRED, MIN_LENGTH, MAX_LENGTH
+enum class FieldType {
+    TEXT, NUMERIC, EMAIL, PASSWORD, SEARCH
 }
 
 // =====================================

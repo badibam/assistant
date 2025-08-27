@@ -90,6 +90,13 @@ interface ThemeContract {
     fun LoadingIndicator(size: Size)
     
     @Composable
+    fun Icon(
+        resourceId: Int,
+        size: Dp,
+        contentDescription: String?
+    )
+    
+    @Composable
     fun Dialog(
         type: DialogType,
         onConfirm: () -> Unit,
@@ -115,4 +122,85 @@ interface ThemeContract {
         onLongClick: () -> Unit,
         content: @Composable () -> Unit
     )
+    
+    // =====================================
+    // FORMULAIRES
+    // =====================================
+    
+    @Composable
+    fun FormField(
+        label: String,
+        value: String,
+        onChange: (String) -> Unit,
+        type: TextFieldType,
+        state: ComponentState,
+        readonly: Boolean,
+        onClick: (() -> Unit)?,
+        contentDescription: String?,
+        required: Boolean,
+        fieldType: FieldType
+    )
+    
+    @Composable
+    fun FormSelection(
+        label: String,
+        options: List<String>,
+        selected: String,
+        onSelect: (String) -> Unit,
+        required: Boolean
+    )
+    
+    @Composable
+    fun FormActions(
+        content: @Composable RowScope.() -> Unit
+    )
+    
+    // =====================================
+    // BOUTONS AVEC ICÔNES
+    // =====================================
+    
+    @Composable
+    fun SaveButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun EditButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun DeleteButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun AddButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun CancelButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun ConfirmButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun BackButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun PlayButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun StopButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun UpButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun DownButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun PauseButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun ConfigButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun InfoButton(onClick: () -> Unit, size: Size)
+    
+    @Composable
+    fun RefreshButton(onClick: () -> Unit, size: Size)
 }
