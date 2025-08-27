@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -102,6 +103,10 @@ fun MainScreen() {
             onUpdate = {
                 configZone = null
                 reloadZones()
+            },
+            onDelete = {
+                configZone = null
+                reloadZones()
             }
         )
         return // Exit MainScreen composition when showing zone config
@@ -143,23 +148,23 @@ fun MainScreen() {
             }
         )
     } else {
-        // Main content using new UI.* system
-        UI.Column {
+        // Main content using hybrid system: Compose layouts + UI.* components
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             // Title
             UI.Text(
                 text = "Assistant Personnel",
                 type = TextType.TITLE
             )
             
-            UI.Spacer(modifier = Modifier.height(16.dp))
-            
             // Zones section
             UI.Text(
                 text = "Mes Zones",
                 type = TextType.SUBTITLE
             )
-            
-            UI.Spacer(modifier = Modifier.height(12.dp))
             
             if (zones.isEmpty()) {
                 // Show placeholder when no zones
@@ -168,10 +173,8 @@ fun MainScreen() {
                     type = TextType.BODY
                 )
                 
-                UI.Spacer(modifier = Modifier.height(8.dp))
-                
                 UI.Button(
-                    type = ButtonType.ADD,
+                    type = ButtonType.PRIMARY,
                     onClick = { 
                         showCreateZone = true
                     }
@@ -195,11 +198,9 @@ fun MainScreen() {
                     )
                 }
                 
-                UI.Spacer(modifier = Modifier.height(8.dp))
-                
                 // Add zone button
                 UI.Button(
-                    type = ButtonType.ADD,
+                    type = ButtonType.PRIMARY,
                     onClick = { 
                         showCreateZone = true
                     }
@@ -211,15 +212,11 @@ fun MainScreen() {
                 }
             }
             
-            UI.Spacer(modifier = Modifier.height(24.dp))
-            
             // Terminal section placeholder
             UI.Text(
                 text = "Terminal",
                 type = TextType.SUBTITLE
             )
-            
-            UI.Spacer(modifier = Modifier.height(8.dp))
             
             UI.Text(
                 text = "Assistant prêt",

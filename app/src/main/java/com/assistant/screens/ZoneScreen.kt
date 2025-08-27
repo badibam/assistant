@@ -2,6 +2,7 @@ package com.assistant.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -11,11 +12,12 @@ import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.launch
 
 /**
  * Zone detail screen - shows zone information and its tools
- * Migrated to use new UI.* system
+ * Uses hybrid system: Compose layouts + UI.* visual components
  */
 @Composable
 fun ZoneScreen(
@@ -29,6 +31,12 @@ fun ZoneScreen(
     // Load tool instances via command pattern
     var toolInstances by remember { mutableStateOf<List<ToolInstance>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    // State for showing/hiding available tools list
+    var showAvailableTools by remember { mutableStateOf(false) }
+    
+    // State for tool configuration screen
+    var showingConfigFor by remember { mutableStateOf<String?>(null) }
     
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
@@ -61,11 +69,89 @@ fun ZoneScreen(
         }
     }
     
-    UI.Column {
+    // Function to reload tool instances after operations
+    val reloadToolInstances = {
+        coroutineScope.launch {
+            isLoading = true
+            try {
+                val result = coordinator.processUserAction("get->tool_instances", mapOf("zone_id" to zone.id))
+                if (result.status == CommandStatus.SUCCESS && result.data != null) {
+                    val instancesData = result.data["tool_instances"] as? List<Map<String, Any>> ?: emptyList()
+                    toolInstances = instancesData.mapNotNull { instanceMap ->
+                        try {
+                            ToolInstance(
+                                id = instanceMap["id"] as String,
+                                zone_id = instanceMap["zone_id"] as String,
+                                tool_type = instanceMap["tool_type"] as String,
+                                config_json = instanceMap["config_json"] as String,
+                                config_metadata_json = instanceMap["config_metadata_json"] as String,
+                                order_index = (instanceMap["order_index"] as Number).toInt(),
+                                created_at = (instanceMap["created_at"] as Number).toLong(),
+                                updated_at = (instanceMap["updated_at"] as Number).toLong()
+                            )
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // TODO: Error handling
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+    
+    // Configuration callbacks
+    val onSaveConfig = { config: String ->
+        showingConfigFor?.let { toolTypeId ->
+            // Create new tool
+            coroutineScope.launch {
+                try {
+                    val configMetadata = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema() ?: "{}"
+                    val result = coordinator.processUserAction("create->tool_instance", mapOf(
+                        "zone_id" to zone.id,
+                        "tool_type" to toolTypeId,
+                        "config_json" to config,
+                        "config_metadata_json" to configMetadata
+                    ))
+                    showingConfigFor = null
+                    reloadToolInstances()
+                } catch (e: Exception) {
+                    // TODO: Error handling
+                }
+            }
+        }
+    }
+    
+    val onCancelConfig = {
+        showingConfigFor = null
+    }
+    
+    // Show configuration screen if requested
+    showingConfigFor?.let { toolTypeId ->
+        ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
+            zoneId = zone.id,
+            onSave = onSaveConfig,
+            onCancel = onCancelConfig,
+            existingConfig = null,
+            existingToolId = null,
+            onDelete = null
+        )
+        return // Exit ZoneScreen composition when showing config
+    }
+    
+    Column(
+        modifier = Modifier.padding(16.dp)
+    ) {
         // Header with back button, zone title and add tool button
-        UI.Row(spacing = 12.dp) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             UI.Button(
-                type = ButtonType.BACK,
+                type = ButtonType.DEFAULT,
                 onClick = onBack
             ) {
                 UI.Text(
@@ -75,7 +161,10 @@ fun ZoneScreen(
             }
             
             // Zone title
-            UI.Column(spacing = 4.dp) {
+            Column(
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 UI.Text(
                     text = zone.name,
                     type = TextType.TITLE
@@ -91,9 +180,9 @@ fun ZoneScreen(
             
             // Add tool button
             UI.Button(
-                type = ButtonType.ADD,
+                type = ButtonType.PRIMARY,
                 onClick = {
-                    // TODO: Show available tools to add
+                    showAvailableTools = !showAvailableTools
                 }
             ) {
                 UI.Text(
@@ -103,7 +192,42 @@ fun ZoneScreen(
             }
         }
         
-        UI.Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Available tools list (shown conditionally)
+        if (showAvailableTools) {
+            UI.Card(
+                type = CardType.DEFAULT
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    UI.Text(
+                        text = "Types d'outils disponibles",
+                        type = TextType.SUBTITLE
+                    )
+                    
+                    // List all available tool types
+                    ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
+                        UI.Button(
+                            type = ButtonType.PRIMARY,
+                            onClick = {
+                                showingConfigFor = toolTypeId
+                                showAvailableTools = false
+                            }
+                        ) {
+                            UI.Text(
+                                text = toolType.getDisplayName(),
+                                type = TextType.LABEL
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+        }
         
         if (isLoading) {
             UI.Text(
@@ -130,7 +254,7 @@ fun ZoneScreen(
                     }
                 )
                 
-                UI.Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }

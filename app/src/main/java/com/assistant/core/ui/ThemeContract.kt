@@ -8,7 +8,10 @@ import androidx.compose.ui.unit.Dp
 
 /**
  * ThemeContract - Interface que tous les thèmes doivent implémenter
- * UNIQUEMENT les éléments convenus dans UI_DECISIONS.md
+ * UNIQUEMENT les composants VISUELS (thématisés)
+ * 
+ * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
+ * VISUELS : définis par ce contrat pour thématisation
  * 
  * Chaque thème (DefaultTheme, RetroTheme, etc.) implémente cette interface
  * pour fournir son propre style visuel aux composants
@@ -16,26 +19,10 @@ import androidx.compose.ui.unit.Dp
 interface ThemeContract {
     
     // =====================================
-    // LAYOUT
+    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
-    
-    @Composable
-    fun Column(
-        spacing: Dp?,
-        content: @Composable ColumnScope.() -> Unit
-    )
-    
-    @Composable
-    fun Row(
-        spacing: Dp?,
-        content: @Composable RowScope.() -> Unit
-    )
-    
-    @Composable
-    fun Box(content: @Composable BoxScope.() -> Unit)
-    
-    @Composable
-    fun Spacer(modifier: Modifier)
+    // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
+    // PAS d'interface - accès direct pour flexibilité maximale
     
     // =====================================
     // INTERACTIVE

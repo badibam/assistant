@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.ToolTypeManager
@@ -13,35 +14,20 @@ import org.json.JSONObject
 
 /**
  * UI - API publique unifiée
- * UNIQUEMENT les éléments convenus dans UI_DECISIONS.md
+ * UNIQUEMENT les composants VISUELS (thématisés)
+ * 
+ * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
+ * VISUELS : utiliser UI.* pour thématisation
  * 
  * Principe : UI.* → délégation au thème actuel via CurrentTheme.current
  */
 object UI {
     
     // =====================================
-    // LAYOUT
+    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
-    
-    @Composable
-    fun Column(
-        spacing: Dp? = null,
-        content: @Composable ColumnScope.() -> Unit
-    ) = CurrentTheme.current.Column(spacing, content)
-    
-    @Composable
-    fun Row(
-        spacing: Dp? = null,
-        content: @Composable RowScope.() -> Unit
-    ) = CurrentTheme.current.Row(spacing, content)
-    
-    @Composable
-    fun Box(content: @Composable BoxScope.() -> Unit) = 
-        CurrentTheme.current.Box(content)
-    
-    @Composable
-    fun Spacer(modifier: Modifier) = 
-        CurrentTheme.current.Spacer(modifier)
+    // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
+    // PAS de wrappers - accès direct pour flexibilité maximale
     
     // =====================================
     // INTERACTIVE
@@ -116,6 +102,149 @@ object UI {
         onCancel: () -> Unit = { },
         content: @Composable () -> Unit
     ) = CurrentTheme.current.Dialog(type, onConfirm, onCancel, content)
+    
+    // =====================================
+    // FORMULAIRES UNIFIÉS
+    // =====================================
+    
+    @Composable
+    fun FormField(
+        label: String,
+        value: String,
+        onChange: (String) -> Unit,
+        type: TextFieldType = TextFieldType.TEXT,
+        validation: ValidationRule = ValidationRule.NONE,
+        state: ComponentState = ComponentState.NORMAL,
+        placeholder: String = ""
+    ) {
+        Column {
+            Text(label, TextType.LABEL)
+            TextField(
+                type = type,
+                state = state,
+                value = value,
+                onChange = onChange,
+                placeholder = placeholder.ifEmpty { label }
+            )
+        }
+    }
+    
+    @Composable
+    fun FormSelection(
+        label: String,
+        options: List<String>,
+        selected: String,
+        onSelect: (String) -> Unit
+    ) {
+        Column {
+            Text(label, TextType.LABEL)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                options.forEach { option ->
+                    Button(
+                        type = if (option == selected) ButtonType.PRIMARY else ButtonType.SECONDARY,
+                        onClick = { onSelect(option) }
+                    ) {
+                        Text(option, TextType.LABEL)
+                    }
+                }
+            }
+        }
+    }
+    
+    @Composable
+    fun FormActions(
+        content: @Composable RowScope.() -> Unit
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
+    }
+    
+    // =====================================
+    // BOUTONS AVEC ICÔNES AUTOMATIQUES
+    // =====================================
+    
+    @Composable
+    fun SaveButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("✅", TextType.LABEL) }
+    
+    @Composable
+    fun EditButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("✏️", TextType.LABEL) }
+    
+    @Composable
+    fun DeleteButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("🗑️", TextType.LABEL) }
+    
+    @Composable
+    fun AddButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("➕", TextType.LABEL) }
+    
+    @Composable
+    fun CancelButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("❌", TextType.LABEL) }
+    
+    @Composable
+    fun ConfirmButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("✅", TextType.LABEL) }
+    
+    @Composable
+    fun BackButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("←", TextType.LABEL) }
+    
+    @Composable
+    fun PlayButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("▶️", TextType.LABEL) }
+    
+    @Composable
+    fun StopButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("⏹️", TextType.LABEL) }
+    
+    @Composable
+    fun PauseButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("⏸️", TextType.LABEL) }
+    
+    @Composable
+    fun ConfigButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("⚙️", TextType.LABEL) }
+    
+    @Composable
+    fun InfoButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("ℹ️", TextType.LABEL) }
+    
+    @Composable
+    fun RefreshButton(onClick: () -> Unit) = Button(
+        type = ButtonType.DEFAULT,
+        onClick = onClick
+    ) { Text("🔄", TextType.LABEL) }
     
     // =====================================
     // COMPOSANTS SPÉCIALISÉS

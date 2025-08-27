@@ -25,47 +25,17 @@ import com.assistant.core.ui.DisplayMode
  * DefaultTheme - Implémentation par défaut du ThemeContract
  * 
  * Thème moderne basé sur Material 3 avec nos types sémantiques
- * UNIQUEMENT les éléments convenus dans UI_DECISIONS.md
+ * UNIQUEMENT les composants VISUELS (thématisés)
+ * 
+ * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
  */
 object DefaultTheme : ThemeContract {
     
     // =====================================
-    // LAYOUT
+    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
-    
-    @Composable
-    override fun Column(
-        spacing: Dp?,
-        content: @Composable ColumnScope.() -> Unit
-    ) {
-        androidx.compose.foundation.layout.Column(
-            verticalArrangement = spacing?.let { Arrangement.spacedBy(it) } ?: Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            content = content
-        )
-    }
-    
-    @Composable
-    override fun Row(
-        spacing: Dp?,
-        content: @Composable RowScope.() -> Unit
-    ) {
-        androidx.compose.foundation.layout.Row(
-            horizontalArrangement = spacing?.let { Arrangement.spacedBy(it) } ?: Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically,
-            content = content
-        )
-    }
-    
-    @Composable
-    override fun Box(content: @Composable BoxScope.() -> Unit) {
-        androidx.compose.foundation.layout.Box(content = content)
-    }
-    
-    @Composable
-    override fun Spacer(modifier: Modifier) {
-        androidx.compose.foundation.layout.Spacer(modifier = modifier)
-    }
+    // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
+    // PAS d'implémentation - accès direct pour flexibilité maximale
     
     // =====================================
     // INTERACTIVE
@@ -80,12 +50,9 @@ object DefaultTheme : ThemeContract {
         content: @Composable () -> Unit
     ) {
         val buttonColors = when (type) {
-            ButtonType.SAVE -> ButtonDefaults.buttonColors()
-            ButtonType.DELETE -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ButtonType.CONFIRM_DELETE -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ButtonType.CANCEL -> ButtonDefaults.outlinedButtonColors()
-            ButtonType.ADD -> ButtonDefaults.buttonColors()
-            ButtonType.BACK -> ButtonDefaults.textButtonColors()
+            ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
+            ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
+            ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
         }
         
         val isEnabled = when (state) {
@@ -94,24 +61,15 @@ object DefaultTheme : ThemeContract {
         }
         
         when (type) {
-            ButtonType.CANCEL, ButtonType.BACK -> {
-                if (type == ButtonType.BACK) {
-                    TextButton(
-                        onClick = onClick,
-                        enabled = isEnabled,
-                        colors = buttonColors as ButtonColors,
-                        content = { content() }
-                    )
-                } else {
-                    OutlinedButton(
-                        onClick = onClick,
-                        enabled = isEnabled,
-                        colors = buttonColors as ButtonColors,
-                        content = { content() }
-                    )
-                }
+            ButtonType.SECONDARY -> {
+                OutlinedButton(
+                    onClick = onClick,
+                    enabled = isEnabled,
+                    colors = buttonColors as ButtonColors,
+                    content = { content() }
+                )
             }
-            else -> {
+            ButtonType.PRIMARY, ButtonType.DEFAULT -> {
                 androidx.compose.material3.Button(
                     onClick = onClick,
                     enabled = isEnabled,

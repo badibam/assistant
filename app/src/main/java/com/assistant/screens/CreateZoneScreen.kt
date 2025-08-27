@@ -2,6 +2,7 @@ package com.assistant.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -13,14 +14,15 @@ import kotlinx.coroutines.launch
 
 /**
  * Screen for creating/editing a zone
- * Migrated to use new UI.* system
+ * Uses hybrid system: Compose layouts + UI.* visual components
  */
 @Composable
 fun CreateZoneScreen(
     existingZone: Zone? = null,
     onCancel: () -> Unit = {},
     onCreate: ((String, String?, String?) -> Unit)? = null,
-    onUpdate: (() -> Unit)? = null
+    onUpdate: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -34,26 +36,57 @@ fun CreateZoneScreen(
     // Validation state
     var nameError by remember { mutableStateOf(false) }
     
+    // Delete confirmation state
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     val isEditing = existingZone != null
     
-    UI.Column {
-        // Title
-        UI.Text(
-            text = if (isEditing) "Modifier Zone" else "Créer Zone",
-            type = TextType.TITLE
-        )
+    Column(
+        modifier = Modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Title with delete button for editing
+        if (isEditing) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UI.Text(
+                    text = "Modifier Zone",
+                    type = TextType.TITLE
+                )
+                
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    onClick = {
+                        showDeleteDialog = true
+                    }
+                ) {
+                    UI.Text(
+                        text = "Supprimer",
+                        type = TextType.LABEL
+                    )
+                }
+            }
+        } else {
+            UI.Text(
+                text = "Créer Zone",
+                type = TextType.TITLE
+            )
+        }
         
-        UI.Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Form fields
-        UI.Column {
+        Column {
             // Name field (required)
             UI.Text(
                 text = "Nom de la zone",
                 type = TextType.SUBTITLE
             )
             
-            UI.Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
             UI.TextField(
                 type = TextFieldType.TEXT,
@@ -66,14 +99,14 @@ fun CreateZoneScreen(
             )
             
             if (nameError) {
-                UI.Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 UI.Text(
                     text = "Le nom est obligatoire",
                     type = TextType.ERROR
                 )
             }
             
-            UI.Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             // Description field (optional)
             UI.Text(
@@ -81,7 +114,7 @@ fun CreateZoneScreen(
                 type = TextType.SUBTITLE
             )
             
-            UI.Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
             UI.TextField(
                 type = TextFieldType.TEXT,
@@ -90,12 +123,14 @@ fun CreateZoneScreen(
                 placeholder = "Description (optionnel)"
             )
             
-            UI.Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Action buttons
-            UI.Row {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 UI.Button(
-                    type = ButtonType.CANCEL,
+                    type = ButtonType.SECONDARY,
                     onClick = onCancel
                 ) {
                     UI.Text(
@@ -104,17 +139,26 @@ fun CreateZoneScreen(
                     )
                 }
                 
-                UI.Spacer(modifier = Modifier.width(12.dp))
-                
                 UI.Button(
-                    type = ButtonType.SAVE,
+                    type = ButtonType.PRIMARY,
                     onClick = {
                         if (name.trim().isNotEmpty()) {
                             if (isEditing) {
                                 // Handle update
                                 coroutineScope.launch {
-                                    // TODO: Implement update logic via coordinator
-                                    onUpdate?.invoke()
+                                    try {
+                                        val result = coordinator.processUserAction(
+                                            "update->zone",
+                                            mapOf(
+                                                "zone_id" to existingZone!!.id,
+                                                "name" to name.trim(),
+                                                "description" to (description.takeIf { it.isNotBlank() } ?: "")
+                                            )
+                                        )
+                                        onUpdate?.invoke()
+                                    } catch (e: Exception) {
+                                        // TODO: Error handling
+                                    }
                                 }
                             } else {
                                 // Handle create
@@ -130,6 +174,38 @@ fun CreateZoneScreen(
                         type = TextType.LABEL
                     )
                 }
+            }
+        }
+        
+        // Delete confirmation dialog
+        if (showDeleteDialog && isEditing) {
+            UI.Dialog(
+                type = DialogType.DANGER,
+                onConfirm = {
+                    coroutineScope.launch {
+                        try {
+                            val result = coordinator.processUserAction(
+                                "delete->zone",
+                                mapOf(
+                                    "zone_id" to existingZone!!.id
+                                )
+                            )
+                            showDeleteDialog = false
+                            onDelete?.invoke()
+                        } catch (e: Exception) {
+                            // TODO: Error handling
+                            showDeleteDialog = false
+                        }
+                    }
+                },
+                onCancel = {
+                    showDeleteDialog = false
+                }
+            ) {
+                UI.Text(
+                    "Êtes-vous sûr de vouloir supprimer la zone \"${existingZone?.name}\" ? Cette action est irréversible.",
+                    TextType.BODY
+                )
             }
         }
     }

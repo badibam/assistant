@@ -102,8 +102,13 @@ enum class DialogType {
 /**
  * Types de boutons avec sémantique métier
  */
+/**
+ * Types de boutons simplifiés
+ */
 enum class ButtonType {
-    SAVE, DELETE, CANCEL, ADD, BACK, CONFIRM_DELETE
+    PRIMARY,    // Bouton principal (ex: sauvegarder)
+    SECONDARY,  // Bouton secondaire (ex: annuler)
+    DEFAULT     // Bouton neutre (tous les boutons avec icônes)
 }
 
 /**
@@ -124,5 +129,6 @@ enum class TextType {
  * Types de cartes
  */
 enum class CardType {
+    DEFAULT
     // Types à ajouter au fur et à mesure des besoins
 }

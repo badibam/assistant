@@ -1,13 +1,13 @@
-# TODO - Prochaines étapes après refactor UI
+# TODO - Prochaines étapes après migration UI
 
-## 🔗 INTÉGRATION & COMPILATION (Priorité 1)
-- [x] **Ajouter imports manquants** dans tous les fichiers ui/core/
-- [x] **Corriger erreurs de compilation** (probablement des références manquantes)  
-- [x] **Connecter entités réelles** : remplacer `zone: Any` par `zone: Zone`, `tool: Any` par `tool: ToolInstance`
-- [ ] **Tester rendu basique** : vérifier qu'un `UI.Button(ButtonType.SAVE)` s'affiche
-- [ ] **Tester changement thème** : `CurrentTheme.switchTheme()` fonctionne
+## ✅ MIGRATION UI COMPLÈTE 
+- [x] **Système UI unifié** avec `UI.*` et support spacing + alignement par défaut
+- [x] **Écrans migrés** : MainScreen, ZoneScreen, CreateZoneScreen vers nouveaux UI.*
+- [x] **Long clicks fonctionnels** pour ZoneCard et ToolCard
+- [x] **Layout optimisé** ZoneScreen avec header horizontal (← Titre +)
+- [x] **Compilation réussie** et app fonctionnelle
 
-## 🛠️ INTÉGRATION TOOL TYPES (Priorité 2)  
+## 🛠️ INTÉGRATION TOOL TYPES (Priorité 1)  
 - [ ] **Étendre ToolTypeContract** pour définir le contenu des zones libres par DisplayMode
 - [ ] **Implémenter dans TrackingToolType** :
   - `getContentForDisplayMode(LINE)` → boutons "+" etc.
@@ -16,23 +16,24 @@
 - [ ] **Remplacer tous les TODO** dans UI.ToolCard() par appels tool type
 - [ ] **Connecter icônes** via ThemeIconManager + tool types
 
-## 📝 SYSTÈME DE FORMULAIRES (Si validé)
-- [ ] **Décider** : FormField/FormSelection/FormActions à implémenter ?
-- [ ] **ValidationRule** : implémenter la validation intégrée
-- [ ] **Intégrer dans ThemeContract** et DefaultTheme
+## 📝 LAYOUT AVANCÉ (Priorité 2)
+- [ ] **Implémenter weight** pour répartition d'espace (si nécessaire)
+- [ ] **Ajouter arrangement** pour alignement spécifique (Start/End/SpaceBetween)
+- [ ] **Tester composants avancés** : Dialog, Toast, Snackbar
 
-## 🧪 TESTS & MIGRATION
-- [ ] **Tester tous les composants** : Button, TextField, Text, Card, Dialog, Toast, Snackbar
-- [ ] **Vérifier DisplayModes** : tailles correctes selon ICON/MINIMAL/LINE/etc.
-- [ ] **Migrer écrans existants** : MainScreen, ZoneScreen, CreateZoneScreen avec nouveaux UI.*
+## 🔧 FONCTIONNALITÉS MANQUANTES
+- [ ] **Navigation outils** : Implémenter onClick pour ouvrir les écrans d'outils
+- [ ] **Ajout d'outils** : Connecter le bouton "+" pour afficher les types disponibles
+- [ ] **Configuration outils** : Connecter onLongClick pour configuration
+- [ ] **Formulaire CreateZone** : Connecter au coordinator pour création réelle
 
-## 🎯 VALIDATION FINALE
-- [ ] **Compilation réussie** sans erreurs
-- [ ] **Affichage correct** des composants avec thème par défaut
-- [ ] **Architecture respectée** : contenu (UI.kt) séparé de l'apparence (thème)
-- [ ] **DisplayModes fonctionnels** avec zones libres définies par tool types
+## 🎯 VALIDATION & TESTS
+- [ ] **Test navigation complète** : Main → Zone → Outil → Config
+- [ ] **Test gestuelles** : Click, long click, retour
+- [ ] **Vérifier DisplayModes** : tailles correctes ICON/MINIMAL/LINE/etc.
+- [ ] **Validation theme** : Vérifier que tous les composants respectent DefaultTheme
 
 ---
 
-**État actuel** : Architecture complète créée, prête pour intégration et tests.  
-**Prochaine étape** : Résoudre compilation + imports pour tester le système.
+**État actuel** : Système UI complet et fonctionnel, écrans de base migrés.  
+**Prochaine étape** : Intégrer les tool types pour affichage dynamique du contenu.
