@@ -11,7 +11,7 @@ import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
-// import com.assistant.tools.tracking.ui.TrackingScreen
+import com.assistant.tools.tracking.ui.TrackingScreen
 import org.json.JSONObject
 
 /**
@@ -32,10 +32,20 @@ object TrackingToolType : ToolTypeContract {
             "data_validation": "",
             "display_mode": "",
             "icon_name": "activity",
-            "type": "",
-            "show_value": "",
-            "item_mode": "",
-            "auto_switch": ""
+            "type": "numeric",
+            "auto_switch": "",
+            "items": [
+                {
+                    "name": "Eau",
+                    "unit": "ml",
+                    "default_value": "250"
+                },
+                {
+                    "name": "Marche",
+                    "unit": "min",
+                    "default_value": "30"
+                }
+            ]
         }
         """.trimIndent()
     }
@@ -55,17 +65,6 @@ object TrackingToolType : ToolTypeContract {
                 "values": ["numeric", "text", "scale", "boolean", "duration", "choice", "counter"],
                 "required": true,
                 "description": "Data type for all items in this tracking instance"
-            },
-            "show_value": {
-                "type": "boolean",
-                "default": true,
-                "description": "Whether to show value input field in UI"
-            },
-            "item_mode": {
-                "type": "enum",
-                "values": ["free", "predefined", "both"],
-                "default": "free",
-                "description": "Item input mode: free text, predefined list, or both"
             },
             "auto_switch": {
                 "type": "boolean",
@@ -122,11 +121,16 @@ object TrackingToolType : ToolTypeContract {
     override fun getUsageScreen(
         toolInstanceId: String,
         configJson: String,
+        zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     ) {
-        // TrackingScreen temporairement désactivé
-        androidx.compose.material3.Text("Tracking UI en cours de migration...")
+        TrackingScreen(
+            toolInstanceId = toolInstanceId,
+            zoneName = zoneName,
+            onNavigateBack = onNavigateBack,
+            onConfigureClick = onLongClick
+        )
     }
     
     override fun validateData(data: Any, operation: String): ValidationResult {

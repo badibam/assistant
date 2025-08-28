@@ -23,6 +23,9 @@ import java.util.UUID
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import com.assistant.core.coordinator.CancellationToken
+import java.util.ArrayDeque
 
 /**
  * Represents a queued operation with its execution context
@@ -123,20 +126,22 @@ class Coordinator(context: Context) {
     }
     
     /**
-     * Process next operation from queue
+     * Process next operation from queue - waits for coordinator to be available
      */
     private suspend fun processQueue(): CommandResult {
-        if (_state.value != CoordinatorState.IDLE) {
-            return CommandResult(
-                status = CommandStatus.ERROR,
-                error = "Coordinator busy"
-            )
+        // Wait for coordinator to be idle instead of rejecting
+        while (_state.value != CoordinatorState.IDLE) {
+            kotlinx.coroutines.delay(50) // Wait 50ms before checking again
         }
         
-        val queuedOp = normalQueue.removeFirstOrNull() ?: return CommandResult(
-            status = CommandStatus.ERROR,
-            error = "No operations in queue"
-        )
+        val queuedOp = if (normalQueue.isNotEmpty()) {
+            normalQueue.removeFirst()
+        } else {
+            return CommandResult(
+                status = CommandStatus.ERROR,
+                error = "No operations in queue"
+            )
+        }
         
         return executeQueuedOperation(queuedOp)
     }
@@ -362,6 +367,19 @@ class Coordinator(context: Context) {
         return when {
             command.action == "update->zone" -> executeServiceOperation(command, "zone_service", "update")
             command.action == "update->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "update")
+            command.action == "update->tool_data" -> {
+                val toolType = command.params["tool_type"] as? String
+                val operation = command.params["operation"] as? String ?: "update"
+                if (toolType.isNullOrBlank()) {
+                    CommandResult(
+                        commandId = command.id,
+                        status = CommandStatus.ERROR,
+                        error = "update->tool_data requires 'tool_type' parameter"
+                    )
+                } else {
+                    executeServiceOperation(command, "${toolType}_service", operation)
+                }
+            }
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,

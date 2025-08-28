@@ -155,6 +155,13 @@ interface ThemeContract {
         content: @Composable RowScope.() -> Unit
     )
     
+    @Composable
+    fun Checkbox(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String?
+    )
+    
     // =====================================
     // BOUTONS AVEC ICÔNES
     // =====================================

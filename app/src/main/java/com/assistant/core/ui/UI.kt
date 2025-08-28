@@ -159,6 +159,13 @@ object UI {
         content: @Composable RowScope.() -> Unit
     ) = CurrentTheme.current.FormActions(content)
     
+    @Composable
+    fun Checkbox(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String? = null
+    ) = CurrentTheme.current.Checkbox(checked, onCheckedChange, label)
+    
     // =====================================
     // BOUTONS AVEC ICÔNES AUTOMATIQUES
     // =====================================

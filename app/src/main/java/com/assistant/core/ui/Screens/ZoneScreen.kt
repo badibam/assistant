@@ -39,6 +39,9 @@ fun ZoneScreen(
     var showingConfigFor by remember { mutableStateOf<String?>(null) }
     var editingTool by remember { mutableStateOf<ToolInstance?>(null) }
     
+    // State for tool usage screen
+    var selectedToolInstance by remember { mutableStateOf<ToolInstance?>(null) }
+    
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
         isLoading = true
@@ -173,6 +176,23 @@ fun ZoneScreen(
         return // Exit ZoneScreen composition when showing config
     }
     
+    // Show tool usage screen if selected
+    selectedToolInstance?.let { toolInstance ->
+        ToolTypeManager.getToolType(toolInstance.tool_type)?.getUsageScreen(
+            toolInstanceId = toolInstance.id,
+            configJson = toolInstance.config_json,
+            zoneName = zone.name,
+            onNavigateBack = {
+                selectedToolInstance = null
+            },
+            onLongClick = {
+                editingTool = toolInstance
+                showingConfigFor = toolInstance.tool_type
+            }
+        )
+        return // Exit ZoneScreen composition when showing usage screen
+    }
+    
     Column(
         modifier = Modifier.padding(16.dp)
     ) {
@@ -280,7 +300,7 @@ fun ZoneScreen(
                     displayMode = DisplayMode.LINE,
                     context = context,
                     onClick = {
-                        // TODO: Open tool screen
+                        selectedToolInstance = toolInstance
                     },
                     onLongClick = {
                         editingTool = toolInstance

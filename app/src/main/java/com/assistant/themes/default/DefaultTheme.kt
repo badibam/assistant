@@ -91,6 +91,35 @@ object DefaultTheme : ThemeContract {
                     content()
                 }
             }
+        } else if (size == Size.S) {
+            // Pour Size.S, utiliser Surface + clickable similaire à XS mais plus grand
+            val surfaceColors = when (type) {
+                ButtonType.PRIMARY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
+                ButtonType.SECONDARY -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+                ButtonType.DEFAULT -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+            }
+            
+            Surface(
+                color = surfaceColors.first,
+                contentColor = surfaceColors.second,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                border = if (type == ButtonType.SECONDARY) {
+                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                } else null,
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 36.dp, minHeight = 36.dp) // Dimensions plus grandes que XS
+                    .wrapContentSize()
+                    .clickable(enabled = isEnabled) { 
+                        if (isEnabled) onClick() 
+                    }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.defaultMinSize(minWidth = 24.dp, minHeight = 24.dp)
+                ) {
+                    content()
+                }
+            }
         } else {
             // Pour les autres tailles, utiliser les boutons Material normaux
             val buttonColors = when (type) {
@@ -432,13 +461,22 @@ object DefaultTheme : ThemeContract {
         
         Column {
             Text(displayLabel, TextType.LABEL)
-            TextField(
-                type = type,
-                state = state,
-                value = value,
-                onChange = onChange,
-                placeholder = label
-            )
+            
+            if (readonly) {
+                // Display as text when readonly
+                Text(
+                    text = if (value.isNotBlank()) value else "(vide)",
+                    type = TextType.BODY
+                )
+            } else {
+                TextField(
+                    type = type,
+                    state = state,
+                    value = value,
+                    onChange = onChange,
+                    placeholder = label
+                )
+            }
         }
     }
     
@@ -499,6 +537,27 @@ object DefaultTheme : ThemeContract {
             verticalAlignment = Alignment.CenterVertically,
             content = content
         )
+    }
+    
+    @Composable
+    override fun Checkbox(
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        label: String?
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            androidx.compose.material3.Checkbox(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+            
+            if (label != null) {
+                Text(label, TextType.BODY)
+            }
+        }
     }
     
     // =====================================

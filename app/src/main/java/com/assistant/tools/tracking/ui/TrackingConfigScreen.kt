@@ -144,20 +144,6 @@ fun TrackingConfigScreen(
             } ?: defaultConfig.optString("type")
         )
     }
-    var showValue by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("show_value") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("show_value")
-        )
-    }
-    var itemMode by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("item_mode") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("item_mode")
-        )
-    }
     var autoSwitch by remember(existingConfig) { 
         mutableStateOf(
             existingConfig?.let { 
@@ -211,9 +197,7 @@ fun TrackingConfigScreen(
                      management.isNotBlank() &&
                      configValidation.isNotBlank() &&
                      dataValidation.isNotBlank() &&
-                     trackingType.isNotBlank() &&
-                     showValue.isNotBlank() &&
-                     itemMode.isNotBlank()
+                     trackingType.isNotBlank()
         
         if (isValid) {
             val config = JSONObject().apply {
@@ -225,8 +209,6 @@ fun TrackingConfigScreen(
             put("display_mode", displayMode)
             put("icon_name", iconName)
             put("type", trackingType)
-            put("show_value", showValue)
-            put("item_mode", itemMode)
             put("auto_switch", autoSwitch)
             put("items", JSONArray().apply {
                 items.forEach { item ->
@@ -450,54 +432,6 @@ fun TrackingConfigScreen(
                     required = true
                 )
                 
-                UI.FormSelection(
-                    label = "Mode des items",
-                    options = listOf("Libre (free)", "Prédéfini (predefined)", "Mixte (both)"),
-                    selected = when(itemMode) {
-                        "free" -> "Libre (free)"
-                        "predefined" -> "Prédéfini (predefined)"
-                        "both" -> "Mixte (both)"
-                        else -> itemMode
-                    },
-                    onSelect = { selectedLabel ->
-                        val newMode = when {
-                            selectedLabel.contains("(free)") -> "free"
-                            selectedLabel.contains("(predefined)") -> "predefined"
-                            selectedLabel.contains("(both)") -> "both"
-                            else -> selectedLabel
-                        }
-                        
-                        // Cancel editing if in progress when mode changes
-                        if (itemMode != newMode) {
-                            editingItemIndex = null
-                            editItemName = ""
-                                    }
-                        
-                        itemMode = newMode
-                    },
-                    required = true
-                )
-                
-                // Show value option (only for predefined and mixed modes)
-                if (itemMode == "predefined" || itemMode == "both") {
-                    UI.FormSelection(
-                        label = "Afficher valeur",
-                        options = listOf("Afficher", "Masquer"),
-                        selected = when(showValue) {
-                            "show" -> "Afficher"
-                            "hide" -> "Masquer"
-                            else -> showValue
-                        },
-                        onSelect = { selectedLabel ->
-                            showValue = when(selectedLabel) {
-                                "Afficher" -> "show"
-                                "Masquer" -> "hide"
-                                else -> selectedLabel
-                            }
-                        },
-                        required = true
-                    )
-                }
                 
                 // Auto-switch (only for duration)
                 if (trackingType == "duration") {
@@ -520,8 +454,8 @@ fun TrackingConfigScreen(
             }
         }
         
-        // Card 3: Liste des items (seulement en mode Prédéfini ou Mixte)
-        if (itemMode == "predefined" || itemMode == "both") {
+        // Card 3: Liste des items prédéfinis
+        if (trackingType.isNotBlank()) {
             UI.Card(type = CardType.DEFAULT) {
                 Column(
                     modifier = Modifier.padding(16.dp),

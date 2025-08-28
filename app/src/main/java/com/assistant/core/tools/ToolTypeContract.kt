@@ -88,6 +88,7 @@ interface ToolTypeContract {
     fun getUsageScreen(
         toolInstanceId: String,
         configJson: String,
+        zoneName: String,
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
