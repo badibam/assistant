@@ -644,7 +644,12 @@ fun TrackingConfigScreen(
             }
             
             if (isEditing && onDelete != null) {
-                UI.DeleteButton(onDelete)
+                UI.Button(
+                    type = ButtonType.SECONDARY,
+                    onClick = onDelete
+                ) {
+                    UI.Text("Supprimer", TextType.LABEL)
+                }
             }
         }
         

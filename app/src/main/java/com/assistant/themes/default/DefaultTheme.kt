@@ -36,6 +36,7 @@ import com.assistant.core.ui.FieldType
  * 
  * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
  */
+@OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
     
     // =====================================
@@ -77,7 +78,7 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 } else null,
                 modifier = Modifier
-                    .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp) // Dimensions minimales = hauteur d'une ligne de texte
+                    .defaultMinSize(minWidth = 30.dp, minHeight = 30.dp) // Dimensions minimales
                     .wrapContentSize()
                     .clickable(enabled = isEnabled) { 
                         if (isEnabled) onClick() 
@@ -397,9 +398,11 @@ object DefaultTheme : ThemeContract {
         }
         
         androidx.compose.material3.Card(
-            onClick = onClick,
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            modifier = cardModifier
+            modifier = cardModifier.combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
         ) {
             // Le contenu vient de UI.ToolCard()
             Box(modifier = Modifier.padding(cardPadding)) {

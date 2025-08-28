@@ -35,8 +35,9 @@ fun ZoneScreen(
     // State for showing/hiding available tools list
     var showAvailableTools by remember { mutableStateOf(false) }
     
-    // State for tool configuration screen
+    // State for tool configuration screen  
     var showingConfigFor by remember { mutableStateOf<String?>(null) }
+    var editingTool by remember { mutableStateOf<ToolInstance?>(null) }
     
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
@@ -104,7 +105,24 @@ fun ZoneScreen(
     
     // Configuration callbacks
     val onSaveConfig = { config: String ->
-        showingConfigFor?.let { toolTypeId ->
+        editingTool?.let { tool ->
+            // Update existing tool
+            coroutineScope.launch {
+                try {
+                    val configMetadata = ToolTypeManager.getToolType(tool.tool_type)?.getConfigSchema() ?: "{}"
+                    val result = coordinator.processUserAction("update->tool_instance", mapOf(
+                        "tool_instance_id" to tool.id,
+                        "config_json" to config,
+                        "config_metadata_json" to configMetadata
+                    ))
+                    editingTool = null
+                    showingConfigFor = null
+                    reloadToolInstances()
+                } catch (e: Exception) {
+                    // TODO: Error handling
+                }
+            }
+        } ?: showingConfigFor?.let { toolTypeId ->
             // Create new tool
             coroutineScope.launch {
                 try {
@@ -126,6 +144,7 @@ fun ZoneScreen(
     
     val onCancelConfig = {
         showingConfigFor = null
+        editingTool = null
     }
     
     // Show configuration screen if requested
@@ -134,9 +153,22 @@ fun ZoneScreen(
             zoneId = zone.id,
             onSave = onSaveConfig,
             onCancel = onCancelConfig,
-            existingConfig = null,
-            existingToolId = null,
-            onDelete = null
+            existingConfig = editingTool?.config_json,
+            existingToolId = editingTool?.id,
+            onDelete = editingTool?.let { tool ->
+                {
+                    coroutineScope.launch {
+                        try {
+                            coordinator.processUserAction("delete->tool_instance", mapOf("tool_instance_id" to tool.id))
+                            editingTool = null
+                            showingConfigFor = null
+                            reloadToolInstances()
+                        } catch (e: Exception) {
+                            // TODO: Error handling
+                        }
+                    }
+                }
+            }
         )
         return // Exit ZoneScreen composition when showing config
     }
@@ -246,11 +278,13 @@ fun ZoneScreen(
                 UI.ToolCard(
                     tool = toolInstance,
                     displayMode = DisplayMode.LINE,
+                    context = context,
                     onClick = {
                         // TODO: Open tool screen
                     },
                     onLongClick = {
-                        // TODO: Open tool configuration
+                        editingTool = toolInstance
+                        showingConfigFor = toolInstance.tool_type
                     }
                 )
                 

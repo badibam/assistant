@@ -230,9 +230,30 @@ object UI {
     }
     
     @Composable
+    fun ToolCardHeader(
+        tool: ToolInstance,
+        context: android.content.Context
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icône réelle
+            val iconName = JSONObject(tool.config_json).optString("icon", "activity")
+            val iconResourceId = ThemeIconManager.getIconResource(context, "default", iconName)
+            Icon(iconResourceId, size = 24.dp)
+            
+            // Nom de l'instance
+            val toolInstanceName = JSONObject(tool.config_json).optString("name", "Sans nom")
+            Text(toolInstanceName, TextType.BODY)
+        }
+    }
+    
+    @Composable
     fun ToolCard(
         tool: ToolInstance,
         displayMode: DisplayMode,
+        context: android.content.Context,
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
     ) {
@@ -248,28 +269,12 @@ object UI {
                     Text("T", TextType.BODY) // Placeholder
                 }
                 DisplayMode.MINIMAL -> {
-                    Row {
-                        Text("T", TextType.BODY) // TODO: Icône
-                        val toolInstanceName = try {
-                            JSONObject(tool.config_json).optString("name")
-                        } catch (e: Exception) {
-                            ""
-                        }
-                        Text(toolInstanceName, TextType.BODY)
-                    }
+                    ToolCardHeader(tool, context)
                 }
                 DisplayMode.LINE -> {
                     Row {
                         // Icône + titre à gauche (partie fixe)
-                        Row {
-                            Text("T", TextType.BODY) // TODO: Icône via tool type
-                            val toolInstanceName = try {
-                                JSONObject(tool.config_json).optString("name")
-                            } catch (e: Exception) {
-                                ""
-                            }
-                            Text(toolInstanceName, TextType.BODY)
-                        }
+                        ToolCardHeader(tool, context)
                         // Zone libre à droite définie par tool type
                         Box {
                             // TODO: Contenu libre LINE défini par tool type
@@ -280,15 +285,7 @@ object UI {
                     Column {
                         Row {
                             // Icône + titre à gauche (partie fixe)
-                            Row {
-                                Text("T", TextType.BODY) // TODO: Icône via tool type
-                                val toolInstanceName = try {
-                                JSONObject(tool.config_json).optString("name")
-                            } catch (e: Exception) {
-                                ""
-                            }
-                            Text(toolInstanceName, TextType.BODY)
-                            }
+                            ToolCardHeader(tool, context)
                             // Zone libre en haut à droite définie par tool type
                             Box {
                                 // TODO: Contenu libre haut défini par tool type selon mode
