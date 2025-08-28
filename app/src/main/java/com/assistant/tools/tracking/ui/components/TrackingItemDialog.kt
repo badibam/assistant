@@ -28,14 +28,14 @@ fun TrackingItemDialog(
     mode: TrackingDialogMode,
     initialName: String = "",
     initialUnit: String = "",
-    initialDefaultValue: String = "",
-    onConfirm: (name: String, unit: String, defaultValue: String, addToPredefined: Boolean) -> Unit,
+    initialDefaultQuantity: String = "",
+    onConfirm: (name: String, unit: String, defaultQuantity: String, addToPredefined: Boolean) -> Unit,
     onCancel: () -> Unit
 ) {
     // Dialog state
     var itemName by remember(isVisible) { mutableStateOf(initialName) }
     var itemUnit by remember(isVisible) { mutableStateOf(initialUnit) }
-    var itemDefaultValue by remember(isVisible) { mutableStateOf(initialDefaultValue) }
+    var itemDefaultQuantity by remember(isVisible) { mutableStateOf(initialDefaultQuantity) }
     var addToPredefined by remember(isVisible) { mutableStateOf(false) }
     
     // Reset fields when dialog becomes visible
@@ -43,7 +43,7 @@ fun TrackingItemDialog(
         if (isVisible) {
             itemName = initialName
             itemUnit = initialUnit
-            itemDefaultValue = initialDefaultValue
+            itemDefaultQuantity = initialDefaultQuantity
         }
     }
     
@@ -72,7 +72,7 @@ fun TrackingItemDialog(
             type = dialogType,
             onConfirm = {
                 if (itemName.isNotBlank()) {
-                    onConfirm(itemName.trim(), itemUnit.trim(), itemDefaultValue.trim(), addToPredefined)
+                    onConfirm(itemName.trim(), itemUnit.trim(), itemDefaultQuantity.trim(), addToPredefined)
                 }
             },
             onCancel = onCancel
@@ -99,9 +99,8 @@ fun TrackingItemDialog(
                 if (trackingType == "numeric") {
                     UI.FormField(
                         label = valueLabel,
-                        value = itemDefaultValue,
-                        onChange = { itemDefaultValue = it },
-                        type = TextFieldType.NUMERIC,
+                        value = itemDefaultQuantity,
+                        onChange = { itemDefaultQuantity = it },
                         fieldType = FieldType.NUMERIC,
                         required = isValueRequired
                     )

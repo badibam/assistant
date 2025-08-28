@@ -299,12 +299,10 @@ fun TrackingConfigScreen(
                     // Icône actuelle avec SafeIcon
                     SafeIcon(context, "default", iconName, 32.dp)
                     
-                    UI.Button(
-                        type = ButtonType.SECONDARY,
+                    UI.ActionButton(
+                        action = ButtonAction.SELECT,
                         onClick = { showIconSelector = true }
-                    ) {
-                        UI.Text("Choisir", TextType.LABEL)
-                    }
+                    )
                 }
                 
                 UI.FormSelection(
@@ -467,8 +465,8 @@ fun TrackingConfigScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         UI.Text("Items prédéfinis", TextType.SUBTITLE)
-                        UI.Button(
-                            type = ButtonType.SECONDARY,
+                        UI.ActionButton(
+                            action = ButtonAction.ADD,
                             onClick = { 
                                 // Ouvrir dialog pour nouvel item
                                 editingItemIndex = null
@@ -477,9 +475,7 @@ fun TrackingConfigScreen(
                                 editItemUnit = String()
                                 showItemDialog = true
                             }
-                        ) {
-                            UI.Text("+ Élément", TextType.LABEL)
-                        }
+                        )
                     }
                     
                     // En-tête du tableau (toujours affiché)
@@ -563,27 +559,22 @@ fun TrackingConfigScreen(
         
         // Actions
         UI.FormActions {
-            UI.Button(
-                type = ButtonType.PRIMARY,
+            UI.ActionButton(
+                action = if (isEditing) ButtonAction.SAVE else ButtonAction.CREATE,
                 onClick = handleSave
-            ) {
-                UI.Text(if (isEditing) "Sauvegarder" else "Créer", TextType.LABEL)
-            }
+            )
             
-            UI.Button(
-                type = ButtonType.SECONDARY,
+            UI.ActionButton(
+                action = ButtonAction.CANCEL,
                 onClick = onCancel
-            ) {
-                UI.Text("Annuler", TextType.LABEL)
-            }
+            )
             
             if (isEditing && onDelete != null) {
-                UI.Button(
-                    type = ButtonType.SECONDARY,
+                UI.ActionButton(
+                    action = ButtonAction.DELETE,
+                    requireConfirmation = true,
                     onClick = onDelete
-                ) {
-                    UI.Text("Supprimer", TextType.LABEL)
-                }
+                )
             }
         }
         
@@ -652,7 +643,6 @@ fun TrackingConfigScreen(
                             label = "Quantité par défaut",
                             value = editItemDefaultValue,
                             onChange = { editItemDefaultValue = it },
-                            type = TextFieldType.NUMERIC,
                             fieldType = FieldType.NUMERIC
                         )
                         
@@ -750,11 +740,15 @@ private fun ItemRowReadonly(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             modifier = Modifier.width(60.dp)
         ) {
-            UI.UpButton(
+            UI.ActionButton(
+                action = ButtonAction.UP,
+                display = ButtonDisplay.ICON,
                 size = Size.XS,
                 onClick = onMoveUp
             )
-            UI.DownButton(
+            UI.ActionButton(
+                action = ButtonAction.DOWN,
+                display = ButtonDisplay.ICON,
                 size = Size.XS,
                 onClick = onMoveDown
             )
@@ -785,15 +779,20 @@ private fun ItemRowReadonly(
         }
         
         // Action buttons
-        UI.EditButton(
+        UI.ActionButton(
+            action = ButtonAction.EDIT,
+            display = ButtonDisplay.ICON,
             size = Size.XS,
             onClick = onEdit
         )
         
         Spacer(modifier = Modifier.width(4.dp))
         
-        UI.DeleteButton(
+        UI.ActionButton(
+            action = ButtonAction.DELETE,
+            display = ButtonDisplay.ICON,
             size = Size.XS,
+            requireConfirmation = true,
             onClick = onDelete
         )
     }

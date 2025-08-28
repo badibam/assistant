@@ -38,8 +38,20 @@ interface ThemeContract {
     )
     
     @Composable
+    fun ActionButton(
+        action: ButtonAction,
+        display: ButtonDisplay,
+        size: Size,
+        type: ButtonType?,
+        enabled: Boolean,
+        requireConfirmation: Boolean,
+        confirmMessage: String?,
+        onClick: () -> Unit
+    )
+    
+    @Composable
     fun TextField(
-        type: TextFieldType,
+        fieldType: FieldType,
         state: ComponentState,
         value: String,
         onChange: (String) -> Unit,
@@ -132,13 +144,12 @@ interface ThemeContract {
         label: String,
         value: String,
         onChange: (String) -> Unit,
-        type: TextFieldType,
+        fieldType: FieldType,
         state: ComponentState,
         readonly: Boolean,
         onClick: (() -> Unit)?,
         contentDescription: String?,
-        required: Boolean,
-        fieldType: FieldType
+        required: Boolean
     )
     
     @Composable
@@ -162,52 +173,5 @@ interface ThemeContract {
         label: String?
     )
     
-    // =====================================
-    // BOUTONS AVEC ICÔNES
-    // =====================================
-    
-    @Composable
-    fun SaveButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun EditButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun DeleteButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun AddButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun CancelButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun ConfirmButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun BackButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun PlayButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun StopButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun UpButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun DownButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun PauseButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun ConfigButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun InfoButton(onClick: () -> Unit, size: Size)
-    
-    @Composable
-    fun RefreshButton(onClick: () -> Unit, size: Size)
+    // Anciens boutons supprimés - utiliser ActionButton
 }

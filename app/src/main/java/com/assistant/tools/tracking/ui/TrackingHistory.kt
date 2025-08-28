@@ -16,6 +16,7 @@ import com.assistant.tools.tracking.ui.components.TrackingItemDialog
 import com.assistant.tools.tracking.ui.components.TrackingDialogMode
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.tools.tracking.TrackingUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -96,16 +97,16 @@ fun TrackingHistory(
         }
     }
     
-    // Update entry
-    val updateEntry = { entryId: String, newValue: String, newName: String ->
+    // Update entry - only quantity changes, name and unit stay the same
+    val updateEntry = { entryId: String, newQuantity: String ->
         scope.launch {
             try {
                 val params = mapOf(
                     "tool_type" to "tracking",
                     "operation" to "update",
                     "entry_id" to entryId,
-                    "name" to newName,
-                    "value" to newValue
+                    "quantity" to newQuantity,
+                    "type" to "numeric"
                 )
                 android.util.Log.d("TrackingHistory", "Updating entry with params: $params")
                 
@@ -172,12 +173,11 @@ fun TrackingHistory(
             UI.Text("Historique des entrées", TextType.SUBTITLE)
             
             if (!isLoading) {
-                UI.Button(
-                    type = ButtonType.DEFAULT,
+                UI.ActionButton(
+                    action = ButtonAction.REFRESH,
+                    display = ButtonDisplay.ICON,
                     onClick = { loadData() }
-                ) {
-                    UI.Text("↻", TextType.LABEL)
-                }
+                )
             }
         }
         
@@ -248,23 +248,12 @@ fun TrackingHistory(
                 mode = TrackingDialogMode.PREDEFINED_INPUT,
                 initialName = entry.name,
                 initialUnit = parsedValue.unit,
-                initialDefaultValue = parsedValue.amount.toString(),
-                onConfirm = { name, unit, defaultValue, _ ->
-                    val numericValue = com.assistant.core.utils.NumberFormatting.parseUserInput(defaultValue)
-                    if (numericValue != null) {
-                        val jsonValue = JSONObject().apply {
-                            put("amount", numericValue)
-                            put("unit", unit)
-                            put("type", trackingType)
-                            put("raw", formatDisplayValue(numericValue, unit))
-                        }
-                        
-                        updateEntry(entry.id, jsonValue.toString(), name)
-                        showEditDialog = false
-                        editingEntry = null
-                    } else {
-                        android.util.Log.w("TrackingHistory", "Invalid numeric value for update: '$defaultValue'")
-                    }
+                initialDefaultQuantity = parsedValue.quantity.toString(),
+                onConfirm = { name, unit, defaultQuantity, _ ->
+                    // Only quantity changes in history edit
+                    updateEntry(entry.id, defaultQuantity)
+                    showEditDialog = false
+                    editingEntry = null
                 },
                 onCancel = {
                     showEditDialog = false
@@ -305,19 +294,18 @@ private fun TrackingHistoryRow(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                UI.Button(
-                    type = ButtonType.DEFAULT,
+                UI.ActionButton(
+                    action = ButtonAction.EDIT,
+                    display = ButtonDisplay.ICON,
                     onClick = onEdit
-                ) {
-                    UI.Text("Modifier", TextType.CAPTION)
-                }
+                )
                 
-                UI.Button(
-                    type = ButtonType.SECONDARY,
+                UI.ActionButton(
+                    action = ButtonAction.DELETE,
+                    display = ButtonDisplay.ICON,
+                    requireConfirmation = true,
                     onClick = onDelete
-                ) {
-                    UI.Text("×", TextType.CAPTION)
-                }
+                )
             }
         }
     }
@@ -378,7 +366,7 @@ private fun parseTrackingValue(valueJson: String): ParsedValue {
     return try {
         val json = JSONObject(valueJson)
         ParsedValue(
-            amount = json.optDouble("amount", 0.0),
+            quantity = json.optDouble("quantity", 0.0),
             unit = json.optString("unit", "")
         )
     } catch (e: Exception) {
@@ -386,27 +374,11 @@ private fun parseTrackingValue(valueJson: String): ParsedValue {
     }
 }
 
-/**
- * Format display value for consistent presentation
- */
-private fun formatDisplayValue(value: Double, unit: String): String {
-    val formattedValue = if (value == value.toInt().toDouble()) {
-        value.toInt().toString()
-    } else {
-        value.toString()
-    }
-    
-    return if (unit.isNotBlank()) {
-        "$formattedValue $unit"
-    } else {
-        formattedValue
-    }
-}
 
 /**
  * Data class for parsed tracking values
  */
 private data class ParsedValue(
-    val amount: Double,
+    val quantity: Double,
     val unit: String
 )

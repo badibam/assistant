@@ -60,3 +60,17 @@ En migrant vers le nouveau système UI, des fonctionnalités importantes ont ét
 
 **État actuel** : Système UI complet et fonctionnel, écrans de base migrés.  
 **Prochaine étape** : Intégrer les tool types pour affichage dynamique du contenu.
+
+
+
+
+
+/src/main/java/com/assistant/core/tools/ToolTypeContract.kt with 1 addition
+       88        fun getUsageScreen(
+       89            toolInstanceId: String,
+       90            configJson: String,
+       91 +          zoneName: String,
+       92            onNavigateBack: () -> Unit,
+       93            onLongClick: () -> Unit
+       94        )
+

@@ -200,11 +200,14 @@ object TrackingToolType : ToolTypeContract {
             
             when (type) {
                 "numeric" -> {
-                    if (!json.has("amount")) {
-                        return ValidationResult.error("Missing required 'amount' field for numeric type")
+                    if (!json.has("quantity")) {
+                        return ValidationResult.error("Missing required 'quantity' field for numeric type")
                     }
                     
-                    val amount = json.getDouble("amount") // Strict: will throw if missing or invalid
+                    val quantity = json.getDouble("quantity") // Strict: will throw if missing or invalid
+                    if (quantity < 0 || !quantity.isFinite()) {
+                        return ValidationResult.error("Invalid quantity value: $quantity")
+                    }
                     ValidationResult.success()
                 }
                 // TODO: Add validation for other tracking types when implemented

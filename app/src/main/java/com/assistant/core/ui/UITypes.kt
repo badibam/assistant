@@ -112,11 +112,21 @@ enum class ButtonType {
 }
 
 /**
- * Types de champs texte
+ * Actions prédéfinies pour les boutons standardisés
  */
-enum class TextFieldType {
-    TEXT, NUMERIC, SEARCH, PASSWORD
+enum class ButtonAction {
+    SAVE, CREATE, UPDATE, DELETE, CANCEL, BACK, 
+    CONFIGURE, ADD, EDIT, REFRESH, SELECT, CONFIRM, UP, DOWN
 }
+
+/**
+ * Modes d'affichage pour les boutons
+ */
+enum class ButtonDisplay {
+    ICON,       // Icône seule
+    LABEL       // Texte seul (BOTH sera ajouté plus tard)
+}
+
 
 /**
  * Types de texte avec hiérarchie

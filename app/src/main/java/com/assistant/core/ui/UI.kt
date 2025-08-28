@@ -43,13 +43,25 @@ object UI {
     ) = CurrentTheme.current.Button(type, size, state, onClick, content)
     
     @Composable
+    fun ActionButton(
+        action: ButtonAction,
+        display: ButtonDisplay = ButtonDisplay.LABEL,
+        size: Size = Size.M,
+        type: ButtonType? = null,  // Override optionnel du type par défaut
+        enabled: Boolean = true,
+        requireConfirmation: Boolean = false,  // Dialogue de confirmation automatique
+        confirmMessage: String? = null,        // Message custom (null = message par défaut)
+        onClick: () -> Unit
+    ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
+    
+    @Composable
     fun TextField(
-        type: TextFieldType,
+        fieldType: FieldType,
         state: ComponentState = ComponentState.NORMAL,
         value: String,
         onChange: (String) -> Unit,
         placeholder: String
-    ) = CurrentTheme.current.TextField(type, state, value, onChange, placeholder)
+    ) = CurrentTheme.current.TextField(fieldType, state, value, onChange, placeholder)
     
     // =====================================
     // DISPLAY
@@ -119,9 +131,8 @@ object UI {
         label: String,
         value: String,
         onChange: (String) -> Unit,
-        type: TextFieldType = TextFieldType.TEXT,
-        required: Boolean = false,
         fieldType: FieldType = FieldType.TEXT,
+        required: Boolean = false,
         state: ComponentState = ComponentState.NORMAL,
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
@@ -130,13 +141,12 @@ object UI {
         label = label,
         value = value, 
         onChange = onChange,
-        type = type,
+        fieldType = fieldType,
         state = state,
         readonly = readonly,
         onClick = onClick,
         contentDescription = contentDescription,
-        required = required,
-        fieldType = fieldType
+        required = required
     )
     
     @Composable
@@ -170,50 +180,7 @@ object UI {
     // BOUTONS AVEC ICÔNES AUTOMATIQUES
     // =====================================
     
-    @Composable
-    fun SaveButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.SaveButton(onClick, size)
-    
-    @Composable
-    fun EditButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.EditButton(onClick, size)
-    
-    @Composable
-    fun DeleteButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.DeleteButton(onClick, size)
-    
-    @Composable
-    fun AddButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.AddButton(onClick, size)
-    
-    @Composable
-    fun CancelButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.CancelButton(onClick, size)
-    
-    @Composable
-    fun ConfirmButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.ConfirmButton(onClick, size)
-    
-    @Composable
-    fun BackButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.BackButton(onClick, size)
-    
-    @Composable
-    fun PlayButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.PlayButton(onClick, size)
-    
-    @Composable
-    fun StopButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.StopButton(onClick, size)
-    
-    @Composable
-    fun PauseButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.PauseButton(onClick, size)
-    
-    @Composable
-    fun ConfigButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.ConfigButton(onClick, size)
-    
-    @Composable
-    fun InfoButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.InfoButton(onClick, size)
-    
-    @Composable
-    fun RefreshButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.RefreshButton(onClick, size)
-    
-    @Composable
-    fun UpButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.UpButton(onClick, size)
-    
-    @Composable
-    fun DownButton(onClick: () -> Unit, size: Size = Size.M) = CurrentTheme.current.DownButton(onClick, size)
+    // Anciens boutons prédéfinis supprimés - utiliser UI.ActionButton à la place
     
     // =====================================
     // COMPOSANTS SPÉCIALISÉS

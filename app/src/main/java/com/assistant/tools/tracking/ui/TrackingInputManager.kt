@@ -34,13 +34,13 @@ fun TrackingInputManager(
     // State management
     var isLoading by remember { mutableStateOf(false) }
     
-    // Save function with common logic
-    val saveEntry: (String, String) -> Unit = { valueJson, itemName ->
+    // Save function with common logic - now takes raw data instead of JSON
+    val saveEntry: (String, String, String) -> Unit = { itemName, quantity, unit ->
         scope.launch {
             isLoading = true
             
             try {
-                // Use coordinator to save tracking entry
+                // Use coordinator to save tracking entry with raw data
                 val params = mapOf(
                     "tool_type" to "tracking",
                     "operation" to "create",
@@ -48,7 +48,9 @@ fun TrackingInputManager(
                     "zone_name" to zoneName,
                     "tool_instance_name" to toolInstanceName,
                     "name" to itemName,
-                    "value" to valueJson
+                    "quantity" to quantity,
+                    "unit" to unit,
+                    "type" to "numeric"
                 )
                 android.util.Log.d("TrackingInputManager", "Saving with params: $params")
                 

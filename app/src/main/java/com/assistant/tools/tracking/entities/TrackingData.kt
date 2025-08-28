@@ -19,7 +19,7 @@ data class TrackingData(
     val tool_instance_name: String,  // "Nutrition Tracking" (copied from config)
     
     val name: String,                // "Whole bread", "Mood", etc.
-    val value: String,               // JSON: {"amount": 75, "unit": "g", "type": "numeric", "raw": "75g"}
+    val value: String,               // JSON: {"quantity": 75, "unit": "g", "type": "numeric", "raw": "75g"}
     
     val recorded_at: Long,           // When the measurement was taken
     val created_at: Long = System.currentTimeMillis(),

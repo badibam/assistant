@@ -90,12 +90,10 @@ fun TrackingScreen(
                 UI.Text(errorMessage!!, TextType.BODY)
             }
             
-            UI.Button(
-                type = ButtonType.SECONDARY,
+            UI.ActionButton(
+                action = ButtonAction.BACK,
                 onClick = onNavigateBack
-            ) {
-                UI.Text("Retour", TextType.LABEL)
-            }
+            )
         } else if (toolInstance != null) {
             // Tool header
             TrackingToolHeader(
@@ -146,12 +144,10 @@ fun TrackingScreen(
             }
             
             // Navigation
-            UI.Button(
-                type = ButtonType.SECONDARY,
+            UI.ActionButton(
+                action = ButtonAction.BACK,
                 onClick = onNavigateBack
-            ) {
-                UI.Text("Retour", TextType.LABEL)
-            }
+            )
         }
     }
 }
@@ -200,12 +196,11 @@ private fun TrackingToolHeader(
             }
             
             // Configure button
-            UI.Button(
-                type = ButtonType.DEFAULT,
+            UI.ActionButton(
+                action = ButtonAction.CONFIGURE,
+                display = ButtonDisplay.ICON,
                 onClick = onConfigureClick
-            ) {
-                UI.Text("⚙", TextType.LABEL)
-            }
+            )
         }
     }
 }

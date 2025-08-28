@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,9 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.ThemeContract
 import com.assistant.core.ui.ButtonType
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.ComponentState
-import com.assistant.core.ui.TextFieldType
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.CardType
 import com.assistant.core.ui.FeedbackType
@@ -161,8 +163,186 @@ object DefaultTheme : ThemeContract {
     }
     
     @Composable
+    override fun ActionButton(
+        action: ButtonAction,
+        display: ButtonDisplay,
+        size: Size,
+        type: ButtonType?,
+        enabled: Boolean,
+        requireConfirmation: Boolean,
+        confirmMessage: String?,
+        onClick: () -> Unit
+    ) {
+        // État du dialogue de confirmation
+        var showConfirmDialog by remember { mutableStateOf(false) }
+        
+        // Déterminer le type par défaut selon l'action
+        val buttonType = type ?: getDefaultButtonType(action)
+        
+        // Déterminer l'état selon enabled
+        val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
+        
+        if (display == ButtonDisplay.ICON) {
+            // Mode ICON : Bouton compact/circulaire comme XS/S
+            val iconSize = when (size) {
+                Size.XXL -> 48.dp
+                Size.XL -> 40.dp  
+                Size.L -> 32.dp
+                Size.M -> 28.dp
+                Size.S -> 24.dp
+                Size.XS -> 20.dp
+            }
+            
+            val isEnabled = state != ComponentState.DISABLED
+            val buttonColors = when (buttonType) {
+                ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
+                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
+                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+            }
+            
+            when (buttonType) {
+                ButtonType.SECONDARY -> {
+                    OutlinedButton(
+                        onClick = {
+                            if (requireConfirmation) {
+                                showConfirmDialog = true
+                            } else {
+                                onClick()
+                            }
+                        },
+                        enabled = isEnabled,
+                        colors = buttonColors as ButtonColors,
+                        modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        androidx.compose.material3.Text(
+                            getButtonIcon(action),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                ButtonType.PRIMARY, ButtonType.DEFAULT -> {
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            if (requireConfirmation) {
+                                showConfirmDialog = true
+                            } else {
+                                onClick()
+                            }
+                        },
+                        enabled = isEnabled,
+                        colors = buttonColors,
+                        modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        androidx.compose.material3.Text(
+                            getButtonIcon(action),
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        } else {
+            // Mode LABEL : Bouton standard
+            Button(
+                type = buttonType,
+                size = size,
+                state = state,
+                onClick = {
+                    if (requireConfirmation) {
+                        showConfirmDialog = true
+                    } else {
+                        onClick()
+                    }
+                }
+            ) {
+                androidx.compose.material3.Text(
+                    getButtonText(action)
+                )
+            }
+        }
+        
+        // Dialogue de confirmation automatique
+        if (showConfirmDialog && requireConfirmation) {
+            Dialog(
+                type = DialogType.DANGER,
+                onConfirm = {
+                    showConfirmDialog = false
+                    onClick()  // Exécuter l'action après confirmation
+                },
+                onCancel = {
+                    showConfirmDialog = false
+                }
+            ) {
+                androidx.compose.material3.Text(
+                    confirmMessage ?: getDefaultConfirmMessage(action),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+    
+    // Helpers pour le mapping action -> type/texte/icône
+    private fun getDefaultButtonType(action: ButtonAction): ButtonType {
+        return when (action) {
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.CONFIRM -> ButtonType.PRIMARY
+            ButtonAction.DELETE, ButtonAction.CANCEL -> ButtonType.SECONDARY  
+            ButtonAction.BACK, ButtonAction.CONFIGURE, ButtonAction.ADD,
+            ButtonAction.EDIT, ButtonAction.REFRESH, ButtonAction.SELECT,
+            ButtonAction.UPDATE, ButtonAction.UP, ButtonAction.DOWN -> ButtonType.PRIMARY
+        }
+    }
+    
+    private fun getButtonText(action: ButtonAction): String {
+        // TODO: Remplacer par strings.xml pour i18n
+        return when (action) {
+            ButtonAction.SAVE -> "Sauvegarder"
+            ButtonAction.CREATE -> "Créer"
+            ButtonAction.UPDATE -> "Modifier"
+            ButtonAction.DELETE -> "Supprimer"
+            ButtonAction.CANCEL -> "Annuler"
+            ButtonAction.BACK -> "Retour"
+            ButtonAction.CONFIGURE -> "Configurer"
+            ButtonAction.ADD -> "Ajouter"
+            ButtonAction.EDIT -> "Modifier"
+            ButtonAction.REFRESH -> "Actualiser"
+            ButtonAction.SELECT -> "Sélectionner"
+            ButtonAction.CONFIRM -> "Confirmer"
+            ButtonAction.UP -> "Monter"
+            ButtonAction.DOWN -> "Descendre"
+        }
+    }
+    
+    private fun getButtonIcon(action: ButtonAction): String {
+        // Symboles Unicode pour lisibilité et uniformité
+        return when (action) {
+            ButtonAction.SAVE -> "✓"      // Check mark
+            ButtonAction.CREATE -> "+"    // Plus
+            ButtonAction.UPDATE -> "✎"    // Pencil
+            ButtonAction.DELETE -> "✕"    // X mark
+            ButtonAction.CANCEL -> "✕"    // X mark
+            ButtonAction.BACK -> "◀"      // Triangle gauche
+            ButtonAction.CONFIGURE -> "⚙" // Gear
+            ButtonAction.ADD -> "+"       // Plus
+            ButtonAction.EDIT -> "✎"      // Pencil
+            ButtonAction.REFRESH -> "↻"   // Circular arrow
+            ButtonAction.SELECT -> "✓"    // Check mark
+            ButtonAction.CONFIRM -> "✓"   // Check mark
+            ButtonAction.UP -> "▲"        // Triangle haut
+            ButtonAction.DOWN -> "▼"      // Triangle bas
+        }
+    }
+    
+    private fun getDefaultConfirmMessage(action: ButtonAction): String {
+        return when (action) {
+            ButtonAction.DELETE -> "Êtes-vous sûr de vouloir supprimer cet élément ? Cette action est irréversible."
+            else -> "Confirmer cette action ?"
+        }
+    }
+    
+    @Composable
     override fun TextField(
-        type: TextFieldType,
+        fieldType: FieldType,
         state: ComponentState,
         value: String,
         onChange: (String) -> Unit,
@@ -449,13 +629,12 @@ object DefaultTheme : ThemeContract {
         label: String,
         value: String,
         onChange: (String) -> Unit,
-        type: TextFieldType,
+        fieldType: FieldType,
         state: ComponentState,
         readonly: Boolean,
         onClick: (() -> Unit)?,
         contentDescription: String?,
-        required: Boolean,
-        fieldType: FieldType
+        required: Boolean
     ) {
         val displayLabel = if (required) label else "$label (optionnel)"
         
@@ -470,7 +649,7 @@ object DefaultTheme : ThemeContract {
                 )
             } else {
                 TextField(
-                    type = type,
+                    fieldType = fieldType,
                     state = state,
                     value = value,
                     onChange = onChange,
@@ -560,127 +739,5 @@ object DefaultTheme : ThemeContract {
         }
     }
     
-    // =====================================
-    // BOUTONS AVEC ICÔNES
-    // =====================================
-    
-    @Composable
-    override fun SaveButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("✅", TextType.LABEL) }
-    
-    @Composable
-    override fun EditButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("✏️", TextType.LABEL) }
-    
-    @Composable
-    override fun DeleteButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("🗑️", TextType.LABEL) }
-    
-    @Composable
-    override fun AddButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("➕", TextType.LABEL) }
-    
-    @Composable
-    override fun CancelButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("❌", TextType.LABEL) }
-    
-    @Composable
-    override fun ConfirmButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("✅", TextType.LABEL) }
-    
-    @Composable
-    override fun BackButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("←", TextType.LABEL) }
-    
-    @Composable
-    override fun PlayButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("▶️", TextType.LABEL) }
-    
-    @Composable
-    override fun StopButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("⏹️", TextType.LABEL) }
-    
-    @Composable
-    override fun PauseButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("⏸️", TextType.LABEL) }
-    
-    @Composable
-    override fun ConfigButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("⚙️", TextType.LABEL) }
-    
-    @Composable
-    override fun InfoButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("ℹ️", TextType.LABEL) }
-    
-    @Composable
-    override fun RefreshButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("🔄", TextType.LABEL) }
-    
-    @Composable
-    override fun UpButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("▲", TextType.LABEL) }
-    
-    @Composable
-    override fun DownButton(onClick: () -> Unit, size: Size) = Button(
-        type = ButtonType.DEFAULT,
-        size = size,
-        state = ComponentState.NORMAL,
-        onClick = onClick
-    ) { Text("▼", TextType.LABEL) }
+    // Anciens boutons supprimés - utiliser UI.ActionButton à la place
 }

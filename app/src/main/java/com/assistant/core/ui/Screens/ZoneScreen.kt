@@ -202,15 +202,11 @@ fun ZoneScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            UI.Button(
-                type = ButtonType.DEFAULT,
+            UI.ActionButton(
+                action = ButtonAction.BACK,
+                display = ButtonDisplay.ICON,
                 onClick = onBack
-            ) {
-                UI.Text(
-                    text = "←",
-                    type = TextType.LABEL
-                )
-            }
+            )
             
             // Zone title
             Column(
@@ -231,17 +227,11 @@ fun ZoneScreen(
             }
             
             // Add tool button
-            UI.Button(
-                type = ButtonType.PRIMARY,
-                onClick = {
-                    showAvailableTools = !showAvailableTools
-                }
-            ) {
-                UI.Text(
-                    text = "+",
-                    type = TextType.LABEL
-                )
-            }
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                onClick = { showAvailableTools = !showAvailableTools }
+            )
         }
         
         Spacer(modifier = Modifier.height(16.dp))

@@ -9,6 +9,7 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.ValidationResult
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.tools.tracking.TrackingUtils
 import org.json.JSONObject
 import kotlinx.coroutines.delay
 import java.util.concurrent.ConcurrentHashMap
@@ -65,14 +66,26 @@ class TrackingService(private val context: Context) : ExecutableService {
         val zoneName = params.optString("zone_name")
         val toolInstanceName = params.optString("tool_instance_name")
         val name = params.optString("name")
-        val value = params.optString("value")
+        val quantity = params.optString("quantity")
+        val unit = params.optString("unit")
+        val type = params.optString("type", "numeric")
         val recordedAt = params.optLong("recorded_at", System.currentTimeMillis())
         
-        Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, value=$value")
+        Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, quantity=$quantity, unit=$unit")
         
         if (toolInstanceId.isBlank() || zoneName.isBlank() || toolInstanceName.isBlank() || 
-            name.isBlank() || value.isBlank()) {
-            return OperationResult.error("Tool instance ID, zone name, tool instance name, name and value are required")
+            name.isBlank() || quantity.isBlank()) {
+            return OperationResult.error("Tool instance ID, zone name, tool instance name, name and quantity are required")
+        }
+        
+        // Create JSON value from raw data
+        val valueJson = when (type) {
+            "numeric" -> TrackingUtils.createNumericValueJson(quantity, unit)
+            else -> null
+        }
+        
+        if (valueJson == null) {
+            return OperationResult.error("Invalid $type data: quantity='$quantity', unit='$unit'")
         }
         
         if (token.isCancelled) return OperationResult.cancelled()
@@ -82,7 +95,7 @@ class TrackingService(private val context: Context) : ExecutableService {
             zone_name = zoneName,
             tool_instance_name = toolInstanceName,
             name = name,
-            value = value,
+            value = valueJson,
             recorded_at = recordedAt
         )
         
@@ -116,8 +129,8 @@ class TrackingService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         val entryId = params.optString("entry_id")
-        val value = params.optString("value")
-        val name = params.optString("name")
+        val quantity = params.optString("quantity")
+        val type = params.optString("type", "numeric")
         val recordedAt = params.optLong("recorded_at", -1)
         
         if (entryId.isBlank()) {
@@ -129,12 +142,43 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         if (token.isCancelled) return OperationResult.cancelled()
         
+        // If quantity is provided, create new JSON value keeping existing unit
+        var newValue = existingEntry.value
+        if (quantity.isNotBlank()) {
+            // Parse existing value to get unit
+            val existingUnit = try {
+                val json = org.json.JSONObject(existingEntry.value)
+                json.optString("unit", "")
+            } catch (e: Exception) { "" }
+            
+            // Create new JSON value
+            val valueJson = when (type) {
+                "numeric" -> TrackingUtils.createNumericValueJson(quantity, existingUnit)
+                else -> null
+            }
+            
+            if (valueJson == null) {
+                return OperationResult.error("Invalid $type data: quantity='$quantity'")
+            }
+            
+            newValue = valueJson
+        }
+        
         val updatedEntry = existingEntry.copy(
-            name = name.takeIf { it.isNotBlank() } ?: existingEntry.name,
-            value = value.takeIf { it.isNotBlank() } ?: existingEntry.value,
+            value = newValue,
             recorded_at = if (recordedAt != -1L) recordedAt else existingEntry.recorded_at,
             updated_at = System.currentTimeMillis()
         )
+        
+        // Validate data before update
+        val toolType = ToolTypeManager.getToolType("tracking")
+        if (toolType != null) {
+            val validation = toolType.validateData(updatedEntry, "update")
+            if (!validation.isValid) {
+                Log.e("TrackingService", "Update validation failed: ${validation.errorMessage}")
+                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            }
+        }
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -160,6 +204,16 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         val existingEntry = trackingDao.getEntryById(entryId)
             ?: return OperationResult.error("Tracking entry not found")
+        
+        // Validate data before delete
+        val toolType = ToolTypeManager.getToolType("tracking")
+        if (toolType != null) {
+            val validation = toolType.validateData(existingEntry, "delete")
+            if (!validation.isValid) {
+                Log.e("TrackingService", "Delete validation failed: ${validation.errorMessage}")
+                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            }
+        }
         
         if (token.isCancelled) return OperationResult.cancelled()
         

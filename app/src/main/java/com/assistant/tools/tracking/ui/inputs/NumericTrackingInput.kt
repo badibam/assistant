@@ -7,12 +7,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.tools.tracking.ui.components.TrackingItemDialog
 import com.assistant.tools.tracking.ui.components.TrackingDialogMode
 import com.assistant.tools.tracking.ui.components.TrackingItem
 import com.assistant.core.utils.NumberFormatting
+import com.assistant.core.validation.ValidationHelper
+import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.tools.tracking.TrackingUtils
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -24,10 +28,11 @@ import org.json.JSONObject
 @Composable
 fun NumericTrackingInput(
     config: JSONObject,
-    onSave: (valueJson: String, itemName: String) -> Unit,
+    onSave: (itemName: String, quantity: String, unit: String) -> Unit,
     onAddToPredefined: (itemName: String, unit: String, defaultValue: String) -> Unit,
     isLoading: Boolean
 ) {
+    val context = LocalContext.current
     // Parse predefined items from config
     val predefinedItems = remember(config) {
         val itemsArray = config.optJSONArray("items") ?: JSONArray()
@@ -86,15 +91,9 @@ fun NumericTrackingInput(
                             PredefinedItemButton(
                                 item = item,
                                 isLoading = isLoading,
-                                onQuickSave = { value ->
-                                    // Save directly with predefined values
-                                    val jsonValue = JSONObject().apply {
-                                        put("amount", value)
-                                        put("unit", item.getUnit())
-                                        put("type", "numeric")
-                                        put("raw", formatDisplayValue(value, item.getUnit()))
-                                    }
-                                    onSave(jsonValue.toString(), item.name)
+                                onQuickSave = { quantity ->
+                                    // Pass raw data to service - no JSON creation in UI
+                                    onSave(item.name, quantity.toString(), item.getUnit())
                                 },
                                 onOpenDialog = {
                                     selectedItem = item
@@ -117,16 +116,14 @@ fun NumericTrackingInput(
         
         // "Other" button for free input
         Box(modifier = Modifier.fillMaxWidth()) {
-            UI.Button(
-                type = ButtonType.SECONDARY,
+            UI.ActionButton(
+                action = ButtonAction.ADD,
                 onClick = {
                     selectedItem = null
                     dialogMode = DialogMode.FREE_INPUT
                     showDialog = true
                 }
-            ) {
-                UI.Text("Nouvelle entrée", TextType.LABEL)
-            }
+            )
         }
         
         // Dialog for input
@@ -139,27 +136,14 @@ fun NumericTrackingInput(
             },
             initialName = selectedItem?.name ?: "",
             initialUnit = selectedItem?.getUnit() ?: "",
-            initialDefaultValue = selectedItem?.getDefaultValue() ?: "",
-            onConfirm = { name, unit, defaultValue, addToPredefined ->
-                // Only save if we have a valid numeric value
-                val numericValue = NumberFormatting.parseUserInput(defaultValue)
-                if (numericValue != null) {
-                    val jsonValue = JSONObject().apply {
-                        put("amount", numericValue)
-                        put("unit", unit)
-                        put("type", "numeric")
-                        put("raw", formatDisplayValue(numericValue, unit))
-                    }
-                    
-                    onSave(jsonValue.toString(), name)
-                } else {
-                    // Invalid value - don't save, user should see validation error
-                    android.util.Log.w("NumericTrackingInput", "Invalid numeric value: '$defaultValue'")
-                }
+            initialDefaultQuantity = selectedItem?.getDefaultValue() ?: "",
+            onConfirm = { name, unit, defaultQuantity, addToPredefined ->
+                // Pass raw data to service - no JSON creation in UI
+                onSave(name, defaultQuantity, unit)
                 
                 // Add to predefined if checkbox was checked
                 if (addToPredefined) {
-                    onAddToPredefined(name, unit, defaultValue)
+                    onAddToPredefined(name, unit, defaultQuantity)
                 }
                 
                 showDialog = false
@@ -214,28 +198,34 @@ private fun PredefinedItemButton(
         }
         
         // Add button (quick save with default or open dialog)
-        UI.AddButton(
+        UI.ActionButton(
+            action = ButtonAction.ADD,
+            display = ButtonDisplay.ICON,
+            size = Size.S,
             onClick = {
                 android.util.Log.d("PredefinedItemButton", "Add click on ${item.name}, hasDefaultValue=$hasDefaultValue")
                 if (hasDefaultValue) {
-                    // Quick save with default value
-                    val numericValue = NumberFormatting.parseUserInput(defaultValue) ?: 1.0
-                    onQuickSave(numericValue)
+                    // Quick save with default quantity - no fallback, should be valid since it's predefined
+                    val numericQuantity = NumberFormatting.parseUserInput(defaultValue)
+                    if (numericQuantity != null) {
+                        onQuickSave(numericQuantity)
+                    }
                 } else {
                     // Open dialog to input quantity
                     onOpenDialog()
                 }
-            },
-            size = Size.S
+            }
         )
         
         // Edit button (always opens dialog for custom quantity)
-        UI.EditButton(
+        UI.ActionButton(
+            action = ButtonAction.EDIT,
+            display = ButtonDisplay.ICON,
+            size = Size.S,
             onClick = {
                 android.util.Log.d("PredefinedItemButton", "Edit click on ${item.name}")
                 onOpenDialog()
-            },
-            size = Size.S
+            }
         )
     }
 }
@@ -248,19 +238,3 @@ private enum class DialogMode {
     EDIT_QUANTITY    // Existing item, name readonly, focus on quantity
 }
 
-/**
- * Format display value for consistent presentation
- */
-private fun formatDisplayValue(value: Double, unit: String): String {
-    val formattedValue = if (value == value.toInt().toDouble()) {
-        value.toInt().toString()
-    } else {
-        value.toString()
-    }
-    
-    return if (unit.isNotBlank()) {
-        "$formattedValue\u00A0$unit" // Espace insécable
-    } else {
-        formattedValue
-    }
-}
