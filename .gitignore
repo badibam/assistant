@@ -40,3 +40,10 @@ gradle/
 
 # Backup directory
 .BAK/
+
+# Release signing
+keystore/
+*.keystore
+*.jks
+.env
+keystore/

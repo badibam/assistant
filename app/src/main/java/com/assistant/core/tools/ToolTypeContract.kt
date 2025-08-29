@@ -2,6 +2,7 @@ package com.assistant.core.tools
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.room.migration.Migration
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 
@@ -100,4 +101,21 @@ interface ToolTypeContract {
      * @return ValidationResult with success/error details
      */
     fun validateData(data: Any, operation: String): ValidationResult
+    
+    /**
+     * Get database migrations for this tool type
+     * Returns empty list if no migrations are needed
+     * Migrations should be ordered by version (startVersion ascending)
+     * @return List of Room Migration objects for this tool type
+     */
+    fun getDatabaseMigrations(): List<Migration>
+    
+    /**
+     * Migrate configuration JSON from old version to new version
+     * Used when tool type configuration schema changes
+     * @param fromVersion Version of the configuration to migrate from
+     * @param configJson Current configuration JSON string
+     * @return Migrated configuration JSON string, or original if no migration needed
+     */
+    fun migrateConfig(fromVersion: Int, configJson: String): String
 }

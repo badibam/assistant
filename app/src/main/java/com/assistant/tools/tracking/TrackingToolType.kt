@@ -2,6 +2,8 @@ package com.assistant.tools.tracking
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.tools.ToolTypeContract
 import com.assistant.tools.tracking.TrackingService
 import com.assistant.core.services.ExecutableService
@@ -216,5 +218,41 @@ object TrackingToolType : ToolTypeContract {
         } catch (e: Exception) {
             ValidationResult.error("Invalid JSON format in value field: ${e.message}")
         }
+    }
+    
+    override fun getDatabaseMigrations(): List<Migration> {
+        return listOf(
+            // Exemple de migration future pour TrackingData
+            // TRACKING_MIGRATION_1_2
+        )
+    }
+    
+    override fun migrateConfig(fromVersion: Int, configJson: String): String {
+        return when (fromVersion) {
+            1 -> {
+                // Exemple: Migration config v1 → v2
+                // val config = JSONObject(configJson)
+                // config.put("new_field", "default_value")
+                // config.toString()
+                configJson // Pas de migration nécessaire pour l'instant
+            }
+            else -> configJson // Pas de migration connue
+        }
+    }
+    
+    // Migrations d'exemple (pour référence future)
+    private object Migrations {
+        // Exemple de migration de base de données (pour référence future)
+        /*
+        val TRACKING_MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Exemple: Ajouter une colonne
+                database.execSQL("ALTER TABLE tracking_data ADD COLUMN category TEXT DEFAULT ''")
+                
+                // Exemple: Migrer des données
+                database.execSQL("UPDATE tracking_data SET category = 'health' WHERE tool_instance_name LIKE '%santé%'")
+            }
+        }
+        */
     }
 }

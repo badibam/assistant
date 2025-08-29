@@ -8,6 +8,7 @@ import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.versioning.MigrationOrchestrator
 
 @Database(
     entities = [
@@ -29,11 +30,23 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
+                val migrationOrchestrator = MigrationOrchestrator(context)
+                
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "assistant_database"
-                ).build()
+                )
+                .addMigrations(*migrationOrchestrator.getAllMigrations())
+                .addCallback(object : RoomDatabase.Callback() {
+                    override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                        super.onOpen(db)
+                        // Base de données ouverte avec succès
+                        println("AppDatabase opened successfully - version ${db.version}")
+                    }
+                })
+                .build()
+                
                 INSTANCE = instance
                 instance
             }

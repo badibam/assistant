@@ -11,6 +11,7 @@ import com.assistant.core.ui.Screens.MainScreen
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.update.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,12 +20,22 @@ import android.util.Log
 class MainActivity : ComponentActivity() {
     
     private lateinit var coordinator: Coordinator
+    private lateinit var updateManager: UpdateManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         // Initialize coordinator
         coordinator = Coordinator(this)
+        
+        // Initialize update manager
+        updateManager = UpdateManager(this)
+        
+        // Check for updates at startup
+        updateManager.scheduleUpdateCheck { updateInfo ->
+            Log.i("Updates", "Mise à jour disponible: ${updateInfo.version}")
+            // TODO: Afficher notification ou dialog avec UpdateInfo
+        }
         
         // TODO: Preload icons for current theme
         // CoroutineScope(Dispatchers.IO).launch {

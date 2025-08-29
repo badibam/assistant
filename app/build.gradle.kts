@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,21 +16,68 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
+    
+    signingConfigs {
+        create("release") {
+            // Configuration de signature
+            // IMPORTANT: Ne jamais commiter les vraies clés !
+            
+            // Tenter de charger depuis variables d'environnement ou .env
+            val keystoreFile = file("../keystore/assistant-release.keystore")
+            val envFile = file("../keystore/.env")
+            
+            var keystorePass = System.getenv("KEYSTORE_PASSWORD")
+            var keyPass = System.getenv("KEY_PASSWORD")
+            
+            // Si pas de variables d'environnement, essayer de lire .env
+            if ((keystorePass == null || keyPass == null) && envFile.exists()) {
+                val envProps = Properties()
+                envFile.reader().use { envProps.load(it) }
+                keystorePass = keystorePass ?: envProps.getProperty("KEYSTORE_PASSWORD")
+                keyPass = keyPass ?: envProps.getProperty("KEY_PASSWORD")
+            }
+            
+            storeFile = keystoreFile
+            storePassword = keystorePass ?: "changeme"
+            keyAlias = "assistant-release"
+            keyPassword = keyPass ?: "changeme"
+        }
+    }
 
     buildTypes {
-        release {
+        debug {
+            applicationIdSuffix = ".debug"
+            isDebuggable = true
             isMinifyEnabled = false
+        }
+        
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("release")
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // Renommage APK avec version
+            applicationVariants.all {
+                val variant = this
+                variant.outputs
+                    .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+                    .forEach { output ->
+                        output.outputFileName = "assistant-v${variant.versionName}.apk"
+                    }
+            }
         }
     }
     compileOptions {
