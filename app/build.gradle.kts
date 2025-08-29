@@ -250,58 +250,68 @@ tasks.named("preBuild") {
 }
 
 /**
- * Convert SVG to Android Vector Drawable XML
- * Simple conversion - for complex SVGs, consider using external tools
+ * Convert SVG to Android Vector Drawable XML using Node.js svg2vectordrawable
+ * More robust conversion that preserves SVG styling (stroke, fill, etc.)
  */
 fun convertSvgToVectorDrawable(svgFile: File, outputFile: File, iconName: String) {
     try {
-        val svgContent = svgFile.readText()
+        // Use Node.js svg2vectordrawable for robust conversion
+        val result = exec {
+            commandLine("npx", "svg2vectordrawable", "-i", svgFile.absolutePath, "-o", outputFile.absolutePath)
+            isIgnoreExitValue = true
+        }
         
-        // Extract basic SVG attributes (simplified parser)
-        val widthRegex = """width=["']([^"']+)["']""".toRegex()
-        val heightRegex = """height=["']([^"']+)["']""".toRegex()
-        val viewBoxRegex = """viewBox=["']([^"']+)["']""".toRegex()
-        val pathRegex = """<path[^>]*d=["']([^"']+)["'][^>]*/>""".toRegex()
-        
-        val width = widthRegex.find(svgContent)?.groupValues?.get(1) ?: "24dp"
-        val height = heightRegex.find(svgContent)?.groupValues?.get(1) ?: "24dp"
-        val viewBox = viewBoxRegex.find(svgContent)?.groupValues?.get(1) ?: "0 0 24 24"
-        
-        // Extract paths
-        val paths = pathRegex.findAll(svgContent).map { 
-            it.groupValues[1] 
-        }.toList()
-        
-        if (paths.isEmpty()) {
-            println("⚠️  Warning: No paths found in $svgFile")
-            // Create placeholder
+        if (result.exitValue == 0 && outputFile.exists()) {
+            // Post-process to add stroke attributes for SVGs that use stroke styling
+            postProcessVectorDrawable(svgFile, outputFile)
+            println("✅ Converted with svg2vectordrawable: ${outputFile.name}")
+        } else {
+            println("⚠️  svg2vectordrawable failed for $svgFile, using fallback")
             generatePlaceholderVector(outputFile, iconName)
-            return
         }
-        
-        // Generate Android Vector Drawable XML
-        val vectorXml = buildString {
-            appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
-            appendLine("""<vector xmlns:android="http://schemas.android.com/apk/res/android"""")
-            appendLine("""    android:width="24dp"""")
-            appendLine("""    android:height="24dp"""")
-            appendLine("""    android:viewportWidth="24"""")
-            appendLine("""    android:viewportHeight="24">""")
-            
-            paths.forEach { pathData ->
-                appendLine("""    <path""")
-                appendLine("""        android:pathData="$pathData"""")
-                appendLine("""        android:fillColor="#FF333333" />""")
-            }
-            
-            appendLine("""</vector>""")
-        }
-        
-        outputFile.writeText(vectorXml)
         
     } catch (e: Exception) {
-        println("❌ Error converting $svgFile: ${e.message}")
+        println("❌ Error calling svg2vectordrawable for $svgFile: ${e.message}")
+        println("   Make sure Node.js and svg2vectordrawable are installed:")
+        println("   npm install -g svg2vectordrawable")
         generatePlaceholderVector(outputFile, iconName)
+    }
+}
+
+/**
+ * Post-process Vector Drawable to add stroke attributes if original SVG uses stroke styling
+ * Uses neutral color suitable for runtime tinting per instance
+ */
+fun postProcessVectorDrawable(svgFile: File, outputFile: File) {
+    try {
+        val svgContent = svgFile.readText()
+        val hasStroke = svgContent.contains("stroke=") && svgContent.contains("fill=\"none\"")
+        
+        if (hasStroke) {
+            val vectorContent = outputFile.readText()
+            
+            // Add stroke attributes to all <path> elements that don't have fillColor
+            val updatedContent = vectorContent.replace(
+                Regex("""<path\s+android:pathData="([^"]+)"\s*/>""")
+            ) { matchResult ->
+                val pathData = matchResult.groupValues[1]
+                """<path
+        android:pathData="$pathData"
+        android:strokeColor="?android:attr/colorControlNormal"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />"""
+            }
+            
+            if (updatedContent != vectorContent) {
+                outputFile.writeText(updatedContent)
+                println("🎨 Added stroke styling with neutral color to ${outputFile.name}")
+            }
+        }
+        
+    } catch (e: Exception) {
+        println("⚠️  Warning: Could not post-process ${outputFile.name}: ${e.message}")
     }
 }
 
