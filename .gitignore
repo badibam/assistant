@@ -37,3 +37,6 @@ gradle/
 *.apk
 *.dex
 *.class
+
+# Backup directory
+.BAK/

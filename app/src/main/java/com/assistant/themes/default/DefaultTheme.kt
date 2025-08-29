@@ -8,6 +8,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,6 +31,8 @@ import com.assistant.core.ui.FeedbackType
 import com.assistant.core.ui.Duration
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.utils.DateUtils
+import java.util.Calendar
 import com.assistant.core.ui.FieldType
 
 /**
@@ -642,11 +647,19 @@ object DefaultTheme : ThemeContract {
             Text(displayLabel, TextType.LABEL)
             
             if (readonly) {
-                // Display as text when readonly
-                Text(
-                    text = if (value.isNotBlank()) value else "(vide)",
-                    type = TextType.BODY
-                )
+                // Display as text when readonly - clickable if onClick provided
+                val textModifier = if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                }
+                
+                Box(modifier = textModifier) {
+                    Text(
+                        text = if (value.isNotBlank()) value else "(vide)",
+                        type = TextType.BODY
+                    )
+                }
             } else {
                 TextField(
                     fieldType = fieldType,
@@ -736,6 +749,49 @@ object DefaultTheme : ThemeContract {
             if (label != null) {
                 Text(label, TextType.BODY)
             }
+        }
+    }
+    
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun DatePicker(
+        selectedDate: String,
+        onDateSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        // Convert local date to UTC for DatePicker compatibility
+        val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
+        val utcDate = selectedDateMs + java.util.TimeZone.getDefault().getOffset(selectedDateMs)
+        
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = utcDate
+        )
+        
+        DatePickerDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onDateSelected(DateUtils.formatDateForDisplay(millis))
+                        }
+                        onDismiss()
+                    }
+                ) {
+                    androidx.compose.material3.Text("OK")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = onDismiss
+                ) {
+                    androidx.compose.material3.Text("Annuler")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState
+            )
         }
     }
     

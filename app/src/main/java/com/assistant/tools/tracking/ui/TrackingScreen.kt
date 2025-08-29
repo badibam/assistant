@@ -1,6 +1,8 @@
 package com.assistant.tools.tracking.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +77,7 @@ fun TrackingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -95,13 +98,36 @@ fun TrackingScreen(
                 onClick = onNavigateBack
             )
         } else if (toolInstance != null) {
-            // Tool header
-            TrackingToolHeader(
-                toolInstance = toolInstance!!,
-                config = config,
-                context = context,
-                onConfigureClick = onConfigureClick
-            )
+            // Tool header with external buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Back button (left, outside colored zone)
+                UI.ActionButton(
+                    action = ButtonAction.BACK,
+                    display = ButtonDisplay.ICON,
+                    size = Size.L,
+                    onClick = onNavigateBack
+                )
+                
+                // Tool header (center)
+                TrackingToolHeader(
+                    toolInstance = toolInstance!!,
+                    config = config,
+                    context = context,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Configure button (right, outside colored zone)
+                UI.ActionButton(
+                    action = ButtonAction.CONFIGURE,
+                    display = ButtonDisplay.ICON,
+                    size = Size.L,
+                    onClick = onConfigureClick
+                )
+            }
             
             // Input interface section
             UI.Card(type = CardType.DEFAULT) {
@@ -143,11 +169,6 @@ fun TrackingScreen(
                 }
             }
             
-            // Navigation
-            UI.ActionButton(
-                action = ButtonAction.BACK,
-                onClick = onNavigateBack
-            )
         }
     }
 }
@@ -160,14 +181,15 @@ private fun TrackingToolHeader(
     toolInstance: Map<String, Any>,
     config: JSONObject,
     context: android.content.Context,
-    onConfigureClick: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     val toolName = config.optString("name", "Suivi")
     val toolDescription = config.optString("description", "")
     val iconName = config.optString("icon_name", "activity")
     val trackingType = config.optString("type", "numeric")
     
-    UI.Card(type = CardType.DEFAULT) {
+    Box(modifier = modifier) {
+        UI.Card(type = CardType.DEFAULT) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -183,7 +205,6 @@ private fun TrackingToolHeader(
             
             // Tool info
             Column(
-                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 UI.Text(toolName, TextType.TITLE)
@@ -192,15 +213,9 @@ private fun TrackingToolHeader(
                     UI.Text(toolDescription, TextType.BODY)
                 }
                 
-                UI.Text("Type: $trackingType", TextType.CAPTION)
+                UI.Text("Suivi - $trackingType", TextType.CAPTION)
             }
-            
-            // Configure button
-            UI.ActionButton(
-                action = ButtonAction.CONFIGURE,
-                display = ButtonDisplay.ICON,
-                onClick = onConfigureClick
-            )
         }
     }
+}
 }

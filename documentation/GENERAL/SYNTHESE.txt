@@ -37,8 +37,6 @@
 ═══ Modularité des outils ═══
 ▪ Structure physique : 1 outil = 1 dossier avec organisation interne standardisée
 ▪ Architecture logique : système d'interfaces/contrats pour garantir les éléments communs obligatoires (métadonnées JSON, structure config JSON, page config, comportement clic, etc.) tout en laissant liberté d'implémentation
-▪ Composants de base réutilisables disponibles (mais non contraints) pour la manière dont l'outil proprement dit s'affiche (le graphique, le journal, la notif, etc.)
-
 
 
 ╔══════════════════════════════╗
@@ -90,116 +88,55 @@ Automatisations programmées (calculs, statistique, analyse IA etc)
 ║   NAVIGATION ET ÉCRANS       ║
 ╚══════════════════════════════╝
 
-
-═══ Généralités ═══
-
-▪ Différents écrans permettent d'accéder de différentes façon aux données / fonctionnalités
-▪  Zone "Appel IA" disponible en permanence (toggle), qui indique quelques mots de contexte
-
-
 ═══ Les différents écrans ═══
 
 ── Écran Principal ──
 ▪ Accès aux zones : Boutons/tuiles vers les différentes zones
-▪ Terminal : un endroit de l'écran principal dans lequel le programme indique à l'utilisateur ce qu'il est en train de faire en arrière-plan (calcul de données, échange avec l'IA, etc.)
+▪ Terminal : feedback en arrière-plan (calculs, échanges IA, etc.)
 
 ── Zones ──
 ▪ Outils associés à cette zone (suivis, objectifs, journaux, etc.)
 
 ── Ecrans par type d'outil ──
 ▪ Graphiques, Objectifs, Journaux, Messages, etc.
-▪ Regroupent les informations par type d'outil plutôt que par zone.
+▪ Regroupent les informations par type d'outil plutôt que par zone
 
-── File d'attente ──
-▪ Liste des actions prévues par l'app (Requêtes IA, calculs, statistiques, notification, etc.)
-▪ Possibilité de changer l'ordre, le moment, les instructions, etc.
-▪ Liste notamment les requêtes IA en attente de réseau si offline
-
-── Discussions ──
-▪ Historique des discussions avec l'IA (résumés)
+── Interface IA ──
+▪ Chat unifié accessible depuis n'importe quel écran (bouton toggle)
+▪ Enrichissements contextuels selon écran de lancement
+▪ Historique des sessions et états en temps réel
 
 
 ╔══════════════════════════════╗
 ║             IA               ║
 ╚══════════════════════════════╝
 
-═══ Système de prompts ═══
+═══ Principe général ═══
+▪ Interface de chat unifiée avec enrichissements intégrés
+▪ Communication exclusivement via commandes JSON structurées (pas d'accès direct aux données)
+▪ Navigation par métadonnées puis accès aux données spécifiques selon besoins
+▪ Intégration complète avec le Coordinateur (`initiated_by: "ai"`)
 
-── Prompt manager ──
-▪ Connaît le contexte global de la session (déclencheur, type de reqûete, etc.)
-▪ Connaît l'état actuel de la session
-▪ Assemble en conséquence des fragments en un prompt
-▪ Ensuite se laisse piloter par l'IA via l'interface de commandes
-▪ Reprend la main quand l'IA ne demande plus d'infos
-▪ Reprend la main par règles prédéfinies (dépassement tokens, erreur, coupure internet, etc.)
+═══ Enrichissements conversationnels ═══
+▪ 6 catégories d'actions : 🔍 Données, 📝 Utiliser, ✨ Créer, 🔧 Modifier, 📁 Organiser, 📚 Documenter
+▪ Configuration via overlays → blocs intégrés dans message
+▪ L'IA comprend le contexte par ordre séquentiel des enrichissements
+▪ Workflow naturel : écrire → enrichir → envoyer
 
-── Types de fragments ──
-▪ Prompt intro de base (incluant fragment minimal de documentation d'interface de commandes)
-▪ Fragments de documentation d'interface de commandes
-▪ Contexte dynamique (depuis où la requête est-elle envoyée, avec quelles précisions de l'utilisateur, etc.)
-▪ Descriptifs JSON (metadata) des différents objets
-▪ Données elles-mêmes
+═══ Sessions et validation ═══
+▪ Sessions persistantes jusqu'à terminaison explicite utilisateur
+▪ Actions validées en temps réel via modules de communication dans conversation
+▪ Historique chronologique des actions IA ↔ Utilisateur
+▪ Pas de file d'attente d'actions, tout traité immédiatement
 
-── Hiérarchie des prompts ──
-▪ Cascade de prompts selon le contexte
-▪ Ex: session générale → outil de type suivi → outil de suivi spécifique → modification du suivi
+═══ Architecture technique ═══
+▪ PromptManager : assemblage dynamique de fragments selon contexte
+▪ Modules de communication standardisés (MultipleChoice, Slider, etc.)
+▪ Système de permissions granulaires par cascade (app -> zone -> type d'outil -> instance d'outil)
+▪ Gestion offline : requêtes en attente de connexion avec retry automatique (détail à préciser)
 
-── Economie des tokens ──
-▪ Spécification systématique dans métadonnées de longueur de texte, de l'utilisation appropriée/ non appropriée
-▪ Différentes versions d'une même donnée, par exemple pour journaux : entrée brute, résumé 1 paragraphe, résumé 1 phrase, résumé en quelques mots-clés
-
-
-═══ Interface de commandes ═══
-
-▪ Dialogue entre IA et App via interface de commandes JSON
-
-── Structure ──
-▪ Liste de commandes JSON
-▪ Chaque commande contient : point d'accès, paramètres (JSON), description de l'action, raison, id (pour référence future dans la session), ...
-
-── Points d'accès ──
-▪ Navigation : explorer les données via les métadonnées uniquement
-▪ Accès : accéder au contenu réel
-▪ Modifications : modifier l'état (CRUD, configuration, calculs, etc.)
-▪ Message : dialoguer avec l'utilisateur dans le contexte de cette session
-
-── Logique de contrôle ──
-▪ IA : agit selon ce qui lui semble approprié
-▪ App : applique ses mécanismes de contrôle après coup
-▪ Retours détaillés : succès/échec/validation_requise/permission_refusée, etc.
-▪ IA reçoit les résultats si session continue
-
-
-═══ Navigation des données ═══
-▪ L'IA reçoit les infos de structure, interface de commandes, navigation dans méta/données
-▪ L'IA demande les méta/données au fur et à mesure de ses besoins
-
-
-═══ Discussions ═══
-▪ Il est possible de lancer un thread de discussion avec l'IA depuis n'importe quel écran de l'app
-▪ Le contexte où a été lancée la discussion sera intégré dans le prompt
-▪ IA répond à l'humain et décide de lancer des actions
-▪ Les actions sont présentées à l'humain pour validation (action proposée + raison ; regroupées par batch si nombreuses)
-▪ Les discussions ne sont pas nécessairement conservées (sauf peut être pour amélioration de l'app)
-▪ Une discussion terminée donne lieu à un résumé qui est enregistré
------Dévelopements éventuels-----
-▪ Une discussion reste "en cours" tant que l'utilisateur ne la marque pas comme terminée.
-
-
-═══ Actions de l'IA ═══
-▪ L'IA peut intervenir partout (CRUD, configuration, etc.)
-▪ Validation : selon le contexte: validation des actions proposées par l'IA. (Actions critiques, préférence utilisateur, etc.)
-
-
-═══ Gestion online/offline ═══
-
-── Offline ──
-▪ Certaines fonctionnalités restent disponibles : Suivi, Journaux, Calculs, etc.
-▪ Requêtes IA mises en File d'attente
-
-── Online ──
-▪ Traitement des Requêtes en attente
-▪ Interactions IA en temps réel (Discussions)
+═══ Documentation détaillée ═══
+▪ Voir documentation/AI/
 
 
 ╔══════════════════════════════╗
@@ -218,12 +155,6 @@ Automatisations programmées (calculs, statistique, analyse IA etc)
 ▪ Toutes modifications passent par événements
 ▪ Logging des modifications
 ▪ Evite synchronisation manuelle
-
-── Gestion des cascades d'actions ──
-▪ Automatiques (App gère) ex: contraintes de cohérence
-▪ Validation (App peut gérer) ex: suppression outil → suppression données ?
-▪ IA gère (Humain en théorie peut gérer) : Modifs subséquentes sur la base des modifs effectuées (cf logs, contexte, etc.)
-
 
 ═══ Verbalisation ═══
 ▪ Système de verbalisation des actions de modification, des états de l'app, de divers résultats

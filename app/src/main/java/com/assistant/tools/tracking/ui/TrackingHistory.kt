@@ -17,11 +17,10 @@ import com.assistant.tools.tracking.ui.components.TrackingDialogMode
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.tools.tracking.TrackingUtils
+import com.assistant.core.utils.DateUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.abs
 
 /**
  * Responsive table display for tracking data history with CRUD operations
@@ -44,6 +43,12 @@ fun TrackingHistory(
     var showEditDialog by remember { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<TrackingData?>(null) }
     
+    // Date filter state - default to today
+    var selectedDate by remember { 
+        mutableStateOf(DateUtils.getTodayFormatted())
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+    
     // Load data
     val loadData = {
         scope.launch {
@@ -64,7 +69,7 @@ fun TrackingHistory(
                     CommandStatus.SUCCESS -> {
                         val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
                         
-                        trackingData = entriesData.mapNotNull { entryMap ->
+                        val allEntries = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
                                     TrackingData(
@@ -83,7 +88,14 @@ fun TrackingHistory(
                                     null
                                 }
                             } else null
-                        }.sortedByDescending { it.recorded_at }
+                        }
+                        
+                        // Filter by selected date and limit to 100 entries
+                        val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
+                        trackingData = allEntries
+                            .filter { DateUtils.isOnSameDay(it.recorded_at, selectedDateMs) }
+                            .sortedByDescending { it.recorded_at }
+                            .take(100)
                     }
                     else -> {
                         errorMessage = result.error ?: "Erreur lors du chargement"
@@ -155,8 +167,8 @@ fun TrackingHistory(
         }
     }
     
-    // Load data on composition
-    LaunchedEffect(toolInstanceId) {
+    // Load data on composition and when date changes
+    LaunchedEffect(toolInstanceId, selectedDate) {
         loadData()
     }
     
@@ -164,13 +176,24 @@ fun TrackingHistory(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with refresh button
+        // Header with date selector and refresh button
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            UI.Text("Historique des entrées", TextType.SUBTITLE)
+            // Date selector as title
+            UI.FormField(
+                label = "",
+                value = selectedDate,
+                onChange = { },
+                fieldType = FieldType.TEXT,
+                required = true,
+                readonly = true,
+                onClick = { 
+                    showDatePicker = true
+                }
+            )
             
             if (!isLoading) {
                 UI.ActionButton(
@@ -220,11 +243,11 @@ fun TrackingHistory(
             }
         }
         
-        // Data table
-        LazyColumn(
+        // Data table - limit items and make it non-scrollable (parent page is scrollable)
+        Column(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(trackingData) { entry ->
+            trackingData.forEach { entry ->
                 TrackingHistoryRow(
                     entry = entry,
                     trackingType = trackingType,
@@ -234,6 +257,24 @@ fun TrackingHistory(
                     },
                     onDelete = { deleteEntry(entry.id) }
                 )
+            }
+            
+            // Show count info
+            if (trackingData.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                UI.Card(type = CardType.DEFAULT) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        UI.Text(
+                            "${trackingData.size} entrée(s) pour le $selectedDate" + 
+                            if (trackingData.size == 100) " (limite atteinte)" else "",
+                            TextType.CAPTION
+                        )
+                    }
+                }
             }
         }
         
@@ -261,6 +302,19 @@ fun TrackingHistory(
                 }
             )
         }
+        
+        // Date picker dialog
+        if (showDatePicker) {
+            UI.DatePicker(
+                selectedDate = selectedDate,
+                onDateSelected = { newDate ->
+                    selectedDate = newDate
+                },
+                onDismiss = {
+                    showDatePicker = false
+                }
+            )
+        }
     }
 }
 
@@ -282,7 +336,7 @@ private fun TrackingHistoryRow(
                 .padding(8.dp)
         ) {
             // Date column  
-            UI.Text(formatSmartDate(entry.recorded_at), TextType.BODY)
+            UI.Text(DateUtils.formatSmartDate(entry.recorded_at), TextType.BODY)
             
             // Item column
             UI.Text(entry.name, TextType.BODY)
@@ -310,42 +364,6 @@ private fun TrackingHistoryRow(
         }
     }
 
-/**
- * Format date with smart relative display
- */
-private fun formatSmartDate(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val dayInMs = 24 * 60 * 60 * 1000L
-    
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val dateFormat = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
-    
-    return when {
-        diff < dayInMs && isSameDay(timestamp, now) -> "Aujourd'hui ${timeFormat.format(Date(timestamp))}"
-        diff < 2 * dayInMs && isYesterday(timestamp, now) -> "Hier ${timeFormat.format(Date(timestamp))}"
-        else -> dateFormat.format(Date(timestamp))
-    }
-}
-
-/**
- * Check if two timestamps are on the same day
- */
-private fun isSameDay(timestamp1: Long, timestamp2: Long): Boolean {
-    val cal1 = Calendar.getInstance().apply { timeInMillis = timestamp1 }
-    val cal2 = Calendar.getInstance().apply { timeInMillis = timestamp2 }
-    
-    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-           cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
-}
-
-/**
- * Check if timestamp is yesterday
- */
-private fun isYesterday(timestamp: Long, now: Long): Boolean {
-    val yesterday = now - 24 * 60 * 60 * 1000L
-    return isSameDay(timestamp, yesterday)
-}
 
 /**
  * Format tracking value for display based on type

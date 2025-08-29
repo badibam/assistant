@@ -116,6 +116,13 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
+    @Composable
+    fun DatePicker(
+        selectedDate: String,
+        onDateSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    )
+    
     // =====================================
     // CONTAINERS SPÉCIALISÉS (apparence uniquement)
     // =====================================

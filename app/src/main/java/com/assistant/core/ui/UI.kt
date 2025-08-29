@@ -122,6 +122,13 @@ object UI {
         content: @Composable () -> Unit
     ) = CurrentTheme.current.Dialog(type, onConfirm, onCancel, content)
     
+    @Composable
+    fun DatePicker(
+        selectedDate: String,
+        onDateSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    ) = CurrentTheme.current.DatePicker(selectedDate, onDateSelected, onDismiss)
+    
     // =====================================
     // FORMULAIRES UNIFIÉS
     // =====================================
