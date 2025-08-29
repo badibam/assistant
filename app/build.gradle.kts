@@ -102,11 +102,241 @@ android {
     }
 }
 
-// TODO: Add build script to auto-generate Vector Drawables from SVG
-// Script should read themes/*/icons/*.svg and generate res/drawable/theme_*_*.xml
-// This will replace manual XML conversion when scaling to multiple themes
-// Implementation: Gradle task that converts SVG → Vector Drawable XML maintaining
-// the {theme}_{icon_name} naming convention for seamless ThemeIconManager compatibility
+// Theme Resource Generation Task
+tasks.register("generateThemeResources") {
+    description = "Generate drawable resources from theme SVG icons"
+    group = "build"
+    
+    val themesDir = file("src/main/java/com/assistant/themes")
+    val outputDir = file("src/main/res/drawable")
+    val iconsListFile = file("src/main/assets/standard_icons.txt")
+    
+    // Gradle cache: run if themes OR icons list changed
+    inputs.dir(themesDir)
+    inputs.file(iconsListFile)  // ← AJOUT: surveille le fichier liste
+    outputs.dir(outputDir)
+    
+    doFirst {
+        // Phase 1: Validation avec warnings - vérifier cohérence globale
+        println("🔍 Validating theme consistency...")
+        
+        if (!themesDir.exists()) {
+            throw GradleException("Themes directory not found: ${themesDir.absolutePath}")
+        }
+        
+        // Vérifier que le thème default existe (requis comme fallback)
+        val defaultThemeDir = File(themesDir, "default")
+        if (!defaultThemeDir.exists() || !File(defaultThemeDir, "icons").exists()) {
+            throw GradleException("❌ Default theme directory not found: ${defaultThemeDir.absolutePath}\n" +
+                "   Default theme is required as fallback for other themes")
+        }
+        
+        themesDir.listFiles()?.filter { it.isDirectory }?.forEach { themeDir ->
+            val themeName = themeDir.name
+            val iconsDir = File(themeDir, "icons")
+            
+            if (iconsDir.exists() && iconsDir.isDirectory) {
+                // Scanner SVG disponibles dans ce thème
+                val availableSvgs = iconsDir.listFiles { _, name -> 
+                    name.endsWith(".svg", ignoreCase = true)
+                }?.map { 
+                    it.nameWithoutExtension 
+                }?.toSet() ?: emptySet()
+                
+                val standardIcons = getStandardIcons()
+                val missingSvgs = standardIcons - availableSvgs
+                val orphanSvgs = availableSvgs - standardIcons
+                
+                if (missingSvgs.isNotEmpty() && themeName == "default") {
+                    println("⚠️  Default theme missing SVG files: $missingSvgs")
+                    println("   → Will generate placeholders for missing icons")
+                } else if (missingSvgs.isNotEmpty()) {
+                    println("ℹ️  Theme '$themeName' missing SVG files: $missingSvgs")
+                    println("   → Will fallback to default theme")
+                }
+                
+                if (orphanSvgs.isNotEmpty()) {
+                    println("⚠️  Theme '$themeName': SVG files not in IconConfig.STANDARD_ICONS: $orphanSvgs")
+                    println("   → Consider adding these to IconConfig.STANDARD_ICONS")
+                }
+                
+                println("✅ Theme '$themeName': Ready (${availableSvgs.size}/${standardIcons.size} icons)")
+            }
+        }
+    }
+    
+    doLast {
+        println("🎨 Generating theme resources...")
+        
+        outputDir.mkdirs()
+        
+        themesDir.listFiles()?.filter { it.isDirectory }?.forEach { themeDir ->
+            val themeName = themeDir.name
+            val iconsDir = File(themeDir, "icons")
+            
+            if (iconsDir.exists() && iconsDir.isDirectory) {
+                println("📁 Processing theme: $themeName")
+                
+                // Générer ressources pour toutes les icônes standard
+                getStandardIcons().forEach { iconId ->
+                    val svgFile = File(iconsDir, "$iconId.svg")
+                    val outputFileName = "${themeName}_${iconId.replace("-", "_")}.xml"
+                    val outputFile = File(outputDir, outputFileName)
+                    
+                    when {
+                        // 1. SVG exists in current theme → use it
+                        svgFile.exists() -> {
+                            convertSvgToVectorDrawable(svgFile, outputFile, iconId)
+                            println("✅ Generated from $themeName: $outputFileName")
+                        }
+                        
+                        // 2. SVG missing but theme is default → placeholder
+                        themeName == "default" -> {
+                            generatePlaceholderVector(outputFile, iconId)
+                            println("🔄 Generated placeholder for default: $outputFileName")
+                        }
+                        
+                        // 3. SVG missing in other theme → fallback to default
+                        else -> {
+                            val defaultSvgFile = File(themesDir, "default/icons/$iconId.svg")
+                            if (defaultSvgFile.exists()) {
+                                convertSvgToVectorDrawable(defaultSvgFile, outputFile, iconId)
+                                println("🔄 Fallback from default: $outputFileName")
+                            } else {
+                                generatePlaceholderVector(outputFile, iconId)
+                                println("⚠️  Missing in both $themeName and default: $outputFileName")
+                            }
+                        }
+                    }
+                }
+                
+                // Phase 2: Nettoyage automatique - supprimer resources orphelines
+                println("🧹 Cleaning orphan resources for theme: $themeName")
+                
+                val expectedFiles = getStandardIcons().map { iconId ->
+                    "${themeName}_${iconId.replace("-", "_")}.xml"
+                }.toSet()
+                
+                val existingFiles = outputDir.listFiles { _, name ->
+                    name.startsWith("${themeName}_") && name.endsWith(".xml")
+                }?.map { it.name }?.toSet() ?: emptySet()
+                
+                val orphanFiles = existingFiles - expectedFiles
+                
+                orphanFiles.forEach { orphanFile ->
+                    val fileToDelete = File(outputDir, orphanFile)
+                    if (fileToDelete.delete()) {
+                        println("🗑️  Removed orphan resource: $orphanFile")
+                    }
+                }
+                
+                if (orphanFiles.isEmpty()) {
+                    println("✨ No orphan resources found for theme: $themeName")
+                }
+            }
+        }
+        
+        println("🎉 Theme resource generation complete!")
+    }
+}
+
+// Auto-run before build
+tasks.named("preBuild") {
+    dependsOn("generateThemeResources")
+}
+
+/**
+ * Convert SVG to Android Vector Drawable XML
+ * Simple conversion - for complex SVGs, consider using external tools
+ */
+fun convertSvgToVectorDrawable(svgFile: File, outputFile: File, iconName: String) {
+    try {
+        val svgContent = svgFile.readText()
+        
+        // Extract basic SVG attributes (simplified parser)
+        val widthRegex = """width=["']([^"']+)["']""".toRegex()
+        val heightRegex = """height=["']([^"']+)["']""".toRegex()
+        val viewBoxRegex = """viewBox=["']([^"']+)["']""".toRegex()
+        val pathRegex = """<path[^>]*d=["']([^"']+)["'][^>]*/>""".toRegex()
+        
+        val width = widthRegex.find(svgContent)?.groupValues?.get(1) ?: "24dp"
+        val height = heightRegex.find(svgContent)?.groupValues?.get(1) ?: "24dp"
+        val viewBox = viewBoxRegex.find(svgContent)?.groupValues?.get(1) ?: "0 0 24 24"
+        
+        // Extract paths
+        val paths = pathRegex.findAll(svgContent).map { 
+            it.groupValues[1] 
+        }.toList()
+        
+        if (paths.isEmpty()) {
+            println("⚠️  Warning: No paths found in $svgFile")
+            // Create placeholder
+            generatePlaceholderVector(outputFile, iconName)
+            return
+        }
+        
+        // Generate Android Vector Drawable XML
+        val vectorXml = buildString {
+            appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
+            appendLine("""<vector xmlns:android="http://schemas.android.com/apk/res/android"""")
+            appendLine("""    android:width="24dp"""")
+            appendLine("""    android:height="24dp"""")
+            appendLine("""    android:viewportWidth="24"""")
+            appendLine("""    android:viewportHeight="24">""")
+            
+            paths.forEach { pathData ->
+                appendLine("""    <path""")
+                appendLine("""        android:pathData="$pathData"""")
+                appendLine("""        android:fillColor="#FF333333" />""")
+            }
+            
+            appendLine("""</vector>""")
+        }
+        
+        outputFile.writeText(vectorXml)
+        
+    } catch (e: Exception) {
+        println("❌ Error converting $svgFile: ${e.message}")
+        generatePlaceholderVector(outputFile, iconName)
+    }
+}
+
+/**
+ * Generate placeholder vector drawable when SVG conversion fails
+ */
+fun generatePlaceholderVector(outputFile: File, iconName: String) {
+    val placeholderXml = """<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Placeholder for $iconName -->
+    <path
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM13,17h-2v-6h2v6zM13,9h-2L11,7h2v2z"
+        android:fillColor="#FF333333" />
+</vector>
+"""
+    outputFile.writeText(placeholderXml)
+}
+
+/**
+ * Get STANDARD_ICONS list from shared assets file
+ * Single source of truth for both Gradle task and runtime
+ */
+fun getStandardIcons(): Set<String> {
+    val iconsFile = file("src/main/assets/standard_icons.txt")
+    if (!iconsFile.exists()) {
+        throw GradleException("❌ Missing standard_icons.txt file in src/main/assets/")
+    }
+    
+    return iconsFile.readText()
+        .trim()
+        .split("\n")
+        .map { it.trim() }
+        .filter { it.isNotBlank() && !it.startsWith("#") }
+        .toSet()
+}
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
