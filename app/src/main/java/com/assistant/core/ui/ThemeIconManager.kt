@@ -7,7 +7,8 @@ import android.content.Context
  */
 data class AvailableIcon(
     val id: String,
-    val displayName: String
+    val displayName: String,
+    val resourceId: Int
 )
 
 /**
@@ -43,31 +44,13 @@ object ThemeIconManager {
     }
     
     /**
-     * Standard icons loaded from shared assets file
-     * Single source of truth with Gradle task
-     */
-    private fun getStandardIcons(context: Context): List<String> {
-        return context.assets.open("standard_icons.txt").use { inputStream ->
-            inputStream.bufferedReader().useLines { lines ->
-                lines.map { it.trim() }
-                    .filter { it.isNotBlank() && !it.startsWith("#") }
-                    .toList()
-            }
-        }
-    }
-    
-    /**
-     * Get all available icons for a theme
-     * @param context Android context
-     * @param themeName Theme name (e.g., "default", "glass")
-     * @return List of available icons with their IDs and display names
+     * Get all available icons for a theme using generated resources
+     * Uses direct R.drawable references instead of getIdentifier()
      */
     fun getAvailableIcons(context: Context, themeName: String): List<AvailableIcon> {
-        val standardIcons = getStandardIcons(context)
-        return standardIcons.mapNotNull { iconId ->
-            if (iconExists(context, themeName, iconId)) {
-                AvailableIcon(iconId, formatDisplayName(iconId))
-            } else null
+        return when (themeName) {
+            "default" -> GeneratedThemeResources.getDefaultThemeIcons()
+            else -> emptyList() // Add other themes here as needed
         }
     }
     

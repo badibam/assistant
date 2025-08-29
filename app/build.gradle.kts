@@ -236,6 +236,10 @@ tasks.register("generateThemeResources") {
             }
         }
         
+        // Phase 3: Generate Kotlin code with direct R.drawable references
+        println("📝 Generating Kotlin theme resources...")
+        generateKotlinThemeResources()
+        
         println("🎉 Theme resource generation complete!")
     }
 }
@@ -336,6 +340,54 @@ fun getStandardIcons(): Set<String> {
         .map { it.trim() }
         .filter { it.isNotBlank() && !it.startsWith("#") }
         .toSet()
+}
+
+/**
+ * Generate Kotlin code with direct R.drawable references
+ * Eliminates need for getIdentifier() by using compiled resource IDs
+ */
+fun generateKotlinThemeResources() {
+    val standardIcons = getStandardIcons()
+    val outputFile = file("src/main/java/com/assistant/core/ui/GeneratedThemeResources.kt")
+    
+    val kotlinCode = buildString {
+        appendLine("package com.assistant.core.ui")
+        appendLine("")
+        appendLine("import com.assistant.R")
+        appendLine("")
+        appendLine("/**")
+        appendLine(" * Generated theme resources with direct R.drawable references")
+        appendLine(" * Auto-generated from standard_icons.txt - DO NOT EDIT MANUALLY")
+        appendLine(" */")
+        appendLine("object GeneratedThemeResources {")
+        appendLine("    ")
+        appendLine("    /**")
+        appendLine("     * Get default theme icons with direct resource references")
+        appendLine("     */")
+        appendLine("    fun getDefaultThemeIcons(): List<AvailableIcon> {")
+        appendLine("        return listOf(")
+        
+        standardIcons.forEach { iconId ->
+            val resourceName = "default_${iconId.replace("-", "_")}"
+            val displayName = iconId.split("-").joinToString(" ") { 
+                it.replaceFirstChar { char -> char.uppercase() } 
+            }
+            appendLine("            AvailableIcon(")
+            appendLine("                id = \"$iconId\",")
+            appendLine("                displayName = \"$displayName\",")
+            appendLine("                resourceId = R.drawable.$resourceName")
+            appendLine("            ),")
+        }
+        
+        appendLine("        )")
+        appendLine("    }")
+        appendLine("    ")
+        appendLine("    // TODO: Add other themes here (glass, etc.) when implemented")
+        appendLine("}")
+    }
+    
+    outputFile.writeText(kotlinCode)
+    println("✅ Generated: ${outputFile.name}")
 }
 
 dependencies {
