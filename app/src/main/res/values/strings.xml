@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Assistant Personnel</string>
-    <string name="main_screen_title">Assistant Personnel</string>
+    <string name="app_name">Assistant</string>
+    <string name="main_screen_title">Assistant</string>
     <string name="zones_section">Zones</string>
     <string name="no_zones">Aucune zone configurée</string>
     <string name="create_zone">Créer une zone</string>

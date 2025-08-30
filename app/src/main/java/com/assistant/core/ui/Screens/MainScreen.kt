@@ -156,7 +156,7 @@ fun MainScreen() {
         ) {
             // Title
             UI.Text(
-                text = "Assistant Personnel",
+                text = "Assistant",
                 type = TextType.TITLE
             )
             
