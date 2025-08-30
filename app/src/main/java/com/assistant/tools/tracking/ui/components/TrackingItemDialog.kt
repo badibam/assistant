@@ -2,10 +2,13 @@ package com.assistant.tools.tracking.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.NumberFormatting
+import com.assistant.core.utils.DateUtils
 
 /**
  * Dialog modes for different usage contexts
@@ -29,14 +32,22 @@ fun TrackingItemDialog(
     initialName: String = "",
     initialUnit: String = "",
     initialDefaultQuantity: String = "",
-    onConfirm: (name: String, unit: String, defaultQuantity: String, addToPredefined: Boolean) -> Unit,
+    initialDate: String = "",
+    initialTime: String = "",
+    onConfirm: (name: String, unit: String, defaultQuantity: String, addToPredefined: Boolean, date: String, time: String) -> Unit,
     onCancel: () -> Unit
 ) {
     // Dialog state
     var itemName by remember(isVisible) { mutableStateOf(initialName) }
     var itemUnit by remember(isVisible) { mutableStateOf(initialUnit) }
     var itemDefaultQuantity by remember(isVisible) { mutableStateOf(initialDefaultQuantity) }
+    var itemDate by remember(isVisible) { mutableStateOf(initialDate) }
+    var itemTime by remember(isVisible) { mutableStateOf(initialTime) }
     var addToPredefined by remember(isVisible) { mutableStateOf(false) }
+    
+    // Date/time picker states
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     
     // Reset fields when dialog becomes visible
     LaunchedEffect(isVisible) {
@@ -44,6 +55,8 @@ fun TrackingItemDialog(
             itemName = initialName
             itemUnit = initialUnit
             itemDefaultQuantity = initialDefaultQuantity
+            itemDate = initialDate.ifEmpty { DateUtils.getTodayFormatted() }
+            itemTime = initialTime.ifEmpty { DateUtils.getCurrentTimeFormatted() }
         }
     }
     
@@ -66,13 +79,14 @@ fun TrackingItemDialog(
         val isUnitReadonly = mode == TrackingDialogMode.PREDEFINED_INPUT
         val isValueRequired = mode in listOf(TrackingDialogMode.FREE_INPUT, TrackingDialogMode.PREDEFINED_INPUT)
         val showAddToPredefined = mode == TrackingDialogMode.FREE_INPUT
+        val showDateTime = isValueRequired // Afficher date/heure pour les modes ajout/édition d'entrée
         val valueLabel = if (isValueRequired) "Quantité" else "Quantité par défaut"
         
         UI.Dialog(
             type = dialogType,
             onConfirm = {
                 if (itemName.isNotBlank()) {
-                    onConfirm(itemName.trim(), itemUnit.trim(), itemDefaultQuantity.trim(), addToPredefined)
+                    onConfirm(itemName.trim(), itemUnit.trim(), itemDefaultQuantity.trim(), addToPredefined, itemDate, itemTime)
                 }
             },
             onCancel = onCancel
@@ -119,6 +133,33 @@ fun TrackingItemDialog(
                     )
                 }
                 
+                // Champs date et heure conditionnels
+                if (showDateTime) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        UI.FormField(
+                            label = "Date",
+                            value = itemDate,
+                            onChange = { },
+                            fieldType = FieldType.TEXT,
+                            required = true,
+                            readonly = true,
+                            onClick = { showDatePicker = true }
+                        )
+                        
+                        UI.FormField(
+                            label = "Heure",
+                            value = itemTime,
+                            onChange = { },
+                            fieldType = FieldType.TEXT,
+                            required = true,
+                            readonly = true,
+                            onClick = { showTimePicker = true }
+                        )
+                    }
+                }
+                
                 // Case à cocher "Ajouter aux raccourcis" si visible
                 if (showAddToPredefined) {
                     UI.Checkbox(
@@ -128,6 +169,32 @@ fun TrackingItemDialog(
                     )
                 }
             }
+        }
+        
+        // Date picker dialog
+        if (showDatePicker) {
+            UI.DatePicker(
+                selectedDate = itemDate,
+                onDateSelected = { newDate ->
+                    itemDate = newDate
+                },
+                onDismiss = {
+                    showDatePicker = false
+                }
+            )
+        }
+        
+        // Time picker dialog
+        if (showTimePicker) {
+            UI.TimePicker(
+                selectedTime = itemTime,
+                onTimeSelected = { newTime ->
+                    itemTime = newTime
+                },
+                onDismiss = {
+                    showTimePicker = false
+                }
+            )
         }
     }
 }

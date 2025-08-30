@@ -126,4 +126,52 @@ object DateUtils {
         }
         return calendar.timeInMillis
     }
+    
+    /**
+     * Get current time formatted for display (HH:mm)
+     */
+    fun getCurrentTimeFormatted(): String {
+        return formatTimeForDisplay(System.currentTimeMillis())
+    }
+    
+    /**
+     * Parse time string to hour and minute (HH:mm)
+     */
+    fun parseTime(timeString: String): Pair<Int, Int> {
+        return try {
+            val parts = timeString.split(":")
+            if (parts.size == 2) {
+                val hour = parts[0].toInt()
+                val minute = parts[1].toInt()
+                Pair(hour, minute)
+            } else {
+                val cal = Calendar.getInstance()
+                Pair(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+            }
+        } catch (e: Exception) {
+            val cal = Calendar.getInstance()
+            Pair(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+        }
+    }
+    
+    /**
+     * Combine date string (dd/MM/yyyy) and time string (HH:mm) into timestamp
+     */
+    fun combineDateTime(dateString: String, timeString: String): Long {
+        return try {
+            val dateTimestamp = parseDateForFilter(dateString)
+            val (hour, minute) = parseTime(timeString)
+            
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = dateTimestamp
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            calendar.timeInMillis
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
 }

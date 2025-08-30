@@ -11,6 +11,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -793,6 +795,45 @@ object DefaultTheme : ThemeContract {
                 state = datePickerState
             )
         }
+    }
+    
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    override fun TimePicker(
+        selectedTime: String,
+        onTimeSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        val (hour, minute) = DateUtils.parseTime(selectedTime)
+        val timePickerState = rememberTimePickerState(
+            initialHour = hour,
+            initialMinute = minute
+        )
+        
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        val formattedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                        onTimeSelected(formattedTime)
+                        onDismiss()
+                    }
+                ) {
+                    androidx.compose.material3.Text("OK")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = onDismiss
+                ) {
+                    androidx.compose.material3.Text("Annuler")
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
     }
     
     // Anciens boutons supprimés - utiliser UI.ActionButton à la place

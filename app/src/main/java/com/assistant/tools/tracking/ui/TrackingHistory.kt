@@ -109,17 +109,23 @@ fun TrackingHistory(
         }
     }
     
-    // Update entry - only quantity changes, name and unit stay the same
-    val updateEntry = { entryId: String, newQuantity: String ->
+    // Update entry - quantity and timestamp can be changed
+    val updateEntry = { entryId: String, newQuantity: String, newTimestamp: Long? ->
         scope.launch {
             try {
-                val params = mapOf(
+                val params = mutableMapOf(
                     "tool_type" to "tracking",
                     "operation" to "update",
                     "entry_id" to entryId,
                     "quantity" to newQuantity,
                     "type" to "numeric"
                 )
+                
+                // Add timestamp if provided
+                newTimestamp?.let { 
+                    params["recorded_at"] = it.toString()
+                }
+                
                 android.util.Log.d("TrackingHistory", "Updating entry with params: $params")
                 
                 val result = coordinator.processUserAction("update->tool_data", params)
@@ -290,9 +296,12 @@ fun TrackingHistory(
                 initialName = entry.name,
                 initialUnit = parsedValue.unit,
                 initialDefaultQuantity = parsedValue.quantity.toString(),
-                onConfirm = { name, unit, defaultQuantity, _ ->
-                    // Only quantity changes in history edit
-                    updateEntry(entry.id, defaultQuantity)
+                initialDate = DateUtils.formatDateForDisplay(entry.recorded_at),
+                initialTime = DateUtils.formatTimeForDisplay(entry.recorded_at),
+                onConfirm = { name, unit, defaultQuantity, _, date, time ->
+                    // Update entry with new quantity and datetime
+                    val newTimestamp = DateUtils.combineDateTime(date, time)
+                    updateEntry(entry.id, defaultQuantity, newTimestamp)
                     showEditDialog = false
                     editingEntry = null
                 },

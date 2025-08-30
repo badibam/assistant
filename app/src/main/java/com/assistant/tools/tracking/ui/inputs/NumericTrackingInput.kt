@@ -137,8 +137,9 @@ fun NumericTrackingInput(
             initialName = selectedItem?.name ?: "",
             initialUnit = selectedItem?.getUnit() ?: "",
             initialDefaultQuantity = selectedItem?.getDefaultValue() ?: "",
-            onConfirm = { name, unit, defaultQuantity, addToPredefined ->
+            onConfirm = { name, unit, defaultQuantity, addToPredefined, date, time ->
                 // Pass raw data to service - no JSON creation in UI
+                // Note: date/time will be handled by TrackingService for new entries
                 onSave(name, defaultQuantity, unit)
                 
                 // Add to predefined if checkbox was checked

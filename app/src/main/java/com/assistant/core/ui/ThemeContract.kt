@@ -123,6 +123,13 @@ interface ThemeContract {
         onDismiss: () -> Unit
     )
     
+    @Composable
+    fun TimePicker(
+        selectedTime: String,
+        onTimeSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    )
+    
     // =====================================
     // CONTAINERS SPÉCIALISÉS (apparence uniquement)
     // =====================================

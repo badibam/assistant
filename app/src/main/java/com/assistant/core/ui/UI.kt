@@ -129,6 +129,13 @@ object UI {
         onDismiss: () -> Unit
     ) = CurrentTheme.current.DatePicker(selectedDate, onDateSelected, onDismiss)
     
+    @Composable
+    fun TimePicker(
+        selectedTime: String,
+        onTimeSelected: (String) -> Unit,
+        onDismiss: () -> Unit
+    ) = CurrentTheme.current.TimePicker(selectedTime, onTimeSelected, onDismiss)
+    
     // =====================================
     // FORMULAIRES UNIFIÉS
     // =====================================
