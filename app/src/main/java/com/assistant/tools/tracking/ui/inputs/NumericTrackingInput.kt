@@ -28,7 +28,7 @@ import org.json.JSONObject
 @Composable
 fun NumericTrackingInput(
     config: JSONObject,
-    onSave: (itemName: String, quantity: String, unit: String) -> Unit,
+    onSave: (itemName: String, properties: Map<String, Any>) -> Unit,
     onAddToPredefined: (itemName: String, unit: String, defaultValue: String) -> Unit,
     isLoading: Boolean
 ) {
@@ -93,7 +93,10 @@ fun NumericTrackingInput(
                                 isLoading = isLoading,
                                 onQuickSave = { quantity ->
                                     // Pass raw data to service - no JSON creation in UI
-                                    onSave(item.name, quantity.toString(), item.getUnit())
+                                    onSave(item.name, mapOf(
+                                        "quantity" to quantity.toString(),
+                                        "unit" to item.getUnit()
+                                    ))
                                 },
                                 onOpenDialog = {
                                     selectedItem = item
@@ -140,7 +143,10 @@ fun NumericTrackingInput(
             onConfirm = { name, unit, defaultQuantity, addToPredefined, date, time ->
                 // Pass raw data to service - no JSON creation in UI
                 // Note: date/time will be handled by TrackingService for new entries
-                onSave(name, defaultQuantity, unit)
+                onSave(name, mapOf(
+                    "quantity" to defaultQuantity,
+                    "unit" to unit
+                ))
                 
                 // Add to predefined if checkbox was checked
                 if (addToPredefined) {

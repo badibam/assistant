@@ -1,12 +1,15 @@
 package com.assistant.tools.tracking
 
-import com.assistant.core.utils.NumberFormatting
-import org.json.JSONObject
+import com.assistant.tools.tracking.handlers.NumericTrackingType
 
 /**
  * Utility functions for tracking operations
+ * COMPATIBILITY WRAPPER - delegates to new NumericTrackingType handler
+ * This class maintains backward compatibility while we migrate to the new architecture
  */
 object TrackingUtils {
+    
+    private val numericHandler = NumericTrackingType()
     
     /**
      * Create JSON value for numeric tracking data
@@ -15,32 +18,14 @@ object TrackingUtils {
      * @param quantity The numeric quantity as string (from user input)
      * @param unit The unit string (can be empty)
      * @return JSON string or null if parsing fails
+     * 
+     * @deprecated Use NumericTrackingType directly via TrackingTypeFactory
      */
+    @Deprecated("Use NumericTrackingType via TrackingTypeFactory instead")
     fun createNumericValueJson(quantity: String, unit: String): String? {
-        val numericValue = NumberFormatting.parseUserInput(quantity) ?: return null
-        
-        return JSONObject().apply {
-            put("quantity", numericValue)
-            put("unit", unit.trim())
-            put("type", "numeric")
-            put("raw", formatDisplayValue(numericValue, unit.trim()))
-        }.toString()
-    }
-    
-    /**
-     * Format display value for consistent presentation
-     */
-    private fun formatDisplayValue(value: Double, unit: String): String {
-        val formattedValue = if (value == value.toInt().toDouble()) {
-            value.toInt().toString()
-        } else {
-            value.toString()
-        }
-        
-        return if (unit.isNotBlank()) {
-            "$formattedValue\u00A0$unit" // Non-breaking space
-        } else {
-            formattedValue
-        }
+        return numericHandler.createValueJson(mapOf(
+            "quantity" to quantity,
+            "unit" to unit
+        ))
     }
 }

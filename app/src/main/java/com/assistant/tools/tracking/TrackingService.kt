@@ -10,6 +10,7 @@ import com.assistant.core.validation.ValidationResult
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.TrackingUtils
+import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import org.json.JSONObject
 import kotlinx.coroutines.delay
 import java.util.concurrent.ConcurrentHashMap
@@ -26,6 +27,29 @@ class TrackingService(private val context: Context) : ExecutableService {
     
     // Temporary data storage for multi-step operations
     private val tempData = ConcurrentHashMap<String, Any>()
+    
+    /**
+     * Extract properties from params JSONObject for specific tracking types
+     * @param params The JSONObject containing the parameters
+     * @param type The tracking type identifier
+     * @return Map of properties specific to the tracking type
+     */
+    private fun extractPropertiesFromParams(params: JSONObject, type: String): Map<String, Any> {
+        return when (type) {
+            "numeric" -> mapOf(
+                "quantity" to params.optString("quantity", ""),
+                "unit" to params.optString("unit", "")
+            )
+            // Future types will be handled here:
+            // "scale" -> mapOf("value" to params.optInt("value", 1))
+            // "text" -> mapOf("text" to params.optString("text", ""))
+            // "choice" -> mapOf("selected_option" to params.optString("selected_option", ""))
+            // "boolean" -> mapOf("state" to params.optBoolean("state", false))
+            // "counter" -> mapOf("increment" to params.optInt("increment", 1))
+            // "timer" -> mapOf("duration_minutes" to params.optInt("duration_minutes", 0))
+            else -> emptyMap()
+        }
+    }
     
     /**
      * Execute tracking operation with cancellation support
@@ -78,14 +102,17 @@ class TrackingService(private val context: Context) : ExecutableService {
             return OperationResult.error("Tool instance ID, zone name, tool instance name, name and quantity are required")
         }
         
-        // Create JSON value from raw data
-        val valueJson = when (type) {
-            "numeric" -> TrackingUtils.createNumericValueJson(quantity, unit)
-            else -> null
+        // Create JSON value using TrackingTypeFactory
+        val handler = TrackingTypeFactory.getHandler(type)
+        if (handler == null) {
+            return OperationResult.error("Unsupported tracking type: $type")
         }
         
+        val properties = extractPropertiesFromParams(params, type)
+        val valueJson = handler.createValueJson(properties)
+        
         if (valueJson == null) {
-            return OperationResult.error("Invalid $type data: quantity='$quantity', unit='$unit'")
+            return OperationResult.error("Invalid $type data: $properties")
         }
         
         if (token.isCancelled) return OperationResult.cancelled()
@@ -151,14 +178,21 @@ class TrackingService(private val context: Context) : ExecutableService {
                 json.optString("unit", "")
             } catch (e: Exception) { "" }
             
-            // Create new JSON value
-            val valueJson = when (type) {
-                "numeric" -> TrackingUtils.createNumericValueJson(quantity, existingUnit)
-                else -> null
+            // Create new JSON value using TrackingTypeFactory
+            val handler = TrackingTypeFactory.getHandler(type)
+            if (handler == null) {
+                return OperationResult.error("Unsupported tracking type: $type")
             }
             
+            val properties = extractPropertiesFromParams(params, type).toMutableMap()
+            // For numeric type, preserve existing unit if not provided in update
+            if (type == "numeric" && properties["unit"].toString().isBlank()) {
+                properties["unit"] = existingUnit
+            }
+            
+            val valueJson = handler.createValueJson(properties)
             if (valueJson == null) {
-                return OperationResult.error("Invalid $type data: quantity='$quantity'")
+                return OperationResult.error("Invalid $type data: $properties")
             }
             
             newValue = valueJson
