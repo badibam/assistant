@@ -104,7 +104,6 @@ fun TrackingConfigScreen(
     val displayMode by remember { derivedStateOf { config.optString("display_mode", "") } }
     val iconName by remember { derivedStateOf { config.optString("icon_name", "") } }
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
-    val autoSwitch by remember { derivedStateOf { config.optBoolean("auto_switch", false) } }
     val items by remember { derivedStateOf { 
         val itemsArray = config.optJSONArray("items")
         itemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
@@ -196,7 +195,9 @@ fun TrackingConfigScreen(
                      trackingType.isNotBlank()
         
         if (isValid) {
-            onSave(config.toString())
+            // Nettoyer la config avant sauvegarde
+            val cleanConfig = cleanConfiguration(config)
+            onSave(cleanConfig.toString())
         }
     }
     
@@ -361,7 +362,7 @@ fun TrackingConfigScreen(
                         "Texte (text)", 
                         "Échelle (scale)",
                         "Oui/Non (boolean)",
-                        "Durée (duration)",
+                        "Timer (timer)",
                         "Choix (choice)",
                         "Compteur (counter)"
                     ),
@@ -370,7 +371,7 @@ fun TrackingConfigScreen(
                         "text" -> "Texte (text)"
                         "scale" -> "Échelle (scale)"
                         "boolean" -> "Oui/Non (boolean)"
-                        "duration" -> "Durée (duration)"
+                        "timer" -> "Timer (timer)"
                         "choice" -> "Choix (choice)"
                         "counter" -> "Compteur (counter)"
                         else -> trackingType
@@ -381,7 +382,7 @@ fun TrackingConfigScreen(
                             selectedLabel.contains("(text)") -> "text"
                             selectedLabel.contains("(scale)") -> "scale"
                             selectedLabel.contains("(boolean)") -> "boolean"
-                            selectedLabel.contains("(duration)") -> "duration"
+                            selectedLabel.contains("(timer)") -> "timer"
                             selectedLabel.contains("(choice)") -> "choice"
                             selectedLabel.contains("(counter)") -> "counter"
                             else -> selectedLabel
@@ -405,25 +406,12 @@ fun TrackingConfigScreen(
                     required = true
                 )
                 
-                
-                // Auto-switch (only for duration)
-                if (trackingType == "duration") {
-                    UI.FormSelection(
-                        label = "Commutation auto",
-                        options = listOf("Activée", "Désactivée"),
-                        selected = when(autoSwitch) {
-                            true -> "Activée"
-                            false -> "Désactivée"
-                        },
-                        onSelect = { selectedLabel ->
-                            updateConfig("auto_switch", when(selectedLabel) {
-                                "Activée" -> true
-                                "Désactivée" -> false
-                                else -> selectedLabel == "Activée"
-                            })
-                        }
-                    )
-                }
+                // Type-specific parameters
+                TypeSpecificParameters(
+                    trackingType = trackingType,
+                    config = config,
+                    updateConfig = ::updateConfig
+                )
             }
         }
         
@@ -794,4 +782,178 @@ private fun buildItemPropertiesText(properties: Map<String, Any>, trackingType: 
             properties.entries.joinToString(", ") { "${it.key}: ${it.value}" }
         }
     }
+}
+
+/**
+ * Type-specific configuration parameters
+ */
+@Composable
+private fun TypeSpecificParameters(
+    trackingType: String,
+    config: JSONObject,
+    updateConfig: (String, Any) -> Unit
+) {
+    when (trackingType) {
+        "scale" -> {
+            // Use state variables instead of val to allow real-time updates
+            var minValue by remember { mutableStateOf(config.optInt("min", 1).toString()) }
+            var maxValue by remember { mutableStateOf(config.optInt("max", 10).toString()) }
+            val minLabel = config.optString("min_label", "")
+            val maxLabel = config.optString("max_label", "")
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    UI.FormField(
+                        label = "Valeur minimale",
+                        value = minValue,
+                        onChange = { value ->
+                            minValue = value
+                            val intValue = value.toIntOrNull() ?: 1
+                            updateConfig("min", intValue)
+                        },
+                        fieldType = FieldType.NUMERIC,
+                        required = true
+                    )
+                    
+                    UI.FormField(
+                        label = "Valeur maximale", 
+                        value = maxValue,
+                        onChange = { value ->
+                            maxValue = value
+                            val intValue = value.toIntOrNull() ?: 10
+                            updateConfig("max", intValue)
+                        },
+                        fieldType = FieldType.NUMERIC,
+                        required = true
+                    )
+                }
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    UI.FormField(
+                        label = "Label minimum",
+                        value = minLabel,
+                        onChange = { updateConfig("min_label", it) },
+                        fieldType = FieldType.TEXT
+                    )
+                    
+                    UI.FormField(
+                        label = "Label maximum",
+                        value = maxLabel,
+                        onChange = { updateConfig("max_label", it) },
+                        fieldType = FieldType.TEXT
+                    )
+                }
+            }
+        }
+        
+        "boolean" -> {
+            val trueLabel = config.optString("true_label", "Oui")
+            val falseLabel = config.optString("false_label", "Non")
+            
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                UI.FormField(
+                    label = "Label \"Vrai\"",
+                    value = trueLabel,
+                    onChange = { updateConfig("true_label", it) },
+                    fieldType = FieldType.TEXT
+                )
+                
+                UI.FormField(
+                    label = "Label \"Faux\"",
+                    value = falseLabel,
+                    onChange = { updateConfig("false_label", it) },
+                    fieldType = FieldType.TEXT
+                )
+            }
+        }
+        
+        "choice" -> {
+            val optionsArray = config.optJSONArray("options") ?: JSONArray()
+            val currentOptions = (0 until optionsArray.length()).map { 
+                optionsArray.optString(it, "") 
+            }.toMutableList()
+            
+            UI.DynamicList(
+                label = "Options disponibles",
+                items = currentOptions,
+                onItemsChanged = { newOptions ->
+                    // Sauvegarder toutes les options (même vides) pour permettre l'édition
+                    // Le filtrage se fera lors de la sauvegarde finale de la configuration
+                    val newArray = JSONArray()
+                    newOptions.forEach { option ->
+                        newArray.put(option) // Garder tous les éléments, même vides
+                    }
+                    updateConfig("options", newArray)
+                },
+                placeholder = "option",
+                required = true,
+                minItems = 2 // Au moins 2 options pour un choix
+            )
+        }
+        
+        "counter" -> {
+            val allowDecrement = config.optBoolean("allow_decrement", true)
+            val unit = config.optString("unit", "")
+            
+            UI.FormField(
+                label = "Unité",
+                value = unit,
+                onChange = { updateConfig("unit", it) },
+                required = false
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            UI.FormSelection(
+                label = "Autoriser décrémentation",
+                options = listOf("Oui", "Non"),
+                selected = if (allowDecrement) "Oui" else "Non",
+                onSelect = { selected ->
+                    updateConfig("allow_decrement", selected == "Oui")
+                }
+            )
+        }
+        
+        // NUMERIC, TEXT, TIMER n'ont pas de paramètres spécifiques de configuration
+        // Les items prédéfinis suffisent pour leur configuration
+    }
+}
+
+/**
+ * Nettoie la configuration avant sauvegarde finale
+ */
+private fun cleanConfiguration(config: JSONObject): JSONObject {
+    val cleanConfig = JSONObject(config.toString()) // Copie profonde
+    
+    // Nettoyer les options vides pour les types CHOICE
+    if (cleanConfig.optString("type") == "choice") {
+        android.util.Log.d("CONFIG_CLEAN", "Cleaning CHOICE config")
+        val optionsArray = cleanConfig.optJSONArray("options")
+        if (optionsArray != null) {
+            android.util.Log.d("CONFIG_CLEAN", "Original options: $optionsArray")
+            val cleanArray = JSONArray()
+            for (i in 0 until optionsArray.length()) {
+                val option = optionsArray.optString(i, "")
+                val trimmedOption = option.trim()
+                android.util.Log.d("CONFIG_CLEAN", "Option '$option' -> trimmed '$trimmedOption'")
+                if (trimmedOption.isNotBlank()) {
+                    cleanArray.put(trimmedOption)
+                }
+            }
+            android.util.Log.d("CONFIG_CLEAN", "Clean options: $cleanArray")
+            cleanConfig.put("options", cleanArray)
+        }
+    }
+    
+    // Les items prédéfinis sont toujours valides (nom obligatoire dans l'UI)
+    
+    return cleanConfig
 }

@@ -1,104 +1,4 @@
-# 📋 Plan d'Implémentation Progressive
 
-  Phase 1⃣ : Architecture Core (Base Sans Casser)
-
-  Objectif : Créer la base sans toucher au code existant
-
-  1. Créer l'interface TrackingTypeHandler
-  2. Migrer TrackingUtils → NumericTrackingType (garder TrackingUtils en wrapper pour compatibilité)
-  3. Créer TrackingTypeFactory
-  4. Tester que NUMERIC fonctionne avec la nouvelle architecture
-
-  Phase 2⃣ : Refactoring TrackingService
-
-  Objectif : Généraliser la logique de sauvegarde
-
-  1. Modifier TrackingService.handleCreate() :
-  val handler = TrackingTypeFactory.getHandler(type)
-  val valueJson = handler?.createValueJson(extractProperties(params))
-  2. Généraliser l'extraction des propriétés :
-  fun extractPropertiesFromParams(params: JSONObject, type: String): Map<String, Any>
-  3. Tester NUMERIC avec nouveau service
-
-  Phase 3⃣ : Refactoring TrackingInputManager
-
-  Objectif : Signature unifiée onSave: (String, Map<String, Any>) -> Unit
-
-  1. Modifier la signature saveEntry
-  2. Adapter NumericTrackingInput pour utiliser Map au lieu de quantity/unit
-  3. Généraliser la logique de sauvegarde dans TrackingInputManager
-  4. Tester NUMERIC avec nouvelle interface
-
-  Phase 4⃣ : Nouveaux Composants UI
-
-  Objectif : Composants manquants pour les nouveaux types
-
-  1. Créer UI.ToggleField (pour BOOLEAN)
-  2. Créer UI.SliderField (pour SCALE)
-  3. Étendre UI.FormField pour COUNTER (boutons +/-)
-  4. Créer composants TIMER (état + boutons)
-
-  Phase 5⃣ : Implémentation par Type
-
-  Objectif : Un type à la fois pour validation incrémentale
-
-  Ordre recommandé :
-  1. SCALE (simple, pas de dépendances)
-  2. TEXT (trivial)
-  3. CHOICE (réutilise UI.FormSelection)
-  4. BOOLEAN (nouveau composant)
-  5. COUNTER (logique simple)
-  6. TIMER (le plus complexe, état persistant)
-
-  Phase 6⃣ : TrackingItemDialog Générique
-
-  Objectif : Dialogue unifié pour tous les types
-
-  1. Conditionner les champs selon le type dynamiquement
-  2. Généraliser la logique de validation
-  3. Adapter les appelants (History, Input components)
-
-  Phase 7⃣ : Nettoyage & Optimisation
-
-  Objectif : Supprimer le code legacy
-
-  1. Supprimer l'ancien TrackingUtils (remplacé par NumericTrackingType)
-  2. Nettoyer les switch/when hardcodés
-  3. Supprimer duration → timer dans les commentaires
-  4. Tests de régression complets
-
-  ---
-  🔧 Stratégie Anti-Duplication
-
-  Logique Commune Externalisée :
-
-  - TrackingInputManager → Logique de sauvegarde générique
-  - TrackingService → Factory pattern pour tous types
-  - TrackingItemDialog → Rendu conditionnel selon type
-  - TrackingTypeHandler → Encapsulation par type (validation, JSON, config)
-
-  Composants UI Réutilisables :
-
-  - Étendre les composants existants quand possible
-  - Créer seulement les manquants (Toggle, Slider spécialisé)
-  - Garder la cohérence avec le système UI existant
-
-  Configuration Centralisée :
-
-  - Chaque type gère sa propre config par défaut
-  - Factory pour l'instanciation
-  - Validation unifiée via les handlers
-
-  ---
-  ⚡ Points d'Attention
-
-  1. Compatibilité : Garder NUMERIC fonctionnel à chaque étape
-  2. Tests : Valider chaque phase avant la suivante
-  3. Performance : Factory pattern léger (pas de reflection)
-  4. UI : Respecter les patterns existants (UI.FormField, etc.)
-  5. Migration : Données existantes compatibles
-
-  Estimation : ~7 phases, chacune testable indépendamment, montée en charge progressive.
 
 
 
@@ -109,6 +9,54 @@
 - **onSave** : `(String, Map<String, Any>) -> Unit`
 - **value JSON** : Champ `raw` standardisé obligatoire pour affichage unifié
 - **Pattern factory** : `NumericTrackingType`, `ScaleTrackingType`, etc.
+
+---
+
+## Interface Utilisateur - Principes Généraux
+
+### Modes du Dialog UniversalTrackingDialog
+
+Le dialog utilise 3 dimensions orthogonales :
+
+```kotlin
+enum class ItemType { FREE, PREDEFINED }      // Origine : libre ou item prédéfini
+enum class InputType { ENTRY, CONFIG }        // Usage : saisie donnée ou config item
+enum class ActionType { CREATE, UPDATE }      // Action : création ou modification
+```
+
+**Cas spécial édition historique** : `ItemType` non défini (null)
+
+### Logique d'Affichage des Champs
+
+**Ordre des champs :**
+1. **Date et heure** (en premier si présent)
+2. **Nom**
+3. **Champs spécifiques au type**
+4. **Case "Ajouter aux raccourcis"** (en dernier si présente)
+
+**Conditions d'affichage :**
+- **Nom éditable** : uniquement si `ItemType.FREE`
+- **Date/heure présents** : uniquement si `InputType.ENTRY`
+- **Case "ajouter aux raccourcis"** : uniquement si `ItemType.FREE && InputType.ENTRY`
+- **Bouton validation** : texte selon `ActionType` (Créer/Modifier/Sauvegarder)
+
+### Patterns d'Interface par Type
+
+**NUMERIC** :
+- Items prédéfinis : Bouton + qui ajoute rapidement (si qté par défaut est configurée, sinon ouvre dialogue) et bouton "crayon" ✎ → ouvre dialog
+
+**SCALE, TEXT, CHOICE** :
+- Les items prédéfinis sont des boutons cliquqbles qui ouvrent dialog.
+
+**BOOLEAN** :
+- Boutons "👍" + "👎" (sauvegarde directe) + bouton "crayon" ✎ → dialog
+
+**COUNTER** :
+- Boutons "+X(valeur incrément configurée)" + "-X" (sauvegarde directe) + bouton "crayon" ✎ → dialog
+
+**TIMER** :
+- Boutons prédéfinis (auto-switch, pas de dialog pour saisie)
+- Dialog uniquement pour édition d'entrées existantes (historique)
 
 ---
 
@@ -294,7 +242,6 @@
 - Boutons par activité avec mise en valeur visuelle (PRIMARY pour actif)
 - Auto-switch : cliquer une activité arrête l'actuelle et démarre la nouvelle
 - Possibilité d'arrêter sans démarrer autre chose
-- Saisie libre => ajout auto aux prédéfinis (option correspondante cochée readonly)
 
 **Comportement :**
 - Chronométrage en temps réel

@@ -1,0 +1,67 @@
+COMPTEUR :
+- Dans dialog : champ incrément: on ne peut pas supprimer le dernier caractère -> impossible de transformer 1 en 2 sans ajouter le 2 d abord.
+
+- Ajout de valeur positive ok
+- Ajout de "-2" -> increment = 2 ok, mais affiche "+-2" :
+
+Created valueJson: {"increment":-2,"unit":"","type":"counter","raw":"+-2"}
+2025-08-30 21:57:19.872  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Starting validation for entry: aaa, type: {"increment":-2,"unit":"","type":"counter","raw":"+-2"}
+2025-08-30 21:57:19.872  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  validateValueFormat called with value: {"increment":-2,"unit":"","type":"counter","raw":"+-2"}
+
+- Update entry : pris pour numeric ...
+
+----------------------
+
+
+CHOIX :
+Erreur enregistrement :
+ D  Extracted properties for type choice: {allow_multiple=false, available_options=[], selected_option=option 1}
+2025-08-30 21:27:27.569  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Created valueJson: null
+2025-08-30 21:27:27.569  4443-4443  TRACKING_DEBUG          com.assistant.debug                  E  FAILED to create valueJson for type choice with properties: {allow_multiple=false, available_options=[], selected_option=option 1}
+-> alors que option correctement renseignée.
+------------
+TIMER :
+
+- nom incorrect (durée = ancien nom. maintenant :  timer)
+- quand clic sur item prédéfini => ouvre dialog "modifier l'entrée" au lieu de lancer timer + surbrillance activité.
+- il faut quon redéroule ensemble le fonctionnement de ce type.
+
+------------------------
+BOOLEEN :
+
+erreur dans label :
+Extracted properties for type boolean: {state=true, true_label=Activé, false_label=Désactivé}
+2025-08-30 21:30:07.408  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Created valueJson: {"state":true,"true_label":"Activé","false_label":"Désactivé","type":"boolean","raw":"Activé"}
+2025-08-30 21:30:07.409  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Starting validation for entry: aaa, type: {"state":true,"true_label":"Activé","false_label":"Désactivé","type":"boolean","raw":"Activé"}
+2025-08-30 21:30:07.409  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  validateValueFormat called with value: {"state":true,"true_label":"Activé","false_label":"Désactivé","type":"boolean","raw":"Activé"}
+2025-08-30 21:30:07.410  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Parsed JSON successfully
+2025-08-30 21:30:07.410  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Validating type: boolean
+2025-08-30 21:30:07.410  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Handler found for type: boolean
+2025-08-30 21:30:07.411  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Converted to properties: {state=true, true_label=Activé, false_label=Désactivé}
+2025-08-30 21:30:07.411  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Handler validation result: true
+2025-08-30 21:30:07.412  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Validation SUCCESS for type: boolean
+2025-08-30 21:30:07.412  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Validation result: isValid=true, error=null
+
+-> Je n'ai écrit nulle part "activé / désactivé" . Si c'est un fallback ce serait plutôt oui/non. mais là la pb c'est que les labels sont configurés et ne sont pas pris en compte. Et il faudra aussi changer le fallback
+- Le toggle quand on édite une entry est toujours sur false par défaut au lieu de prendre la valeur.
+- quand on valide l'édition, pris pour numeric
+----------------------
+
+ECHELLE :
+Le raw ne respecte pas les specs ; normalement : "7 (1 à 10)", "1 (-5 à 5)"
+édition ne marche pas : pris pour 'numeric'
+
+------
+TEXTE :
+edition ne marche pas : pris pour numeric
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  validateValueFormat called with value: {"quantity":0,"unit":"","type":"numeric","raw":"0"}
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Parsed JSON successfully
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Validating type: numeric
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Handler found for type: numeric
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Converted to properties: {quantity=0, unit=}
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Handler validation result: true
+2025-08-30 21:37:46.845  4443-4443  TRACKING_DEBUG          com.assistant.debug                  D  Validation SUCCESS for type: numeric
+
+----------------------------
+- De façon générale, quand on édite, la date/heure doit être initialisée avec date heure d'origine, pas actuelle. (pb identifié notamment dans BOOL: quand j'enregistre sans rien modifier, l'ordre dans l'historique change donc je suppose que la date enregistrée n'est pas la meme qu'au départ.)
+- Le pb des items pris pour numeric : si c'est lié à un fallback il faut non seulement régler le pb mais aussi supprimer le fallback....

@@ -232,6 +232,17 @@ object UI {
         required: Boolean = false
     ) = CurrentTheme.current.TimerField(label, activities, currentActivity, currentDuration, onStartActivity, onStopActivity, onSaveSession, required)
     
+    @Composable
+    fun DynamicList(
+        label: String,
+        items: List<String>,
+        onItemsChanged: (List<String>) -> Unit,
+        placeholder: String = "Nouvel élément",
+        required: Boolean = false,
+        minItems: Int = 0,
+        maxItems: Int = Int.MAX_VALUE
+    ) = CurrentTheme.current.DynamicList(label, items, onItemsChanged, placeholder, required, minItems, maxItems)
+    
     // =====================================
     // BOUTONS AVEC ICÔNES AUTOMATIQUES
     // =====================================

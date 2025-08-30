@@ -12,8 +12,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.tools.tracking.entities.TrackingData
-import com.assistant.tools.tracking.ui.components.TrackingItemDialog
-import com.assistant.tools.tracking.ui.components.TrackingDialogMode
+import com.assistant.tools.tracking.ui.components.UniversalTrackingDialog
+import com.assistant.tools.tracking.ui.components.ItemType
+import com.assistant.tools.tracking.ui.components.InputType
+import com.assistant.tools.tracking.ui.components.ActionType
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.tools.tracking.TrackingUtils
@@ -110,23 +112,26 @@ fun TrackingHistory(
     }
     
     // Update entry - quantity and timestamp can be changed
-    val updateEntry = { entryId: String, newQuantity: String, newTimestamp: Long? ->
+    val updateEntry = { entryId: String, name: String, properties: Map<String, Any>, newTimestamp: Long? ->
         scope.launch {
             try {
-                val params = mutableMapOf(
+                val params = mutableMapOf<String, Any>(
                     "tool_type" to "tracking",
                     "operation" to "update",
                     "entry_id" to entryId,
-                    "quantity" to newQuantity,
-                    "type" to "numeric"
+                    "name" to name,
+                    "type" to trackingType
                 )
+                
+                // Add all properties from the tracking type
+                params.putAll(properties)
                 
                 // Add timestamp if provided
                 newTimestamp?.let { 
                     params["recorded_at"] = it.toString()
                 }
                 
-                android.util.Log.d("TrackingHistory", "Updating entry with params: $params")
+                android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - Updating entry with params: $params")
                 
                 val result = coordinator.processUserAction("update->tool_data", params)
                 
@@ -287,21 +292,72 @@ fun TrackingHistory(
         // Edit dialog
         if (showEditDialog && editingEntry != null) {
             val entry = editingEntry!!
-            val parsedValue = parseTrackingValue(entry.value)
             
-            TrackingItemDialog(
+            // Parse JSON directly for each type instead of using limited ParsedValue
+            val initialProperties = try {
+                val json = JSONObject(entry.value)
+                when (trackingType) {
+                    "numeric" -> mapOf(
+                        "quantity" to json.optString("quantity", ""),
+                        "unit" to json.optString("unit", "")
+                    )
+                    "boolean" -> mapOf(
+                        "state" to json.optBoolean("state", false),
+                        "true_label" to json.optString("true_label", "Oui"),
+                        "false_label" to json.optString("false_label", "Non")
+                    )
+                    "scale" -> mapOf(
+                        "value" to json.optInt("value", 5),
+                        "min_value" to json.optInt("min_value", 1),
+                        "max_value" to json.optInt("max_value", 10),
+                        "min_label" to json.optString("min_label", ""),
+                        "max_label" to json.optString("max_label", "")
+                    )
+                    "text" -> mapOf(
+                        "text" to json.optString("text", "")
+                    )
+                    "choice" -> {
+                        val availableOptions = json.optJSONArray("available_options")?.let { array ->
+                            (0 until array.length()).map { array.optString(it, "") }
+                        } ?: emptyList<String>()
+                        mapOf(
+                            "selected_option" to json.optString("selected_option", ""),
+                            "available_options" to availableOptions
+                        )
+                    }
+                    "counter" -> mapOf(
+                        "increment" to json.optInt("increment", 1),
+                        "unit" to json.optString("unit", "")
+                    )
+                    "timer" -> mapOf(
+                        "activity" to json.optString("activity", ""),
+                        "duration_minutes" to json.optInt("duration_minutes", 0)
+                    )
+                    else -> emptyMap()
+                }
+            } catch (e: Exception) {
+                emptyMap<String, Any>()
+            }
+            
+            UniversalTrackingDialog(
                 isVisible = showEditDialog,
                 trackingType = trackingType,
-                mode = TrackingDialogMode.PREDEFINED_INPUT,
+                config = JSONObject(), // Empty config for editing existing entries
+                itemType = null, // History editing - no itemType
+                inputType = InputType.ENTRY,
+                actionType = ActionType.UPDATE,
                 initialName = entry.name,
-                initialUnit = parsedValue.unit,
-                initialDefaultQuantity = parsedValue.quantity.toString(),
+                initialProperties = initialProperties,
                 initialDate = DateUtils.formatDateForDisplay(entry.recorded_at),
                 initialTime = DateUtils.formatTimeForDisplay(entry.recorded_at),
-                onConfirm = { name, unit, defaultQuantity, _, date, time ->
-                    // Update entry with new quantity and datetime
+                onConfirm = { name, properties, _, date, time ->
+                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - onConfirm called: name='$name', properties=$properties, trackingType=$trackingType")
+                    
+                    // Update entry with new values and datetime
                     val newTimestamp = DateUtils.combineDateTime(date, time)
-                    updateEntry(entry.id, defaultQuantity, newTimestamp)
+                    
+                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', properties=$properties, timestamp=$newTimestamp")
+                    updateEntry(entry.id, name, properties, newTimestamp)
                     showEditDialog = false
                     editingEntry = null
                 },

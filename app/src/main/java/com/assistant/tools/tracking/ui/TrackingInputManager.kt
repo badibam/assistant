@@ -1,13 +1,15 @@
 package com.assistant.tools.tracking.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
-import com.assistant.tools.tracking.ui.inputs.NumericTrackingInput
+import com.assistant.core.ui.*
+import com.assistant.tools.tracking.ui.components.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -36,6 +38,7 @@ fun TrackingInputManager(
     
     // Save function with generalized Map signature for all tracking types
     val saveEntry: (String, Map<String, Any>) -> Unit = { itemName, properties ->
+        android.util.Log.d("TRACKING_DEBUG", "saveEntry called: itemName=$itemName, properties=$properties, trackingType=$trackingType")
         scope.launch {
             isLoading = true
             
@@ -53,6 +56,7 @@ fun TrackingInputManager(
                 
                 // Add type-specific properties
                 params.putAll(properties)
+                android.util.Log.d("TRACKING_DEBUG", "Final params being sent: $params")
                 android.util.Log.d("CONFIGDEBUG", "ADDING ITEM - toolInstanceId: $toolInstanceId, params: $params")
                 
                 val result = coordinator.processUserAction("create->tool_data", params)
@@ -98,129 +102,86 @@ fun TrackingInputManager(
         }
     }
     
+    // Dialog states
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogItemType by remember { mutableStateOf<ItemType?>(null) }
+    var dialogInputType by remember { mutableStateOf(InputType.ENTRY) }
+    var dialogActionType by remember { mutableStateOf(ActionType.CREATE) }
+    var dialogInitialName by remember { mutableStateOf("") }
+    var dialogInitialProperties by remember { mutableStateOf(emptyMap<String, Any>()) }
+    
+    // Handler for adding items to predefined shortcuts
+    val addToPredefined: (String, Map<String, Any>) -> Unit = { itemName, properties ->
+        // TODO: Implement adding items to config.items
+        // This would modify the tool instance configuration
+        android.util.Log.d("TrackingInputManager", "Would add to predefined: $itemName with $properties")
+        onConfigChanged()
+    }
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Route to appropriate input component based on tracking type
-        when (trackingType) {
-            "numeric" -> NumericTrackingInput(
-                config = config,
-                onSave = saveEntry,
-                onAddToPredefined = { itemName, unit, defaultValue ->
-                    scope.launch {
-                        try {
-                            // Get current tool instance to modify config
-                            android.util.Log.d("TrackingInputManager", "Getting tool instance for adding to predefined: $toolInstanceId")
-                            val getResult = coordinator.processUserAction(
-                                "get->tool_instance",
-                                mapOf("tool_instance_id" to toolInstanceId)
-                            )
-                            
-                            android.util.Log.d("TrackingInputManager", "Get result: status=${getResult.status}, data=${getResult.data}")
-                            
-                            if (getResult.status != CommandStatus.SUCCESS) {
-                                android.util.Log.e("TrackingInputManager", "Failed to get tool instance: ${getResult.error}")
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Impossible de récupérer la configuration: ${getResult.error}",
-                                    android.widget.Toast.LENGTH_LONG
-                                ).show()
-                                return@launch
-                            }
-                            
-                            val toolInstanceData = getResult.data?.get("tool_instance") as? Map<String, Any>
-                            val currentConfig = toolInstanceData?.get("config_json") as? String ?: "{}"
-                            
-                            // Parse and modify config to add item
-                            val configJson = JSONObject(currentConfig)
-                            val itemsArray = configJson.optJSONArray("items") ?: org.json.JSONArray()
-                            
-                            // Add new item
-                            val newItem = JSONObject().apply {
-                                put("name", itemName)
-                                if (unit.isNotBlank()) put("unit", unit)
-                                if (defaultValue.isNotBlank()) put("default_value", defaultValue)
-                            }
-                            itemsArray.put(newItem)
-                            configJson.put("items", itemsArray)
-                            
-                            // Update tool instance with modified config
-                            val result = coordinator.processUserAction(
-                                "update->tool_instance",
-                                mapOf(
-                                    "tool_instance_id" to toolInstanceId,
-                                    "config_json" to configJson.toString()
-                                )
-                            )
-                            
-                            when (result.status) {
-                                CommandStatus.SUCCESS -> {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Ajouté aux raccourcis",
-                                        android.widget.Toast.LENGTH_SHORT
-                                    ).show()
-                                    
-                                    // Notify parent to reload config
-                                    onConfigChanged()
-                                }
-                                else -> {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        result.error ?: "Erreur lors de l'ajout aux raccourcis",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            android.widget.Toast.makeText(
-                                context,
-                                "Erreur: ${e.message}",
-                                android.widget.Toast.LENGTH_LONG
-                            ).show()
-                        }
+        // Predefined items section for all types
+        PredefinedItemsSection(
+            config = config,
+            trackingType = trackingType,
+            isLoading = isLoading,
+            toolInstanceId = toolInstanceId,
+            onQuickSave = { name, properties ->
+                saveEntry(name, properties)
+            },
+            onOpenDialog = { name, properties ->
+                dialogInitialName = name
+                dialogInitialProperties = properties
+                dialogItemType = ItemType.PREDEFINED
+                dialogInputType = InputType.ENTRY
+                dialogActionType = ActionType.CREATE
+                showDialog = true
+            }
+        )
+        
+        // Free input button (crayon/pencil icon) - except for TIMER which has no free input
+        if (trackingType != "timer") {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                UI.ActionButton(
+                    action = ButtonAction.EDIT,
+                    display = ButtonDisplay.ICON,
+                    onClick = {
+                        dialogInitialName = ""
+                        dialogInitialProperties = emptyMap()
+                        dialogItemType = ItemType.FREE
+                        dialogInputType = InputType.ENTRY
+                        dialogActionType = ActionType.CREATE
+                        showDialog = true
                     }
-                },
-                isLoading = isLoading
-            )
-//            "text" -> TextTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-//            "scale" -> ScaleTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-//            "boolean" -> BooleanTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-//            "duration" -> DurationTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-//            "choice" -> ChoiceTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-//            "counter" -> CounterTrackingInput(
-//                config = config,
-//                onSave = saveEntry,
-//                isLoading = isLoading
-//            )
-            else -> {
-                // Fallback for unsupported types
-                android.widget.Toast.makeText(
-                    context,
-                    "Type de suivi non supporté: $trackingType",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                )
             }
         }
     }
+    
+    // Universal tracking dialog
+    UniversalTrackingDialog(
+        isVisible = showDialog,
+        trackingType = trackingType,
+        config = config,
+        itemType = dialogItemType,
+        inputType = dialogInputType,
+        actionType = dialogActionType,
+        initialName = dialogInitialName,
+        initialProperties = dialogInitialProperties,
+        onConfirm = { name, properties, addToPredefinedFlag, date, time ->
+            // Save the entry
+            saveEntry(name, properties)
+            
+            // Add to predefined if requested
+            if (addToPredefinedFlag && dialogItemType == ItemType.FREE) {
+                addToPredefined(name, properties)
+            }
+            
+            showDialog = false
+        },
+        onCancel = {
+            showDialog = false
+        }
+    )
 }

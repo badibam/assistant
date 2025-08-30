@@ -1035,6 +1035,98 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
+    override fun DynamicList(
+        label: String,
+        items: List<String>,
+        onItemsChanged: (List<String>) -> Unit,
+        placeholder: String,
+        required: Boolean,
+        minItems: Int,
+        maxItems: Int
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Label with required indicator
+            if (label.isNotBlank()) {
+                Row {
+                    androidx.compose.material3.Text(
+                        text = label,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                    )
+                    if (required) {
+                        androidx.compose.material3.Text(
+                            text = " *",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        androidx.compose.material3.Text(
+                            text = " (optionnel)",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            // List of items with delete buttons
+            items.forEachIndexed { index, item ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = item,
+                        onValueChange = { newValue ->
+                            val newItems = items.toMutableList()
+                            newItems[index] = newValue
+                            onItemsChanged(newItems)
+                        },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    
+                    // Delete button (only show if more than minItems)
+                    if (items.size > minItems) {
+                        ActionButton(
+                            action = ButtonAction.DELETE,
+                            display = ButtonDisplay.ICON,
+                            size = Size.S,
+                            type = null,
+                            enabled = true,
+                            requireConfirmation = false,
+                            confirmMessage = null,
+                            onClick = {
+                                val newItems = items.toMutableList()
+                                newItems.removeAt(index)
+                                onItemsChanged(newItems)
+                            }
+                        )
+                    }
+                }
+            }
+            
+            // Add button (only show if less than maxItems)
+            if (items.size < maxItems) {
+                ActionButton(
+                    action = ButtonAction.ADD,
+                    display = ButtonDisplay.LABEL,
+                    size = Size.M,
+                    type = null,
+                    enabled = true,
+                    requireConfirmation = false,
+                    confirmMessage = null,
+                    onClick = {
+                        onItemsChanged(items + "")
+                    }
+                )
+            }
+        }
+    }
+    
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun DatePicker(

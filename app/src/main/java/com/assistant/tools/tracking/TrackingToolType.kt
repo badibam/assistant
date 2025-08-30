@@ -12,6 +12,7 @@ import com.assistant.core.utils.NumberFormatting
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.data.TrackingDatabase
 import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
 import com.assistant.tools.tracking.ui.TrackingScreen
 import org.json.JSONObject
@@ -64,7 +65,7 @@ object TrackingToolType : ToolTypeContract {
             },
             "type": {
                 "type": "enum",
-                "values": ["numeric", "text", "scale", "boolean", "duration", "choice", "counter"],
+                "values": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
                 "required": true,
                 "description": "Data type for all items in this tracking instance"
             },
@@ -188,33 +189,90 @@ object TrackingToolType : ToolTypeContract {
     }
     
     private fun validateValueFormat(value: String): ValidationResult {
+        android.util.Log.d("TRACKING_DEBUG", "validateValueFormat called with value: $value")
         return try {
             val json = JSONObject(value)
+            android.util.Log.d("TRACKING_DEBUG", "Parsed JSON successfully")
             
             // Strict validation: 'type' field is required
             if (!json.has("type")) {
+                android.util.Log.e("TRACKING_DEBUG", "Missing 'type' field in JSON")
                 return ValidationResult.error("Missing required 'type' field in value JSON")
             }
             
             val type = json.getString("type")
+            android.util.Log.d("TRACKING_DEBUG", "Validating type: $type")
             
-            when (type) {
-                "numeric" -> {
-                    if (!json.has("quantity")) {
-                        return ValidationResult.error("Missing required 'quantity' field for numeric type")
-                    }
-                    
-                    val quantity = json.getDouble("quantity") // Strict: will throw if missing or invalid
-                    if (quantity < 0 || !quantity.isFinite()) {
-                        return ValidationResult.error("Invalid quantity value: $quantity")
-                    }
-                    ValidationResult.success()
-                }
-                // TODO: Add validation for other tracking types when implemented
-                else -> ValidationResult.error("Unsupported tracking type: $type")
+            // Use TrackingTypeFactory handlers for validation
+            val handler = TrackingTypeFactory.getHandler(type)
+            if (handler == null) {
+                android.util.Log.e("TRACKING_DEBUG", "No handler found for type: $type")
+                return ValidationResult.error("Unsupported tracking type: $type")
             }
+            android.util.Log.d("TRACKING_DEBUG", "Handler found for type: $type")
+            
+            // Convert JSON back to properties map for handler validation
+            val properties = jsonToProperties(json, type)
+            android.util.Log.d("TRACKING_DEBUG", "Converted to properties: $properties")
+            
+            // Validate using the appropriate handler
+            val isValid = handler.validateInput(properties)
+            android.util.Log.d("TRACKING_DEBUG", "Handler validation result: $isValid")
+            if (!isValid) {
+                android.util.Log.e("TRACKING_DEBUG", "Handler validation FAILED for $type with properties: $properties")
+                return ValidationResult.error("Invalid $type data in value JSON")
+            }
+            
+            android.util.Log.d("TRACKING_DEBUG", "Validation SUCCESS for type: $type")
+            ValidationResult.success()
         } catch (e: Exception) {
+            android.util.Log.e("TRACKING_DEBUG", "Exception in validateValueFormat: ${e.message}", e)
             ValidationResult.error("Invalid JSON format in value field: ${e.message}")
+        }
+    }
+    
+    /**
+     * Convert JSON value back to properties map for handler validation
+     */
+    fun jsonToProperties(json: JSONObject, type: String): Map<String, Any> {
+        return when (type) {
+            "numeric" -> mapOf(
+                "quantity" to json.optString("quantity", ""),
+                "unit" to json.optString("unit", "")
+            )
+            "boolean" -> mapOf(
+                "state" to json.optBoolean("state", false),
+                "true_label" to json.optString("true_label", "Oui"),
+                "false_label" to json.optString("false_label", "Non")
+            )
+            "scale" -> mapOf(
+                "value" to json.optInt("value", 0),
+                "min" to json.optInt("min", 1),
+                "max" to json.optInt("max", 10),
+                "min_label" to json.optString("min_label", ""),
+                "max_label" to json.optString("max_label", "")
+            )
+            "text" -> mapOf(
+                "text" to json.optString("text", "")
+            )
+            "choice" -> {
+                val availableOptions = json.optJSONArray("available_options")?.let { array ->
+                    (0 until array.length()).map { array.optString(it, "") }.filter { it.isNotEmpty() }
+                } ?: emptyList<String>()
+                
+                mapOf(
+                    "selected_option" to json.optString("selected_option", ""),
+                    "available_options" to availableOptions
+                )
+            }
+            "counter" -> mapOf(
+                "increment" to json.optInt("increment", 0)
+            )
+            "timer" -> mapOf(
+                "activity" to json.optString("activity", ""),
+                "duration_minutes" to json.optInt("duration_minutes", 0)
+            )
+            else -> emptyMap()
         }
     }
     

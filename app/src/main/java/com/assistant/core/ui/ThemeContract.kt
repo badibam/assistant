@@ -229,5 +229,16 @@ interface ThemeContract {
         required: Boolean
     )
     
+    @Composable
+    fun DynamicList(
+        label: String,
+        items: List<String>,
+        onItemsChanged: (List<String>) -> Unit,
+        placeholder: String,
+        required: Boolean,
+        minItems: Int,
+        maxItems: Int
+    )
+    
     // Anciens boutons supprimés - utiliser ActionButton
 }

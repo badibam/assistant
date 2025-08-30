@@ -7,6 +7,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.database.AppDatabase
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.TrackingUtils
@@ -25,6 +26,9 @@ class TrackingService(private val context: Context) : ExecutableService {
             ?: throw IllegalStateException("TrackingDao not available")
     }
     
+    private val database by lazy { AppDatabase.getDatabase(context) }
+    private val toolInstanceDao by lazy { database.toolInstanceDao() }
+    
     // Temporary data storage for multi-step operations
     private val tempData = ConcurrentHashMap<String, Any>()
     
@@ -34,19 +38,46 @@ class TrackingService(private val context: Context) : ExecutableService {
      * @param type The tracking type identifier
      * @return Map of properties specific to the tracking type
      */
-    private fun extractPropertiesFromParams(params: JSONObject, type: String): Map<String, Any> {
+    private fun extractPropertiesFromParams(params: JSONObject, type: String, instanceConfig: JSONObject?): Map<String, Any> {
         return when (type) {
             "numeric" -> mapOf(
                 "quantity" to params.optString("quantity", ""),
                 "unit" to params.optString("unit", "")
             )
-            // Future types will be handled here:
-            // "scale" -> mapOf("value" to params.optInt("value", 1))
-            // "text" -> mapOf("text" to params.optString("text", ""))
-            // "choice" -> mapOf("selected_option" to params.optString("selected_option", ""))
-            // "boolean" -> mapOf("state" to params.optBoolean("state", false))
-            // "counter" -> mapOf("increment" to params.optInt("increment", 1))
-            // "timer" -> mapOf("duration_minutes" to params.optInt("duration_minutes", 0))
+            "boolean" -> mapOf(
+                "state" to params.optBoolean("state", false),
+                "true_label" to (instanceConfig?.optString("true_label", "Oui") ?: "Oui"),
+                "false_label" to (instanceConfig?.optString("false_label", "Non") ?: "Non")
+            )
+            "scale" -> mapOf(
+                "value" to params.optInt("value", 5),
+                "min_value" to params.optInt("min_value", 1),
+                "max_value" to params.optInt("max_value", 10),
+                "min_label" to params.optString("min_label", ""),
+                "max_label" to params.optString("max_label", "")
+            )
+            "text" -> mapOf(
+                "text" to params.optString("text", "")
+            )
+            "choice" -> {
+                // Get available options from instance config, not user params
+                val availableOptions = instanceConfig?.optJSONArray("options")?.let { array ->
+                    (0 until array.length()).map { array.optString(it, "") }.filter { it.isNotEmpty() }
+                } ?: emptyList<String>()
+                
+                mapOf(
+                    "available_options" to availableOptions,
+                    "selected_option" to params.optString("selected_option", "")
+                )
+            }
+            "counter" -> mapOf(
+                "increment" to params.optInt("increment", 1),
+                "unit" to (instanceConfig?.optString("unit", "") ?: "")
+            )
+            "timer" -> mapOf(
+                "activity" to params.optString("activity", ""),
+                "duration_minutes" to params.optInt("duration_minutes", 0)
+            )
             else -> emptyMap()
         }
     }
@@ -98,8 +129,8 @@ class TrackingService(private val context: Context) : ExecutableService {
         Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, quantity=$quantity, unit=$unit")
         
         if (toolInstanceId.isBlank() || zoneName.isBlank() || toolInstanceName.isBlank() || 
-            name.isBlank() || quantity.isBlank()) {
-            return OperationResult.error("Tool instance ID, zone name, tool instance name, name and quantity are required")
+            name.isBlank()) {
+            return OperationResult.error("Tool instance ID, zone name, tool instance name and name are required")
         }
         
         // Create JSON value using TrackingTypeFactory
@@ -108,11 +139,17 @@ class TrackingService(private val context: Context) : ExecutableService {
             return OperationResult.error("Unsupported tracking type: $type")
         }
         
-        val properties = extractPropertiesFromParams(params, type)
+        // Get instance config for choice options and other type configs
+        val instanceConfig = toolInstanceDao.getToolInstanceById(toolInstanceId)?.config_json?.let { JSONObject(it) }
+        val properties = extractPropertiesFromParams(params, type, instanceConfig)
+        android.util.Log.d("TRACKING_DEBUG", "Extracted properties for type $type: $properties")
+        
         val valueJson = handler.createValueJson(properties)
+        android.util.Log.d("TRACKING_DEBUG", "Created valueJson: $valueJson")
         
         if (valueJson == null) {
-            return OperationResult.error("Invalid $type data: $properties")
+            android.util.Log.e("TRACKING_DEBUG", "FAILED to create valueJson for type $type with properties: $properties")
+            return OperationResult.error("Failed to create value JSON for $type data: $properties")
         }
         
         if (token.isCancelled) return OperationResult.cancelled()
@@ -130,12 +167,16 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         // Validate data before insertion
         val toolType = ToolTypeManager.getToolType("tracking")
+        android.util.Log.d("TRACKING_DEBUG", "Starting validation for entry: ${newEntry.name}, type: ${newEntry.value}")
         if (toolType != null) {
             val validation = toolType.validateData(newEntry, "create")
+            android.util.Log.d("TRACKING_DEBUG", "Validation result: isValid=${validation.isValid}, error=${validation.errorMessage}")
             if (!validation.isValid) {
-                Log.e("TrackingService", "Validation failed: ${validation.errorMessage}")
+                android.util.Log.e("TRACKING_DEBUG", "VALIDATION FAILED: ${validation.errorMessage}")
                 return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
+        } else {
+            android.util.Log.e("TRACKING_DEBUG", "ToolType is NULL!")
         }
         
         Log.d("TrackingService", "Inserting entry into database: ${newEntry.id}")
@@ -156,8 +197,6 @@ class TrackingService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         val entryId = params.optString("entry_id")
-        val quantity = params.optString("quantity")
-        val type = params.optString("type", "numeric")
         val recordedAt = params.optLong("recorded_at", -1)
         
         if (entryId.isBlank()) {
@@ -167,36 +206,57 @@ class TrackingService(private val context: Context) : ExecutableService {
         val existingEntry = trackingDao.getEntryById(entryId)
             ?: return OperationResult.error("Tracking entry not found")
         
+        // Extract type from existing entry value
+        val type = try {
+            val json = org.json.JSONObject(existingEntry.value)
+            val typeFromJson = json.optString("type", "")
+            if (typeFromJson.isBlank()) {
+                return OperationResult.error("Cannot determine type from existing entry")
+            }
+            typeFromJson
+        } catch (e: Exception) { 
+            return OperationResult.error("Invalid JSON format in existing entry: ${e.message}")
+        }
+        
         if (token.isCancelled) return OperationResult.cancelled()
         
-        // If quantity is provided, create new JSON value keeping existing unit
-        var newValue = existingEntry.value
-        if (quantity.isNotBlank()) {
-            // Parse existing value to get unit
-            val existingUnit = try {
-                val json = org.json.JSONObject(existingEntry.value)
-                json.optString("unit", "")
-            } catch (e: Exception) { "" }
-            
-            // Create new JSON value using TrackingTypeFactory
-            val handler = TrackingTypeFactory.getHandler(type)
-            if (handler == null) {
-                return OperationResult.error("Unsupported tracking type: $type")
-            }
-            
-            val properties = extractPropertiesFromParams(params, type).toMutableMap()
-            // For numeric type, preserve existing unit if not provided in update
-            if (type == "numeric" && properties["unit"].toString().isBlank()) {
-                properties["unit"] = existingUnit
-            }
-            
-            val valueJson = handler.createValueJson(properties)
-            if (valueJson == null) {
-                return OperationResult.error("Invalid $type data: $properties")
-            }
-            
-            newValue = valueJson
+        // Extract new properties from params and create new JSON value
+        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - extracting properties for type: $type from params: $params")
+        
+        // Create new JSON value using TrackingTypeFactory
+        val handler = TrackingTypeFactory.getHandler(type)
+        if (handler == null) {
+            return OperationResult.error("Unsupported tracking type: $type")
         }
+        
+        // Get instance config for choice options and other type configs
+        val instanceConfig = toolInstanceDao.getToolInstanceById(existingEntry.tool_instance_id)?.config_json?.let { JSONObject(it) }
+        val properties = extractPropertiesFromParams(params, type, instanceConfig).toMutableMap()
+        
+        // Preserve existing properties that are not provided in update (generic approach)
+        try {
+            val existingJson = org.json.JSONObject(existingEntry.value)
+            val existingProperties = TrackingToolType.jsonToProperties(existingJson, type)
+            
+            // For each existing property, use it if not provided in the new properties
+            existingProperties.forEach { (key, value) ->
+                if (!properties.containsKey(key) || properties[key].toString().isBlank()) {
+                    properties[key] = value
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("TRACKING_DEBUG", "Could not preserve existing properties: ${e.message}")
+        }
+        
+        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - extracted properties: $properties")
+        
+        val valueJson = handler.createValueJson(properties)
+        if (valueJson == null) {
+            return OperationResult.error("Invalid $type data: $properties")
+        }
+        
+        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - created new valueJson: $valueJson")
+        val newValue = valueJson
         
         val updatedEntry = existingEntry.copy(
             value = newValue,

@@ -14,13 +14,12 @@ object TrackingTypeFactory {
     fun getHandler(type: String): TrackingTypeHandler? {
         return when (type.lowercase()) {
             "numeric" -> NumericTrackingType()
-            // Future types will be added here:
-            // "scale" -> ScaleTrackingType()
-            // "text" -> TextTrackingType()
-            // "choice" -> ChoiceTrackingType()
-            // "boolean" -> BooleanTrackingType()
-            // "counter" -> CounterTrackingType()
-            // "timer" -> TimerTrackingType()
+            "boolean" -> BooleanTrackingType()
+            "scale" -> ScaleTrackingType()
+            "text" -> TextTrackingType()
+            "choice" -> ChoiceTrackingType()
+            "counter" -> CounterTrackingType()
+            "timer" -> TimerTrackingType()
             else -> null
         }
     }
@@ -31,8 +30,13 @@ object TrackingTypeFactory {
      */
     fun getSupportedTypes(): List<String> {
         return listOf(
-            "numeric"
-            // Future types will be added here
+            "numeric",
+            "boolean",
+            "scale", 
+            "text",
+            "choice",
+            "counter",
+            "timer"
         )
     }
     
