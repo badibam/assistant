@@ -187,5 +187,47 @@ interface ThemeContract {
         label: String?
     )
     
+    @Composable
+    fun ToggleField(
+        label: String,
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        trueLabel: String,
+        falseLabel: String,
+        required: Boolean
+    )
+    
+    @Composable
+    fun SliderField(
+        label: String,
+        value: Int,
+        onValueChange: (Int) -> Unit,
+        range: IntRange,
+        minLabel: String,
+        maxLabel: String,
+        required: Boolean
+    )
+    
+    @Composable
+    fun CounterField(
+        label: String,
+        incrementButtons: List<Pair<String, Int>>,
+        decrementButtons: List<Pair<String, Int>>,
+        onIncrement: (Int) -> Unit,
+        required: Boolean
+    )
+    
+    @Composable
+    fun TimerField(
+        label: String,
+        activities: List<String>,
+        currentActivity: String?,
+        currentDuration: String,
+        onStartActivity: (String) -> Unit,
+        onStopActivity: () -> Unit,
+        onSaveSession: (String, Int) -> Unit,
+        required: Boolean
+    )
+    
     // Anciens boutons supprimés - utiliser ActionButton
 }

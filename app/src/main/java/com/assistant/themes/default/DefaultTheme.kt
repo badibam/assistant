@@ -754,6 +754,287 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
+    override fun ToggleField(
+        label: String,
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        trueLabel: String,
+        falseLabel: String,
+        required: Boolean
+    ) {
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Label du champ
+            Text(displayLabel, TextType.LABEL)
+            
+            // Toggle avec labels
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Switch(
+                    checked = checked,
+                    onCheckedChange = onCheckedChange
+                )
+                
+                androidx.compose.material3.Text(
+                    text = if (checked) trueLabel else falseLabel,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = if (checked) {
+                        androidx.compose.material3.MaterialTheme.colorScheme.primary
+                    } else {
+                        androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+        }
+    }
+    
+    @Composable
+    override fun SliderField(
+        label: String,
+        value: Int,
+        onValueChange: (Int) -> Unit,
+        range: IntRange,
+        minLabel: String,
+        maxLabel: String,
+        required: Boolean
+    ) {
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Label du champ
+            Text(displayLabel, TextType.LABEL)
+            
+            // Valeur actuelle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                androidx.compose.material3.Text(
+                    text = value.toString(),
+                    style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            // Slider
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onValueChange(it.toInt()) },
+                valueRange = range.first.toFloat()..range.last.toFloat(),
+                steps = if (range.last - range.first > 1) range.last - range.first - 1 else 0
+            )
+            
+            // Labels min/max
+            if (minLabel.isNotEmpty() || maxLabel.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    androidx.compose.material3.Text(
+                        text = minLabel,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    androidx.compose.material3.Text(
+                        text = maxLabel,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+    
+    @Composable
+    override fun CounterField(
+        label: String,
+        incrementButtons: List<Pair<String, Int>>,
+        decrementButtons: List<Pair<String, Int>>,
+        onIncrement: (Int) -> Unit,
+        required: Boolean
+    ) {
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Label du champ
+            Text(displayLabel, TextType.LABEL)
+            
+            // Boutons d'incrément  
+            if (incrementButtons.isNotEmpty()) {
+                androidx.compose.material3.Text(
+                    text = "Ajouter :",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    incrementButtons.chunked(2).forEach { rowButtons ->
+                        rowButtons.forEach { (displayText, incrementValue) ->
+                            Button(
+                                onClick = { onIncrement(incrementValue) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                androidx.compose.material3.Text(displayText)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Boutons de décrément
+            if (decrementButtons.isNotEmpty()) {
+                androidx.compose.material3.Text(
+                    text = "Retirer :",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                )
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    decrementButtons.chunked(2).forEach { rowButtons ->
+                        rowButtons.forEach { (displayText, decrementValue) ->
+                            Button(
+                                onClick = { onIncrement(-decrementValue) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                androidx.compose.material3.Text(displayText)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    @Composable
+    override fun TimerField(
+        label: String,
+        activities: List<String>,
+        currentActivity: String?,
+        currentDuration: String,
+        onStartActivity: (String) -> Unit,
+        onStopActivity: () -> Unit,
+        onSaveSession: (String, Int) -> Unit,
+        required: Boolean
+    ) {
+        val displayLabel = if (required) label else "$label (optionnel)"
+        
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Label du champ
+            Text(displayLabel, TextType.LABEL)
+            
+            // État actuel du timer
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (currentActivity != null) {
+                        androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
+                    }
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (currentActivity != null) {
+                        androidx.compose.material3.Text(
+                            text = "En cours : $currentActivity",
+                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        androidx.compose.material3.Text(
+                            text = currentDuration,
+                            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        androidx.compose.material3.Text(
+                            text = "Arrêté",
+                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            
+            // Boutons d'activités
+            if (activities.isNotEmpty()) {
+                androidx.compose.material3.Text(
+                    text = "Activités :",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                )
+                
+                activities.chunked(2).forEach { rowActivities ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        rowActivities.forEach { activity ->
+                            val isActive = currentActivity == activity
+                            Button(
+                                onClick = {
+                                    if (isActive) {
+                                        onStopActivity()
+                                    } else {
+                                        onStartActivity(activity)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isActive) {
+                                        androidx.compose.material3.MaterialTheme.colorScheme.primary
+                                    } else {
+                                        androidx.compose.material3.MaterialTheme.colorScheme.outline
+                                    },
+                                    contentColor = if (isActive) {
+                                        androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                                    }
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                androidx.compose.material3.Text(activity)
+                            }
+                        }
+                        
+                        // Fill remaining space if odd number of activities
+                        if (rowActivities.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun DatePicker(

@@ -190,6 +190,48 @@ object UI {
         label: String? = null
     ) = CurrentTheme.current.Checkbox(checked, onCheckedChange, label)
     
+    @Composable
+    fun ToggleField(
+        label: String,
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit,
+        trueLabel: String = "Activé",
+        falseLabel: String = "Désactivé",
+        required: Boolean = false
+    ) = CurrentTheme.current.ToggleField(label, checked, onCheckedChange, trueLabel, falseLabel, required)
+    
+    @Composable
+    fun SliderField(
+        label: String,
+        value: Int,
+        onValueChange: (Int) -> Unit,
+        range: IntRange,
+        minLabel: String = "",
+        maxLabel: String = "",
+        required: Boolean = false
+    ) = CurrentTheme.current.SliderField(label, value, onValueChange, range, minLabel, maxLabel, required)
+    
+    @Composable
+    fun CounterField(
+        label: String,
+        incrementButtons: List<Pair<String, Int>>, // Pairs of (displayText, incrementValue)
+        decrementButtons: List<Pair<String, Int>> = emptyList(),
+        onIncrement: (Int) -> Unit,
+        required: Boolean = false
+    ) = CurrentTheme.current.CounterField(label, incrementButtons, decrementButtons, onIncrement, required)
+    
+    @Composable
+    fun TimerField(
+        label: String,
+        activities: List<String>, // List of predefined activity names
+        currentActivity: String?, // Currently active activity (null if stopped)
+        currentDuration: String, // Current session duration (formatted string)
+        onStartActivity: (String) -> Unit,
+        onStopActivity: () -> Unit,
+        onSaveSession: (String, Int) -> Unit, // (activityName, durationMinutes)
+        required: Boolean = false
+    ) = CurrentTheme.current.TimerField(label, activities, currentActivity, currentDuration, onStartActivity, onStopActivity, onSaveSession, required)
+    
     // =====================================
     // BOUTONS AVEC ICÔNES AUTOMATIQUES
     // =====================================
