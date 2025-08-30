@@ -14,6 +14,9 @@ import com.assistant.core.ui.*
 import com.assistant.core.ui.ThemeIconManager
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -57,12 +60,17 @@ fun TrackingConfigScreen(
     zoneId: String,
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
-    existingConfig: String? = null,
     existingToolId: String? = null,
     onDelete: (() -> Unit)? = null
 ) {
+    println("===============================")
+    println("TrackingConfigScreen called with existingToolId: $existingToolId")
+    println("===============================")
+    
     val context = LocalContext.current
-    val isEditing = existingConfig != null && existingToolId != null
+    val coordinator = remember { Coordinator(context) }
+    val scope = rememberCoroutineScope()
+    val isEditing = existingToolId != null
     
     // Helper function pour charger items depuis JSONArray
     fun loadItemsFromJSONArray(itemsArray: JSONArray): MutableList<TrackingItem> {
@@ -84,88 +92,76 @@ fun TrackingConfigScreen(
         return loadedItems
     }
     
-    // Configuration state - Initialisation immédiate depuis config existante ou défaut
-    val defaultConfig by remember { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
+    // Single config state - source of truth
+    var config by remember { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
     
-    var name by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("name") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("name")
-        )
-    }
-    var description by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("description") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("description")
-        )
-    }
-    var management by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("management") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("management")
-        )
-    }
-    var configValidation by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("config_validation") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("config_validation")
-        )
-    }
-    var dataValidation by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("data_validation") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("data_validation")
-        )
-    }
-    var displayMode by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("display_mode") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("display_mode")
-        )
-    }
-    var iconName by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("icon_name") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("icon_name")
-        )
+    // Derived states from config
+    val name by remember { derivedStateOf { config.optString("name", "") } }
+    val description by remember { derivedStateOf { config.optString("description", "") } }
+    val management by remember { derivedStateOf { config.optString("management", "") } }
+    val configValidation by remember { derivedStateOf { config.optString("config_validation", "") } }
+    val dataValidation by remember { derivedStateOf { config.optString("data_validation", "") } }
+    val displayMode by remember { derivedStateOf { config.optString("display_mode", "") } }
+    val iconName by remember { derivedStateOf { config.optString("icon_name", "") } }
+    val trackingType by remember { derivedStateOf { config.optString("type", "") } }
+    val autoSwitch by remember { derivedStateOf { config.optBoolean("auto_switch", false) } }
+    val items by remember { derivedStateOf { 
+        val itemsArray = config.optJSONArray("items")
+        itemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
+    } }
+    
+    // Config update helpers
+    fun updateConfig(key: String, value: Any) {
+        config.put(key, value)
+        config = JSONObject(config.toString()) // Force recomposition
     }
     
-    var trackingType by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optString("type") } catch (e: Exception) { null }
-            } ?: defaultConfig.optString("type")
-        )
-    }
-    var autoSwitch by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { 
-                try { JSONObject(it).optBoolean("auto_switch") } catch (e: Exception) { null }
-            } ?: defaultConfig.optBoolean("auto_switch")
-        )
-    }
-    
-    // Items management state - Initialisation immédiate
-    var items: MutableList<TrackingItem> by remember(existingConfig) { 
-        mutableStateOf(
-            existingConfig?.let { config ->
-                try {
-                    val configJson = JSONObject(config)
-                    val itemsArray = configJson.optJSONArray("items")
-                    itemsArray?.let { loadItemsFromJSONArray(it) }
-                } catch (e: Exception) { null }
-            } ?: run {
-                val defaultItemsArray = defaultConfig.optJSONArray("items")
-                defaultItemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
+    fun updateItems(newItems: MutableList<TrackingItem>) {
+        val itemsArray = JSONArray()
+        newItems.forEach { item ->
+            val itemObj = JSONObject().apply {
+                put("name", item.name)
+                item.properties.forEach { (key, value) ->
+                    put(key, value)
+                }
             }
+            itemsArray.put(itemObj)
+        }
+        updateConfig("items", itemsArray)
+    }
+    
+    // Load config: NO FALLBACKS - CRASH IF DB FAILS
+    LaunchedEffect(existingToolId) {
+        android.util.Log.d("CONFIGDEBUG", "LaunchedEffect triggered - existingToolId: $existingToolId")
+        
+        if (existingToolId == null) {
+            android.util.Log.d("CONFIGDEBUG", "No existingToolId, using default config for creation")
+            config = JSONObject(TrackingToolType.getDefaultConfig())
+            return@LaunchedEffect
+        }
+        
+        android.util.Log.d("CONFIGDEBUG", "Calling coordinator.processUserAction for toolId: $existingToolId")
+        val result = coordinator.processUserAction(
+            "get->tool_instance",
+            mapOf("tool_instance_id" to existingToolId)
         )
+        
+        android.util.Log.d("CONFIGDEBUG", "Coordinator result - status: ${result.status}, data: ${result.data}")
+        
+        if (result.status != CommandStatus.SUCCESS) {
+            throw RuntimeException("CONFIGDEBUG: DB call failed - status: ${result.status}, error: ${result.error}")
+        }
+        
+        val toolInstanceData = result.data?.get("tool_instance") as? Map<String, Any>
+            ?: throw RuntimeException("CONFIGDEBUG: No tool_instance in result.data: ${result.data}")
+            
+        val configString = toolInstanceData["config_json"] as? String
+            ?: throw RuntimeException("CONFIGDEBUG: No config_json in toolInstanceData: $toolInstanceData")
+            
+        android.util.Log.d("CONFIGDEBUG", "Config string from DB: $configString")
+        val newConfig = JSONObject(configString)
+        android.util.Log.d("CONFIGDEBUG", "New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
+        config = newConfig
     }
     
     // UI state for item dialog
@@ -200,27 +196,6 @@ fun TrackingConfigScreen(
                      trackingType.isNotBlank()
         
         if (isValid) {
-            val config = JSONObject().apply {
-            put("name", name.trim())
-            put("description", description.trim())
-            put("management", management)
-            put("config_validation", configValidation)
-            put("data_validation", dataValidation)
-            put("display_mode", displayMode)
-            put("icon_name", iconName)
-            put("type", trackingType)
-            put("auto_switch", autoSwitch)
-            put("items", JSONArray().apply {
-                items.forEach { item ->
-                    put(JSONObject().apply {
-                        put("name", item.name)
-                        item.properties.forEach { (key, value) ->
-                            put(key, value)
-                        }
-                    })
-                }
-            })
-            }
             onSave(config.toString())
         }
     }
@@ -231,8 +206,8 @@ fun TrackingConfigScreen(
             type = DialogType.DANGER,
             onConfirm = {
                 pendingTrackingType?.let { newType ->
-                    trackingType = newType
-                    items.clear()
+                    updateConfig("type", newType)
+                    updateConfig("items", JSONArray())
                 }
                 showTypeChangeWarning = false
                 pendingTrackingType = null
@@ -278,14 +253,14 @@ fun TrackingConfigScreen(
                 UI.FormField(
                     label = "Nom",
                     value = name,
-                    onChange = { name = it },
+                    onChange = { updateConfig("name", it) },
                     required = true
                 )
                 
                 UI.FormField(
                     label = "Description",
                     value = description,
-                    onChange = { description = it }
+                    onChange = { updateConfig("description", it) }
                 )
                 
                 // Sélection d'icône
@@ -309,7 +284,7 @@ fun TrackingConfigScreen(
                     label = "Mode d'affichage",
                     options = listOf("ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL"),
                     selected = displayMode,
-                    onSelect = { displayMode = it },
+                    onSelect = { updateConfig("display_mode", it) },
                     required = true
                 )
                 
@@ -323,12 +298,12 @@ fun TrackingConfigScreen(
                         else -> management
                     },
                     onSelect = { selectedLabel ->
-                        management = when(selectedLabel) {
+                        updateConfig("management", when(selectedLabel) {
                             "Manuel" -> "manual"
                             "IA" -> "ai"
                             "Collaboratif" -> "collaborative"
                             else -> selectedLabel
-                        }
+                        })
                     },
                     required = true
                 )
@@ -342,11 +317,11 @@ fun TrackingConfigScreen(
                         else -> configValidation
                     },
                     onSelect = { selectedLabel ->
-                        configValidation = when(selectedLabel) {
+                        updateConfig("config_validation", when(selectedLabel) {
                             "Activée" -> "enabled"
                             "Désactivée" -> "disabled"
                             else -> selectedLabel
-                        }
+                        })
                     },
                     required = true
                 )
@@ -360,11 +335,11 @@ fun TrackingConfigScreen(
                         else -> dataValidation
                     },
                     onSelect = { selectedLabel ->
-                        dataValidation = when(selectedLabel) {
+                        updateConfig("data_validation", when(selectedLabel) {
                             "Activée" -> "enabled"
                             "Désactivée" -> "disabled"
                             else -> selectedLabel
-                        }
+                        })
                     },
                     required = true
                 )
@@ -418,7 +393,7 @@ fun TrackingConfigScreen(
                             showTypeChangeWarning = true
                         } else {
                             // No items or same type, change directly
-                            trackingType = newType
+                            updateConfig("type", newType)
                         }
                         
                         // Cancel editing if in progress when type changes
@@ -441,11 +416,11 @@ fun TrackingConfigScreen(
                             false -> "Désactivée"
                         },
                         onSelect = { selectedLabel ->
-                            autoSwitch = when(selectedLabel) {
+                            updateConfig("auto_switch", when(selectedLabel) {
                                 "Activée" -> true
                                 "Désactivée" -> false
                                 else -> selectedLabel == "Activée"
-                            }
+                            })
                         }
                     )
                 }
@@ -534,7 +509,7 @@ fun TrackingConfigScreen(
                                     val temp = newItems[itemIndex]
                                     newItems[itemIndex] = newItems[itemIndex - 1]
                                     newItems[itemIndex - 1] = temp
-                                    items = newItems
+                                    updateItems(newItems)
                                 }
                             },
                             onMoveDown = {
@@ -543,13 +518,13 @@ fun TrackingConfigScreen(
                                     val temp = newItems[itemIndex]
                                     newItems[itemIndex] = newItems[itemIndex + 1]
                                     newItems[itemIndex + 1] = temp
-                                    items = newItems
+                                    updateItems(newItems)
                                 }
                             },
                             onDelete = {
                                 val newItems = items.toMutableList()
                                 newItems.removeAt(itemIndex)
-                                items = newItems
+                                updateItems(newItems)
                             }
                         )
                     }
@@ -601,7 +576,7 @@ fun TrackingConfigScreen(
                             val newItem = TrackingItem(editItemName, properties)
                             val newItems = items.toMutableList()
                             newItems.add(newItem)
-                            items = newItems
+                            updateItems(newItems)
                         } else {
                             editingItemIndex?.let { index ->
                                 items[index] = TrackingItem(editItemName, properties)
@@ -680,7 +655,7 @@ fun TrackingConfigScreen(
                                 UI.Button(
                                     type = if (iconName == icon.id) ButtonType.PRIMARY else ButtonType.SECONDARY,
                                     onClick = {
-                                        iconName = icon.id
+                                        updateConfig("icon_name", icon.id)
                                         showIconSelector = false
                                     }
                                 ) {

@@ -156,7 +156,6 @@ fun ZoneScreen(
             zoneId = zone.id,
             onSave = onSaveConfig,
             onCancel = onCancelConfig,
-            existingConfig = editingTool?.config_json,
             existingToolId = editingTool?.id,
             onDelete = editingTool?.let { tool ->
                 {

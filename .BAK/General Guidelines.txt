@@ -1,3 +1,3 @@
 - Ne pas utiliser de fallbacks hardcodés (exemple incorrect : zoneName = zoneData?.get("name") as? String ?: "Zone" ; plutôt utiliser mécanismes d'erreurs par exemple)
 - Toujours passer par coordinateur pour accès DB depuis UI / IA (pas d'import de AppDatabase)
--
+- Ne JAMAIS utiliser de mécanisme fallback sans valider explicitement avec moi

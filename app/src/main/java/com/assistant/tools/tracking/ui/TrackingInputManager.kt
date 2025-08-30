@@ -52,12 +52,16 @@ fun TrackingInputManager(
                     "unit" to unit,
                     "type" to "numeric"
                 )
-                android.util.Log.d("TrackingInputManager", "Saving with params: $params")
+                android.util.Log.d("CONFIGDEBUG", "ADDING ITEM - toolInstanceId: $toolInstanceId, params: $params")
                 
                 val result = coordinator.processUserAction("create->tool_data", params)
                 
+                android.util.Log.d("CONFIGDEBUG", "ADD ITEM RESULT - status: ${result.status}, error: ${result.error}")
+                
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
+                        android.util.Log.d("CONFIGDEBUG", "ITEM ADDED SUCCESSFULLY - calling onEntrySaved()")
+                        
                         // Show success toast
                         android.widget.Toast.makeText(
                             context,

@@ -93,7 +93,6 @@ object TrackingToolType : ToolTypeContract {
         zoneId: String,
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
-        existingConfig: String?,
         existingToolId: String?,
         onDelete: (() -> Unit)?
     ) {
@@ -101,7 +100,6 @@ object TrackingToolType : ToolTypeContract {
             zoneId = zoneId,
             onSave = onSave,
             onCancel = onCancel,
-            existingConfig = existingConfig,
             existingToolId = existingToolId,
             onDelete = onDelete
         )

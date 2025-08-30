@@ -43,7 +43,6 @@ interface ToolTypeContract {
      * @param zoneId ID of the zone where the tool will be created
      * @param onSave Called when configuration is saved with the config JSON
      * @param onCancel Called when configuration is cancelled
-     * @param existingConfig Optional existing configuration JSON for editing
      * @param existingToolId Optional existing tool ID for editing mode
      * @param onDelete Optional delete callback for editing mode
      */
@@ -52,7 +51,6 @@ interface ToolTypeContract {
         zoneId: String,
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
-        existingConfig: String?,
         existingToolId: String?,
         onDelete: (() -> Unit)?
     )

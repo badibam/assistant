@@ -25,6 +25,8 @@ fun TrackingScreen(
     onNavigateBack: () -> Unit,
     onConfigureClick: () -> Unit = {}
 ) {
+    android.util.Log.d("CONFIGDEBUG", "TrackingScreen called with toolInstanceId: $toolInstanceId")
+    
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     
