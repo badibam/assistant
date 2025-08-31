@@ -1,6 +1,0 @@
-une fois tracking finalisé : passage de peaufinage :
-
-- internationalisation
-- revoir système de nommage des comandes
-- revoir système de source de commande
-- utiliser système de source de commande

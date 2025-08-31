@@ -41,6 +41,9 @@ gradle/
 # Backup directory
 .BAK/
 
+# Fichiers TODO divers
+.TODO/
+
 # Release signing
 keystore/
 *.keystore
