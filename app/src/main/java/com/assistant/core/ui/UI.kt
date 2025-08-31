@@ -1,6 +1,7 @@
 package com.assistant.core.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,8 +74,11 @@ object UI {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null
-    ) = CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
+        textAlign: TextAlign? = null,
+        clickable: Boolean = false,
+        onClick: (() -> Unit)? = null,
+        padding: Dp? = null
+    ) = CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
     
     // Extensions pour weight dans Row/Column scopes
     @Composable  
@@ -83,14 +87,20 @@ object UI {
         type: TextType,
         weight: Float? = null,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null
+        textAlign: TextAlign? = null,
+        clickable: Boolean = false,
+        onClick: (() -> Unit)? = null,
+        padding: Dp? = null
     ) {
         if (weight != null) {
-            Box(modifier = Modifier.weight(weight)) {
-                Text(text, type, fillMaxWidth, textAlign)
+            val boxModifier = Modifier.weight(weight).let { 
+                if (padding != null) it.padding(padding) else it 
+            }
+            Box(modifier = boxModifier) {
+                Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding = null)
             }
         } else {
-            Text(text, type, fillMaxWidth, textAlign)
+            Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
         }
     }
     
@@ -100,14 +110,20 @@ object UI {
         type: TextType,
         weight: Float? = null,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null
+        textAlign: TextAlign? = null,
+        clickable: Boolean = false,
+        onClick: (() -> Unit)? = null,
+        padding: Dp? = null
     ) {
         if (weight != null) {
-            Box(modifier = Modifier.weight(weight)) {
-                Text(text, type, fillMaxWidth, textAlign)
+            val boxModifier = Modifier.weight(weight).let { 
+                if (padding != null) it.padding(padding) else it 
+            }
+            Box(modifier = boxModifier) {
+                Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding = null)
             }
         } else {
-            Text(text, type, fillMaxWidth, textAlign)
+            Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
         }
     }
     

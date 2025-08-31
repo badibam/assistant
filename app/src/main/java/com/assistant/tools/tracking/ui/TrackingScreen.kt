@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.ui.ThemeIconManager
@@ -136,7 +137,7 @@ fun TrackingScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    UI.Text("Nouvelle entrée", TextType.SUBTITLE)
+                    UI.Text("Nouvelle entrée", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
                     key(configRefreshTrigger) {
                         TrackingInputManager(
@@ -160,7 +161,7 @@ fun TrackingScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    UI.Text("Historique", TextType.SUBTITLE)
+                    UI.Text("Historique", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
                     key(historyRefreshTrigger) {
                         TrackingHistory(
@@ -209,7 +210,7 @@ private fun TrackingToolHeader(
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                UI.Text(toolName, TextType.TITLE)
+                UI.Text(toolName, TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                 
                 if (toolDescription.isNotBlank()) {
                     UI.Text(toolDescription, TextType.BODY)

@@ -92,8 +92,11 @@ UI.Button(type, onClick)
 fun Text(
     text: String,
     type: TextType,
-    fillMaxWidth: Boolean = false,   // Pour centrage/background
-    textAlign: TextAlign? = null     // Pour alignement du texte
+    fillMaxWidth: Boolean = false,
+    textAlign: TextAlign? = null,
+    clickable: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    padding: Dp? = null
 )
 
 // Extensions pour weight (disponibles dans Row/Column uniquement)
@@ -101,69 +104,49 @@ fun Text(
 fun RowScope.Text(
     text: String,
     type: TextType,
-    weight: Float? = null,           // ✨ Weight naturel dans Row !
+    weight: Float? = null,           // ✨ Weight naturel !
     fillMaxWidth: Boolean = false,
-    textAlign: TextAlign? = null
+    textAlign: TextAlign? = null,
+    clickable: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    padding: Dp? = null
 )
 
 @Composable
-fun ColumnScope.Text(
-    text: String,
-    type: TextType,
-    weight: Float? = null,           // ✨ Weight naturel dans Column !
-    fillMaxWidth: Boolean = false,
-    textAlign: TextAlign? = null
-)
+fun ColumnScope.Text(/* même signature avec weight */)
 ```
 
-### ✅ **Usage normal (disponible partout)**
+### ✅ **Usages courants**
 ```kotlin
-// Texte simple
-UI.Text("Simple", TextType.BODY)
+// Simple
+UI.Text("Hello", TextType.BODY)
 
-// Centrage
-UI.Text("Centré", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+// Avec padding et clic
+UI.Text("Menu", TextType.BODY, padding = 8.dp, clickable = true) { navigate() }
 
-// Background étendu
-Box(modifier = Modifier.fillMaxWidth().background(Color.Red)) {
-    UI.Text("Notification", TextType.BODY, fillMaxWidth = true)
-}
+// Centré
+UI.Text("Titre", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
 ```
 
-### ✨ **Nouveau : Weight naturel dans Row/Column**
+### ✨ **Weight naturel dans Row/Column**
 ```kotlin
-// Weight dans Row - API naturelle !
 Row {
-    UI.Text("Label", TextType.BODY)  // Taille naturelle
-    UI.Text("Flexible", TextType.BODY, weight = 1f)  // ✨ Magique !
-    UI.Text("End", TextType.CAPTION)  // Taille naturelle  
+    UI.Text("Label", TextType.BODY)
+    UI.Text("Flexible", TextType.BODY, weight = 1f)  // ✨ Plus de Box !
 }
 
-// Weight dans Column
-Column {
-    UI.Text("Header", TextType.TITLE)  // Taille naturelle
-    UI.Text("Content", TextType.BODY, weight = 1f)  // Prend l'espace restant
-    UI.Text("Footer", TextType.CAPTION)  // Taille naturelle
-}
-
-// Proportions multiples
+// Tous paramètres
 Row {
-    UI.Text("A", TextType.BODY, weight = 1f)  // 1/6 espace
-    UI.Text("B", TextType.BODY, weight = 2f)  // 2/6 espace
-    UI.Text("C", TextType.BODY, weight = 3f)  // 3/6 espace
-}
-
-// Combinaison weight + fillMaxWidth + textAlign
-Row {
-    UI.Text("Start", TextType.BODY)
     UI.Text(
-        text = "Centré et flexible",
+        text = "Complet",
         type = TextType.BODY,
         weight = 2f,
         fillMaxWidth = true,
-        textAlign = TextAlign.Center
+        textAlign = TextAlign.Center,
+        clickable = true,
+        onClick = { click() },
+        padding = 12.dp
     )
-    UI.Text("End", TextType.BODY)
 }
 ```
 
@@ -179,11 +162,11 @@ Box(modifier = Modifier.weight(1f)) {
 ```
 
 ### 💡 **Règles d'usage**
-- **weight** = ✨ paramètre naturel dans Row/Column ! Plus besoin de Box
-- **fillMaxWidth** = pour centrage ou background étendu
-- **textAlign** = avec fillMaxWidth pour alignement  
+- **weight** = paramètre naturel dans Row/Column, plus de Box !
+- **padding** = espacement autour du texte
+- **clickable** = zone cliquable sur le texte  
+- **fillMaxWidth + textAlign** = centrage
 - **80% des cas** = paramètres par défaut suffisants
-- **Pattern recommandé** = `UI.Text(weight = 1f)` directement dans Row/Column
 
 ---
 

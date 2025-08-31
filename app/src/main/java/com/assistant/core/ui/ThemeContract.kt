@@ -1,6 +1,7 @@
 package com.assistant.core.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,10 @@ interface ThemeContract {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?
+        textAlign: TextAlign?,
+        clickable: Boolean,
+        onClick: (() -> Unit)?,
+        padding: Dp?
     )
     
     @Composable
