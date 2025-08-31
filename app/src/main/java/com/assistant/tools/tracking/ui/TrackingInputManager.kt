@@ -12,6 +12,7 @@ import com.assistant.core.ui.*
 import com.assistant.tools.tracking.ui.components.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Input orchestrator for tracking tools
@@ -124,7 +125,13 @@ fun TrackingInputManager(
                     put("name", itemName)
                     // Add all properties to the item
                     properties.forEach { (key, value) ->
-                        put(key, value)
+                        when (value) {
+                            is String -> put(key, value)
+                            is Int -> put(key, value)
+                            is Double -> put(key, value)
+                            is Boolean -> put(key, value)
+                            else -> put(key, value.toString())
+                        }
                     }
                 }
                 
@@ -132,16 +139,16 @@ fun TrackingInputManager(
                 currentItems.put(newItem)
                 
                 // Update tool instance configuration
-                val params = JSONObject().apply {
-                    put("tool_type", "tracking")
-                    put("operation", "update_config")
-                    put("tool_instance_id", toolInstanceId)
-                    put("config", config.apply {
+                val params = mapOf(
+                    "tool_type" to "tracking",
+                    "operation" to "update_config", 
+                    "tool_instance_id" to toolInstanceId,
+                    "config" to config.apply {
                         put("items", currentItems)
-                    }.toString())
-                }
+                    }.toString()
+                )
                 
-                android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: ${params.toString()}")
+                android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: $params")
                 
                 val result = coordinator.processUserAction("update->tool_config", params)
                 if (result.status == CommandStatus.SUCCESS) {
