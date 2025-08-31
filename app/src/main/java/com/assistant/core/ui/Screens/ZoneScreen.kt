@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
@@ -193,7 +194,8 @@ fun ZoneScreen(
     }
     
     Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Header with back button, zone title and add tool button
         Row(
@@ -207,9 +209,9 @@ fun ZoneScreen(
                 onClick = onBack
             )
             
-            // Zone title
+            // Zone title + description - centrés
             Column(
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+                modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 UI.Text(
@@ -217,7 +219,7 @@ fun ZoneScreen(
                     type = TextType.TITLE
                 )
                 
-                zone.description?.let { description ->
+                zone.description?.takeIf { it.isNotBlank() }?.let { description ->
                     UI.Text(
                         text = description,
                         type = TextType.BODY
@@ -233,8 +235,6 @@ fun ZoneScreen(
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
         // Available tools list (shown conditionally)
         if (showAvailableTools) {
             UI.Card(
@@ -249,25 +249,28 @@ fun ZoneScreen(
                         type = TextType.SUBTITLE
                     )
                     
-                    // List all available tool types
+                    // List all available tool types - centrés
                     ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
-                        UI.Button(
-                            type = ButtonType.PRIMARY,
-                            onClick = {
-                                showingConfigFor = toolTypeId
-                                showAvailableTools = false
-                            }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            UI.Text(
-                                text = toolType.getDisplayName(),
-                                type = TextType.LABEL
-                            )
+                            UI.Button(
+                                type = ButtonType.PRIMARY,
+                                onClick = {
+                                    showingConfigFor = toolTypeId
+                                    showAvailableTools = false
+                                }
+                            ) {
+                                UI.Text(
+                                    text = toolType.getDisplayName(),
+                                    type = TextType.LABEL
+                                )
+                            }
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
         }
         
         if (isLoading) {
@@ -296,8 +299,6 @@ fun ZoneScreen(
                         showingConfigFor = toolInstance.tool_type
                     }
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }

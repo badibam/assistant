@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
@@ -151,14 +152,17 @@ fun MainScreen() {
         // Main content using hybrid system: Compose layouts + UI.* components
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
+            // Title - centré
             UI.Text(
                 text = "Assistant",
-                type = TextType.TITLE
+                type = TextType.TITLE,
+                fillMaxWidth = true,
+                textAlign = TextAlign.Center
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
             
             // Zones section
             UI.Text(
@@ -173,16 +177,31 @@ fun MainScreen() {
                     type = TextType.BODY
                 )
                 
-                UI.Button(
-                    type = ButtonType.PRIMARY,
-                    onClick = { 
-                        showCreateZone = true
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    UI.Text(
-                        text = "Créer une zone",
-                        type = TextType.LABEL
-                    )
+                    // Test RowScope avec Box + weight
+                    Box(
+                        modifier = Modifier.weight(0.3f)
+                    ) {
+                        UI.Text(
+                            text = "Test weight",
+                            type = TextType.CAPTION
+                        )
+                    }
+                    
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        onClick = { 
+                            showCreateZone = true
+                        }
+                    ) {
+                        UI.Text(
+                            text = "Créer une zone",
+                            type = TextType.LABEL
+                        )
+                    }
                 }
             } else {
                 // Show zones list using UI.ZoneCard
@@ -199,20 +218,27 @@ fun MainScreen() {
                 }
                 
                 // Add zone button
-                UI.Button(
-                    type = ButtonType.PRIMARY,
-                    onClick = { 
-                        showCreateZone = true
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    UI.Text(
-                        text = "Ajouter une zone",
-                        type = TextType.LABEL
-                    )
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        onClick = { 
+                            showCreateZone = true
+                        }
+                    ) {
+                        UI.Text(
+                            text = "Ajouter une zone",
+                            type = TextType.LABEL
+                        )
+                    }
                 }
             }
             
-            // Terminal section placeholder
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Terminal section
             UI.Text(
                 text = "Terminal",
                 type = TextType.SUBTITLE

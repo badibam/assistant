@@ -69,10 +69,7 @@ interface ThemeContract {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?,
-        clickable: Boolean,
-        onClick: (() -> Unit)?,
-        padding: Dp?
+        textAlign: TextAlign?
     )
     
     @Composable

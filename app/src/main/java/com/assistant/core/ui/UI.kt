@@ -74,58 +74,11 @@ object UI {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null,
-        clickable: Boolean = false,
-        onClick: (() -> Unit)? = null,
-        padding: Dp? = null
-    ) = CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
-    
-    // Extensions pour weight dans Row/Column scopes
-    @Composable  
-    fun RowScope.Text(
-        text: String,
-        type: TextType,
-        weight: Float? = null,
-        fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null,
-        clickable: Boolean = false,
-        onClick: (() -> Unit)? = null,
-        padding: Dp? = null
+        textAlign: TextAlign? = null
     ) {
-        if (weight != null) {
-            val boxModifier = Modifier.weight(weight).let { 
-                if (padding != null) it.padding(padding) else it 
-            }
-            Box(modifier = boxModifier) {
-                Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding = null)
-            }
-        } else {
-            Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
-        }
+        CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
     }
     
-    @Composable
-    fun ColumnScope.Text(
-        text: String,
-        type: TextType,
-        weight: Float? = null,
-        fillMaxWidth: Boolean = false,
-        textAlign: TextAlign? = null,
-        clickable: Boolean = false,
-        onClick: (() -> Unit)? = null,
-        padding: Dp? = null
-    ) {
-        if (weight != null) {
-            val boxModifier = Modifier.weight(weight).let { 
-                if (padding != null) it.padding(padding) else it 
-            }
-            Box(modifier = boxModifier) {
-                Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding = null)
-            }
-        } else {
-            Text(text, type, fillMaxWidth, textAlign, clickable, onClick, padding)
-        }
-    }
     
     @Composable
     fun Card(
@@ -367,12 +320,28 @@ object UI {
                     ToolCardHeader(tool, context)
                 }
                 DisplayMode.LINE -> {
-                    Row {
-                        // Icône + titre à gauche (partie fixe)
-                        ToolCardHeader(tool, context)
-                        // Zone libre à droite définie par tool type
-                        Box {
-                            // TODO: Contenu libre LINE défini par tool type
+                    Row(
+                        modifier = Modifier.fillMaxHeight(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Moitié gauche : ToolCardHeader centré verticalement et horizontalement
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ToolCardHeader(tool, context)
+                        }
+                        
+                        // Utiliser Box + weight pour le texte
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            UI.Text(
+                                text = "Outil de " + ToolTypeManager.getToolTypeName(tool.tool_type),
+                                type = TextType.BODY,
+                                fillMaxWidth = true,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }

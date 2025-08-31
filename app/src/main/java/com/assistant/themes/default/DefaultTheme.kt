@@ -22,7 +22,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import androidx.compose.foundation.clickable
 import com.assistant.core.ui.ThemeContract
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.ButtonAction
@@ -366,7 +365,8 @@ object DefaultTheme : ThemeContract {
             placeholder = { androidx.compose.material3.Text(placeholder) },
             isError = isError,
             readOnly = isReadOnly,
-            enabled = state != ComponentState.DISABLED
+            enabled = state != ComponentState.DISABLED,
+            modifier = Modifier.fillMaxWidth()
         )
     }
     
@@ -379,10 +379,7 @@ object DefaultTheme : ThemeContract {
         text: String,
         type: TextType,
         fillMaxWidth: Boolean,
-        textAlign: TextAlign?,
-        clickable: Boolean,
-        onClick: (() -> Unit)?,
-        padding: Dp?
+        textAlign: TextAlign?
     ) {
         val style = when (type) {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
@@ -401,10 +398,7 @@ object DefaultTheme : ThemeContract {
         }
         
         // Construction du modifier
-        var textModifier: Modifier = Modifier
-        if (fillMaxWidth) textModifier = textModifier.fillMaxWidth()
-        if (clickable && onClick != null) textModifier = textModifier.clickable { onClick() }
-        if (padding != null) textModifier = textModifier.padding(padding)
+        val textModifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier
         
         androidx.compose.material3.Text(
             text = text,
@@ -661,7 +655,7 @@ object DefaultTheme : ThemeContract {
         val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             if (readonly) {
                 // Display as text when readonly - clickable if onClick provided
@@ -676,10 +670,7 @@ object DefaultTheme : ThemeContract {
                         text = if (value.isNotBlank()) value else "(vide)",
                         type = TextType.BODY,
                         fillMaxWidth = false,
-                        textAlign = null,
-                        clickable = false,
-                        onClick = null,
-                        padding = null
+                        textAlign = null
                     )
                 }
             } else {
@@ -707,7 +698,7 @@ object DefaultTheme : ThemeContract {
         val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -721,7 +712,7 @@ object DefaultTheme : ThemeContract {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
                     colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                    modifier = Modifier.menuAnchor()
+                    modifier = Modifier.fillMaxWidth().menuAnchor()
                 )
                 
                 ExposedDropdownMenu(
@@ -769,7 +760,7 @@ object DefaultTheme : ThemeContract {
             )
             
             if (label != null) {
-                Text(label, TextType.BODY, false, null, false, null, null)
+                Text(label, TextType.BODY, false, null)
             }
         }
     }
@@ -789,7 +780,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Toggle avec labels
             Row(
@@ -830,7 +821,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Valeur actuelle
             Row(
@@ -888,7 +879,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Boutons d'incrément  
             if (incrementButtons.isNotEmpty()) {
@@ -967,7 +958,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null, false, null, null)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // État actuel du timer
             Card(

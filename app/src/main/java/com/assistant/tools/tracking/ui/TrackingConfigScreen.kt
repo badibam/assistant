@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.UI
@@ -234,14 +235,17 @@ fun TrackingConfigScreen(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
+        // Header - centré (pattern établi)
         UI.Text(
             text = if (isEditing) "Modifier Suivi" else "Créer Suivi",
-            type = TextType.TITLE
+            type = TextType.TITLE,
+            fillMaxWidth = true,
+            textAlign = TextAlign.Center
         )
+        
+        Spacer(modifier = Modifier.height(8.dp))
         
         // Card 1: Paramètres généraux
         UI.Card(type = CardType.DEFAULT) {
@@ -446,31 +450,53 @@ fun TrackingConfigScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Colonne ordre
-                        Box(modifier = Modifier.width(60.dp)) {
-                            UI.Text("Ordre", TextType.CAPTION)
+                        // Colonne ordre - largeur fixe alignée
+                        Box(
+                            modifier = Modifier.width(50.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            UI.Text(
+                                text = "Ordre",
+                                type = TextType.CAPTION
+                            )
                         }
                         
-                        // Colonne nom
-                        Box(modifier = Modifier.weight(0.4f).padding(horizontal = 8.dp)) {
-                            UI.Text("Nom", TextType.CAPTION)
+                        // Header avec Box + weight + padding  
+                        Box(
+                            modifier = Modifier.weight(0.4f).padding(8.dp)
+                        ) {
+                            UI.Text(
+                                text = "Nom", 
+                                type = TextType.CAPTION
+                            )
                         }
                         
                         // Colonnes spécifiques au type numeric
                         if (trackingType == "numeric") {
-                            Box(modifier = Modifier.weight(0.25f).padding(horizontal = 8.dp)) {
-                                UI.Text("Qté par défaut", TextType.CAPTION)
+                            Box(
+                                modifier = Modifier.weight(0.25f).padding(8.dp)
+                            ) {
+                                UI.Text(
+                                    text = "Qté par défaut",
+                                    type = TextType.CAPTION
+                                )
                             }
                             
-                            Box(modifier = Modifier.weight(0.25f).padding(horizontal = 8.dp)) {
-                                UI.Text("Unité", TextType.CAPTION)
+                            Box(
+                                modifier = Modifier.weight(0.25f).padding(8.dp)
+                            ) {
+                                UI.Text(
+                                    text = "Unité",
+                                    type = TextType.CAPTION
+                                )
                             }
                         }
                         
-                        // Colonne actions
-                        Box(modifier = Modifier.width(72.dp)) {
-                            UI.Text("Actions", TextType.CAPTION)
-                        }
+                        // Colonne actions - largeur fixe
+                        UI.Text(
+                            text = "Actions",
+                            type = TextType.CAPTION
+                        )
                     }
                     
                     // Tableau items
@@ -672,7 +698,7 @@ fun TrackingConfigScreen(
                             }
                         }
                         
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -700,8 +726,8 @@ private fun ItemRowReadonly(
     ) {
         // Up/Down buttons côte à côte
         Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.width(60.dp)
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.width(50.dp)
         ) {
             UI.ActionButton(
                 action = ButtonAction.UP,
@@ -717,27 +743,36 @@ private fun ItemRowReadonly(
             )
         }
         
-        // Name column
+        // Name column avec Box + weight + padding
         Box(
-            modifier = Modifier.weight(0.4f).padding(horizontal = 8.dp)
+            modifier = Modifier.weight(0.4f).padding(8.dp)
         ) {
-            UI.Text(item.name, TextType.BODY)
+            UI.Text(
+                text = item.name,
+                type = TextType.BODY
+            )
         }
         
         // Value columns for numeric type
         if (trackingType == "numeric") {
+            val defaultValue = item.properties["default_value"]
             Box(
-                modifier = Modifier.weight(0.25f).padding(horizontal = 8.dp)
+                modifier = Modifier.weight(0.25f).padding(8.dp)
             ) {
-                val defaultValue = item.properties["default_value"]
-                UI.Text(defaultValue?.toString() ?: "-", TextType.BODY)
+                UI.Text(
+                    text = defaultValue?.toString() ?: "-",
+                    type = TextType.BODY
+                )
             }
             
+            val unit = item.properties["unit"]?.toString()
             Box(
-                modifier = Modifier.weight(0.25f).padding(horizontal = 8.dp)
+                modifier = Modifier.weight(0.25f).padding(8.dp)
             ) {
-                val unit = item.properties["unit"]?.toString()
-                UI.Text(unit ?: "-", TextType.BODY)
+                UI.Text(
+                    text = unit ?: "-",
+                    type = TextType.BODY
+                )
             }
         }
         

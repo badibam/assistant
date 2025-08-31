@@ -83,90 +83,44 @@ UI.Card(type, content)
 UI.Button(type, onClick)
 ```
 
-## 3. UI.TEXT - PARAMÈTRES ET USAGE
+## 3. UI.TEXT - ARCHITECTURE SIMPLIFIÉE
 
-### Signature UI.Text
+### ✅ **Signature finale (4 paramètres)**
 ```kotlin
-// Fonction de base (disponible partout)
 @Composable
 fun Text(
     text: String,
     type: TextType,
     fillMaxWidth: Boolean = false,
-    textAlign: TextAlign? = null,
-    clickable: Boolean = false,
-    onClick: (() -> Unit)? = null,
-    padding: Dp? = null
+    textAlign: TextAlign? = null
 )
-
-// Extensions pour weight (disponibles dans Row/Column uniquement)
-@Composable  
-fun RowScope.Text(
-    text: String,
-    type: TextType,
-    weight: Float? = null,           // ✨ Weight naturel !
-    fillMaxWidth: Boolean = false,
-    textAlign: TextAlign? = null,
-    clickable: Boolean = false,
-    onClick: (() -> Unit)? = null,
-    padding: Dp? = null
-)
-
-@Composable
-fun ColumnScope.Text(/* même signature avec weight */)
 ```
 
-### ✅ **Usages courants**
+### 💡 **Layout séparé = Box wrapper**
 ```kotlin
-// Simple
-UI.Text("Hello", TextType.BODY)
-
-// Avec padding et clic
-UI.Text("Menu", TextType.BODY, padding = 8.dp, clickable = true) { navigate() }
-
-// Centré
-UI.Text("Titre", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
-```
-
-### ✨ **Weight naturel dans Row/Column**
-```kotlin
+// ✅ Pattern weight avec Box
 Row {
     UI.Text("Label", TextType.BODY)
-    UI.Text("Flexible", TextType.BODY, weight = 1f)  // ✨ Plus de Box !
+    Box(modifier = Modifier.weight(1f)) {
+        UI.Text("Flexible", TextType.BODY, fillMaxWidth = true, textAlign = TextAlign.Center)
+    }
 }
 
-// Tous paramètres
-Row {
-    UI.Text(
-        text = "Complet",
-        type = TextType.BODY,
-        weight = 2f,
-        fillMaxWidth = true,
-        textAlign = TextAlign.Center,
-        clickable = true,
-        onClick = { click() },
-        padding = 12.dp
-    )
+// ✅ Pattern padding avec Box  
+Box(modifier = Modifier.padding(8.dp)) {
+    UI.Text("Padded", TextType.BODY)
+}
+
+// ✅ Pattern clickable avec Box
+Box(modifier = Modifier.clickable { navigate() }) {
+    UI.Text("Menu", TextType.BODY)
 }
 ```
 
-### ❌ **Cas où NE PAS utiliser fillMaxWidth**
-```kotlin
-// Text normal dans Column/Row
-UI.Text("Simple text", TextType.BODY)  // Largeur naturelle suffisante
-
-// Dans Box déjà flexible - fillMaxWidth inutile sauf pour centrage
-Box(modifier = Modifier.weight(1f)) {
-    UI.Text("Value", TextType.BODY)  // Prend déjà toute la Box
-}
-```
-
-### 💡 **Règles d'usage**
-- **weight** = paramètre naturel dans Row/Column, plus de Box !
-- **padding** = espacement autour du texte
-- **clickable** = zone cliquable sur le texte  
-- **fillMaxWidth + textAlign** = centrage
-- **80% des cas** = paramètres par défaut suffisants
+### 🎯 **Principe de séparation**
+- **UI.Text** → Rendu du texte uniquement
+- **Box + Modifier** → Layout, interactions, espacement
+- **Compose-idiomatique** → Responsabilités séparées
 
 ---
 
