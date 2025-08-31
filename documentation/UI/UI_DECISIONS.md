@@ -87,59 +87,83 @@ UI.Button(type, onClick)
 
 ### Signature UI.Text
 ```kotlin
+// Fonction de base (disponible partout)
 @Composable
 fun Text(
     text: String,
     type: TextType,
-    fillMaxWidth: Boolean = false,   // Pour centrage/background dans Box parente
-    textAlign: TextAlign? = null     // Souvent avec fillMaxWidth pour centrage
+    fillMaxWidth: Boolean = false,   // Pour centrage/background
+    textAlign: TextAlign? = null     // Pour alignement du texte
+)
+
+// Extensions pour weight (disponibles dans Row/Column uniquement)
+@Composable  
+fun RowScope.Text(
+    text: String,
+    type: TextType,
+    weight: Float? = null,           // ✨ Weight naturel dans Row !
+    fillMaxWidth: Boolean = false,
+    textAlign: TextAlign? = null
+)
+
+@Composable
+fun ColumnScope.Text(
+    text: String,
+    type: TextType,
+    weight: Float? = null,           // ✨ Weight naturel dans Column !
+    fillMaxWidth: Boolean = false,
+    textAlign: TextAlign? = null
 )
 ```
 
-### ✅ **Cas d'usage fillMaxWidth = true**
+### ✅ **Usage normal (disponible partout)**
 ```kotlin
-// Centrage de texte dans Box parente
-Row {
-    Box(modifier = Modifier.weight(1f)) {
-        UI.Text("Titre centré", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
-    }
-}
+// Texte simple
+UI.Text("Simple", TextType.BODY)
 
-// Background sur toute la largeur dans Box parente
-Box(
-    modifier = Modifier.fillMaxWidth().background(Color.Red)
-) {
+// Centrage
+UI.Text("Centré", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+
+// Background étendu
+Box(modifier = Modifier.fillMaxWidth().background(Color.Red)) {
     UI.Text("Notification", TextType.BODY, fillMaxWidth = true)
-}
-
-// Zone cliquable étendue - géré par Box parente
-Row {
-    Box(
-        modifier = Modifier.weight(1f).clickable { navigate() }
-    ) {
-        UI.Text("Menu item", TextType.LABEL, fillMaxWidth = true)
-    }
 }
 ```
 
-### ✅ **Pattern weight avec Box**
+### ✨ **Nouveau : Weight naturel dans Row/Column**
 ```kotlin
+// Weight dans Row - API naturelle !
 Row {
     UI.Text("Label", TextType.BODY)  // Taille naturelle
-    
-    Box(modifier = Modifier.weight(1f)) {  // Flexible
-        UI.Text("Value", TextType.BODY)
-    }
+    UI.Text("Flexible", TextType.BODY, weight = 1f)  // ✨ Magique !
+    UI.Text("End", TextType.CAPTION)  // Taille naturelle  
 }
 
+// Weight dans Column
+Column {
+    UI.Text("Header", TextType.TITLE)  // Taille naturelle
+    UI.Text("Content", TextType.BODY, weight = 1f)  // Prend l'espace restant
+    UI.Text("Footer", TextType.CAPTION)  // Taille naturelle
+}
+
+// Proportions multiples
 Row {
-    Box(modifier = Modifier.weight(1f)) {  // 1/3 espace
-        UI.Text("A", TextType.BODY)
-    }
-    Box(modifier = Modifier.weight(2f)) {  // 2/3 espace  
-        UI.Text("B", TextType.BODY)
-    }
-    UI.Text("Fixe", TextType.BODY)  // Taille naturelle
+    UI.Text("A", TextType.BODY, weight = 1f)  // 1/6 espace
+    UI.Text("B", TextType.BODY, weight = 2f)  // 2/6 espace
+    UI.Text("C", TextType.BODY, weight = 3f)  // 3/6 espace
+}
+
+// Combinaison weight + fillMaxWidth + textAlign
+Row {
+    UI.Text("Start", TextType.BODY)
+    UI.Text(
+        text = "Centré et flexible",
+        type = TextType.BODY,
+        weight = 2f,
+        fillMaxWidth = true,
+        textAlign = TextAlign.Center
+    )
+    UI.Text("End", TextType.BODY)
 }
 ```
 
@@ -155,11 +179,11 @@ Box(modifier = Modifier.weight(1f)) {
 ```
 
 ### 💡 **Règles d'usage**
-- **weight** = géré par Box parente avec `Modifier.weight()`
-- **fillMaxWidth** = principalement pour centrage dans Box ou background étendu
-- **textAlign** = toujours avec fillMaxWidth, sinon pas d'effet visible  
+- **weight** = ✨ paramètre naturel dans Row/Column ! Plus besoin de Box
+- **fillMaxWidth** = pour centrage ou background étendu
+- **textAlign** = avec fillMaxWidth pour alignement  
 - **80% des cas** = paramètres par défaut suffisants
-- **Pattern recommandé** = `Box(Modifier.weight()) { UI.Text(...) }` pour flexibilité
+- **Pattern recommandé** = `UI.Text(weight = 1f)` directement dans Row/Column
 
 ---
 

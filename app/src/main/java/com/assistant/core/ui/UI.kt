@@ -76,6 +76,41 @@ object UI {
         textAlign: TextAlign? = null
     ) = CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
     
+    // Extensions pour weight dans Row/Column scopes
+    @Composable  
+    fun RowScope.Text(
+        text: String,
+        type: TextType,
+        weight: Float? = null,
+        fillMaxWidth: Boolean = false,
+        textAlign: TextAlign? = null
+    ) {
+        if (weight != null) {
+            Box(modifier = Modifier.weight(weight)) {
+                Text(text, type, fillMaxWidth, textAlign)
+            }
+        } else {
+            Text(text, type, fillMaxWidth, textAlign)
+        }
+    }
+    
+    @Composable
+    fun ColumnScope.Text(
+        text: String,
+        type: TextType,
+        weight: Float? = null,
+        fillMaxWidth: Boolean = false,
+        textAlign: TextAlign? = null
+    ) {
+        if (weight != null) {
+            Box(modifier = Modifier.weight(weight)) {
+                Text(text, type, fillMaxWidth, textAlign)
+            }
+        } else {
+            Text(text, type, fillMaxWidth, textAlign)
+        }
+    }
+    
     @Composable
     fun Card(
         type: CardType,
