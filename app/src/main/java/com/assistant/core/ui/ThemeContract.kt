@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 
 /**
@@ -65,7 +66,9 @@ interface ThemeContract {
     @Composable
     fun Text(
         text: String,
-        type: TextType
+        type: TextType,
+        fillMaxWidth: Boolean,
+        textAlign: TextAlign?
     )
     
     @Composable

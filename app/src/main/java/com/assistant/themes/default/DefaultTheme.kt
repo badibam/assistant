@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.ThemeContract
@@ -375,7 +376,9 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun Text(
         text: String,
-        type: TextType
+        type: TextType,
+        fillMaxWidth: Boolean,
+        textAlign: TextAlign?
     ) {
         val style = when (type) {
             TextType.TITLE -> MaterialTheme.typography.headlineMedium
@@ -393,10 +396,15 @@ object DefaultTheme : ThemeContract {
             else -> MaterialTheme.colorScheme.onSurface
         }
         
+        // Construction du modifier
+        val textModifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier
+        
         androidx.compose.material3.Text(
             text = text,
             style = style,
-            color = color
+            color = color,
+            modifier = textModifier,
+            textAlign = textAlign
         )
     }
     
@@ -646,7 +654,7 @@ object DefaultTheme : ThemeContract {
         val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             if (readonly) {
                 // Display as text when readonly - clickable if onClick provided
@@ -659,7 +667,9 @@ object DefaultTheme : ThemeContract {
                 Box(modifier = textModifier) {
                     Text(
                         text = if (value.isNotBlank()) value else "(vide)",
-                        type = TextType.BODY
+                        type = TextType.BODY,
+                        fillMaxWidth = false,
+                        textAlign = null
                     )
                 }
             } else {
@@ -687,7 +697,7 @@ object DefaultTheme : ThemeContract {
         val displayLabel = if (required) label else "$label (optionnel)"
         
         Column {
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             ExposedDropdownMenuBox(
                 expanded = expanded,
@@ -749,7 +759,7 @@ object DefaultTheme : ThemeContract {
             )
             
             if (label != null) {
-                Text(label, TextType.BODY)
+                Text(label, TextType.BODY, false, null)
             }
         }
     }
@@ -769,7 +779,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Toggle avec labels
             Row(
@@ -810,7 +820,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Valeur actuelle
             Row(
@@ -868,7 +878,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // Boutons d'incrément  
             if (incrementButtons.isNotEmpty()) {
@@ -947,7 +957,7 @@ object DefaultTheme : ThemeContract {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Label du champ
-            Text(displayLabel, TextType.LABEL)
+            Text(displayLabel, TextType.LABEL, false, null)
             
             // État actuel du timer
             Card(

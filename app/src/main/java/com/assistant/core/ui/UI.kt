@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.assistant.core.database.entities.Zone
@@ -70,8 +71,10 @@ object UI {
     @Composable
     fun Text(
         text: String,
-        type: TextType
-    ) = CurrentTheme.current.Text(text, type)
+        type: TextType,
+        fillMaxWidth: Boolean = false,
+        textAlign: TextAlign? = null
+    ) = CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
     
     @Composable
     fun Card(
