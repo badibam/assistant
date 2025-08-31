@@ -112,10 +112,48 @@ fun TrackingInputManager(
     
     // Handler for adding items to predefined shortcuts
     val addToPredefined: (String, Map<String, Any>) -> Unit = { itemName, properties ->
-        // TODO: Implement adding items to config.items
-        // This would modify the tool instance configuration
-        android.util.Log.d("TrackingInputManager", "Would add to predefined: $itemName with $properties")
-        onConfigChanged()
+        scope.launch {
+            try {
+                android.util.Log.d("TRACKING_DEBUG", "Adding to predefined: $itemName with $properties")
+                
+                // Get current items array from config
+                val currentItems = config.optJSONArray("items") ?: JSONArray()
+                
+                // Create new item JSON object
+                val newItem = JSONObject().apply {
+                    put("name", itemName)
+                    // Add all properties to the item
+                    properties.forEach { (key, value) ->
+                        put(key, value)
+                    }
+                }
+                
+                // Add new item to array
+                currentItems.put(newItem)
+                
+                // Update tool instance configuration
+                val params = JSONObject().apply {
+                    put("tool_type", "tracking")
+                    put("operation", "update_config")
+                    put("tool_instance_id", toolInstanceId)
+                    put("config", config.apply {
+                        put("items", currentItems)
+                    }.toString())
+                }
+                
+                android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: ${params.toString()}")
+                
+                val result = coordinator.processUserAction("update->tool_config", params)
+                if (result.status == CommandStatus.SUCCESS) {
+                    android.util.Log.d("TRACKING_DEBUG", "Successfully added item to predefined shortcuts")
+                    onConfigChanged()
+                } else {
+                    android.util.Log.e("TRACKING_DEBUG", "Failed to add item to predefined: ${result.error}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TRACKING_DEBUG", "Error adding to predefined: ${e.message}", e)
+            }
+        }
     }
     
     Column(

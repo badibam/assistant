@@ -2,4 +2,4 @@
 - Texte UI
 - Peaufinage graphique : quesiton des weight notamment
 - Internationalisation
--
+- Couleur par défaut

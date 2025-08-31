@@ -83,7 +83,68 @@ UI.Card(type, content)
 UI.Button(type, onClick)
 ```
 
-## 3. FEEDBACK UTILISATEUR
+## 3. UI.TEXT - PARAMÈTRES ET USAGE
+
+### Signature UI.Text
+```kotlin
+@Composable
+fun Text(
+    text: String,
+    type: TextType,
+    weight: Float? = null,           // Pour weight dans Row/Column
+    fillMaxWidth: Boolean = false,   // Pour centrage/background/clickable
+    textAlign: TextAlign? = null,    // Souvent avec fillMaxWidth
+    clickable: Boolean = false,      // Zone cliquable
+    onClick: (() -> Unit)? = null    // Action si clickable
+)
+```
+
+### ✅ **Cas d'usage fillMaxWidth = true**
+```kotlin
+// Centrage de texte
+UI.Text("Titre", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+
+// Background sur toute la largeur  
+UI.Text("Notification", TextType.BODY, fillMaxWidth = true, background = Color.Red)
+
+// Zone cliquable étendue (menu items)
+UI.Text("Menu item", TextType.LABEL, fillMaxWidth = true, clickable = true) { navigate() }
+```
+
+### ✅ **Cas d'usage weight**
+```kotlin
+Row {
+    UI.Text("Label", TextType.BODY)                    // Taille naturelle
+    UI.Text("Value flexible", TextType.BODY, weight = 1f)  // Prend l'espace restant
+}
+
+Row {
+    UI.Text("A", TextType.BODY, weight = 1f)  // 1/3 de l'espace restant
+    UI.Text("B", TextType.BODY, weight = 2f)  // 2/3 de l'espace restant  
+    UI.Text("Fixe", TextType.BODY)            // Taille naturelle
+}
+```
+
+### ❌ **Cas où NE PAS utiliser fillMaxWidth**
+```kotlin
+// Text normal dans Column/Row
+UI.Text("Simple text", TextType.BODY)  // Largeur naturelle suffisante
+
+// Dans Row avec weight (déjà flexible)
+Row {
+    UI.Text("Value", TextType.BODY, weight = 1f)  // fillMaxWidth inutile
+}
+```
+
+### 💡 **Règles d'usage**
+- **weight** = répartit l'espace restant proportionnellement dans Row/Column
+- **fillMaxWidth** = principalement pour centrage, background ou zone cliquable étendue  
+- **textAlign** = toujours avec fillMaxWidth, sinon pas d'effet visible
+- **80% des cas** = paramètres par défaut suffisants
+
+---
+
+## 4. FEEDBACK UTILISATEUR
 
 ### Messages temporaires intégrés
 ```kotlin
