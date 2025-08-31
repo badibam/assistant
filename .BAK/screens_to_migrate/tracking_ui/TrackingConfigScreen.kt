@@ -66,7 +66,6 @@ fun TrackingConfigScreen(
     var trackingType by remember { mutableStateOf("") }
     var showValue by remember { mutableStateOf(false) }
     var itemMode by remember { mutableStateOf("") }
-    var autoSwitch by remember { mutableStateOf(false) }
     
     // Items management state
     var items: MutableList<TrackingItem> by remember { 
@@ -115,7 +114,6 @@ fun TrackingConfigScreen(
             trackingType = config.optString("type", "")
             showValue = config.optBoolean("show_value", false)
             itemMode = config.optString("item_mode", "")
-            autoSwitch = config.optBoolean("auto_switch", false)
             
             // Items
             val itemsArray = config.optJSONArray("items")
@@ -159,7 +157,6 @@ fun TrackingConfigScreen(
             put("type", trackingType)
             put("show_value", showValue)
             put("item_mode", itemMode)
-            put("auto_switch", autoSwitch)
             put("items", JSONArray().apply {
                 items.forEach { item ->
                     put(JSONObject().apply {
@@ -335,7 +332,7 @@ fun TrackingConfigScreen(
                             "text" to "Texte", 
                             "scale" to "Échelle",
                             "boolean" to "Oui/Non",
-                            "duration" to "Durée",
+                            "timer" to "Timer",
                             "choice" to "Choix",
                             "counter" to "Compteur"
                         ).forEach { (value, label) ->
@@ -443,43 +440,6 @@ fun TrackingConfigScreen(
                                     semantic = "show-value-$value",
                                     onClick = { showValue = value },
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                                ) {
-                                    UI.Text(
-                                        text = label,
-                                        type = TextType.LABEL,
-                                        semantic = "button-label"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Auto-switch (only for duration)
-                if (trackingType == "duration") {
-                    UI.Card(
-                        type = CardType.SYSTEM,
-                        semantic = "auto-switch-selection",
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        UI.Column {
-                            UI.Text(
-                                text = "Basculement automatique",
-                                type = TextType.SUBTITLE,
-                                semantic = "field-label"
-                            )
-                            UI.Spacer(modifier = Modifier.height(8.dp))
-                            
-                            listOf(
-                                true to "Activé (stoppe l'activité précédente)",
-                                false to "Désactivé (tracking parallèle possible)"
-                            ).forEach { (value, label) ->
-                                UI.Button(
-                                    type = if (autoSwitch == value) ButtonType.PRIMARY else ButtonType.GHOST,
-                                    semantic = "auto-switch-$value",
-                                    onClick = { autoSwitch = value },
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                    enabled = true
                                 ) {
                                     UI.Text(
                                         text = label,

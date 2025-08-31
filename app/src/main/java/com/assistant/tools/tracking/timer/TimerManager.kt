@@ -26,7 +26,7 @@ class TimerManager private constructor() {
     private var updateJob: Job? = null
     
     /**
-     * Démarre un timer pour une activité avec auto-switch
+     * Démarre un timer pour une activité
      */
     fun startTimer(activityName: String, toolInstanceId: String, onPreviousTimerResult: ((minutes: Int, activityName: String) -> Unit)? = null) {
         // Arrêter le timer précédent s'il existe

@@ -47,10 +47,11 @@ class MainActivity : ComponentActivity() {
         //testMultiStepOperations()
         
         setContent {
-            MaterialTheme {
+            MaterialTheme(
+                colorScheme = com.assistant.core.ui.CurrentTheme.current.colorScheme
+            ) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     MainScreen()
                 }

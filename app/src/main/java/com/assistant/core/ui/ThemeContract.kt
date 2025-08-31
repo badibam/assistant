@@ -7,6 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.material3.ColorScheme
 
 /**
  * ThemeContract - Interface que tous les thèmes doivent implémenter
@@ -153,6 +154,17 @@ interface ThemeContract {
         content: @Composable () -> Unit
     )
     
+    @Composable
+    fun PageHeader(
+        title: String,
+        subtitle: String?,
+        icon: String?,
+        leftButton: ButtonAction?,
+        rightButton: ButtonAction?,
+        onLeftClick: (() -> Unit)?,
+        onRightClick: (() -> Unit)?
+    )
+    
     // =====================================
     // FORMULAIRES
     // =====================================
@@ -243,6 +255,16 @@ interface ThemeContract {
         minItems: Int,
         maxItems: Int
     )
+    
+    // =====================================
+    // COLORSCHEME MATERIAL3
+    // =====================================
+    
+    /**
+     * ColorScheme Material3 pour ce thème
+     * Utilisé par MainActivity pour configurer MaterialTheme globalement
+     */
+    val colorScheme: ColorScheme
     
     // Anciens boutons supprimés - utiliser ActionButton
 }

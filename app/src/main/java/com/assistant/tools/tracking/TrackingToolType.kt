@@ -36,19 +36,7 @@ object TrackingToolType : ToolTypeContract {
             "display_mode": "",
             "icon_name": "activity",
             "type": "numeric",
-            "auto_switch": "",
-            "items": [
-                {
-                    "name": "Eau",
-                    "unit": "ml",
-                    "default_value": "250"
-                },
-                {
-                    "name": "Marche",
-                    "unit": "min",
-                    "default_value": "30"
-                }
-            ]
+            "items": []
         }
         """.trimIndent()
     }
@@ -58,22 +46,201 @@ object TrackingToolType : ToolTypeContract {
         // Examples: "x-ai-context", "x-ui-hint", "x-purpose", "x-validation-rules"
         return """
         {
-            "name": {
-                "type": "string",
-                "required": true,
-                "description": "Display name for this tracking instance"
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Display name for this tracking instance"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional description for this tracking instance"
+                },
+                "management": {
+                    "type": "string",
+                    "enum": ["manual", "ai"],
+                    "description": "Management type: manual input or AI-assisted"
+                },
+                "config_validation": {
+                    "type": "string",
+                    "description": "Configuration validation settings"
+                },
+                "data_validation": {
+                    "type": "string",
+                    "description": "Data validation settings"
+                },
+                "display_mode": {
+                    "type": "string",
+                    "description": "Display mode for this tracking instance"
+                },
+                "icon_name": {
+                    "type": "string",
+                    "default": "activity",
+                    "description": "Icon name for this tracking instance"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
+                    "description": "Data type for all items in this tracking instance"
+                }
             },
-            "type": {
-                "type": "enum",
-                "values": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
-                "required": true,
-                "description": "Data type for all items in this tracking instance"
-            },
-            "auto_switch": {
-                "type": "boolean",
-                "default": true,
-                "description": "For duration type: automatically stop previous activity when starting a new one"
-            }
+            "required": ["name", "management", "type"],
+            "allOf": [
+                {
+                    "if": {
+                        "properties": { "type": { "const": "numeric" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined numeric items with quantity and unit",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" },
+                                        "default_quantity": { "type": "string" },
+                                        "unit": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "timer" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined timer activities",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "choice" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Available choice options",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        },
+                        "required": ["items"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "scale" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined scale items with min/max values",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" },
+                                        "min": { "type": "integer", "default": 1 },
+                                        "max": { "type": "integer", "default": 10 },
+                                        "min_label": { "type": "string" },
+                                        "max_label": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "counter" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined counter items",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            },
+                            "allow_decrement": {
+                                "type": "boolean",
+                                "default": true,
+                                "description": "Allow negative increments"
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "boolean" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined boolean items with custom labels",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" },
+                                        "true_label": { "type": "string", "default": "Oui" },
+                                        "false_label": { "type": "string", "default": "Non" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "text" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "items": {
+                                "type": "array",
+                                "description": "Predefined text items",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": { "type": "string" }
+                                    },
+                                    "required": ["name"]
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
         }
         """.trimIndent()
     }

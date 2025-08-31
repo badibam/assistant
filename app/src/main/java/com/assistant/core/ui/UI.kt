@@ -278,6 +278,17 @@ object UI {
     }
     
     @Composable
+    fun PageHeader(
+        title: String,
+        subtitle: String? = null,
+        icon: String? = null,
+        leftButton: ButtonAction? = null,
+        rightButton: ButtonAction? = null,
+        onLeftClick: (() -> Unit)? = null,
+        onRightClick: (() -> Unit)? = null
+    ) = CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
+    
+    @Composable
     fun ToolCardHeader(
         tool: ToolInstance,
         context: android.content.Context

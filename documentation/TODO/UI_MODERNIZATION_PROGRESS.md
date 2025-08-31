@@ -4,26 +4,6 @@
 
 **Objectif :** Révision complète et peaufinage de l'UI de l'Assistant Android avec unification des patterns et modernisation des composants.
 
-## 🎯 Problèmes identifiés
-
-### 1. **Inconsistance des patterns d'alignement**
-- Certains écrans utilisent `horizontalAlignment = Alignment.CenterHorizontally` (centre tout)
-- D'autres utilisent des patterns mixtes
-- **Solution :** Pattern unifié avec titre centré + contenu aligné naturellement
-
-### 2. **Usage obsolète de Box wrappers**
-- Pattern ancien : `Box(modifier = Modifier.weight(1f)) { UI.Text(...) }`
-- Nombreuses Box inutiles pour des alignements simples
-- **Solution :** Utiliser `UI.Text(..., weight = 1f)` directement
-
-### 3. **TextField non-optimisés pour mobile**
-- Champs sans `fillMaxWidth()` 
-- **Solution :** Standard mobile avec largeur complète
-
-### 4. **Extensions RowScope/ColumnScope non-accessibles**
-- Extensions `RowScope.Text` définies mais non-utilisables via `UI.Text`
-- **Solution :** Architecture hybride avec délégation intelligente
-
 ## 🚀 Plan d'attaque
 
 ### Phase 1: Établir les patterns de référence ✅
@@ -65,29 +45,6 @@ Row(
     horizontalArrangement = Arrangement.Center
 ) {
     UI.Button(...) { ... }
-}
-```
-
-#### ⚖️ **Layout avec weight (NOUVEAU)**
-```kotlin
-Row {
-    UI.Text("Colonne 1", TextType.BODY, weight = 0.4f, padding = 8.dp)
-    UI.Text("Colonne 2", TextType.BODY, weight = 0.6f, padding = 8.dp) 
-}
-```
-
-#### 📱 **TextField mobile standard**
-```kotlin
-UI.FormField(...) // Utilise automatiquement fillMaxWidth()
-```
-
-#### 🎨 **DisplayMode.LINE pour ToolCard**
-```kotlin
-Row(modifier = Modifier.fillMaxHeight()) {
-    Box(modifier = Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-        ToolCardHeader(...)
-    }
-    UI.Text("Outil de X", weight = 1f, fillMaxWidth = true, textAlign = TextAlign.Center)
 }
 ```
 
@@ -151,12 +108,6 @@ fun RowScope.Text(..., weight: Float? = null) {
 5. **Box + weight** : `Box(Modifier.weight(X)) { UI.Text(...) }` après simplification UI.Text
 6. **Séparateurs section** : Spacer(8dp) après titres, Spacer(16dp) entre sections
 
-### **Patterns à éviter :**
-- ❌ `horizontalAlignment = Alignment.CenterHorizontally` global
-- ❌ `Box(modifier = Modifier.weight(...)) { UI.Text(...) }`
-- ❌ TextField sans `fillMaxWidth()`
-- ❌ Espacements manuels inconsistants
-
 ## 📈 Prochaines étapes
 
 1. **Finaliser TrackingConfigScreen** - Lignes du tableau + test
@@ -164,20 +115,3 @@ fun RowScope.Text(..., weight: Float? = null) {
 3. **TrackingHistory** - Listes + navigation cohérente  
 4. **UniversalTrackingDialog** - Formulaires modaux
 5. **Tests finaux** - Vérification cohérence globale
-
-## 🚨 Notes techniques importantes
-
-### **UI.Text avec weight - Architecture fonctionnelle :**
-- ✅ Compile et fonctionne
-- ✅ Pas de crash app 
-- ✅ Délégation intelligente Row/Column scope
-- ✅ Évite récursion infinie via CurrentTheme.current.Text
-
-### **Garde-fous :**
-- Extensions appelent toujours `CurrentTheme.current.Text` (jamais `Text` ou `UI.Text`)
-- Pattern weights uniquement dans Row/Column contexts
-- Espacement cohérent via `spacedBy` + Spacers stratégiques
-
----
-
-**Status global : 75% terminé - UI.Text architecture simplifiée - TrackingConfigScreen 100% moderne - Patterns cohérents établis**

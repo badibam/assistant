@@ -1,50 +1,90 @@
-# Décisions UI - Architecture Finale
+# Patterns UI - Architecture Finale
 
-## 1. ARCHITECTURE DES COMPOSANTS
-
-### 📐 LAYOUTS : Compose natif
+## 🏗️ **Layout Principal**
 ```kotlin
-// ✅ UTILISER DIRECTEMENT
-Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) { }
-Column(verticalArrangement = Arrangement.Center) { }
-Box(modifier = Modifier.fillMaxSize()) { }
-Spacer(modifier = Modifier.height(16.dp))
+Column(
+    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp)
+) { /* contenu */ }
 ```
 
-### 🎨 COMPOSANTS VISUELS : UI.*
+## 🎨 **Titres et Headers**
 ```kotlin
-// ✅ UTILISER UI.*
-UI.Button(type = ButtonType.PRIMARY) { }
-UI.Text("Titre", TextType.TITLE)
-UI.TextField(type = TextFieldType.TEXT, value, onChange, placeholder)
-UI.Card(type = CardType.DEFAULT) { }
+// Titre principal écran (centré)
+UI.Text("Titre", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+
+// Titre section hors card (padding horizontal)
+Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+    UI.Text("Section", TextType.SUBTITLE)
+}
 ```
 
-### 🏗️ COMPOSANTS MÉTIER : UI.*
+## 📱 **Cards Pleine Largeur**
 ```kotlin
-// ✅ LOGIQUE + APPARENCE
-UI.ZoneCard(zone, onClick, onLongClick)
-UI.ToolCard(tool, displayMode, onClick, onLongClick)
+UI.Card(type = CardType.DEFAULT) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        // Contenu avec padding interne
+    }
+}
 ```
 
-## ❌ INTERDICTIONS
+## 🎯 **Headers de Page**
 ```kotlin
-// Pas de wrappers layout dans UI.*
-UI.Column { }    // → Column { }
-UI.Row { }       // → Row { }
-UI.Box { }       // → Box { }
-UI.Spacer(..)    // → Spacer(..)
+UI.PageHeader(
+    title = "Titre",
+    subtitle = "Sous-titre optionnel",
+    icon = "activity",          // Optionnel
+    leftButton = ButtonAction.BACK,
+    rightButton = ButtonAction.ADD,
+    onLeftClick = onBack,
+    onRightClick = onAdd
+)
 ```
 
-## 💡 PRINCIPE
-- **Layout = logique universelle** → Compose direct + modifiers
-- **Visuel = apparence thématique** → UI.* pour cohérence
-- **Métier = logique + apparence** → UI.* pour encapsulation
-- **⚠️ Initialisation état : JAMAIS LaunchedEffect** → Utiliser `remember(dependencies) { calcul immédiat }` sinon affichage conditionnel bugué au premier rendu
-- **⚠️ Valeurs par défaut : JAMAIS hardcodées** → Utiliser `.getDefaultConfig()`, `.orEmpty()` ou sources de vérité appropriées
-- **⚠️ FormSelection : TOUJOURS conversion bidirectionnelle** → `when(valeurInterne) → "Valeur Affichée"` + `when(valeurAffichée) → valeurInterne` avec `else` pour cohérence
-- **⚠️ FormSelection : JAMAIS de Boolean** → Utiliser String avec conversion ("show"/"hide" ↔ "Afficher"/"Masquer")
-- **⚠️ Validation élégante** → `required: Boolean` + `fieldType: FieldType` dans UI.FormField/FormSelection
+## 🔘 **Boutons et Formulaires**
+```kotlin
+// Boutons centrés
+Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    UI.ActionButton(action = ButtonAction.SAVE, onClick = save)
+}
+
+// Formulaires
+UI.FormField(label = "Nom", value = name, onChange = { name = it }, required = true)
+UI.FormActions {
+    UI.ActionButton(action = ButtonAction.SAVE, onClick = save)
+    UI.ActionButton(action = ButtonAction.CANCEL, onClick = cancel)
+}
+```
+
+## 📊 **Tableaux avec Weight**
+```kotlin
+Row(modifier = Modifier.fillMaxWidth()) {
+    // Boutons fixes
+    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+        UI.ActionButton(action = ButtonAction.UP, display = ButtonDisplay.ICON, size = Size.XS)
+    }
+    // Colonnes flexibles  
+    Box(modifier = Modifier.weight(4f).padding(8.dp)) {
+        UI.Text("Nom", TextType.BODY)
+    }
+}
+```
+
+## ⚡ **Espacement Standard**
+- **Entre sections** : `spacedBy(16.dp)`
+- **Vertical screens** : `padding(vertical = 16.dp)`
+- **Cards internes** : `padding(16.dp)`
+- **Sections hors cards** : `padding(horizontal = 16.dp)`
+
+## 🎯 **Architecture Hybride**
+- **Layouts** : Compose natif (Row, Column, Box, Spacer)
+- **Visuels** : UI.* (Button, Text, Card, FormField)
+- **Métier** : UI.* (ZoneCard, ToolCard)
+
+## ❌ **Interdictions**
+- ~~UI.Column/Row/Box~~ → Compose direct
+- ~~LaunchedEffect pour état initial~~ → `remember(deps) { calcul }`
+- ~~Valeurs hardcodées~~ → `.getDefaultConfig()`, `.orEmpty()`
 
 ## 2. COMPOSANTS SPÉCIALISÉS
 

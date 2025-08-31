@@ -81,7 +81,7 @@ fun TrackingScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (isLoading) {
@@ -101,40 +101,25 @@ fun TrackingScreen(
                 onClick = onNavigateBack
             )
         } else if (toolInstance != null) {
-            // Tool header with external buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back button (left, outside colored zone)
-                UI.ActionButton(
-                    action = ButtonAction.BACK,
-                    display = ButtonDisplay.ICON,
-                    size = Size.L,
-                    onClick = onNavigateBack
-                )
-                
-                // Tool header (center)
-                TrackingToolHeader(
-                    toolInstance = toolInstance!!,
-                    config = config,
-                    context = context,
-                    modifier = Modifier.weight(1f)
-                )
-                
-                // Configure button (right, outside colored zone)
-                UI.ActionButton(
-                    action = ButtonAction.CONFIGURE,
-                    display = ButtonDisplay.ICON,
-                    size = Size.L,
-                    onClick = onConfigureClick
-                )
-            }
+            // Tool header with UI.PageHeader
+            val toolName = config.optString("name", "Suivi")
+            val toolDescription = config.optString("description", "")
+            val iconName = config.optString("icon_name", "activity")
+            
+            UI.PageHeader(
+                title = toolName,
+                subtitle = toolDescription.takeIf { it.isNotBlank() },
+                icon = iconName,
+                leftButton = ButtonAction.BACK,
+                rightButton = ButtonAction.CONFIGURE,
+                onLeftClick = onNavigateBack,
+                onRightClick = onConfigureClick
+            )
             
             // Input interface section
             UI.Card(type = CardType.DEFAULT) {
                 Column(
+                    modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     UI.Text("Nouvelle entrée", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
@@ -159,6 +144,7 @@ fun TrackingScreen(
             // History section
             UI.Card(type = CardType.DEFAULT) {
                 Column(
+                    modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     UI.Text("Historique", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
@@ -174,51 +160,4 @@ fun TrackingScreen(
             
         }
     }
-}
-
-/**
- * Tool header with icon, name, description and configure access
- */
-@Composable
-private fun TrackingToolHeader(
-    toolInstance: Map<String, Any>,
-    config: JSONObject,
-    context: android.content.Context,
-    modifier: Modifier = Modifier
-) {
-    val toolName = config.optString("name", "Suivi")
-    val toolDescription = config.optString("description", "")
-    val iconName = config.optString("icon_name", "activity")
-    val trackingType = config.optString("type", "numeric")
-    
-    Box(modifier = modifier) {
-        UI.Card(type = CardType.DEFAULT) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon
-            val iconResourceId = try {
-                ThemeIconManager.getIconResource(context, "default", iconName)
-            } catch (e: IllegalArgumentException) {
-                ThemeIconManager.getIconResource(context, "default", "activity")
-            }
-            UI.Icon(iconResourceId, size = 48.dp)
-            
-            // Tool info
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                UI.Text(toolName, TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
-                
-                if (toolDescription.isNotBlank()) {
-                    UI.Text(toolDescription, TextType.BODY)
-                }
-                
-                UI.Text("Suivi - $trackingType", TextType.CAPTION)
-            }
-        }
-    }
-}
 }

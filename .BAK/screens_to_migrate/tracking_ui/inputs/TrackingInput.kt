@@ -186,7 +186,7 @@ fun TrackingInput(
 //                onSave = saveEntry,
 //                isLoading = isLoading
 //            )
-//            "duration" -> DurationTrackingInput(
+//            "timer" -> TimerTrackingInput(
 //                config = config,
 //                config = config,
 //                onSave = saveEntry,

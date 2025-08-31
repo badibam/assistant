@@ -151,58 +151,31 @@ fun MainScreen() {
     } else {
         // Main content using hybrid system: Compose layouts + UI.* components
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title - centré
-            UI.Text(
-                text = "Assistant",
-                type = TextType.TITLE,
-                fillMaxWidth = true,
-                textAlign = TextAlign.Center
+            // Header with configure and add zone buttons
+            UI.PageHeader(
+                title = "Assistant",
+                subtitle = null,
+                icon = null,
+                leftButton = ButtonAction.CONFIGURE,
+                rightButton = ButtonAction.ADD,
+                onLeftClick = { /* Pas d'action pour le moment */ },
+                onRightClick = { showCreateZone = true }
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
             
             // Zones section
-            UI.Text(
-                text = "Mes Zones",
-                type = TextType.SUBTITLE
-            )
             
             if (zones.isEmpty()) {
                 // Show placeholder when no zones
                 UI.Text(
                     text = "Aucune zone créée",
-                    type = TextType.BODY
+                    type = TextType.BODY,
+                    fillMaxWidth = true,
+                    textAlign = TextAlign.Center
                 )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    // Test RowScope avec Box + weight
-                    Box(
-                        modifier = Modifier.weight(0.3f)
-                    ) {
-                        UI.Text(
-                            text = "Test weight",
-                            type = TextType.CAPTION
-                        )
-                    }
-                    
-                    UI.Button(
-                        type = ButtonType.PRIMARY,
-                        onClick = { 
-                            showCreateZone = true
-                        }
-                    ) {
-                        UI.Text(
-                            text = "Créer une zone",
-                            type = TextType.LABEL
-                        )
-                    }
-                }
+
             } else {
                 // Show zones list using UI.ZoneCard
                 zones.forEach { zone ->
@@ -216,38 +189,7 @@ fun MainScreen() {
                         }
                     )
                 }
-                
-                // Add zone button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    UI.Button(
-                        type = ButtonType.PRIMARY,
-                        onClick = { 
-                            showCreateZone = true
-                        }
-                    ) {
-                        UI.Text(
-                            text = "Ajouter une zone",
-                            type = TextType.LABEL
-                        )
-                    }
-                }
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Terminal section
-            UI.Text(
-                text = "Terminal",
-                type = TextType.SUBTITLE
-            )
-            
-            UI.Text(
-                text = "Assistant prêt",
-                type = TextType.BODY
-            )
         }
     }
 }

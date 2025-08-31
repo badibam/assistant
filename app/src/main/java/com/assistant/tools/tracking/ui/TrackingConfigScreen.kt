@@ -168,7 +168,7 @@ fun TrackingConfigScreen(
     var showItemDialog by remember { mutableStateOf(false) }
     var editingItemIndex by remember { mutableStateOf<Int?>(null) }
     var editItemName by remember { mutableStateOf(String()) }
-    var editItemDefaultValue by remember { mutableStateOf(String()) }
+    var editItemDefaultQuantity by remember { mutableStateOf(String()) }
     var editItemUnit by remember { mutableStateOf(String()) }
     
     // État pour le sélecteur d'icônes
@@ -234,15 +234,18 @@ fun TrackingConfigScreen(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header - centré (pattern établi)
-        UI.Text(
-            text = if (isEditing) "Modifier Suivi" else "Créer Suivi",
-            type = TextType.TITLE,
-            fillMaxWidth = true,
-            textAlign = TextAlign.Center
+        // Header with back button
+        UI.PageHeader(
+            title = if (isEditing) "Modifier Suivi" else "Créer Suivi",
+            subtitle = null,
+            icon = null,
+            leftButton = ButtonAction.BACK,
+            rightButton = null,
+            onLeftClick = onCancel,
+            onRightClick = null
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -438,110 +441,118 @@ fun TrackingConfigScreen(
                                 // Ouvrir dialog pour nouvel item
                                 editingItemIndex = null
                                 editItemName = String()
-                                editItemDefaultValue = String()
+                                editItemDefaultQuantity = String()
                                 editItemUnit = String()
                                 showItemDialog = true
                             }
                         )
                     }
-                    
-                    // En-tête du tableau (toujours affiché)
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Colonne ordre - largeur fixe alignée
-                        Box(
-                            modifier = Modifier.width(50.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            UI.Text(
-                                text = "Ordre",
-                                type = TextType.CAPTION
-                            )
-                        }
-                        
-                        // Header avec Box + weight + padding  
-                        Box(
-                            modifier = Modifier.weight(0.4f).padding(8.dp)
-                        ) {
-                            UI.Text(
-                                text = "Nom", 
-                                type = TextType.CAPTION
-                            )
-                        }
-                        
-                        // Colonnes spécifiques au type numeric
-                        if (trackingType == "numeric") {
-                            Box(
-                                modifier = Modifier.weight(0.25f).padding(8.dp)
-                            ) {
-                                UI.Text(
-                                    text = "Qté par défaut",
-                                    type = TextType.CAPTION
-                                )
-                            }
-                            
-                            Box(
-                                modifier = Modifier.weight(0.25f).padding(8.dp)
-                            ) {
-                                UI.Text(
-                                    text = "Unité",
-                                    type = TextType.CAPTION
-                                )
-                            }
-                        }
-                        
-                        // Colonne actions - largeur fixe
-                        UI.Text(
-                            text = "Actions",
-                            type = TextType.CAPTION
-                        )
-                    }
-                    
+
                     // Tableau items
                     if (items.isEmpty()) {
-                        UI.Text("Aucun item défini", TextType.BODY)
-                    }
-                    
-                    // Afficher les items s'il y en a
-                    items.forEachIndexed { itemIndex, item ->
-                        ItemRowReadonly(
-                            item = item,
-                            itemIndex = itemIndex,
-                            trackingType = trackingType,
-                            onEdit = { 
-                                editingItemIndex = itemIndex
-                                editItemName = item.name
-                                editItemDefaultValue = item.properties["default_value"]?.toString() ?: String()
-                                editItemUnit = item.properties["unit"]?.toString() ?: String()
-                                showItemDialog = true
-                            },
-                            onMoveUp = {
-                                if (itemIndex > 0) {
-                                    val newItems = items.toMutableList()
-                                    val temp = newItems[itemIndex]
-                                    newItems[itemIndex] = newItems[itemIndex - 1]
-                                    newItems[itemIndex - 1] = temp
-                                    updateItems(newItems)
-                                }
-                            },
-                            onMoveDown = {
-                                if (itemIndex < items.size - 1) {
-                                    val newItems = items.toMutableList()
-                                    val temp = newItems[itemIndex]
-                                    newItems[itemIndex] = newItems[itemIndex + 1]
-                                    newItems[itemIndex + 1] = temp
-                                    updateItems(newItems)
-                                }
-                            },
-                            onDelete = {
-                                val newItems = items.toMutableList()
-                                newItems.removeAt(itemIndex)
-                                updateItems(newItems)
-                            }
+                        UI.Text(
+                            text = "Aucun item défini",
+                            type = TextType.CAPTION,
+                            fillMaxWidth = true,
+                            textAlign = TextAlign.Center
                         )
+                    } else{
+                        //Ligne d'en-tête
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Colonnes ordre
+                            Box(
+                                modifier = Modifier.weight(2f),
+                                contentAlignment = Alignment.Center
+                            ) {}
+
+                            // Colonne nom
+                            Box(
+                                modifier = Modifier.weight(4f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                UI.Text(
+                                    text = "Nom",
+                                    type = TextType.CAPTION
+                                )
+                            }
+
+                            // Colonnes spécifiques au type numeric
+                            if (trackingType == "numeric") {
+                                Box(
+                                    modifier = Modifier.weight(2f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    UI.Text(
+                                        text = "Qté",
+                                        type = TextType.CAPTION
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier.weight(2f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    UI.Text(
+                                        text = "Unité",
+                                        type = TextType.CAPTION
+                                    )
+                                }
+                            }
+
+                            // Colones modifier + supprimer
+                            Box(
+                                modifier = Modifier.weight(2f),
+                                contentAlignment = Alignment.Center
+                            ) {}
+                        }
+
+                        // Afficher les items
+                        items.forEachIndexed { itemIndex, item ->
+                            ItemRowReadonly(
+                                item = item,
+                                itemIndex = itemIndex,
+                                trackingType = trackingType,
+                                onEdit = {
+                                    editingItemIndex = itemIndex
+                                    editItemName = item.name
+                                    editItemDefaultQuantity = item.properties["default_quantity"]?.toString() ?: String()
+                                    editItemUnit = item.properties["unit"]?.toString() ?: String()
+                                    showItemDialog = true
+                                },
+                                onMoveUp = {
+                                    if (itemIndex > 0) {
+                                        val newItems = items.toMutableList()
+                                        val temp = newItems[itemIndex]
+                                        newItems[itemIndex] = newItems[itemIndex - 1]
+                                        newItems[itemIndex - 1] = temp
+                                        updateItems(newItems)
+                                    }
+                                },
+                                onMoveDown = {
+                                    if (itemIndex < items.size - 1) {
+                                        val newItems = items.toMutableList()
+                                        val temp = newItems[itemIndex]
+                                        newItems[itemIndex] = newItems[itemIndex + 1]
+                                        newItems[itemIndex + 1] = temp
+                                        updateItems(newItems)
+                                    }
+                                },
+                                onDelete = {
+                                    val newItems = items.toMutableList()
+                                    newItems.removeAt(itemIndex)
+                                    updateItems(newItems)
+                                }
+                            )
+                        }
                     }
+
+                    
+
+                    
+
                 }
             }
         }
@@ -576,10 +587,10 @@ fun TrackingConfigScreen(
                 onConfirm = {
                     if (editItemName.isNotBlank()) {
                         val properties = mutableMapOf<String, Any>()
-                        if (editItemDefaultValue.isNotBlank()) {
-                            val parsed = NumberFormatting.parseUserInput(editItemDefaultValue)
+                        if (editItemDefaultQuantity.isNotBlank()) {
+                            val parsed = NumberFormatting.parseUserInput(editItemDefaultQuantity)
                             if (parsed != null) {
-                                properties["default_value"] = parsed
+                                properties["default_quantity"] = parsed
                             }
                         }
                         if (editItemUnit.isNotBlank()) {
@@ -598,7 +609,7 @@ fun TrackingConfigScreen(
                         }
                         showItemDialog = false
                         editItemName = String()
-                        editItemDefaultValue = String()
+                        editItemDefaultQuantity = String()
                         editItemUnit = String()
                         editingItemIndex = null
                     }
@@ -606,7 +617,7 @@ fun TrackingConfigScreen(
                 onCancel = {
                     showItemDialog = false
                     editItemName = String()
-                    editItemDefaultValue = String()
+                    editItemDefaultQuantity = String()
                     editItemUnit = String()
                     editingItemIndex = null
                 }
@@ -630,8 +641,8 @@ fun TrackingConfigScreen(
                     if (trackingType == "numeric") {
                         UI.FormField(
                             label = "Quantité par défaut",
-                            value = editItemDefaultValue,
-                            onChange = { editItemDefaultValue = it },
+                            value = editItemDefaultQuantity,
+                            onChange = { editItemDefaultQuantity = it },
                             fieldType = FieldType.NUMERIC
                         )
                         
@@ -724,10 +735,10 @@ private fun ItemRowReadonly(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Up/Down buttons côte à côte
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.width(50.dp)
+        // UP button (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
         ) {
             UI.ActionButton(
                 action = ButtonAction.UP,
@@ -735,6 +746,13 @@ private fun ItemRowReadonly(
                 size = Size.XS,
                 onClick = onMoveUp
             )
+        }
+        
+        // DOWN button (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
             UI.ActionButton(
                 action = ButtonAction.DOWN,
                 display = ButtonDisplay.ICON,
@@ -743,9 +761,10 @@ private fun ItemRowReadonly(
             )
         }
         
-        // Name column avec Box + weight + padding
+        // Nom (weight=4f)
         Box(
-            modifier = Modifier.weight(0.4f).padding(8.dp)
+            modifier = Modifier.weight(4f),
+            contentAlignment = Alignment.Center
         ) {
             UI.Text(
                 text = item.name,
@@ -753,46 +772,58 @@ private fun ItemRowReadonly(
             )
         }
         
-        // Value columns for numeric type
+        // Champs spécifiques (uniquement pour numeric actuellement)
+
         if (trackingType == "numeric") {
-            val defaultValue = item.properties["default_value"]
             Box(
-                modifier = Modifier.weight(0.25f).padding(8.dp)
+                modifier = Modifier.weight(2f),
+                contentAlignment = Alignment.Center
             ) {
+                val defaultQuantity = item.properties["default_quantity"]
                 UI.Text(
-                    text = defaultValue?.toString() ?: "-",
+                    text = defaultQuantity?.toString() ?: "-",
                     type = TextType.BODY
                 )
             }
-            
-            val unit = item.properties["unit"]?.toString()
+
             Box(
-                modifier = Modifier.weight(0.25f).padding(8.dp)
+                modifier = Modifier.weight(2f),
+                contentAlignment = Alignment.Center
             ) {
+                val unit = item.properties["unit"]?.toString()
                 UI.Text(
                     text = unit ?: "-",
                     type = TextType.BODY
                 )
             }
         }
+
+        // EDIT button (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.ActionButton(
+                action = ButtonAction.EDIT,
+                display = ButtonDisplay.ICON,
+                size = Size.XS,
+                onClick = onEdit
+            )
+        }
         
-        // Action buttons
-        UI.ActionButton(
-            action = ButtonAction.EDIT,
-            display = ButtonDisplay.ICON,
-            size = Size.XS,
-            onClick = onEdit
-        )
-        
-        Spacer(modifier = Modifier.width(4.dp))
-        
-        UI.ActionButton(
-            action = ButtonAction.DELETE,
-            display = ButtonDisplay.ICON,
-            size = Size.XS,
-            requireConfirmation = true,
-            onClick = onDelete
-        )
+        // DELETE button (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.ActionButton(
+                action = ButtonAction.DELETE,
+                display = ButtonDisplay.ICON,
+                size = Size.XS,
+                requireConfirmation = true,
+                onClick = onDelete
+            )
+        }
     }
 }
 
@@ -802,12 +833,12 @@ private fun ItemRowReadonly(
 private fun buildItemPropertiesText(properties: Map<String, Any>, trackingType: String): String {
     return when (trackingType) {
         "numeric" -> {
-            val defaultValue = properties["default_value"]
+            val defaultQuantity = properties["default_quantity"]
             val unit = properties["unit"]?.toString()?.takeIf { it.isNotBlank() }
             
             when {
-                defaultValue != null && unit != null -> "$defaultValue $unit"
-                defaultValue != null -> defaultValue.toString()
+                defaultQuantity != null && unit != null -> "$defaultQuantity $unit"
+                defaultQuantity != null -> defaultQuantity.toString()
                 unit != null -> unit
                 else -> ""
             }
@@ -842,47 +873,55 @@ private fun TypeSpecificParameters(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    UI.FormField(
-                        label = "Valeur minimale",
-                        value = minValue,
-                        onChange = { value ->
-                            minValue = value
-                            val intValue = value.toIntOrNull() ?: 1
-                            updateConfig("min", intValue)
-                        },
-                        fieldType = FieldType.NUMERIC,
-                        required = true
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Valeur minimale",
+                            value = minValue,
+                            onChange = { value ->
+                                minValue = value
+                                val intValue = value.toIntOrNull() ?: 1
+                                updateConfig("min", intValue)
+                            },
+                            fieldType = FieldType.NUMERIC,
+                            required = true
+                        )
+                    }
                     
-                    UI.FormField(
-                        label = "Valeur maximale", 
-                        value = maxValue,
-                        onChange = { value ->
-                            maxValue = value
-                            val intValue = value.toIntOrNull() ?: 10
-                            updateConfig("max", intValue)
-                        },
-                        fieldType = FieldType.NUMERIC,
-                        required = true
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Valeur maximale", 
+                            value = maxValue,
+                            onChange = { value ->
+                                maxValue = value
+                                val intValue = value.toIntOrNull() ?: 10
+                                updateConfig("max", intValue)
+                            },
+                            fieldType = FieldType.NUMERIC,
+                            required = true
+                        )
+                    }
                 }
                 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    UI.FormField(
-                        label = "Label minimum",
-                        value = minLabel,
-                        onChange = { updateConfig("min_label", it) },
-                        fieldType = FieldType.TEXT
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Label minimum",
+                            value = minLabel,
+                            onChange = { updateConfig("min_label", it) },
+                            fieldType = FieldType.TEXT
+                        )
+                    }
                     
-                    UI.FormField(
-                        label = "Label maximum",
-                        value = maxLabel,
-                        onChange = { updateConfig("max_label", it) },
-                        fieldType = FieldType.TEXT
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Label maximum",
+                            value = maxLabel,
+                            onChange = { updateConfig("max_label", it) },
+                            fieldType = FieldType.TEXT
+                        )
+                    }
                 }
             }
         }
@@ -894,19 +933,23 @@ private fun TypeSpecificParameters(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                UI.FormField(
-                    label = "Label \"Vrai\"",
-                    value = trueLabel,
-                    onChange = { updateConfig("true_label", it) },
-                    fieldType = FieldType.TEXT
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    UI.FormField(
+                        label = "Label \"Vrai\"",
+                        value = trueLabel,
+                        onChange = { updateConfig("true_label", it) },
+                        fieldType = FieldType.TEXT
+                    )
+                }
                 
-                UI.FormField(
-                    label = "Label \"Faux\"",
-                    value = falseLabel,
-                    onChange = { updateConfig("false_label", it) },
-                    fieldType = FieldType.TEXT
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    UI.FormField(
+                        label = "Label \"Faux\"",
+                        value = falseLabel,
+                        onChange = { updateConfig("false_label", it) },
+                        fieldType = FieldType.TEXT
+                    )
+                }
             }
         }
         
@@ -936,16 +979,6 @@ private fun TypeSpecificParameters(
         
         "counter" -> {
             val allowDecrement = config.optBoolean("allow_decrement", true)
-            val unit = config.optString("unit", "")
-            
-            UI.FormField(
-                label = "Unité",
-                value = unit,
-                onChange = { updateConfig("unit", it) },
-                required = false
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
             
             UI.FormSelection(
                 label = "Autoriser décrémentation",

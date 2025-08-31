@@ -194,46 +194,19 @@ fun ZoneScreen(
     }
     
     Column(
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Header with back button, zone title and add tool button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            UI.ActionButton(
-                action = ButtonAction.BACK,
-                display = ButtonDisplay.ICON,
-                onClick = onBack
-            )
-            
-            // Zone title + description - centrés
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                UI.Text(
-                    text = zone.name,
-                    type = TextType.TITLE
-                )
-                
-                zone.description?.takeIf { it.isNotBlank() }?.let { description ->
-                    UI.Text(
-                        text = description,
-                        type = TextType.BODY
-                    )
-                }
-            }
-            
-            // Add tool button
-            UI.ActionButton(
-                action = ButtonAction.ADD,
-                display = ButtonDisplay.ICON,
-                onClick = { showAvailableTools = !showAvailableTools }
-            )
-        }
+        UI.PageHeader(
+            title = zone.name,
+            subtitle = zone.description?.takeIf { it.isNotBlank() },
+            icon = null,
+            leftButton = ButtonAction.BACK,
+            rightButton = ButtonAction.ADD,
+            onLeftClick = onBack,
+            onRightClick = { showAvailableTools = !showAvailableTools }
+        )
         
         // Available tools list (shown conditionally)
         if (showAvailableTools) {
@@ -246,7 +219,10 @@ fun ZoneScreen(
                 ) {
                     UI.Text(
                         text = "Types d'outils disponibles",
-                        type = TextType.SUBTITLE
+                        type = TextType.BODY,
+                        fillMaxWidth = true,
+                        textAlign = TextAlign.Center
+
                     )
                     
                     // List all available tool types - centrés
@@ -282,7 +258,9 @@ fun ZoneScreen(
             // No tools placeholder
             UI.Text(
                 text = "Aucun outil dans cette zone",
-                type = TextType.BODY
+                type = TextType.BODY,
+                fillMaxWidth = true,
+                textAlign = TextAlign.Center
             )
         } else {
             // Show tools using UI.ToolCard

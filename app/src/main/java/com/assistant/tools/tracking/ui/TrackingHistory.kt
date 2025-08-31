@@ -242,15 +242,37 @@ fun TrackingHistory(
         // Table header
         if (trackingData.isNotEmpty()) {
             Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                UI.Text("Date", TextType.CAPTION)
-                UI.Text("Item", TextType.CAPTION) 
-                UI.Text("Valeur", TextType.CAPTION)
-                UI.Text("Actions", TextType.CAPTION)
+                // Date header (weight=3f)
+                Box(
+                    modifier = Modifier.weight(3f).padding(8.dp)
+                ) {
+                    UI.Text("Date", TextType.CAPTION)
+                }
+                
+                // Nom header (weight=3f)
+                Box(
+                    modifier = Modifier.weight(3f).padding(8.dp)
+                ) {
+                    UI.Text("Item", TextType.CAPTION)
+                }
+                
+                // Valeur header (weight=3f)
+                Box(
+                    modifier = Modifier.weight(3f).padding(8.dp)
+                ) {
+                    UI.Text("Valeur", TextType.CAPTION)
+                }
+                
+                // Actions headers (weight=1f chaque)
+                Box(
+                    modifier = Modifier.weight(2f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    UI.Text("Actions", TextType.CAPTION)
+                }
             }
         }
         
@@ -326,8 +348,7 @@ fun TrackingHistory(
                         )
                     }
                     "counter" -> mapOf(
-                        "increment" to json.optInt("increment", 1),
-                        "unit" to json.optString("unit", "")
+                        "increment" to json.optInt("increment", 1)
                     )
                     "timer" -> mapOf(
                         "activity" to json.optString("activity", ""),
@@ -394,39 +415,66 @@ private fun TrackingHistoryRow(
     onDelete: () -> Unit
 ) {
     Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Date (weight=3f)
+        Box(
+            modifier = Modifier.weight(3f).padding(8.dp)
         ) {
-            // Date column  
-            UI.Text(DateUtils.formatSmartDate(entry.recorded_at), TextType.BODY)
-            
-            // Item column
-            UI.Text(entry.name, TextType.BODY)
-            
-            // Value column
-            UI.Text(formatTrackingValue(entry, trackingType), TextType.BODY)
-            
-            // Actions column
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                UI.ActionButton(
-                    action = ButtonAction.EDIT,
-                    display = ButtonDisplay.ICON,
-                    onClick = onEdit
-                )
-                
-                UI.ActionButton(
-                    action = ButtonAction.DELETE,
-                    display = ButtonDisplay.ICON,
-                    requireConfirmation = true,
-                    onClick = onDelete
-                )
-            }
+            UI.Text(
+                text = DateUtils.formatSmartDateTime(entry.recorded_at),
+                type = TextType.BODY
+            )
         }
+        
+        // Nom (weight=3f)  
+        Box(
+            modifier = Modifier.weight(3f).padding(8.dp)
+        ) {
+            UI.Text(
+                text = entry.name,
+                type = TextType.BODY
+            )
+        }
+        
+        // Valeur (weight=3f)
+        Box(
+            modifier = Modifier.weight(3f).padding(8.dp)
+        ) {
+            UI.Text(
+                text = formatTrackingValue(entry, trackingType),
+                type = TextType.BODY
+            )
+        }
+        
+        // Modifier (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.ActionButton(
+                action = ButtonAction.EDIT,
+                display = ButtonDisplay.ICON,
+                size = Size.XS,
+                onClick = onEdit
+            )
+        }
+        
+        // Supprimer (weight=1f)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.ActionButton(
+                action = ButtonAction.DELETE,
+                display = ButtonDisplay.ICON,
+                size = Size.XS,
+                requireConfirmation = true,
+                onClick = onDelete
+            )
+        }
+    }
     }
 
 

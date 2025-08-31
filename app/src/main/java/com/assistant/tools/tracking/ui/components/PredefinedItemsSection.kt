@@ -121,14 +121,14 @@ private fun NumericItemsLayout(
     onOpenDialog: (String, Map<String, Any>) -> Unit
 ) {
     items.forEach { item ->
-        val defaultValue = item.getProperty("default_value")
-        val hasDefaultValue = defaultValue.isNotBlank()
+        val defaultQuantity = item.getProperty("default_quantity")
+        val hasDefaultQuantity = defaultQuantity.isNotBlank()
         
         val displayText = buildString {
             append(item.name)
-            if (hasDefaultValue) {
+            if (hasDefaultQuantity) {
                 append(" (")
-                append(defaultValue)
+                append(defaultQuantity)
                 val unit = item.getProperty("unit")
                 if (unit.isNotBlank()) {
                     append("\u00A0${unit}")
@@ -161,12 +161,12 @@ private fun NumericItemsLayout(
                 size = Size.S,
                 enabled = !isLoading,
                 onClick = {
-                    if (hasDefaultValue) {
+                    if (hasDefaultQuantity) {
                         // Quick save with default quantity
-                        val numericQuantity = NumberFormatting.parseUserInput(defaultValue)
+                        val numericQuantity = NumberFormatting.parseUserInput(defaultQuantity)
                         if (numericQuantity != null) {
                             onQuickSave(item.name, mapOf(
-                                "quantity" to defaultValue,
+                                "quantity" to defaultQuantity,
                                 "unit" to item.getProperty("unit")
                             ))
                         }

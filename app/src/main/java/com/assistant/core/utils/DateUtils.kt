@@ -63,6 +63,13 @@ object DateUtils {
     }
     
     /**
+     * Check if timestamp is today
+     */
+    fun isToday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean {
+        return isOnSameDay(timestamp, now)
+    }
+    
+    /**
      * Check if timestamp is yesterday
      */
     fun isYesterday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean {
@@ -71,10 +78,19 @@ object DateUtils {
     }
     
     /**
-     * Check if timestamp is today
+     * Format timestamp with smart date labels
+     * Aujourd'hui: "Auj. 15h30"
+     * Hier: "Hier 18h25" 
+     * Autres: "28/08/25 18h25"
      */
-    fun isToday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean {
-        return isOnSameDay(timestamp, now)
+    fun formatSmartDateTime(timestamp: Long, now: Long = System.currentTimeMillis()): String {
+        val time = formatTimeForDisplay(timestamp)
+        
+        return when {
+            isToday(timestamp, now) -> "Auj. $time"
+            isYesterday(timestamp, now) -> "Hier $time"
+            else -> formatFullDateTime(timestamp)
+        }
     }
     
     /**

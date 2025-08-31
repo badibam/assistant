@@ -5,8 +5,12 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -19,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -50,6 +55,118 @@ import com.assistant.core.ui.FieldType
 object DefaultTheme : ThemeContract {
     
     // =====================================
+    // PALETTE DE COULEURS CENTRALISÉE
+    // =====================================
+    object Colors {
+        // THÈME CLAIR - Material Design (commenté)
+        /*
+        // Primary colors
+        val Primary = Color(0xFF1976D2)        // Bleu Material
+        val OnPrimary = Color(0xFFFFFFFF)      // Blanc
+        val Secondary = Color(0xFF03DAC6)      // Teal
+        val OnSecondary = Color(0xFF000000)    // Noir
+        
+        // Surface colors
+        val Surface = Color(0xFFFFFFFF)        // Blanc
+        val OnSurface = Color(0xFF1C1B1F)      // Gris foncé
+        val SurfaceVariant = Color(0xFFF3F0F4) // Gris très clair
+        val OnSurfaceVariant = Color(0xFF49454F) // Gris moyen foncé
+        
+        // Background colors
+        val Background = Color(0xFFFFFBFE)     // Blanc légèrement teinté
+        val OnBackground = Color(0xFF1C1B1F)   // Gris foncé
+        
+        // Feedback colors
+        val Error = Color(0xFFB3261E)          // Rouge
+        val OnError = Color(0xFFFFFFFF)        // Blanc
+        val Success = Color(0xFF4CAF50)        // Vert
+        val OnSuccess = Color(0xFFFFFFFF)      // Blanc
+        val Warning = Color(0xFFFF9800)        // Orange
+        val OnWarning = Color(0xFF000000)      // Noir
+        
+        // Outline & borders
+        val Outline = Color(0xFF79747E)        // Gris moyen
+        val OutlineVariant = Color(0xFFCAC4D0) // Gris clair
+        
+        // Container colors for feedback
+        val SuccessContainer = Color(0xFFD1F2EB) // Vert clair
+        val OnSuccessContainer = Color(0xFF00695C) // Vert foncé
+        val ErrorContainer = Color(0xFFFDEAEA)   // Rouge clair
+        val OnErrorContainer = Color(0xFFD32F2F) // Rouge foncé
+        val WarningContainer = Color(0xFFFFF3CD) // Jaune clair
+        val OnWarningContainer = Color(0xFFE65100) // Orange foncé
+        val InfoContainer = Color(0xFFF5F5F5)    // Gris très clair
+        val OnInfoContainer = Color(0xFF616161)  // Gris moyen
+        */
+        
+        // THÈME SOMBRE NERDY - Terminal/Hacker vibes
+        // Primary colors - Vert terminal classique
+        val Primary = Color(0xFF00FF41)        // Vert Matrix/terminal
+        val OnPrimary = Color(0xFF0D1117)      // Noir terminal profond
+        val Secondary = Color(0xFF58A6FF)      // Bleu code (GitHub)
+        val OnSecondary = Color(0xFF0D1117)    // Noir terminal profond
+        
+        // Surface colors - Tons sombres GitHub/VS Code
+        val Surface = Color(0xFF161B22)        // Gris sombre GitHub
+        val OnSurface = Color(0xFFF0F6FC)      // Blanc cassé terminal
+        val SurfaceVariant = Color(0xFF21262D) // Gris moyen GitHub
+        val OnSurfaceVariant = Color(0xFF8B949E) // Gris commentaire
+        
+        // Background colors - Noir terminal profond
+        val Background = Color(0xFF0D1117)     // Noir GitHub/terminal
+        val OnBackground = Color(0xFFF0F6FC)   // Blanc cassé terminal
+        
+        // Feedback colors - Couleurs terminal/code
+        val Error = Color(0xFFFF6B6B)          // Rouge terminal doux
+        val OnError = Color(0xFF0D1117)        // Noir terminal profond
+        val Success = Color(0xFF7CE38B)        // Vert terminal doux
+        val OnSuccess = Color(0xFF0D1117)      // Noir terminal profond
+        val Warning = Color(0xFFFFD93D)        // Jaune terminal
+        val OnWarning = Color(0xFF0D1117)      // Noir terminal profond
+        
+        // Outline & borders - Subtils mais visibles
+        val Outline = Color(0xFF30363D)        // Bordure GitHub subtile
+        val OutlineVariant = Color(0xFF21262D) // Bordure plus subtile
+        
+        // Container colors for feedback - Tons sombres
+        val SuccessContainer = Color(0xFF1A3A2E) // Vert très sombre
+        val OnSuccessContainer = Color(0xFF7CE38B) // Vert terminal doux
+        val ErrorContainer = Color(0xFF3D1A1A)   // Rouge très sombre
+        val OnErrorContainer = Color(0xFFFF6B6B) // Rouge terminal doux
+        val WarningContainer = Color(0xFF3D3A1A) // Jaune très sombre
+        val OnWarningContainer = Color(0xFFFFD93D) // Jaune terminal
+        val InfoContainer = Color(0xFF1A2332)    // Bleu très sombre
+        val OnInfoContainer = Color(0xFF58A6FF)  // Bleu code
+    }
+
+    // =====================================
+    // COLORSCHEME MATERIAL3 PERSONNALISÉ
+    // =====================================
+    override val colorScheme = darkColorScheme(
+        primary = Colors.Primary,
+        onPrimary = Colors.OnPrimary,
+        secondary = Colors.Secondary,
+        onSecondary = Colors.OnSecondary,
+        surface = Colors.Surface,
+        onSurface = Colors.OnSurface,
+        surfaceVariant = Colors.SurfaceVariant,
+        onSurfaceVariant = Colors.OnSurfaceVariant,
+        background = Colors.Background,
+        onBackground = Colors.OnBackground,
+        error = Colors.Error,
+        onError = Colors.OnError,
+        outline = Colors.Outline,
+        outlineVariant = Colors.OutlineVariant
+    )
+
+    // =====================================
+    // CONSTANTES DE FORME DU THÈME
+    // =====================================
+    private val ButtonTextShape = RoundedCornerShape(2.dp)
+    private val ButtonIconShape = RoundedCornerShape(2.dp)
+    private val CardShape = RectangleShape
+    
+    // =====================================
     // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
@@ -75,17 +192,17 @@ object DefaultTheme : ThemeContract {
         // Pour Size.XS, utiliser Surface + clickable pour 0 padding absolu
         if (size == Size.XS) {
             val surfaceColors = when (type) {
-                ButtonType.PRIMARY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-                ButtonType.SECONDARY -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
-                ButtonType.DEFAULT -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+                ButtonType.PRIMARY -> Colors.Primary to Colors.OnPrimary
+                ButtonType.SECONDARY -> Colors.Surface to Colors.OnSurface
+                ButtonType.DEFAULT -> Colors.Surface to Colors.OnSurface
             }
             
             Surface(
                 color = surfaceColors.first,
                 contentColor = surfaceColors.second,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+                shape = ButtonIconShape,
                 border = if (type == ButtonType.SECONDARY) {
-                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    androidx.compose.foundation.BorderStroke(1.dp, Colors.Outline)
                 } else null,
                 modifier = Modifier
                     .defaultMinSize(minWidth = 30.dp, minHeight = 30.dp) // Dimensions minimales
@@ -104,17 +221,17 @@ object DefaultTheme : ThemeContract {
         } else if (size == Size.S) {
             // Pour Size.S, utiliser Surface + clickable similaire à XS mais plus grand
             val surfaceColors = when (type) {
-                ButtonType.PRIMARY -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.onPrimary
-                ButtonType.SECONDARY -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
-                ButtonType.DEFAULT -> MaterialTheme.colorScheme.surface to MaterialTheme.colorScheme.onSurface
+                ButtonType.PRIMARY -> Colors.Primary to Colors.OnPrimary
+                ButtonType.SECONDARY -> Colors.Surface to Colors.OnSurface
+                ButtonType.DEFAULT -> Colors.Surface to Colors.OnSurface
             }
             
             Surface(
                 color = surfaceColors.first,
                 contentColor = surfaceColors.second,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+                shape = ButtonTextShape,
                 border = if (type == ButtonType.SECONDARY) {
-                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    androidx.compose.foundation.BorderStroke(1.dp, Colors.Outline)
                 } else null,
                 modifier = Modifier
                     .defaultMinSize(minWidth = 36.dp, minHeight = 36.dp) // Dimensions plus grandes que XS
@@ -133,9 +250,18 @@ object DefaultTheme : ThemeContract {
         } else {
             // Pour les autres tailles, utiliser les boutons Material normaux
             val buttonColors = when (type) {
-                ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
-                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
-                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                ButtonType.PRIMARY -> ButtonDefaults.buttonColors(
+                    containerColor = Colors.Primary,
+                    contentColor = Colors.OnPrimary
+                )
+                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors(
+                    containerColor = Colors.Surface,
+                    contentColor = Colors.OnSurface
+                )
+                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(
+                    containerColor = Colors.Surface,
+                    contentColor = Colors.OnSurface
+                )
             }
             
             val contentPadding = when (size) {
@@ -153,6 +279,7 @@ object DefaultTheme : ThemeContract {
                         onClick = onClick,
                         enabled = isEnabled,
                         colors = buttonColors as ButtonColors,
+                        shape = ButtonTextShape,
                         contentPadding = contentPadding,
                         content = { content() }
                     )
@@ -163,6 +290,7 @@ object DefaultTheme : ThemeContract {
                         enabled = isEnabled,
                         colors = buttonColors,
                         contentPadding = contentPadding,
+                        shape = ButtonTextShape,
                         content = { content() }
                     )
                 }
@@ -203,12 +331,21 @@ object DefaultTheme : ThemeContract {
             
             val isEnabled = state != ComponentState.DISABLED
             val buttonColors = when (buttonType) {
-                ButtonType.PRIMARY -> ButtonDefaults.buttonColors()
-                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors()
-                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                ButtonType.PRIMARY -> ButtonDefaults.buttonColors(
+                    containerColor = Colors.Primary,
+                    contentColor = Colors.OnPrimary
+                )
+                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors(
+                    containerColor = Colors.Surface,
+                    contentColor = Colors.OnSurface
+                )
+                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(
+                    containerColor = Colors.Surface,
+                    contentColor = Colors.OnSurface
+                )
             }
             
-            when (buttonType) {
+                when (buttonType) {
                 ButtonType.SECONDARY -> {
                     OutlinedButton(
                         onClick = {
@@ -220,6 +357,7 @@ object DefaultTheme : ThemeContract {
                         },
                         enabled = isEnabled,
                         colors = buttonColors as ButtonColors,
+                        shape = ButtonIconShape,
                         modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
                         contentPadding = PaddingValues(0.dp)
                     ) {
@@ -240,6 +378,7 @@ object DefaultTheme : ThemeContract {
                         },
                         enabled = isEnabled,
                         colors = buttonColors,
+                        shape = ButtonIconShape,
                         modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
                         contentPadding = PaddingValues(0.dp)
                     ) {
@@ -392,9 +531,9 @@ object DefaultTheme : ThemeContract {
         }
         
         val color = when (type) {
-            TextType.ERROR -> MaterialTheme.colorScheme.error
-            TextType.WARNING -> MaterialTheme.colorScheme.primary // Pas de warning dans M3, utilise primary
-            else -> MaterialTheme.colorScheme.onSurface
+            TextType.ERROR -> Colors.Error
+            TextType.WARNING -> Colors.Primary // Pas de warning dans M3, utilise primary
+            else -> Colors.OnSurface
         }
         
         // Construction du modifier
@@ -423,6 +562,11 @@ object DefaultTheme : ThemeContract {
         
         androidx.compose.material3.Card(
             elevation = elevation,
+            shape = CardShape,
+            colors = CardDefaults.cardColors(
+                containerColor = Colors.Surface,
+                contentColor = Colors.OnSurface
+            ),
             content = { content() }
         )
     }
@@ -442,21 +586,22 @@ object DefaultTheme : ThemeContract {
         androidx.compose.material3.Card(
             colors = CardDefaults.cardColors(
                 containerColor = when (type) {
-                    FeedbackType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer
-                    FeedbackType.ERROR -> MaterialTheme.colorScheme.errorContainer
-                    FeedbackType.WARNING -> MaterialTheme.colorScheme.secondaryContainer
-                    FeedbackType.INFO -> MaterialTheme.colorScheme.surfaceVariant
+                    FeedbackType.SUCCESS -> Colors.SuccessContainer
+                    FeedbackType.ERROR -> Colors.ErrorContainer
+                    FeedbackType.WARNING -> Colors.WarningContainer
+                    FeedbackType.INFO -> Colors.InfoContainer
                 }
-            )
+            ),
+            shape = CardShape
         ) {
             androidx.compose.material3.Text(
                 text = message,
                 modifier = Modifier.padding(16.dp),
                 color = when (type) {
-                    FeedbackType.SUCCESS -> MaterialTheme.colorScheme.onPrimaryContainer
-                    FeedbackType.ERROR -> MaterialTheme.colorScheme.onErrorContainer
-                    FeedbackType.WARNING -> MaterialTheme.colorScheme.onSecondaryContainer
-                    FeedbackType.INFO -> MaterialTheme.colorScheme.onSurfaceVariant
+                    FeedbackType.SUCCESS -> Colors.OnSuccessContainer
+                    FeedbackType.ERROR -> Colors.OnErrorContainer
+                    FeedbackType.WARNING -> Colors.OnWarningContainer
+                    FeedbackType.INFO -> Colors.OnInfoContainer
                 }
             )
         }
@@ -472,16 +617,19 @@ object DefaultTheme : ThemeContract {
         androidx.compose.material3.Snackbar(
             action = if (action != null && onAction != null) {
                 {
-                    TextButton(onClick = onAction) {
+                    TextButton(
+                        onClick = onAction,
+                        shape = ButtonTextShape
+                    ) {
                         androidx.compose.material3.Text(action)
                     }
                 }
             } else null,
             containerColor = when (type) {
-                FeedbackType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer
-                FeedbackType.ERROR -> MaterialTheme.colorScheme.errorContainer
-                FeedbackType.WARNING -> MaterialTheme.colorScheme.secondaryContainer
-                FeedbackType.INFO -> MaterialTheme.colorScheme.surfaceVariant
+                FeedbackType.SUCCESS -> Colors.OnSuccessContainer
+                FeedbackType.ERROR -> Colors.OnErrorContainer
+                FeedbackType.WARNING -> Colors.OnWarningContainer
+                FeedbackType.INFO -> Colors.OnInfoContainer
             }
         ) {
             androidx.compose.material3.Text(message)
@@ -516,7 +664,7 @@ object DefaultTheme : ThemeContract {
             painter = painterResource(id = resourceId),
             contentDescription = contentDescription,
             modifier = Modifier.size(size),
-            tint = Color(0xFF333333)
+            tint = Colors.OnSurface
         )
     }
     
@@ -545,10 +693,17 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.material3.Button(
                         onClick = onConfirm,
                         colors = if (type == DialogType.DANGER) {
-                            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ButtonDefaults.buttonColors(
+                                containerColor = Colors.Error,
+                                contentColor = Colors.OnError
+                            )
                         } else {
-                            ButtonDefaults.buttonColors()
-                        }
+                            ButtonDefaults.buttonColors(
+                                containerColor = Colors.Primary,
+                                contentColor = Colors.OnPrimary
+                            )
+                        },
+                        shape = ButtonTextShape
                     ) {
                         androidx.compose.material3.Text(confirmText)
                     }
@@ -558,7 +713,10 @@ object DefaultTheme : ThemeContract {
             },
             dismissButton = if (cancelText != null) {
                 {
-                    TextButton(onClick = onCancel) {
+                    TextButton(
+                        onClick = onCancel,
+                        shape = ButtonTextShape
+                    ) {
                         androidx.compose.material3.Text(cancelText)
                     }
                 }
@@ -581,9 +739,10 @@ object DefaultTheme : ThemeContract {
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
+                containerColor = Colors.Surface,
+                contentColor = Colors.OnSurface
             ),
+            shape = CardShape,
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
@@ -624,6 +783,11 @@ object DefaultTheme : ThemeContract {
         
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = CardShape,
+            colors = CardDefaults.cardColors(
+                containerColor = Colors.Surface,
+                contentColor = Colors.OnSurface
+            ),
             modifier = cardModifier.combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -738,7 +902,8 @@ object DefaultTheme : ThemeContract {
         content: @Composable RowScope.() -> Unit
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
             content = content
         )
@@ -796,9 +961,9 @@ object DefaultTheme : ThemeContract {
                     text = if (checked) trueLabel else falseLabel,
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                     color = if (checked) {
-                        androidx.compose.material3.MaterialTheme.colorScheme.primary
+                        Colors.Primary
                     } else {
-                        androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        Colors.OnSurfaceVariant
                     }
                 )
             }
@@ -831,7 +996,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = value.toString(),
                     style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                    color = Colors.Primary
                 )
             }
             
@@ -852,13 +1017,13 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.material3.Text(
                         text = minLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Colors.OnSurfaceVariant
                     )
                     
                     androidx.compose.material3.Text(
                         text = maxLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Colors.OnSurfaceVariant
                     )
                 }
             }
@@ -886,7 +1051,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = "Ajouter :",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                    color = Colors.OnSurface
                 )
                 
                 Row(
@@ -898,9 +1063,10 @@ object DefaultTheme : ThemeContract {
                             Button(
                                 onClick = { onIncrement(incrementValue) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                                    containerColor = Colors.SurfaceVariant,
+                                    contentColor = Colors.OnSurfaceVariant
                                 ),
+                                shape = ButtonTextShape,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 androidx.compose.material3.Text(displayText)
@@ -915,7 +1081,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = "Retirer :",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                    color = Colors.OnSurface
                 )
                 
                 Row(
@@ -927,9 +1093,10 @@ object DefaultTheme : ThemeContract {
                             Button(
                                 onClick = { onIncrement(-decrementValue) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onErrorContainer
+                                    containerColor = Colors.ErrorContainer,
+                                    contentColor = Colors.OnErrorContainer
                                 ),
+                                shape = ButtonTextShape,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 androidx.compose.material3.Text(displayText)
@@ -964,9 +1131,9 @@ object DefaultTheme : ThemeContract {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = if (currentActivity != null) {
-                        androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer
+                        Colors.SurfaceVariant
                     } else {
-                        androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
+                        Colors.InfoContainer
                     }
                 ),
                 modifier = Modifier.fillMaxWidth()
@@ -979,18 +1146,18 @@ object DefaultTheme : ThemeContract {
                         androidx.compose.material3.Text(
                             text = "En cours : $currentActivity",
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer
+                            color = Colors.OnSurfaceVariant
                         )
                         androidx.compose.material3.Text(
                             text = currentDuration,
                             style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                            color = Colors.Primary
                         )
                     } else {
                         androidx.compose.material3.Text(
                             text = "Arrêté",
                             style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Colors.OnSurfaceVariant
                         )
                     }
                 }
@@ -1020,16 +1187,17 @@ object DefaultTheme : ThemeContract {
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isActive) {
-                                        androidx.compose.material3.MaterialTheme.colorScheme.primary
+                                        Colors.Primary
                                     } else {
-                                        androidx.compose.material3.MaterialTheme.colorScheme.outline
+                                        Colors.Outline
                                     },
                                     contentColor = if (isActive) {
-                                        androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                                        Colors.OnPrimary
                                     } else {
-                                        androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                                        Colors.OnSurface
                                     }
                                 ),
+                                shape = ButtonTextShape,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 androidx.compose.material3.Text(activity)
@@ -1061,26 +1229,8 @@ object DefaultTheme : ThemeContract {
         ) {
             // Label with required indicator
             if (label.isNotBlank()) {
-                Row {
-                    androidx.compose.material3.Text(
-                        text = label,
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
-                    )
-                    if (required) {
-                        androidx.compose.material3.Text(
-                            text = " *",
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.error
-                        )
-                    } else {
-                        androidx.compose.material3.Text(
-                            text = " (optionnel)",
-                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                val displayLabel = if (required) label else "$label (optionnel)"
+                Text(displayLabel, TextType.LABEL, false, null)
             }
             
             // List of items with delete buttons
@@ -1162,14 +1312,16 @@ object DefaultTheme : ThemeContract {
                             onDateSelected(DateUtils.formatDateForDisplay(millis))
                         }
                         onDismiss()
-                    }
+                    },
+                    shape = ButtonTextShape
                 ) {
                     androidx.compose.material3.Text("OK")
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(
-                    onClick = onDismiss
+                    onClick = onDismiss,
+                    shape = ButtonTextShape
                 ) {
                     androidx.compose.material3.Text("Annuler")
                 }
@@ -1202,14 +1354,16 @@ object DefaultTheme : ThemeContract {
                         val formattedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
                         onTimeSelected(formattedTime)
                         onDismiss()
-                    }
+                    },
+                    shape = ButtonTextShape
                 ) {
                     androidx.compose.material3.Text("OK")
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(
-                    onClick = onDismiss
+                    onClick = onDismiss,
+                    shape = ButtonTextShape
                 ) {
                     androidx.compose.material3.Text("Annuler")
                 }
@@ -1218,6 +1372,89 @@ object DefaultTheme : ThemeContract {
                 TimePicker(state = timePickerState)
             }
         )
+    }
+    
+    @Composable
+    override fun PageHeader(
+        title: String,
+        subtitle: String?,
+        icon: String?,
+        leftButton: ButtonAction?,
+        rightButton: ButtonAction?,
+        onLeftClick: (() -> Unit)?,
+        onRightClick: (() -> Unit)?
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Zone gauche fixe (48.dp)
+            Box(
+                modifier = Modifier.width(48.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                leftButton?.let { action ->
+                    com.assistant.core.ui.UI.ActionButton(
+                        action = action,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onLeftClick ?: { }
+                    )
+                }
+            }
+            
+            // Zone centrale (titre centré, flexible)
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Ligne 1: Icône + Titre
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    icon?.let { iconName ->
+                        val context = LocalContext.current
+                        if (com.assistant.core.ui.ThemeIconManager.iconExists(context, "default", iconName)) {
+                            val iconResource = com.assistant.core.ui.ThemeIconManager.getIconResource(context, "default", iconName)
+                            Box(modifier = Modifier.size(24.dp)) {
+                                Image(
+                                    painter = painterResource(iconResource),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                    Text(title, TextType.TITLE, false, TextAlign.Center)
+                }
+                
+                // Ligne 2: Sous-titre (forcé centré)
+                subtitle?.let { 
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(it, TextType.CAPTION, false, TextAlign.Center)
+                    }
+                }
+            }
+            
+            // Zone droite fixe (48.dp)
+            Box(
+                modifier = Modifier.width(48.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                rightButton?.let { action ->
+                    com.assistant.core.ui.UI.ActionButton(
+                        action = action,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onRightClick ?: { }
+                    )
+                }
+            }
+        }
     }
     
     // Anciens boutons supprimés - utiliser UI.ActionButton à la place
