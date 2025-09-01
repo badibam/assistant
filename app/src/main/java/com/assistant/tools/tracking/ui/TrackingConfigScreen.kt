@@ -604,7 +604,9 @@ fun TrackingConfigScreen(
                             updateItems(newItems)
                         } else {
                             editingItemIndex?.let { index ->
-                                items[index] = TrackingItem(editItemName, properties)
+                                val newItems = items.toMutableList()
+                                newItems[index] = TrackingItem(editItemName, properties)
+                                updateItems(newItems)
                             }
                         }
                         showItemDialog = false

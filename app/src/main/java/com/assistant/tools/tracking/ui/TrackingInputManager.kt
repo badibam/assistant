@@ -139,18 +139,18 @@ fun TrackingInputManager(
                 currentItems.put(newItem)
                 
                 // Update tool instance configuration
+                val updatedConfigJson = config.apply {
+                    put("items", currentItems)
+                }.toString()
+                
                 val params = mapOf(
-                    "tool_type" to "tracking",
-                    "operation" to "update_config", 
                     "tool_instance_id" to toolInstanceId,
-                    "config" to config.apply {
-                        put("items", currentItems)
-                    }.toString()
+                    "config_json" to updatedConfigJson
                 )
                 
                 android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: $params")
                 
-                val result = coordinator.processUserAction("update->tool_config", params)
+                val result = coordinator.processUserAction("update->tool_instance", params)
                 if (result.status == CommandStatus.SUCCESS) {
                     android.util.Log.d("TRACKING_DEBUG", "Successfully added item to predefined shortcuts")
                     onConfigChanged()
