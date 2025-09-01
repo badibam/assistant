@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,13 +27,18 @@ fun MainScreen() {
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
-    var showCreateZone by remember { mutableStateOf(false) }
-    var selectedZone by remember { mutableStateOf<Zone?>(null) }
-    var configZone by remember { mutableStateOf<Zone?>(null) }
-    
     // Load zones via command pattern
     var zones by remember { mutableStateOf<List<Zone>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    // Navigation states - persistent across orientation changes
+    var showCreateZone by rememberSaveable { mutableStateOf(false) }
+    var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+    var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+    
+    // Derived states from IDs (recomputed after orientation change)
+    val selectedZone = zones.find { it.id == selectedZoneId }
+    val configZone = zones.find { it.id == configZoneId }
     
     // Load zones on first composition
     LaunchedEffect(Unit) {
@@ -99,14 +105,14 @@ fun MainScreen() {
         CreateZoneScreen(
             existingZone = zone,
             onCancel = {
-                configZone = null
+                configZoneId = null
             },
             onUpdate = {
-                configZone = null
+                configZoneId = null
                 reloadZones()
             },
             onDelete = {
-                configZone = null
+                configZoneId = null
                 reloadZones()
             }
         )
@@ -118,7 +124,7 @@ fun MainScreen() {
         ZoneScreen(
             zone = zone,
             onBack = {
-                selectedZone = null
+                selectedZoneId = null
             }
         )
         return // Exit MainScreen composition when showing ZoneScreen
@@ -182,10 +188,10 @@ fun MainScreen() {
                     UI.ZoneCard(
                         zone = zone,
                         onClick = {
-                            selectedZone = zone
+                            selectedZoneId = zone.id
                         },
                         onLongClick = {
-                            configZone = zone
+                            configZoneId = zone.id
                         }
                     )
                 }

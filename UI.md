@@ -214,6 +214,33 @@ Box(modifier = Modifier.padding(horizontal = 16.dp)) {
 ```
 
 ## ═══════════════════════════════════
+## Changements d'Orientation
+
+### Problem : États perdus lors de rotation écran
+
+```kotlin
+// ❌ État perdu  
+var showDialog by remember { mutableStateOf(false) }
+
+// ✅ État conservé
+var showDialog by rememberSaveable { mutableStateOf(false) }
+```
+
+### Pattern ID pour objets complexes
+
+```kotlin
+// Sauvegarder l'ID, pas l'objet
+var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+val selectedZone = zones.find { it.id == selectedZoneId }
+
+// Usage
+onClick = { selectedZoneId = zone.id }
+```
+
+**rememberSaveable pour** : navigation, sélections, formulaires
+**remember pour** : loading, données auto-rechargées
+
+## ═══════════════════════════════════
 ## Tableaux et Listes
 
 ### Pattern Weight pour Tableaux

@@ -1,6 +1,7 @@
 package com.assistant.themes.default
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -658,13 +659,23 @@ object DefaultTheme : ThemeContract {
     override fun Icon(
         resourceId: Int,
         size: Dp,
-        contentDescription: String?
+        contentDescription: String?,
+        tint: androidx.compose.ui.graphics.Color?,
+        background: androidx.compose.ui.graphics.Color?
     ) {
+        val iconModifier = if (background != null) {
+            Modifier
+                .size(size)
+                .background(background, ButtonIconShape)
+        } else {
+            Modifier.size(size)
+        }
+        
         Icon(
             painter = painterResource(id = resourceId),
             contentDescription = contentDescription,
-            modifier = Modifier.size(size),
-            tint = Colors.OnSurface
+            modifier = iconModifier,
+            tint = tint ?: Colors.OnSurface
         )
     }
     
@@ -1299,9 +1310,20 @@ object DefaultTheme : ThemeContract {
         val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
         val utcDate = selectedDateMs + java.util.TimeZone.getDefault().getOffset(selectedDateMs)
         
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = utcDate
-        )
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        
+        // Utiliser key() pour recréer le state à chaque changement d'orientation
+        val datePickerState = key(isLandscape) {
+            rememberDatePickerState(
+                initialSelectedDateMillis = utcDate,
+                initialDisplayMode = if (isLandscape) {
+                    androidx.compose.material3.DisplayMode.Input // Mode saisie plus compact
+                } else {
+                    androidx.compose.material3.DisplayMode.Picker // Mode roue normal
+                }
+            )
+        }
         
         DatePickerDialog(
             onDismissRequest = onDismiss,
@@ -1340,11 +1362,19 @@ object DefaultTheme : ThemeContract {
         onTimeSelected: (String) -> Unit,
         onDismiss: () -> Unit
     ) {
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        
         val (hour, minute) = DateUtils.parseTime(selectedTime)
-        val timePickerState = rememberTimePickerState(
-            initialHour = hour,
-            initialMinute = minute
-        )
+        
+        // Utiliser key() pour recréer le state à chaque changement d'orientation
+        val timePickerState = key(isLandscape) {
+            rememberTimePickerState(
+                initialHour = hour,
+                initialMinute = minute,
+                is24Hour = true // Format 24h plus compact
+            )
+        }
         
         AlertDialog(
             onDismissRequest = onDismiss,
@@ -1369,7 +1399,13 @@ object DefaultTheme : ThemeContract {
                 }
             },
             text = {
-                TimePicker(state = timePickerState)
+                if (isLandscape) {
+                    // Mode paysage - TimePicker avec layout plus compact
+                    TimeInput(state = timePickerState)
+                } else {
+                    // Mode portrait - TimePicker normal avec roues
+                    TimePicker(state = timePickerState)
+                }
             }
         )
     }
@@ -1417,13 +1453,12 @@ object DefaultTheme : ThemeContract {
                         val context = LocalContext.current
                         if (com.assistant.core.ui.ThemeIconManager.iconExists(context, "default", iconName)) {
                             val iconResource = com.assistant.core.ui.ThemeIconManager.getIconResource(context, "default", iconName)
-                            Box(modifier = Modifier.size(24.dp)) {
-                                Image(
-                                    painter = painterResource(iconResource),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(iconResource),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = Colors.OnSurface
+                            )
                         }
                     }
                     Text(title, TextType.TITLE, false, TextAlign.Center)

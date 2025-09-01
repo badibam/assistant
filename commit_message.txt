@@ -1,8 +1,0 @@
-Restructure documentation et simplifier versioning
-
-- Consolidation 11 fichiers → 4 fichiers organisés (README, CORE, UI, TOOLS)
-- README avec structure claire
-- Documentation technique concentrée et patterns unifiés
-- Suppression fichiers éparpillés et redondants
-- Simplification versioning 0.1.0 → 0.1
-- Ajout .TODO/ dans .gitignore

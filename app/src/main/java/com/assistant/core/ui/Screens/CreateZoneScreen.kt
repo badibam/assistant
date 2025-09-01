@@ -2,6 +2,7 @@ package com.assistant.core.ui.Screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,10 +30,10 @@ fun CreateZoneScreen(
     val coroutineScope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
     
-    // Form state - initialize with existing zone values if editing
-    var name by remember(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
-    var description by remember(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
-    var color by remember { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
+    // Form state - persistent across orientation changes
+    var name by rememberSaveable(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
+    var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
+    var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
     
     // Validation state
     // Form validation state

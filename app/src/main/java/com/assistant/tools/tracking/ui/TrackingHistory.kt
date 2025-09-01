@@ -456,7 +456,7 @@ private fun TrackingHistoryRow(
             UI.ActionButton(
                 action = ButtonAction.EDIT,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 onClick = onEdit
             )
         }
@@ -469,7 +469,7 @@ private fun TrackingHistoryRow(
             UI.ActionButton(
                 action = ButtonAction.DELETE,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 requireConfirmation = true,
                 onClick = onDelete
             )

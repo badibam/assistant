@@ -118,8 +118,10 @@ object UI {
     fun Icon(
         resourceId: Int,
         size: Dp = 24.dp,
-        contentDescription: String? = null
-    ) = CurrentTheme.current.Icon(resourceId, size, contentDescription)
+        contentDescription: String? = null,
+        tint: androidx.compose.ui.graphics.Color? = null,
+        background: androidx.compose.ui.graphics.Color? = null
+    ) = CurrentTheme.current.Icon(resourceId, size, contentDescription, tint, background)
     
     @Composable
     fun Dialog(
@@ -300,7 +302,11 @@ object UI {
             // Icône réelle
             val iconName = JSONObject(tool.config_json).optString("icon", "activity")
             val iconResourceId = ThemeIconManager.getIconResource(context, "default", iconName)
-            Icon(iconResourceId, size = 24.dp)
+            Icon(
+                resourceId = iconResourceId, 
+                size = 24.dp,
+                contentDescription = null
+            )
             
             // Nom de l'instance
             val toolInstanceName = JSONObject(tool.config_json).optString("name", "Sans nom")

@@ -38,14 +38,18 @@ private fun SafeIcon(
     context: android.content.Context,
     themeName: String,
     iconName: String,
-    size: Dp
+    size: Dp,
+    tint: androidx.compose.ui.graphics.Color? = null,
+    background: androidx.compose.ui.graphics.Color? = null
 ) {
     if (ThemeIconManager.iconExists(context, themeName, iconName)) {
         val iconResource = ThemeIconManager.getIconResource(context, themeName, iconName)
         UI.Icon(
             resourceId = iconResource,
             size = size,
-            contentDescription = null
+            contentDescription = null,
+            tint = tint,
+            background = background
         )
     } else {
         UI.Text("❓", TextType.BODY)
@@ -745,7 +749,7 @@ private fun ItemRowReadonly(
             UI.ActionButton(
                 action = ButtonAction.UP,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 onClick = onMoveUp
             )
         }
@@ -758,7 +762,7 @@ private fun ItemRowReadonly(
             UI.ActionButton(
                 action = ButtonAction.DOWN,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 onClick = onMoveDown
             )
         }
@@ -808,7 +812,7 @@ private fun ItemRowReadonly(
             UI.ActionButton(
                 action = ButtonAction.EDIT,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 onClick = onEdit
             )
         }
@@ -821,7 +825,7 @@ private fun ItemRowReadonly(
             UI.ActionButton(
                 action = ButtonAction.DELETE,
                 display = ButtonDisplay.ICON,
-                size = Size.XS,
+                size = Size.S,
                 requireConfirmation = true,
                 onClick = onDelete
             )

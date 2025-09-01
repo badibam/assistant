@@ -2,6 +2,7 @@ package com.assistant.core.ui.Screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,15 +34,19 @@ fun ZoneScreen(
     var toolInstances by remember { mutableStateOf<List<ToolInstance>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     
-    // State for showing/hiding available tools list
-    var showAvailableTools by remember { mutableStateOf(false) }
+    // State for showing/hiding available tools list - persiste orientation changes
+    var showAvailableTools by rememberSaveable { mutableStateOf(false) }
     
-    // State for tool configuration screen  
-    var showingConfigFor by remember { mutableStateOf<String?>(null) }
-    var editingTool by remember { mutableStateOf<ToolInstance?>(null) }
+    // State for tool configuration screen - persiste orientation changes  
+    var showingConfigFor by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingToolId by rememberSaveable { mutableStateOf<String?>(null) }
     
-    // State for tool usage screen
-    var selectedToolInstance by remember { mutableStateOf<ToolInstance?>(null) }
+    // State for tool usage screen - persiste orientation changes
+    var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
+    
+    // Derived states from IDs (recomputed after orientation change)
+    val editingTool = toolInstances.find { it.id == editingToolId }
+    val selectedToolInstance = toolInstances.find { it.id == selectedToolInstanceId }
     
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
@@ -119,7 +124,7 @@ fun ZoneScreen(
                         "config_json" to config,
                         "config_metadata_json" to configMetadata
                     ))
-                    editingTool = null
+                    editingToolId = null
                     showingConfigFor = null
                     reloadToolInstances()
                 } catch (e: Exception) {
@@ -148,7 +153,7 @@ fun ZoneScreen(
     
     val onCancelConfig = {
         showingConfigFor = null
-        editingTool = null
+        editingToolId = null
     }
     
     // Show configuration screen if requested
@@ -163,7 +168,7 @@ fun ZoneScreen(
                     coroutineScope.launch {
                         try {
                             coordinator.processUserAction("delete->tool_instance", mapOf("tool_instance_id" to tool.id))
-                            editingTool = null
+                            editingToolId = null
                             showingConfigFor = null
                             reloadToolInstances()
                         } catch (e: Exception) {
@@ -183,10 +188,10 @@ fun ZoneScreen(
             configJson = toolInstance.config_json,
             zoneName = zone.name,
             onNavigateBack = {
-                selectedToolInstance = null
+                selectedToolInstanceId = null
             },
             onLongClick = {
-                editingTool = toolInstance
+                editingToolId = toolInstance.id
                 showingConfigFor = toolInstance.tool_type
             }
         )
@@ -270,10 +275,10 @@ fun ZoneScreen(
                     displayMode = DisplayMode.LINE,
                     context = context,
                     onClick = {
-                        selectedToolInstance = toolInstance
+                        selectedToolInstanceId = toolInstance.id
                     },
                     onLongClick = {
-                        editingTool = toolInstance
+                        editingToolId = toolInstance.id
                         showingConfigFor = toolInstance.tool_type
                     }
                 )

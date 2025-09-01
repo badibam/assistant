@@ -110,7 +110,9 @@ interface ThemeContract {
     fun Icon(
         resourceId: Int,
         size: Dp,
-        contentDescription: String?
+        contentDescription: String?,
+        tint: androidx.compose.ui.graphics.Color?,
+        background: androidx.compose.ui.graphics.Color?
     )
     
     @Composable
