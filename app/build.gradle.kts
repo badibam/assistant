@@ -424,6 +424,9 @@ dependencies {
     // JSON
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // JSON Schema validation
+    implementation("com.networknt:json-schema-validator:1.0.87")
+    
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     

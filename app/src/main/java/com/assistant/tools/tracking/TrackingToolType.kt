@@ -226,8 +226,7 @@ object TrackingToolType : ToolTypeContract {
         {
             "properties": {
                 "value": {
-                    "type": "string",
-                    "description": "JSON-encoded tracking data specific to the tracking type",
+                    "description": "Tracking data specific to the tracking type (parsed from JSON string)",
                     "oneOf": [
                         {
                             "description": "Numeric tracking data",
@@ -255,14 +254,14 @@ object TrackingToolType : ToolTypeContract {
                             "additionalProperties": false,
                             "properties": {
                                 "type": { "const": "scale" },
-                                "value": { "type": "integer", "minimum": 1, "maximum": 100 },
+                                "rating": { "type": "integer", "minimum": 1, "maximum": 100 },
                                 "min_value": { "type": "integer", "minimum": 1 },
                                 "max_value": { "type": "integer", "maximum": 100 },
                                 "min_label": { "type": "string", "maxLength": 60 },
                                 "max_label": { "type": "string", "maxLength": 60 },
                                 "raw": { "type": "string", "maxLength": 250 }
                             },
-                            "required": ["type", "value", "min_value", "max_value"]
+                            "required": ["type", "rating", "min_value", "max_value"]
                         },
                         {
                             "description": "Boolean tracking data",
@@ -493,9 +492,9 @@ object TrackingToolType : ToolTypeContract {
                 "false_label" to json.optString("false_label", "Non")
             )
             "scale" -> mapOf(
-                "value" to json.optInt("value", 0),
-                "min" to json.optInt("min", 1),
-                "max" to json.optInt("max", 10),
+                "rating" to json.optInt("rating", 0),
+                "min_value" to json.optInt("min_value", 1),
+                "max_value" to json.optInt("max_value", 10),
                 "min_label" to json.optString("min_label", ""),
                 "max_label" to json.optString("max_label", "")
             )
@@ -557,5 +556,38 @@ object TrackingToolType : ToolTypeContract {
             }
         }
         */
+    }
+    
+    /**
+     * Converts TrackingData to JSON for schema validation
+     * This creates a JSON representation that matches the data schema
+     */
+    fun TrackingData.toValidationJson(): String {
+        return JSONObject().apply {
+            put("id", id)
+            put("tool_instance_id", tool_instance_id)
+            put("zone_name", zone_name)
+            put("tool_instance_name", tool_instance_name)
+            put("name", name)
+            put("value", value) // value is already JSON string
+            put("recorded_at", recorded_at)
+        }.toString()
+    }
+    
+    /**
+     * Converts validated JSON back to TrackingData
+     * Used after successful schema validation
+     */
+    fun String.toTrackingData(): TrackingData {
+        val json = JSONObject(this)
+        return TrackingData(
+            id = json.optString("id", ""),
+            tool_instance_id = json.getString("tool_instance_id"),
+            zone_name = json.getString("zone_name"),
+            tool_instance_name = json.getString("tool_instance_name"),
+            name = json.getString("name"),
+            value = json.getString("value"),
+            recorded_at = json.getLong("recorded_at")
+        )
     }
 }

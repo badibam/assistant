@@ -7,11 +7,13 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.validation.JsonSchemaValidator
 import com.assistant.core.database.AppDatabase
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
 import com.assistant.tools.tracking.TrackingUtils
 import com.assistant.tools.tracking.handlers.TrackingTypeFactory
+import com.assistant.tools.tracking.TrackingToolType.toValidationJson
 import org.json.JSONObject
 import kotlinx.coroutines.delay
 import java.util.concurrent.ConcurrentHashMap
@@ -178,15 +180,32 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         if (token.isCancelled) return OperationResult.cancelled()
         
-        // Validate data before insertion
+        // Validate data before insertion using JSON Schema
         val toolType = ToolTypeManager.getToolType("tracking")
         android.util.Log.d("TRACKING_DEBUG", "Starting validation for entry: ${newEntry.name}, type: ${newEntry.value}")
         if (toolType != null) {
-            val validation = toolType.validateData(newEntry, "create")
-            android.util.Log.d("TRACKING_DEBUG", "Validation result: isValid=${validation.isValid}, error=${validation.errorMessage}")
-            if (!validation.isValid) {
-                android.util.Log.e("TRACKING_DEBUG", "VALIDATION FAILED: ${validation.errorMessage}")
-                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            // Phase 1: Use new JSON Schema validation as primary validation
+            val dataJson = newEntry.toValidationJson()
+            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
+            
+            // Phase 2: Keep manual validation for comparison in debug mode
+            val manualValidation = toolType.validateData(newEntry, "create")
+            
+            // Compare results and log differences for debugging
+            if (schemaValidation.isValid != manualValidation.isValid) {
+                Log.w("VALIDATION_COMPARISON", 
+                    "Validation mismatch for ${newEntry.name}:\n" +
+                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
+                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
+            }
+            
+            android.util.Log.d("TRACKING_DEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
+            android.util.Log.d("TRACKING_DEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
+            
+            // Use schema validation as primary validation
+            if (!schemaValidation.isValid) {
+                android.util.Log.e("TRACKING_DEBUG", "SCHEMA VALIDATION FAILED: ${schemaValidation.errorMessage}")
+                return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
             }
         } else {
             android.util.Log.e("TRACKING_DEBUG", "ToolType is NULL!")
@@ -277,13 +296,28 @@ class TrackingService(private val context: Context) : ExecutableService {
             updated_at = System.currentTimeMillis()
         )
         
-        // Validate data before update
+        // Validate data before update using JSON Schema
         val toolType = ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
-            val validation = toolType.validateData(updatedEntry, "update")
-            if (!validation.isValid) {
-                Log.e("TrackingService", "Update validation failed: ${validation.errorMessage}")
-                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            // Phase 1: Use new JSON Schema validation as primary validation
+            val dataJson = updatedEntry.toValidationJson()
+            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
+            
+            // Phase 2: Keep manual validation for comparison in debug mode
+            val manualValidation = toolType.validateData(updatedEntry, "update")
+            
+            // Compare results and log differences for debugging
+            if (schemaValidation.isValid != manualValidation.isValid) {
+                Log.w("VALIDATION_COMPARISON", 
+                    "Update validation mismatch for ${updatedEntry.name}:\n" +
+                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
+                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
+            }
+            
+            // Use schema validation as primary validation
+            if (!schemaValidation.isValid) {
+                Log.e("TrackingService", "Update schema validation failed: ${schemaValidation.errorMessage}")
+                return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
             }
         }
         
@@ -312,13 +346,28 @@ class TrackingService(private val context: Context) : ExecutableService {
         val existingEntry = trackingDao.getEntryById(entryId)
             ?: return OperationResult.error("Tracking entry not found")
         
-        // Validate data before delete
+        // Validate data before delete using JSON Schema
         val toolType = ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
-            val validation = toolType.validateData(existingEntry, "delete")
-            if (!validation.isValid) {
-                Log.e("TrackingService", "Delete validation failed: ${validation.errorMessage}")
-                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            // Phase 1: Use new JSON Schema validation as primary validation
+            val dataJson = existingEntry.toValidationJson()
+            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
+            
+            // Phase 2: Keep manual validation for comparison in debug mode
+            val manualValidation = toolType.validateData(existingEntry, "delete")
+            
+            // Compare results and log differences for debugging
+            if (schemaValidation.isValid != manualValidation.isValid) {
+                Log.w("VALIDATION_COMPARISON", 
+                    "Delete validation mismatch for ${existingEntry.name}:\n" +
+                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
+                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
+            }
+            
+            // Use schema validation as primary validation
+            if (!schemaValidation.isValid) {
+                Log.e("TrackingService", "Delete schema validation failed: ${schemaValidation.errorMessage}")
+                return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
             }
         }
         

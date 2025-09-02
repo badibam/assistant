@@ -226,7 +226,8 @@ versionName = "0.1.1"
 ### Data Consistency  
 
 - Event sourcing obligatoire pour modifications
-- Schémas JSON pour validation
+- **Validation centralisée** : JsonSchemaValidator pour config/data
+- Schémas JSON pour validation automatique
 - Standalone databases pour discovery
 
 ---
