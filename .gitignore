@@ -50,3 +50,4 @@ keystore/
 *.jks
 .env
 keystore/
+.BAK/

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.*
+import com.assistant.core.utils.DateUtils
 import com.assistant.tools.tracking.ui.components.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -38,8 +39,8 @@ fun TrackingInputManager(
     var isLoading by remember { mutableStateOf(false) }
     
     // Save function with generalized Map signature for all tracking types
-    val saveEntry: (String, Map<String, Any>) -> Unit = { itemName, properties ->
-        android.util.Log.d("TRACKING_DEBUG", "saveEntry called: itemName=$itemName, properties=$properties, trackingType=$trackingType")
+    val saveEntry: (String, Map<String, Any>, String, String) -> Unit = { itemName, properties, date, time ->
+        android.util.Log.d("TRACKING_DEBUG", "saveEntry called: itemName=$itemName, properties=$properties, date=$date, time=$time, trackingType=$trackingType")
         scope.launch {
             isLoading = true
             
@@ -52,7 +53,9 @@ fun TrackingInputManager(
                     "zone_name" to zoneName,
                     "tool_instance_name" to toolInstanceName,
                     "name" to itemName,
-                    "type" to trackingType
+                    "type" to trackingType,
+                    "date" to date,
+                    "time" to time
                 )
                 
                 // Add type-specific properties
@@ -173,7 +176,8 @@ fun TrackingInputManager(
             isLoading = isLoading,
             toolInstanceId = toolInstanceId,
             onQuickSave = { name, properties ->
-                saveEntry(name, properties)
+                // Use current date/time for quick save actions
+                saveEntry(name, properties, DateUtils.getTodayFormatted(), DateUtils.getCurrentTimeFormatted())
             },
             onOpenDialog = { name, properties ->
                 dialogInitialName = name
@@ -185,11 +189,11 @@ fun TrackingInputManager(
             }
         )
         
-        // Free input button (crayon/pencil icon) - except for TIMER which has no free input
+        // Free input button (plus icon) - except for TIMER which has no free input
         if (trackingType != "timer") {
             Box(modifier = Modifier.fillMaxWidth()) {
                 UI.ActionButton(
-                    action = ButtonAction.EDIT,
+                    action = ButtonAction.ADD,
                     display = ButtonDisplay.ICON,
                     onClick = {
                         dialogInitialName = ""
@@ -215,8 +219,8 @@ fun TrackingInputManager(
         initialName = dialogInitialName,
         initialProperties = dialogInitialProperties,
         onConfirm = { name, properties, addToPredefinedFlag, date, time ->
-            // Save the entry
-            saveEntry(name, properties)
+            // Save the entry with the user-selected date and time
+            saveEntry(name, properties, date, time)
             
             // Add to predefined if requested
             if (addToPredefinedFlag && dialogItemType == ItemType.FREE) {

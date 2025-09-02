@@ -272,7 +272,8 @@ fun TrackingConfigScreen(
                 UI.FormField(
                     label = "Description",
                     value = description,
-                    onChange = { updateConfig("description", it) }
+                    onChange = { updateConfig("description", it) },
+                    fieldType = FieldType.TEXT_MEDIUM
                 )
                 
                 // Sélection d'icône
@@ -739,6 +740,7 @@ private fun ItemRowReadonly(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // UP button (weight=1f)

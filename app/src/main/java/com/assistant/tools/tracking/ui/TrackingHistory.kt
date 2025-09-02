@@ -194,17 +194,16 @@ fun TrackingHistory(
             modifier = Modifier.fillMaxWidth()
         ) {
             // Date selector as title
-            UI.FormField(
-                label = "",
-                value = selectedDate,
-                onChange = { },
-                fieldType = FieldType.TEXT,
-                required = true,
-                readonly = true,
-                onClick = { 
+
+            UI.Button(
+                type = ButtonType.DEFAULT,
+                size = Size.M,
+                onClick = {
                     showDatePicker = true
                 }
-            )
+            ) {
+                UI.Text(selectedDate, TextType.BODY)
+            }
             
             if (!isLoading) {
                 UI.ActionButton(
@@ -295,18 +294,15 @@ fun TrackingHistory(
             // Show count info
             if (trackingData.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                
-                UI.Card(type = CardType.DEFAULT) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        UI.Text(
-                            "${trackingData.size} entrée(s) pour le $selectedDate" + 
-                            if (trackingData.size == 100) " (limite atteinte)" else "",
-                            TextType.CAPTION
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Text(
+                        "${trackingData.size} entrée(s) pour le $selectedDate" +
+                                if (trackingData.size == 100) " (limite atteinte)" else "",
+                        TextType.CAPTION
+                    )
                 }
             }
         }
@@ -416,6 +412,7 @@ private fun TrackingHistoryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Date (weight=3f)

@@ -29,6 +29,12 @@ interface ToolTypeContract {
     fun getConfigSchema(): String
     
     /**
+     * JSON Schema describing the data structure for this tool type
+     * Used for AI validation and service-side validation
+     */
+    fun getDataSchema(): String
+    
+    /**
      * List of operations this tool type supports
      */
     fun getAvailableOperations(): List<String>

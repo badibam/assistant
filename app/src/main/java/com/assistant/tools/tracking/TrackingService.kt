@@ -124,7 +124,20 @@ class TrackingService(private val context: Context) : ExecutableService {
         val quantity = params.optString("quantity")
         val unit = params.optString("unit")
         val type = params.optString("type", "numeric")
-        val recordedAt = params.optLong("recorded_at", System.currentTimeMillis())
+        // Parse date and time parameters or use current timestamp as fallback
+        val recordedAt = if (params.has("date") && params.has("time")) {
+            try {
+                val date = params.optString("date")
+                val time = params.optString("time")
+                Log.d("TrackingService", "Converting date=$date time=$time to timestamp")
+                com.assistant.core.utils.DateUtils.combineDateTime(date, time)
+            } catch (e: Exception) {
+                Log.e("TrackingService", "Failed to parse date/time, using current timestamp", e)
+                System.currentTimeMillis()
+            }
+        } else {
+            params.optLong("recorded_at", System.currentTimeMillis())
+        }
         
         Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, quantity=$quantity, unit=$unit")
         

@@ -95,7 +95,7 @@ fun CreateZoneScreen(
             label = "Description",
             value = description,
             onChange = { description = it },
-            fieldType = FieldType.TEXT,
+            fieldType = FieldType.TEXT_MEDIUM,
             required = false
         )
         

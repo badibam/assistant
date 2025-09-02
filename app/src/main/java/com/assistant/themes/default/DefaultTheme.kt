@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +19,10 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,6 +46,7 @@ import com.assistant.core.ui.Duration
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.tools.BaseSchemas
 import java.util.Calendar
 import com.assistant.core.ui.FieldType
 
@@ -177,6 +183,94 @@ object DefaultTheme : ThemeContract {
     // INTERACTIVE
     // =====================================
     
+    // Configuration des boutons par taille
+    private data class ButtonConfig(
+        val minWidth: Dp,
+        val minHeight: Dp,
+        val padding: PaddingValues,
+        val shape: Shape,
+        val containerColor: Color,
+        val contentColor: Color,
+        val border: BorderStroke?
+    )
+    
+    private fun getButtonConfig(size: Size, type: ButtonType): ButtonConfig {
+        val (containerColor, contentColor, border) = when (type) {
+            ButtonType.PRIMARY -> Triple(
+                Colors.Primary, 
+                Colors.OnPrimary, 
+                null
+            )
+            ButtonType.SECONDARY -> Triple(
+                Colors.ErrorContainer, 
+                Colors.OnErrorContainer, 
+                null
+            )
+            ButtonType.DEFAULT -> Triple(
+                Colors.SurfaceVariant, 
+                Colors.OnSurfaceVariant, 
+                null
+            )
+        }
+        
+        return when (size) {
+            Size.XS -> ButtonConfig(
+                minWidth = 30.dp,
+                minHeight = 30.dp,
+                padding = PaddingValues(4.dp),
+                shape = ButtonIconShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+            Size.S -> ButtonConfig(
+                minWidth = 36.dp,
+                minHeight = 36.dp,
+                padding = PaddingValues(6.dp),
+                shape = ButtonIconShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+            Size.M -> ButtonConfig(
+                minWidth = 48.dp,
+                minHeight = 40.dp,
+                padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                shape = ButtonTextShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+            Size.L -> ButtonConfig(
+                minWidth = 64.dp,
+                minHeight = 48.dp,
+                padding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                shape = ButtonTextShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+            Size.XL -> ButtonConfig(
+                minWidth = 80.dp,
+                minHeight = 56.dp,
+                padding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+                shape = ButtonTextShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+            Size.XXL -> ButtonConfig(
+                minWidth = 96.dp,
+                minHeight = 64.dp,
+                padding = PaddingValues(horizontal = 40.dp, vertical = 20.dp),
+                shape = ButtonTextShape,
+                containerColor = containerColor,
+                contentColor = contentColor,
+                border = border
+            )
+        }
+    }
+
     @Composable
     override fun Button(
         type: ButtonType,
@@ -190,111 +284,24 @@ object DefaultTheme : ThemeContract {
             ComponentState.LOADING, ComponentState.DISABLED, ComponentState.ERROR, ComponentState.READONLY -> false
         }
         
-        // Pour Size.XS, utiliser Surface + clickable pour 0 padding absolu
-        if (size == Size.XS) {
-            val surfaceColors = when (type) {
-                ButtonType.PRIMARY -> Colors.Primary to Colors.OnPrimary
-                ButtonType.SECONDARY -> Colors.Surface to Colors.OnSurface
-                ButtonType.DEFAULT -> Colors.Surface to Colors.OnSurface
-            }
-            
-            Surface(
-                color = surfaceColors.first,
-                contentColor = surfaceColors.second,
-                shape = ButtonIconShape,
-                border = if (type == ButtonType.SECONDARY) {
-                    androidx.compose.foundation.BorderStroke(1.dp, Colors.Outline)
-                } else null,
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 30.dp, minHeight = 30.dp) // Dimensions minimales
-                    .wrapContentSize()
-                    .clickable(enabled = isEnabled) { 
-                        if (isEnabled) onClick() 
-                    }
+        val config = getButtonConfig(size, type)
+        
+        Surface(
+            color = if (isEnabled) config.containerColor else Colors.SurfaceVariant,
+            contentColor = if (isEnabled) config.contentColor else Colors.OnSurfaceVariant,
+            shape = config.shape,
+            border = if (isEnabled) config.border else null,
+            modifier = Modifier
+                .defaultMinSize(minWidth = config.minWidth, minHeight = config.minHeight)
+                .clickable(enabled = isEnabled) { 
+                    if (isEnabled) onClick() 
+                }
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.padding(config.padding)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
-                ) {
-                    content()
-                }
-            }
-        } else if (size == Size.S) {
-            // Pour Size.S, utiliser Surface + clickable similaire à XS mais plus grand
-            val surfaceColors = when (type) {
-                ButtonType.PRIMARY -> Colors.Primary to Colors.OnPrimary
-                ButtonType.SECONDARY -> Colors.Surface to Colors.OnSurface
-                ButtonType.DEFAULT -> Colors.Surface to Colors.OnSurface
-            }
-            
-            Surface(
-                color = surfaceColors.first,
-                contentColor = surfaceColors.second,
-                shape = ButtonTextShape,
-                border = if (type == ButtonType.SECONDARY) {
-                    androidx.compose.foundation.BorderStroke(1.dp, Colors.Outline)
-                } else null,
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 36.dp, minHeight = 36.dp) // Dimensions plus grandes que XS
-                    .wrapContentSize()
-                    .clickable(enabled = isEnabled) { 
-                        if (isEnabled) onClick() 
-                    }
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.defaultMinSize(minWidth = 24.dp, minHeight = 24.dp)
-                ) {
-                    content()
-                }
-            }
-        } else {
-            // Pour les autres tailles, utiliser les boutons Material normaux
-            val buttonColors = when (type) {
-                ButtonType.PRIMARY -> ButtonDefaults.buttonColors(
-                    containerColor = Colors.Primary,
-                    contentColor = Colors.OnPrimary
-                )
-                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors(
-                    containerColor = Colors.Surface,
-                    contentColor = Colors.OnSurface
-                )
-                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(
-                    containerColor = Colors.Surface,
-                    contentColor = Colors.OnSurface
-                )
-            }
-            
-            val contentPadding = when (size) {
-                Size.XS -> PaddingValues(0.dp) // Ne sera pas utilisé vu le if au-dessus
-                Size.S -> PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                Size.M -> PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                Size.L -> PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                Size.XL -> PaddingValues(horizontal = 32.dp, vertical = 16.dp)
-                Size.XXL -> PaddingValues(horizontal = 40.dp, vertical = 20.dp)
-            }
-            
-            when (type) {
-                ButtonType.SECONDARY -> {
-                    OutlinedButton(
-                        onClick = onClick,
-                        enabled = isEnabled,
-                        colors = buttonColors as ButtonColors,
-                        shape = ButtonTextShape,
-                        contentPadding = contentPadding,
-                        content = { content() }
-                    )
-                }
-                ButtonType.PRIMARY, ButtonType.DEFAULT -> {
-                    androidx.compose.material3.Button(
-                        onClick = onClick,
-                        enabled = isEnabled,
-                        colors = buttonColors,
-                        contentPadding = contentPadding,
-                        shape = ButtonTextShape,
-                        content = { content() }
-                    )
-                }
+                content()
             }
         }
     }
@@ -319,91 +326,25 @@ object DefaultTheme : ThemeContract {
         // Déterminer l'état selon enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
         
-        if (display == ButtonDisplay.ICON) {
-            // Mode ICON : Bouton compact/circulaire comme XS/S
-            val iconSize = when (size) {
-                Size.XXL -> 48.dp
-                Size.XL -> 40.dp  
-                Size.L -> 32.dp
-                Size.M -> 28.dp
-                Size.S -> 24.dp
-                Size.XS -> 20.dp
-            }
-            
-            val isEnabled = state != ComponentState.DISABLED
-            val buttonColors = when (buttonType) {
-                ButtonType.PRIMARY -> ButtonDefaults.buttonColors(
-                    containerColor = Colors.Primary,
-                    contentColor = Colors.OnPrimary
-                )
-                ButtonType.SECONDARY -> ButtonDefaults.outlinedButtonColors(
-                    containerColor = Colors.Surface,
-                    contentColor = Colors.OnSurface
-                )
-                ButtonType.DEFAULT -> ButtonDefaults.buttonColors(
-                    containerColor = Colors.Surface,
-                    contentColor = Colors.OnSurface
-                )
-            }
-            
-                when (buttonType) {
-                ButtonType.SECONDARY -> {
-                    OutlinedButton(
-                        onClick = {
-                            if (requireConfirmation) {
-                                showConfirmDialog = true
-                            } else {
-                                onClick()
-                            }
-                        },
-                        enabled = isEnabled,
-                        colors = buttonColors as ButtonColors,
-                        shape = ButtonIconShape,
-                        modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        androidx.compose.material3.Text(
-                            getButtonIcon(action),
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-                ButtonType.PRIMARY, ButtonType.DEFAULT -> {
-                    androidx.compose.material3.Button(
-                        onClick = {
-                            if (requireConfirmation) {
-                                showConfirmDialog = true
-                            } else {
-                                onClick()
-                            }
-                        },
-                        enabled = isEnabled,
-                        colors = buttonColors,
-                        shape = ButtonIconShape,
-                        modifier = Modifier.minimumInteractiveComponentSize().size(iconSize),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        androidx.compose.material3.Text(
-                            getButtonIcon(action),
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-                        )
-                    }
+        // Utiliser le Button unifié pour tous les cas
+        Button(
+            type = buttonType,
+            size = size,
+            state = state,
+            onClick = {
+                if (requireConfirmation) {
+                    showConfirmDialog = true
+                } else {
+                    onClick()
                 }
             }
-        } else {
-            // Mode LABEL : Bouton standard
-            Button(
-                type = buttonType,
-                size = size,
-                state = state,
-                onClick = {
-                    if (requireConfirmation) {
-                        showConfirmDialog = true
-                    } else {
-                        onClick()
-                    }
-                }
-            ) {
+        ) {
+            if (display == ButtonDisplay.ICON) {
+                androidx.compose.material3.Text(
+                    getButtonIcon(action),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                )
+            } else {
                 androidx.compose.material3.Text(
                     getButtonText(action)
                 )
@@ -433,11 +374,14 @@ object DefaultTheme : ThemeContract {
     // Helpers pour le mapping action -> type/texte/icône
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.CONFIRM -> ButtonType.PRIMARY
-            ButtonAction.DELETE, ButtonAction.CANCEL -> ButtonType.SECONDARY  
-            ButtonAction.BACK, ButtonAction.CONFIGURE, ButtonAction.ADD,
-            ButtonAction.EDIT, ButtonAction.REFRESH, ButtonAction.SELECT,
-            ButtonAction.UPDATE, ButtonAction.UP, ButtonAction.DOWN -> ButtonType.PRIMARY
+            // PRIMARY: Actions critiques/importantes
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM -> ButtonType.PRIMARY
+            
+            // SECONDARY: Actions destructives/dangereuses avec confirmation
+            ButtonAction.DELETE -> ButtonType.SECONDARY
+            
+            // DEFAULT: Actions neutres/navigation standard
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.UP, ButtonAction.DOWN -> ButtonType.DEFAULT
         }
     }
     
@@ -499,13 +443,85 @@ object DefaultTheme : ThemeContract {
         val isError = state == ComponentState.ERROR
         val isReadOnly = state == ComponentState.READONLY
         
+        // Configuration intelligente du clavier selon le type de champ
+        val keyboardOptions = when (fieldType) {
+            FieldType.TEXT -> KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            )
+            FieldType.TEXT_MEDIUM -> KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            )
+            FieldType.TEXT_LONG -> KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Default
+            )
+            FieldType.TEXT_UNLIMITED -> KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Default
+            )
+            FieldType.NUMERIC -> KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                autoCorrect = false,
+                imeAction = ImeAction.Next
+            )
+            FieldType.EMAIL -> KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                autoCorrect = false,
+                capitalization = KeyboardCapitalization.None,
+                imeAction = ImeAction.Next
+            )
+            FieldType.PASSWORD -> KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                autoCorrect = false,
+                capitalization = KeyboardCapitalization.None,
+                imeAction = ImeAction.Done
+            )
+            FieldType.SEARCH -> KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Search
+            )
+        }
+        
+        // Limite de caractères selon le type de champ
+        val maxLength = when (fieldType) {
+            FieldType.TEXT -> BaseSchemas.FieldLimits.SHORT_LENGTH
+            FieldType.TEXT_MEDIUM -> BaseSchemas.FieldLimits.MEDIUM_LENGTH
+            FieldType.TEXT_LONG -> BaseSchemas.FieldLimits.LONG_LENGTH
+            FieldType.TEXT_UNLIMITED -> BaseSchemas.FieldLimits.UNLIMITED_LENGTH
+            FieldType.NUMERIC, FieldType.EMAIL, FieldType.PASSWORD, FieldType.SEARCH -> BaseSchemas.FieldLimits.UNLIMITED_LENGTH
+        }
+        
+        // Filter input if there's a character limit
+        val filteredOnChange: (String) -> Unit = if (maxLength < Int.MAX_VALUE) {
+            { newValue -> 
+                if (newValue.length <= maxLength) {
+                    onChange(newValue)
+                }
+            }
+        } else {
+            onChange
+        }
+        
         OutlinedTextField(
             value = value,
-            onValueChange = onChange,
+            onValueChange = filteredOnChange,
             placeholder = { androidx.compose.material3.Text(placeholder) },
             isError = isError,
             readOnly = isReadOnly,
             enabled = state != ComponentState.DISABLED,
+            keyboardOptions = keyboardOptions,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -1491,6 +1507,4 @@ object DefaultTheme : ThemeContract {
             }
         }
     }
-    
-    // Anciens boutons supprimés - utiliser UI.ActionButton à la place
 }

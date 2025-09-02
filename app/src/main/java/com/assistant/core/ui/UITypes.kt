@@ -40,7 +40,14 @@ enum class Size {
  * Types de champs pour validation et comportement
  */
 enum class FieldType {
-    TEXT, NUMERIC, EMAIL, PASSWORD, SEARCH
+    TEXT,           // 60 chars - identifiants, noms, labels
+    TEXT_MEDIUM,    // 250 chars - descriptions, valeurs tracking texte
+    TEXT_LONG,      // 1500 chars - contenu libre long
+    TEXT_UNLIMITED, // Aucune limite - documentation, exports
+    NUMERIC, 
+    EMAIL, 
+    PASSWORD, 
+    SEARCH
 }
 
 // =====================================

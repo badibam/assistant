@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.tools.ToolTypeContract
+import com.assistant.core.tools.BaseSchemas
 import com.assistant.tools.tracking.TrackingService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
@@ -42,49 +43,17 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getConfigSchema(): String {
-        // TODO: Define custom JSON Schema extension fields for AI and UI context
-        // Examples: "x-ai-context", "x-ui-hint", "x-purpose", "x-validation-rules"
-        return """
+        // Tracking-specific configuration schema extending base schema
+        val specificSchema = """
         {
-            "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Display name for this tracking instance"
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Optional description for this tracking instance"
-                },
-                "management": {
-                    "type": "string",
-                    "enum": ["manual", "ai"],
-                    "description": "Management type: manual input or AI-assisted"
-                },
-                "config_validation": {
-                    "type": "string",
-                    "description": "Configuration validation settings"
-                },
-                "data_validation": {
-                    "type": "string",
-                    "description": "Data validation settings"
-                },
-                "display_mode": {
-                    "type": "string",
-                    "description": "Display mode for this tracking instance"
-                },
-                "icon_name": {
-                    "type": "string",
-                    "default": "activity",
-                    "description": "Icon name for this tracking instance"
-                },
                 "type": {
                     "type": "string",
                     "enum": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
                     "description": "Data type for all items in this tracking instance"
                 }
             },
-            "required": ["name", "management", "type"],
+            "required": ["type"],
             "allOf": [
                 {
                     "if": {
@@ -98,9 +67,9 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" },
-                                        "default_quantity": { "type": "string" },
-                                        "unit": { "type": "string" }
+                                        "name": { "type": "string", "maxLength": 60 },
+                                        "default_quantity": { "type": "string", "maxLength": 60 },
+                                        "unit": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -120,7 +89,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" }
+                                        "name": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -140,7 +109,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" }
+                                        "name": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -161,11 +130,11 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" },
+                                        "name": { "type": "string", "maxLength": 60 },
                                         "min": { "type": "integer", "default": 1 },
                                         "max": { "type": "integer", "default": 10 },
-                                        "min_label": { "type": "string" },
-                                        "max_label": { "type": "string" }
+                                        "min_label": { "type": "string", "maxLength": 60 },
+                                        "max_label": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -185,7 +154,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" }
+                                        "name": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -210,9 +179,9 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" },
-                                        "true_label": { "type": "string", "default": "Oui" },
-                                        "false_label": { "type": "string", "default": "Non" }
+                                        "name": { "type": "string", "maxLength": 60 },
+                                        "true_label": { "type": "string", "maxLength": 60, "default": "Oui" },
+                                        "false_label": { "type": "string", "maxLength": 60, "default": "Non" }
                                     },
                                     "required": ["name"]
                                 }
@@ -232,7 +201,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string" }
+                                        "name": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -243,6 +212,117 @@ object TrackingToolType : ToolTypeContract {
             ]
         }
         """.trimIndent()
+        
+        // Combine base schema with tracking-specific schema
+        return BaseSchemas.createExtendedSchema(
+            BaseSchemas.getBaseConfigSchema(),
+            specificSchema
+        )
+    }
+    
+    override fun getDataSchema(): String {
+        // Tracking-specific data schema extending base schema
+        val specificSchema = """
+        {
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "description": "JSON-encoded tracking data specific to the tracking type",
+                    "oneOf": [
+                        {
+                            "description": "Numeric tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "numeric" },
+                                "quantity": { "type": "string", "maxLength": 60 },
+                                "unit": { "type": "string", "maxLength": 60 },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "quantity"]
+                        },
+                        {
+                            "description": "Text tracking data", 
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "text" },
+                                "text": { "type": "string", "maxLength": 250 },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "text"]
+                        },
+                        {
+                            "description": "Scale tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "scale" },
+                                "value": { "type": "integer", "minimum": 1, "maximum": 100 },
+                                "min_value": { "type": "integer", "minimum": 1 },
+                                "max_value": { "type": "integer", "maximum": 100 },
+                                "min_label": { "type": "string", "maxLength": 60 },
+                                "max_label": { "type": "string", "maxLength": 60 },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "value", "min_value", "max_value"]
+                        },
+                        {
+                            "description": "Boolean tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "boolean" },
+                                "state": { "type": "boolean" },
+                                "true_label": { "type": "string", "maxLength": 60 },
+                                "false_label": { "type": "string", "maxLength": 60 },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "state"]
+                        },
+                        {
+                            "description": "Choice tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "choice" },
+                                "selected_option": { "type": "string", "maxLength": 60 },
+                                "available_options": {
+                                    "type": "array",
+                                    "items": { "type": "string", "maxLength": 60 }
+                                },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "selected_option", "available_options"]
+                        },
+                        {
+                            "description": "Counter tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "counter" },
+                                "increment": { "type": "integer" },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "increment"]
+                        },
+                        {
+                            "description": "Timer tracking data",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "const": "timer" },
+                                "activity": { "type": "string", "maxLength": 60 },
+                                "duration_minutes": { "type": "integer", "minimum": 0 },
+                                "raw": { "type": "string", "maxLength": 250 }
+                            },
+                            "required": ["type", "activity", "duration_minutes"]
+                        }
+                    ]
+                }
+            },
+            "required": ["value"]
+        }
+        """.trimIndent()
+        
+        // Combine base schema with tracking-specific schema
+        return BaseSchemas.createExtendedSchema(
+            BaseSchemas.getBaseDataSchema(),
+            specificSchema
+        )
     }
     
     override fun getAvailableOperations(): List<String> {

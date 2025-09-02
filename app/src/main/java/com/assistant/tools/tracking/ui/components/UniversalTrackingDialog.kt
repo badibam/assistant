@@ -241,7 +241,7 @@ fun UniversalTrackingDialog(
                             label = "Texte",
                             value = textValue,
                             onChange = { textValue = it },
-                            fieldType = FieldType.TEXT,
+                            fieldType = FieldType.TEXT_MEDIUM,
                             required = isValueRequired
                         )
                     }
