@@ -72,6 +72,32 @@ Box(modifier = Modifier.clickable { navigate() }) {
 
 **Principe** : UI.Text pour le rendu, Box+Modifier pour layout et interactions.
 
+### Pattern Row Standardisé
+
+```kotlin
+// Pattern espacement uniforme
+Row(
+    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    // Colonnes avec weight + Box pour alignement précis
+    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { 
+        UI.ActionButton(action = ButtonAction.UP, display = ButtonDisplay.ICON, size = Size.S)
+    }
+    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { 
+        UI.ActionButton(action = ButtonAction.DOWN, display = ButtonDisplay.ICON, size = Size.S)
+    }
+    Box(modifier = Modifier.weight(4f)) { 
+        UI.Text("Contenu principal", TextType.BODY)
+    }
+}
+```
+
+**Usage** : Tableaux, listes avec actions, formulaires multi-colonnes  
+**Espacement** : `spacedBy(8.dp)` standard entre colonnes  
+**Padding** : `vertical = 4.dp` pour les rows de tableaux
+
 ## ═══════════════════════════════════
 ## Boutons et Actions
 
@@ -105,11 +131,19 @@ UI.ActionButton(
 **Navigation** : BACK, UP, DOWN
 **Utilitaires** : ADD, EDIT, CONFIGURE, REFRESH, SELECT
 
-### Styles Visuels
+### Hiérarchie Visuelle
 
-**PRIMARY** : Action principale (couleur vive, max 1 par écran)
-**SECONDARY** : Actions destructives/secondaires (contour transparent)  
-**DEFAULT** : Actions neutres (fond surface, le plus fréquent)
+**PRIMARY** : Actions critiques/importantes (vert terminal)
+- SAVE, CREATE, CONFIRM, ADD, CONFIGURE, SELECT, EDIT, UPDATE
+- Usage : Actions qui créent, modifient ou valident du contenu
+
+**DEFAULT** : Actions neutres/navigation (gris moyen distinct)  
+- CANCEL, BACK, REFRESH, UP, DOWN
+- Usage : Navigation et actions sans impact sur les données
+
+**SECONDARY** : Actions destructives (rouge sombre)
+- DELETE uniquement
+- Usage : Actions irréversibles nécessitant attention
 
 ### Confirmation Automatique
 
@@ -121,6 +155,40 @@ UI.ActionButton(
     onClick = handleDelete // appelé APRÈS confirmation
 )
 ```
+
+## ═══════════════════════════════════
+## Champs de Texte et Saisie
+
+### Extensions FieldType
+
+```kotlin
+// Limites automatiques selon le contexte
+UI.FormField(
+    fieldType = FieldType.TEXT,           // 60 chars - noms, identifiants, labels
+    fieldType = FieldType.TEXT_MEDIUM,    // 250 chars - descriptions, valeurs tracking texte  
+    fieldType = FieldType.TEXT_LONG,      // 1500 chars - contenu libre long
+    fieldType = FieldType.TEXT_UNLIMITED, // Aucune limite - documentation, exports
+    fieldType = FieldType.NUMERIC,        // Clavier numérique
+    fieldType = FieldType.EMAIL,          // Clavier email, pas d'autocorrect
+    fieldType = FieldType.PASSWORD,       // Masqué, pas d'autocorrect
+    fieldType = FieldType.SEARCH          // Autocorrect + action search
+)
+```
+
+### Autocorrection Intelligente
+
+**TEXT** : Words + autocorrect (noms, identifiants)  
+**TEXT_MEDIUM/LONG** : Sentences + autocorrect (contenu utilisateur)  
+**EMAIL/PASSWORD** : Pas d'autocorrect (sécurité/précision)  
+**NUMERIC** : Clavier numérique uniquement  
+**SEARCH** : Words + action loupe
+
+### Mapping Contexte → FieldType
+
+**Identifiants** : `FieldType.TEXT` (60) - Noms zones, outils, items  
+**Descriptions** : `FieldType.TEXT_MEDIUM` (250) - Descriptions outils  
+**Valeurs tracking texte** : `FieldType.TEXT_MEDIUM` (250) - Observations utilisateur  
+**Documentation** : `FieldType.TEXT_LONG` (1500) - Aide, notes longues
 
 ## ═══════════════════════════════════
 ## Formulaires et Validation
