@@ -31,6 +31,23 @@ data class TrackingItem(
     val properties: MutableMap<String, Any> = mutableMapOf()
 )
 
+/**
+ * Helper function to check if all fields of an item are empty
+ */
+private fun allFieldsEmpty(name: String, properties: Map<String, Any>): Boolean {
+    // Check if name is empty or blank
+    if (name.trim().isNotEmpty()) return false
+    
+    // Check if any property has non-empty value
+    return properties.values.all { value ->
+        when (value) {
+            is String -> value.trim().isEmpty()
+            is Number -> value.toDouble() == 0.0
+            else -> value.toString().trim().isEmpty()
+        }
+    }
+}
+
 
 /**
  * Helper function to safely get icon resource
@@ -607,21 +624,42 @@ fun TrackingConfigScreen(
                 type = if (isCreating) DialogType.CREATE else DialogType.EDIT,
                 onConfirm = {
                     val properties = mutableMapOf<String, Any>()
-                    properties["default_quantity"] = editItemDefaultQuantity
-                    properties["unit"] = editItemUnit
                     
-                    if (isCreating) {
-                        val newItem = TrackingItem(editItemName, properties)
-                        val newItems = items.toMutableList()
-                        newItems.add(newItem)
-                        updateItems(newItems)
-                    } else {
-                        editingItemIndex?.let { index ->
+                    // Build properties according to tracking type
+                    when (trackingType) {
+                        "numeric" -> {
+                            properties["default_quantity"] = editItemDefaultQuantity
+                            properties["unit"] = editItemUnit
+                        }
+                        // For other types (text, choice, scale, etc.), no additional properties needed
+                        // The item name is sufficient
+                    }
+                    
+                    // Check if all fields are empty - if so, silently handle removal/non-addition
+                    if (allFieldsEmpty(editItemName, properties)) {
+                        if (!isCreating && editingItemIndex != null) {
+                            // Editing mode: remove the item from the list
                             val newItems = items.toMutableList()
-                            newItems[index] = TrackingItem(editItemName, properties)
+                            newItems.removeAt(editingItemIndex!!)
                             updateItems(newItems)
                         }
+                        // Creating mode: simply don't add anything (silent)
+                    } else {
+                        // Normal case: add or update the item
+                        if (isCreating) {
+                            val newItem = TrackingItem(editItemName, properties)
+                            val newItems = items.toMutableList()
+                            newItems.add(newItem)
+                            updateItems(newItems)
+                        } else {
+                            editingItemIndex?.let { index ->
+                                val newItems = items.toMutableList()
+                                newItems[index] = TrackingItem(editItemName, properties)
+                                updateItems(newItems)
+                            }
+                        }
                     }
+                    
                     showItemDialog = false
                     editItemName = String()
                     editItemDefaultQuantity = String()
