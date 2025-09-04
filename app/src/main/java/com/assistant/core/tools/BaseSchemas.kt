@@ -18,6 +18,7 @@ object BaseSchemas {
             "properties": {
                 "name": {
                     "type": "string",
+                    "minLength": 1,
                     "maxLength": 60,
                     "description": "Display name for this tool instance"
                 },
@@ -76,6 +77,7 @@ object BaseSchemas {
                 },
                 "name": {
                     "type": "string",
+                    "minLength": 1,
                     "maxLength": 60,
                     "description": "Name/identifier for this specific data entry"
                 },

@@ -67,8 +67,8 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 },
-                                        "default_quantity": { "type": "string", "maxLength": 60 },
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+                                        "default_quantity": { "type": "number" },
                                         "unit": { "type": "string", "maxLength": 60 }
                                     },
                                     "required": ["name"]
@@ -89,7 +89,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -109,7 +109,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -130,7 +130,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 },
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
                                         "min": { "type": "integer", "default": 1 },
                                         "max": { "type": "integer", "default": 10 },
                                         "min_label": { "type": "string", "maxLength": 60 },
@@ -154,7 +154,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -179,7 +179,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 },
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
                                         "true_label": { "type": "string", "maxLength": 60, "default": "Oui" },
                                         "false_label": { "type": "string", "maxLength": 60, "default": "Non" }
                                     },
@@ -201,7 +201,7 @@ object TrackingToolType : ToolTypeContract {
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "maxLength": 60 }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": 60 }
                                     },
                                     "required": ["name"]
                                 }
@@ -562,6 +562,7 @@ object TrackingToolType : ToolTypeContract {
      */
     override fun getFormFieldName(fieldName: String): String {
         return when(fieldName) {
+            "default_quantity" -> "Qté par défaut"
             "quantity" -> "Quantité"
             "name" -> "Nom" 
             "unit" -> "Unité"
@@ -579,7 +580,7 @@ object TrackingToolType : ToolTypeContract {
             "increment" -> "Incrément"
             "activity" -> "Activité"
             "duration_minutes" -> "Durée"
-            else -> fieldName.replaceFirstChar { it.uppercase() } // Fallback: capitalize first letter
+            else -> "Champ non reconnu"
         }
     }
 }

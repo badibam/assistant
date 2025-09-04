@@ -23,16 +23,22 @@ object SchemaValidator {
     /**
      * Main validation function - handles all validation scenarios
      * Uses NetworkNT with Jackson for comprehensive validation of nested structures
-     * @param schema JSON schema string
+     * @param schemaProvider Provider that supplies schema and field translations
      * @param data Data to validate as key-value map
+     * @param useDataSchema true to use data schema, false to use config schema
      * @return ValidationResult with success/error status and user-friendly messages
      */
-    fun validate(schema: String, data: Map<String, Any>): ValidationResult {
+    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, useDataSchema: Boolean = false): ValidationResult {
+        val schema = if (useDataSchema) {
+            schemaProvider.getDataSchema() ?: throw IllegalArgumentException("SchemaProvider has no data schema")
+        } else {
+            schemaProvider.getConfigSchema()
+        }
         safeLog("SCHEMA VALIDATION START")
         
         return try {
-            // Convert any JSONObject to Map for Jackson compatibility
-            val cleanData = convertJsonObjectsToMaps(data)
+            // Convert any JSONObject to Map for Jackson compatibility and filter empty values
+            val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
             
             // Let NetworkNT handle all conditional schema resolution automatically
             val jsonSchema = getOrCompileSchema(schema)
@@ -53,7 +59,7 @@ object SchemaValidator {
                 safeLog("SCHEMA VALIDATION SUCCESS")
                 ValidationResult.success()
             } else {
-                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema)
+                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, schemaProvider)
                 if (errorMessage.isEmpty()) {
                     safeLog("SCHEMA VALIDATION SUCCESS (errors filtered out)")
                     ValidationResult.success()
@@ -72,7 +78,41 @@ object SchemaValidator {
     }
     
     
+    /**
+     * Filters out empty values (empty strings, null values) from data before validation
+     * Recursively handles nested structures to prevent type mismatch errors
+     */
+    private fun filterEmptyValues(data: Map<String, Any>): Map<String, Any> {
+        return data.mapNotNull { (key, value) ->
+            val filteredValue = filterEmptyValue(value)
+            if (filteredValue != null) {
+                key to filteredValue
+            } else {
+                null
+            }
+        }.toMap()
+    }
     
+    /**
+     * Filters a single value recursively
+     */
+    private fun filterEmptyValue(value: Any?): Any? {
+        return when (value) {
+            null -> null
+            is String -> if (value.trim().isEmpty()) null else value
+            is Map<*, *> -> {
+                @Suppress("UNCHECKED_CAST")
+                val originalMap = value as Map<String, Any>
+                val filteredMap = filterEmptyValues(originalMap)
+                if (filteredMap.isEmpty()) null else filteredMap
+            }
+            is List<*> -> {
+                val filteredList = value.mapNotNull { filterEmptyValue(it) }
+                if (filteredList.isEmpty()) null else filteredList
+            }
+            else -> value
+        }
+    }
     
     /**
      * Converts Android JSONObjects to Maps for Jackson compatibility

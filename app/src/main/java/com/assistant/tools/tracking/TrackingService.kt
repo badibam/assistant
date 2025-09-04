@@ -274,12 +274,11 @@ class TrackingService(private val context: Context) : ExecutableService {
                 android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
                 
                 android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
-                val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
-                val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
+                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                })
+                }, useDataSchema = true)
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
                 
                 // Use schema validation as primary validation
@@ -402,12 +401,11 @@ class TrackingService(private val context: Context) : ExecutableService {
                 android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
                 
                 android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
-                val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
-                val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
+                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                })
+                }, useDataSchema = true)
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
                 
                 // Use schema validation as primary validation
@@ -458,12 +456,11 @@ class TrackingService(private val context: Context) : ExecutableService {
         if (toolType != null) {
             // Phase 1: Use new JSON Schema validation as primary validation
             val dataJson = existingEntry.toValidationJson()
-            val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
-            val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
+            val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
                 // Convert JSON string to Map for new API
                 val jsonObject = JSONObject(it)
                 jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-            })
+            }, useDataSchema = true)
             
             // Use schema validation as primary validation
             if (!schemaValidation.isValid) {

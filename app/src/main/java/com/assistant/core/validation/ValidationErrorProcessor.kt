@@ -11,8 +11,9 @@ object ValidationErrorProcessor {
     /**
      * Filters and formats validation errors into readable string with error prioritization
      * Filters base schema errors when conditional schemas are present
+     * @param schemaProvider Optional SchemaProvider for field name translation
      */
-    fun filterErrors(errors: Set<ValidationMessage>, schema: String): String {
+    fun filterErrors(errors: Set<ValidationMessage>, schema: String, schemaProvider: SchemaProvider? = null): String {
         if (errors.isEmpty()) return ""
         
         // Filter out base schema errors if conditional schemas are present
@@ -23,7 +24,9 @@ object ValidationErrorProcessor {
         
         return errorsByPath.map { (path, pathErrors) ->
             val prioritizedError = selectMostRelevantError(pathErrors)
-            "Field '$path': $prioritizedError"
+            val friendlyFieldName = extractFieldNameFromMessage(prioritizedError, schemaProvider)
+            val cleanMessage = cleanErrorMessage(prioritizedError)
+            "$friendlyFieldName : $cleanMessage"
         }.joinToString("; ")
     }
     
@@ -130,6 +133,53 @@ object ValidationErrorProcessor {
         
         // Fallback: return first error if no pattern matches
         return messages.firstOrNull() ?: "invalid format"
+    }
+    
+    /**
+     * Extracts field name from error message and translates it to user-friendly name
+     * Examples: 
+     * - "$.name: must be at least 1 characters long" -> "name" -> "Nom"
+     * - "$.items[2].default_quantity: integer found..." -> "default_quantity" -> "Quantité par défaut"
+     */
+    private fun extractFieldNameFromMessage(errorMessage: String, schemaProvider: SchemaProvider?): String {
+        if (schemaProvider == null) return "Champ"
+        
+        // Extract field path from error message (before the colon)
+        // NetworkNT format: "$.path.to.field: error description"
+        val fieldPath = errorMessage.substringBefore(":").trim()
+        
+        // Get only the last level of the field path
+        // Examples: "$.value.quantity" -> "quantity", "$.items[2].default_quantity" -> "default_quantity"
+        val fieldName = when {
+            fieldPath.contains(".") -> {
+                // Get last part after final dot: "$.value.quantity" -> "quantity"
+                fieldPath.substringAfterLast(".")
+            }
+            fieldPath.startsWith("$.") -> {
+                // Direct field: "$.fieldname" -> "fieldname"
+                fieldPath.substringAfter("$.")
+            }
+            else -> {
+                // Fallback: use as-is
+                fieldPath
+            }
+        }
+        
+        return schemaProvider.getFormFieldName(fieldName)
+    }
+    
+    /**
+     * Removes the technical field path from error message
+     * Examples:
+     * - "$.name: must be at least 1 characters long" -> "must be at least 1 characters long"
+     * - "$.items[2].default_quantity: integer found, string expected" -> "integer found, string expected"
+     */
+    private fun cleanErrorMessage(errorMessage: String): String {
+        return if (errorMessage.contains(":")) {
+            errorMessage.substringAfter(":").trim()
+        } else {
+            errorMessage
+        }
     }
     
     /**

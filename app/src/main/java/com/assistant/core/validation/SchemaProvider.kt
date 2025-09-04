@@ -16,4 +16,11 @@ interface SchemaProvider {
      * @return JSON Schema string for data validation, or null if no data schema
      */
     fun getDataSchema(): String?
+    
+    /**
+     * Get user-friendly field name for display in validation errors
+     * @param fieldName The technical field name (e.g., "quantity", "name")
+     * @return User-friendly field name for display (e.g., "Quantité", "Nom")
+     */
+    fun getFormFieldName(fieldName: String): String
 }

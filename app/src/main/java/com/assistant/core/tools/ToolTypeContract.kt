@@ -103,13 +103,6 @@ interface ToolTypeContract : SchemaProvider {
     fun validateData(data: Any, operation: String): ValidationResult
     
     /**
-     * Get user-friendly field name for display
-     * @param fieldName The technical field name (e.g., "quantity", "name")  
-     * @return User-friendly field name for display (e.g., "Quantité", "Nom")
-     */
-    fun getFormFieldName(fieldName: String): String
-    
-    /**
      * Get database migrations for this tool type
      * Returns empty list if no migrations are needed
      * Migrations should be ordered by version (startVersion ascending)

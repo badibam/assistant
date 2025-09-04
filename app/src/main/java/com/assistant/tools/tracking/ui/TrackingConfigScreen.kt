@@ -17,6 +17,8 @@ import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -190,21 +192,33 @@ fun TrackingConfigScreen(
     }
     
     
-    // Save function
+    // State for error messages
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    // Save function avec validation V3
     val handleSave = {
-        // Validation des champs obligatoires
-        val isValid = name.isNotBlank() && 
-                     iconName.isNotBlank() && 
-                     displayMode.isNotBlank() &&
-                     management.isNotBlank() &&
-                     configValidation.isNotBlank() &&
-                     dataValidation.isNotBlank() &&
-                     trackingType.isNotBlank()
+        // Nettoyer la config avant validation
+        val cleanConfig = cleanConfiguration(config)
         
-        if (isValid) {
-            // Nettoyer la config avant sauvegarde
-            val cleanConfig = cleanConfiguration(config)
-            onSave(cleanConfig.toString())
+        // Convertir JSONObject en Map pour SchemaValidator V3
+        val configMap = cleanConfig.keys().asSequence().associateWith { key ->
+            cleanConfig.get(key)
+        }
+        
+        // Utiliser SchemaValidator V3 avec le schéma de configuration tracking
+        val toolType = ToolTypeManager.getToolType("tracking")
+        if (toolType != null) {
+            val validation = SchemaValidator.validate(toolType, configMap, useDataSchema = false)
+            
+            if (validation.isValid) {
+                onSave(cleanConfig.toString())
+            } else {
+                android.util.Log.e("TrackingConfigScreen", "Validation failed: ${validation.errorMessage}")
+                errorMessage = validation.errorMessage ?: "Erreur de validation"
+            }
+        } else {
+            android.util.Log.e("TrackingConfigScreen", "ToolType tracking not found")
+            errorMessage = "Type d'outil introuvable"
         }
     }
     
@@ -592,36 +606,27 @@ fun TrackingConfigScreen(
             UI.Dialog(
                 type = if (isCreating) DialogType.CREATE else DialogType.EDIT,
                 onConfirm = {
-                    if (editItemName.isNotBlank()) {
-                        val properties = mutableMapOf<String, Any>()
-                        if (editItemDefaultQuantity.isNotBlank()) {
-                            val parsed = NumberFormatting.parseUserInput(editItemDefaultQuantity)
-                            if (parsed != null) {
-                                properties["default_quantity"] = parsed
-                            }
-                        }
-                        if (editItemUnit.isNotBlank()) {
-                            properties["unit"] = editItemUnit
-                        }
-                        
-                        if (isCreating) {
-                            val newItem = TrackingItem(editItemName, properties)
+                    val properties = mutableMapOf<String, Any>()
+                    properties["default_quantity"] = editItemDefaultQuantity
+                    properties["unit"] = editItemUnit
+                    
+                    if (isCreating) {
+                        val newItem = TrackingItem(editItemName, properties)
+                        val newItems = items.toMutableList()
+                        newItems.add(newItem)
+                        updateItems(newItems)
+                    } else {
+                        editingItemIndex?.let { index ->
                             val newItems = items.toMutableList()
-                            newItems.add(newItem)
+                            newItems[index] = TrackingItem(editItemName, properties)
                             updateItems(newItems)
-                        } else {
-                            editingItemIndex?.let { index ->
-                                val newItems = items.toMutableList()
-                                newItems[index] = TrackingItem(editItemName, properties)
-                                updateItems(newItems)
-                            }
                         }
-                        showItemDialog = false
-                        editItemName = String()
-                        editItemDefaultQuantity = String()
-                        editItemUnit = String()
-                        editingItemIndex = null
                     }
+                    showItemDialog = false
+                    editItemName = String()
+                    editItemDefaultQuantity = String()
+                    editItemUnit = String()
+                    editingItemIndex = null
                 },
                 onCancel = {
                     showItemDialog = false
@@ -652,13 +657,15 @@ fun TrackingConfigScreen(
                             label = "Quantité par défaut",
                             value = editItemDefaultQuantity,
                             onChange = { editItemDefaultQuantity = it },
-                            fieldType = FieldType.NUMERIC
+                            fieldType = FieldType.NUMERIC,
+                            required = false
                         )
                         
                         UI.FormField(
                             label = "Unité",
                             value = editItemUnit,
-                            onChange = { editItemUnit = it }
+                            onChange = { editItemUnit = it },
+                            required = false
                         )
                     }
                 }
@@ -722,6 +729,18 @@ fun TrackingConfigScreen(
                     }
                 }
             }
+        }
+    }
+    
+    // Show error toast when errorMessage is set
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            android.widget.Toast.makeText(
+                context,
+                message,
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            errorMessage = null
         }
     }
 }

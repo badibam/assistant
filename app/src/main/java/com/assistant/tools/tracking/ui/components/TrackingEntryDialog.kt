@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
@@ -97,6 +98,9 @@ fun TrackingEntryDialog(
 
     // Validation state
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
+    
+    // State for error messages
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // UI behavior based on context
     val isNameEditable = true // Name is always editable
@@ -241,8 +245,7 @@ fun TrackingEntryDialog(
         val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
             android.util.Log.d("VALDEBUG", "DataSchema being used: ${toolType.getDataSchema()?.take(200)}...")
-            val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
-            validationResult = SchemaValidator.validate(dataSchema, entryData)
+            validationResult = SchemaValidator.validate(toolType, entryData, useDataSchema = true)
         } else {
             validationResult = ValidationResult.error("Tool type 'tracking' not found")
         }
@@ -348,6 +351,9 @@ fun TrackingEntryDialog(
                     android.util.Log.d("VALDEBUG", "Final recordedAt: $recordedAt")
                     
                     onConfirm(name.trim(), valueJson, addToPredefined, recordedAt)
+                } else {
+                    // Set error message for toast display
+                    errorMessage = validationResult.errorMessage ?: "Erreur de validation"
                 }
             },
             onCancel = onCancel
@@ -356,15 +362,6 @@ fun TrackingEntryDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 UI.Text(dialogTitle, TextType.SUBTITLE)
-                
-                // Display validation errors if any
-                if (!validationResult.isValid) {
-                    UI.Text(
-                        text = validationResult.errorMessage ?: "Erreur de validation",
-                        type = TextType.BODY
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
                 
                 // Name field
                 UI.FormField(
@@ -544,6 +541,19 @@ fun TrackingEntryDialog(
                 },
                 onDismiss = { showTimePicker = false }
             )
+        }
+        
+        // Show error toast when errorMessage is set
+        errorMessage?.let { message ->
+            val context = LocalContext.current
+            LaunchedEffect(message) {
+                android.widget.Toast.makeText(
+                    context,
+                    message,
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                errorMessage = null
+            }
         }
     }
 }
