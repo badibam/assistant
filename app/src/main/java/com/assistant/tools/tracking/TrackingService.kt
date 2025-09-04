@@ -176,10 +176,7 @@ class TrackingService(private val context: Context) : ExecutableService {
         val zoneName = params.optString("zone_name")
         val toolInstanceName = params.optString("tool_instance_name")
         val name = params.optString("name")
-        val quantity = params.optString("quantity")
-        val unit = params.optString("unit")
-        val type = params.optString("type", "numeric")
-        android.util.Log.d("VALDEBUG", "Parameters extracted: toolInstanceId=$toolInstanceId, name=$name, type=$type")
+        android.util.Log.d("VALDEBUG", "Parameters extracted: toolInstanceId=$toolInstanceId, name=$name")
         // Parse date and time parameters or use current timestamp as fallback
         android.util.Log.d("VALDEBUG", "Parsing recorded_at timestamp...")
         val recordedAt = if (params.has("date") && params.has("time")) {
@@ -208,20 +205,6 @@ class TrackingService(private val context: Context) : ExecutableService {
             return OperationResult.error("Tool instance ID, zone name, tool instance name and name are required")
         }
         
-        android.util.Log.d("VALDEBUG", "Getting handler for type: $type")
-        // Create JSON value using TrackingTypeFactory
-        val handler = TrackingTypeFactory.getHandler(type)
-        if (handler == null) {
-            android.util.Log.e("VALDEBUG", "No handler found for tracking type: $type")
-            return OperationResult.error("Unsupported tracking type: $type")
-        }
-        android.util.Log.d("VALDEBUG", "Handler retrieved successfully for type: $type")
-        
-        android.util.Log.d("VALDEBUG", "Getting instance config from DB...")
-        // Get instance config for choice options and other type configs
-        val instanceConfig = toolInstanceDao.getToolInstanceById(toolInstanceId)?.config_json?.let { JSONObject(it) }
-        android.util.Log.d("VALDEBUG", "Instance config retrieved: ${instanceConfig != null}")
-        
         android.util.Log.d("VALDEBUG", "Extracting properties from params...")
         
         // Extract value JSON and parse it to get the actual data
@@ -235,17 +218,16 @@ class TrackingService(private val context: Context) : ExecutableService {
             JSONObject() 
         }
         
-        val properties = extractPropertiesFromValueJson(valueJson, type, instanceConfig)
-        android.util.Log.d("VALDEBUG", "Properties extracted: $properties")
+        // Extract type from the valueJson itself
+        val type = valueJson.optString("type", "")
+        android.util.Log.d("VALDEBUG", "Type extracted from valueJson: $type")
         
-        android.util.Log.d("VALDEBUG", "Creating value JSON from properties...")
-        val createdValueJson = handler.createValueJson(properties)
-        android.util.Log.d("VALDEBUG", "Created valueJson: $createdValueJson")
-        
-        if (createdValueJson == null) {
-            android.util.Log.e("VALDEBUG", "FAILED to create valueJson for type $type with properties: $properties")
-            return OperationResult.error("Failed to create value JSON for $type data: $properties")
+        if (type.isEmpty()) {
+            android.util.Log.e("VALDEBUG", "No type found in valueJson: $valueJsonString")
+            return OperationResult.error("Invalid value data: missing type")
         }
+        
+        android.util.Log.d("VALDEBUG", "Using original valueJson directly: $valueJsonString")
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -254,7 +236,7 @@ class TrackingService(private val context: Context) : ExecutableService {
             zone_name = zoneName,
             tool_instance_name = toolInstanceName,
             name = name,
-            value = createdValueJson,
+            value = valueJsonString,
             recorded_at = recordedAt
         )
         
