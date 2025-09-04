@@ -76,8 +76,80 @@ class SchemaValidatorTest {
         }
         
         val validConfig = mapOf("title" to "Test Config")
-        val result = SchemaValidator.validate(testProvider, validConfig, useDataSchema = false)
+        val result = SchemaValidator.validate(testProvider.getConfigSchema(), validConfig)
         
         assertTrue("Config validation should succeed", result.isValid)
+    }
+    
+    @Test
+    fun testErrorPrioritization_TypeErrorOverSchemaError() {
+        // Schema with conditional validation that can generate multiple errors
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "object",
+                        "allOf": [
+                            {
+                                "properties": {
+                                    "type": {"type": "string"}
+                                }
+                            },
+                            {
+                                "if": {"properties": {"type": {"const": "numeric"}}},
+                                "then": {
+                                    "properties": {
+                                        "quantity": {"type": "number"},
+                                        "unit": {"type": "string"}
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        """.trimIndent()
+        
+        // Data that triggers both "not defined" and "wrong type" errors
+        val wrongTypeData = mapOf(
+            "value" to mapOf(
+                "type" to "numeric",
+                "quantity" to "abc",  // String instead of number
+                "unit" to "kg"
+            )
+        )
+        
+        val result = SchemaValidator.validate(schema, wrongTypeData)
+        
+        assertFalse("Validation should fail", result.isValid)
+        
+        // Should prioritize type error over schema structure error
+        val errorMsg = result.errorMessage!!
+        assertTrue("Should show type error with French message", 
+            errorMsg.contains("trouvé") && errorMsg.contains("attendu"))
+        assertFalse("Should not show schema structure error", 
+            errorMsg.contains("not defined in the schema"))
+    }
+    
+    @Test
+    fun testErrorPrioritization_RequiredFieldError() {
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"}
+                },
+                "required": ["name"]
+            }
+        """.trimIndent()
+        
+        val missingData = mapOf<String, Any>()
+        
+        val result = SchemaValidator.validate(schema, missingData)
+        
+        assertFalse("Validation should fail", result.isValid)
+        assertTrue("Should show required field error", 
+            result.errorMessage?.contains("obligatoire") == true)
     }
 }

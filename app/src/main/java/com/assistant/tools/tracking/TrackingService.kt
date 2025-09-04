@@ -274,25 +274,13 @@ class TrackingService(private val context: Context) : ExecutableService {
                 android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
                 
                 android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
-                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+                val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
+                val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                }, useDataSchema = true)
+                })
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
-                
-                // Phase 2: Keep manual validation for comparison in debug mode
-                android.util.Log.d("VALDEBUG", "Calling manual validation...")
-                val manualValidation = toolType.validateData(newEntry, "create")
-                android.util.Log.d("VALDEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
-                
-                // Compare results and log differences for debugging
-                if (schemaValidation.isValid != manualValidation.isValid) {
-                    Log.w("VALIDATION_COMPARISON", 
-                        "Validation mismatch for ${newEntry.name}:\n" +
-                        "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
-                        "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
-                }
                 
                 // Use schema validation as primary validation
                 if (!schemaValidation.isValid) {
@@ -371,7 +359,7 @@ class TrackingService(private val context: Context) : ExecutableService {
         // Preserve existing properties that are not provided in update (generic approach)
         try {
             val existingJson = org.json.JSONObject(existingEntry.value)
-            val existingProperties = TrackingToolType.jsonToProperties(existingJson, type)
+            val existingProperties = jsonToProperties(existingJson, type)
             
             // For each existing property, use it if not provided in the new properties
             existingProperties.forEach { (key, value) ->
@@ -414,25 +402,13 @@ class TrackingService(private val context: Context) : ExecutableService {
                 android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
                 
                 android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
-                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+                val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
+                val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                }, useDataSchema = true)
+                })
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
-                
-                // Phase 2: Keep manual validation for comparison in debug mode
-                android.util.Log.d("VALDEBUG", "Calling manual validation...")
-                val manualValidation = toolType.validateData(updatedEntry, "update")
-                android.util.Log.d("VALDEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
-                
-                // Compare results and log differences for debugging
-                if (schemaValidation.isValid != manualValidation.isValid) {
-                    Log.w("VALIDATION_COMPARISON", 
-                        "Update validation mismatch for ${updatedEntry.name}:\n" +
-                        "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
-                        "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
-                }
                 
                 // Use schema validation as primary validation
                 if (!schemaValidation.isValid) {
@@ -482,22 +458,12 @@ class TrackingService(private val context: Context) : ExecutableService {
         if (toolType != null) {
             // Phase 1: Use new JSON Schema validation as primary validation
             val dataJson = existingEntry.toValidationJson()
-            val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+            val dataSchema = toolType.getDataSchema() ?: throw IllegalStateException("Aucun schéma de données disponible")
+            val schemaValidation = SchemaValidator.validate(dataSchema, dataJson.let { 
                 // Convert JSON string to Map for new API
                 val jsonObject = JSONObject(it)
                 jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-            }, useDataSchema = true)
-            
-            // Phase 2: Keep manual validation for comparison in debug mode
-            val manualValidation = toolType.validateData(existingEntry, "delete")
-            
-            // Compare results and log differences for debugging
-            if (schemaValidation.isValid != manualValidation.isValid) {
-                Log.w("VALIDATION_COMPARISON", 
-                    "Delete validation mismatch for ${existingEntry.name}:\n" +
-                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
-                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
-            }
+            })
             
             // Use schema validation as primary validation
             if (!schemaValidation.isValid) {
@@ -514,6 +480,52 @@ class TrackingService(private val context: Context) : ExecutableService {
             "entry_id" to entryId,
             "deleted_at" to System.currentTimeMillis()
         ))
+    }
+    
+    /**
+     * Temporary utility to extract properties from JSON for update operations
+     * TODO: Replace with UniversalDataMapper in future refactor
+     */
+    private fun jsonToProperties(json: JSONObject, type: String): Map<String, Any> {
+        return when (type) {
+            "numeric" -> mapOf(
+                "quantity" to json.optString("quantity", ""),
+                "unit" to json.optString("unit", "")
+            )
+            "boolean" -> mapOf(
+                "state" to json.optBoolean("state", false),
+                "true_label" to json.optString("true_label", "Oui"),
+                "false_label" to json.optString("false_label", "Non")
+            )
+            "scale" -> mapOf(
+                "rating" to json.optInt("rating", 0),
+                "min_value" to json.optInt("min_value", 1),
+                "max_value" to json.optInt("max_value", 10),
+                "min_label" to json.optString("min_label", ""),
+                "max_label" to json.optString("max_label", "")
+            )
+            "text" -> mapOf(
+                "text" to json.optString("text", "")
+            )
+            "choice" -> {
+                val availableOptions = json.optJSONArray("available_options")?.let { array ->
+                    (0 until array.length()).map { array.optString(it, "") }.filter { it.isNotEmpty() }
+                } ?: emptyList<String>()
+                
+                mapOf(
+                    "selected_option" to json.optString("selected_option", ""),
+                    "available_options" to availableOptions
+                )
+            }
+            "counter" -> mapOf(
+                "increment" to json.optInt("increment", 0)
+            )
+            "timer" -> mapOf(
+                "activity" to json.optString("activity", ""),
+                "duration_minutes" to json.optInt("duration_minutes", 0)
+            )
+            else -> emptyMap()
+        }
     }
 
     /**
