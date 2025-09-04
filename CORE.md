@@ -213,7 +213,7 @@ versionName = "0.1.1"
 ### Service Implementation
 
 - Hériter `ExecutableService`
-- Validation via ToolType.validateData()
+- Validation via `SchemaValidator.validate(toolType, data, useDataSchema)`
 - Logs d'erreur explicites
 - Gestion token cancellation
 
@@ -226,9 +226,69 @@ versionName = "0.1.1"
 ### Data Consistency  
 
 - Event sourcing obligatoire pour modifications
-- **Validation centralisée** : JsonSchemaValidator pour config/data
+- **Validation centralisée** : SchemaValidator pour config/data
 - Schémas JSON pour validation automatique
 - Standalone databases pour discovery
+
+## ═══════════════════════════════════
+## Validation JSON Schema V3
+
+Architecture centralisée de validation basée sur JSON Schema avec traduction automatique.
+
+### Structure Validation
+
+```
+app/src/main/java/com/assistant/core/validation/
+├── SchemaValidator.kt           ← API principale
+├── ValidationErrorProcessor.kt  ← Traitement erreurs  
+├── SchemaProvider.kt            ← Interface schémas
+└── ValidationResult.kt          ← Data class résultat
+```
+
+### API Unifiée
+
+```kotlin
+// Usage standard pour tous types d'outils
+val toolType = ToolTypeManager.getToolType("tracking")
+val result = SchemaValidator.validate(toolType, data, useDataSchema = true)
+
+if (result.isValid) {
+    // Validation réussie
+} else {
+    // Erreur traduite en français : result.errorMessage
+}
+```
+
+### Interface SchemaProvider
+
+Tous les ToolTypes implémentent SchemaProvider :
+
+```kotlin
+interface SchemaProvider {
+    fun getConfigSchema(): String        // Schéma configuration outil
+    fun getDataSchema(): String?         // Schéma données métier
+    fun getFormFieldName(String): String // Traductions champs
+}
+```
+
+### Fonctionnalités Automatiques
+
+- **Filtrage valeurs vides** : Supprime `""` et `null` avant validation
+- **Traduction erreurs** : Messages français avec noms traduits  
+- **Schémas conditionnels** : Support `allOf/if/then` natif
+- **Cache performance** : Schémas mis en cache automatiquement
+
+### Types de Validation
+
+```kotlin
+// Validation configuration outil (création/modification)
+SchemaValidator.validate(toolType, configData, useDataSchema = false)
+
+// Validation données métier (entries)  
+SchemaValidator.validate(toolType, entryData, useDataSchema = true)
+```
+
+## ═══════════════════════════════════
 
 ---
 

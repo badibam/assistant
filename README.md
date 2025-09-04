@@ -94,11 +94,11 @@ app/
 
 ## État du développement
 
-**Version 0.1** (sortie le 01/09/2025)
+**Version 0.1.3** (septembre 2025)
 - Architecture finale stabilisée
 - Système de zones et outils fonctionnel
 - Interface UI propre avec patterns établis
-- Système de coordination et validation en place
+- **Validation JSON Schema V3** centralisée avec traduction automatique
 - Tool type Tracking complet et opérationnel
 
 

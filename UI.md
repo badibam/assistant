@@ -193,23 +193,14 @@ UI.FormField(
 ## ═══════════════════════════════════
 ## Formulaires et Validation
 
-### Validation 2 Couches
-
-**UI légère** : Champs vides, format basique
-**Service robuste** : Logique métier, contraintes données
-
-### Pattern isFormValid
+### Toast d'Erreurs Automatique
 
 ```kotlin
-val isFormValid = remember(name, email) { 
-    name.trim().isNotEmpty() && email.contains("@") 
-}
-
-val handleSave = {
-    if (isFormValid) {
-        coordinator.processUserAction(...)
+errorMessage?.let { message ->
+    LaunchedEffect(message) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        errorMessage = null
     }
-    // Pas d'else - UI.FormField gère l'affichage des erreurs
 }
 ```
 
@@ -402,15 +393,13 @@ Le système de thème utilise une palette de couleurs personnalisée branchée s
 - **UI.Button** pour textes dynamiques et contenu complexe
 - **FormActions** pour tous boutons de formulaire
 - **Box wrappers** pour layout et interactions UI.Text
-- **Validation 2 couches** UI légère + Service robuste
+- **Validation centralisée** via SchemaValidator
 
 ### À Éviter
 
 - Mélanger ActionButton et UI.Button dans même écran
-- Validation manuelle avec états d'erreur
 - Boutons Row/Column manuels au lieu de FormActions  
 - Layout modifiers directement sur UI.Text
-- Plus de 2 couches de validation
 
 ---
 

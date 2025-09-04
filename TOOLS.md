@@ -284,37 +284,48 @@ enum class DisplayMode {
 ```
 
 ## ═══════════════════════════════════
-## Validation et Patterns
+## Validation JSON Schema V3
 
-### Validation via FormValidator (Recommandé)
+Validation unifiée pour tous les types d'outils via SchemaValidator.
 
-Utilisation du système de validation unifié basé sur JSON Schema :
+### API Standard
 
 ```kotlin
-// Dans les formulaires - validation très simple
-val isFormValid = remember(name, properties) {
-    FormValidator.validateToolData("tracking", mapOf(
-        "name" to name,
-        "value" to properties,
-        // autres champs...
-    ))
-}
+// Récupération du ToolType (SchemaProvider)
+val toolType = ToolTypeManager.getToolType("tracking")
 
-// Pour les formulaires de configuration
-val isConfigValid = remember(configData) {
-    FormValidator.validateToolConfig("tracking", configData)
+// Validation données métier (entries)
+val dataResult = SchemaValidator.validate(toolType, entryData, useDataSchema = true)
+
+// Validation configuration outil
+val configResult = SchemaValidator.validate(toolType, configData, useDataSchema = false)
+
+// Gestion résultat
+if (dataResult.isValid) {
+    // Validation réussie
+} else {
+    // Erreur traduite automatiquement : dataResult.errorMessage
 }
 ```
 
-### Validation Service avec ToolType (Legacy)
-
-Pour compatibilité, conservée mais dépréciée au profit de FormValidator :
+### Validation Service Pattern
 
 ```kotlin
-override fun validateData(data: Any, operation: String): ValidationResult {
-    // Utilise maintenant JsonSchemaValidator automatiquement
-    // Pas besoin de validation manuelle
-    return ValidationResult.success()
+class MyToolService(private val context: Context) : ExecutableService {
+    
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
+        // Validation automatique via ToolType
+        val toolType = ToolTypeManager.getToolType("my_tool")
+        if (toolType != null) {
+            val validation = SchemaValidator.validate(toolType, dataMap, useDataSchema = true)
+            if (!validation.isValid) {
+                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+            }
+        }
+        
+        // Logique métier...
+        return OperationResult.success()
+    }
 }
 ```
 
@@ -323,87 +334,59 @@ override fun validateData(data: Any, operation: String): ValidationResult {
 ```kotlin
 @Composable
 fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () -> Unit) {
+    var name by remember { mutableStateOf("") }
     var toolType by remember { mutableStateOf("simple") }
-    var format by remember { mutableStateOf("text") }
     
-    val isFormValid = remember(toolType, format) {
-        toolType.isNotBlank() && format.isNotBlank()
+    // Validation temps réel (optionnelle)
+    val validationResult = remember(name, toolType) {
+        val toolTypeProvider = ToolTypeManager.getToolType("my_tool")
+        val configData = mapOf("name" to name, "type" to toolType)
+        toolTypeProvider?.let { 
+            SchemaValidator.validate(it, configData, useDataSchema = false) 
+        }
     }
     
     val handleSave = {
-        if (isFormValid) {
-            val config = JSONObject().apply {
-                put("type", toolType)
-                put("format", format)
-            }
-            onSave(config.toString())
+        val config = JSONObject().apply {
+            put("name", name)
+            put("type", toolType)
         }
+        onSave(config.toString())
     }
     
     Column {
         UI.FormField(
-            label = "Type d'outil",
-            value = toolType,
-            onChange = { toolType = it },
-            required = true
+            label = "Nom de l'outil",
+            value = name,
+            onChange = { name = it },
+            required = true,
+            state = if (validationResult?.isValid == false) ComponentState.ERROR else ComponentState.NORMAL
         )
         
         UI.FormSelection(
-            label = "Format",
-            options = listOf("text", "number"),
-            selected = format,
-            onSelect = { format = it }
+            label = "Type",
+            options = listOf("simple", "advanced"),
+            selected = toolType,
+            onSelect = { toolType = it }
         )
         
+        // Toast d'erreur automatique
+        validationResult?.errorMessage?.let { errorMsg ->
+            LaunchedEffect(errorMsg) {
+                android.widget.Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+            }
+        }
+        
         UI.FormActions {
-            UI.ActionButton(action = ButtonAction.SAVE, onClick = handleSave)
+            UI.ActionButton(
+                action = ButtonAction.SAVE, 
+                enabled = validationResult?.isValid != false,
+                onClick = handleSave
+            )
             UI.ActionButton(action = ButtonAction.CANCEL, onClick = onCancel)
         }
     }
 }
-```
-
-## ═══════════════════════════════════
-## Pattern SchemaProvider Extensible
-
-### Architecture Unifiée
-
-```kotlin
-// Interface pour tous les fournisseurs de schémas
-interface SchemaProvider {
-    fun getConfigSchema(): String
-    fun getDataSchema(): String?  // null si pas de data schema
-}
-
-// ToolTypeContract étend SchemaProvider
-interface ToolTypeContract : SchemaProvider {
-    // Méthodes existantes...
-}
-```
-
-### Extensions Futures
-
-```kotlin
-// Modules Core (futur)
-object CoreSchemas : SchemaProvider {
-    override fun getConfigSchema(): String = getZoneConfigSchema()
-    override fun getDataSchema(): String? = null  // Zones config seulement
-}
-
-// Modules fonctionnels (futur) 
-object SchedulerSchemas : SchemaProvider {
-    override fun getConfigSchema(): String = getTaskQueueConfigSchema()
-    override fun getDataSchema(): String = getScheduledTaskSchema()
-}
-```
-
-### Usage Uniforme
-
-```kotlin
-// Même API pour tous les types de schémas
-FormValidator.validateConfig(toolType, formData)        // Tool types
-FormValidator.validateConfig(CoreSchemas, zoneData)     // Core (futur)
-FormValidator.validateData(SchedulerSchemas, taskData)  // Modules (futur)
 ```
 
 ## ═══════════════════════════════════
@@ -418,7 +401,7 @@ FormValidator.validateData(SchedulerSchemas, taskData)  // Modules (futur)
 ### Consistency Patterns
 
 - Standalone database par tool type
-- Validation unifiée via FormValidator/JsonSchemaValidator
+- Validation unifiée via SchemaValidator
 - Configuration JSON avec schéma
 - Event sourcing pour toutes modifications
 
@@ -426,7 +409,7 @@ FormValidator.validateData(SchedulerSchemas, taskData)  // Modules (futur)
 
 - ToolTypeContract étend SchemaProvider pour validation unifiée
 - ExecutableService pour logique métier
-- FormValidator pour validation UI/Service
+- SchemaValidator pour validation UI/Service
 
 ---
 
