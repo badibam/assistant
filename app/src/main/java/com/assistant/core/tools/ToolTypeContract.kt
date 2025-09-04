@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.room.migration.Migration
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.validation.SchemaProvider
 
 /**
  * Contract for tool type implementations
  * Defines the mandatory static metadata that each tool type must provide
+ * Extends SchemaProvider for unified form validation across the app
  */
-interface ToolTypeContract {
+interface ToolTypeContract : SchemaProvider {
     
     /**
      * Human-readable display name for this tool type
@@ -22,17 +24,11 @@ interface ToolTypeContract {
      */
     fun getDefaultConfig(): String
     
-    /**
-     * JSON Schema describing the configuration structure for this tool type
-     * Used for AI validation and UI generation
-     */
-    fun getConfigSchema(): String
+    // ═══ Schema Provider Implementation ═══
+    // Inherited from SchemaProvider:
+    // fun getConfigSchema(): String - JSON Schema for tool configuration
+    // fun getDataSchema(): String? - JSON Schema for tool data (null if no data schema)
     
-    /**
-     * JSON Schema describing the data structure for this tool type
-     * Used for AI validation and service-side validation
-     */
-    fun getDataSchema(): String
     
     /**
      * List of operations this tool type supports
@@ -105,6 +101,13 @@ interface ToolTypeContract {
      * @return ValidationResult with success/error details
      */
     fun validateData(data: Any, operation: String): ValidationResult
+    
+    /**
+     * Get user-friendly field name for display
+     * @param fieldName The technical field name (e.g., "quantity", "name")  
+     * @return User-friendly field name for display (e.g., "Quantité", "Nom")
+     */
+    fun getFormFieldName(fieldName: String): String
     
     /**
      * Get database migrations for this tool type

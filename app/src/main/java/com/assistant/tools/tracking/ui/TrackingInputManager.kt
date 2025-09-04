@@ -38,14 +38,15 @@ fun TrackingInputManager(
     // State management
     var isLoading by remember { mutableStateOf(false) }
     
-    // Save function with generalized Map signature for all tracking types
-    val saveEntry: (String, Map<String, Any>, String, String) -> Unit = { itemName, properties, date, time ->
-        android.util.Log.d("TRACKING_DEBUG", "saveEntry called: itemName=$itemName, properties=$properties, date=$date, time=$time, trackingType=$trackingType")
+    // Save function with new valueJson signature
+    val saveEntry: (String, String, Long) -> Unit = { itemName, valueJson, recordedAt ->
+        android.util.Log.d("VALDEBUG", "=== SAVEENTRY START ===")
+        android.util.Log.d("VALDEBUG", "saveEntry called: itemName=$itemName, valueJson=$valueJson, recordedAt=$recordedAt, trackingType=$trackingType")
         scope.launch {
             isLoading = true
             
             try {
-                // Build params with generalized properties
+                // Build params with new value JSON format
                 val params = mutableMapOf<String, Any>(
                     "tool_type" to "tracking",
                     "operation" to "create",
@@ -53,23 +54,21 @@ fun TrackingInputManager(
                     "zone_name" to zoneName,
                     "tool_instance_name" to toolInstanceName,
                     "name" to itemName,
-                    "type" to trackingType,
-                    "date" to date,
-                    "time" to time
+                    "value" to valueJson,
+                    "recorded_at" to recordedAt
                 )
-                
-                // Add type-specific properties
-                params.putAll(properties)
-                android.util.Log.d("TRACKING_DEBUG", "Final params being sent: $params")
-                android.util.Log.d("CONFIGDEBUG", "ADDING ITEM - toolInstanceId: $toolInstanceId, params: $params")
+                android.util.Log.d("VALDEBUG", "Final params being sent: $params")
                 
                 val result = coordinator.processUserAction("create->tool_data", params)
                 
-                android.util.Log.d("CONFIGDEBUG", "ADD ITEM RESULT - status: ${result.status}, error: ${result.error}")
+                android.util.Log.d("VALDEBUG", "=== COORDINATOR RESULT ===")
+                android.util.Log.d("VALDEBUG", "Result status: ${result.status}")
+                android.util.Log.d("VALDEBUG", "Result error: ${result.error}")
+                android.util.Log.d("VALDEBUG", "Result data: ${result.data}")
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
-                        android.util.Log.d("CONFIGDEBUG", "ITEM ADDED SUCCESSFULLY - calling onEntrySaved()")
+                        android.util.Log.d("VALDEBUG", "=== SAVE SUCCESS ===")
                         
                         // Show success toast
                         android.widget.Toast.makeText(
@@ -83,7 +82,8 @@ fun TrackingInputManager(
                     else -> {
                         // Show error toast with detailed error
                         val errorMsg = result.error ?: "Erreur lors de la sauvegarde"
-                        android.util.Log.e("TrackingInputManager", "Save failed: status=${result.status}, error=$errorMsg")
+                        android.util.Log.e("VALDEBUG", "=== SAVE FAILED ===")
+                        android.util.Log.e("VALDEBUG", "Save failed: status=${result.status}, error=$errorMsg")
                         android.widget.Toast.makeText(
                             context,
                             errorMsg,
@@ -94,7 +94,8 @@ fun TrackingInputManager(
                 
             } catch (e: Exception) {
                 // Show error toast
-                android.util.Log.e("TrackingInputManager", "Exception during save", e)
+                android.util.Log.e("VALDEBUG", "=== SAVE EXCEPTION ===")
+                android.util.Log.e("VALDEBUG", "Exception during save", e)
                 android.widget.Toast.makeText(
                     context,
                     "Erreur: ${e.message}",
@@ -109,7 +110,6 @@ fun TrackingInputManager(
     // Dialog states
     var showDialog by remember { mutableStateOf(false) }
     var dialogItemType by remember { mutableStateOf<ItemType?>(null) }
-    var dialogInputType by remember { mutableStateOf(InputType.ENTRY) }
     var dialogActionType by remember { mutableStateOf(ActionType.CREATE) }
     var dialogInitialName by remember { mutableStateOf("") }
     var dialogInitialProperties by remember { mutableStateOf(emptyMap<String, Any>()) }
@@ -176,14 +176,32 @@ fun TrackingInputManager(
             isLoading = isLoading,
             toolInstanceId = toolInstanceId,
             onQuickSave = { name, properties ->
-                // Use current date/time for quick save actions
-                saveEntry(name, properties, DateUtils.getTodayFormatted(), DateUtils.getCurrentTimeFormatted())
+                // Convert properties to valueJson for quick save
+                val valueJson = when (trackingType) {
+                    "numeric" -> JSONObject().apply {
+                        put("type", "numeric")
+                        put("quantity", properties["default_quantity"] ?: 0.0)
+                        put("unit", properties["unit"] ?: "")
+                        val qty = properties["default_quantity"]?.toString() ?: "0"
+                        val unit = properties["unit"]?.toString() ?: ""
+                        put("raw", if (unit.isNotBlank()) "$qty $unit" else qty)
+                    }.toString()
+                    "counter" -> JSONObject().apply {
+                        put("type", "counter") 
+                        put("increment", properties["default_increment"] ?: 1)
+                        put("raw", properties["default_increment"]?.toString() ?: "1")
+                    }.toString()
+                    else -> JSONObject().apply {
+                        put("type", trackingType)
+                        put("raw", name) // Default for other types
+                    }.toString()
+                }
+                saveEntry(name, valueJson, System.currentTimeMillis())
             },
             onOpenDialog = { name, properties ->
                 dialogInitialName = name
                 dialogInitialProperties = properties
                 dialogItemType = ItemType.PREDEFINED
-                dialogInputType = InputType.ENTRY
                 dialogActionType = ActionType.CREATE
                 showDialog = true
             }
@@ -199,7 +217,6 @@ fun TrackingInputManager(
                         dialogInitialName = ""
                         dialogInitialProperties = emptyMap()
                         dialogItemType = ItemType.FREE
-                        dialogInputType = InputType.ENTRY
                         dialogActionType = ActionType.CREATE
                         showDialog = true
                     }
@@ -208,23 +225,43 @@ fun TrackingInputManager(
         }
     }
     
-    // Universal tracking dialog
-    UniversalTrackingDialog(
+    // Tracking entry dialog
+    TrackingEntryDialog(
         isVisible = showDialog,
         trackingType = trackingType,
         config = config,
         itemType = dialogItemType,
-        inputType = dialogInputType,
         actionType = dialogActionType,
+        toolInstanceId = toolInstanceId,
+        zoneName = zoneName,
+        toolInstanceName = toolInstanceName,
         initialName = dialogInitialName,
-        initialProperties = dialogInitialProperties,
-        onConfirm = { name, properties, addToPredefinedFlag, date, time ->
+        initialValue = dialogInitialProperties,
+        initialRecordedAt = System.currentTimeMillis(),
+        onConfirm = { name, valueJson, addToPredefinedFlag, recordedAt ->
             // Save the entry with the user-selected date and time
-            saveEntry(name, properties, date, time)
+            saveEntry(name, valueJson, recordedAt)
             
             // Add to predefined if requested
             if (addToPredefinedFlag && dialogItemType == ItemType.FREE) {
-                addToPredefined(name, properties)
+                // Parse valueJson back to properties for addToPredefined
+                try {
+                    val valueObj = JSONObject(valueJson)
+                    val properties = mutableMapOf<String, Any>()
+                    when (trackingType) {
+                        "numeric" -> {
+                            if (valueObj.has("quantity")) properties["default_quantity"] = valueObj.getDouble("quantity")
+                            if (valueObj.has("unit")) properties["unit"] = valueObj.getString("unit")
+                        }
+                        "counter" -> {
+                            if (valueObj.has("increment")) properties["default_increment"] = valueObj.getInt("increment")
+                        }
+                        // Other types don't have default properties typically
+                    }
+                    addToPredefined(name, properties)
+                } catch (e: Exception) {
+                    android.util.Log.e("TRACKING_DEBUG", "Error parsing value JSON for predefined: ${e.message}")
+                }
             }
             
             showDialog = false

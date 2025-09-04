@@ -220,100 +220,197 @@ object TrackingToolType : ToolTypeContract {
         )
     }
     
-    override fun getDataSchema(): String {
+    override fun getDataSchema(): String? {
         // Tracking-specific data schema extending base schema
         val specificSchema = """
         {
             "properties": {
+                "id": { "type": "string" },
+                "tool_instance_id": { "type": "string" },
+                "zone_name": { "type": "string" },
+                "tool_instance_name": { "type": "string" },
+                "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+                "recorded_at": { "type": "number" },
                 "value": {
-                    "description": "Tracking data specific to the tracking type (parsed from JSON string)",
-                    "oneOf": [
-                        {
-                            "description": "Numeric tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "numeric" },
-                                "quantity": { "type": "string", "maxLength": 60 },
-                                "unit": { "type": "string", "maxLength": 60 },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "quantity"]
-                        },
-                        {
-                            "description": "Text tracking data", 
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "text" },
-                                "text": { "type": "string", "maxLength": 250 },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "text"]
-                        },
-                        {
-                            "description": "Scale tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "scale" },
-                                "rating": { "type": "integer", "minimum": 1, "maximum": 100 },
-                                "min_value": { "type": "integer", "minimum": 1 },
-                                "max_value": { "type": "integer", "maximum": 100 },
-                                "min_label": { "type": "string", "maxLength": 60 },
-                                "max_label": { "type": "string", "maxLength": 60 },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "rating", "min_value", "max_value"]
-                        },
-                        {
-                            "description": "Boolean tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "boolean" },
-                                "state": { "type": "boolean" },
-                                "true_label": { "type": "string", "maxLength": 60 },
-                                "false_label": { "type": "string", "maxLength": 60 },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "state"]
-                        },
-                        {
-                            "description": "Choice tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "choice" },
-                                "selected_option": { "type": "string", "maxLength": 60 },
-                                "available_options": {
-                                    "type": "array",
-                                    "items": { "type": "string", "maxLength": 60 }
-                                },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "selected_option", "available_options"]
-                        },
-                        {
-                            "description": "Counter tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "counter" },
-                                "increment": { "type": "integer" },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "increment"]
-                        },
-                        {
-                            "description": "Timer tracking data",
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": { "const": "timer" },
-                                "activity": { "type": "string", "maxLength": 60 },
-                                "duration_minutes": { "type": "integer", "minimum": 0 },
-                                "raw": { "type": "string", "maxLength": 250 }
-                            },
-                            "required": ["type", "activity", "duration_minutes"]
-                        }
-                    ]
+                    "type": "object",
+                    "description": "Tracking data specific to the tracking type",
+                    "properties": {
+                        "type": { "type": "string" },
+                        "raw": { "type": "string", "maxLength": 250 }
+                    },
+                    "required": ["type"],
+                    "additionalProperties": false
                 }
             },
-            "required": ["value"]
+            "required": ["name", "value"],
+            "allOf": [
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "numeric" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "numeric" },
+                                    "quantity": { "type": "number" },
+                                    "unit": { "type": "string", "maxLength": 60 },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "quantity"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "text" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "text" },
+                                    "text": { "type": "string", "maxLength": 250 },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "text"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "scale" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "scale" },
+                                    "rating": { "type": "integer", "minimum": 1, "maximum": 100 },
+                                    "min_value": { "type": "integer", "minimum": 1 },
+                                    "max_value": { "type": "integer", "maximum": 100 },
+                                    "min_label": { "type": "string", "maxLength": 60 },
+                                    "max_label": { "type": "string", "maxLength": 60 },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "rating", "min_value", "max_value"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "boolean" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "boolean" },
+                                    "state": { "type": "boolean" },
+                                    "true_label": { "type": "string", "maxLength": 60 },
+                                    "false_label": { "type": "string", "maxLength": 60 },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "state"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "choice" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "choice" },
+                                    "selected_option": { "type": "string", "maxLength": 60 },
+                                    "available_options": {
+                                        "type": "array",
+                                        "items": { "type": "string", "maxLength": 60 }
+                                    },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "selected_option", "available_options"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "counter" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "counter" },
+                                    "increment": { "type": "integer" },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "increment"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { 
+                            "value": { 
+                                "properties": { "type": { "const": "timer" } } 
+                            } 
+                        }
+                    },
+                    "then": {
+                        "properties": {
+                            "value": {
+                                "properties": {
+                                    "type": { "const": "timer" },
+                                    "activity": { "type": "string", "maxLength": 60 },
+                                    "duration_minutes": { "type": "integer", "minimum": 0 },
+                                    "raw": { "type": "string", "maxLength": 250 }
+                                },
+                                "required": ["type", "activity", "duration_minutes"],
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                }
+            ]
         }
         """.trimIndent()
         
@@ -323,6 +420,7 @@ object TrackingToolType : ToolTypeContract {
             specificSchema
         )
     }
+    
     
     override fun getAvailableOperations(): List<String> {
         return listOf(
@@ -569,7 +667,9 @@ object TrackingToolType : ToolTypeContract {
             put("zone_name", zone_name)
             put("tool_instance_name", tool_instance_name)
             put("name", name)
-            put("value", value) // value is already JSON string
+            // Parse value string JSON into object for schema validation
+            val valueObject = JSONObject(value)
+            put("value", valueObject)
             put("recorded_at", recorded_at)
         }.toString()
     }
@@ -589,5 +689,33 @@ object TrackingToolType : ToolTypeContract {
             value = json.getString("value"),
             recorded_at = json.getLong("recorded_at")
         )
+    }
+    
+    /**
+     * Get user-friendly field name for display
+     * @param fieldName The technical field name (e.g., "quantity", "name")
+     * @return User-friendly field name for display (e.g., "Quantité", "Nom")
+     */
+    override fun getFormFieldName(fieldName: String): String {
+        return when(fieldName) {
+            "quantity" -> "Quantité"
+            "name" -> "Nom" 
+            "unit" -> "Unité"
+            "text" -> "Texte"
+            "rating" -> "Note"
+            "min_value" -> "Valeur min"
+            "max_value" -> "Valeur max"
+            "min_label" -> "Libellé min"
+            "max_label" -> "Libellé max"
+            "state" -> "État"
+            "true_label" -> "Libellé vrai"
+            "false_label" -> "Libellé faux"
+            "selected_option" -> "Option sélectionnée"
+            "available_options" -> "Options disponibles"
+            "increment" -> "Incrément"
+            "activity" -> "Activité"
+            "duration_minutes" -> "Durée"
+            else -> fieldName.replaceFirstChar { it.uppercase() } // Fallback: capitalize first letter
+        }
     }
 }

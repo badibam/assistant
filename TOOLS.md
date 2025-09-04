@@ -286,34 +286,35 @@ enum class DisplayMode {
 ## ═══════════════════════════════════
 ## Validation et Patterns
 
-### Validation Service avec ToolType
+### Validation via FormValidator (Recommandé)
+
+Utilisation du système de validation unifié basé sur JSON Schema :
+
+```kotlin
+// Dans les formulaires - validation très simple
+val isFormValid = remember(name, properties) {
+    FormValidator.validateToolData("tracking", mapOf(
+        "name" to name,
+        "value" to properties,
+        // autres champs...
+    ))
+}
+
+// Pour les formulaires de configuration
+val isConfigValid = remember(configData) {
+    FormValidator.validateToolConfig("tracking", configData)
+}
+```
+
+### Validation Service avec ToolType (Legacy)
+
+Pour compatibilité, conservée mais dépréciée au profit de FormValidator :
 
 ```kotlin
 override fun validateData(data: Any, operation: String): ValidationResult {
-    if (data !is MyToolData) {
-        return ValidationResult.error("Invalid data type")
-    }
-    
-    return when (operation) {
-        "create" -> validateCreate(data)
-        "update" -> validateUpdate(data)
-        "delete" -> validateDelete(data) 
-        else -> ValidationResult.error("Unknown operation: $operation")
-    }
-}
-
-private fun validateCreate(data: MyToolData): ValidationResult {
-    return try {
-        val json = JSONObject(data.value)
-        
-        if (!json.has("required_field")) {
-            return ValidationResult.error("Missing required field")
-        }
-        
-        ValidationResult.success()
-    } catch (e: Exception) {
-        ValidationResult.error("Invalid JSON: ${e.message}")
-    }
+    // Utilise maintenant JsonSchemaValidator automatiquement
+    // Pas besoin de validation manuelle
+    return ValidationResult.success()
 }
 ```
 
@@ -363,6 +364,49 @@ fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () ->
 ```
 
 ## ═══════════════════════════════════
+## Pattern SchemaProvider Extensible
+
+### Architecture Unifiée
+
+```kotlin
+// Interface pour tous les fournisseurs de schémas
+interface SchemaProvider {
+    fun getConfigSchema(): String
+    fun getDataSchema(): String?  // null si pas de data schema
+}
+
+// ToolTypeContract étend SchemaProvider
+interface ToolTypeContract : SchemaProvider {
+    // Méthodes existantes...
+}
+```
+
+### Extensions Futures
+
+```kotlin
+// Modules Core (futur)
+object CoreSchemas : SchemaProvider {
+    override fun getConfigSchema(): String = getZoneConfigSchema()
+    override fun getDataSchema(): String? = null  // Zones config seulement
+}
+
+// Modules fonctionnels (futur) 
+object SchedulerSchemas : SchemaProvider {
+    override fun getConfigSchema(): String = getTaskQueueConfigSchema()
+    override fun getDataSchema(): String = getScheduledTaskSchema()
+}
+```
+
+### Usage Uniforme
+
+```kotlin
+// Même API pour tous les types de schémas
+FormValidator.validateConfig(toolType, formData)        // Tool types
+FormValidator.validateConfig(CoreSchemas, zoneData)     // Core (futur)
+FormValidator.validateData(SchedulerSchemas, taskData)  // Modules (futur)
+```
+
+## ═══════════════════════════════════
 ## Règles d'Extension
 
 ### Discovery Pure
@@ -374,15 +418,15 @@ fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () ->
 ### Consistency Patterns
 
 - Standalone database par tool type
-- Validation 2 couches (UI légère + Service robuste) 
+- Validation unifiée via FormValidator/JsonSchemaValidator
 - Configuration JSON avec schéma
 - Event sourcing pour toutes modifications
 
 ### Interface Contracts
 
-- ToolTypeContract pour métadonnées et discovery
+- ToolTypeContract étend SchemaProvider pour validation unifiée
 - ExecutableService pour logique métier
-- Validation via validateData()
+- FormValidator pour validation UI/Service
 
 ---
 

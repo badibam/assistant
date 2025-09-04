@@ -7,7 +7,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.ValidationResult
-import com.assistant.core.validation.JsonSchemaValidator
+import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.database.AppDatabase
 import com.assistant.tools.tracking.data.TrackingDao
 import com.assistant.tools.tracking.entities.TrackingData
@@ -35,7 +35,57 @@ class TrackingService(private val context: Context) : ExecutableService {
     private val tempData = ConcurrentHashMap<String, Any>()
     
     /**
-     * Extract properties from params JSONObject for specific tracking types
+     * Extract properties from value JSONObject for specific tracking types
+     * @param valueJson The JSONObject containing the tracking value data
+     * @param type The tracking type identifier
+     * @return Map of properties specific to the tracking type
+     */
+    private fun extractPropertiesFromValueJson(valueJson: JSONObject, type: String, instanceConfig: JSONObject?): Map<String, Any> {
+        return when (type) {
+            "numeric" -> mapOf(
+                "quantity" to valueJson.optString("quantity", ""),
+                "unit" to valueJson.optString("unit", "")
+            )
+            "boolean" -> mapOf(
+                "state" to valueJson.optBoolean("state", false),
+                "true_label" to (instanceConfig?.optString("true_label", "Oui") ?: "Oui"),
+                "false_label" to (instanceConfig?.optString("false_label", "Non") ?: "Non")
+            )
+            "scale" -> mapOf(
+                "value" to valueJson.optInt("rating", 5), // Note: rating in JSON, value in properties
+                "min_value" to valueJson.optInt("min_value", 1),
+                "max_value" to valueJson.optInt("max_value", 10),
+                "min_label" to valueJson.optString("min_label", ""),
+                "max_label" to valueJson.optString("max_label", "")
+            )
+            "text" -> mapOf(
+                "text" to valueJson.optString("text", "")
+            )
+            "choice" -> {
+                // Get available options from instance config, not user params
+                val availableOptions = instanceConfig?.optJSONArray("options")?.let { array ->
+                    (0 until array.length()).map { array.optString(it, "") }.filter { it.isNotEmpty() }
+                } ?: emptyList<String>()
+                
+                mapOf(
+                    "available_options" to availableOptions,
+                    "selected_option" to valueJson.optString("selected_option", "")
+                )
+            }
+            "counter" -> mapOf(
+                "increment" to valueJson.optInt("increment", 1),
+                "unit" to (instanceConfig?.optString("unit", "") ?: "")
+            )
+            "timer" -> mapOf(
+                "activity" to valueJson.optString("activity", ""),
+                "duration_minutes" to valueJson.optInt("duration_minutes", 0)
+            )
+            else -> emptyMap()
+        }
+    }
+
+    /**
+     * Extract properties from params JSONObject for specific tracking types (LEGACY - for compatibility)
      * @param params The JSONObject containing the parameters
      * @param type The tracking type identifier
      * @return Map of properties specific to the tracking type
@@ -116,9 +166,12 @@ class TrackingService(private val context: Context) : ExecutableService {
      * Create a new tracking entry
      */
     private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
+        android.util.Log.d("VALDEBUG", "=== TRACKINGSERVICE.HANDLECREATE START ===")
+        android.util.Log.d("VALDEBUG", "Create params received: $params")
         Log.d("TrackingService", "handleCreate() called with params: $params")
         if (token.isCancelled) return OperationResult.cancelled()
         
+        android.util.Log.d("VALDEBUG", "Extracting parameters...")
         val toolInstanceId = params.optString("tool_instance_id")
         val zoneName = params.optString("zone_name")
         val toolInstanceName = params.optString("tool_instance_name")
@@ -126,44 +179,71 @@ class TrackingService(private val context: Context) : ExecutableService {
         val quantity = params.optString("quantity")
         val unit = params.optString("unit")
         val type = params.optString("type", "numeric")
+        android.util.Log.d("VALDEBUG", "Parameters extracted: toolInstanceId=$toolInstanceId, name=$name, type=$type")
         // Parse date and time parameters or use current timestamp as fallback
+        android.util.Log.d("VALDEBUG", "Parsing recorded_at timestamp...")
         val recordedAt = if (params.has("date") && params.has("time")) {
             try {
                 val date = params.optString("date")
                 val time = params.optString("time")
-                Log.d("TrackingService", "Converting date=$date time=$time to timestamp")
-                com.assistant.core.utils.DateUtils.combineDateTime(date, time)
+                android.util.Log.d("VALDEBUG", "Converting date=$date time=$time to timestamp")
+                val timestamp = com.assistant.core.utils.DateUtils.combineDateTime(date, time)
+                android.util.Log.d("VALDEBUG", "Date conversion successful: $timestamp")
+                timestamp
             } catch (e: Exception) {
-                Log.e("TrackingService", "Failed to parse date/time, using current timestamp", e)
+                android.util.Log.e("VALDEBUG", "Failed to parse date/time, using current timestamp", e)
                 System.currentTimeMillis()
             }
         } else {
-            params.optLong("recorded_at", System.currentTimeMillis())
+            val timestamp = params.optLong("recorded_at", System.currentTimeMillis())
+            android.util.Log.d("VALDEBUG", "Using provided/current timestamp: $timestamp")
+            timestamp
         }
         
-        Log.d("TrackingService", "Creating entry: toolInstanceId=$toolInstanceId, name=$name, quantity=$quantity, unit=$unit")
+        android.util.Log.d("VALDEBUG", "Validating required parameters...")
         
         if (toolInstanceId.isBlank() || zoneName.isBlank() || toolInstanceName.isBlank() || 
             name.isBlank()) {
+            android.util.Log.e("VALDEBUG", "Required parameters missing: toolInstanceId=$toolInstanceId, zoneName=$zoneName, toolInstanceName=$toolInstanceName, name=$name")
             return OperationResult.error("Tool instance ID, zone name, tool instance name and name are required")
         }
         
+        android.util.Log.d("VALDEBUG", "Getting handler for type: $type")
         // Create JSON value using TrackingTypeFactory
         val handler = TrackingTypeFactory.getHandler(type)
         if (handler == null) {
+            android.util.Log.e("VALDEBUG", "No handler found for tracking type: $type")
             return OperationResult.error("Unsupported tracking type: $type")
         }
+        android.util.Log.d("VALDEBUG", "Handler retrieved successfully for type: $type")
         
+        android.util.Log.d("VALDEBUG", "Getting instance config from DB...")
         // Get instance config for choice options and other type configs
         val instanceConfig = toolInstanceDao.getToolInstanceById(toolInstanceId)?.config_json?.let { JSONObject(it) }
-        val properties = extractPropertiesFromParams(params, type, instanceConfig)
-        android.util.Log.d("TRACKING_DEBUG", "Extracted properties for type $type: $properties")
+        android.util.Log.d("VALDEBUG", "Instance config retrieved: ${instanceConfig != null}")
         
-        val valueJson = handler.createValueJson(properties)
-        android.util.Log.d("TRACKING_DEBUG", "Created valueJson: $valueJson")
+        android.util.Log.d("VALDEBUG", "Extracting properties from params...")
         
-        if (valueJson == null) {
-            android.util.Log.e("TRACKING_DEBUG", "FAILED to create valueJson for type $type with properties: $properties")
+        // Extract value JSON and parse it to get the actual data
+        val valueJsonString = params.optString("value", "{}")
+        android.util.Log.d("VALDEBUG", "Value JSON string from params: $valueJsonString")
+        
+        val valueJson = try { 
+            JSONObject(valueJsonString) 
+        } catch (e: Exception) { 
+            android.util.Log.e("VALDEBUG", "Failed to parse value JSON: $valueJsonString", e)
+            JSONObject() 
+        }
+        
+        val properties = extractPropertiesFromValueJson(valueJson, type, instanceConfig)
+        android.util.Log.d("VALDEBUG", "Properties extracted: $properties")
+        
+        android.util.Log.d("VALDEBUG", "Creating value JSON from properties...")
+        val createdValueJson = handler.createValueJson(properties)
+        android.util.Log.d("VALDEBUG", "Created valueJson: $createdValueJson")
+        
+        if (createdValueJson == null) {
+            android.util.Log.e("VALDEBUG", "FAILED to create valueJson for type $type with properties: $properties")
             return OperationResult.error("Failed to create value JSON for $type data: $properties")
         }
         
@@ -174,58 +254,81 @@ class TrackingService(private val context: Context) : ExecutableService {
             zone_name = zoneName,
             tool_instance_name = toolInstanceName,
             name = name,
-            value = valueJson,
+            value = createdValueJson,
             recorded_at = recordedAt
         )
+        
+        android.util.Log.d("VALDEBUG", "newEntry created: ${newEntry.id}, name=${newEntry.name}, value=${newEntry.value}")
         
         if (token.isCancelled) return OperationResult.cancelled()
         
         // Validate data before insertion using JSON Schema
+        android.util.Log.d("VALDEBUG", "Starting validation phase...")
         val toolType = ToolTypeManager.getToolType("tracking")
-        android.util.Log.d("TRACKING_DEBUG", "Starting validation for entry: ${newEntry.name}, type: ${newEntry.value}")
+        android.util.Log.d("VALDEBUG", "toolType retrieved: ${toolType != null}")
         if (toolType != null) {
             // Phase 1: Use new JSON Schema validation as primary validation
-            val dataJson = newEntry.toValidationJson()
-            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
-            
-            // Phase 2: Keep manual validation for comparison in debug mode
-            val manualValidation = toolType.validateData(newEntry, "create")
-            
-            // Compare results and log differences for debugging
-            if (schemaValidation.isValid != manualValidation.isValid) {
-                Log.w("VALIDATION_COMPARISON", 
-                    "Validation mismatch for ${newEntry.name}:\n" +
-                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
-                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
-            }
-            
-            android.util.Log.d("TRACKING_DEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
-            android.util.Log.d("TRACKING_DEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
-            
-            // Use schema validation as primary validation
-            if (!schemaValidation.isValid) {
-                android.util.Log.e("TRACKING_DEBUG", "SCHEMA VALIDATION FAILED: ${schemaValidation.errorMessage}")
-                return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
+            try {
+                android.util.Log.d("VALDEBUG", "Converting newEntry to validation JSON...")
+                val dataJson = newEntry.toValidationJson()
+                android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
+                
+                android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
+                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+                    // Convert JSON string to Map for new API
+                    val jsonObject = JSONObject(it)
+                    jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
+                }, useDataSchema = true)
+                android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
+                
+                // Phase 2: Keep manual validation for comparison in debug mode
+                android.util.Log.d("VALDEBUG", "Calling manual validation...")
+                val manualValidation = toolType.validateData(newEntry, "create")
+                android.util.Log.d("VALDEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
+                
+                // Compare results and log differences for debugging
+                if (schemaValidation.isValid != manualValidation.isValid) {
+                    Log.w("VALIDATION_COMPARISON", 
+                        "Validation mismatch for ${newEntry.name}:\n" +
+                        "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
+                        "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
+                }
+                
+                // Use schema validation as primary validation
+                if (!schemaValidation.isValid) {
+                    android.util.Log.e("VALDEBUG", "Schema validation FAILED: ${schemaValidation.errorMessage}")
+                    return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
+                }
+                
+                android.util.Log.d("VALDEBUG", "Validation phase completed successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("VALDEBUG", "Exception during validation: ${e.message}", e)
+                return OperationResult.error("Validation exception: ${e.message}")
             }
         } else {
-            android.util.Log.e("TRACKING_DEBUG", "ToolType is NULL!")
+            android.util.Log.e("VALDEBUG", "ToolType is NULL!")
         }
         
-        Log.d("TrackingService", "Inserting entry into database: ${newEntry.id}")
+        android.util.Log.d("VALDEBUG", "Calling trackingDao.insertEntry...")
         trackingDao.insertEntry(newEntry)
-        Log.d("TrackingService", "Entry inserted successfully")
+        android.util.Log.d("VALDEBUG", "trackingDao.insertEntry completed successfully")
         
-        return OperationResult.success(mapOf(
+        val result = OperationResult.success(mapOf(
             "entry_id" to newEntry.id,
             "tool_instance_id" to newEntry.tool_instance_id,
             "recorded_at" to newEntry.recorded_at
         ))
+        
+        android.util.Log.d("VALDEBUG", "=== TRACKINGSERVICE.HANDLECREATE END - SUCCESS ===")
+        return result
     }
     
     /**
      * Update existing tracking entry
      */
     private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
+        android.util.Log.d("VALDEBUG", "=== TRACKINGSERVICE.HANDLEUPDATE START ===")
+        android.util.Log.d("VALDEBUG", "Update params received: $params")
         if (token.isCancelled) return OperationResult.cancelled()
         
         val entryId = params.optString("entry_id")
@@ -291,44 +394,72 @@ class TrackingService(private val context: Context) : ExecutableService {
         val newValue = valueJson
         
         val updatedEntry = existingEntry.copy(
+            name = params.optString("name", existingEntry.name),
             value = newValue,
             recorded_at = if (recordedAt != -1L) recordedAt else existingEntry.recorded_at,
             updated_at = System.currentTimeMillis()
         )
         
+        android.util.Log.d("VALDEBUG", "updatedEntry created: name=${updatedEntry.name}, value=${updatedEntry.value}")
+        
         // Validate data before update using JSON Schema
+        android.util.Log.d("VALDEBUG", "Starting validation phase...")
         val toolType = ToolTypeManager.getToolType("tracking")
+        android.util.Log.d("VALDEBUG", "toolType retrieved: ${toolType != null}")
         if (toolType != null) {
             // Phase 1: Use new JSON Schema validation as primary validation
-            val dataJson = updatedEntry.toValidationJson()
-            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
-            
-            // Phase 2: Keep manual validation for comparison in debug mode
-            val manualValidation = toolType.validateData(updatedEntry, "update")
-            
-            // Compare results and log differences for debugging
-            if (schemaValidation.isValid != manualValidation.isValid) {
-                Log.w("VALIDATION_COMPARISON", 
-                    "Update validation mismatch for ${updatedEntry.name}:\n" +
-                    "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
-                    "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
-            }
-            
-            // Use schema validation as primary validation
-            if (!schemaValidation.isValid) {
-                Log.e("TrackingService", "Update schema validation failed: ${schemaValidation.errorMessage}")
-                return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
+            try {
+                android.util.Log.d("VALDEBUG", "Converting updatedEntry to validation JSON...")
+                val dataJson = updatedEntry.toValidationJson()
+                android.util.Log.d("VALDEBUG", "dataJson for validation: $dataJson")
+                
+                android.util.Log.d("VALDEBUG", "Calling SchemaValidator.validate...")
+                val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+                    // Convert JSON string to Map for new API
+                    val jsonObject = JSONObject(it)
+                    jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
+                }, useDataSchema = true)
+                android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
+                
+                // Phase 2: Keep manual validation for comparison in debug mode
+                android.util.Log.d("VALDEBUG", "Calling manual validation...")
+                val manualValidation = toolType.validateData(updatedEntry, "update")
+                android.util.Log.d("VALDEBUG", "Manual validation result: isValid=${manualValidation.isValid}, error=${manualValidation.errorMessage}")
+                
+                // Compare results and log differences for debugging
+                if (schemaValidation.isValid != manualValidation.isValid) {
+                    Log.w("VALIDATION_COMPARISON", 
+                        "Update validation mismatch for ${updatedEntry.name}:\n" +
+                        "Schema: ${schemaValidation.isValid} (${schemaValidation.errorMessage})\n" +
+                        "Manual: ${manualValidation.isValid} (${manualValidation.errorMessage})")
+                }
+                
+                // Use schema validation as primary validation
+                if (!schemaValidation.isValid) {
+                    android.util.Log.e("VALDEBUG", "Schema validation FAILED: ${schemaValidation.errorMessage}")
+                    return OperationResult.error("Validation failed: ${schemaValidation.errorMessage}")
+                }
+                
+                android.util.Log.d("VALDEBUG", "Validation phase completed successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("VALDEBUG", "Exception during validation: ${e.message}", e)
+                return OperationResult.error("Validation exception: ${e.message}")
             }
         }
         
         if (token.isCancelled) return OperationResult.cancelled()
         
+        android.util.Log.d("VALDEBUG", "Calling trackingDao.updateEntry...")
         trackingDao.updateEntry(updatedEntry)
+        android.util.Log.d("VALDEBUG", "trackingDao.updateEntry completed successfully")
         
-        return OperationResult.success(mapOf(
+        val result = OperationResult.success(mapOf(
             "entry_id" to updatedEntry.id,
             "updated_at" to updatedEntry.updated_at
         ))
+        
+        android.util.Log.d("VALDEBUG", "=== TRACKINGSERVICE.HANDLEUPDATE END - SUCCESS ===")
+        return result
     }
     
     /**
@@ -351,7 +482,11 @@ class TrackingService(private val context: Context) : ExecutableService {
         if (toolType != null) {
             // Phase 1: Use new JSON Schema validation as primary validation
             val dataJson = existingEntry.toValidationJson()
-            val schemaValidation = JsonSchemaValidator.validateData(toolType, dataJson)
+            val schemaValidation = SchemaValidator.validate(toolType, dataJson.let { 
+                // Convert JSON string to Map for new API
+                val jsonObject = JSONObject(it)
+                jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
+            }, useDataSchema = true)
             
             // Phase 2: Keep manual validation for comparison in debug mode
             val manualValidation = toolType.validateData(existingEntry, "delete")

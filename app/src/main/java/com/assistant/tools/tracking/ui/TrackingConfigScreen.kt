@@ -68,6 +68,8 @@ fun TrackingConfigScreen(
     existingToolId: String? = null,
     onDelete: (() -> Unit)? = null
 ) {
+    // VALDEBUG: Screen startup debug
+    android.util.Log.d("VALDEBUG", "TrackingConfigScreen opened - existingToolId=$existingToolId")
     println("===============================")
     println("TrackingConfigScreen called with existingToolId: $existingToolId")
     println("===============================")
