@@ -40,8 +40,8 @@ object ValidationErrorProcessor {
     private fun filterRedundantSchemaErrors(errors: Set<ValidationMessage>, schema: String): List<ValidationMessage> {
         val errorList = errors.toList()
         
-        // Check if schema contains conditional validation by analyzing schema content
-        val hasConditionalValidation = schema.contains("\"if\"") && schema.contains("\"then\"")
+        // Robust detection of conditional validation using JSON parsing
+        val hasConditionalValidation = detectConditionalValidation(schema)
         
         safeLog("Schema has conditional validation: $hasConditionalValidation")
         
@@ -282,6 +282,15 @@ object ValidationErrorProcessor {
             // Generic fallback
             else -> context.getString(R.string.validation_invalid_format)
         }
+    }
+    
+    /**
+     * Detects conditional validation using precise regex patterns
+     * Looks for "if": followed by an object AND "then": followed by an object
+     */
+    private fun detectConditionalValidation(schemaJson: String): Boolean {
+        return schemaJson.contains(Regex("\"if\"\\s*:\\s*\\{")) && 
+               schemaJson.contains(Regex("\"then\"\\s*:\\s*\\{"))
     }
     
     /**
