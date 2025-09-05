@@ -213,7 +213,7 @@ versionName = "0.1.1"
 ### Service Implementation
 
 - Hériter `ExecutableService`
-- Validation via `SchemaValidator.validate(toolType, data, useDataSchema)`
+- Validation via `SchemaValidator.validate(toolType, data, context, useDataSchema)`
 - Logs d'erreur explicites
 - Gestion token cancellation
 
@@ -250,7 +250,7 @@ app/src/main/java/com/assistant/core/validation/
 ```kotlin
 // Usage standard pour tous types d'outils
 val toolType = ToolTypeManager.getToolType("tracking")
-val result = SchemaValidator.validate(toolType, data, useDataSchema = true)
+val result = SchemaValidator.validate(toolType, data, context, useDataSchema = true)
 
 if (result.isValid) {
     // Validation réussie
@@ -282,10 +282,10 @@ interface SchemaProvider {
 
 ```kotlin
 // Validation configuration outil (création/modification)
-SchemaValidator.validate(toolType, configData, useDataSchema = false)
+SchemaValidator.validate(toolType, configData, context, useDataSchema = false)
 
 // Validation données métier (entries)  
-SchemaValidator.validate(toolType, entryData, useDataSchema = true)
+SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
 ```
 
 ## ═══════════════════════════════════

@@ -260,7 +260,7 @@ class TrackingService(private val context: Context) : ExecutableService {
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                }, useDataSchema = true)
+                }, context, useDataSchema = true)
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
                 
                 // Use schema validation as primary validation
@@ -387,7 +387,7 @@ class TrackingService(private val context: Context) : ExecutableService {
                     // Convert JSON string to Map for new API
                     val jsonObject = JSONObject(it)
                     jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-                }, useDataSchema = true)
+                }, context, useDataSchema = true)
                 android.util.Log.d("VALDEBUG", "Schema validation result: isValid=${schemaValidation.isValid}, error=${schemaValidation.errorMessage}")
                 
                 // Use schema validation as primary validation
@@ -442,7 +442,7 @@ class TrackingService(private val context: Context) : ExecutableService {
                 // Convert JSON string to Map for new API
                 val jsonObject = JSONObject(it)
                 jsonObject.keys().asSequence().associateWith { key -> jsonObject.get(key) }
-            }, useDataSchema = true)
+            }, context, useDataSchema = true)
             
             // Use schema validation as primary validation
             if (!schemaValidation.isValid) {

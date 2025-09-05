@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Validation Error Messages -->
+    
+    <!-- Type mismatch errors -->
+    <string name="validation_type_string_number">doit être un nombre</string>
+    <string name="validation_type_number_string">doit être un texte</string>
+    <string name="validation_type_boolean_string">doit être un texte</string>
+    <string name="validation_type_array_object">doit être un objet</string>
+    <string name="validation_type_object_array">doit être une liste</string>
+    <string name="validation_type_mismatch">type de valeur incorrect</string>
+    
+    <!-- Required field errors -->
+    <string name="validation_required_field">est obligatoire</string>
+    <string name="validation_required_property">champ obligatoire manquant</string>
+    
+    <!-- String length constraints -->
+    <string name="validation_min_length">doit contenir au moins %1$d caractères</string>
+    <string name="validation_max_length">ne peut pas dépasser %1$d caractères</string>
+    <string name="validation_min_length_1">doit contenir au moins 1 caractère</string>
+    
+    <!-- Numeric constraints -->
+    <string name="validation_minimum">doit être supérieur ou égal à %1$s</string>
+    <string name="validation_maximum">doit être inférieur ou égal à %1$s</string>
+    <string name="validation_exclusive_minimum">doit être supérieur à %1$s</string>
+    <string name="validation_exclusive_maximum">doit être inférieur à %1$s</string>
+    
+    <!-- Array constraints -->
+    <string name="validation_min_items">doit contenir au moins %1$d éléments</string>
+    <string name="validation_max_items">ne peut pas contenir plus de %1$d éléments</string>
+    <string name="validation_unique_items">les éléments doivent être uniques</string>
+    
+    <!-- Format and pattern errors -->
+    <string name="validation_pattern_mismatch">format non valide</string>
+    <string name="validation_format_email">doit être une adresse email valide</string>
+    <string name="validation_format_date">doit être une date valide</string>
+    <string name="validation_format_time">doit être une heure valide</string>
+    <string name="validation_format_uri">doit être une URL valide</string>
+    
+    <!-- Enum/choice errors -->
+    <string name="validation_enum_mismatch">valeur non autorisée</string>
+    <string name="validation_enum_allowed">valeurs autorisées : %1$s</string>
+    
+    <!-- Schema structure errors -->
+    <string name="validation_additional_properties">propriété non autorisée</string>
+    <string name="validation_not_defined_schema">n\'est pas défini dans le schéma</string>
+    
+    <!-- Generic fallback -->
+    <string name="validation_invalid_format">format non valide</string>
+    <string name="validation_generic_error">erreur de validation</string>
+    
+    <!-- Field name fallback -->
+    <string name="validation_field_default">Champ</string>
+</resources>

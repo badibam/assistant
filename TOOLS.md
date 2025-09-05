@@ -295,10 +295,10 @@ Validation unifiée pour tous les types d'outils via SchemaValidator.
 val toolType = ToolTypeManager.getToolType("tracking")
 
 // Validation données métier (entries)
-val dataResult = SchemaValidator.validate(toolType, entryData, useDataSchema = true)
+val dataResult = SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
 
 // Validation configuration outil
-val configResult = SchemaValidator.validate(toolType, configData, useDataSchema = false)
+val configResult = SchemaValidator.validate(toolType, configData, context, useDataSchema = false)
 
 // Gestion résultat
 if (dataResult.isValid) {
@@ -317,7 +317,7 @@ class MyToolService(private val context: Context) : ExecutableService {
         // Validation automatique via ToolType
         val toolType = ToolTypeManager.getToolType("my_tool")
         if (toolType != null) {
-            val validation = SchemaValidator.validate(toolType, dataMap, useDataSchema = true)
+            val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
             if (!validation.isValid) {
                 return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
@@ -342,7 +342,7 @@ fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () ->
         val toolTypeProvider = ToolTypeManager.getToolType("my_tool")
         val configData = mapOf("name" to name, "type" to toolType)
         toolTypeProvider?.let { 
-            SchemaValidator.validate(it, configData, useDataSchema = false) 
+            SchemaValidator.validate(it, configData, context, useDataSchema = false) 
         }
     }
     

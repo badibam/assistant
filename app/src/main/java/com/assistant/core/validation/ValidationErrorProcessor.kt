@@ -1,5 +1,7 @@
 package com.assistant.core.validation
 
+import android.content.Context
+import com.assistant.R
 import com.networknt.schema.ValidationMessage
 
 /**
@@ -11,9 +13,10 @@ object ValidationErrorProcessor {
     /**
      * Filters and formats validation errors into readable string with error prioritization
      * Filters base schema errors when conditional schemas are present
+     * @param context Android context for string resource access
      * @param schemaProvider Optional SchemaProvider for field name translation
      */
-    fun filterErrors(errors: Set<ValidationMessage>, schema: String, schemaProvider: SchemaProvider? = null): String {
+    fun filterErrors(errors: Set<ValidationMessage>, schema: String, context: Context, schemaProvider: SchemaProvider? = null): String {
         if (errors.isEmpty()) return ""
         
         // Filter out base schema errors if conditional schemas are present
@@ -25,9 +28,9 @@ object ValidationErrorProcessor {
         return errorsByPath.map { (path, pathErrors) ->
             val prioritizedError = selectMostRelevantError(pathErrors)
             val friendlyFieldName = extractFieldNameFromMessage(prioritizedError, schemaProvider)
-            val cleanMessage = cleanErrorMessage(prioritizedError)
-            "$friendlyFieldName : $cleanMessage"
-        }.joinToString("; ")
+            val translatedMessage = translateErrorMessage(prioritizedError, context)
+            "$friendlyFieldName : $translatedMessage"
+        }.joinToString("\n")
     }
     
     /**
@@ -169,16 +172,115 @@ object ValidationErrorProcessor {
     }
     
     /**
-     * Removes the technical field path from error message
-     * Examples:
-     * - "$.name: must be at least 1 characters long" -> "must be at least 1 characters long"
-     * - "$.items[2].default_quantity: integer found, string expected" -> "integer found, string expected"
+     * Translates technical error messages to user-friendly French messages
+     * Uses string resources for consistent translations
      */
-    private fun cleanErrorMessage(errorMessage: String): String {
-        return if (errorMessage.contains(":")) {
+    private fun translateErrorMessage(errorMessage: String, context: Context): String {
+        val cleanMessage = if (errorMessage.contains(":")) {
             errorMessage.substringAfter(":").trim()
         } else {
             errorMessage
+        }
+        
+        return when {
+            // Type mismatch errors
+            cleanMessage.contains("string found, number expected") -> 
+                context.getString(R.string.validation_type_string_number)
+            cleanMessage.contains("number found, string expected") -> 
+                context.getString(R.string.validation_type_number_string)
+            cleanMessage.contains("boolean found, string expected") -> 
+                context.getString(R.string.validation_type_boolean_string)
+            cleanMessage.contains("array found, object expected") -> 
+                context.getString(R.string.validation_type_array_object)
+            cleanMessage.contains("object found, array expected") -> 
+                context.getString(R.string.validation_type_object_array)
+            cleanMessage.contains("found,") && cleanMessage.contains("expected") -> 
+                context.getString(R.string.validation_type_mismatch)
+            
+            // Required field errors
+            cleanMessage.contains("is missing but it is required") -> 
+                context.getString(R.string.validation_required_field)
+            cleanMessage.contains("required property") -> 
+                context.getString(R.string.validation_required_property)
+            cleanMessage.contains("is required") -> 
+                context.getString(R.string.validation_required_field)
+            
+            // String length constraints
+            cleanMessage.matches(Regex("must be at least (\\d+) characters long")) -> {
+                val length = Regex("must be at least (\\d+) characters long").find(cleanMessage)?.groupValues?.get(1)
+                if (length == "1") {
+                    context.getString(R.string.validation_min_length_1)
+                } else {
+                    context.getString(R.string.validation_min_length, length ?: "1")
+                }
+            }
+            cleanMessage.matches(Regex("must be at most (\\d+) characters long")) -> {
+                val length = Regex("must be at most (\\d+) characters long").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_max_length, length ?: "0")
+            }
+            
+            // Numeric constraints  
+            cleanMessage.matches(Regex("must be greater than or equal to ([\\d.]+)")) -> {
+                val value = Regex("must be greater than or equal to ([\\d.]+)").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_minimum, value ?: "0")
+            }
+            cleanMessage.matches(Regex("must be less than or equal to ([\\d.]+)")) -> {
+                val value = Regex("must be less than or equal to ([\\d.]+)").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_maximum, value ?: "0")
+            }
+            cleanMessage.matches(Regex("must be greater than ([\\d.]+)")) -> {
+                val value = Regex("must be greater than ([\\d.]+)").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_exclusive_minimum, value ?: "0")
+            }
+            cleanMessage.matches(Regex("must be less than ([\\d.]+)")) -> {
+                val value = Regex("must be less than ([\\d.]+)").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_exclusive_maximum, value ?: "0")
+            }
+            
+            // Array constraints
+            cleanMessage.matches(Regex("must have at least (\\d+) items")) -> {
+                val count = Regex("must have at least (\\d+) items").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_min_items, count?.toIntOrNull() ?: 1)
+            }
+            cleanMessage.matches(Regex("must have at most (\\d+) items")) -> {
+                val count = Regex("must have at most (\\d+) items").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_max_items, count?.toIntOrNull() ?: 0)
+            }
+            cleanMessage.contains("items are not unique") -> 
+                context.getString(R.string.validation_unique_items)
+            
+            // Format and pattern errors
+            cleanMessage.contains("does not match") -> 
+                context.getString(R.string.validation_pattern_mismatch)
+            cleanMessage.contains("pattern") -> 
+                context.getString(R.string.validation_pattern_mismatch)
+            cleanMessage.contains("format") && cleanMessage.contains("email") -> 
+                context.getString(R.string.validation_format_email)
+            cleanMessage.contains("format") && cleanMessage.contains("date") -> 
+                context.getString(R.string.validation_format_date)
+            cleanMessage.contains("format") && cleanMessage.contains("time") -> 
+                context.getString(R.string.validation_format_time)
+            cleanMessage.contains("format") && cleanMessage.contains("uri") -> 
+                context.getString(R.string.validation_format_uri)
+            cleanMessage.contains("format") -> 
+                context.getString(R.string.validation_invalid_format)
+            
+            // Enum/choice errors
+            cleanMessage.contains("enum") -> 
+                context.getString(R.string.validation_enum_mismatch)
+            cleanMessage.matches(Regex("is not one of \\[(.+)]")) -> {
+                val values = Regex("is not one of \\[(.+)]").find(cleanMessage)?.groupValues?.get(1)
+                context.getString(R.string.validation_enum_allowed, values ?: "")
+            }
+            
+            // Schema structure errors
+            cleanMessage.contains("additional properties") -> 
+                context.getString(R.string.validation_additional_properties)
+            cleanMessage.contains("is not defined in the schema") -> 
+                context.getString(R.string.validation_not_defined_schema)
+            
+            // Generic fallback
+            else -> context.getString(R.string.validation_invalid_format)
         }
     }
     

@@ -1,5 +1,6 @@
 package com.assistant.core.validation
 
+import android.content.Context
 import com.networknt.schema.JsonSchema
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
@@ -25,10 +26,11 @@ object SchemaValidator {
      * Uses NetworkNT with Jackson for comprehensive validation of nested structures
      * @param schemaProvider Provider that supplies schema and field translations
      * @param data Data to validate as key-value map
+     * @param context Android context for string resource access
      * @param useDataSchema true to use data schema, false to use config schema
      * @return ValidationResult with success/error status and user-friendly messages
      */
-    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, useDataSchema: Boolean = false): ValidationResult {
+    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, useDataSchema: Boolean = false): ValidationResult {
         val schema = if (useDataSchema) {
             schemaProvider.getDataSchema() ?: throw IllegalArgumentException("SchemaProvider has no data schema")
         } else {
@@ -59,7 +61,7 @@ object SchemaValidator {
                 safeLog("SCHEMA VALIDATION SUCCESS")
                 ValidationResult.success()
             } else {
-                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, schemaProvider)
+                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, context, schemaProvider)
                 if (errorMessage.isEmpty()) {
                     safeLog("SCHEMA VALIDATION SUCCESS (errors filtered out)")
                     ValidationResult.success()

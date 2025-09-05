@@ -225,7 +225,7 @@ fun TrackingConfigScreen(
         // Utiliser SchemaValidator V3 avec le schéma de configuration tracking
         val toolType = ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
-            val validation = SchemaValidator.validate(toolType, configMap, useDataSchema = false)
+            val validation = SchemaValidator.validate(toolType, configMap, context, useDataSchema = false)
             
             if (validation.isValid) {
                 onSave(cleanConfig.toString())
