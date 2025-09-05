@@ -303,7 +303,7 @@ val handleSave = {
 }
 ```
 
-**Architecture** : `assets/schemas/*.json` + `SchemaLoader` + messages français
+**Architecture** : Schémas externalisés en objets Kotlin
 
 ## ═══════════════════════════════════
 

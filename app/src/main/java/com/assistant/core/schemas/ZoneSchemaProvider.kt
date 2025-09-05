@@ -2,7 +2,7 @@ package com.assistant.core.schemas
 
 import android.content.Context
 import com.assistant.core.validation.SchemaProvider
-import com.assistant.core.validation.SchemaLoader
+import com.assistant.core.schemas.ZoneSchemas
 
 /**
  * Schema provider for Zone configuration (business entity)
@@ -12,7 +12,7 @@ import com.assistant.core.validation.SchemaLoader
 class ZoneSchemaProvider(private val context: Context) : SchemaProvider {
     
     override fun getConfigSchema(): String {
-        return SchemaLoader.loadSchema(context, "zone_config_schema.json")
+        return ZoneSchemas.CONFIG_SCHEMA
     }
     
     override fun getDataSchema(): String? = null

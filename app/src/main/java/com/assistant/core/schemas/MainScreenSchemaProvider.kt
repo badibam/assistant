@@ -1,8 +1,8 @@
-package com.assistant.core.ui.schemas
+package com.assistant.core.schemas
 
 import android.content.Context
 import com.assistant.core.validation.SchemaProvider
-import com.assistant.core.validation.SchemaLoader
+import com.assistant.core.schemas.MainScreenSchemas
 
 /**
  * Schema provider for MainScreen UI configuration (future settings)
@@ -11,11 +11,11 @@ import com.assistant.core.validation.SchemaLoader
 object MainScreenSchemaProvider : SchemaProvider {
     
     override fun getConfigSchema(): String {
-        throw UnsupportedOperationException("Context required. Use getConfigSchema(context) instead.")
+        return MainScreenSchemas.CONFIG_SCHEMA
     }
     
     fun getConfigSchema(context: Context): String {
-        return SchemaLoader.loadSchema(context, "mainscreen_config_schema.json")
+        return MainScreenSchemas.CONFIG_SCHEMA
     }
     
     override fun getDataSchema(): String? = null
