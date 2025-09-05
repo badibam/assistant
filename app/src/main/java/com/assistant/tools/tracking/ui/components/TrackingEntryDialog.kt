@@ -102,6 +102,9 @@ fun TrackingEntryDialog(
     // State for error messages
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
+    // State for validated value object (single source of truth)
+    var valueObject by remember { mutableStateOf<Any>(emptyMap<String, Any>()) }
+    
     // Get Android context for string resources
     val context = LocalContext.current
 
@@ -204,7 +207,7 @@ fun TrackingEntryDialog(
 
         // Build complete TrackingData structure for validation
         // Parse valueJson to object for schema validation
-        val valueObject = try {
+        valueObject = try {
             val jsonObj = JSONObject(valueJson)
             // Convert JSONObject to Map for validation
             val map = mutableMapOf<String, Any>()
@@ -276,76 +279,14 @@ fun TrackingEntryDialog(
                 validateForm()
                 android.util.Log.d("VALDEBUG", "After validation: isValid=${validationResult.isValid}")
                 if (validationResult.isValid) {
-                    // Build final value JSON
-                    val valueJson = when (trackingType) {
-                        "numeric" -> JSONObject().apply {
-                            put("type", "numeric")
-                            put("quantity", numericQuantity.trim()) // Keep as string per schema
-                            put("unit", numericUnit.trim())
-                            put("raw", "${numericQuantity.trim()}${if (numericUnit.isNotBlank()) " ${numericUnit.trim()}" else ""}")
-                        }.toString()
-                        
-                        "text" -> JSONObject().apply {
-                            put("type", "text")
-                            put("text", textValue.trim())
-                            put("raw", textValue.trim())
-                        }.toString()
-                        
-                        "scale" -> {
-                            val minValue = config.optInt("min", 1)
-                            val maxValue = config.optInt("max", 10)
-                            val minLabel = config.optString("min_label", "")
-                            val maxLabel = config.optString("max_label", "")
-                            
-                            JSONObject().apply {
-                                put("type", "scale")
-                                put("rating", scaleRating)
-                                put("min_value", minValue)
-                                put("max_value", maxValue)
-                                put("min_label", minLabel)
-                                put("max_label", maxLabel)
-                                put("raw", "$scaleRating ($minValue à $maxValue)")
-                            }.toString()
+                    // Use validated and transformed valueObject (single source of truth)
+                    // This ensures Dialog and Service use exactly the same data format
+                    val valueJson = JSONObject().apply {
+                        val valueMap = valueObject as Map<String, Any>
+                        for ((key, value) in valueMap) {
+                            put(key, value)
                         }
-                        
-                        "choice" -> JSONObject().apply {
-                            put("type", "choice")
-                            put("selected_option", choiceValue.trim())
-                            val options = config.optJSONArray("options")?.let { array ->
-                                (0 until array.length()).map { array.getString(it) }
-                            } ?: emptyList()
-                            put("available_options", options)
-                            put("raw", choiceValue.trim())
-                        }.toString()
-                        
-                        "boolean" -> {
-                            val trueLabel = config.optString("true_label", "Oui")
-                            val falseLabel = config.optString("false_label", "Non")
-                            
-                            JSONObject().apply {
-                                put("type", "boolean")
-                                put("state", booleanValue)
-                                put("true_label", trueLabel)
-                                put("false_label", falseLabel)
-                                put("raw", if (booleanValue) trueLabel else falseLabel)
-                            }.toString()
-                        }
-                        
-                        "counter" -> JSONObject().apply {
-                            put("type", "counter")
-                            put("increment", counterIncrement.toIntOrNull() ?: 1)
-                            put("raw", counterIncrement.trim())
-                        }.toString()
-                        
-                        "timer" -> JSONObject().apply {
-                            put("type", "timer")
-                            put("activity", "") // Timer activity - could be derived from name
-                            put("duration_minutes", timerDuration.toIntOrNull() ?: 0)
-                            put("raw", "${timerDuration.trim()} min")
-                        }.toString()
-                        
-                        else -> "{}"
-                    }
+                    }.toString()
                     
                     android.util.Log.d("VALDEBUG", "=== CALLING PARENT ONCONFIRM ===")
                     android.util.Log.d("VALDEBUG", "Final name: '${name.trim()}'")
