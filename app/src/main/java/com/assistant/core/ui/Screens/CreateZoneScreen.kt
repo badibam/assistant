@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.database.entities.Zone
@@ -35,15 +36,28 @@ fun CreateZoneScreen(
     var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
     var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
     
-    // Validation state
-    // Form validation state
-    val isFormValid = remember(name) { name.trim().isNotEmpty() }
     val isEditing = existingZone != null
     
     // Handle save logic
     val handleSave = {
-        if (isFormValid) {
-            if (isEditing) {
+        // Validation via SchemaValidator avant sauvegarde
+        val zoneData = mapOf(
+            "name" to name.trim(),
+            "description" to description.trim()
+        )
+        
+        try {
+            val zoneProvider = com.assistant.core.schemas.ZoneSchemaProvider.create(context)
+            val validation = com.assistant.core.validation.SchemaValidator.validate(
+                zoneProvider,
+                zoneData,
+                context,
+                useDataSchema = false
+            )
+            
+            if (validation.isValid) {
+                // Validation réussie, procéder à la sauvegarde
+                if (isEditing) {
                 // Handle update
                 coroutineScope.launch {
                     try {
@@ -60,10 +74,18 @@ fun CreateZoneScreen(
                         // TODO: Error handling
                     }
                 }
+                } else {
+                    // Handle create
+                    onCreate?.invoke(name.trim(), description.takeIf { it.isNotBlank() }, null)
+                }
             } else {
-                // Handle create
-                onCreate?.invoke(name.trim(), description.takeIf { it.isNotBlank() }, null)
+                // Validation échouée, afficher erreur via Toast
+                Toast.makeText(context, validation.errorMessage, Toast.LENGTH_LONG).show()
             }
+            
+        } catch (e: Exception) {
+            // Erreur technique de validation
+            Toast.makeText(context, "Erreur de validation: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -81,6 +103,7 @@ fun CreateZoneScreen(
         )
         
         Spacer(modifier = Modifier.height(8.dp))
+        
         
         // Form fields
         UI.FormField(

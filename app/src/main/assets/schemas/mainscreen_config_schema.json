@@ -1,0 +1,6 @@
+{
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false,
+  "description": "MainScreen configuration schema - to be implemented later"
+}

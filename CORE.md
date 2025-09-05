@@ -288,6 +288,23 @@ SchemaValidator.validate(toolType, configData, context, useDataSchema = false)
 SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
 ```
 
+## SchemaValidator V3 + Schémas Externes 🆕
+
+**Pattern Validation Unifié** : Validation au clic + Toast + Schémas JSON externes
+
+```kotlin
+val handleSave = {
+    val validation = SchemaValidator.validate(provider, data, context)
+    if (validation.isValid) {
+        // Sauvegarder
+    } else {
+        Toast.makeText(context, validation.errorMessage, LENGTH_LONG).show()
+    }
+}
+```
+
+**Architecture** : `assets/schemas/*.json` + `SchemaLoader` + messages français
+
 ## ═══════════════════════════════════
 
 ---
