@@ -12,7 +12,7 @@ class AppVersionManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app_version", Context.MODE_PRIVATE)
     
     companion object {
-        const val CURRENT_APP_VERSION = 4
+        const val CURRENT_APP_VERSION = 5
         const val CURRENT_DATABASE_VERSION = 1
         const val CURRENT_CONFIG_VERSION = 1
         
