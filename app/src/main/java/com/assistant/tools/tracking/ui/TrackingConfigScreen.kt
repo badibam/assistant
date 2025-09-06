@@ -288,8 +288,12 @@ fun TrackingConfigScreen(
                 if (existingToolId != null) {
                     android.util.Log.d("TrackingConfig", "About to call delete_all_entries for tool: $existingToolId")
                     val deleteResult = coordinator.processUserAction(
-                        "delete_all_entries", 
-                        mapOf("tool_instance_id" to existingToolId)
+                        "delete->tool_data", 
+                        mapOf(
+                            "tool_type" to "tracking",
+                            "operation" to "delete_all_entries",
+                            "tool_instance_id" to existingToolId
+                        )
                     )
                     android.util.Log.d("TrackingConfig", "Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
                     if (deleteResult.status != CommandStatus.SUCCESS) {
