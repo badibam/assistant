@@ -23,6 +23,14 @@ import java.util.concurrent.ConcurrentHashMap
  * Implements the standard service pattern with cancellation token
  */
 class TrackingService(private val context: Context) : ExecutableService {
+    
+    init {
+        val toolType = ToolTypeManager.getToolType("tracking")
+        val availableOps = toolType?.getAvailableOperations() ?: emptyList()
+        Log.d("TrackingService", "=== TrackingService initialized ===")
+        Log.d("TrackingService", "Available operations: $availableOps")
+    }
+    
     private val trackingDao by lazy { 
         ToolTypeManager.getDaoForToolType("tracking", context) as? TrackingDao
             ?: throw IllegalStateException("TrackingDao not available")
@@ -148,6 +156,7 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
+                "delete_all_entries" -> handleDeleteAllEntries(params, token)
                 "get_entries" -> handleGetEntries(params, token)
                 "get_entries_by_date_range" -> handleGetEntriesByDateRange(params, token)
                 "get_entry_by_id" -> handleGetEntryById(params, token)
@@ -612,5 +621,34 @@ class TrackingService(private val context: Context) : ExecutableService {
                 "updated_at" to entry.updated_at
             )
         ))
+    }
+
+    /**
+     * Delete all entries for a specific tool instance
+     * Used when changing tool type to clear incompatible data
+     */
+    private suspend fun handleDeleteAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        Log.d("TrackingService", "=== handleDeleteAllEntries() called ===")
+        Log.d("TrackingService", "Params: $params")
+        
+        if (token.isCancelled) return OperationResult.cancelled()
+        
+        val toolInstanceId = params.optString("tool_instance_id")
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error("Tool instance ID is required")
+        }
+        
+        try {
+            trackingDao.deleteAllEntriesForToolInstance(toolInstanceId)
+            Log.d("TrackingService", "Deleted all entries for tool instance $toolInstanceId")
+            
+            return OperationResult.success(mapOf(
+                "success" to true,
+                "tool_instance_id" to toolInstanceId
+            ))
+        } catch (e: Exception) {
+            Log.e("TrackingService", "Failed to delete entries for tool instance $toolInstanceId", e)
+            return OperationResult.error("Failed to delete entries: ${e.message}")
+        }
     }
 }

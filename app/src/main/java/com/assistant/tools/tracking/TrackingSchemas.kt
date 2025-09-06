@@ -94,19 +94,19 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined scale items with min/max values",
+                                "description": "Predefined scale items (names only, min/max shared globally)",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                        "min": { "type": "integer", "default": 1 },
-                                        "max": { "type": "integer", "default": 10 },
-                                        "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                        "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
                                     },
                                     "required": ["name"]
                                 }
-                            }
+                            },
+                            "min": { "type": "integer", "default": 1, "description": "Minimum value for all scale items" },
+                            "max": { "type": "integer", "default": 10, "description": "Maximum value for all scale items" },
+                            "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for minimum value" },
+                            "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for maximum value" }
                         }
                     }
                 },

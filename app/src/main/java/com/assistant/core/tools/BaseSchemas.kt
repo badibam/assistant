@@ -41,9 +41,20 @@ object BaseSchemas {
                     "maxLength": 60,
                     "default": "activity",
                     "description": "Icon name for this tool instance"
+                },
+                "config_validation": {
+                    "type": "string",
+                    "enum": ["enabled", "disabled"],
+                    "description": "Configuration validation mode"
+                },
+                "data_validation": {
+                    "type": "string", 
+                    "enum": ["enabled", "disabled"],
+                    "description": "Data validation mode"
                 }
             },
-            "required": ["name", "management"]
+            "required": ["name", "management"],
+            "additionalProperties": false
         }
         """.trimIndent()
     }
@@ -104,17 +115,179 @@ object BaseSchemas {
     
     /**
      * Utility function to merge base schema with specific schema
-     * Returns an allOf schema that combines base and specific properties
+     * Flattens schemas to avoid nested allOf structures and simplify validation
+     * Handles properties, required, allOf, and metadata fields (x-*, $schema, etc.)
      */
     fun createExtendedSchema(baseSchema: String, specificSchema: String): String {
-        return """
-        {
-            "allOf": [
-                $baseSchema,
-                $specificSchema
-            ]
+        return try {
+            val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+            val baseNode = objectMapper.readTree(baseSchema)
+            val specificNode = objectMapper.readTree(specificSchema)
+            
+            val result = objectMapper.createObjectNode()
+            
+            // 1. Merge all metadata fields (type, $schema, title, description, x-*, etc.)
+            mergeMetadataFields(result, baseNode, specificNode)
+            
+            // 2. Merge properties (specific overrides base)
+            mergeProperties(result, baseNode, specificNode, objectMapper)
+            
+            // 3. Merge required arrays (union of both)
+            mergeRequired(result, baseNode, specificNode, objectMapper)
+            
+            // 4. Extract and flatten allOf conditions to root level
+            mergeAllOfConditions(result, baseNode, specificNode, objectMapper)
+            
+            // 5. Set additionalProperties (specific overrides base, default false)
+            setAdditionalProperties(result, baseNode, specificNode)
+            
+            objectMapper.writeValueAsString(result)
+            
+        } catch (e: Exception) {
+            // Fallback to old behavior if JSON parsing fails
+            """
+            {
+                "allOf": [
+                    $baseSchema,
+                    $specificSchema
+                ]
+            }
+            """.trimIndent()
         }
-        """.trimIndent()
+    }
+    
+    /**
+     * Merges metadata fields (type, $schema, title, description, x-*, etc.)
+     * Specific schema overrides base schema for conflicting fields
+     */
+    private fun mergeMetadataFields(
+        result: com.fasterxml.jackson.databind.node.ObjectNode,
+        baseNode: com.fasterxml.jackson.databind.JsonNode,
+        specificNode: com.fasterxml.jackson.databind.JsonNode
+    ) {
+        val metadataFields = setOf("type", "\$schema", "title", "description")
+        val skipFields = setOf("properties", "required", "allOf", "additionalProperties")
+        
+        // Add base metadata
+        baseNode.fields().forEach { (key, value) ->
+            if (key !in skipFields && (key in metadataFields || key.startsWith("x-"))) {
+                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+            }
+        }
+        
+        // Add specific metadata (overrides base)
+        specificNode.fields().forEach { (key, value) ->
+            if (key !in skipFields && (key in metadataFields || key.startsWith("x-"))) {
+                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+            }
+        }
+        
+        // Ensure we have a type if neither schema specified it
+        if (!result.has("type")) {
+            result.put("type", "object")
+        }
+    }
+    
+    /**
+     * Merges properties from both schemas (specific overrides base)
+     */
+    private fun mergeProperties(
+        result: com.fasterxml.jackson.databind.node.ObjectNode,
+        baseNode: com.fasterxml.jackson.databind.JsonNode,
+        specificNode: com.fasterxml.jackson.databind.JsonNode,
+        objectMapper: com.fasterxml.jackson.databind.ObjectMapper
+    ) {
+        val mergedProperties = objectMapper.createObjectNode()
+        
+        // Add base properties
+        baseNode.get("properties")?.fields()?.forEach { (key, value) ->
+            mergedProperties.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+        }
+        
+        // Add specific properties (overrides base)
+        specificNode.get("properties")?.fields()?.forEach { (key, value) ->
+            mergedProperties.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+        }
+        
+        if (mergedProperties.size() > 0) {
+            result.set<com.fasterxml.jackson.databind.JsonNode>("properties", mergedProperties)
+        }
+    }
+    
+    /**
+     * Merges required arrays from both schemas (union)
+     */
+    private fun mergeRequired(
+        result: com.fasterxml.jackson.databind.node.ObjectNode,
+        baseNode: com.fasterxml.jackson.databind.JsonNode,
+        specificNode: com.fasterxml.jackson.databind.JsonNode,
+        objectMapper: com.fasterxml.jackson.databind.ObjectMapper
+    ) {
+        val requiredSet = mutableSetOf<String>()
+        
+        // Add base required
+        baseNode.get("required")?.forEach { item ->
+            requiredSet.add(item.asText())
+        }
+        
+        // Add specific required
+        specificNode.get("required")?.forEach { item ->
+            requiredSet.add(item.asText())
+        }
+        
+        if (requiredSet.isNotEmpty()) {
+            val requiredArray = objectMapper.createArrayNode()
+            requiredSet.sorted().forEach { requiredArray.add(it) }
+            result.set<com.fasterxml.jackson.databind.JsonNode>("required", requiredArray)
+        }
+    }
+    
+    /**
+     * Extracts and flattens allOf conditions from both schemas to root level
+     */
+    private fun mergeAllOfConditions(
+        result: com.fasterxml.jackson.databind.node.ObjectNode,
+        baseNode: com.fasterxml.jackson.databind.JsonNode,
+        specificNode: com.fasterxml.jackson.databind.JsonNode,
+        objectMapper: com.fasterxml.jackson.databind.ObjectMapper
+    ) {
+        val allConditions = mutableListOf<com.fasterxml.jackson.databind.JsonNode>()
+        
+        // Extract from base schema
+        baseNode.get("allOf")?.forEach { condition ->
+            allConditions.add(condition)
+        }
+        
+        // Extract from specific schema
+        specificNode.get("allOf")?.forEach { condition ->
+            allConditions.add(condition)
+        }
+        
+        if (allConditions.isNotEmpty()) {
+            val allOfArray = objectMapper.createArrayNode()
+            allConditions.forEach { allOfArray.add(it) }
+            result.set<com.fasterxml.jackson.databind.JsonNode>("allOf", allOfArray)
+        }
+    }
+    
+    /**
+     * Sets additionalProperties (specific overrides base, default false)
+     */
+    private fun setAdditionalProperties(
+        result: com.fasterxml.jackson.databind.node.ObjectNode,
+        baseNode: com.fasterxml.jackson.databind.JsonNode,
+        specificNode: com.fasterxml.jackson.databind.JsonNode
+    ) {
+        when {
+            specificNode.has("additionalProperties") -> 
+                result.set<com.fasterxml.jackson.databind.JsonNode>("additionalProperties", 
+                    specificNode.get("additionalProperties"))
+            baseNode.has("additionalProperties") -> 
+                result.set<com.fasterxml.jackson.databind.JsonNode>("additionalProperties", 
+                    baseNode.get("additionalProperties"))
+            else -> 
+                result.put("additionalProperties", false)
+        }
     }
     
     /**

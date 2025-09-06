@@ -27,9 +27,8 @@ object ValidationErrorProcessor {
         
         return errorsByPath.map { (path, pathErrors) ->
             val prioritizedError = selectMostRelevantError(pathErrors)
-            val friendlyFieldName = extractFieldNameFromMessage(prioritizedError, schemaProvider)
-            val translatedMessage = translateErrorMessage(prioritizedError, context)
-            "$friendlyFieldName : $translatedMessage"
+            val translatedMessage = replaceFieldNameInMessage(prioritizedError, schemaProvider)
+            translatedMessage
         }.joinToString("\n")
     }
     
@@ -139,36 +138,49 @@ object ValidationErrorProcessor {
     }
     
     /**
-     * Extracts field name from error message and translates it to user-friendly name
-     * Examples: 
-     * - "$.name: must be at least 1 characters long" -> "name" -> "Nom"
-     * - "$.items[2].default_quantity: integer found..." -> "default_quantity" -> "Quantité par défaut"
+     * Replaces $.fieldname references in error messages with translated field names
+     * Examples:
+     * - "$.name est un champ obligatoire mais manquant" -> "Nom est un champ obligatoire mais manquant"
+     * - "$.value.quantity: must be a number" -> "Quantité: must be a number"
+     * - "$.items[2].default_quantity is invalid" -> "Qté par défaut is invalid"
      */
-    private fun extractFieldNameFromMessage(errorMessage: String, schemaProvider: SchemaProvider?): String {
-        if (schemaProvider == null) return "Champ"
+    private fun replaceFieldNameInMessage(errorMessage: String, schemaProvider: SchemaProvider?): String {
+        if (schemaProvider == null) return errorMessage
         
-        // Extract field path from error message (before the colon)
-        // NetworkNT format: "$.path.to.field: error description"
-        val fieldPath = errorMessage.substringBefore(":").trim()
+        // Find all $.fieldname patterns in the message
+        val fieldPathRegex = Regex("""\$\.([a-zA-Z_][a-zA-Z0-9_]*(?:\[[0-9]+\])?(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*(?:\[[0-9]+\])?)""")
         
-        // Get only the last level of the field path
-        // Examples: "$.value.quantity" -> "quantity", "$.items[2].default_quantity" -> "default_quantity"
-        val fieldName = when {
-            fieldPath.contains(".") -> {
-                // Get last part after final dot: "$.value.quantity" -> "quantity"
-                fieldPath.substringAfterLast(".")
+        var translatedMessage = errorMessage
+        
+        fieldPathRegex.findAll(errorMessage).forEach { match ->
+            val fullPath = match.value // e.g., "$.value.quantity"
+            val fieldPath = match.groupValues[1] // e.g., "value.quantity"
+            
+            // DEBUG: Log field replacement process
+            safeLog("DEBUG FIELD REPLACE: fullPath='$fullPath', fieldPath='$fieldPath'")
+            
+            // Get the actual field name (last component)
+            val fieldName = when {
+                fieldPath.contains(".") -> {
+                    // Get last part after final dot: "value.quantity" -> "quantity"
+                    fieldPath.substringAfterLast(".")
+                }
+                else -> {
+                    // Direct field: "fieldname" -> "fieldname"
+                    fieldPath
+                }
             }
-            fieldPath.startsWith("$.") -> {
-                // Direct field: "$.fieldname" -> "fieldname"
-                fieldPath.substringAfter("$.")
-            }
-            else -> {
-                // Fallback: use as-is
-                fieldPath
-            }
+            
+            safeLog("DEBUG FIELD REPLACE: extracted fieldName='$fieldName'")
+            
+            val translatedName = schemaProvider.getFormFieldName(fieldName)
+            safeLog("DEBUG FIELD REPLACE: translated to='$translatedName'")
+            
+            // Replace the full $.path with just the translated name
+            translatedMessage = translatedMessage.replace(fullPath, translatedName)
         }
         
-        return schemaProvider.getFormFieldName(fieldName)
+        return translatedMessage
     }
     
     /**

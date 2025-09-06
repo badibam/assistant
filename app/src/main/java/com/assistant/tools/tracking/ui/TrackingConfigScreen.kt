@@ -76,6 +76,28 @@ private fun SafeIcon(
 }
 
 /**
+ * Clears all type-specific configuration fields when changing tracking type
+ * This prevents validation errors from leftover fields of the previous type
+ */
+private fun clearTypeSpecificFields(config: JSONObject) {
+    // Scale-specific fields
+    config.remove("min")
+    config.remove("max")
+    config.remove("min_label")
+    config.remove("max_label")
+    
+    // Counter-specific fields
+    config.remove("allow_decrement")
+    
+    // Boolean-specific fields  
+    config.remove("true_label")
+    config.remove("false_label")
+    
+    // Note: items is already cleared in the calling code
+    // Note: choice-specific "options" would go here if it existed in schema
+}
+
+/**
  * Configuration screen for Tracking tool type
  * Uses UI_DECISIONS.md patterns with full functionality restored
  */
@@ -135,6 +157,9 @@ fun TrackingConfigScreen(
         itemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
     } }
     
+    // Track original type for data deletion detection
+    var originalType by remember { mutableStateOf("") }
+    
     // Config update helpers
     fun updateConfig(key: String, value: Any) {
         config.put(key, value)
@@ -186,6 +211,11 @@ fun TrackingConfigScreen(
         android.util.Log.d("CONFIGDEBUG", "Config string from DB: $configString")
         val newConfig = JSONObject(configString)
         android.util.Log.d("CONFIGDEBUG", "New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
+        
+        // Capture original type before updating config
+        originalType = newConfig.optString("type", "")
+        android.util.Log.d("CONFIGDEBUG", "Original type captured: $originalType")
+        
         config = newConfig
     }
     
@@ -209,11 +239,21 @@ fun TrackingConfigScreen(
     }
     
     
-    // State for error messages
+    // State for error messages  
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
+    // State for data deletion warning
+    var showDataDeletionWarning by remember { mutableStateOf(false) }
+    
     // Save function avec validation V3
-    val handleSave = {
+    val handleSave = handleSave@{
+        // Check if type changed and we're editing an existing tool
+        if (isEditing && originalType.isNotEmpty() && originalType != trackingType) {
+            // Show data deletion warning
+            showDataDeletionWarning = true
+            return@handleSave
+        }
+        
         // Nettoyer la config avant validation
         val cleanConfig = cleanConfiguration(config)
         
@@ -239,12 +279,65 @@ fun TrackingConfigScreen(
         }
     }
     
+    // Final save with data deletion
+    val handleFinalSave = {
+        android.util.Log.d("TrackingConfig", "=== FINAL SAVE STARTED ===")
+        scope.launch {
+            try {
+                // Delete existing data first
+                if (existingToolId != null) {
+                    android.util.Log.d("TrackingConfig", "About to call delete_all_entries for tool: $existingToolId")
+                    val deleteResult = coordinator.processUserAction(
+                        "delete_all_entries", 
+                        mapOf("tool_instance_id" to existingToolId)
+                    )
+                    android.util.Log.d("TrackingConfig", "Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
+                    if (deleteResult.status != CommandStatus.SUCCESS) {
+                        android.util.Log.w("TrackingConfig", "Failed to delete existing data: ${deleteResult.message}")
+                    } else {
+                        android.util.Log.d("TrackingConfig", "Data deletion successful")
+                    }
+                } else {
+                    android.util.Log.d("TrackingConfig", "No existingToolId, skipping data deletion")
+                }
+                
+                // Then proceed with normal save
+                val cleanConfig = cleanConfiguration(config)
+                val configMap = cleanConfig.keys().asSequence().associateWith { key ->
+                    cleanConfig.get(key)
+                }
+                
+                val toolType = ToolTypeManager.getToolType("tracking")
+                if (toolType != null) {
+                    val validation = SchemaValidator.validate(toolType, configMap, context, useDataSchema = false)
+                    
+                    if (validation.isValid) {
+                        onSave(cleanConfig.toString())
+                    } else {
+                        android.util.Log.e("TrackingConfigScreen", "Validation failed: ${validation.errorMessage}")
+                        errorMessage = validation.errorMessage ?: "Erreur de validation"
+                    }
+                } else {
+                    android.util.Log.e("TrackingConfigScreen", "ToolType tracking not found")
+                    errorMessage = "Type d'outil introuvable"
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TrackingConfig", "Error during final save", e)
+                errorMessage = "Erreur lors de la sauvegarde"
+            }
+        }
+    }
+    
     // Confirmation dialogs
     if (showTypeChangeWarning) {
         UI.Dialog(
             type = DialogType.DANGER,
             onConfirm = {
                 pendingTrackingType?.let { newType ->
+                    // Clear all type-specific fields before setting new type
+                    clearTypeSpecificFields(config)
+                    
+                    // Set new type and reset items
                     updateConfig("type", newType)
                     updateConfig("items", JSONArray())
                 }
@@ -264,6 +357,41 @@ fun TrackingConfigScreen(
                 "Vous avez ${items.size} élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?",
                 TextType.BODY
             )
+        }
+    }
+    
+    // Data deletion warning dialog
+    if (showDataDeletionWarning) {
+        UI.Dialog(
+            type = DialogType.DANGER,
+            onConfirm = {
+                showDataDeletionWarning = false
+                handleFinalSave()
+            },
+            onCancel = {
+                showDataDeletionWarning = false
+            }
+        ) {
+            Column {
+                UI.Text(
+                    "Changement de type détecté",
+                    TextType.SUBTITLE
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Text(
+                    "Le type passe de \"$originalType\" à \"$trackingType\".",
+                    TextType.BODY
+                )
+                UI.Text(
+                    "Toutes les données saisies seront supprimées.",
+                    TextType.BODY
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Text(
+                    "Continuer ?",
+                    TextType.BODY
+                )
+            }
         }
     }
     
@@ -336,18 +464,16 @@ fun TrackingConfigScreen(
                 
                 UI.FormSelection(
                     label = "Gestion",
-                    options = listOf("Manuel", "IA", "Collaboratif"),
+                    options = listOf("Manuel", "IA"),
                     selected = when(management) {
                         "manual" -> "Manuel"
                         "ai" -> "IA"
-                        "collaborative" -> "Collaboratif"
                         else -> management
                     },
                     onSelect = { selectedLabel ->
                         updateConfig("management", when(selectedLabel) {
                             "Manuel" -> "manual"
                             "IA" -> "ai"
-                            "Collaboratif" -> "collaborative"
                             else -> selectedLabel
                         })
                     },
@@ -628,7 +754,11 @@ fun TrackingConfigScreen(
                     // Build properties according to tracking type
                     when (trackingType) {
                         "numeric" -> {
-                            properties["default_quantity"] = editItemDefaultQuantity
+                            // Convert string to number for schema validation
+                            val quantity = editItemDefaultQuantity.toDoubleOrNull()
+                            if (quantity != null) {
+                                properties["default_quantity"] = quantity
+                            }
                             properties["unit"] = editItemUnit
                         }
                         // For other types (text, choice, scale, etc.), no additional properties needed

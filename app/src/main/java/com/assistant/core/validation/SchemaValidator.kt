@@ -36,37 +36,56 @@ object SchemaValidator {
         } else {
             schemaProvider.getConfigSchema()
         }
-        safeLog("SCHEMA VALIDATION START")
+        safeLog("SCHEMADEBUG: SCHEMA VALIDATION START")
         
         return try {
             // Convert any JSONObject to Map for Jackson compatibility and filter empty values
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
             
-            // Let NetworkNT handle all conditional schema resolution automatically
-            val jsonSchema = getOrCompileSchema(schema)
+            // DEBUG: Log schema being used
+            safeLog("SCHEMADEBUG: === SCHEMA BEING VALIDATED ===")
+            safeLog("SCHEMADEBUG: $schema")
+            safeLog("SCHEMADEBUG: === END SCHEMA ===")
+            
+            // Schema is flattened by createExtendedSchema, but still need SchemaResolver 
+            // to resolve if/then conditions before passing to NetworkNT
+            val resolvedSchema = SchemaResolver.resolve(schema, cleanData)
+            
+            // Let NetworkNT validate against resolved schema
+            val jsonSchema = getOrCompileSchema(resolvedSchema)
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val dataNode = objectMapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(cleanData)
             
-            safeLog("DATA MAP: $cleanData")
-            safeLog("NETWORKNT DATANODE: $dataNode")
+            safeLog("SCHEMADEBUG: DATA MAP: $cleanData")
+            safeLog("SCHEMADEBUG: NETWORKNT DATANODE: $dataNode")
+            
+            // DEBUG: Check conditional validation
+            if (schema.contains("\"if\"") && schema.contains("\"then\"")) {
+                safeLog("SCHEMADEBUG: CONDITIONAL SCHEMA DETECTED")
+                val valueObject = cleanData["value"] as? Map<*, *>
+                if (valueObject != null) {
+                    val valueType = valueObject["type"]
+                    safeLog("SCHEMADEBUG: VALUE TYPE in data: '$valueType'")
+                }
+            }
             
             // NetworkNT validates against the full schema including allOf/if/then conditions
             val errors = jsonSchema.validate(dataNode)
-            safeLog("NETWORKNT ERRORS COUNT: ${errors.size}")
+            safeLog("SCHEMADEBUG: NETWORKNT ERRORS COUNT: ${errors.size}")
             errors.forEach { error ->
-                safeLog("NETWORKNT ERROR: Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
+                safeLog("SCHEMADEBUG: ERROR Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
             }
             
             val result = if (errors.isEmpty()) {
-                safeLog("SCHEMA VALIDATION SUCCESS")
+                safeLog("SCHEMADEBUG: VALIDATION SUCCESS")
                 ValidationResult.success()
             } else {
                 val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, context, schemaProvider)
                 if (errorMessage.isEmpty()) {
-                    safeLog("SCHEMA VALIDATION SUCCESS (errors filtered out)")
+                    safeLog("SCHEMADEBUG: VALIDATION SUCCESS (errors filtered out)")
                     ValidationResult.success()
                 } else {
-                    safeLog("SCHEMA VALIDATION FAILED: $errorMessage")
+                    safeLog("SCHEMADEBUG: VALIDATION FAILED: $errorMessage")
                     ValidationResult.error(errorMessage)
                 }
             }
@@ -74,7 +93,7 @@ object SchemaValidator {
             result
             
         } catch (e: Exception) {
-            safeLog("Exception during validation: ${e.message}")
+            safeLog("SCHEMADEBUG: Exception during validation: ${e.message}")
             ValidationResult.error("Erreur de validation: ${e.message}")
         }
     }
@@ -171,11 +190,11 @@ object SchemaValidator {
         
         return if (cacheEnabled) {
             schemaCache.getOrPut(cacheKey) {
-                safeLog("Compiling and caching schema")
+                safeLog("SCHEMADEBUG: Compiling and caching schema")
                 compileSchema(schemaJson)
             }
         } else {
-            safeLog("Compiling schema (no cache)")
+            safeLog("SCHEMADEBUG: Compiling schema (no cache)")
             compileSchema(schemaJson)
         }
     }
@@ -194,7 +213,7 @@ object SchemaValidator {
      */
     fun clearCache() {
         schemaCache.clear()
-        safeLog("Schema cache cleared")
+        safeLog("SCHEMADEBUG: Schema cache cleared")
     }
     
     /**
@@ -202,9 +221,9 @@ object SchemaValidator {
      */
     private fun safeLog(message: String) {
         try {
-            android.util.Log.d("VALDEBUG", message)
+            android.util.Log.d("SCHEMADEBUG", message)
         } catch (e: RuntimeException) {
-            println("VALDEBUG: $message")
+            println("SCHEMADEBUG: $message")
         }
     }
 }

@@ -296,6 +296,13 @@ fun TrackingEntryDialog(
                     
                     onConfirm(name.trim(), valueJson, addToPredefined, recordedAt)
                 } else {
+                    // DEBUG: Detailed error logging
+                    android.util.Log.e("VALDEBUG", "=== VALIDATION FAILED ===")
+                    android.util.Log.e("VALDEBUG", "Field data: $valueObject")
+                    android.util.Log.e("VALDEBUG", "Error: ${validationResult.errorMessage}")
+                    android.util.Log.e("VALDEBUG", "Tracking type: $trackingType")
+                    android.util.Log.e("VALDEBUG", "Device: Android ${android.os.Build.VERSION.RELEASE}")
+                    
                     // Set error message for toast display
                     errorMessage = validationResult.errorMessage ?: "Erreur de validation"
                 }

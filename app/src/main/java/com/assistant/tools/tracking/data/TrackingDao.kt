@@ -25,4 +25,7 @@ interface TrackingDao {
 
     @Query("DELETE FROM tracking_data WHERE id = :id")
     suspend fun deleteEntryById(id: String)
+
+    @Query("DELETE FROM tracking_data WHERE tool_instance_id = :toolInstanceId")
+    suspend fun deleteAllEntriesForToolInstance(toolInstanceId: String)
 }
