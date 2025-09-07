@@ -209,13 +209,13 @@ class MigrationOrchestrator(private val context: Context) {
             
             // 2. Accès à la base de données
             val database = AppDatabase.getDatabase(context)
-            val dao = database.baseToolDataDao()
+            val dao = database.toolDataDao()
             
             // 3. Scan versions data en DB
-            val dataVersions = dao.getTooltypeMinVersions()
+            val dataVersions = dao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
             
             // 4. Migration autonome par tooltype
-            dataVersions.forEach { (tooltype, minVersion) ->
+            for ((tooltype: String, minVersion: Int) in dataVersions) {
                 val toolTypeContract = allToolTypes[tooltype]
                 
                 if (toolTypeContract is ToolTypeContract) {

@@ -17,8 +17,8 @@ import java.util.*
  */
 class ToolDataService(private val context: Context) : ExecutableService {
 
-    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         return try {
             when (operation) {
@@ -28,15 +28,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "get_entries" -> getEntries(params, token)
                 "get_stats" -> getStats(params, token)
                 "delete_all_entries" -> deleteAllEntries(params, token)
-                else -> Operation.OperationResult.error("Unknown operation: $operation")
+                else -> OperationResult.error("Unknown operation: $operation")
             }
         } catch (e: Exception) {
-            Operation.OperationResult.error("ToolDataService error: ${e.message}")
+            OperationResult.error("ToolDataService error: ${e.message}")
         }
     }
 
-    private suspend fun createEntry(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun createEntry(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("toolInstanceId")
         val tooltype = params.optString("tooltype")
@@ -45,7 +45,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val name = params.optString("name", null)
 
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameters: toolInstanceId, tooltype")
+            return OperationResult.error("Missing required parameters: toolInstanceId, tooltype")
         }
 
         // Validation via ToolType
@@ -61,7 +61,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             
             val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
             if (!validation.isValid) {
-                return Operation.OperationResult.error("Validation failed: ${validation.errorMessage}")
+                return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
         }
 
@@ -82,7 +82,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         dao.insert(entity)
 
-        return Operation.OperationResult.success(
+        return OperationResult.success(
             data = mapOf(
                 "id" to entity.id,
                 "createdAt" to entity.createdAt
@@ -90,8 +90,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
-    private suspend fun updateEntry(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun updateEntry(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val entryId = params.optString("id")
         val dataJson = params.optJSONObject("data")?.toString()
@@ -99,12 +99,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val name = params.optString("name", null)
 
         if (entryId.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameter: id")
+            return OperationResult.error("Missing required parameter: id")
         }
 
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
-            ?: return Operation.OperationResult.error("Entry not found: $entryId")
+            ?: return OperationResult.error("Entry not found: $entryId")
 
         // Validation si nouvelles données fournies
         if (dataJson != null) {
@@ -120,7 +120,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 
                 val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
                 if (!validation.isValid) {
-                    return Operation.OperationResult.error("Validation failed: ${validation.errorMessage}")
+                    return OperationResult.error("Validation failed: ${validation.errorMessage}")
                 }
             }
         }
@@ -134,7 +134,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         dao.update(updatedEntity)
 
-        return Operation.OperationResult.success(
+        return OperationResult.success(
             data = mapOf(
                 "id" to updatedEntity.id,
                 "updatedAt" to updatedEntity.updatedAt
@@ -142,32 +142,32 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
-    private suspend fun deleteEntry(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun deleteEntry(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val entryId = params.optString("id")
         if (entryId.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameter: id")
+            return OperationResult.error("Missing required parameter: id")
         }
 
         val dao = getToolDataDao()
         dao.deleteById(entryId)
 
-        return Operation.OperationResult.success()
+        return OperationResult.success()
     }
 
-    private suspend fun getEntries(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun getEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("toolInstanceId")
         if (toolInstanceId.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
         val dao = getToolDataDao()
         val entries = dao.getByToolInstance(toolInstanceId)
 
-        return Operation.OperationResult.success(
+        return OperationResult.success(
             data = mapOf("entries" to entries.map { entity ->
                 mapOf(
                     "id" to entity.id,
@@ -184,38 +184,37 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
-    private suspend fun getStats(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun getStats(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("toolInstanceId")
         if (toolInstanceId.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
         val dao = getToolDataDao()
         val count = dao.countByToolInstance(toolInstanceId)
 
-        return Operation.OperationResult.success(
-            data = mapOf(
-                "count" to count,
-                "first_entry" to null, // TODO: implémenter si nécessaire
-                "last_entry" to null   // TODO: implémenter si nécessaire
+        return OperationResult.success(
+            mapOf(
+                "count" to count
+                // TODO: ajouter first_entry et last_entry si nécessaire
             )
         )
     }
 
-    private suspend fun deleteAllEntries(params: JSONObject, token: CancellationToken): Operation.OperationResult {
-        if (token.isCancelled) return Operation.OperationResult.cancelled()
+    private suspend fun deleteAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("toolInstanceId")
         if (toolInstanceId.isEmpty()) {
-            return Operation.OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
         val dao = getToolDataDao()
         dao.deleteByToolInstance(toolInstanceId)
 
-        return Operation.OperationResult.success()
+        return OperationResult.success()
     }
 
     /**
@@ -223,5 +222,29 @@ class ToolDataService(private val context: Context) : ExecutableService {
      */
     private fun getToolDataDao(): BaseToolDataDao {
         return AppDatabase.getDatabase(context).toolDataDao()
+    }
+}
+
+/**
+ * Result of a service operation
+ */
+data class OperationResult(
+    val success: Boolean,
+    val data: Map<String, Any>? = null,
+    val error: String? = null,
+    val cancelled: Boolean = false,
+    // Multi-step operation support
+    val requiresBackground: Boolean = false,     // Phase 1 → 2: needs background processing
+    val requiresContinuation: Boolean = false    // Phase 2 → 3: needs final step
+) {
+    companion object {
+        fun success(
+            data: Map<String, Any>? = null, 
+            requiresBackground: Boolean = false,
+            requiresContinuation: Boolean = false
+        ) = OperationResult(true, data, requiresBackground = requiresBackground, requiresContinuation = requiresContinuation)
+        
+        fun error(message: String) = OperationResult(false, error = message)
+        fun cancelled() = OperationResult(false, cancelled = true)
     }
 }

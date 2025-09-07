@@ -6,7 +6,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.tools.ToolTypeContract
 import com.assistant.core.tools.BaseSchemas
-import com.assistant.tools.tracking.TrackingService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.utils.NumberFormatting
@@ -87,12 +86,12 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getService(context: Context): ExecutableService {
-        return TrackingService(context)
+        return com.assistant.core.services.ToolDataService(context)
     }
     
     override fun getDao(context: Context): Any {
         val database = com.assistant.core.database.AppDatabase.getDatabase(context)
-        val baseDao = database.baseToolDataDao()
+        val baseDao = database.toolDataDao()
         
         // Utilise l'implémentation générique qui suffit pour le tracking standard
         return com.assistant.core.database.dao.DefaultExtendedToolDataDao(baseDao, "tracking")

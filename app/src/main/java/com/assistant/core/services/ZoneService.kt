@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.services.OperationResult
 import org.json.JSONObject
 
 /**
@@ -204,29 +205,5 @@ class ZoneService(private val context: Context) {
             "zones" to zoneData,
             "count" to zoneData.size
         ))
-    }
-}
-
-/**
- * Result of a service operation
- */
-data class OperationResult(
-    val success: Boolean,
-    val data: Map<String, Any>? = null,
-    val error: String? = null,
-    val cancelled: Boolean = false,
-    // Multi-step operation support
-    val requiresBackground: Boolean = false,     // Phase 1 → 2: needs background processing
-    val requiresContinuation: Boolean = false    // Phase 2 → 3: needs final step
-) {
-    companion object {
-        fun success(
-            data: Map<String, Any>? = null, 
-            requiresBackground: Boolean = false,
-            requiresContinuation: Boolean = false
-        ) = OperationResult(true, data, requiresBackground = requiresBackground, requiresContinuation = requiresContinuation)
-        
-        fun error(message: String) = OperationResult(false, error = message)
-        fun cancelled() = OperationResult(false, cancelled = true)
     }
 }

@@ -425,7 +425,7 @@ private fun TrackingHistoryRow(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
             UI.Text(
-                text = entry.name,
+                text = entry.name ?: "",
                 type = TextType.BODY
             )
         }

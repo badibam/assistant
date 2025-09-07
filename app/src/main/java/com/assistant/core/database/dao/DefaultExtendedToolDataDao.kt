@@ -39,7 +39,7 @@ class DefaultExtendedToolDataDao(
         baseDao.getByTooltype(tooltype)
     
     override suspend fun getTooltypeMinVersions(): Map<String, Int> = 
-        baseDao.getTooltypeMinVersions()
+        baseDao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
     
     // === Méthodes de convenance génériques ===
     

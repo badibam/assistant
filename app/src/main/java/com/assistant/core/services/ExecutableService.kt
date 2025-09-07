@@ -1,6 +1,7 @@
 package com.assistant.core.services
 
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.services.OperationResult
 import org.json.JSONObject
 
 /**

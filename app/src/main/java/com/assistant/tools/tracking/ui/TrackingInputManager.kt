@@ -237,8 +237,6 @@ fun TrackingInputManager(
         itemType = dialogItemType,
         actionType = dialogActionType,
         toolInstanceId = toolInstanceId,
-        zoneName = zoneName,
-        toolInstanceName = toolInstanceName,
         initialName = dialogInitialName,
         initialValue = dialogInitialProperties,
         initialRecordedAt = System.currentTimeMillis(),

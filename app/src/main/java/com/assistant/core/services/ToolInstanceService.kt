@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.services.OperationResult
 import org.json.JSONObject
 
 /**

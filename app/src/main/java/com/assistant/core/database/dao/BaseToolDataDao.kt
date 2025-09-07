@@ -7,6 +7,14 @@ import androidx.room.Update
 import com.assistant.core.database.entities.ToolDataEntity
 
 /**
+ * Data class pour le résultat de la requête getTooltypeMinVersions
+ */
+data class TooltypeVersion(
+    val tooltype: String,
+    val min_version: Int
+)
+
+/**
  * DAO de base pour opérations communes sur tool_data
  * Les DAOs spécialisés héritent de cette classe
  */
@@ -72,5 +80,5 @@ abstract class BaseToolDataDao {
      * Utilisé pour déterminer quels tooltypes nécessitent une migration
      */
     @Query("SELECT tooltype, MIN(data_version) as min_version FROM tool_data GROUP BY tooltype")
-    abstract suspend fun getTooltypeMinVersions(): Map<String, Int>
+    abstract suspend fun getTooltypeMinVersions(): List<TooltypeVersion>
 }
