@@ -51,7 +51,8 @@ class MigrationOrchestrator(private val context: Context) {
      */
     private fun getCoreMigrations(): List<Migration> {
         return listOf(
-            CORE_MIGRATION_1_2
+            // Migration 1→2 supprimée - architecture unifiée démarre en v3
+            CORE_MIGRATION_2_3
         )
     }
     
@@ -84,31 +85,19 @@ class MigrationOrchestrator(private val context: Context) {
                 database.execSQL("CREATE INDEX idx_tool_data_instance_timestamp ON tool_data(tool_instance_id, timestamp)")
                 database.execSQL("CREATE INDEX idx_tool_data_tooltype_version ON tool_data(tooltype, data_version)")
                 
-                // Migration des données tracking_data vers tool_data si la table existe
-                try {
-                    database.execSQL("""
-                        INSERT INTO tool_data (id, tool_instance_id, tooltype, data_version, timestamp, name, data, created_at, updated_at)
-                        SELECT 
-                            id,
-                            tool_instance_id,
-                            'tracking' as tooltype,
-                            1 as data_version,
-                            recorded_at as timestamp,
-                            name,
-                            value as data,
-                            created_at,
-                            updated_at
-                        FROM tracking_data
-                    """.trimIndent())
-                    
-                    // Supprimer l'ancienne table après migration réussie
-                    database.execSQL("DROP TABLE tracking_data")
-                    
-                } catch (e: Exception) {
-                    // Table tracking_data n'existe pas ou migration échoue
-                    // Ne pas bloquer la migration, juste logger
-                    println("Migration tracking_data ignorée: ${e.message}")
-                }
+                // Migration supprimée - wipe complet pour architecture unifiée
+                // Les données précédentes seront perdues (à récupérer par script externe si besoin)
+            }
+        }
+        
+        /**
+         * Migration 2→3: Transition vers architecture unifiée propre
+         * Aucune migration de données - démarrage propre
+         */
+        val CORE_MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migration vide - la table tool_data existe déjà en v2
+                // Architecture unifiée déjà en place
             }
         }
     }

@@ -4,7 +4,7 @@
 # DB BACKUP/RESTORE pour Tests Migration
 # ======================================
 
-PACKAGE_NAME="com.assistant"
+PACKAGE_NAME="com.assistant.debug"
 DB_NAME="assistant_database"
 BACKUP_DIR="./db_backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -34,26 +34,48 @@ setup_backup_dir() {
 # Backup DB
 backup_db() {
     local backup_name="${1:-$TIMESTAMP}"
-    local backup_path="$BACKUP_DIR/assistant_database_$backup_name"
     
-    echo -e "${BLUE}💾 Sauvegarde DB...${NC}"
+    echo -e "${BLUE}💾 Sauvegarde DBs + WAL files...${NC}"
     
-    # Pull DB depuis appareil
-    adb exec-out run-as $PACKAGE_NAME cat databases/$DB_NAME > "$backup_path"
+    # Backup tracking_database + ses fichiers WAL (vraies données)
+    local tracking_path="$BACKUP_DIR/tracking_database_$backup_name"
+    local tracking_wal="$BACKUP_DIR/tracking_database-wal_$backup_name"
+    local tracking_shm="$BACKUP_DIR/tracking_database-shm_$backup_name"
     
-    if [ $? -eq 0 ] && [ -f "$backup_path" ] && [ -s "$backup_path" ]; then
-        echo -e "${GREEN}✅ DB sauvegardée: $backup_path${NC}"
-        ls -lh "$backup_path"
-        return 0
-    else
-        echo -e "${RED}❌ Échec sauvegarde DB${NC}"
-        return 1
+    adb exec-out run-as $PACKAGE_NAME cat databases/tracking_database > "$tracking_path"
+    adb exec-out run-as $PACKAGE_NAME cat databases/tracking_database-wal > "$tracking_wal" 2>/dev/null
+    adb exec-out run-as $PACKAGE_NAME cat databases/tracking_database-shm > "$tracking_shm" 2>/dev/null
+    
+    # Backup assistant_database + ses fichiers WAL
+    local assistant_path="$BACKUP_DIR/assistant_database_$backup_name"  
+    local assistant_wal="$BACKUP_DIR/assistant_database-wal_$backup_name"
+    local assistant_shm="$BACKUP_DIR/assistant_database-shm_$backup_name"
+    
+    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database > "$assistant_path"
+    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database-wal > "$assistant_wal" 2>/dev/null
+    adb exec-out run-as $PACKAGE_NAME cat databases/assistant_database-shm > "$assistant_shm" 2>/dev/null
+    
+    # Vérification
+    echo -e "${GREEN}✅ DBs + WAL sauvegardées:${NC}"
+    echo "   Tracking DB: $(ls -lh "$tracking_path" | awk '{print $5}')"
+    if [ -f "$tracking_wal" ] && [ -s "$tracking_wal" ]; then
+        echo "   Tracking WAL: $(ls -lh "$tracking_wal" | awk '{print $5}') ← VRAIES DONNÉES TRACKING"
     fi
+    echo "   Assistant DB: $(ls -lh "$assistant_path" | awk '{print $5}')"
+    if [ -f "$assistant_wal" ] && [ -s "$assistant_wal" ]; then
+        echo "   Assistant WAL: $(ls -lh "$assistant_wal" | awk '{print $5}') ← VRAIES DONNÉES ASSISTANT"
+    fi
+    return 0
 }
 
 # Restore DB  
 restore_db() {
     local backup_file="$1"
+    
+    # Si le fichier ne contient pas le chemin complet, chercher dans BACKUP_DIR
+    if [[ "$backup_file" != /* ]] && [[ "$backup_file" != ./* ]]; then
+        backup_file="$BACKUP_DIR/$backup_file"
+    fi
     
     if [ ! -f "$backup_file" ]; then
         echo -e "${RED}❌ Fichier backup introuvable: $backup_file${NC}"
@@ -61,18 +83,131 @@ restore_db() {
         return 1
     fi
     
-    echo -e "${BLUE}🔄 Restauration DB depuis: $backup_file${NC}"
+    echo -e "${BLUE}🔄 Restauration complète depuis: $backup_file${NC}"
     
     # Arrêter l'app
     adb shell am force-stop $PACKAGE_NAME
     
-    # Push DB vers appareil
-    adb push "$backup_file" /sdcard/tmp_db
-    adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_db > databases/$DB_NAME"
-    adb shell rm /sdcard/tmp_db
+    # Détecter le type de fichier à partir du nom
+    local backup_base=$(basename "$backup_file")
+    local timestamp=""
+    
+    if [[ "$backup_base" =~ tracking_database_(.+)$ ]]; then
+        timestamp="${BASH_REMATCH[1]}"
+        echo -e "${BLUE}📁 Restauration tracking_database + fichiers WAL (timestamp: $timestamp)${NC}"
+        
+        # Restaurer tracking_database principal
+        adb push "$backup_file" /sdcard/tmp_db
+        adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_db > databases/tracking_database"
+        adb shell rm /sdcard/tmp_db
+        
+        # Restaurer fichiers WAL s'ils existent
+        local wal_file="$BACKUP_DIR/tracking_database-wal_$timestamp"
+        local shm_file="$BACKUP_DIR/tracking_database-shm_$timestamp"
+        
+        if [ -f "$wal_file" ]; then
+            echo -e "${BLUE}🔄 Restauration WAL file...${NC}"
+            adb push "$wal_file" /sdcard/tmp_wal
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_wal > databases/tracking_database-wal"
+            adb shell rm /sdcard/tmp_wal
+        fi
+        
+        if [ -f "$shm_file" ]; then
+            echo -e "${BLUE}🔄 Restauration SHM file...${NC}"
+            adb push "$shm_file" /sdcard/tmp_shm
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_shm > databases/tracking_database-shm"
+            adb shell rm /sdcard/tmp_shm
+        fi
+        
+        # Restaurer aussi assistant_database du même timestamp (contient zones, tool_instances, etc.)
+        local assistant_file="$BACKUP_DIR/assistant_database_$timestamp"
+        if [ -f "$assistant_file" ]; then
+            echo -e "${BLUE}🔄 Restauration assistant_database (zones, tool_instances)...${NC}"
+            adb push "$assistant_file" /sdcard/tmp_assistant
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant > databases/assistant_database"
+            adb shell rm /sdcard/tmp_assistant
+            
+            # Restaurer fichiers WAL assistant s'ils existent
+            local assistant_wal_file="$BACKUP_DIR/assistant_database-wal_$timestamp"
+            local assistant_shm_file="$BACKUP_DIR/assistant_database-shm_$timestamp"
+            
+            if [ -f "$assistant_wal_file" ] && [ -s "$assistant_wal_file" ]; then
+                echo -e "${BLUE}🔄 Restauration assistant WAL file...${NC}"
+                adb push "$assistant_wal_file" /sdcard/tmp_assistant_wal
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_wal > databases/assistant_database-wal"
+                adb shell rm /sdcard/tmp_assistant_wal
+            fi
+            
+            if [ -f "$assistant_shm_file" ] && [ -s "$assistant_shm_file" ]; then
+                echo -e "${BLUE}🔄 Restauration assistant SHM file...${NC}"
+                adb push "$assistant_shm_file" /sdcard/tmp_assistant_shm
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_shm > databases/assistant_database-shm"
+                adb shell rm /sdcard/tmp_assistant_shm
+            fi
+        else
+            echo -e "${RED}⚠️  assistant_database_$timestamp introuvable - métadonnées manquantes${NC}"
+        fi
+        
+    elif [[ "$backup_base" =~ assistant_database_(.+)$ ]]; then
+        timestamp="${BASH_REMATCH[1]}"
+        echo -e "${BLUE}📁 Restauration assistant_database (timestamp: $timestamp)${NC}"
+        
+        adb push "$backup_file" /sdcard/tmp_db
+        adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_db > databases/assistant_database"
+        adb shell rm /sdcard/tmp_db
+        
+        # Restaurer fichiers WAL assistant du même timestamp  
+        local assistant_wal_file="$BACKUP_DIR/assistant_database-wal_$timestamp"
+        local assistant_shm_file="$BACKUP_DIR/assistant_database-shm_$timestamp"
+        
+        if [ -f "$assistant_wal_file" ] && [ -s "$assistant_wal_file" ]; then
+            echo -e "${BLUE}🔄 Restauration assistant WAL file...${NC}"
+            adb push "$assistant_wal_file" /sdcard/tmp_assistant_wal
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_wal > databases/assistant_database-wal"
+            adb shell rm /sdcard/tmp_assistant_wal
+        fi
+        
+        if [ -f "$assistant_shm_file" ] && [ -s "$assistant_shm_file" ]; then
+            echo -e "${BLUE}🔄 Restauration assistant SHM file...${NC}"
+            adb push "$assistant_shm_file" /sdcard/tmp_assistant_shm
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_assistant_shm > databases/assistant_database-shm"
+            adb shell rm /sdcard/tmp_assistant_shm
+        fi
+        
+        # Restaurer aussi tracking_database + WAL du même timestamp (données réelles)
+        local tracking_file="$BACKUP_DIR/tracking_database_$timestamp"
+        if [ -f "$tracking_file" ]; then
+            echo -e "${BLUE}🔄 Restauration tracking_database (données réelles)...${NC}"
+            adb push "$tracking_file" /sdcard/tmp_tracking
+            adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_tracking > databases/tracking_database"
+            adb shell rm /sdcard/tmp_tracking
+            
+            # Restaurer fichiers WAL tracking
+            local wal_file="$BACKUP_DIR/tracking_database-wal_$timestamp"
+            local shm_file="$BACKUP_DIR/tracking_database-shm_$timestamp"
+            
+            if [ -f "$wal_file" ]; then
+                echo -e "${BLUE}🔄 Restauration tracking WAL file...${NC}"
+                adb push "$wal_file" /sdcard/tmp_wal
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_wal > databases/tracking_database-wal"
+                adb shell rm /sdcard/tmp_wal
+            fi
+            
+            if [ -f "$shm_file" ]; then
+                echo -e "${BLUE}🔄 Restauration tracking SHM file...${NC}"
+                adb push "$shm_file" /sdcard/tmp_shm
+                adb shell run-as $PACKAGE_NAME sh -c "cat /sdcard/tmp_shm > databases/tracking_database-shm"
+                adb shell rm /sdcard/tmp_shm
+            fi
+        fi
+    else
+        echo -e "${RED}❌ Format de fichier backup non reconnu: $backup_base${NC}"
+        return 1
+    fi
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ DB restaurée avec succès${NC}"
+        echo -e "${GREEN}✅ DB + fichiers WAL restaurés avec succès${NC}"
+        echo -e "${BLUE}🚀 Redémarrez l'app pour voir les données restaurées${NC}"
         return 0
     else
         echo -e "${RED}❌ Échec restauration DB${NC}"

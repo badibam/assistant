@@ -20,7 +20,7 @@ import com.assistant.core.versioning.MigrationOrchestrator
         // Note: Les entités des outils seront ajoutées dynamiquement
         // via le système de build et ToolTypeRegistry
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
