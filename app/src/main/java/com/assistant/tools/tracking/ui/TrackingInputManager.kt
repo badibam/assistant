@@ -46,16 +46,13 @@ fun TrackingInputManager(
             isLoading = true
             
             try {
-                // Build params with new value JSON format
+                // Build params pour nouvelle structure tool_data
                 val params = mutableMapOf<String, Any>(
-                    "tool_type" to "tracking",
-                    "operation" to "create",
                     "tool_instance_id" to toolInstanceId,
-                    "zone_name" to zoneName,
-                    "tool_instance_name" to toolInstanceName,
+                    "tooltype" to "tracking",
+                    "timestamp" to recordedAt,
                     "name" to itemName,
-                    "value" to valueJson,
-                    "recorded_at" to recordedAt
+                    "data" to JSONObject(valueJson)
                 )
                 android.util.Log.d("VALDEBUG", "Final params being sent: $params")
                 

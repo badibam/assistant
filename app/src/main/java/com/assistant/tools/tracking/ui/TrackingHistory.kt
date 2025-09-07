@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
-import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.tools.tracking.ui.components.TrackingEntryDialog
 import com.assistant.tools.tracking.ui.components.ItemType
 import com.assistant.tools.tracking.ui.components.ActionType
@@ -38,11 +38,11 @@ fun TrackingHistory(
     val coordinator = remember { Coordinator(context) }
     
     // State
-    var trackingData by remember { mutableStateOf<List<TrackingData>>(emptyList()) }
+    var trackingData by remember { mutableStateOf<List<ToolDataEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
-    var editingEntry by remember { mutableStateOf<TrackingData?>(null) }
+    var editingEntry by remember { mutableStateOf<ToolDataEntity?>(null) }
     
     // Date filter state - default to today
     var selectedDate by remember { 
@@ -60,7 +60,6 @@ fun TrackingHistory(
                 val result = coordinator.processUserAction(
                     "get->tool_data",
                     mapOf(
-                        "tool_type" to "tracking",
                         "operation" to "get_entries",
                         "tool_instance_id" to toolInstanceId
                     )
@@ -73,16 +72,15 @@ fun TrackingHistory(
                         val allEntries = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
-                                    TrackingData(
+                                    ToolDataEntity(
                                         id = entryMap["id"] as? String ?: "",
-                                        tool_instance_id = entryMap["tool_instance_id"] as? String ?: "",
-                                        zone_name = entryMap["zone_name"] as? String ?: "",
-                                        tool_instance_name = entryMap["tool_instance_name"] as? String ?: "",
-                                        name = entryMap["name"] as? String ?: "",
-                                        value = entryMap["value"] as? String ?: "",
-                                        recorded_at = (entryMap["recorded_at"] as? Number)?.toLong() ?: 0L,
-                                        created_at = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
-                                        updated_at = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L
+                                        toolInstanceId = entryMap["tool_instance_id"] as? String ?: "",
+                                        tooltype = entryMap["tooltype"] as? String ?: "tracking",
+                                        timestamp = (entryMap["timestamp"] as? Number)?.toLong(),
+                                        name = entryMap["name"] as? String,
+                                        data = entryMap["data"] as? String ?: "",
+                                        createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
+                                        updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L
                                     )
                                 } catch (e: Exception) {
                                     Log.e("TrackingHistory", "Failed to map entry", e)
@@ -94,8 +92,8 @@ fun TrackingHistory(
                         // Filter by selected date and limit to 100 entries
                         val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
                         trackingData = allEntries
-                            .filter { DateUtils.isOnSameDay(it.recorded_at, selectedDateMs) }
-                            .sortedByDescending { it.recorded_at }
+                            .filter { it.timestamp?.let { ts -> DateUtils.isOnSameDay(ts, selectedDateMs) } ?: false }
+                            .sortedByDescending { it.timestamp ?: 0L }
                             .take(100)
                     }
                     else -> {
@@ -117,16 +115,14 @@ fun TrackingHistory(
         scope.launch {
             try {
                 val params = mutableMapOf<String, Any>(
-                    "tool_type" to "tracking",
-                    "operation" to "update",
-                    "entry_id" to entryId,
+                    "id" to entryId,
                     "name" to name,
-                    "value" to valueJson
+                    "data" to JSONObject(valueJson)
                 )
                 
                 // Add timestamp if provided
                 newTimestamp?.let { 
-                    params["recorded_at"] = it.toString()
+                    params["timestamp"] = it
                 }
                 
                 android.util.Log.d("VALDEBUG", "Final update params: $params")

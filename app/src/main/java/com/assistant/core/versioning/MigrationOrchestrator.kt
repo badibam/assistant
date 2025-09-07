@@ -79,6 +79,31 @@ class MigrationOrchestrator(private val context: Context) {
                 database.execSQL("CREATE INDEX idx_tool_data_timestamp ON tool_data(timestamp)")
                 database.execSQL("CREATE INDEX idx_tool_data_tooltype ON tool_data(tooltype)")
                 database.execSQL("CREATE INDEX idx_tool_data_instance_timestamp ON tool_data(tool_instance_id, timestamp)")
+                
+                // Migration des données tracking_data vers tool_data si la table existe
+                try {
+                    database.execSQL("""
+                        INSERT INTO tool_data (id, tool_instance_id, tooltype, timestamp, name, data, created_at, updated_at)
+                        SELECT 
+                            id,
+                            tool_instance_id,
+                            'tracking' as tooltype,
+                            recorded_at as timestamp,
+                            name,
+                            value as data,
+                            created_at,
+                            updated_at
+                        FROM tracking_data
+                    """.trimIndent())
+                    
+                    // Supprimer l'ancienne table après migration réussie
+                    database.execSQL("DROP TABLE tracking_data")
+                    
+                } catch (e: Exception) {
+                    // Table tracking_data n'existe pas ou migration échoue
+                    // Ne pas bloquer la migration, juste logger
+                    println("Migration tracking_data ignorée: ${e.message}")
+                }
             }
         }
     }
