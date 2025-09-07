@@ -316,19 +316,7 @@ class Coordinator(context: Context) {
         return when {
             command.action == "create->zone" -> executeServiceOperation(command, "zone_service", "create")
             command.action == "create->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "create")
-            command.action == "create->tool_data" -> {
-                val toolType = command.params["tool_type"] as? String
-                val operation = command.params["operation"] as? String ?: "create"
-                if (toolType.isNullOrBlank()) {
-                    CommandResult(
-                        commandId = command.id,
-                        status = CommandStatus.ERROR,
-                        error = "create->tool_data requires 'tool_type' parameter"
-                    )
-                } else {
-                    executeServiceOperation(command, "${toolType}_service", operation)
-                }
-            }
+            command.action == "create->tool_data" -> executeServiceOperation(command, "tool_data_service", "create")
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,
@@ -343,17 +331,8 @@ class Coordinator(context: Context) {
             command.action == "get->tool_instances" -> executeServiceOperation(command, "tool_instance_service", "get_by_zone")
             command.action == "get->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "get_by_id")
             command.action == "get->tool_data" -> {
-                val toolType = command.params["tool_type"] as? String
-                val operation = command.params["operation"] as? String
-                if (toolType.isNullOrBlank() || operation.isNullOrBlank()) {
-                    CommandResult(
-                        commandId = command.id,
-                        status = CommandStatus.ERROR,
-                        error = "get->tool_data requires 'tool_type' and 'operation' parameters"
-                    )
-                } else {
-                    executeServiceOperation(command, "${toolType}_service", operation)
-                }
+                val operation = command.params["operation"] as? String ?: "get_entries"
+                executeServiceOperation(command, "tool_data_service", operation)
             }
             else -> CommandResult(
                 commandId = command.id,
@@ -367,19 +346,7 @@ class Coordinator(context: Context) {
         return when {
             command.action == "update->zone" -> executeServiceOperation(command, "zone_service", "update")
             command.action == "update->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "update")
-            command.action == "update->tool_data" -> {
-                val toolType = command.params["tool_type"] as? String
-                val operation = command.params["operation"] as? String ?: "update"
-                if (toolType.isNullOrBlank()) {
-                    CommandResult(
-                        commandId = command.id,
-                        status = CommandStatus.ERROR,
-                        error = "update->tool_data requires 'tool_type' parameter"
-                    )
-                } else {
-                    executeServiceOperation(command, "${toolType}_service", operation)
-                }
-            }
+            command.action == "update->tool_data" -> executeServiceOperation(command, "tool_data_service", "update")
             else -> CommandResult(
                 commandId = command.id,
                 status = CommandStatus.SUCCESS,
@@ -393,17 +360,8 @@ class Coordinator(context: Context) {
             command.action == "delete->zone" -> executeServiceOperation(command, "zone_service", "delete")
             command.action == "delete->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "delete")
             command.action == "delete->tool_data" -> {
-                val toolType = command.params["tool_type"] as? String
                 val operation = command.params["operation"] as? String ?: "delete"
-                if (toolType.isNullOrBlank()) {
-                    CommandResult(
-                        commandId = command.id,
-                        status = CommandStatus.ERROR,
-                        error = "delete->tool_data requires 'tool_type' parameter"
-                    )
-                } else {
-                    executeServiceOperation(command, "${toolType}_service", operation)
-                }
+                executeServiceOperation(command, "tool_data_service", operation)
             }
             else -> CommandResult(
                 commandId = command.id,

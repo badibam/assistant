@@ -31,6 +31,7 @@ class ServiceManager(private val context: Context) {
             // Core services (hardcoded)
             "zone_service" -> ZoneService(context)
             "tool_instance_service" -> ToolInstanceService(context)
+            "tool_data_service" -> ToolDataService(context)
             "backup_service" -> BackupService()
             
             // Tool services (discovered via ToolTypeManager)

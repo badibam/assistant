@@ -49,9 +49,38 @@ class MigrationOrchestrator(private val context: Context) {
      */
     private fun getCoreMigrations(): List<Migration> {
         return listOf(
-            // Exemple de migration core future
-            // CORE_MIGRATION_1_2
+            CORE_MIGRATION_1_2
         )
+    }
+    
+    companion object {
+        /**
+         * Migration 1→2: Ajout table tool_data unifiée
+         */
+        val CORE_MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Création table tool_data unifiée
+                database.execSQL("""
+                    CREATE TABLE tool_data (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        tool_instance_id TEXT NOT NULL,
+                        tooltype TEXT NOT NULL,
+                        timestamp INTEGER,
+                        name TEXT,
+                        data TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        FOREIGN KEY (tool_instance_id) REFERENCES tool_instances(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                
+                // Index pour performances
+                database.execSQL("CREATE INDEX idx_tool_data_instance ON tool_data(tool_instance_id)")
+                database.execSQL("CREATE INDEX idx_tool_data_timestamp ON tool_data(timestamp)")
+                database.execSQL("CREATE INDEX idx_tool_data_tooltype ON tool_data(tooltype)")
+                database.execSQL("CREATE INDEX idx_tool_data_instance_timestamp ON tool_data(tool_instance_id, timestamp)")
+            }
+        }
     }
     
     /**
