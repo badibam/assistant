@@ -61,7 +61,7 @@ fun TrackingHistory(
                     "get->tool_data",
                     mapOf(
                         "operation" to "get_entries",
-                        "tool_instance_id" to toolInstanceId
+                        "toolInstanceId" to toolInstanceId
                     )
                 )
                 
@@ -74,13 +74,13 @@ fun TrackingHistory(
                                 try {
                                     ToolDataEntity(
                                         id = entryMap["id"] as? String ?: "",
-                                        toolInstanceId = entryMap["tool_instance_id"] as? String ?: "",
+                                        toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
                                         tooltype = entryMap["tooltype"] as? String ?: "tracking",
                                         timestamp = (entryMap["timestamp"] as? Number)?.toLong(),
                                         name = entryMap["name"] as? String,
                                         data = entryMap["data"] as? String ?: "",
-                                        createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
-                                        updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L
+                                        createdAt = (entryMap["createdAt"] as? Number)?.toLong() ?: 0L,
+                                        updatedAt = (entryMap["updatedAt"] as? Number)?.toLong() ?: 0L
                                     )
                                 } catch (e: Exception) {
                                     Log.e("TrackingHistory", "Failed to map entry", e)
@@ -312,7 +312,7 @@ fun TrackingHistory(
             
             // Parse JSON directly for each type instead of using limited ParsedValue
             val initialProperties = try {
-                val json = JSONObject(entry.value)
+                val json = JSONObject(entry.data)
                 when (trackingType) {
                     "numeric" -> mapOf(
                         "quantity" to json.optString("quantity", ""),
@@ -362,11 +362,9 @@ fun TrackingHistory(
                 itemType = null, // History editing - no itemType
                 actionType = ActionType.UPDATE,
                 toolInstanceId = toolInstanceId,
-                zoneName = entry.zone_name,
-                toolInstanceName = entry.tool_instance_name,
-                initialName = entry.name,
+                initialName = entry.name ?: "",
                 initialValue = initialProperties,
-                initialRecordedAt = entry.recorded_at,
+                initialRecordedAt = entry.timestamp ?: System.currentTimeMillis(),
                 onConfirm = { name, valueJson, _, recordedAt ->
                     android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - onConfirm called: name='$name', valueJson=$valueJson, trackingType=$trackingType")
                     
@@ -417,7 +415,7 @@ private fun TrackingHistoryRow(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
             UI.Text(
-                text = DateUtils.formatSmartDateTime(entry.recorded_at),
+                text = DateUtils.formatSmartDateTime(entry.timestamp ?: System.currentTimeMillis()),
                 type = TextType.BODY
             )
         }
@@ -475,12 +473,12 @@ private fun TrackingHistoryRow(
 /**
  * Format tracking value for display based on type
  */
-private fun formatTrackingValue(entry: TrackingData, trackingType: String): String {
+private fun formatTrackingValue(entry: ToolDataEntity, trackingType: String): String {
     return try {
-        val valueJson = JSONObject(entry.value)
-        valueJson.optString("raw", entry.value)
+        val valueJson = JSONObject(entry.data)
+        valueJson.optString("raw", entry.data)
     } catch (e: Exception) {
-        entry.value
+        entry.data
     }
 }
 

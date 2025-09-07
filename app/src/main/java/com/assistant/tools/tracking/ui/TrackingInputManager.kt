@@ -48,8 +48,8 @@ fun TrackingInputManager(
             try {
                 // Build params pour nouvelle structure tool_data
                 val params = mutableMapOf<String, Any>(
-                    "tool_instance_id" to toolInstanceId,
-                    "tooltype" to "tracking",
+                    "toolInstanceId" to toolInstanceId,
+                    "tooltype" to "tracking", 
                     "timestamp" to recordedAt,
                     "name" to itemName,
                     "data" to JSONObject(valueJson)

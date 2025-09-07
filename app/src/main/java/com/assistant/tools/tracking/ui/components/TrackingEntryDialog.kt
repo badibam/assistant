@@ -41,8 +41,6 @@ fun TrackingEntryDialog(
     itemType: ItemType?, // PREDEFINED, FREE, or null for history
     actionType: ActionType, // CREATE or UPDATE
     toolInstanceId: String = "",
-    zoneName: String = "",
-    toolInstanceName: String = "",
     initialName: String = "",
     initialValue: Map<String, Any> = emptyMap(),
     initialRecordedAt: Long = System.currentTimeMillis(),
@@ -211,14 +209,12 @@ fun TrackingEntryDialog(
         
         val entryData = mapOf(
             "id" to "temp-validation-id",
-            "tool_instance_id" to toolInstanceId,
-            "zone_name" to zoneName,
-            "tool_instance_name" to toolInstanceName,
+            "toolInstanceId" to toolInstanceId,
             "name" to name.trim(),
-            "value" to valueObject, // Use parsed object, not JSON string
-            "recorded_at" to recordedAt,
-            "created_at" to System.currentTimeMillis(),
-            "updated_at" to System.currentTimeMillis()
+            "data" to valueObject, // Use parsed object, not JSON string
+            "timestamp" to recordedAt,
+            "createdAt" to System.currentTimeMillis(),
+            "updatedAt" to System.currentTimeMillis()
         )
 
         // Log data being validated
