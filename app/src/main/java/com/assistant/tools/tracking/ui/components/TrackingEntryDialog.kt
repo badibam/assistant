@@ -207,27 +207,7 @@ fun TrackingEntryDialog(
 
         // Build complete TrackingData structure for validation
         // Parse valueJson to object for schema validation
-        valueObject = try {
-            val jsonObj = JSONObject(valueJson)
-            // Convert JSONObject to Map for validation
-            val map = mutableMapOf<String, Any>()
-            jsonObj.keys().forEach { key ->
-                val value = jsonObj.get(key)
-                // Convert quantity to number for numeric tracking types to match schema
-                if (key == "quantity" && trackingType == "numeric" && value is String) {
-                    try {
-                        map[key] = value.toDouble()
-                    } catch (e: NumberFormatException) {
-                        map[key] = value
-                    }
-                } else {
-                    map[key] = value
-                }
-            }
-            map
-        } catch (e: Exception) {
-            emptyMap<String, Any>()
-        }
+        valueObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(valueJson, trackingType)
         
         val entryData = mapOf(
             "id" to "temp-validation-id",

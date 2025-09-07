@@ -177,14 +177,14 @@ fun TrackingInputManager(
             toolInstanceId = toolInstanceId,
             onQuickSave = { name, properties ->
                 // Convert properties to valueJson for quick save
-                val valueJson = when (trackingType) {
+                val initialValueJson = when (trackingType) {
                     "numeric" -> JSONObject().apply {
                         put("type", "numeric")
-                        put("quantity", properties["default_quantity"] ?: 0.0)
+                        put("quantity", properties["quantity"] ?: properties["default_quantity"])
                         put("unit", properties["unit"] ?: "")
-                        val qty = properties["default_quantity"]?.toString() ?: "0"
+                        val qty = (properties["quantity"] ?: properties["default_quantity"])?.toString()
                         val unit = properties["unit"]?.toString() ?: ""
-                        put("raw", if (unit.isNotBlank()) "$qty $unit" else qty)
+                        put("raw", if (unit.isNotBlank()) "$qty $unit" else qty ?: "")
                     }.toString()
                     "counter" -> JSONObject().apply {
                         put("type", "counter") 
@@ -196,7 +196,16 @@ fun TrackingInputManager(
                         put("raw", name) // Default for other types
                     }.toString()
                 }
-                saveEntry(name, valueJson, System.currentTimeMillis())
+                
+                // Convert to validation format with proper types
+                val validationObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(initialValueJson, trackingType)
+                val finalValueJson = JSONObject().apply {
+                    for ((key, value) in validationObject) {
+                        put(key, value)
+                    }
+                }.toString()
+                
+                saveEntry(name, finalValueJson, System.currentTimeMillis())
             },
             onOpenDialog = { name, properties ->
                 dialogInitialName = name

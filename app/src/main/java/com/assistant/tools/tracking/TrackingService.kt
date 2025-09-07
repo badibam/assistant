@@ -333,43 +333,21 @@ class TrackingService(private val context: Context) : ExecutableService {
         
         if (token.isCancelled) return OperationResult.cancelled()
         
-        // Extract new properties from params and create new JSON value
-        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - extracting properties for type: $type from params: $params")
+        // Extract new value JSON from params - it's already properly formatted
+        val newValueJsonString = params.optString("value", "")
+        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - using new value JSON: $newValueJsonString")
         
-        // Create new JSON value using TrackingTypeFactory
-        val handler = TrackingTypeFactory.getHandler(type)
-        if (handler == null) {
-            return OperationResult.error("Unsupported tracking type: $type")
+        if (newValueJsonString.isEmpty()) {
+            return OperationResult.error("No value provided for update")
         }
         
-        // Get instance config for choice options and other type configs
-        val instanceConfig = toolInstanceDao.getToolInstanceById(existingEntry.tool_instance_id)?.config_json?.let { JSONObject(it) }
-        val properties = extractPropertiesFromParams(params, type, instanceConfig).toMutableMap()
-        
-        // Preserve existing properties that are not provided in update (generic approach)
-        try {
-            val existingJson = org.json.JSONObject(existingEntry.value)
-            val existingProperties = jsonToProperties(existingJson, type)
-            
-            // For each existing property, use it if not provided in the new properties
-            existingProperties.forEach { (key, value) ->
-                if (!properties.containsKey(key) || properties[key].toString().isBlank()) {
-                    properties[key] = value
-                }
-            }
+        // Validate the provided JSON is well-formed
+        val newValue = try {
+            val testJson = JSONObject(newValueJsonString)
+            newValueJsonString
         } catch (e: Exception) {
-            android.util.Log.w("TRACKING_DEBUG", "Could not preserve existing properties: ${e.message}")
+            return OperationResult.error("Invalid JSON format: ${e.message}")
         }
-        
-        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - extracted properties: $properties")
-        
-        val valueJson = handler.createValueJson(properties)
-        if (valueJson == null) {
-            return OperationResult.error("Invalid $type data: $properties")
-        }
-        
-        android.util.Log.d("TRACKING_DEBUG", "TrackingService.handleUpdate - created new valueJson: $valueJson")
-        val newValue = valueJson
         
         val updatedEntry = existingEntry.copy(
             name = params.optString("name", existingEntry.name),
