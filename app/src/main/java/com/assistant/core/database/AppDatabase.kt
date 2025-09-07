@@ -6,23 +6,27 @@ import androidx.room.RoomDatabase
 import android.content.Context
 import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
+import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
+import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.versioning.MigrationOrchestrator
 
 @Database(
     entities = [
         Zone::class,
-        ToolInstance::class
+        ToolInstance::class,
+        ToolDataEntity::class
         // Note: Les entités des outils seront ajoutées dynamiquement
         // via le système de build et ToolTypeRegistry
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun zoneDao(): ZoneDao
     abstract fun toolInstanceDao(): ToolInstanceDao
+    abstract fun toolDataDao(): BaseToolDataDao
 
     companion object {
         @Volatile
