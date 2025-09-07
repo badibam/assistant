@@ -11,6 +11,7 @@ import com.assistant.core.validation.SchemaProvider
  * Contract for tool type implementations
  * Defines the mandatory static metadata that each tool type must provide
  * Extends SchemaProvider for unified form validation across the app
+ * Includes data migration capabilities for autonomous data upgrades
  */
 interface ToolTypeContract : SchemaProvider {
     
@@ -118,4 +119,22 @@ interface ToolTypeContract : SchemaProvider {
      * @return Migrated configuration JSON string, or original if no migration needed
      */
     fun migrateConfig(fromVersion: Int, configJson: String): String
+    
+    // ═══ Data Migration Capabilities (from ToolTypeDataContract) ═══
+    
+    /**
+     * Version actuelle des données pour ce tooltype
+     * @return Version numérique (ex: 1, 2, 3...)
+     */
+    fun getCurrentDataVersion(): Int = 1
+    
+    /**
+     * Upgrade des données si nécessaire
+     * Appelé au démarrage pour chaque entrée de données obsolète
+     * 
+     * @param rawData Données JSON existantes 
+     * @param fromVersion Version actuelle des données
+     * @return Données JSON upgradées vers getCurrentDataVersion()
+     */
+    fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String = rawData
 }

@@ -22,8 +22,6 @@ import org.json.JSONArray
 @Composable
 fun TrackingInputManager(
     toolInstanceId: String,
-    zoneName: String,
-    toolInstanceName: String,
     config: JSONObject,
     onEntrySaved: () -> Unit,
     onConfigChanged: () -> Unit = {}

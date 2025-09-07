@@ -10,9 +10,7 @@ import com.assistant.tools.tracking.TrackingService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.utils.NumberFormatting
-import com.assistant.tools.tracking.data.TrackingDao
-import com.assistant.tools.tracking.data.TrackingDatabase
-import com.assistant.tools.tracking.entities.TrackingData
+import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import com.assistant.tools.tracking.TrackingSchemas
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
@@ -93,11 +91,15 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getDao(context: Context): Any {
-        return TrackingDatabase.getDatabase(context).trackingDao()
+        val database = com.assistant.core.database.AppDatabase.getDatabase(context)
+        val baseDao = database.baseToolDataDao()
+        
+        // Utilise l'implémentation générique qui suffit pour le tracking standard
+        return com.assistant.core.database.dao.DefaultExtendedToolDataDao(baseDao, "tracking")
     }
     
     override fun getDatabaseEntities(): List<Class<*>> {
-        return listOf(TrackingData::class.java)
+        return listOf(ToolDataEntity::class.java)
     }
     
     @Composable
@@ -123,10 +125,7 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getDatabaseMigrations(): List<Migration> {
-        return listOf(
-            // Exemple de migration future pour TrackingData
-            // TRACKING_MIGRATION_1_2
-        )
+        return emptyList() // Migrations gérées par le core maintenant
     }
     
     override fun migrateConfig(fromVersion: Int, configJson: String): String {
@@ -158,39 +157,40 @@ object TrackingToolType : ToolTypeContract {
         */
     }
     
-    /**
-     * Converts TrackingData to JSON for schema validation
-     * This creates a JSON representation that matches the data schema
-     */
-    fun TrackingData.toValidationJson(): String {
-        return JSONObject().apply {
-            put("id", id)
-            put("tool_instance_id", tool_instance_id)
-            put("zone_name", zone_name)
-            put("tool_instance_name", tool_instance_name)
-            put("name", name)
-            // Parse value string JSON into object for schema validation
-            val valueObject = JSONObject(value)
-            put("value", valueObject)
-            put("recorded_at", recorded_at)
-        }.toString()
+    // ═══ Data Migration Capabilities ═══
+    override fun getCurrentDataVersion(): Int = 2
+    
+    override fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String {
+        return when (fromVersion) {
+            1 -> upgradeV1ToV2(rawData)
+            else -> rawData // Pas de migration nécessaire
+        }
     }
     
     /**
-     * Converts validated JSON back to TrackingData
-     * Used after successful schema validation
+     * Migration v1 → v2 : Ajout du champ type si manquant
      */
-    fun String.toTrackingData(): TrackingData {
-        val json = JSONObject(this)
-        return TrackingData(
-            id = json.optString("id", ""),
-            tool_instance_id = json.getString("tool_instance_id"),
-            zone_name = json.getString("zone_name"),
-            tool_instance_name = json.getString("tool_instance_name"),
-            name = json.getString("name"),
-            value = json.getString("value"),
-            recorded_at = json.getLong("recorded_at")
-        )
+    private fun upgradeV1ToV2(v1Data: String): String {
+        return try {
+            val json = JSONObject(v1Data)
+            // Ajouter le champ type si absent (v2 requirement)
+            if (!json.has("type")) {
+                // Inférer le type depuis les données existantes
+                val inferredType = when {
+                    json.has("quantity") -> "numeric"
+                    json.has("items") -> "choice"
+                    json.has("duration") -> "timer"
+                    json.has("checked") -> "boolean"
+                    json.has("level") -> "scale"
+                    else -> "text"
+                }
+                json.put("type", inferredType)
+            }
+            json.toString()
+        } catch (e: Exception) {
+            // En cas d'erreur, retourner les données originales
+            v1Data
+        }
     }
     
     /**

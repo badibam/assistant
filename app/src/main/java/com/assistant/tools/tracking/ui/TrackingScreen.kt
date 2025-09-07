@@ -50,10 +50,7 @@ fun TrackingScreen(
                 CommandStatus.SUCCESS -> {
                     val toolInstanceData = result.data?.get("tool_instance") as? Map<String, Any>
                     if (toolInstanceData != null) {
-                        // Add zone_name directly from parameter
-                        toolInstance = toolInstanceData.toMutableMap().apply {
-                            put("zone_name", zoneName)
-                        }
+                        toolInstance = toolInstanceData
                     }
                 }
                 else -> {
@@ -127,8 +124,6 @@ fun TrackingScreen(
                     key(configRefreshTrigger) {
                         TrackingInputManager(
                             toolInstanceId = toolInstanceId,
-                            zoneName = (toolInstance?.get("zone_name") as? String) ?: "",
-                            toolInstanceName = config.optString("name", "Suivi"),
                             config = config,
                             onEntrySaved = { 
                                 historyRefreshTrigger++

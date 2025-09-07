@@ -400,7 +400,7 @@ fun TrackingHistory(
  */
 @Composable
 private fun TrackingHistoryRow(
-    entry: TrackingData,
+    entry: ToolDataEntity,
     trackingType: String,
     onEdit: () -> Unit,
     onDelete: () -> Unit

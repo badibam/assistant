@@ -66,4 +66,11 @@ abstract class BaseToolDataDao {
      */
     @Query("SELECT * FROM tool_data WHERE tooltype = :tooltype ORDER BY timestamp DESC")
     abstract suspend fun getByTooltype(tooltype: String): List<ToolDataEntity>
+
+    /**
+     * Récupère les versions minimales de données par tooltype
+     * Utilisé pour déterminer quels tooltypes nécessitent une migration
+     */
+    @Query("SELECT tooltype, MIN(data_version) as min_version FROM tool_data GROUP BY tooltype")
+    abstract suspend fun getTooltypeMinVersions(): Map<String, Int>
 }

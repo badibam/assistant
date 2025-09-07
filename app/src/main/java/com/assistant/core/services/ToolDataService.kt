@@ -66,10 +66,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         val now = System.currentTimeMillis()
+        val dataVersion = toolType?.getCurrentDataVersion() ?: 1
         val entity = ToolDataEntity(
             id = UUID.randomUUID().toString(),
             toolInstanceId = toolInstanceId,
             tooltype = tooltype,
+            dataVersion = dataVersion,
             timestamp = timestamp,
             name = name,
             data = dataJson,
@@ -171,6 +173,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "id" to entity.id,
                     "toolInstanceId" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
+                    "dataVersion" to entity.dataVersion,
                     "timestamp" to entity.timestamp,
                     "name" to entity.name,
                     "data" to entity.data,

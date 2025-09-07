@@ -188,13 +188,9 @@ object TrackingSchemas {
     val DATA_SCHEMA = """
         {
             "properties": {
-                "id": { "type": "string" },
-                "tool_instance_id": { "type": "string" },
-                "zone_name": { "type": "string" },
-                "tool_instance_name": { "type": "string" },
                 "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                "recorded_at": { "type": "number" },
-                "value": {
+                "timestamp": { "type": "number" },
+                "data": {
                     "type": "object",
                     "description": "Tracking data specific to the tracking type",
                     "properties": {
@@ -205,19 +201,19 @@ object TrackingSchemas {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "value"],
+            "required": ["name", "timestamp", "data"],
             "allOf": [
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "numeric" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "numeric" },
                                     "quantity": { "type": "number" },
@@ -233,36 +229,14 @@ object TrackingSchemas {
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
-                                "properties": { "type": { "const": "text" } } 
-                            } 
-                        }
-                    },
-                    "then": {
-                        "properties": {
-                            "value": {
-                                "properties": {
-                                    "type": { "const": "text" },
-                                    "text": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
-                                },
-                                "required": ["type", "text"],
-                                "additionalProperties": false
-                            }
-                        }
-                    }
-                },
-                {
-                    "if": {
-                        "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "scale" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "scale" },
                                     "rating": { "type": "integer", "minimum": 1, "maximum": 100 },
@@ -281,14 +255,14 @@ object TrackingSchemas {
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "boolean" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "boolean" },
                                     "state": { "type": "boolean" },
@@ -305,14 +279,14 @@ object TrackingSchemas {
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "choice" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "choice" },
                                     "selected_option": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
@@ -331,14 +305,14 @@ object TrackingSchemas {
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "counter" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "counter" },
                                     "increment": { "type": "integer" },
@@ -353,14 +327,14 @@ object TrackingSchemas {
                 {
                     "if": {
                         "properties": { 
-                            "value": { 
+                            "data": { 
                                 "properties": { "type": { "const": "timer" } } 
                             } 
                         }
                     },
                     "then": {
                         "properties": {
-                            "value": {
+                            "data": {
                                 "properties": {
                                     "type": { "const": "timer" },
                                     "activity": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },

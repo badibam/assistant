@@ -12,6 +12,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.update.UpdateManager
+import com.assistant.core.versioning.MigrationOrchestrator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,6 +22,7 @@ class MainActivity : ComponentActivity() {
     
     private lateinit var coordinator: Coordinator
     private lateinit var updateManager: UpdateManager
+    private lateinit var migrationOrchestrator: MigrationOrchestrator
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +32,31 @@ class MainActivity : ComponentActivity() {
         
         // Initialize update manager
         updateManager = UpdateManager(this)
+        
+        // Initialize migration orchestrator
+        migrationOrchestrator = MigrationOrchestrator(this)
+        
+        // Perform startup data migrations
+        CoroutineScope(Dispatchers.IO).launch {
+            Log.d("Migrations", "Starting data migrations...")
+            val result = migrationOrchestrator.performStartupMigrations(this@MainActivity)
+            
+            if (result.success) {
+                if (result.migratedTooltypes.isNotEmpty()) {
+                    Log.i("Migrations", "Data migrations completed successfully:")
+                    result.migratedTooltypes.forEach { migration ->
+                        Log.i("Migrations", "  - $migration")
+                    }
+                } else {
+                    Log.i("Migrations", "No data migrations needed")
+                }
+            } else {
+                Log.e("Migrations", "Data migration errors:")
+                result.errors.forEach { error ->
+                    Log.e("Migrations", "  - ${error.toUserFriendlyMessage()}")
+                }
+            }
+        }
         
         // Check for updates at startup
         updateManager.scheduleUpdateCheck { updateInfo ->
