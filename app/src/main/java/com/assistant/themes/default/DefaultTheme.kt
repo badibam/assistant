@@ -381,7 +381,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE -> ButtonType.SECONDARY
             
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.UP, ButtonAction.DOWN -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT -> ButtonType.DEFAULT
         }
     }
     
@@ -402,6 +402,8 @@ object DefaultTheme : ThemeContract {
             ButtonAction.CONFIRM -> "Confirmer"
             ButtonAction.UP -> "Monter"
             ButtonAction.DOWN -> "Descendre"
+            ButtonAction.LEFT -> "Précédent"
+            ButtonAction.RIGHT -> "Suivant"
         }
     }
     
@@ -422,6 +424,8 @@ object DefaultTheme : ThemeContract {
             ButtonAction.CONFIRM -> "✓"   // Check mark
             ButtonAction.UP -> "▲"        // Triangle haut
             ButtonAction.DOWN -> "▼"      // Triangle bas
+            ButtonAction.LEFT -> "◀"      // Triangle gauche
+            ButtonAction.RIGHT -> "▶"     // Triangle droite
         }
     }
     

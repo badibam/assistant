@@ -188,32 +188,49 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Paramètres de filtrage et pagination
         val limit = params.optInt("limit", 100)
+        val page = params.optInt("page", 1)
+        val offset = (page - 1) * limit
         val startTime = if (params.has("startTime")) params.optLong("startTime") else null
         val endTime = if (params.has("endTime")) params.optLong("endTime") else null
 
         val dao = getToolDataDao()
-        val entries = if (startTime != null && endTime != null) {
+        
+        val (entries, totalCount) = if (startTime != null && endTime != null) {
             // Filtrage par plage de temps avec pagination
-            dao.getByTimeRange(toolInstanceId, startTime, endTime, limit)
+            val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)
+            val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
+            Pair(data, count)
         } else {
-            // Pagination simple (toutes les entrées) - utilise la méthode existante
-            dao.getRecent(toolInstanceId, limit)
+            // Pagination simple (toutes les entrées)
+            val count = dao.countByToolInstance(toolInstanceId)
+            val data = dao.getByToolInstancePaginated(toolInstanceId, limit, offset)
+            Pair(data, count)
         }
+        
+        val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
         return OperationResult.success(
-            data = mapOf("entries" to entries.map { entity ->
-                mapOf(
-                    "id" to entity.id,
-                    "toolInstanceId" to entity.toolInstanceId,
-                    "tooltype" to entity.tooltype,
-                    "dataVersion" to entity.dataVersion,
-                    "timestamp" to entity.timestamp,
-                    "name" to entity.name,
-                    "data" to entity.data,
-                    "createdAt" to entity.createdAt,
-                    "updatedAt" to entity.updatedAt
+            data = mapOf(
+                "entries" to entries.map { entity ->
+                    mapOf(
+                        "id" to entity.id,
+                        "toolInstanceId" to entity.toolInstanceId,
+                        "tooltype" to entity.tooltype,
+                        "dataVersion" to entity.dataVersion,
+                        "timestamp" to entity.timestamp,
+                        "name" to entity.name,
+                        "data" to entity.data,
+                        "createdAt" to entity.createdAt,
+                        "updatedAt" to entity.updatedAt
+                    )
+                },
+                "pagination" to mapOf(
+                    "currentPage" to page,
+                    "totalPages" to totalPages,
+                    "totalEntries" to totalCount,
+                    "entriesPerPage" to limit
                 )
-            })
+            )
         )
     }
 

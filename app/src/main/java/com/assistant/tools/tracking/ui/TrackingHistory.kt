@@ -64,6 +64,11 @@ fun TrackingHistory(
     var currentPeriod by remember { mutableStateOf(Period.now(PeriodType.DAY)) }
     var entriesLimit by remember { mutableStateOf(100) }
     
+    // Pagination state
+    var currentPage by remember { mutableStateOf(1) }
+    var totalEntries by remember { mutableStateOf(0) }
+    var totalPages by remember { mutableStateOf(1) }
+    
     // App config state - null jusqu'au chargement
     var dayStartHour by remember { mutableStateOf<Int?>(null) }
     var weekStartDay by remember { mutableStateOf<String?>(null) }
@@ -85,7 +90,8 @@ fun TrackingHistory(
                 val params = mutableMapOf<String, Any>(
                     "operation" to "get_entries",
                     "toolInstanceId" to toolInstanceId,
-                    "limit" to entriesLimit
+                    "limit" to entriesLimit,
+                    "page" to currentPage
                 )
                 
                 // Ajouter les filtres temporels selon le type de période
@@ -138,6 +144,14 @@ fun TrackingHistory(
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
                         val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
+                        val paginationData = result.data?.get("pagination") as? Map<*, *>
+                        
+                        // Mise à jour des données de pagination
+                        paginationData?.let { pagination ->
+                            totalPages = (pagination["totalPages"] as? Number)?.toInt() ?: 1
+                            totalEntries = (pagination["totalEntries"] as? Number)?.toInt() ?: 0
+                            currentPage = (pagination["currentPage"] as? Number)?.toInt() ?: 1
+                        }
                         
                         trackingData = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
@@ -268,8 +282,13 @@ fun TrackingHistory(
         return
     }
 
-    // Load data on composition and when filters change
-    LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, refreshTrigger) {
+    // Reset page when filters change
+    LaunchedEffect(periodFilter, currentPeriod, entriesLimit) {
+        currentPage = 1
+    }
+    
+    // Load data on composition and when filters or pagination change
+    LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, currentPage, refreshTrigger) {
         loadData()
     }
     
@@ -437,27 +456,57 @@ fun TrackingHistory(
                 )
             }
             
-            // Show count info
-            if (trackingData.isNotEmpty()) {
+            // Pagination controls
+            if (trackingData.isNotEmpty() && totalPages > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val periodLabel = when (periodFilter) {
-                        PeriodFilterType.ALL -> "au total"
-                        PeriodFilterType.HOUR -> "pour cette heure"
-                        PeriodFilterType.DAY -> "pour le $selectedDate"
-                        PeriodFilterType.WEEK -> "pour cette semaine"
-                        PeriodFilterType.MONTH -> "pour ce mois"
-                        PeriodFilterType.YEAR -> "pour cette année"
+                    // Previous page button
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (currentPage > 1) {
+                            UI.ActionButton(
+                                action = ButtonAction.LEFT,
+                                display = ButtonDisplay.ICON,
+                                onClick = { 
+                                    if (currentPage > 1) {
+                                        currentPage -= 1
+                                    }
+                                }
+                            )
+                        }
                     }
                     
-                    UI.Text(
-                        "${trackingData.size} entrée(s) $periodLabel" +
-                                if (trackingData.size == entriesLimit) " (limite $entriesLimit atteinte)" else "",
-                        TextType.CAPTION
-                    )
+                    // Page indicator
+                    Box(
+                        modifier = Modifier.weight(2f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.Text(
+                            "Page $currentPage sur $totalPages",
+                            TextType.CAPTION
+                        )
+                    }
+                    
+                    // Next page button
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        if (currentPage < totalPages) {
+                            UI.ActionButton(
+                                action = ButtonAction.RIGHT,
+                                display = ButtonDisplay.ICON,
+                                onClick = { 
+                                    if (currentPage < totalPages) {
+                                        currentPage += 1
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }

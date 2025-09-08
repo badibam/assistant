@@ -203,7 +203,7 @@ fun PeriodSelector(
     ) {
         // Bouton précédent
         UI.ActionButton(
-            action = ButtonAction.BACK,
+            action = ButtonAction.LEFT,
             display = ButtonDisplay.ICON,
             size = Size.M,
             onClick = {
@@ -239,7 +239,7 @@ fun PeriodSelector(
         
         // Bouton suivant
         UI.ActionButton(
-            action = ButtonAction.UP, // Réutilise UP pour "suivant"
+            action = ButtonAction.RIGHT,
             display = ButtonDisplay.ICON,
             size = Size.M,
             onClick = {
@@ -322,7 +322,7 @@ private fun generateHourLabel(timestamp: Long, now: Long): String {
     val diffHours = ((normalizedNow - normalizedTimestamp) / (60 * 60 * 1000)).toInt()
     
     return when {
-        diffHours == 0 -> "Maintenant"
+        diffHours == 0 -> "Cette heure-ci"
         diffHours > 0 && diffHours <= 12 -> "Il y a $diffHours heure${if (diffHours > 1) "s" else ""}"
         diffHours < 0 && diffHours >= -12 -> "Dans ${-diffHours} heure${if (-diffHours > 1) "s" else ""}"
         else -> {
@@ -365,8 +365,8 @@ private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String):
     
     return when {
         diffWeeks == 0 -> "Cette semaine"
-        diffWeeks == 1 -> "Semaine dernière"
-        diffWeeks == -1 -> "Semaine prochaine"
+        diffWeeks == 1 -> "La semaine dernière"
+        diffWeeks == -1 -> "La semaine prochaine"
         diffWeeks > 0 && diffWeeks <= 4 -> "Il y a $diffWeeks semaine${if (diffWeeks > 1) "s" else ""}"
         diffWeeks < 0 && diffWeeks >= -4 -> "Dans ${-diffWeeks} semaine${if (-diffWeeks > 1) "s" else ""}"
         else -> {
@@ -391,9 +391,9 @@ private fun generateMonthLabel(timestamp: Long, now: Long): String {
                     (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH))
     
     return when {
-        diffMonths == 0 -> "Ce mois"
-        diffMonths == 1 -> "Mois dernier"
-        diffMonths == -1 -> "Mois prochain"
+        diffMonths == 0 -> "Ce mois-ci"
+        diffMonths == 1 -> "Le mois dernier"
+        diffMonths == -1 -> "Le mois prochain"
         diffMonths > 0 && diffMonths <= 6 -> "Il y a $diffMonths mois"
         diffMonths < 0 && diffMonths >= -6 -> "Dans ${-diffMonths} mois"
         else -> {
@@ -422,10 +422,10 @@ private fun generateYearLabel(timestamp: Long, now: Long): String {
     
     return when {
         diffYears == 0 -> "Cette année"
-        diffYears == 1 -> "Année dernière"
-        diffYears == -1 -> "Année prochaine"
-        diffYears > 0 && diffYears <= 3 -> "Il y a $diffYears année${if (diffYears > 1) "s" else ""}"
-        diffYears < 0 && diffYears >= -3 -> "Dans ${-diffYears} année${if (-diffYears > 1) "s" else ""}"
+        diffYears == 1 -> "L'année dernière"
+        diffYears == -1 -> "L'année prochaine"
+        diffYears > 0 && diffYears <= 3 -> "Il y a $diffYears an${if (diffYears > 1) "s" else ""}"
+        diffYears < 0 && diffYears >= -3 -> "Dans ${-diffYears} an${if (-diffYears > 1) "s" else ""}"
         else -> tsYear.toString()
     }
 }

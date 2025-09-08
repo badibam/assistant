@@ -76,10 +76,22 @@ abstract class BaseToolDataDao {
     abstract suspend fun getByTooltype(tooltype: String): List<ToolDataEntity>
 
     /**
-     * Récupère les entrées dans une plage de temps avec limite
+     * Récupère les entrées dans une plage de temps avec limite et offset (pagination)
      */
-    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp DESC LIMIT :limit")
-    abstract suspend fun getByTimeRange(toolInstanceId: String, startTime: Long, endTime: Long, limit: Int): List<ToolDataEntity>
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
+    abstract suspend fun getByTimeRangePaginated(toolInstanceId: String, startTime: Long, endTime: Long, limit: Int, offset: Int): List<ToolDataEntity>
+    
+    /**
+     * Compte les entrées dans une plage de temps
+     */
+    @Query("SELECT COUNT(*) FROM tool_data WHERE tool_instance_id = :toolInstanceId AND timestamp >= :startTime AND timestamp < :endTime")
+    abstract suspend fun countByTimeRange(toolInstanceId: String, startTime: Long, endTime: Long): Int
+    
+    /**
+     * Récupère les entrées avec pagination (toutes périodes)
+     */
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
+    abstract suspend fun getByToolInstancePaginated(toolInstanceId: String, limit: Int, offset: Int): List<ToolDataEntity>
 
     /**
      * Récupère les versions minimales de données par tooltype
