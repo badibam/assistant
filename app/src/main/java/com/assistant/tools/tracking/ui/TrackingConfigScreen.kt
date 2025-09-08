@@ -159,6 +159,7 @@ fun TrackingConfigScreen(
     
     // Track original type for data deletion detection
     var originalType by remember { mutableStateOf("") }
+    var initialConfigString by remember { mutableStateOf("") }
     
     // Config update helpers
     fun updateConfig(key: String, value: Any) {
@@ -212,7 +213,8 @@ fun TrackingConfigScreen(
         val newConfig = JSONObject(configString)
         android.util.Log.d("CONFIGDEBUG", "New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
         
-        // Capture original type before updating config
+        // Capture original config and type before updating
+        initialConfigString = configString
         originalType = newConfig.optString("type", "")
         android.util.Log.d("CONFIGDEBUG", "Original type captured: $originalType")
         
@@ -245,12 +247,132 @@ fun TrackingConfigScreen(
     // State for data deletion warning
     var showDataDeletionWarning by remember { mutableStateOf(false) }
     
+    // State for scale change warning
+    var showScaleChangeWarning by remember { mutableStateOf(false) }
+    var scaleChangeDetails by remember { mutableStateOf<String?>(null) }
+    
+    // State for boolean labels change warning
+    var showBooleanChangeWarning by remember { mutableStateOf(false) }
+    var booleanChangeDetails by remember { mutableStateOf<String?>(null) }
+    
+    // State for choice options change warning  
+    var showChoiceChangeWarning by remember { mutableStateOf(false) }
+    var choiceChangeDetails by remember { mutableStateOf<String?>(null) }
+    
+    // Function to detect scale changes
+    val detectScaleChanges = {
+        if (isEditing && trackingType == "scale" && originalType == "scale") {
+            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
+            val currentConfig = config
+            
+            val oldMin = originalConfig.optInt("min", 1)
+            val oldMax = originalConfig.optInt("max", 10)
+            val oldMinLabel = originalConfig.optString("min_label", "")
+            val oldMaxLabel = originalConfig.optString("max_label", "")
+            
+            val newMin = currentConfig.optInt("min", 1)
+            val newMax = currentConfig.optInt("max", 10)
+            val newMinLabel = currentConfig.optString("min_label", "")
+            val newMaxLabel = currentConfig.optString("max_label", "")
+            
+            val scaleChanged = oldMin != newMin || oldMax != newMax
+            val labelsChanged = oldMinLabel != newMinLabel || oldMaxLabel != newMaxLabel
+            
+            if (scaleChanged || labelsChanged) {
+                val oldScaleText = buildString {
+                    append(oldMin)
+                    if (oldMinLabel.isNotEmpty()) append(" ($oldMinLabel)")
+                    append(" à ")
+                    append(oldMax)
+                    if (oldMaxLabel.isNotEmpty()) append(" ($oldMaxLabel)")
+                }
+                val newScaleText = buildString {
+                    append(newMin)
+                    if (newMinLabel.isNotEmpty()) append(" ($newMinLabel)")
+                    append(" à ")
+                    append(newMax)
+                    if (newMaxLabel.isNotEmpty()) append(" ($newMaxLabel)")
+                }
+                scaleChangeDetails = "Ancienne échelle : $oldScaleText\nNouvelle échelle : $newScaleText"
+                true
+            } else false
+        } else false
+    }
+
+    // Function to detect boolean label changes
+    val detectBooleanChanges = {
+        if (isEditing && trackingType == "boolean" && originalType == "boolean") {
+            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
+            val currentConfig = config
+            
+            val oldTrueLabel = originalConfig.optString("true_label", "Oui")
+            val oldFalseLabel = originalConfig.optString("false_label", "Non")
+            val newTrueLabel = currentConfig.optString("true_label", "Oui")
+            val newFalseLabel = currentConfig.optString("false_label", "Non")
+            
+            if (oldTrueLabel != newTrueLabel || oldFalseLabel != newFalseLabel) {
+                booleanChangeDetails = "Anciennes étiquettes : \"$oldTrueLabel\" / \"$oldFalseLabel\"\nNouvelles étiquettes : \"$newTrueLabel\" / \"$newFalseLabel\""
+                true
+            } else false
+        } else false
+    }
+
+    // Function to detect choice options changes  
+    val detectChoiceChanges = {
+        if (isEditing && trackingType == "choice" && originalType == "choice") {
+            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
+            val currentConfig = config
+            
+            val oldOptions = originalConfig.optJSONArray("options")?.let { array ->
+                (0 until array.length()).map { array.getString(it) }
+            } ?: emptyList()
+            val newOptions = currentConfig.optJSONArray("options")?.let { array ->
+                (0 until array.length()).map { array.getString(it) }
+            } ?: emptyList()
+            
+            if (oldOptions != newOptions) {
+                val removedOptions = oldOptions.filter { it !in newOptions }
+                val addedOptions = newOptions.filter { it !in oldOptions }
+                
+                val details = buildString {
+                    if (removedOptions.isNotEmpty()) {
+                        append("Options supprimées : ${removedOptions.joinToString(", ") { "\"$it\"" }}")
+                    }
+                    if (addedOptions.isNotEmpty()) {
+                        if (removedOptions.isNotEmpty()) append("\n")
+                        append("Options ajoutées : ${addedOptions.joinToString(", ") { "\"$it\"" }}")
+                    }
+                }
+                choiceChangeDetails = details
+                true
+            } else false
+        } else false
+    }
+
     // Save function avec validation V3
     val handleSave = handleSave@{
         // Check if type changed and we're editing an existing tool
         if (isEditing && originalType.isNotEmpty() && originalType != trackingType) {
             // Show data deletion warning
             showDataDeletionWarning = true
+            return@handleSave
+        }
+        
+        // Check if scale parameters changed
+        if (detectScaleChanges()) {
+            showScaleChangeWarning = true
+            return@handleSave
+        }
+        
+        // Check if boolean labels changed
+        if (detectBooleanChanges()) {
+            showBooleanChangeWarning = true
+            return@handleSave
+        }
+        
+        // Check if choice options changed
+        if (detectChoiceChanges()) {
+            showChoiceChangeWarning = true
             return@handleSave
         }
         
@@ -388,6 +510,120 @@ fun TrackingConfigScreen(
                 )
                 UI.Text(
                     "Toutes les données saisies seront supprimées.",
+                    TextType.BODY
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Text(
+                    "Continuer ?",
+                    TextType.BODY
+                )
+            }
+        }
+    }
+    
+    // Scale change warning dialog
+    if (showScaleChangeWarning) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = {
+                showScaleChangeWarning = false
+                handleFinalSave()
+            },
+            onCancel = {
+                showScaleChangeWarning = false
+            }
+        ) {
+            Column {
+                UI.Text(
+                    "⚠️ Modification d'échelle détectée",
+                    TextType.SUBTITLE
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                scaleChangeDetails?.let { details ->
+                    UI.Text(
+                        details,
+                        TextType.BODY
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                UI.Text(
+                    "Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d'origine.",
+                    TextType.BODY
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Text(
+                    "Continuer ?",
+                    TextType.BODY
+                )
+            }
+        }
+    }
+    
+    // Boolean labels change warning dialog
+    if (showBooleanChangeWarning) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = {
+                showBooleanChangeWarning = false
+                handleFinalSave()
+            },
+            onCancel = {
+                showBooleanChangeWarning = false
+            }
+        ) {
+            Column {
+                UI.Text(
+                    "⚠️ Modification d'étiquettes détectée",
+                    TextType.SUBTITLE
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                booleanChangeDetails?.let { details ->
+                    UI.Text(
+                        details,
+                        TextType.BODY
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                UI.Text(
+                    "Les données présentes avant ces modifications garderont leurs étiquettes d'origine.",
+                    TextType.BODY
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Text(
+                    "Continuer ?",
+                    TextType.BODY
+                )
+            }
+        }
+    }
+    
+    // Choice options change warning dialog
+    if (showChoiceChangeWarning) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = {
+                showChoiceChangeWarning = false
+                handleFinalSave()
+            },
+            onCancel = {
+                showChoiceChangeWarning = false
+            }
+        ) {
+            Column {
+                UI.Text(
+                    "⚠️ Modification d'options détectée",
+                    TextType.SUBTITLE
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                choiceChangeDetails?.let { details ->
+                    UI.Text(
+                        details,
+                        TextType.BODY
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                UI.Text(
+                    "Les données présentes avant ces modifications garderont leurs options d'origine, même si elles ne sont plus disponibles dans la configuration.",
                     TextType.BODY
                 )
                 Spacer(modifier = Modifier.height(8.dp))

@@ -96,6 +96,34 @@ fun TrackingEntryDialog(
 
     // Validation state
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
+
+    // ═══ Vraies valeurs centralisées pour tous les types (utilisées dans validateForm ET UI) ═══
+    val realValues = remember(trackingType, config, initialValue) {
+        when (trackingType) {
+            "scale" -> mapOf(
+                "minValue" to ((initialValue["min_value"] as? Number)?.toInt() 
+                    ?: if (config.has("min")) config.getInt("min") else null),
+                "maxValue" to ((initialValue["max_value"] as? Number)?.toInt() 
+                    ?: if (config.has("max")) config.getInt("max") else null),
+                "minLabel" to ((initialValue["min_label"] as? String)
+                    ?: if (config.has("min_label")) config.getString("min_label") else null),
+                "maxLabel" to ((initialValue["max_label"] as? String)
+                    ?: if (config.has("max_label")) config.getString("max_label") else null)
+            )
+            "boolean" -> mapOf(
+                "trueLabel" to ((initialValue["true_label"] as? String)
+                    ?: if (config.has("true_label")) config.getString("true_label") else "Oui"),
+                "falseLabel" to ((initialValue["false_label"] as? String)
+                    ?: if (config.has("false_label")) config.getString("false_label") else "Non")
+            )
+            "choice" -> mapOf(
+                "options" to (config.optJSONArray("options")?.let { array ->
+                    (0 until array.length()).map { array.getString(it) }
+                } ?: emptyList<String>())
+            )
+            else -> emptyMap()
+        }
+    }
     
     // State for error messages
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -148,35 +176,37 @@ fun TrackingEntryDialog(
             }.toString()
             
             "scale" -> {
-                val minValue = config.optInt("min", 1)
-                val maxValue = config.optInt("max", 10)
-                val minLabel = config.optString("min_label", "")
-                val maxLabel = config.optString("max_label", "")
+                val minValue = realValues["minValue"] as? Int
+                val maxValue = realValues["maxValue"] as? Int  
+                val minLabel = realValues["minLabel"] as? String
+                val maxLabel = realValues["maxLabel"] as? String
                 
                 JSONObject().apply {
                     put("type", "scale")
                     put("rating", scaleRating)
-                    put("min_value", minValue)
-                    put("max_value", maxValue)
-                    put("min_label", minLabel)
-                    put("max_label", maxLabel)
-                    put("raw", "$scaleRating ($minValue à $maxValue)")
+                    if (minValue != null) put("min_value", minValue)
+                    if (maxValue != null) put("max_value", maxValue)
+                    if (minLabel != null) put("min_label", minLabel)
+                    if (maxLabel != null) put("max_label", maxLabel)
+                    val rangeText = if (minValue != null && maxValue != null) " ($minValue à $maxValue)" else ""
+                    put("raw", "$scaleRating$rangeText")
                 }.toString()
             }
             
-            "choice" -> JSONObject().apply {
-                put("type", "choice")
-                put("selected_option", choiceValue.trim())
-                val options = config.optJSONArray("options")?.let { array ->
-                    (0 until array.length()).map { array.getString(it) }
-                } ?: emptyList()
-                put("available_options", options)
-                put("raw", choiceValue.trim())
-            }.toString()
+            "choice" -> {
+                val options = realValues["options"] as? List<String> ?: emptyList()
+                
+                JSONObject().apply {
+                    put("type", "choice")
+                    put("selected_option", choiceValue.trim())
+                    put("available_options", options)
+                    put("raw", choiceValue.trim())
+                }.toString()
+            }
             
             "boolean" -> {
-                val trueLabel = config.optString("true_label", "Oui")
-                val falseLabel = config.optString("false_label", "Non")
+                val trueLabel = realValues["trueLabel"] as? String ?: "Oui"
+                val falseLabel = realValues["falseLabel"] as? String ?: "Non"
                 
                 JSONObject().apply {
                     put("type", "boolean")
@@ -338,15 +368,11 @@ fun TrackingEntryDialog(
                     }
                     
                     "scale" -> {
-                        // Utiliser uniquement les vraies données, AUCUNE valeur par défaut
-                        val minValue = (initialValue["min_value"] as? Number)?.toInt() 
-                            ?: if (config.has("min")) config.getInt("min") else null
-                        val maxValue = (initialValue["max_value"] as? Number)?.toInt() 
-                            ?: if (config.has("max")) config.getInt("max") else null
-                        val minLabel = (initialValue["min_label"] as? String)
-                            ?: if (config.has("min_label")) config.getString("min_label") else null
-                        val maxLabel = (initialValue["max_label"] as? String)
-                            ?: if (config.has("max_label")) config.getString("max_label") else null
+                        // Utiliser les vraies valeurs centralisées
+                        val minValue = realValues["minValue"] as? Int
+                        val maxValue = realValues["maxValue"] as? Int
+                        val minLabel = realValues["minLabel"] as? String
+                        val maxLabel = realValues["maxLabel"] as? String
                         
                         android.util.Log.d("SCALE_DEBUG", "Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
                         
@@ -374,9 +400,7 @@ fun TrackingEntryDialog(
                     }
                     
                     "choice" -> {
-                        val options = config.optJSONArray("options")?.let { array ->
-                            (0 until array.length()).map { array.getString(it) }
-                        } ?: emptyList()
+                        val options = realValues["options"] as? List<String> ?: emptyList()
                         
                         // Show available options (readonly context)
                         if (options.isNotEmpty()) {
@@ -396,8 +420,8 @@ fun TrackingEntryDialog(
                     }
                     
                     "boolean" -> {
-                        val trueLabel = config.optString("true_label", "Oui")
-                        val falseLabel = config.optString("false_label", "Non")
+                        val trueLabel = realValues["trueLabel"] as? String ?: "Oui"
+                        val falseLabel = realValues["falseLabel"] as? String ?: "Non"
                         
                         UI.ToggleField(
                             label = "État",
