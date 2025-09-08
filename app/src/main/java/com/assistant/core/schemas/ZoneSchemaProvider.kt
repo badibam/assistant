@@ -11,11 +11,12 @@ import com.assistant.core.schemas.ZoneSchemas
  */
 class ZoneSchemaProvider(private val context: Context) : SchemaProvider {
     
-    override fun getConfigSchema(): String {
-        return ZoneSchemas.CONFIG_SCHEMA
+    override fun getSchema(schemaType: String): String? {
+        return when (schemaType) {
+            "config" -> ZoneSchemas.CONFIG_SCHEMA
+            else -> null
+        }
     }
-    
-    override fun getDataSchema(): String? = null
     
     override fun getFormFieldName(fieldName: String): String = when(fieldName) {
         "name" -> "Nom de la zone"

@@ -26,9 +26,27 @@ interface ToolTypeContract : SchemaProvider {
     fun getDefaultConfig(): String
     
     // ═══ Schema Provider Implementation ═══
-    // Inherited from SchemaProvider:
-    // fun getConfigSchema(): String - JSON Schema for tool configuration
-    // fun getDataSchema(): String? - JSON Schema for tool data (null if no data schema)
+    
+    /**
+     * Override getSchema to delegate to specific methods for ToolTypes
+     */
+    override fun getSchema(schemaType: String): String? = when(schemaType) {
+        "config" -> getConfigSchema()
+        "data" -> getDataSchema()
+        else -> null
+    }
+    
+    /**
+     * Configuration schema for this tool type (REQUIRED)
+     * @return JSON Schema string for configuration validation
+     */
+    fun getConfigSchema(): String
+    
+    /**
+     * Data schema for this tool type (OPTIONAL)
+     * @return JSON Schema string for data validation, or null if no data schema
+     */
+    fun getDataSchema(): String? = null
     
     
     /**

@@ -52,7 +52,7 @@ fun CreateZoneScreen(
                 zoneProvider,
                 zoneData,
                 context,
-                useDataSchema = false
+                schemaType = "config"
             )
             
             if (validation.isValid) {

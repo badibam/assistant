@@ -258,7 +258,7 @@ fun TrackingEntryDialog(
         val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
             android.util.Log.d("VALDEBUG", "DataSchema being used: ${toolType.getDataSchema()?.take(200)}...")
-            validationResult = SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
+            validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
         } else {
             validationResult = ValidationResult.error("Tool type 'tracking' not found")
         }

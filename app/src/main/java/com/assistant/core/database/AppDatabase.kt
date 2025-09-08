@@ -7,16 +7,19 @@ import android.content.Context
 import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.dao.BaseToolDataDao
+import com.assistant.core.database.dao.AppSettingsCategoryDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
+import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.versioning.MigrationOrchestrator
 
 @Database(
     entities = [
         Zone::class,
         ToolInstance::class,
-        ToolDataEntity::class
+        ToolDataEntity::class,
+        AppSettingsCategory::class
         // Note: Les entités des outils seront ajoutées dynamiquement
         // via le système de build et ToolTypeRegistry
     ],
@@ -27,6 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun zoneDao(): ZoneDao
     abstract fun toolInstanceDao(): ToolInstanceDao
     abstract fun toolDataDao(): BaseToolDataDao
+    abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
 
     companion object {
         @Volatile

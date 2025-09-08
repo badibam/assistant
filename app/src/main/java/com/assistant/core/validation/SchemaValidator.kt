@@ -27,15 +27,12 @@ object SchemaValidator {
      * @param schemaProvider Provider that supplies schema and field translations
      * @param data Data to validate as key-value map
      * @param context Android context for string resource access
-     * @param useDataSchema true to use data schema, false to use config schema
+     * @param schemaType Schema type to use ("config", "data", "temporal", etc.)
      * @return ValidationResult with success/error status and user-friendly messages
      */
-    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, useDataSchema: Boolean = false): ValidationResult {
-        val schema = if (useDataSchema) {
-            schemaProvider.getDataSchema() ?: throw IllegalArgumentException("SchemaProvider has no data schema")
-        } else {
-            schemaProvider.getConfigSchema()
-        }
+    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, schemaType: String = "config"): ValidationResult {
+        val schema = schemaProvider.getSchema(schemaType) 
+            ?: throw IllegalArgumentException("SchemaProvider has no '$schemaType' schema")
         safeLog("SCHEMADEBUG: SCHEMA VALIDATION START")
         
         return try {

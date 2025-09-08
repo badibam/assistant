@@ -70,7 +70,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 put("data", dataContent)
             }
             
-            val validation = SchemaValidator.validate(toolType, fullDataMap, context, useDataSchema = true)
+            val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
             if (!validation.isValid) {
                 return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
@@ -140,7 +140,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     put("data", dataContent)
                 }
                 
-                val validation = SchemaValidator.validate(toolType, fullDataMap, context, useDataSchema = true)
+                val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
                 if (!validation.isValid) {
                     return OperationResult.error("Validation failed: ${validation.errorMessage}")
                 }

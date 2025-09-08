@@ -6,16 +6,11 @@ package com.assistant.core.validation
  */
 interface SchemaProvider {
     /**
-     * Gets the configuration schema for this provider
-     * @return JSON Schema string for configuration validation
+     * Gets the schema for the specified type
+     * @param schemaType Schema type: "config", "data" for tool types, or custom types like "temporal"
+     * @return JSON Schema string, or null if schema type not supported
      */
-    fun getConfigSchema(): String
-    
-    /**
-     * Gets the data schema for this provider
-     * @return JSON Schema string for data validation, or null if no data schema
-     */
-    fun getDataSchema(): String?
+    fun getSchema(schemaType: String): String?
     
     /**
      * Get user-friendly field name for display in validation errors
