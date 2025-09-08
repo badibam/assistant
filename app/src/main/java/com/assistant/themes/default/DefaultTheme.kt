@@ -972,13 +972,37 @@ object DefaultTheme : ThemeContract {
     ) {
         val displayLabel = if (required) label else "$label (optionnel)"
         
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null)
-            
-            // Toggle avec labels
+        if (label.isNotBlank()) {
+            // Avec label - structure Column
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Label du champ
+                Text(displayLabel, TextType.LABEL, false, null)
+                
+                // Toggle avec labels
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Switch(
+                        checked = checked,
+                        onCheckedChange = onCheckedChange
+                    )
+                    
+                    androidx.compose.material3.Text(
+                        text = if (checked) trueLabel else falseLabel,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = if (checked) {
+                            Colors.Primary
+                        } else {
+                            Colors.OnSurfaceVariant
+                        }
+                    )
+                }
+            }
+        } else {
+            // Sans label - juste le Row avec toggle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -9,9 +9,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.NumberFormatting
+import com.assistant.core.utils.DateUtils
 import com.assistant.tools.tracking.timer.TimerManager
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Generic section for predefined items with type-specific button behaviors
@@ -24,7 +27,9 @@ fun PredefinedItemsSection(
     isLoading: Boolean,
     toolInstanceId: String,
     onQuickSave: (name: String, properties: Map<String, Any>) -> Unit,
-    onOpenDialog: (name: String, properties: Map<String, Any>) -> Unit
+    onOpenDialog: (name: String, properties: Map<String, Any>) -> Unit,
+    defaultTimestamp: Long = System.currentTimeMillis(),
+    onDefaultTimestampChange: (Long) -> Unit = {}
 ) {
     // Parse predefined items from config
     val predefinedItems = remember(config) {
@@ -51,11 +56,123 @@ fun PredefinedItemsSection(
         items
     }
     
+    // State for custom default timestamp
+    var useCustomTimestamp by remember { mutableStateOf(false) }
+    var customDate by remember { mutableStateOf(DateUtils.formatDateForDisplay(defaultTimestamp)) }
+    var customTime by remember { mutableStateOf(DateUtils.formatTimeForDisplay(defaultTimestamp)) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    // Update custom fields when defaultTimestamp changes
+    LaunchedEffect(defaultTimestamp) {
+        if (!useCustomTimestamp) {
+            customDate = DateUtils.formatDateForDisplay(defaultTimestamp)
+            customTime = DateUtils.formatTimeForDisplay(defaultTimestamp)
+        }
+    }
+    
+    // Construct final timestamp to use for saving
+    val finalTimestamp = if (useCustomTimestamp) {
+        try {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val dateTimeString = "$customDate $customTime"
+            dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+        } catch (e: Exception) {
+            defaultTimestamp
+        }
+    } else {
+        defaultTimestamp
+    }
+
     if (predefinedItems.isNotEmpty()) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            UI.Text("Raccourcis :", TextType.BODY)
+            // Custom timestamp controls section - all on one line
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Toggle for custom timestamp
+                UI.ToggleField(
+                    label = "",
+                    checked = useCustomTimestamp,
+                    trueLabel = "Date personnalisée",
+                    falseLabel = "Date = maintenant",
+                    onCheckedChange = { checked ->
+                        useCustomTimestamp = checked
+                        if (checked) {
+                            // When enabling custom timestamp, update callback immediately
+                            val newTimestamp = try {
+                                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                val dateTimeString = "$customDate $customTime"
+                                dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+                            } catch (e: Exception) {
+                                defaultTimestamp
+                            }
+                            onDefaultTimestampChange(newTimestamp)
+                        } else {
+                            // When disabling, reset to current time
+                            val now = System.currentTimeMillis()
+                            customDate = DateUtils.formatDateForDisplay(now)
+                            customTime = DateUtils.formatTimeForDisplay(now)
+                            onDefaultTimestampChange(now)
+                        }
+                    }
+                )
+                
+                // Date and time fields when custom timestamp is enabled
+                if (useCustomTimestamp) {
+                    // Date field
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Date",
+                            value = customDate,
+                            onChange = { 
+                                customDate = it
+                                // Update callback when date changes
+                                val newTimestamp = try {
+                                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                    val dateTimeString = "$customDate $customTime"
+                                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+                                } catch (e: Exception) {
+                                    defaultTimestamp
+                                }
+                                onDefaultTimestampChange(newTimestamp)
+                            },
+                            fieldType = FieldType.TEXT,
+                            required = true,
+                            readonly = true,
+                            onClick = { showDatePicker = true }
+                        )
+                    }
+                    
+                    // Time field
+                    Box(modifier = Modifier.weight(1f)) {
+                        UI.FormField(
+                            label = "Heure",
+                            value = customTime,
+                            onChange = { 
+                                customTime = it
+                                // Update callback when time changes
+                                val newTimestamp = try {
+                                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                                    val dateTimeString = "$customDate $customTime"
+                                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+                                } catch (e: Exception) {
+                                    defaultTimestamp
+                                }
+                                onDefaultTimestampChange(newTimestamp)
+                            },
+                            fieldType = FieldType.TEXT,
+                            required = true,
+                            readonly = true,
+                            onClick = { showTimePicker = true }
+                        )
+                    }
+                }
+            }
             
             // Display items with type-specific layouts
             when (trackingType) {
@@ -63,8 +180,13 @@ fun PredefinedItemsSection(
                     NumericItemsLayout(
                         items = predefinedItems,
                         isLoading = isLoading,
-                        onQuickSave = onQuickSave,
-                        onOpenDialog = onOpenDialog
+                        onQuickSave = { name, properties ->
+                            onQuickSave(name, properties)
+                        },
+                        onOpenDialog = { name, properties ->
+                            onOpenDialog(name, properties)
+                        },
+                        customTimestamp = finalTimestamp
                     )
                 }
                 
@@ -73,8 +195,13 @@ fun PredefinedItemsSection(
                         items = predefinedItems,
                         config = config,
                         isLoading = isLoading,
-                        onQuickSave = onQuickSave,
-                        onOpenDialog = onOpenDialog
+                        onQuickSave = { name, properties ->
+                            onQuickSave(name, properties)
+                        },
+                        onOpenDialog = { name, properties ->
+                            onOpenDialog(name, properties)
+                        },
+                        customTimestamp = finalTimestamp
                     )
                 }
                 
@@ -83,8 +210,13 @@ fun PredefinedItemsSection(
                         items = predefinedItems,
                         config = config,
                         isLoading = isLoading,
-                        onQuickSave = onQuickSave,
-                        onOpenDialog = onOpenDialog
+                        onQuickSave = { name, properties ->
+                            onQuickSave(name, properties)
+                        },
+                        onOpenDialog = { name, properties ->
+                            onOpenDialog(name, properties)
+                        },
+                        customTimestamp = finalTimestamp
                     )
                 }
                 
@@ -93,7 +225,10 @@ fun PredefinedItemsSection(
                         items = predefinedItems,
                         isLoading = isLoading,
                         toolInstanceId = toolInstanceId,
-                        onQuickSave = onQuickSave
+                        onQuickSave = { name, properties ->
+                            onQuickSave(name, properties)
+                        },
+                        customTimestamp = finalTimestamp
                     )
                 }
                 
@@ -102,11 +237,57 @@ fun PredefinedItemsSection(
                     SimpleItemsLayout(
                         items = predefinedItems,
                         isLoading = isLoading,
-                        onOpenDialog = onOpenDialog
+                        onOpenDialog = { name, properties ->
+                            onOpenDialog(name, properties)
+                        },
+                        customTimestamp = finalTimestamp
                     )
                 }
             }
         }
+    }
+    
+    // Date and time pickers
+    if (showDatePicker) {
+        UI.DatePicker(
+            selectedDate = customDate,
+            onDateSelected = { newDate ->
+                customDate = newDate
+                // Update callback when date changes
+                val newTimestamp = try {
+                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val dateTimeString = "$customDate $customTime"
+                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+                } catch (e: Exception) {
+                    defaultTimestamp
+                }
+                onDefaultTimestampChange(newTimestamp)
+            },
+            onDismiss = {
+                showDatePicker = false
+            }
+        )
+    }
+    
+    if (showTimePicker) {
+        UI.TimePicker(
+            selectedTime = customTime,
+            onTimeSelected = { newTime ->
+                customTime = newTime
+                // Update callback when time changes
+                val newTimestamp = try {
+                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val dateTimeString = "$customDate $customTime"
+                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+                } catch (e: Exception) {
+                    defaultTimestamp
+                }
+                onDefaultTimestampChange(newTimestamp)
+            },
+            onDismiss = {
+                showTimePicker = false
+            }
+        )
     }
 }
 
@@ -118,7 +299,8 @@ private fun NumericItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
-    onOpenDialog: (String, Map<String, Any>) -> Unit
+    onOpenDialog: (String, Map<String, Any>) -> Unit,
+    customTimestamp: Long = System.currentTimeMillis()
 ) {
     items.forEach { item ->
         val defaultQuantity = item.getProperty("default_quantity")
@@ -200,7 +382,8 @@ private fun BooleanItemsLayout(
     config: JSONObject,
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
-    onOpenDialog: (String, Map<String, Any>) -> Unit
+    onOpenDialog: (String, Map<String, Any>) -> Unit,
+    customTimestamp: Long = System.currentTimeMillis()
 ) {
     items.forEach { item ->
         Row(
@@ -272,7 +455,8 @@ private fun CounterItemsLayout(
     config: JSONObject,
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
-    onOpenDialog: (String, Map<String, Any>) -> Unit
+    onOpenDialog: (String, Map<String, Any>) -> Unit,
+    customTimestamp: Long = System.currentTimeMillis()
 ) {
     val allowDecrement = config.optBoolean("allow_decrement", true)
     
@@ -337,7 +521,8 @@ private fun TimerItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
     toolInstanceId: String,
-    onQuickSave: (String, Map<String, Any>) -> Unit
+    onQuickSave: (String, Map<String, Any>) -> Unit,
+    customTimestamp: Long = System.currentTimeMillis()
 ) {
     val context = LocalContext.current
     val timerManager = remember { TimerManager.getInstance() }
@@ -422,7 +607,8 @@ private fun TimerItemsLayout(
 private fun SimpleItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
-    onOpenDialog: (String, Map<String, Any>) -> Unit
+    onOpenDialog: (String, Map<String, Any>) -> Unit,
+    customTimestamp: Long = System.currentTimeMillis()
 ) {
     items.chunked(2).forEach { rowItems ->
         Row(

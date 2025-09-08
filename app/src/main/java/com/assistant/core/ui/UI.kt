@@ -155,7 +155,7 @@ object UI {
         value: String,
         onChange: (String) -> Unit,
         fieldType: FieldType = FieldType.TEXT,
-        required: Boolean = false,
+        required: Boolean = true,
         state: ComponentState = ComponentState.NORMAL,
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
@@ -178,7 +178,7 @@ object UI {
         options: List<String>,
         selected: String,
         onSelect: (String) -> Unit,
-        required: Boolean = false
+        required: Boolean = true
     ) = CurrentTheme.current.FormSelection(
         label = label,
         options = options,
@@ -206,7 +206,7 @@ object UI {
         onCheckedChange: (Boolean) -> Unit,
         trueLabel: String = "Activé",
         falseLabel: String = "Désactivé",
-        required: Boolean = false
+        required: Boolean = true
     ) = CurrentTheme.current.ToggleField(label, checked, onCheckedChange, trueLabel, falseLabel, required)
     
     @Composable
@@ -217,7 +217,7 @@ object UI {
         range: IntRange,
         minLabel: String = "",
         maxLabel: String = "",
-        required: Boolean = false
+        required: Boolean = true
     ) = CurrentTheme.current.SliderField(label, value, onValueChange, range, minLabel, maxLabel, required)
     
     @Composable
@@ -226,7 +226,7 @@ object UI {
         incrementButtons: List<Pair<String, Int>>, // Pairs of (displayText, incrementValue)
         decrementButtons: List<Pair<String, Int>> = emptyList(),
         onIncrement: (Int) -> Unit,
-        required: Boolean = false
+        required: Boolean = true
     ) = CurrentTheme.current.CounterField(label, incrementButtons, decrementButtons, onIncrement, required)
     
     @Composable
@@ -238,7 +238,7 @@ object UI {
         onStartActivity: (String) -> Unit,
         onStopActivity: () -> Unit,
         onSaveSession: (String, Int) -> Unit, // (activityName, durationMinutes)
-        required: Boolean = false
+        required: Boolean = true
     ) = CurrentTheme.current.TimerField(label, activities, currentActivity, currentDuration, onStartActivity, onStopActivity, onSaveSession, required)
     
     @Composable
@@ -247,7 +247,7 @@ object UI {
         items: List<String>,
         onItemsChanged: (List<String>) -> Unit,
         placeholder: String = "Nouvel élément",
-        required: Boolean = false,
+        required: Boolean = true,
         minItems: Int = 0,
         maxItems: Int = Int.MAX_VALUE
     ) = CurrentTheme.current.DynamicList(label, items, onItemsChanged, placeholder, required, minItems, maxItems)

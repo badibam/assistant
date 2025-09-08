@@ -36,6 +36,9 @@ fun TrackingInputManager(
     // State management
     var isLoading by remember { mutableStateOf(false) }
     
+    // Default timestamp management: custom > now
+    var defaultTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
+    
     // Save function with new valueJson signature
     val saveEntry: (String, String, Long) -> Unit = { itemName, valueJson, recordedAt ->
         android.util.Log.d("VALDEBUG", "=== SAVEENTRY START ===")
@@ -162,7 +165,7 @@ fun TrackingInputManager(
     }
     
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Predefined items section for all types
         PredefinedItemsSection(
@@ -170,6 +173,10 @@ fun TrackingInputManager(
             trackingType = trackingType,
             isLoading = isLoading,
             toolInstanceId = toolInstanceId,
+            defaultTimestamp = defaultTimestamp,
+            onDefaultTimestampChange = { newTimestamp ->
+                defaultTimestamp = newTimestamp
+            },
             onQuickSave = { name, properties ->
                 // Convert properties to valueJson for quick save
                 val initialValueJson = when (trackingType) {
@@ -210,7 +217,7 @@ fun TrackingInputManager(
                     }
                 }.toString()
                 
-                saveEntry(name, finalValueJson, System.currentTimeMillis())
+                saveEntry(name, finalValueJson, defaultTimestamp)
             },
             onOpenDialog = { name, properties ->
                 dialogInitialName = name
@@ -249,7 +256,7 @@ fun TrackingInputManager(
         toolInstanceId = toolInstanceId,
         initialName = dialogInitialName,
         initialValue = dialogInitialProperties,
-        initialRecordedAt = System.currentTimeMillis(),
+        initialRecordedAt = defaultTimestamp,
         onConfirm = { name, valueJson, addToPredefinedFlag, recordedAt ->
             // Save the entry with the user-selected date and time
             saveEntry(name, valueJson, recordedAt)
