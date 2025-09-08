@@ -33,7 +33,14 @@ object DefaultTemporalSettings {
     const val JSON = """
     {
         "week_start_day": "monday",
-        "day_start_hour": 4
+        "day_start_hour": 4,
+        "relative_label_limits": {
+            "hour_limit": 12,
+            "day_limit": 7,
+            "week_limit": 4,
+            "month_limit": 6,
+            "year_limit": 3
+        }
     }
     """
     

@@ -24,9 +24,46 @@ object AppConfigSchemas {
                 "minimum": 0,
                 "maximum": 23,
                 "description": "Heure de début de journée (0-23h)"
+            },
+            "relative_label_limits": {
+                "type": "object",
+                "properties": {
+                    "hour_limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24,
+                        "description": "Limite des labels relatifs pour les heures (±N heures)"
+                    },
+                    "day_limit": {
+                        "type": "integer", 
+                        "minimum": 1,
+                        "maximum": 30,
+                        "description": "Limite des labels relatifs pour les jours (±N jours)"
+                    },
+                    "week_limit": {
+                        "type": "integer",
+                        "minimum": 1, 
+                        "maximum": 12,
+                        "description": "Limite des labels relatifs pour les semaines (±N semaines)"
+                    },
+                    "month_limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24,
+                        "description": "Limite des labels relatifs pour les mois (±N mois)"
+                    },
+                    "year_limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10,
+                        "description": "Limite des labels relatifs pour les années (±N années)"
+                    }
+                },
+                "required": ["hour_limit", "day_limit", "week_limit", "month_limit", "year_limit"],
+                "additionalProperties": false
             }
         },
-        "required": ["week_start_day", "day_start_hour"],
+        "required": ["week_start_day", "day_start_hour", "relative_label_limits"],
         "additionalProperties": false
     }
     """
