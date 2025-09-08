@@ -215,12 +215,20 @@ private fun BooleanItemsLayout(
                 UI.Text(item.name, TextType.BODY)
             }
             
+            // Get labels from config 
+            val trueLabel = config.optString("true_label", "Oui")
+            val falseLabel = config.optString("false_label", "Non")
+            
             // Thumbs up button (true)
             UI.Button(
                 type = ButtonType.DEFAULT,
                 size = Size.S,
                 onClick = {
-                    onQuickSave(item.name, mapOf("state" to true))
+                    onQuickSave(item.name, mapOf(
+                        "state" to true,
+                        "true_label" to trueLabel,
+                        "false_label" to falseLabel
+                    ))
                 }
             ) {
                 UI.Text("👍", TextType.BODY)
@@ -231,7 +239,11 @@ private fun BooleanItemsLayout(
                 type = ButtonType.DEFAULT,
                 size = Size.S,
                 onClick = {
-                    onQuickSave(item.name, mapOf("state" to false))
+                    onQuickSave(item.name, mapOf(
+                        "state" to false,
+                        "true_label" to trueLabel,
+                        "false_label" to falseLabel
+                    ))
                 }
             ) {
                 UI.Text("👎", TextType.BODY)

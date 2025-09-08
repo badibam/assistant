@@ -61,7 +61,7 @@ object BaseSchemas {
     
     /**
      * Base data schema for all tool types
-     * Common fields: id, tool_instance_id, zone_name, tool_instance_name, name, timestamps
+     * Common fields: id, tool_instance_id, tooltype, name, timestamp, created_at, updated_at
      */
     fun getBaseDataSchema(): String {
         return """
@@ -76,15 +76,9 @@ object BaseSchemas {
                     "type": "string",
                     "description": "ID of the tool instance this data belongs to"
                 },
-                "zone_name": {
+                "tooltype": {
                     "type": "string",
-                    "maxLength": 60,
-                    "description": "Name of the zone containing this tool"
-                },
-                "tool_instance_name": {
-                    "type": "string", 
-                    "maxLength": 60,
-                    "description": "Name of the tool instance"
+                    "description": "Type of the tool (tracking, goal, etc.)"
                 },
                 "name": {
                     "type": "string",
@@ -92,8 +86,8 @@ object BaseSchemas {
                     "maxLength": 60,
                     "description": "Name/identifier for this specific data entry"
                 },
-                "recorded_at": {
-                    "type": "integer",
+                "timestamp": {
+                    "type": "number",
                     "minimum": 0,
                     "description": "Timestamp when this data was recorded (user-specified)"
                 },
@@ -108,7 +102,7 @@ object BaseSchemas {
                     "description": "Timestamp when this entry was last updated"
                 }
             },
-            "required": ["tool_instance_id", "zone_name", "tool_instance_name", "name", "recorded_at"]
+            "required": ["tool_instance_id", "tooltype", "name", "timestamp"]
         }
         """.trimIndent()
     }

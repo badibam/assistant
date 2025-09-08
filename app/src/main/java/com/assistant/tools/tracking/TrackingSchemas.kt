@@ -103,7 +103,7 @@ object TrackingSchemas {
                                     "required": ["name"]
                                 }
                             },
-                            "min": { "type": "integer", "default": 1, "description": "Minimum value for all scale items" },
+                            "min": { "type": "integer", "default": 1, "description": "Minimum value for all scale items (can be negative)" },
                             "max": { "type": "integer", "default": 10, "description": "Maximum value for all scale items" },
                             "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for minimum value" },
                             "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for maximum value" }
@@ -239,9 +239,9 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "scale" },
-                                    "rating": { "type": "integer", "minimum": 1, "maximum": 100 },
-                                    "min_value": { "type": "integer", "minimum": 1 },
-                                    "max_value": { "type": "integer", "maximum": 100 },
+                                    "rating": { "type": "integer" },
+                                    "min_value": { "type": "integer" },
+                                    "max_value": { "type": "integer" },
                                     "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
                                     "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
                                     "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }

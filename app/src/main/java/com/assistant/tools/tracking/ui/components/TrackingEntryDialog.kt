@@ -65,7 +65,7 @@ fun TrackingEntryDialog(
     }
     
     var scaleRating by remember(isVisible) { 
-        mutableStateOf((initialValue["rating"] as? Number)?.toInt() ?: 1) 
+        mutableStateOf((initialValue["rating"] as? Number)?.toInt())
     }
     
     var choiceValue by remember(isVisible) { 
@@ -209,12 +209,13 @@ fun TrackingEntryDialog(
         
         val entryData = mapOf(
             "id" to "temp-validation-id",
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
+            "tooltype" to "tracking",
             "name" to name.trim(),
             "data" to valueObject, // Use parsed object, not JSON string
             "timestamp" to recordedAt,
-            "createdAt" to System.currentTimeMillis(),
-            "updatedAt" to System.currentTimeMillis()
+            "created_at" to System.currentTimeMillis(),
+            "updated_at" to System.currentTimeMillis()
         )
 
         // Log data being validated
@@ -337,20 +338,39 @@ fun TrackingEntryDialog(
                     }
                     
                     "scale" -> {
-                        val minValue = config.optInt("min", 1)
-                        val maxValue = config.optInt("max", 10)
-                        val minLabel = config.optString("min_label", "")
-                        val maxLabel = config.optString("max_label", "")
+                        // Utiliser uniquement les vraies données, AUCUNE valeur par défaut
+                        val minValue = (initialValue["min_value"] as? Number)?.toInt() 
+                            ?: if (config.has("min")) config.getInt("min") else null
+                        val maxValue = (initialValue["max_value"] as? Number)?.toInt() 
+                            ?: if (config.has("max")) config.getInt("max") else null
+                        val minLabel = (initialValue["min_label"] as? String)
+                            ?: if (config.has("min_label")) config.getString("min_label") else null
+                        val maxLabel = (initialValue["max_label"] as? String)
+                            ?: if (config.has("max_label")) config.getString("max_label") else null
                         
-                        UI.SliderField(
-                            label = "Note",
-                            value = scaleRating,
-                            onValueChange = { scaleRating = it },
-                            range = minValue..maxValue,
-                            minLabel = minLabel.ifBlank { minValue.toString() },
-                            maxLabel = maxLabel.ifBlank { maxValue.toString() },
-                            required = true
-                        )
+                        android.util.Log.d("SCALE_DEBUG", "Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
+                        
+                        if (minValue != null && maxValue != null) {
+                            // Initialiser à la valeur min si pas encore définie
+                            val currentRating = scaleRating ?: minValue
+                            if (scaleRating == null) {
+                                scaleRating = currentRating
+                            }
+                            
+                            UI.SliderField(
+                                label = "Note",
+                                value = currentRating,
+                                onValueChange = { scaleRating = it },
+                                range = minValue..maxValue,
+                                minLabel = minLabel?.ifBlank { minValue.toString() } ?: minValue.toString(),
+                                maxLabel = maxLabel?.ifBlank { maxValue.toString() } ?: maxValue.toString(),
+                                required = true
+                            )
+                        } else {
+                            // Pas de données min/max valides - afficher erreur
+                            UI.Text("Erreur: min/max non définis pour cette entry", TextType.BODY)
+                            android.util.Log.e("SCALE_DEBUG", "minValue ou maxValue null - impossible d'afficher le slider")
+                        }
                     }
                     
                     "choice" -> {

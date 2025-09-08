@@ -158,7 +158,7 @@ fun TrackingHistory(
                     mapOf(
                         "tool_type" to "tracking",
                         "operation" to "delete",
-                        "entry_id" to entryId
+                        "id" to entryId
                     )
                 )
                 
@@ -323,13 +323,18 @@ fun TrackingHistory(
                         "true_label" to json.optString("true_label", "Oui"),
                         "false_label" to json.optString("false_label", "Non")
                     )
-                    "scale" -> mapOf(
-                        "value" to json.optInt("value", 5),
-                        "min_value" to json.optInt("min_value", 1),
-                        "max_value" to json.optInt("max_value", 10),
-                        "min_label" to json.optString("min_label", ""),
-                        "max_label" to json.optString("max_label", "")
-                    )
+                    "scale" -> {
+                        android.util.Log.d("SCALE_DEBUG", "Données JSON scale: $json")
+                        mapOf(
+                            "rating" to json.optInt("rating"),
+                            "min_value" to json.optInt("min_value"),
+                            "max_value" to json.optInt("max_value"),
+                            "min_label" to json.optString("min_label"),
+                            "max_label" to json.optString("max_label")
+                        ).also { 
+                            android.util.Log.d("SCALE_DEBUG", "InitialProperties créées: $it")
+                        }
+                    }
                     "text" -> mapOf(
                         "text" to json.optString("text", "")
                     )

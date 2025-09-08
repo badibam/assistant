@@ -51,15 +51,26 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Validation via ToolType
         val toolType = ToolTypeManager.getToolType(tooltype)
         if (toolType != null) {
-            val dataMap = JSONObject(dataJson).let { json ->
-                mutableMapOf<String, Any>().apply {
-                    json.keys().forEach { key ->
-                        put(key, json.get(key))
+            // Construire la structure complète pour validation (base fields + data field)
+            val fullDataMap = mutableMapOf<String, Any>().apply {
+                // Champs de base requis par le schéma
+                put("tool_instance_id", toolInstanceId)
+                put("tooltype", tooltype)
+                timestamp?.let { put("timestamp", it) }
+                name?.let { put("name", it) }
+                
+                // Champ data contenant les données spécifiques au tool type
+                val dataContent = JSONObject(dataJson).let { json ->
+                    mutableMapOf<String, Any>().apply {
+                        json.keys().forEach { key ->
+                            put(key, json.get(key))
+                        }
                     }
                 }
+                put("data", dataContent)
             }
             
-            val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
+            val validation = SchemaValidator.validate(toolType, fullDataMap, context, useDataSchema = true)
             if (!validation.isValid) {
                 return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
@@ -110,15 +121,26 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (dataJson != null) {
             val toolType = ToolTypeManager.getToolType(existingEntity.tooltype)
             if (toolType != null) {
-                val dataMap = JSONObject(dataJson).let { json ->
-                    mutableMapOf<String, Any>().apply {
-                        json.keys().forEach { key ->
-                            put(key, json.get(key))
+                // Construire la structure complète pour validation (base fields + data field)
+                val fullDataMap = mutableMapOf<String, Any>().apply {
+                    // Champs de base requis par le schéma
+                    put("tool_instance_id", existingEntity.toolInstanceId)
+                    put("tooltype", existingEntity.tooltype)
+                    put("timestamp", timestamp ?: existingEntity.timestamp ?: 0L)
+                    put("name", name ?: existingEntity.name ?: "")
+                    
+                    // Champ data contenant les données spécifiques au tool type
+                    val dataContent = JSONObject(dataJson).let { json ->
+                        mutableMapOf<String, Any>().apply {
+                            json.keys().forEach { key ->
+                                put(key, json.get(key))
+                            }
                         }
                     }
+                    put("data", dataContent)
                 }
                 
-                val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
+                val validation = SchemaValidator.validate(toolType, fullDataMap, context, useDataSchema = true)
                 if (!validation.isValid) {
                     return OperationResult.error("Validation failed: ${validation.errorMessage}")
                 }

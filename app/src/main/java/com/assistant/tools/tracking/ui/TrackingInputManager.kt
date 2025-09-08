@@ -186,6 +186,16 @@ fun TrackingInputManager(
                         put("increment", properties["default_increment"] ?: 1)
                         put("raw", properties["default_increment"]?.toString() ?: "1")
                     }.toString()
+                    "boolean" -> JSONObject().apply {
+                        put("type", "boolean")
+                        put("state", properties["state"] ?: true)
+                        val trueLabel = properties["true_label"]?.toString() ?: "Oui"
+                        val falseLabel = properties["false_label"]?.toString() ?: "Non"
+                        put("true_label", trueLabel)
+                        put("false_label", falseLabel)
+                        val state = properties["state"] as? Boolean ?: true
+                        put("raw", if (state) trueLabel else falseLabel)
+                    }.toString()
                     else -> JSONObject().apply {
                         put("type", trackingType)
                         put("raw", name) // Default for other types
