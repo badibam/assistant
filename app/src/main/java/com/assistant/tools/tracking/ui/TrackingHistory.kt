@@ -81,19 +81,65 @@ fun TrackingHistory(
             errorMessage = null
             
             try {
-                val result = coordinator.processUserAction(
-                    "get->tool_data",
-                    mapOf(
-                        "operation" to "get_entries",
-                        "toolInstanceId" to toolInstanceId
-                    )
+                // Préparer les paramètres selon le filtre de période
+                val params = mutableMapOf<String, Any>(
+                    "operation" to "get_entries",
+                    "toolInstanceId" to toolInstanceId,
+                    "limit" to entriesLimit
                 )
+                
+                // Ajouter les filtres temporels selon le type de période
+                when (periodFilter) {
+                    PeriodFilterType.ALL -> {
+                        // Pas de filtre temporel, juste la limite
+                    }
+                    PeriodFilterType.HOUR -> {
+                        val periodStart = currentPeriod.timestamp
+                        val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
+                        params["startTime"] = periodStart
+                        params["endTime"] = periodEnd
+                    }
+                    PeriodFilterType.DAY -> {
+                        val periodStart = currentPeriod.timestamp
+                        val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
+                        params["startTime"] = periodStart
+                        params["endTime"] = periodEnd
+                    }
+                    PeriodFilterType.WEEK -> {
+                        val periodStart = currentPeriod.timestamp
+                        val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
+                        params["startTime"] = periodStart
+                        params["endTime"] = periodEnd
+                    }
+                    PeriodFilterType.MONTH -> {
+                        val periodStart = currentPeriod.timestamp
+                        // Pour les mois, on calcule le début du mois suivant
+                        val periodEnd = Calendar.getInstance().apply {
+                            timeInMillis = periodStart
+                            add(Calendar.MONTH, 1)
+                        }.timeInMillis
+                        params["startTime"] = periodStart
+                        params["endTime"] = periodEnd
+                    }
+                    PeriodFilterType.YEAR -> {
+                        val periodStart = currentPeriod.timestamp
+                        // Pour les années, on calcule le début de l'année suivante
+                        val periodEnd = Calendar.getInstance().apply {
+                            timeInMillis = periodStart
+                            add(Calendar.YEAR, 1)
+                        }.timeInMillis
+                        params["startTime"] = periodStart
+                        params["endTime"] = periodEnd
+                    }
+                }
+                
+                val result = coordinator.processUserAction("get->tool_data", params)
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
                         val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
                         
-                        val allEntries = entriesData.mapNotNull { entryMap ->
+                        trackingData = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
                                     val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
@@ -113,78 +159,6 @@ fun TrackingHistory(
                                     null
                                 }
                             } else null
-                        }
-                        
-                        // Filter by period type and limit by entriesLimit
-                        trackingData = when (periodFilter) {
-                            PeriodFilterType.ALL -> {
-                                allEntries
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
-                            PeriodFilterType.HOUR -> {
-                                val periodStart = currentPeriod.timestamp
-                                val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
-                                allEntries
-                                    .filter { entry ->
-                                        val timestamp = entry.timestamp ?: return@filter false
-                                        timestamp >= periodStart && timestamp < periodEnd
-                                    }
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
-                            PeriodFilterType.DAY -> {
-                                val periodStart = currentPeriod.timestamp
-                                val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
-                                allEntries
-                                    .filter { entry ->
-                                        val timestamp = entry.timestamp ?: return@filter false
-                                        timestamp >= periodStart && timestamp < periodEnd
-                                    }
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
-                            PeriodFilterType.WEEK -> {
-                                val periodStart = currentPeriod.timestamp
-                                val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
-                                allEntries
-                                    .filter { entry ->
-                                        val timestamp = entry.timestamp ?: return@filter false
-                                        timestamp >= periodStart && timestamp < periodEnd
-                                    }
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
-                            PeriodFilterType.MONTH -> {
-                                val periodStart = currentPeriod.timestamp
-                                // Pour les mois, on calcule le début du mois suivant
-                                val periodEnd = Calendar.getInstance().apply {
-                                    timeInMillis = periodStart
-                                    add(Calendar.MONTH, 1)
-                                }.timeInMillis
-                                allEntries
-                                    .filter { entry ->
-                                        val timestamp = entry.timestamp ?: return@filter false
-                                        timestamp >= periodStart && timestamp < periodEnd
-                                    }
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
-                            PeriodFilterType.YEAR -> {
-                                val periodStart = currentPeriod.timestamp
-                                // Pour les années, on calcule le début de l'année suivante
-                                val periodEnd = Calendar.getInstance().apply {
-                                    timeInMillis = periodStart
-                                    add(Calendar.YEAR, 1)
-                                }.timeInMillis
-                                allEntries
-                                    .filter { entry ->
-                                        val timestamp = entry.timestamp ?: return@filter false
-                                        timestamp >= periodStart && timestamp < periodEnd
-                                    }
-                                    .sortedByDescending { it.timestamp ?: 0L }
-                                    .take(entriesLimit)
-                            }
                         }
                     }
                     else -> {
@@ -305,61 +279,71 @@ fun TrackingHistory(
     ) {
         // Level 1: Global filters
         Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             // Period filter dropdown
-            UI.FormSelection(
-                label = "",
-                options = listOf("Toutes", "Heure", "Jour", "Semaine", "Mois", "Année"),
-                selected = when(periodFilter) {
-                    PeriodFilterType.ALL -> "Toutes"
-                    PeriodFilterType.HOUR -> "Heure"
-                    PeriodFilterType.DAY -> "Jour"
-                    PeriodFilterType.WEEK -> "Semaine"
-                    PeriodFilterType.MONTH -> "Mois"
-                    PeriodFilterType.YEAR -> "Année"
-                },
-                onSelect = { selection ->
-                    periodFilter = when(selection) {
-                        "Toutes" -> PeriodFilterType.ALL
-                        "Heure" -> PeriodFilterType.HOUR
-                        "Jour" -> PeriodFilterType.DAY
-                        "Semaine" -> PeriodFilterType.WEEK
-                        "Mois" -> PeriodFilterType.MONTH
-                        "Année" -> PeriodFilterType.YEAR
-                        else -> PeriodFilterType.DAY
-                    }
-                    // Update current period when filter changes
-                    currentPeriod = when(periodFilter) {
-                        PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!) // Default for ALL
-                        PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR, dayStartHour!!, weekStartDay!!)
-                        PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
-                        PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK, dayStartHour!!, weekStartDay!!)
-                        PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH, dayStartHour!!, weekStartDay!!)
-                        PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR, dayStartHour!!, weekStartDay!!)
-                    }
-                },
-                required = false
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                UI.FormSelection(
+                    label = "",
+                    options = listOf("Toutes", "Heure", "Jour", "Semaine", "Mois", "Année"),
+                    selected = when(periodFilter) {
+                        PeriodFilterType.ALL -> "Toutes"
+                        PeriodFilterType.HOUR -> "Heure"
+                        PeriodFilterType.DAY -> "Jour"
+                        PeriodFilterType.WEEK -> "Semaine"
+                        PeriodFilterType.MONTH -> "Mois"
+                        PeriodFilterType.YEAR -> "Année"
+                    },
+                    onSelect = { selection ->
+                        periodFilter = when(selection) {
+                            "Toutes" -> PeriodFilterType.ALL
+                            "Heure" -> PeriodFilterType.HOUR
+                            "Jour" -> PeriodFilterType.DAY
+                            "Semaine" -> PeriodFilterType.WEEK
+                            "Mois" -> PeriodFilterType.MONTH
+                            "Année" -> PeriodFilterType.YEAR
+                            else -> PeriodFilterType.DAY
+                        }
+                        // Update current period when filter changes
+                        currentPeriod = when(periodFilter) {
+                            PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!) // Default for ALL
+                            PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR, dayStartHour!!, weekStartDay!!)
+                            PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
+                            PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK, dayStartHour!!, weekStartDay!!)
+                            PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH, dayStartHour!!, weekStartDay!!)
+                            PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR, dayStartHour!!, weekStartDay!!)
+                        }
+                    },
+                    required = false
+                )
+            }
             
-            // Entries limit dropdown  
-            UI.FormSelection(
-                label = "",
-                options = listOf("10", "25", "100", "250", "1000"),
-                selected = entriesLimit.toString(),
-                onSelect = { entriesLimit = it.toInt() },
-                required = false
-            )
+            // Entries limit dropdown
+            Box(modifier = Modifier.weight(1f)) {
+                UI.FormSelection(
+                    label = "",
+                    options = listOf("10", "25", "100", "250", "1000"),
+                    selected = entriesLimit.toString(),
+                    onSelect = { selection -> 
+                        entriesLimit = selection.toInt()
+                    },
+                    required = false
+                )
+            }
             
             // Refresh button
-            if (!isLoading) {
-                UI.ActionButton(
-                    action = ButtonAction.REFRESH,
-                    display = ButtonDisplay.ICON,
-                    onClick = { loadData() }
-                )
+            Box(contentAlignment = Alignment.Center) {
+                if (!isLoading) {
+                    UI.ActionButton(
+                        action = ButtonAction.REFRESH,
+                        display = ButtonDisplay.ICON,
+                        onClick = { loadData() }
+                    )
+                } else {
+                    UI.Text("...", TextType.BODY)
+                }
             }
         }
         
@@ -417,7 +401,7 @@ fun TrackingHistory(
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
-                    UI.Text("Item", TextType.CAPTION)
+                    UI.Text("Nom", TextType.CAPTION)
                 }
                 
                 // Valeur header (weight=3f)

@@ -186,8 +186,19 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
+        // Paramètres de filtrage et pagination
+        val limit = params.optInt("limit", 100)
+        val startTime = if (params.has("startTime")) params.optLong("startTime") else null
+        val endTime = if (params.has("endTime")) params.optLong("endTime") else null
+
         val dao = getToolDataDao()
-        val entries = dao.getByToolInstance(toolInstanceId)
+        val entries = if (startTime != null && endTime != null) {
+            // Filtrage par plage de temps avec pagination
+            dao.getByTimeRange(toolInstanceId, startTime, endTime, limit)
+        } else {
+            // Pagination simple (toutes les entrées) - utilise la méthode existante
+            dao.getRecent(toolInstanceId, limit)
+        }
 
         return OperationResult.success(
             data = mapOf("entries" to entries.map { entity ->

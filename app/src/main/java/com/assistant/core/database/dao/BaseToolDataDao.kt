@@ -76,6 +76,12 @@ abstract class BaseToolDataDao {
     abstract suspend fun getByTooltype(tooltype: String): List<ToolDataEntity>
 
     /**
+     * Récupère les entrées dans une plage de temps avec limite
+     */
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp DESC LIMIT :limit")
+    abstract suspend fun getByTimeRange(toolInstanceId: String, startTime: Long, endTime: Long, limit: Int): List<ToolDataEntity>
+
+    /**
      * Récupère les versions minimales de données par tooltype
      * Utilisé pour déterminer quels tooltypes nécessitent une migration
      */
