@@ -19,9 +19,23 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.tools.tracking.TrackingUtils
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.ui.components.PeriodFilterType
+import com.assistant.core.ui.components.Period
+import com.assistant.core.ui.components.PeriodType
+import com.assistant.core.ui.components.PeriodSelector
+import com.assistant.core.ui.components.normalizeTimestampWithConfig
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.*
+
+/**
+ * Crée une période actuelle avec normalisation selon la configuration
+ */
+private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDay: String): Period {
+    val now = System.currentTimeMillis()
+    val normalizedTimestamp = normalizeTimestampWithConfig(now, type, dayStartHour, weekStartDay)
+    return Period(normalizedTimestamp, type)
+}
 
 /**
  * Responsive table display for tracking data history with CRUD operations
@@ -30,7 +44,8 @@ import java.util.*
 @Composable
 fun TrackingHistory(
     toolInstanceId: String,
-    trackingType: String = "numeric",
+    trackingType: String,
+    refreshTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -44,7 +59,16 @@ fun TrackingHistory(
     var showEditDialog by remember { mutableStateOf(false) }
     var editingEntry by remember { mutableStateOf<ToolDataEntity?>(null) }
     
-    // Date filter state - default to today
+    // New filter system state
+    var periodFilter by remember { mutableStateOf(PeriodFilterType.DAY) }
+    var currentPeriod by remember { mutableStateOf(Period.now(PeriodType.DAY)) }
+    var entriesLimit by remember { mutableStateOf(100) }
+    
+    // App config state - null jusqu'au chargement
+    var dayStartHour by remember { mutableStateOf<Int?>(null) }
+    var weekStartDay by remember { mutableStateOf<String?>(null) }
+    
+    // Legacy state for compatibility during transition
     var selectedDate by remember { 
         mutableStateOf(DateUtils.getTodayFormatted())
     }
@@ -72,11 +96,13 @@ fun TrackingHistory(
                         val allEntries = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
+                                    val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
+                                    Log.d("TIMESTAMP_DEBUG", "Entry ${entryMap["id"]}: timestamp=$timestamp (${DateUtils.formatFullDateTime(timestamp ?: 0)})")
                                     ToolDataEntity(
                                         id = entryMap["id"] as? String ?: "",
                                         toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
                                         tooltype = entryMap["tooltype"] as? String ?: "tracking",
-                                        timestamp = (entryMap["timestamp"] as? Number)?.toLong(),
+                                        timestamp = timestamp,
                                         name = entryMap["name"] as? String,
                                         data = entryMap["data"] as? String ?: "",
                                         createdAt = (entryMap["createdAt"] as? Number)?.toLong() ?: 0L,
@@ -89,12 +115,77 @@ fun TrackingHistory(
                             } else null
                         }
                         
-                        // Filter by selected date and limit to 100 entries
-                        val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
-                        trackingData = allEntries
-                            .filter { it.timestamp?.let { ts -> DateUtils.isOnSameDay(ts, selectedDateMs) } ?: false }
-                            .sortedByDescending { it.timestamp ?: 0L }
-                            .take(100)
+                        // Filter by period type and limit by entriesLimit
+                        trackingData = when (periodFilter) {
+                            PeriodFilterType.ALL -> {
+                                allEntries
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                            PeriodFilterType.HOUR -> {
+                                val periodStart = currentPeriod.timestamp
+                                val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
+                                allEntries
+                                    .filter { entry ->
+                                        val timestamp = entry.timestamp ?: return@filter false
+                                        timestamp >= periodStart && timestamp < periodEnd
+                                    }
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                            PeriodFilterType.DAY -> {
+                                val periodStart = currentPeriod.timestamp
+                                val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
+                                allEntries
+                                    .filter { entry ->
+                                        val timestamp = entry.timestamp ?: return@filter false
+                                        timestamp >= periodStart && timestamp < periodEnd
+                                    }
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                            PeriodFilterType.WEEK -> {
+                                val periodStart = currentPeriod.timestamp
+                                val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
+                                allEntries
+                                    .filter { entry ->
+                                        val timestamp = entry.timestamp ?: return@filter false
+                                        timestamp >= periodStart && timestamp < periodEnd
+                                    }
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                            PeriodFilterType.MONTH -> {
+                                val periodStart = currentPeriod.timestamp
+                                // Pour les mois, on calcule le début du mois suivant
+                                val periodEnd = Calendar.getInstance().apply {
+                                    timeInMillis = periodStart
+                                    add(Calendar.MONTH, 1)
+                                }.timeInMillis
+                                allEntries
+                                    .filter { entry ->
+                                        val timestamp = entry.timestamp ?: return@filter false
+                                        timestamp >= periodStart && timestamp < periodEnd
+                                    }
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                            PeriodFilterType.YEAR -> {
+                                val periodStart = currentPeriod.timestamp
+                                // Pour les années, on calcule le début de l'année suivante
+                                val periodEnd = Calendar.getInstance().apply {
+                                    timeInMillis = periodStart
+                                    add(Calendar.YEAR, 1)
+                                }.timeInMillis
+                                allEntries
+                                    .filter { entry ->
+                                        val timestamp = entry.timestamp ?: return@filter false
+                                        timestamp >= periodStart && timestamp < periodEnd
+                                    }
+                                    .sortedByDescending { it.timestamp ?: 0L }
+                                    .take(entriesLimit)
+                            }
+                        }
                     }
                     else -> {
                         errorMessage = result.error ?: "Erreur lors du chargement"
@@ -177,8 +268,34 @@ fun TrackingHistory(
         }
     }
     
-    // Load data on composition and when date changes
-    LaunchedEffect(toolInstanceId, selectedDate) {
+    // Load app config on composition
+    LaunchedEffect(Unit) {
+        try {
+            val configResult = coordinator.processUserAction("get->app_config", mapOf("category" to "temporal"))
+            if (configResult.status == CommandStatus.SUCCESS) {
+                val config = configResult.data?.get("settings") as? Map<String, Any>
+                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()
+                weekStartDay = config?.get("week_start_day") as? String
+            }
+        } catch (e: Exception) {
+            // Config loading failed
+        }
+    }
+    
+    // Attendre que la config soit chargée
+    if (dayStartHour == null || weekStartDay == null) {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            UI.Text(text = "Chargement de la configuration...", type = TextType.BODY)
+        }
+        return
+    }
+
+    // Load data on composition and when filters change
+    LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, refreshTrigger) {
         loadData()
     }
     
@@ -186,24 +303,57 @@ fun TrackingHistory(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with date selector and refresh button
+        // Level 1: Global filters
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Date selector as title
-
-            UI.Button(
-                type = ButtonType.DEFAULT,
-                size = Size.M,
-                onClick = {
-                    showDatePicker = true
-                }
-            ) {
-                UI.Text(selectedDate, TextType.BODY)
-            }
+            // Period filter dropdown
+            UI.FormSelection(
+                label = "",
+                options = listOf("Toutes", "Heure", "Jour", "Semaine", "Mois", "Année"),
+                selected = when(periodFilter) {
+                    PeriodFilterType.ALL -> "Toutes"
+                    PeriodFilterType.HOUR -> "Heure"
+                    PeriodFilterType.DAY -> "Jour"
+                    PeriodFilterType.WEEK -> "Semaine"
+                    PeriodFilterType.MONTH -> "Mois"
+                    PeriodFilterType.YEAR -> "Année"
+                },
+                onSelect = { selection ->
+                    periodFilter = when(selection) {
+                        "Toutes" -> PeriodFilterType.ALL
+                        "Heure" -> PeriodFilterType.HOUR
+                        "Jour" -> PeriodFilterType.DAY
+                        "Semaine" -> PeriodFilterType.WEEK
+                        "Mois" -> PeriodFilterType.MONTH
+                        "Année" -> PeriodFilterType.YEAR
+                        else -> PeriodFilterType.DAY
+                    }
+                    // Update current period when filter changes
+                    currentPeriod = when(periodFilter) {
+                        PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!) // Default for ALL
+                        PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR, dayStartHour!!, weekStartDay!!)
+                        PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
+                        PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK, dayStartHour!!, weekStartDay!!)
+                        PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH, dayStartHour!!, weekStartDay!!)
+                        PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR, dayStartHour!!, weekStartDay!!)
+                    }
+                },
+                required = false
+            )
             
+            // Entries limit dropdown  
+            UI.FormSelection(
+                label = "",
+                options = listOf("10", "25", "100", "250", "1000"),
+                selected = entriesLimit.toString(),
+                onSelect = { entriesLimit = it.toInt() },
+                required = false
+            )
+            
+            // Refresh button
             if (!isLoading) {
                 UI.ActionButton(
                     action = ButtonAction.REFRESH,
@@ -211,6 +361,19 @@ fun TrackingHistory(
                     onClick = { loadData() }
                 )
             }
+        }
+        
+        // Level 2: Period selector (hidden for ALL filter)
+        if (periodFilter != PeriodFilterType.ALL) {
+            PeriodSelector(
+                period = currentPeriod,
+                onPeriodChange = { newPeriod ->
+                    currentPeriod = newPeriod
+                    loadData()
+                },
+                dayStartHour = dayStartHour!!,
+                weekStartDay = weekStartDay!!
+            )
         }
         
         // Error message
@@ -297,9 +460,18 @@ fun TrackingHistory(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
+                    val periodLabel = when (periodFilter) {
+                        PeriodFilterType.ALL -> "au total"
+                        PeriodFilterType.HOUR -> "pour cette heure"
+                        PeriodFilterType.DAY -> "pour le $selectedDate"
+                        PeriodFilterType.WEEK -> "pour cette semaine"
+                        PeriodFilterType.MONTH -> "pour ce mois"
+                        PeriodFilterType.YEAR -> "pour cette année"
+                    }
+                    
                     UI.Text(
-                        "${trackingData.size} entrée(s) pour le $selectedDate" +
-                                if (trackingData.size == 100) " (limite atteinte)" else "",
+                        "${trackingData.size} entrée(s) $periodLabel" +
+                                if (trackingData.size == entriesLimit) " (limite $entriesLimit atteinte)" else "",
                         TextType.CAPTION
                     )
                 }
@@ -420,7 +592,7 @@ private fun TrackingHistoryRow(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
             UI.Text(
-                text = DateUtils.formatSmartDateTime(entry.timestamp ?: System.currentTimeMillis()),
+                text = DateUtils.formatFullDateTime(entry.timestamp ?: System.currentTimeMillis()),
                 type = TextType.BODY
             )
         }

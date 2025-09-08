@@ -144,12 +144,11 @@ fun TrackingScreen(
                 ) {
                     UI.Text("Historique", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
-                    key(historyRefreshTrigger) {
-                        TrackingHistory(
-                            toolInstanceId = toolInstanceId,
-                            trackingType = config.optString("type", "numeric")
-                        )
-                    }
+                    TrackingHistory(
+                        toolInstanceId = toolInstanceId,
+                        trackingType = config.optString("type", "numeric"),
+                        refreshTrigger = historyRefreshTrigger
+                    )
                 }
             }
             

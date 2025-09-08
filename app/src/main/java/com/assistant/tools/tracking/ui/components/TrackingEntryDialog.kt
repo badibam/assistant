@@ -49,7 +49,7 @@ fun TrackingEntryDialog(
 ) {
     // State management
     var name by remember(isVisible) { mutableStateOf(initialName) }
-    var recordedAt by remember(isVisible) { mutableStateOf(initialRecordedAt) }
+    var recordedAt by remember(isVisible) { mutableStateOf(if (isVisible) System.currentTimeMillis() else initialRecordedAt) }
     var addToPredefined by remember(isVisible) { mutableStateOf(false) }
     
     // Type-specific value states

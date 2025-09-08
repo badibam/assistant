@@ -1,6 +1,7 @@
 package com.assistant.core.coordinator
 
 import android.content.Context
+import android.util.Log
 import com.assistant.core.commands.Command
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
@@ -333,6 +334,10 @@ class Coordinator(context: Context) {
             command.action == "get->tool_data" -> {
                 val operation = command.params["operation"] as? String ?: "get_entries"
                 executeServiceOperation(command, "tool_data_service", operation)
+            }
+            command.action == "get->app_config" -> {
+                Log.d("CONFIGDEBUG", "Coordinator handling get->app_config command: ${command.params}")
+                executeServiceOperation(command, "app_config_service", "get_config")
             }
             else -> CommandResult(
                 commandId = command.id,

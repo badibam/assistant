@@ -62,51 +62,8 @@ object DateUtils {
                cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH)
     }
     
-    /**
-     * Check if timestamp is today
-     */
-    fun isToday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean {
-        return isOnSameDay(timestamp, now)
-    }
     
-    /**
-     * Check if timestamp is yesterday
-     */
-    fun isYesterday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean {
-        val yesterday = now - 24 * 60 * 60 * 1000L
-        return isOnSameDay(timestamp, yesterday)
-    }
     
-    /**
-     * Format timestamp with smart date labels
-     * Aujourd'hui: "Auj. 15h30"
-     * Hier: "Hier 18h25" 
-     * Autres: "28/08/25 18h25"
-     */
-    fun formatSmartDateTime(timestamp: Long, now: Long = System.currentTimeMillis()): String {
-        val time = formatTimeForDisplay(timestamp)
-        
-        return when {
-            isToday(timestamp, now) -> "Auj. $time"
-            isYesterday(timestamp, now) -> "Hier $time"
-            else -> formatFullDateTime(timestamp)
-        }
-    }
-    
-    /**
-     * Format date with smart relative display (Today, Yesterday, or full date)
-     */
-    fun formatSmartDate(timestamp: Long): String {
-        val now = System.currentTimeMillis()
-        val dayInMs = 24 * 60 * 60 * 1000L
-        val diff = now - timestamp
-        
-        return when {
-            diff < dayInMs && isToday(timestamp, now) -> "Aujourd'hui ${formatTimeForDisplay(timestamp)}"
-            diff < 2 * dayInMs && isYesterday(timestamp, now) -> "Hier ${formatTimeForDisplay(timestamp)}"
-            else -> formatFullDateTime(timestamp)
-        }
-    }
     
     /**
      * Get today's date formatted for display

@@ -33,6 +33,7 @@ class ServiceManager(private val context: Context) {
             "tool_instance_service" -> ToolInstanceService(context)
             "tool_data_service" -> ToolDataService(context)
             "backup_service" -> BackupService()
+            "app_config_service" -> AppConfigService(context)
             
             // Tool services (discovered via ToolTypeManager)
             else -> {

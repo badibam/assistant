@@ -7,13 +7,17 @@ import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultTemporalSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.services.ExecutableService
+import com.assistant.core.services.OperationResult
+import com.assistant.core.coordinator.CancellationToken
+import android.util.Log
 import org.json.JSONObject
 
 /**
  * Service centralisé pour la gestion de la configuration de l'application
  * Fournit un accès typé aux paramètres stockés par catégorie en base
  */
-class AppConfigService(private val context: Context) {
+class AppConfigService(private val context: Context) : ExecutableService {
 
     private val database = AppDatabase.getDatabase(context)
     private val settingsDao = database.appSettingsCategoryDao()
@@ -43,19 +47,24 @@ class AppConfigService(private val context: Context) {
      * Gestion interne des paramètres temporels
      */
     private suspend fun getTemporalSettings(): JSONObject {
+        Log.d("CONFIGDEBUG", "Getting temporal settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.TEMPORAL)
         return if (settingsJson != null) {
             try {
+                Log.d("CONFIGDEBUG", "Found existing temporal settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
+                Log.e("CONFIGDEBUG", "Error parsing temporal settings JSON: ${e.message}", e)
                 createDefaultTemporalSettings()
             }
         } else {
+            Log.d("CONFIGDEBUG", "No temporal settings found, creating defaults")
             createDefaultTemporalSettings()
         }
     }
 
     private suspend fun createDefaultTemporalSettings(): JSONObject {
+        Log.d("CONFIGDEBUG", "Creating default temporal settings")
         val defaultSettings = JSONObject(DefaultTemporalSettings.JSON.trimIndent())
         settingsDao.insertOrUpdateSettings(
             AppSettingsCategory(
@@ -63,6 +72,7 @@ class AppConfigService(private val context: Context) {
                 settings = defaultSettings.toString()
             )
         )
+        Log.d("CONFIGDEBUG", "Default temporal settings inserted: $defaultSettings")
         return defaultSettings
     }
 
@@ -106,6 +116,39 @@ class AppConfigService(private val context: Context) {
             }
             // Future categories handled here
         }
+    }
+
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
+        Log.d("CONFIGDEBUG", "AppConfigService.execute: operation=$operation, params=$params")
+        return when (operation) {
+            "get_config" -> {
+                val category = params.optString("category", "temporal")
+                Log.d("CONFIGDEBUG", "Getting config for category: $category")
+                when (category) {
+                    AppSettingCategories.TEMPORAL -> {
+                        val settings = getTemporalSettings()
+                        Log.d("CONFIGDEBUG", "Temporal settings retrieved: $settings")
+                        OperationResult.success(mapOf("settings" to settings.toMap()))
+                    }
+                    else -> {
+                        Log.w("CONFIGDEBUG", "Unknown category: $category")
+                        OperationResult.error("Unknown category: $category")
+                    }
+                }
+            }
+            else -> {
+                Log.w("CONFIGDEBUG", "Unknown operation: $operation")
+                OperationResult.error("Unknown operation: $operation")
+            }
+        }
+    }
+    
+    private fun JSONObject.toMap(): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        keys().forEach { key ->
+            map[key] = get(key)
+        }
+        return map
     }
 
 }
