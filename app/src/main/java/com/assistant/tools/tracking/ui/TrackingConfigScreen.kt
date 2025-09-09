@@ -877,7 +877,7 @@ fun TrackingConfigScreen(
                                 modifier = Modifier.weight(4f),
                                 contentAlignment = Alignment.Center
                             ) {
-                                UI.Text(
+                                UI.CenteredText(
                                     text = "Nom",
                                     type = TextType.CAPTION
                                 )
@@ -889,7 +889,7 @@ fun TrackingConfigScreen(
                                     modifier = Modifier.weight(2f),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    UI.Text(
+                                    UI.CenteredText(
                                         text = "Qté",
                                         type = TextType.CAPTION
                                     )
@@ -899,7 +899,7 @@ fun TrackingConfigScreen(
                                     modifier = Modifier.weight(2f),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    UI.Text(
+                                    UI.CenteredText(
                                         text = "Unité",
                                         type = TextType.CAPTION
                                     )
@@ -1102,7 +1102,7 @@ fun TrackingConfigScreen(
                             iconRow.forEach { icon ->
                                 // Case carrée avec icône + texte
                                 UI.Button(
-                                    type = if (iconName == icon.id) ButtonType.PRIMARY else ButtonType.SECONDARY,
+                                    type = if (iconName == icon.id) ButtonType.PRIMARY else ButtonType.DEFAULT,
                                     onClick = {
                                         updateConfig("icon_name", icon.id)
                                         showIconSelector = false
@@ -1203,7 +1203,7 @@ private fun ItemRowReadonly(
             modifier = Modifier.weight(4f),
             contentAlignment = Alignment.Center
         ) {
-            UI.Text(
+            UI.CenteredText(
                 text = item.name,
                 type = TextType.BODY
             )
@@ -1217,7 +1217,7 @@ private fun ItemRowReadonly(
                 contentAlignment = Alignment.Center
             ) {
                 val defaultQuantity = item.properties["default_quantity"]
-                UI.Text(
+                UI.CenteredText(
                     text = defaultQuantity?.toString() ?: "-",
                     type = TextType.BODY
                 )
@@ -1228,7 +1228,7 @@ private fun ItemRowReadonly(
                 contentAlignment = Alignment.Center
             ) {
                 val unit = item.properties["unit"]?.toString()
-                UI.Text(
+                UI.CenteredText(
                     text = unit ?: "-",
                     type = TextType.BODY
                 )

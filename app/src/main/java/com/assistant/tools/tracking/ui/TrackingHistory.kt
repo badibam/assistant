@@ -370,7 +370,7 @@ fun TrackingHistory(
                         onClick = { loadData() }
                     )
                 } else {
-                    UI.Text("...", TextType.BODY)
+                    UI.CenteredText("...", TextType.BODY)
                 }
             }
         }
@@ -401,7 +401,7 @@ fun TrackingHistory(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                UI.Text("Chargement...", TextType.BODY)
+                UI.CenteredText("Chargement...", TextType.BODY)
             }
         }
         
@@ -444,7 +444,7 @@ fun TrackingHistory(
                     modifier = Modifier.weight(2f),
                     contentAlignment = Alignment.Center
                 ) {
-                    UI.Text("Actions", TextType.CAPTION)
+                    UI.CenteredText("Actions", TextType.CAPTION)
                 }
             }
         }
@@ -493,7 +493,7 @@ fun TrackingHistory(
                         modifier = Modifier.weight(2f),
                         contentAlignment = Alignment.Center
                     ) {
-                        UI.Text(
+                        UI.CenteredText(
                             "Page $currentPage sur $totalPages",
                             TextType.CAPTION
                         )

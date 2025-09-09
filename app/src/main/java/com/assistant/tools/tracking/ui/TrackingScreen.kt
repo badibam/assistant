@@ -86,7 +86,7 @@ fun TrackingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                UI.Text("Chargement...", TextType.BODY)
+                UI.CenteredText("Chargement...", TextType.BODY)
             }
         } else if (errorMessage != null) {
             UI.Card(type = CardType.DEFAULT) {

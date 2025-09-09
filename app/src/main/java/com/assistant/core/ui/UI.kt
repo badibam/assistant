@@ -79,6 +79,17 @@ object UI {
         CurrentTheme.current.Text(text, type, fillMaxWidth, textAlign)
     }
     
+    /**
+     * Texte centré même si multiligne - à utiliser dans Box avec contentAlignment = Alignment.Center
+     */
+    @Composable
+    fun CenteredText(
+        text: String,
+        type: TextType
+    ) {
+        Text(text = text, type = type, fillMaxWidth = true, textAlign = TextAlign.Center)
+    }
+    
     
     @Composable
     fun Card(

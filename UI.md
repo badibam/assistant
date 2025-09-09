@@ -89,7 +89,7 @@ Row(
         UI.ActionButton(action = ButtonAction.DOWN, display = ButtonDisplay.ICON, size = Size.S)
     }
     Box(modifier = Modifier.weight(4f)) { 
-        UI.Text("Contenu principal", TextType.BODY)
+        UI.CenteredText("Contenu principal", TextType.BODY)
     }
 }
 ```
