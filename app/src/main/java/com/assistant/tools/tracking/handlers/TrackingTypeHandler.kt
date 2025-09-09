@@ -15,11 +15,11 @@ interface TrackingTypeHandler {
     fun getType(): String
     
     /**
-     * Create JSON value from user input properties
+     * Create JSON data from user input properties
      * @param properties Map of input properties from the UI
      * @return JSON string for storage, or null if validation fails
      */
-    fun createValueJson(properties: Map<String, Any>): String?
+    fun createDataJson(properties: Map<String, Any>): String?
     
     /**
      * Validate input properties before creating JSON

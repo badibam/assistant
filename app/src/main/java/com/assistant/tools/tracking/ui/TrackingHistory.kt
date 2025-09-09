@@ -198,16 +198,16 @@ fun TrackingHistory(
         }
     }
     
-    // Update entry - name, value and timestamp can be changed
-    val updateEntry = { entryId: String, name: String, valueJson: String, newTimestamp: Long? ->
+    // Update entry - name, data and timestamp can be changed
+    val updateEntry = { entryId: String, name: String, dataJson: String, newTimestamp: Long? ->
         android.util.Log.d("VALDEBUG", "=== UPDATEENTRY START ===")
-        android.util.Log.d("VALDEBUG", "updateEntry called: entryId=$entryId, name=$name, valueJson=$valueJson, newTimestamp=$newTimestamp")
+        android.util.Log.d("VALDEBUG", "updateEntry called: entryId=$entryId, name=$name, dataJson=$dataJson, newTimestamp=$newTimestamp")
         scope.launch {
             try {
                 val params = mutableMapOf<String, Any>(
                     "id" to entryId,
                     "name" to name,
-                    "data" to JSONObject(valueJson)
+                    "data" to JSONObject(dataJson)
                 )
                 
                 // Add timestamp if provided
@@ -581,13 +581,13 @@ fun TrackingHistory(
                 actionType = ActionType.UPDATE,
                 toolInstanceId = toolInstanceId,
                 initialName = entry.name ?: "",
-                initialValue = initialProperties,
-                initialRecordedAt = entry.timestamp ?: System.currentTimeMillis(),
-                onConfirm = { name, valueJson, _, recordedAt ->
-                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - onConfirm called: name='$name', valueJson=$valueJson, trackingType=$trackingType")
+                initialData = initialProperties,
+                initialTimestamp = entry.timestamp ?: System.currentTimeMillis(),
+                onConfirm = { name, dataJson, _, timestamp ->
+                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - onConfirm called: name='$name', dataJson=$dataJson, trackingType=$trackingType")
                     
-                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', valueJson=$valueJson, recordedAt=$recordedAt")
-                    updateEntry(entry.id, name, valueJson, recordedAt)
+                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', dataJson=$dataJson, timestamp=$timestamp")
+                    updateEntry(entry.id, name, dataJson, timestamp)
                     showEditDialog = false
                     editingEntry = null
                 },
@@ -693,8 +693,8 @@ private fun TrackingHistoryRow(
  */
 private fun formatTrackingValue(entry: ToolDataEntity, trackingType: String): String {
     return try {
-        val valueJson = JSONObject(entry.data)
-        valueJson.optString("raw", entry.data)
+        val dataJson = JSONObject(entry.data)
+        dataJson.optString("raw", entry.data)
     } catch (e: Exception) {
         entry.data
     }
@@ -703,9 +703,9 @@ private fun formatTrackingValue(entry: ToolDataEntity, trackingType: String): St
 /**
  * Parse tracking value JSON for editing
  */
-private fun parseTrackingValue(valueJson: String): ParsedValue {
+private fun parseTrackingValue(dataJson: String): ParsedValue {
     return try {
-        val json = JSONObject(valueJson)
+        val json = JSONObject(dataJson)
         ParsedValue(
             quantity = json.optDouble("quantity", 0.0),
             unit = json.optString("unit", "")

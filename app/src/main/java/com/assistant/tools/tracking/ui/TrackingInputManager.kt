@@ -39,10 +39,10 @@ fun TrackingInputManager(
     // Default timestamp management: custom > now
     var defaultTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     
-    // Save function with new valueJson signature
-    val saveEntry: (String, String, Long) -> Unit = { itemName, valueJson, recordedAt ->
+    // Save function with new dataJson signature
+    val saveEntry: (String, String, Long) -> Unit = { itemName, dataJson, timestamp ->
         android.util.Log.d("VALDEBUG", "=== SAVEENTRY START ===")
-        android.util.Log.d("VALDEBUG", "saveEntry called: itemName=$itemName, valueJson=$valueJson, recordedAt=$recordedAt, trackingType=$trackingType")
+        android.util.Log.d("VALDEBUG", "saveEntry called: itemName=$itemName, dataJson=$dataJson, timestamp=$timestamp, trackingType=$trackingType")
         scope.launch {
             isLoading = true
             
@@ -51,9 +51,9 @@ fun TrackingInputManager(
                 val params = mutableMapOf<String, Any>(
                     "toolInstanceId" to toolInstanceId,
                     "tooltype" to "tracking", 
-                    "timestamp" to recordedAt,
+                    "timestamp" to timestamp,
                     "name" to itemName,
-                    "data" to JSONObject(valueJson)
+                    "data" to JSONObject(dataJson)
                 )
                 android.util.Log.d("VALDEBUG", "Final params being sent: $params")
                 
@@ -179,8 +179,8 @@ fun TrackingInputManager(
                 defaultTimestamp = newTimestamp
             },
             onQuickSave = { name, properties ->
-                // Convert properties to valueJson for quick save
-                val initialValueJson = when (trackingType) {
+                // Convert properties to dataJson for quick save
+                val initialDataJson = when (trackingType) {
                     "numeric" -> JSONObject().apply {
                         put("type", "numeric")
                         put("quantity", properties["quantity"] ?: properties["default_quantity"])
@@ -225,14 +225,14 @@ fun TrackingInputManager(
                 }
                 
                 // Convert to validation format with proper types
-                val validationObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(initialValueJson, trackingType)
-                val finalValueJson = JSONObject().apply {
+                val validationObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(initialDataJson, trackingType)
+                val finalDataJson = JSONObject().apply {
                     for ((key, value) in validationObject) {
                         put(key, value)
                     }
                 }.toString()
                 
-                saveEntry(name, finalValueJson, defaultTimestamp)
+                saveEntry(name, finalDataJson, defaultTimestamp)
             },
             onOpenDialog = { name, properties ->
                 dialogInitialName = name
@@ -270,31 +270,31 @@ fun TrackingInputManager(
         actionType = dialogActionType,
         toolInstanceId = toolInstanceId,
         initialName = dialogInitialName,
-        initialValue = dialogInitialProperties,
-        initialRecordedAt = defaultTimestamp,
-        onConfirm = { name, valueJson, addToPredefinedFlag, recordedAt ->
+        initialData = dialogInitialProperties,
+        initialTimestamp = defaultTimestamp,
+        onConfirm = { name, dataJson, addToPredefinedFlag, timestamp ->
             // Save the entry with the user-selected date and time
-            saveEntry(name, valueJson, recordedAt)
+            saveEntry(name, dataJson, timestamp)
             
             // Add to predefined if requested
             if (addToPredefinedFlag && dialogItemType == ItemType.FREE) {
-                // Parse valueJson back to properties for addToPredefined
+                // Parse dataJson back to properties for addToPredefined
                 try {
-                    val valueObj = JSONObject(valueJson)
+                    val dataObj = JSONObject(dataJson)
                     val properties = mutableMapOf<String, Any>()
                     when (trackingType) {
                         "numeric" -> {
-                            if (valueObj.has("quantity")) properties["default_quantity"] = valueObj.getDouble("quantity")
-                            if (valueObj.has("unit")) properties["unit"] = valueObj.getString("unit")
+                            if (dataObj.has("quantity")) properties["default_quantity"] = dataObj.getDouble("quantity")
+                            if (dataObj.has("unit")) properties["unit"] = dataObj.getString("unit")
                         }
                         "counter" -> {
-                            if (valueObj.has("increment")) properties["default_increment"] = valueObj.getInt("increment")
+                            if (dataObj.has("increment")) properties["default_increment"] = dataObj.getInt("increment")
                         }
                         // Other types don't have default properties typically
                     }
                     addToPredefined(name, properties)
                 } catch (e: Exception) {
-                    android.util.Log.e("TRACKING_DEBUG", "Error parsing value JSON for predefined: ${e.message}")
+                    android.util.Log.e("TRACKING_DEBUG", "Error parsing data JSON for predefined: ${e.message}")
                 }
             }
             

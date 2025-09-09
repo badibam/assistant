@@ -11,7 +11,7 @@ class NumericTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "numeric"
     
-    override fun createValueJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>): String? {
         val quantity = properties["quantity"] as? String ?: return null
         val unit = properties["unit"] as? String ?: ""
         

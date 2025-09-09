@@ -10,7 +10,7 @@ class BooleanTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "boolean"
     
-    override fun createValueJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>): String? {
         val state = properties["state"] as? Boolean ?: return null
         val trueLabel = properties["true_label"] as? String ?: "Oui"
         val falseLabel = properties["false_label"] as? String ?: "Non"

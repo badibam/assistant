@@ -189,7 +189,7 @@ override fun getDatabaseMigrations(): List<Migration> {
 
 val TRACKING_MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(database: SupportSQLiteDatabase) {
-        database.execSQL("ALTER TABLE tracking_data ADD COLUMN category TEXT DEFAULT ''")
+        database.execSQL("ALTER TABLE tool_data ADD COLUMN category TEXT DEFAULT ''")
     }
 }
 ```

@@ -59,10 +59,10 @@ object SchemaValidator {
             // DEBUG: Check conditional validation
             if (schema.contains("\"if\"") && schema.contains("\"then\"")) {
                 safeLog("SCHEMADEBUG: CONDITIONAL SCHEMA DETECTED")
-                val valueObject = cleanData["value"] as? Map<*, *>
-                if (valueObject != null) {
-                    val valueType = valueObject["type"]
-                    safeLog("SCHEMADEBUG: VALUE TYPE in data: '$valueType'")
+                val dataObject = cleanData["data"] as? Map<*, *>
+                if (dataObject != null) {
+                    val dataType = dataObject["type"]
+                    safeLog("SCHEMADEBUG: DATA TYPE in data: '$dataType'")
                 }
             }
             

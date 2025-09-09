@@ -44,46 +44,46 @@ fun TrackingEntryDialog(
     actionType: ActionType, // CREATE or UPDATE
     toolInstanceId: String = "",
     initialName: String = "",
-    initialValue: Map<String, Any> = emptyMap(),
-    initialRecordedAt: Long = System.currentTimeMillis(),
-    onConfirm: (name: String, valueJson: String, addToPredefined: Boolean, recordedAt: Long) -> Unit,
+    initialData: Map<String, Any> = emptyMap(),
+    initialTimestamp: Long = System.currentTimeMillis(),
+    onConfirm: (name: String, dataJson: String, addToPredefined: Boolean, timestamp: Long) -> Unit,
     onCancel: () -> Unit
 ) {
     // State management
     var name by remember(isVisible) { mutableStateOf(initialName) }
-    var recordedAt by remember(isVisible, initialRecordedAt) { mutableStateOf(initialRecordedAt) }
+    var timestamp by remember(isVisible, initialTimestamp) { mutableStateOf(initialTimestamp) }
     var addToPredefined by remember(isVisible) { mutableStateOf(false) }
     
     // Type-specific value states
     var numericQuantity by remember(isVisible) { 
-        mutableStateOf(initialValue["quantity"]?.toString() ?: initialValue["default_quantity"]?.toString() ?: "") 
+        mutableStateOf(initialData["quantity"]?.toString() ?: initialData["default_quantity"]?.toString() ?: "") 
     }
     var numericUnit by remember(isVisible) { 
-        mutableStateOf(initialValue["unit"]?.toString() ?: "") 
+        mutableStateOf(initialData["unit"]?.toString() ?: "") 
     }
     
     var textValue by remember(isVisible) { 
-        mutableStateOf(initialValue["text"]?.toString() ?: "") 
+        mutableStateOf(initialData["text"]?.toString() ?: "") 
     }
     
     var scaleRating by remember(isVisible) { 
-        mutableStateOf((initialValue["rating"] as? Number)?.toInt())
+        mutableStateOf((initialData["rating"] as? Number)?.toInt())
     }
     
     var choiceValue by remember(isVisible) { 
-        mutableStateOf(initialValue["selected_option"]?.toString() ?: "") 
+        mutableStateOf(initialData["selected_option"]?.toString() ?: "") 
     }
     
     var booleanValue by remember(isVisible) { 
-        mutableStateOf(initialValue["state"] as? Boolean ?: false) 
+        mutableStateOf(initialData["state"] as? Boolean ?: false) 
     }
     
     var counterIncrement by remember(isVisible) { 
-        mutableStateOf(initialValue["increment"]?.toString() ?: initialValue["default_increment"]?.toString() ?: "1") 
+        mutableStateOf(initialData["increment"]?.toString() ?: initialData["default_increment"]?.toString() ?: "1") 
     }
     
     // Timer: 3 champs séparés H/M/S
-    val initialSeconds = (initialValue["duration_seconds"] as? Number)?.toInt() ?: 0
+    val initialSeconds = (initialData["duration_seconds"] as? Number)?.toInt() ?: 0
     var timerHours by remember(isVisible) { 
         mutableStateOf((initialSeconds / 3600).toString()) 
     }
@@ -96,10 +96,10 @@ fun TrackingEntryDialog(
 
     // Date/time UI states
     var dateString by remember(isVisible) { 
-        mutableStateOf(DateUtils.formatDateForDisplay(recordedAt)) 
+        mutableStateOf(DateUtils.formatDateForDisplay(timestamp)) 
     }
     var timeString by remember(isVisible) { 
-        mutableStateOf(DateUtils.formatTimeForDisplay(recordedAt)) 
+        mutableStateOf(DateUtils.formatTimeForDisplay(timestamp)) 
     }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -108,22 +108,22 @@ fun TrackingEntryDialog(
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
 
     // ═══ Vraies valeurs centralisées pour tous les types (utilisées dans validateForm ET UI) ═══
-    val realValues = remember(trackingType, config, initialValue) {
+    val realValues = remember(trackingType, config, initialData) {
         when (trackingType) {
             "scale" -> mapOf(
-                "minValue" to ((initialValue["min_value"] as? Number)?.toInt() 
+                "minValue" to ((initialData["min_value"] as? Number)?.toInt() 
                     ?: if (config.has("min")) config.getInt("min") else null),
-                "maxValue" to ((initialValue["max_value"] as? Number)?.toInt() 
+                "maxValue" to ((initialData["max_value"] as? Number)?.toInt() 
                     ?: if (config.has("max")) config.getInt("max") else null),
-                "minLabel" to ((initialValue["min_label"] as? String)
+                "minLabel" to ((initialData["min_label"] as? String)
                     ?: if (config.has("min_label")) config.getString("min_label") else null),
-                "maxLabel" to ((initialValue["max_label"] as? String)
+                "maxLabel" to ((initialData["max_label"] as? String)
                     ?: if (config.has("max_label")) config.getString("max_label") else null)
             )
             "boolean" -> mapOf(
-                "trueLabel" to ((initialValue["true_label"] as? String)
+                "trueLabel" to ((initialData["true_label"] as? String)
                     ?: if (config.has("true_label")) config.getString("true_label") else "Oui"),
-                "falseLabel" to ((initialValue["false_label"] as? String)
+                "falseLabel" to ((initialData["false_label"] as? String)
                     ?: if (config.has("false_label")) config.getString("false_label") else "Non")
             )
             "choice" -> mapOf(
@@ -138,8 +138,8 @@ fun TrackingEntryDialog(
     // State for error messages
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
-    // State for validated value object (single source of truth)
-    var valueObject by remember { mutableStateOf<Any>(emptyMap<String, Any>()) }
+    // State for validated data object (single source of truth)
+    var dataObject by remember { mutableStateOf<Any>(emptyMap<String, Any>()) }
     
     // Get Android context for string resources
     val context = LocalContext.current
@@ -156,9 +156,9 @@ fun TrackingEntryDialog(
         ActionType.UPDATE -> "Modifier l'entrée"
     }
 
-    // Sync date/time with recordedAt
+    // Sync date/time with timestamp
     LaunchedEffect(dateString, timeString) {
-        recordedAt = DateUtils.combineDateTime(dateString, timeString)
+        timestamp = DateUtils.combineDateTime(dateString, timeString)
     }
 
     // Reset validation errors when dialog opens
@@ -170,8 +170,8 @@ fun TrackingEntryDialog(
 
     // Validation function
     val validateForm = {
-        // Build value JSON according to tracking type
-        val valueJson = when (trackingType) {
+        // Build data JSON according to tracking type
+        val dataJson = when (trackingType) {
             "numeric" -> JSONObject().apply {
                 put("type", "numeric")
                 put("quantity", numericQuantity.trim()) // Keep as string per schema
@@ -258,16 +258,16 @@ fun TrackingEntryDialog(
         }
 
         // Build complete TrackingData structure for validation
-        // Parse valueJson to object for schema validation
-        valueObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(valueJson, trackingType)
+        // Parse dataJson to object for schema validation
+        dataObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(dataJson, trackingType)
         
         val entryData = mapOf(
             "id" to "temp-validation-id",
             "tool_instance_id" to toolInstanceId,
             "tooltype" to "tracking",
             "name" to name.trim(),
-            "data" to valueObject, // Use parsed object, not JSON string
-            "timestamp" to recordedAt,
+            "data" to dataObject, // Use parsed object, not JSON string
+            "timestamp" to timestamp,
             "created_at" to System.currentTimeMillis(),
             "updated_at" to System.currentTimeMillis()
         )
@@ -275,8 +275,8 @@ fun TrackingEntryDialog(
         // Log data being validated
         android.util.Log.d("VALDEBUG", "=== VALIDATION START ===")
         android.util.Log.d("VALDEBUG", "trackingType: $trackingType")
-        android.util.Log.d("VALDEBUG", "valueJson: $valueJson")
-        android.util.Log.d("VALDEBUG", "valueObject: $valueObject")
+        android.util.Log.d("VALDEBUG", "dataJson: $dataJson")
+        android.util.Log.d("VALDEBUG", "dataObject: $dataObject")
         android.util.Log.d("VALDEBUG", "entryData: $entryData")
         
         val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
@@ -310,11 +310,11 @@ fun TrackingEntryDialog(
                 validateForm()
                 android.util.Log.d("VALDEBUG", "After validation: isValid=${validationResult.isValid}")
                 if (validationResult.isValid) {
-                    // Use validated and transformed valueObject (single source of truth)
+                    // Use validated and transformed dataObject (single source of truth)
                     // This ensures Dialog and Service use exactly the same data format
-                    val valueJson = JSONObject().apply {
-                        val valueMap = valueObject as Map<String, Any>
-                        for ((key, value) in valueMap) {
+                    val dataJson = JSONObject().apply {
+                        val dataMap = dataObject as Map<String, Any>
+                        for ((key, value) in dataMap) {
                             when (value) {
                                 is List<*> -> put(key, JSONArray(value))
                                 else -> put(key, value)
@@ -324,15 +324,15 @@ fun TrackingEntryDialog(
                     
                     android.util.Log.d("VALDEBUG", "=== CALLING PARENT ONCONFIRM ===")
                     android.util.Log.d("VALDEBUG", "Final name: '${name.trim()}'")
-                    android.util.Log.d("VALDEBUG", "Final valueJson: $valueJson")
+                    android.util.Log.d("VALDEBUG", "Final dataJson: $dataJson")
                     android.util.Log.d("VALDEBUG", "Final addToPredefined: $addToPredefined")
-                    android.util.Log.d("VALDEBUG", "Final recordedAt: $recordedAt")
+                    android.util.Log.d("VALDEBUG", "Final timestamp: $timestamp")
                     
-                    onConfirm(name.trim(), valueJson, addToPredefined, recordedAt)
+                    onConfirm(name.trim(), dataJson, addToPredefined, timestamp)
                 } else {
                     // DEBUG: Detailed error logging
                     android.util.Log.e("VALDEBUG", "=== VALIDATION FAILED ===")
-                    android.util.Log.e("VALDEBUG", "Field data: $valueObject")
+                    android.util.Log.e("VALDEBUG", "Field data: $dataObject")
                     android.util.Log.e("VALDEBUG", "Error: ${validationResult.errorMessage}")
                     android.util.Log.e("VALDEBUG", "Tracking type: $trackingType")
                     android.util.Log.e("VALDEBUG", "Device: Android ${android.os.Build.VERSION.RELEASE}")

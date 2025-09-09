@@ -11,7 +11,7 @@ class ChoiceTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "choice"
     
-    override fun createValueJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>): String? {
         val selectedOption = properties["selected_option"] as? String
         val availableOptions = properties["available_options"] as? List<*>
         

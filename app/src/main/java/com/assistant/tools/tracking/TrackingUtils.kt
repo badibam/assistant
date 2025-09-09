@@ -13,20 +13,20 @@ object TrackingUtils {
     private val numericHandler = NumericTrackingType()
     
     /**
-     * Convert JSON value object to validation format
+     * Convert JSON data object to validation format
      * Ensures consistent type conversion for schema validation
      * 
-     * @param valueJson The JSON string with user input format
+     * @param dataJson The JSON string with user input format
      * @param trackingType The tracking type (numeric, text, etc.)
      * @return Map with proper types for validation
      */
-    fun convertToValidationFormat(valueJson: String, trackingType: String): Map<String, Any> {
+    fun convertToValidationFormat(dataJson: String, trackingType: String): Map<String, Any> {
         return try {
-            val jsonObj = JSONObject(valueJson)
+            val dataJsonObj = JSONObject(dataJson)
             val map = mutableMapOf<String, Any>()
             
-            jsonObj.keys().forEach { key ->
-                val value = jsonObj.get(key)
+            dataJsonObj.keys().forEach { key ->
+                val value = dataJsonObj.get(key)
                 // Convert quantity to number for numeric tracking types to match schema
                 if (key == "quantity" && trackingType == "numeric" && value is String) {
                     try {
@@ -45,7 +45,7 @@ object TrackingUtils {
     }
 
     /**
-     * Create JSON value for numeric tracking data
+     * Create JSON data for numeric tracking data
      * Returns null if the quantity cannot be parsed as a valid number
      * 
      * @param quantity The numeric quantity as string (from user input)
@@ -55,8 +55,8 @@ object TrackingUtils {
      * @deprecated Use NumericTrackingType directly via TrackingTypeFactory
      */
     @Deprecated("Use NumericTrackingType via TrackingTypeFactory instead")
-    fun createNumericValueJson(quantity: String, unit: String): String? {
-        return numericHandler.createValueJson(mapOf(
+    fun createNumericDataJson(quantity: String, unit: String): String? {
+        return numericHandler.createDataJson(mapOf(
             "quantity" to quantity,
             "unit" to unit
         ))

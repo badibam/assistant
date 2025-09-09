@@ -11,7 +11,7 @@ class CounterTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "counter"
     
-    override fun createValueJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>): String? {
         val increment = properties["increment"] as? Int ?: return null
         
         return JSONObject().apply {

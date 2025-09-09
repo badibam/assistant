@@ -150,7 +150,7 @@ class MyToolType : ToolTypeContract {
         {
             "type": "simple",
             "format": "text",
-            "required_fields": ["value"]
+            "required_fields": ["data"]
         }
     """.trimIndent()
     

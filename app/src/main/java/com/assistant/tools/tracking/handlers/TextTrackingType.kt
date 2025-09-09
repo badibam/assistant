@@ -10,7 +10,7 @@ class TextTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "text"
     
-    override fun createValueJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>): String? {
         val text = properties["text"] as? String ?: return null
         
         // Basic validation - not empty

@@ -171,21 +171,21 @@ object TrackingToolType : ToolTypeContract {
      */
     private fun upgradeV1ToV2(v1Data: String): String {
         return try {
-            val json = JSONObject(v1Data)
+            val dataJson = JSONObject(v1Data)
             // Ajouter le champ type si absent (v2 requirement)
-            if (!json.has("type")) {
+            if (!dataJson.has("type")) {
                 // Inférer le type depuis les données existantes
                 val inferredType = when {
-                    json.has("quantity") -> "numeric"
-                    json.has("items") -> "choice"
-                    json.has("duration") -> "timer"
-                    json.has("checked") -> "boolean"
-                    json.has("level") -> "scale"
+                    dataJson.has("quantity") -> "numeric"
+                    dataJson.has("items") -> "choice"
+                    dataJson.has("duration") -> "timer"
+                    dataJson.has("checked") -> "boolean"
+                    dataJson.has("level") -> "scale"
                     else -> "text"
                 }
-                json.put("type", inferredType)
+                dataJson.put("type", inferredType)
             }
-            json.toString()
+            dataJson.toString()
         } catch (e: Exception) {
             // En cas d'erreur, retourner les données originales
             v1Data
