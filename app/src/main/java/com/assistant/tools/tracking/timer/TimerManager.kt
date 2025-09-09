@@ -28,12 +28,20 @@ class TimerManager private constructor() {
     /**
      * Démarre un timer pour une activité
      */
-    fun startTimer(activityName: String, toolInstanceId: String, onPreviousTimerResult: ((minutes: Int, activityName: String) -> Unit)? = null) {
+    fun startTimer(
+        activityName: String, 
+        toolInstanceId: String, 
+        onPreviousTimerUpdate: ((entryId: String, seconds: Int) -> Unit)? = null,
+        onCreateNewEntry: (activityName: String) -> String // Callback qui crée l'entrée et retourne l'ID
+    ) {
         // Arrêter le timer précédent s'il existe
-        stopTimer { minutes, previousActivityName ->
-            // Si un callback est fourni, l'utiliser pour sauvegarder le timer précédent
-            onPreviousTimerResult?.invoke(minutes, previousActivityName)
+        stopTimer { entryId, seconds ->
+            // Si un callback est fourni, l'utiliser pour mettre à jour le timer précédent
+            onPreviousTimerUpdate?.invoke(entryId, seconds)
         }
+        
+        // Créer immédiatement l'entrée avec durée = 0
+        val newEntryId = onCreateNewEntry(activityName)
         
         // Démarrer le nouveau timer
         _timerState.value = TimerState(
@@ -41,6 +49,7 @@ class TimerManager private constructor() {
             activityName = activityName,
             startTime = System.currentTimeMillis(),
             toolInstanceId = toolInstanceId,
+            entryId = newEntryId,
             updateTimestamp = System.currentTimeMillis()
         )
         
@@ -49,24 +58,35 @@ class TimerManager private constructor() {
     }
     
     /**
-     * Arrête le timer actuel et retourne la durée en minutes
+     * Arrête le timer actuel et retourne l'ID de l'entrée avec la durée en secondes
      */
-    fun stopTimer(onResult: (minutes: Int, activityName: String) -> Unit) {
+    fun stopTimer(onResult: (entryId: String, seconds: Int) -> Unit) {
         val currentState = _timerState.value
         if (!currentState.isActive) {
             return
         }
         
         // Calculer la durée
-        val elapsedMinutes = currentState.getElapsedMinutes()
-        val activityName = currentState.activityName
+        val elapsedSeconds = currentState.getElapsedSeconds()
+        val entryId = currentState.entryId
         
         // Arrêter le timer
         _timerState.value = TimerState()
         stopUpdateLoop()
         
-        // Retourner le résultat
-        onResult(elapsedMinutes, activityName)
+        // Retourner le résultat pour mise à jour
+        if (entryId.isNotEmpty()) {
+            onResult(entryId, elapsedSeconds)
+        }
+    }
+    
+    /**
+     * Arrête le timer actuel manuellement (pour boutons d'interface)
+     */
+    fun stopCurrentTimer(onUpdate: (entryId: String, seconds: Int) -> Unit) {
+        stopTimer { entryId, seconds ->
+            onUpdate(entryId, seconds)
+        }
     }
     
     /**

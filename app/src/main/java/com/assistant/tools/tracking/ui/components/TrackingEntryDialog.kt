@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -16,6 +17,7 @@ import com.assistant.core.utils.DateUtils
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Dialog modes for tracking entries
@@ -49,7 +51,7 @@ fun TrackingEntryDialog(
 ) {
     // State management
     var name by remember(isVisible) { mutableStateOf(initialName) }
-    var recordedAt by remember(isVisible) { mutableStateOf(if (isVisible) System.currentTimeMillis() else initialRecordedAt) }
+    var recordedAt by remember(isVisible, initialRecordedAt) { mutableStateOf(initialRecordedAt) }
     var addToPredefined by remember(isVisible) { mutableStateOf(false) }
     
     // Type-specific value states
@@ -80,8 +82,16 @@ fun TrackingEntryDialog(
         mutableStateOf(initialValue["increment"]?.toString() ?: initialValue["default_increment"]?.toString() ?: "1") 
     }
     
-    var timerDuration by remember(isVisible) { 
-        mutableStateOf(initialValue["duration"]?.toString() ?: "0") 
+    // Timer: 3 champs séparés H/M/S
+    val initialSeconds = (initialValue["duration_seconds"] as? Number)?.toInt() ?: 0
+    var timerHours by remember(isVisible) { 
+        mutableStateOf((initialSeconds / 3600).toString()) 
+    }
+    var timerMinutes by remember(isVisible) { 
+        mutableStateOf(((initialSeconds % 3600) / 60).toString()) 
+    }
+    var timerSeconds by remember(isVisible) { 
+        mutableStateOf((initialSeconds % 60).toString()) 
     }
 
     // Date/time UI states
@@ -199,7 +209,7 @@ fun TrackingEntryDialog(
                 JSONObject().apply {
                     put("type", "choice")
                     put("selected_option", choiceValue.trim())
-                    put("available_options", options)
+                    put("available_options", JSONArray(options))
                     put("raw", choiceValue.trim())
                 }.toString()
             }
@@ -223,12 +233,26 @@ fun TrackingEntryDialog(
                 put("raw", counterIncrement.trim())
             }.toString()
             
-            "timer" -> JSONObject().apply {
-                put("type", "timer")
-                put("activity", "") // Timer activity - could be derived from name
-                put("duration_minutes", timerDuration.toIntOrNull() ?: 0)
-                put("raw", "${timerDuration.trim()} min")
-            }.toString()
+            "timer" -> {
+                // Convertir H/M/S vers secondes totales
+                val h = timerHours.trim().toIntOrNull() ?: 0
+                val m = timerMinutes.trim().toIntOrNull() ?: 0  
+                val s = timerSeconds.trim().toIntOrNull() ?: 0
+                val totalSeconds = h * 3600 + m * 60 + s
+                
+                // Format intelligent pour raw
+                val rawText = buildString {
+                    if (h > 0) append("${h}h ")
+                    if (m > 0) append("${m}m ")
+                    if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+                }.trim()
+                
+                JSONObject().apply {
+                    put("type", "timer")
+                    put("duration_seconds", totalSeconds)
+                    put("raw", rawText)
+                }.toString()
+            }
             
             else -> "{}"
         }
@@ -291,7 +315,10 @@ fun TrackingEntryDialog(
                     val valueJson = JSONObject().apply {
                         val valueMap = valueObject as Map<String, Any>
                         for ((key, value) in valueMap) {
-                            put(key, value)
+                            when (value) {
+                                is List<*> -> put(key, JSONArray(value))
+                                else -> put(key, value)
+                            }
                         }
                     }.toString()
                     
@@ -444,13 +471,36 @@ fun TrackingEntryDialog(
                     }
                     
                     "timer" -> {
-                        UI.FormField(
-                            label = "Durée (minutes)",
-                            value = timerDuration,
-                            onChange = { timerDuration = it },
-                            required = true,
-                            fieldType = FieldType.NUMERIC
-                        )
+                        // 3 champs séparés pour H/M/S
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                UI.FormField(
+                                    label = "Heures",
+                                    value = timerHours,
+                                    onChange = { timerHours = it },
+                                    fieldType = FieldType.NUMERIC
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
+                                UI.FormField(
+                                    label = "Minutes", 
+                                    value = timerMinutes,
+                                    onChange = { timerMinutes = it },
+                                    fieldType = FieldType.NUMERIC
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
+                                UI.FormField(
+                                    label = "Secondes",
+                                    value = timerSeconds,
+                                    onChange = { timerSeconds = it },
+                                    fieldType = FieldType.NUMERIC
+                                )
+                            }
+                        }
                     }
                 }
                 

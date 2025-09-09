@@ -173,6 +173,7 @@ fun TrackingInputManager(
             trackingType = trackingType,
             isLoading = isLoading,
             toolInstanceId = toolInstanceId,
+            onEntrySaved = onEntrySaved,
             defaultTimestamp = defaultTimestamp,
             onDefaultTimestampChange = { newTimestamp ->
                 defaultTimestamp = newTimestamp
@@ -202,6 +203,20 @@ fun TrackingInputManager(
                         put("false_label", falseLabel)
                         val state = properties["state"] as? Boolean ?: true
                         put("raw", if (state) trueLabel else falseLabel)
+                    }.toString()
+                    "timer" -> JSONObject().apply {
+                        put("type", "timer")
+                        put("duration_seconds", properties["duration_seconds"] ?: 0)
+                        val seconds = properties["duration_seconds"] as? Int ?: 0
+                        val h = seconds / 3600
+                        val m = (seconds % 3600) / 60
+                        val s = seconds % 60
+                        val rawText = buildString {
+                            if (h > 0) append("${h}h ")
+                            if (m > 0) append("${m}m ")
+                            if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+                        }.trim()
+                        put("raw", "$name: $rawText")
                     }.toString()
                     else -> JSONObject().apply {
                         put("type", trackingType)

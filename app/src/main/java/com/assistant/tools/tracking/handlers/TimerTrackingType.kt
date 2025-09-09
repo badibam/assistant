@@ -13,23 +13,23 @@ class TimerTrackingType : TrackingTypeHandler {
     
     override fun createValueJson(properties: Map<String, Any>): String? {
         val activity = properties["activity"] as? String ?: return null
-        val durationMinutes = properties["duration_minutes"] as? Int ?: return null
+        val durationSeconds = properties["duration_seconds"] as? Int ?: return null
         
-        if (activity.isBlank() || durationMinutes <= 0) return null
+        if (activity.isBlank() || durationSeconds <= 0) return null
         
         return JSONObject().apply {
             put("activity", activity.trim())
-            put("duration_minutes", durationMinutes)
+            put("duration_seconds", durationSeconds)
             put("type", "timer")
-            put("raw", formatDuration(activity.trim(), durationMinutes))
+            put("raw", formatDuration(activity.trim(), durationSeconds))
         }.toString()
     }
     
     override fun validateInput(properties: Map<String, Any>): Boolean {
         val activity = properties["activity"] as? String ?: return false
-        val durationMinutes = properties["duration_minutes"] as? Int ?: return false
+        val durationSeconds = properties["duration_seconds"] as? Int ?: return false
         
-        return activity.isNotBlank() && durationMinutes > 0
+        return activity.isNotBlank() && durationSeconds > 0
     }
     
     override fun getDefaultConfig(): JSONObject {
@@ -54,11 +54,17 @@ class TimerTrackingType : TrackingTypeHandler {
     /**
      * Format duration for display
      */
-    private fun formatDuration(activity: String, minutes: Int): String {
-        return when {
-            minutes < 60 -> "$activity: ${minutes}min"
-            minutes % 60 == 0 -> "$activity: ${minutes / 60}h"
-            else -> "$activity: ${minutes / 60}h${minutes % 60}min"
-        }
+    private fun formatDuration(activity: String, seconds: Int): String {
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
+        val s = seconds % 60
+        
+        val duration = buildString {
+            if (h > 0) append("${h}h ")
+            if (m > 0) append("${m}m ")
+            if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+        }.trim()
+        
+        return "$activity: $duration"
     }
 }

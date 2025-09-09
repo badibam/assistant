@@ -71,19 +71,17 @@ object TrackingSchemas {
                     },
                     "then": {
                         "properties": {
-                            "items": {
+                            "options": {
                                 "type": "array",
                                 "description": "Available choice options",
                                 "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
-                                    },
-                                    "required": ["name"]
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}
                                 }
                             }
                         },
-                        "required": ["items"]
+                        "required": ["options"]
                     }
                 },
                 {
@@ -337,11 +335,10 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "timer" },
-                                    "activity": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "duration_minutes": { "type": "integer", "minimum": 0 },
+                                    "duration_seconds": { "type": "integer", "minimum": 0 },
                                     "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
                                 },
-                                "required": ["type", "activity", "duration_minutes"],
+                                "required": ["type", "duration_seconds"],
                                 "additionalProperties": false
                             }
                         }

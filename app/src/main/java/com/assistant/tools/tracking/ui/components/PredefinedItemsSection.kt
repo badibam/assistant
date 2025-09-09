@@ -11,6 +11,9 @@ import com.assistant.core.ui.*
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.utils.DateUtils
 import com.assistant.tools.tracking.timer.TimerManager
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -28,6 +31,7 @@ fun PredefinedItemsSection(
     toolInstanceId: String,
     onQuickSave: (name: String, properties: Map<String, Any>) -> Unit,
     onOpenDialog: (name: String, properties: Map<String, Any>) -> Unit,
+    onEntrySaved: () -> Unit = {},
     defaultTimestamp: Long = System.currentTimeMillis(),
     onDefaultTimestampChange: (Long) -> Unit = {}
 ) {
@@ -58,30 +62,52 @@ fun PredefinedItemsSection(
     
     // State for custom default timestamp
     var useCustomTimestamp by remember { mutableStateOf(false) }
-    var customDate by remember { mutableStateOf(DateUtils.formatDateForDisplay(defaultTimestamp)) }
-    var customTime by remember { mutableStateOf(DateUtils.formatTimeForDisplay(defaultTimestamp)) }
+    var customDate by remember { mutableStateOf("") }
+    var customTime by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     
-    // Update custom fields when defaultTimestamp changes
-    LaunchedEffect(defaultTimestamp) {
-        if (!useCustomTimestamp) {
-            customDate = DateUtils.formatDateForDisplay(defaultTimestamp)
-            customTime = DateUtils.formatTimeForDisplay(defaultTimestamp)
+    // Initialize custom fields when toggle is first activated
+    LaunchedEffect(useCustomTimestamp) {
+        if (useCustomTimestamp && customDate.isBlank()) {
+            val now = System.currentTimeMillis()
+            customDate = DateUtils.formatDateForDisplay(now)
+            customTime = DateUtils.formatTimeForDisplay(now)
+        }
+    }
+    
+    // Update defaultTimestamp when custom date/time changes
+    LaunchedEffect(customDate, customTime, useCustomTimestamp) {
+        android.util.Log.d("TIMESTAMP_DEBUG", "LaunchedEffect: customDate=$customDate, customTime=$customTime, useCustom=$useCustomTimestamp")
+        if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
+            val newTimestamp = try {
+                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                val dateTimeString = "$customDate $customTime"
+                val parsed = dateFormat.parse(dateTimeString)?.time ?: System.currentTimeMillis()
+                android.util.Log.d("TIMESTAMP_DEBUG", "Parsed custom timestamp: $parsed ($dateTimeString)")
+                parsed
+            } catch (e: Exception) {
+                android.util.Log.e("TIMESTAMP_DEBUG", "Error parsing custom timestamp", e)
+                System.currentTimeMillis()
+            }
+            android.util.Log.d("TIMESTAMP_DEBUG", "Calling onDefaultTimestampChange with: $newTimestamp")
+            onDefaultTimestampChange(newTimestamp)
+        } else {
+            android.util.Log.d("TIMESTAMP_DEBUG", "Not updating timestamp - conditions not met")
         }
     }
     
     // Construct final timestamp to use for saving
-    val finalTimestamp = if (useCustomTimestamp) {
+    val finalTimestamp = if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
         try {
             val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             val dateTimeString = "$customDate $customTime"
-            dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
+            dateFormat.parse(dateTimeString)?.time ?: System.currentTimeMillis()
         } catch (e: Exception) {
-            defaultTimestamp
+            System.currentTimeMillis()
         }
     } else {
-        defaultTimestamp
+        System.currentTimeMillis() // Always fresh timestamp when toggle is off
     }
 
     if (predefinedItems.isNotEmpty()) {
@@ -94,53 +120,40 @@ fun PredefinedItemsSection(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Toggle for custom timestamp
+                // Toggle for custom timestamp - disabled if timer running (only for timer type)
+                val canUseCustomTimestamp = if (trackingType == "timer") {
+                    val timerManager = remember { TimerManager.getInstance() }
+                    val timerState by timerManager.timerState
+                    !timerState.isActive
+                } else {
+                    true // Always enabled for non-timer types
+                }
+                
                 UI.ToggleField(
                     label = "",
-                    checked = useCustomTimestamp,
+                    checked = useCustomTimestamp && canUseCustomTimestamp,
                     trueLabel = "Date personnalisée",
                     falseLabel = "Date = maintenant",
                     onCheckedChange = { checked ->
-                        useCustomTimestamp = checked
-                        if (checked) {
-                            // When enabling custom timestamp, update callback immediately
-                            val newTimestamp = try {
-                                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                val dateTimeString = "$customDate $customTime"
-                                dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
-                            } catch (e: Exception) {
-                                defaultTimestamp
+                        if (canUseCustomTimestamp) {
+                            useCustomTimestamp = checked
+                            if (!checked) {
+                                // When disabling, clear custom fields - System.currentTimeMillis() will be used
+                                customDate = ""
+                                customTime = ""
                             }
-                            onDefaultTimestampChange(newTimestamp)
-                        } else {
-                            // When disabling, reset to current time
-                            val now = System.currentTimeMillis()
-                            customDate = DateUtils.formatDateForDisplay(now)
-                            customTime = DateUtils.formatTimeForDisplay(now)
-                            onDefaultTimestampChange(now)
                         }
                     }
                 )
                 
-                // Date and time fields when custom timestamp is enabled
-                if (useCustomTimestamp) {
+                // Date and time fields when custom timestamp is enabled and allowed
+                if (useCustomTimestamp && canUseCustomTimestamp) {
                     // Date field
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
                             label = "Date",
                             value = customDate,
-                            onChange = { 
-                                customDate = it
-                                // Update callback when date changes
-                                val newTimestamp = try {
-                                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                    val dateTimeString = "$customDate $customTime"
-                                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
-                                } catch (e: Exception) {
-                                    defaultTimestamp
-                                }
-                                onDefaultTimestampChange(newTimestamp)
-                            },
+                            onChange = { customDate = it },
                             fieldType = FieldType.TEXT,
                             required = true,
                             readonly = true,
@@ -153,18 +166,7 @@ fun PredefinedItemsSection(
                         UI.FormField(
                             label = "Heure",
                             value = customTime,
-                            onChange = { 
-                                customTime = it
-                                // Update callback when time changes
-                                val newTimestamp = try {
-                                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                                    val dateTimeString = "$customDate $customTime"
-                                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
-                                } catch (e: Exception) {
-                                    defaultTimestamp
-                                }
-                                onDefaultTimestampChange(newTimestamp)
-                            },
+                            onChange = { customTime = it },
                             fieldType = FieldType.TEXT,
                             required = true,
                             readonly = true,
@@ -225,9 +227,14 @@ fun PredefinedItemsSection(
                         items = predefinedItems,
                         isLoading = isLoading,
                         toolInstanceId = toolInstanceId,
+                        useCustomTimestamp = useCustomTimestamp,
                         onQuickSave = { name, properties ->
                             onQuickSave(name, properties)
                         },
+                        onOpenDialog = { name, properties ->
+                            onOpenDialog(name, properties)
+                        },
+                        onEntrySaved = onEntrySaved,
                         customTimestamp = finalTimestamp
                     )
                 }
@@ -253,15 +260,6 @@ fun PredefinedItemsSection(
             selectedDate = customDate,
             onDateSelected = { newDate ->
                 customDate = newDate
-                // Update callback when date changes
-                val newTimestamp = try {
-                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    val dateTimeString = "$customDate $customTime"
-                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
-                } catch (e: Exception) {
-                    defaultTimestamp
-                }
-                onDefaultTimestampChange(newTimestamp)
             },
             onDismiss = {
                 showDatePicker = false
@@ -274,15 +272,6 @@ fun PredefinedItemsSection(
             selectedTime = customTime,
             onTimeSelected = { newTime ->
                 customTime = newTime
-                // Update callback when time changes
-                val newTimestamp = try {
-                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    val dateTimeString = "$customDate $customTime"
-                    dateFormat.parse(dateTimeString)?.time ?: defaultTimestamp
-                } catch (e: Exception) {
-                    defaultTimestamp
-                }
-                onDefaultTimestampChange(newTimestamp)
             },
             onDismiss = {
                 showTimePicker = false
@@ -521,12 +510,90 @@ private fun TimerItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
     toolInstanceId: String,
+    useCustomTimestamp: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
+    onOpenDialog: (String, Map<String, Any>) -> Unit,
+    onEntrySaved: () -> Unit,
     customTimestamp: Long = System.currentTimeMillis()
 ) {
     val context = LocalContext.current
     val timerManager = remember { TimerManager.getInstance() }
     val timerState by timerManager.timerState
+    val coordinator = remember { Coordinator(context) }
+    
+    // Fonction pour créer une entrée timer avec durée = 0
+    val createTimerEntry: (String) -> String = { name ->
+        val timerValueJson = JSONObject().apply {
+            put("type", "timer")
+            put("duration_seconds", 0)
+            put("raw", "0s")
+        }.toString()
+        
+        val params = mutableMapOf<String, Any>(
+            "toolInstanceId" to toolInstanceId,
+            "tooltype" to "tracking", 
+            "timestamp" to System.currentTimeMillis(),
+            "name" to name,
+            "data" to JSONObject(timerValueJson)
+        )
+        
+        try {
+            val result = runBlocking { coordinator.processUserAction("create->tool_data", params) }
+            if (result.status == CommandStatus.SUCCESS) {
+                result.data?.get("id") as? String ?: "error_no_id"
+            } else {
+                "error_${System.currentTimeMillis()}"
+            }
+        } catch (e: Exception) {
+            "error_${System.currentTimeMillis()}"
+        }
+    }
+    
+    // Fonction pour mettre à jour une entrée timer avec la durée finale
+    val updateTimerEntry: (String, Int) -> Unit = { entryId, durationSeconds ->
+        val timerValueJson = JSONObject().apply {
+            put("type", "timer")
+            put("duration_seconds", durationSeconds)
+            val h = durationSeconds / 3600
+            val m = (durationSeconds % 3600) / 60
+            val s = durationSeconds % 60
+            val rawText = buildString {
+                if (h > 0) append("${h}h ")
+                if (m > 0) append("${m}m ")
+                if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+            }.trim()
+            put("raw", rawText)
+        }.toString()
+        
+        val params = mutableMapOf<String, Any>(
+            "id" to entryId,
+            "data" to JSONObject(timerValueJson)
+            // On n'inclut pas "name" pour garder le nom existant
+        )
+        
+        try {
+            val result = runBlocking { coordinator.processUserAction("update->tool_data", params) }
+            if (result.status == CommandStatus.SUCCESS) {
+                // Refresh de l'historique après mise à jour réussie
+                onEntrySaved()
+            } else {
+                // Afficher toast d'erreur
+                android.widget.Toast.makeText(
+                    context,
+                    "Erreur: ${result.error ?: "Impossible de mettre à jour l'entrée"}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                android.util.Log.e("TIMER", "Failed to update timer entry: ${result.error}")
+            }
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(
+                context,
+                "Erreur: ${e.message}",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            android.util.Log.e("TIMER", "Exception updating timer entry", e)
+        }
+    }
     
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -547,41 +614,31 @@ private fun TimerItemsLayout(
                         UI.Button(
                             type = if (isActive) ButtonType.PRIMARY else ButtonType.DEFAULT,
                             onClick = {
-                                if (isActive) {
-                                    // Arrêter le timer actuel
-                                    timerManager.stopTimer { minutes, activityName ->
-                                        if (minutes >= 1) {
-                                            // Sauvegarder si >= 1 minute
-                                            onQuickSave(activityName, mapOf(
-                                                "activity" to activityName,
-                                                "duration_minutes" to minutes
-                                            ))
-                                        } else {
-                                            // Toast pour timer trop court
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Timer trop court, non enregistré",
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
+                                if (useCustomTimestamp) {
+                                    // Mode date personnalisée : ouvrir dialogue pour saisie manuelle
+                                    onOpenDialog(item.name, item.properties)
                                 } else {
-                                    // Démarrer nouveau timer (auto-switch si besoin)
-                                    timerManager.startTimer(item.name, toolInstanceId) { minutes, previousActivityName ->
-                                        if (minutes >= 1) {
-                                            // Sauvegarder le timer précédent si >= 1 minute
-                                            onQuickSave(previousActivityName, mapOf(
-                                                "activity" to previousActivityName,
-                                                "duration_minutes" to minutes
-                                            ))
-                                        } else {
-                                            // Toast pour timer trop court lors d'auto-switch
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "Timer trop court, non enregistré",
-                                                android.widget.Toast.LENGTH_SHORT
-                                            ).show()
+                                    // Mode temps réel : comportement timer normal
+                                    if (isActive) {
+                                        // Arrêter le timer actuel
+                                        timerManager.stopCurrentTimer { entryId, seconds ->
+                                            // Mettre à jour l'entrée existante avec la durée finale
+                                            updateTimerEntry(entryId, seconds)
                                         }
+                                    } else {
+                                        // Démarrer nouveau timer (auto-switch si besoin)
+                                        timerManager.startTimer(
+                                            activityName = item.name,
+                                            toolInstanceId = toolInstanceId,
+                                            onPreviousTimerUpdate = { entryId, seconds ->
+                                                // Mettre à jour le timer précédent avec la durée finale
+                                                updateTimerEntry(entryId, seconds)
+                                            },
+                                            onCreateNewEntry = { activityName ->
+                                                // Créer immédiatement l'entrée avec durée = 0
+                                                createTimerEntry(activityName)
+                                            }
+                                        )
                                     }
                                 }
                             }

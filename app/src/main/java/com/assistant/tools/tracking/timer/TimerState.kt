@@ -8,6 +8,7 @@ data class TimerState(
     val activityName: String = "",
     val startTime: Long = 0L,
     val toolInstanceId: String = "",
+    val entryId: String = "", // ID de l'entrée créée immédiatement
     val updateTimestamp: Long = System.currentTimeMillis()
 ) {
     /**
@@ -26,6 +27,13 @@ data class TimerState(
      */
     fun getElapsedMinutes(): Int {
         return (getElapsedMillis() / 60000).toInt()
+    }
+    
+    /**
+     * Calcule la durée écoulée en secondes
+     */
+    fun getElapsedSeconds(): Int {
+        return (getElapsedMillis() / 1000).toInt()
     }
     
     /**

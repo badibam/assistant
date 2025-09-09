@@ -216,7 +216,7 @@ object TrackingToolType : ToolTypeContract {
             "available_options" -> "Options disponibles"
             "increment" -> "Incrément"
             "activity" -> "Activité"
-            "duration_minutes" -> "Durée"
+            "duration_seconds" -> "Durée"
             else -> "Champ non reconnu"
         }
     }

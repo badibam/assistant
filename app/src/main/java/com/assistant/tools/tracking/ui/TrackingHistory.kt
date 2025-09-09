@@ -18,6 +18,7 @@ import com.assistant.tools.tracking.ui.components.ActionType
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.tools.tracking.TrackingUtils
+import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.ui.components.PeriodFilterType
 import com.assistant.core.ui.components.Period
@@ -153,13 +154,23 @@ fun TrackingHistory(
                             currentPage = (pagination["currentPage"] as? Number)?.toInt() ?: 1
                         }
                         
+                        // Obtenir l'ID de l'entrée timer en cours pour l'exclure
+                        val activeTimerEntryId = TimerManager.getInstance().timerState.value.entryId
+                        
                         trackingData = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
+                                    val entryId = entryMap["id"] as? String ?: ""
+                                    
+                                    // Exclure l'entrée du timer en cours (durée = 0)
+                                    if (activeTimerEntryId.isNotEmpty() && entryId == activeTimerEntryId) {
+                                        return@mapNotNull null
+                                    }
+                                    
                                     val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
                                     Log.d("TIMESTAMP_DEBUG", "Entry ${entryMap["id"]}: timestamp=$timestamp (${DateUtils.formatFullDateTime(timestamp ?: 0)})")
                                     ToolDataEntity(
-                                        id = entryMap["id"] as? String ?: "",
+                                        id = entryId,
                                         toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
                                         tooltype = entryMap["tooltype"] as? String ?: "tracking",
                                         timestamp = timestamp,
@@ -334,8 +345,7 @@ fun TrackingHistory(
                             PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH, dayStartHour!!, weekStartDay!!)
                             PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR, dayStartHour!!, weekStartDay!!)
                         }
-                    },
-                    required = false
+                    }
                 )
             }
             
@@ -347,8 +357,7 @@ fun TrackingHistory(
                     selected = entriesLimit.toString(),
                     onSelect = { selection -> 
                         entriesLimit = selection.toInt()
-                    },
-                    required = false
+                    }
                 )
             }
             
@@ -556,8 +565,7 @@ fun TrackingHistory(
                         "increment" to json.optInt("increment", 1)
                     )
                     "timer" -> mapOf(
-                        "activity" to json.optString("activity", ""),
-                        "duration_minutes" to json.optInt("duration_minutes", 0)
+                        "duration_seconds" to json.optInt("duration_seconds", 0)
                     )
                     else -> emptyMap()
                 }
