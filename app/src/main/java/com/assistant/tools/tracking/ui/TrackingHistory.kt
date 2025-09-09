@@ -468,55 +468,11 @@ fun TrackingHistory(
             // Pagination controls
             if (trackingData.isNotEmpty() && totalPages > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Previous page button
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (currentPage > 1) {
-                            UI.ActionButton(
-                                action = ButtonAction.LEFT,
-                                display = ButtonDisplay.ICON,
-                                onClick = { 
-                                    if (currentPage > 1) {
-                                        currentPage -= 1
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    
-                    // Page indicator
-                    Box(
-                        modifier = Modifier.weight(2f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        UI.CenteredText(
-                            "Page $currentPage sur $totalPages",
-                            TextType.CAPTION
-                        )
-                    }
-                    
-                    // Next page button
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        if (currentPage < totalPages) {
-                            UI.ActionButton(
-                                action = ButtonAction.RIGHT,
-                                display = ButtonDisplay.ICON,
-                                onClick = { 
-                                    if (currentPage < totalPages) {
-                                        currentPage += 1
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
+                UI.Pagination(
+                    currentPage = currentPage,
+                    totalPages = totalPages,
+                    onPageChange = { newPage -> currentPage = newPage }
+                )
             }
         }
         

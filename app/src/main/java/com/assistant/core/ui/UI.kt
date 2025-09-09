@@ -457,4 +457,45 @@ object UI {
         onIconChange, onDisplayModeChange, onManagementChange,
         onConfigValidationChange, onDataValidationChange, suggestedIcons
     )
+    
+    @Composable
+    fun ToolConfigActions(
+        isEditing: Boolean,
+        onSave: () -> Unit,
+        onCancel: () -> Unit,
+        onDelete: (() -> Unit)? = null,
+        saveEnabled: Boolean = true
+    ) = com.assistant.core.ui.components.ToolConfigActions(
+        isEditing, onSave, onCancel, onDelete, saveEnabled
+    )
+    
+    // =====================================
+    // VALIDATION HELPERS
+    // =====================================
+    
+    /**
+     * Helper de validation unifiée pour tous les tooltypes.
+     */
+    object ValidationHelper {
+        fun validateAndSave(
+            toolTypeName: String,
+            configData: Map<String, Any>,
+            context: android.content.Context,
+            schemaType: String = "config",
+            onSuccess: (String) -> Unit,
+            onError: ((String) -> Unit)? = null
+        ): Boolean = com.assistant.core.tools.ui.ValidationHelper.validateAndSave(
+            toolTypeName, configData, context, schemaType, onSuccess, onError
+        )
+    }
+    
+    @Composable
+    fun Pagination(
+        currentPage: Int,
+        totalPages: Int,
+        onPageChange: (Int) -> Unit,
+        showPageInfo: Boolean = true
+    ) = com.assistant.core.ui.components.Pagination(
+        currentPage, totalPages, onPageChange, showPageInfo
+    )
 }

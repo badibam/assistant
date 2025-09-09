@@ -357,26 +357,19 @@ fun TrackingConfigScreen(
         // Nettoyer la config avant validation
         val cleanConfig = cleanConfiguration(config)
         
-        // Convertir JSONObject en Map pour SchemaValidator V3
+        // Convertir JSONObject en Map pour ValidationHelper
         val configMap = cleanConfig.keys().asSequence().associateWith { key ->
             cleanConfig.get(key)
         }
         
-        // Utiliser SchemaValidator V3 avec le schéma de configuration tracking
-        val toolType = ToolTypeManager.getToolType("tracking")
-        if (toolType != null) {
-            val validation = SchemaValidator.validate(toolType, configMap, context, schemaType = "config")
-            
-            if (validation.isValid) {
-                onSave(cleanConfig.toString())
-            } else {
-                android.util.Log.e("TrackingConfigScreen", "Validation failed: ${validation.errorMessage}")
-                errorMessage = validation.errorMessage ?: "Erreur de validation"
-            }
-        } else {
-            android.util.Log.e("TrackingConfigScreen", "ToolType tracking not found")
-            errorMessage = "Type d'outil introuvable"
-        }
+        // Utiliser ValidationHelper unifié
+        UI.ValidationHelper.validateAndSave(
+            toolTypeName = "tracking",
+            configData = configMap,
+            context = context,
+            schemaType = "config",
+            onSuccess = onSave
+        )
     }
     
     // Final save with data deletion
@@ -940,25 +933,12 @@ fun TrackingConfigScreen(
         }
         
         // Actions
-        UI.FormActions {
-            UI.ActionButton(
-                action = if (isEditing) ButtonAction.SAVE else ButtonAction.CREATE,
-                onClick = handleSave
-            )
-            
-            UI.ActionButton(
-                action = ButtonAction.CANCEL,
-                onClick = onCancel
-            )
-            
-            if (isEditing && onDelete != null) {
-                UI.ActionButton(
-                    action = ButtonAction.DELETE,
-                    requireConfirmation = true,
-                    onClick = onDelete
-                )
-            }
-        }
+        UI.ToolConfigActions(
+            isEditing = isEditing,
+            onSave = handleSave,
+            onCancel = onCancel,
+            onDelete = onDelete
+        )
         
         
         // Item edit/create dialog
