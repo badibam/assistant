@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings pour le tooltype tracking -->
+    
+    <!-- Métadonnées outil -->
+    <string name="display_name">Suivi</string>
+    <string name="description_default">Suivez vos métriques quotidiennes</string>
+    
+    <!-- Interface configuration -->
+    <string name="config_title">Configuration du suivi</string>
+    <string name="field_name">Nom du suivi</string>
+    <string name="field_description">Description</string>
+    <string name="field_type">Type de suivi</string>
+    <string name="field_unit">Unité</string>
+    
+    <!-- Types de tracking -->
+    <string name="type_numeric">Numérique</string>
+    <string name="type_text">Texte libre</string>
+    <string name="type_scale">Échelle</string>
+    <string name="type_choice">Choix multiples</string>
+    <string name="type_timer">Minuteur</string>
+    
+    <!-- Interface historique -->
+    <string name="history_title">Historique</string>
+    <string name="history_empty">Aucune donnée enregistrée</string>
+    <string name="filter_period">Période</string>
+    <string name="filter_all">Toutes</string>
+    <string name="filter_week">Cette semaine</string>
+    <string name="filter_month">Ce mois</string>
+    
+    <!-- Erreurs spécifiques -->
+    <string name="error_invalid_value">Valeur invalide pour ce type de suivi</string>
+    <string name="error_missing_items">Veuillez définir au moins un choix</string>
+    <string name="error_duplicate_item">Ce choix existe déjà</string>
+</resources>

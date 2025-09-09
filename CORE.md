@@ -306,6 +306,28 @@ val handleSave = {
 **Architecture** : Schémas externalisés en objets Kotlin
 
 ## ═══════════════════════════════════
+## Système de Strings Modulaire
+
+Architecture unifiée pour internationalisation avec discovery pattern.
+
+### Structure
+- **Sources** : `core/strings/sources/shared.xml` + `tools/*/strings.xml`
+- **Génération** : Script Gradle → `res/values/tool_strings_generated.xml`
+- **API** : `Strings.for(tool = "tracking", context)`
+
+### Usage
+```kotlin
+import com.assistant.core.strings.Strings
+val s = remember { Strings.`for`(tool = "tracking", context = context) }
+s.shared("save")           // shared_save
+s.tool("display_name")     // tracking_display_name
+```
+
+### Namespaces
+- **shared** : App core + modules globaux
+- **tool** : Spécifique par tooltype avec contexte
+
+## ═══════════════════════════════════
 
 ---
 

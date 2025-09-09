@@ -19,6 +19,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.strings.Strings
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -97,6 +98,10 @@ fun TrackingConfigScreen(
     val coordinator = remember { Coordinator(context) }
     val scope = rememberCoroutineScope()
     val isEditing = existingToolId != null
+    
+    // Setup strings système
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
+    
     
     // Helper function pour charger items depuis JSONArray
     fun loadItemsFromJSONArray(itemsArray: JSONArray): MutableList<TrackingItem> {
@@ -738,9 +743,9 @@ fun TrackingConfigScreen(
                 UI.Text("Paramètres spécifiques", TextType.SUBTITLE)
                 
                 UI.FormSelection(
-                    label = "Type de tracking",
+                    label = "${s.shared("loading")} - Type de tracking",
                     options = listOf(
-                        "Numérique (numeric)",
+                        "${s.tool("type_numeric")} (numeric)",
                         "Texte (text)", 
                         "Échelle (scale)",
                         "Oui/Non (boolean)",
@@ -749,7 +754,7 @@ fun TrackingConfigScreen(
                         "Compteur (counter)"
                     ),
                     selected = when(trackingType) {
-                        "numeric" -> "Numérique (numeric)"
+                        "numeric" -> "${s.tool("type_numeric")} (numeric)"
                         "text" -> "Texte (text)"
                         "scale" -> "Échelle (scale)"
                         "boolean" -> "Oui/Non (boolean)"

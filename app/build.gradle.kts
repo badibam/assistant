@@ -244,9 +244,87 @@ tasks.register("generateThemeResources") {
     }
 }
 
+// Strings Resource Generation Task
+tasks.register("generateStringResources") {
+    description = "Generate string resources from tool XML files"
+    group = "build"
+    
+    val toolsDir = file("src/main/java/com/assistant/tools")
+    val sharedStringsDir = file("src/main/java/com/assistant/core/strings/sources") // Sources strings shared
+    val outputFile = file("src/main/res/values/tool_strings_generated.xml")
+    
+    // Gradle cache: run if any source changed
+    inputs.dir(toolsDir)
+    if (sharedStringsDir.exists()) inputs.dir(sharedStringsDir)
+    outputs.file(outputFile)
+    
+    doLast {
+        println("🔤 Generating string resources...")
+        
+        val aggregatedStrings = StringBuilder()
+        aggregatedStrings.append("""<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
+""")
+        
+        // Process tool strings
+        if (toolsDir.exists()) {
+            toolsDir.listFiles()?.filter { it.isDirectory }?.forEach { toolDir ->
+                val toolName = toolDir.name
+                val stringsFile = File(toolDir, "strings.xml")
+                
+                if (stringsFile.exists()) {
+                    println("📁 Processing tool strings: $toolName")
+                    processStrings(stringsFile, toolName, aggregatedStrings)
+                }
+            }
+        }
+        
+        // Process shared strings (manual)
+        if (sharedStringsDir.exists()) {
+            val sharedStringsFile = File(sharedStringsDir, "shared.xml")
+            if (sharedStringsFile.exists()) {
+                println("📁 Processing shared strings")
+                processStrings(sharedStringsFile, "shared", aggregatedStrings)
+            }
+        }
+        
+        aggregatedStrings.append("</resources>")
+        outputFile.writeText(aggregatedStrings.toString())
+        println("✅ Generated: ${outputFile.name}")
+    }
+}
+
+/**
+ * Process strings.xml file and add prefixed entries to output
+ */
+fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
+    try {
+        val xmlContent = stringsFile.readText()
+        
+        // Pattern pour extraire <string name="key">value</string>
+        val stringPattern = """<string\s+name="([^"]+)"[^>]*>([^<]+)</string>""".toRegex()
+        
+        output.appendLine("    <!-- $prefix -->")
+        
+        stringPattern.findAll(xmlContent).forEach { match ->
+            val key = match.groupValues[1]
+            val value = match.groupValues[2].trim()
+            val prefixedKey = "${prefix}_${key}"
+            
+            output.appendLine("""    <string name="$prefixedKey">$value</string>""")
+        }
+        
+        output.appendLine()
+        
+    } catch (e: Exception) {
+        println("❌ Error processing $stringsFile: ${e.message}")
+    }
+}
+
 // Auto-run before build
 tasks.named("preBuild") {
-    dependsOn("generateThemeResources")
+    dependsOn("generateThemeResources", "generateStringResources")
 }
 
 /**
