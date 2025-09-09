@@ -52,28 +52,6 @@ private fun allFieldsEmpty(name: String, properties: Map<String, Any>): Boolean 
 /**
  * Helper function to safely get icon resource
  */
-@Composable
-private fun SafeIcon(
-    context: android.content.Context,
-    themeName: String,
-    iconName: String,
-    size: Dp,
-    tint: androidx.compose.ui.graphics.Color? = null,
-    background: androidx.compose.ui.graphics.Color? = null
-) {
-    if (ThemeIconManager.iconExists(context, themeName, iconName)) {
-        val iconResource = ThemeIconManager.getIconResource(context, themeName, iconName)
-        UI.Icon(
-            resourceId = iconResource,
-            size = size,
-            contentDescription = null,
-            tint = tint,
-            background = background
-        )
-    } else {
-        UI.Text("❓", TextType.BODY)
-    }
-}
 
 /**
  * Clears all type-specific configuration fields when changing tracking type
@@ -686,7 +664,7 @@ fun TrackingConfigScreen(
                     UI.Text("Icône:", TextType.LABEL)
                     
                     // Icône actuelle avec SafeIcon
-                    SafeIcon(context, "default", iconName, 32.dp)
+                    UI.Icon(iconName = iconName, size = 32.dp)
                     
                     UI.ActionButton(
                         action = ButtonAction.SELECT,
@@ -1115,7 +1093,7 @@ fun TrackingConfigScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         verticalArrangement = Arrangement.Center
                                     ) {
-                                        SafeIcon(context, "default", icon.id, 32.dp)
+                                        UI.Icon(iconName = icon.id, size = 32.dp)
                                         
                                         Spacer(modifier = Modifier.height(4.dp))
                                         

@@ -127,12 +127,32 @@ object UI {
     
     @Composable
     fun Icon(
-        resourceId: Int,
+        iconName: String,
+        themeName: String = "default",
         size: Dp = 24.dp,
         contentDescription: String? = null,
         tint: androidx.compose.ui.graphics.Color? = null,
         background: androidx.compose.ui.graphics.Color? = null
-    ) = CurrentTheme.current.Icon(resourceId, size, contentDescription, tint, background)
+    ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        if (ThemeIconManager.iconExists(context, themeName, iconName)) {
+            val iconResource = ThemeIconManager.getIconResource(context, themeName, iconName)
+            CurrentTheme.current.Icon(
+                resourceId = iconResource,
+                size = size,
+                contentDescription = contentDescription ?: iconName,
+                tint = tint,
+                background = background
+            )
+        } else {
+            // Fallback : afficher les 2 premières lettres du nom
+            Text(
+                text = iconName.take(2).uppercase(),
+                type = TextType.CAPTION,
+                fillMaxWidth = false
+            )
+        }
+    }
     
     @Composable
     fun Dialog(
@@ -312,9 +332,8 @@ object UI {
         ) {
             // Icône réelle
             val iconName = JSONObject(tool.config_json).optString("icon", "activity")
-            val iconResourceId = ThemeIconManager.getIconResource(context, "default", iconName)
             Icon(
-                resourceId = iconResourceId, 
+                iconName = iconName,
                 size = 24.dp,
                 contentDescription = null
             )
@@ -392,4 +411,50 @@ object UI {
             }
         }
     }
+    
+    // =====================================
+    // REUSABLE COMPONENTS
+    // =====================================
+    
+    @Composable
+    fun PeriodSelector(
+        period: com.assistant.core.ui.components.Period,
+        onPeriodChange: (com.assistant.core.ui.components.Period) -> Unit,
+        modifier: Modifier = Modifier,
+        showDatePicker: Boolean = true,
+        dayStartHour: Int = 0
+    ) = com.assistant.core.ui.components.PeriodSelector(
+        period, onPeriodChange, modifier, showDatePicker, dayStartHour
+    )
+    
+    @Composable
+    fun IconSelector(
+        current: String,
+        suggested: List<String> = emptyList(),
+        onChange: (String) -> Unit
+    ) = com.assistant.core.ui.components.IconSelector(current, suggested, onChange)
+    
+    @Composable
+    fun ToolGeneralParams(
+        name: String,
+        description: String,
+        iconName: String,
+        displayMode: String,
+        management: String,
+        configValidation: Boolean,
+        dataValidation: Boolean,
+        onNameChange: (String) -> Unit,
+        onDescriptionChange: (String) -> Unit,
+        onIconChange: (String) -> Unit,
+        onDisplayModeChange: (String) -> Unit,
+        onManagementChange: (String) -> Unit,
+        onConfigValidationChange: (Boolean) -> Unit,
+        onDataValidationChange: (Boolean) -> Unit,
+        suggestedIcons: List<String> = emptyList()
+    ) = com.assistant.core.tools.ui.ToolGeneralParams(
+        name, description, iconName, displayMode, management,
+        configValidation, dataValidation, onNameChange, onDescriptionChange,
+        onIconChange, onDisplayModeChange, onManagementChange,
+        onConfigValidationChange, onDataValidationChange, suggestedIcons
+    )
 }
