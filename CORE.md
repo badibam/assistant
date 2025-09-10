@@ -308,24 +308,41 @@ val handleSave = {
 ## ═══════════════════════════════════
 ## Système de Strings Modulaire
 
-Architecture unifiée pour internationalisation avec discovery pattern.
+Architecture unifiée pour internationalisation avec discovery pattern et génération automatique.
 
 ### Structure
 - **Sources** : `core/strings/sources/shared.xml` + `tools/*/strings.xml`
 - **Génération** : Script Gradle → `res/values/tool_strings_generated.xml`
-- **API** : `Strings.for(tool = "tracking", context)`
+- **API** : `Strings.for(context)` pour shared, `Strings.for(tool = "tracking", context)` pour tools
 
 ### Usage
 ```kotlin
 import com.assistant.core.strings.Strings
+
+// Strings shared
+val s = remember { Strings.`for`(context = context) }
+s.shared("action_save")           // shared_action_save
+s.shared("label_name_zone")       // shared_label_name_zone
+
+// Strings tool-specific
 val s = remember { Strings.`for`(tool = "tracking", context = context) }
-s.shared("save")           // shared_save
-s.tool("display_name")     // tracking_display_name
+s.tool("display_name")            // tracking_display_name  
+s.shared("action_cancel")         // shared_action_cancel (toujours accessible)
 ```
 
-### Namespaces
-- **shared** : App core + modules globaux
-- **tool** : Spécifique par tooltype avec contexte
+### Catégories Shared
+- **action_*** : save, create, cancel, delete, validate, confirm, etc.
+- **label_*** : name_zone, description, icon, enabled, disabled, etc.
+- **message_*** : loading_tools, validation_error, no_zones_created, etc.
+- **period_*** : today, yesterday, this_week, last_month, etc.
+- **content_*** : app_title, tool_description, unnamed, etc.
+- **month_*** : january, february, march, etc.
+
+### Échappement Automatique
+Le script Gradle gère automatiquement :
+- Apostrophes : `L'année` → `L\'année`
+- Guillemets : `"texte"` → `\"texte\"`
+- Placeholders : `%s` → `%1$s`, `%d` → `%1$d`
 
 ## ═══════════════════════════════════
 

@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.Coordinator
@@ -27,6 +28,7 @@ fun ZoneScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     
@@ -223,7 +225,7 @@ fun ZoneScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     UI.Text(
-                        text = "Types d'outils disponibles",
+                        text = s.shared("message_available_tool_types"),
                         type = TextType.BODY,
                         fillMaxWidth = true,
                         textAlign = TextAlign.Center
@@ -256,13 +258,13 @@ fun ZoneScreen(
         
         if (isLoading) {
             UI.Text(
-                text = "Chargement des outils...",
+                text = s.shared("message_loading_tools"),
                 type = TextType.BODY
             )
         } else if (toolInstances.isEmpty()) {
             // No tools placeholder
             UI.Text(
-                text = "Aucun outil dans cette zone",
+                text = s.shared("message_no_tools_in_zone"),
                 type = TextType.BODY,
                 fillMaxWidth = true,
                 textAlign = TextAlign.Center

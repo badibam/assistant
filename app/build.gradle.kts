@@ -302,17 +302,20 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
     try {
         val xmlContent = stringsFile.readText()
         
-        // Pattern pour extraire <string name="key">value</string>
-        val stringPattern = """<string\s+name="([^"]+)"[^>]*>([^<]+)</string>""".toRegex()
+        // Pattern amélioré pour extraire <string name="key">value</string> avec support multiline et caractères échappés
+        val stringPattern = """<string\s+name="([^"]+)"[^>]*>(.*?)</string>""".toRegex(RegexOption.DOT_MATCHES_ALL)
         
         output.appendLine("    <!-- $prefix -->")
         
         stringPattern.findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
-            val value = match.groupValues[2].trim()
+            val rawValue = match.groupValues[2].trim()
             val prefixedKey = "${prefix}_${key}"
             
-            output.appendLine("""    <string name="$prefixedKey">$value</string>""")
+            // Nettoyer et valider le contenu de la string
+            val cleanedValue = cleanAndEscapeXmlString(rawValue)
+            
+            output.appendLine("""    <string name="$prefixedKey">$cleanedValue</string>""")
         }
         
         output.appendLine()
@@ -320,6 +323,40 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
     } catch (e: Exception) {
         println("❌ Error processing $stringsFile: ${e.message}")
     }
+}
+
+/**
+ * Nettoie et échappe correctement une string XML pour Android
+ * Gère les apostrophes, guillemets, et placeholders de manière robuste
+ */
+fun cleanAndEscapeXmlString(value: String): String {
+    var result = value
+        // 1. Nettoyer les espaces et retours à la ligne inutiles
+        .replace(Regex("\\s+"), " ")
+        .trim()
+    
+    // 2. Gestion spéciale des apostrophes - ne pas doubler l'échappement
+    if (!result.contains("\\'")) {
+        // Échapper les apostrophes seulement si pas déjà échappées
+        result = result.replace("'", "\\'")
+    }
+    
+    // 3. Gestion spéciale des guillemets - ne pas doubler l'échappement  
+    if (!result.contains("\\\"")) {
+        // Échapper les guillemets seulement si pas déjà échappés
+        result = result.replace("\"", "\\\"")
+    }
+    
+    // 4. Corriger les placeholders pour Android format uniquement s'ils ne sont pas déjà au bon format
+    if (!result.contains("%1\$")) {
+        result = result.replace("%s", "%1\$s")
+                       .replace("%d", "%1\$d")
+    }
+    
+    // 5. Validation finale - enlever les caractères de contrôle invisibles qui peuvent causer des erreurs Unicode
+    result = result.replace(Regex("[\\u0000-\\u001F\\u007F-\\u009F]"), "")
+    
+    return result
 }
 
 // Auto-run before build

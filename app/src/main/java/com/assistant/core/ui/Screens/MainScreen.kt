@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.commands.CommandStatus
 import kotlinx.coroutines.launch
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
     // Load zones via command pattern
@@ -162,7 +164,7 @@ fun MainScreen() {
         ) {
             // Header with configure and add zone buttons
             UI.PageHeader(
-                title = "Assistant",
+                title = s.shared("app_title"),
                 subtitle = null,
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,
@@ -176,7 +178,7 @@ fun MainScreen() {
             if (zones.isEmpty()) {
                 // Show placeholder when no zones
                 UI.Text(
-                    text = "Aucune zone créée",
+                    text = s.shared("message_no_zones_created"),
                     type = TextType.BODY,
                     fillMaxWidth = true,
                     textAlign = TextAlign.Center

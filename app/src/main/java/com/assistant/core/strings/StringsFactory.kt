@@ -40,20 +40,4 @@ object StringsFactory {
         )
     }
     
-    /**
-     * Variante avec paramètres nommés pour différents contextes.
-     * Extensible pour futurs namespaces.
-     */
-    fun `for`(
-        tool: String? = null,
-        theme: String? = null,
-        zone: String? = null,
-        context: Context
-    ): StringsContext {
-        return StringsContext(
-            sharedStrings = SharedStrings(context),
-            toolStrings = tool?.let { ToolStrings(it, context) }
-            // Extensible pour theme, zone, etc.
-        )
-    }
 }

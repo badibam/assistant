@@ -17,7 +17,7 @@ object Strings {
      * 
      * s.shared("save")           // shared_save
      * s.shared("ia_history_filter") // shared_ia_history_filter
-     * s.tool?.s("display_name")  // tool_tracking_display_name
+     * s.tool("display_name")  // tracking_display_name
      * ```
      * 
      * @param tool Nom du tooltype si contexte tool requis
@@ -26,19 +26,5 @@ object Strings {
      */
     fun `for`(tool: String? = null, context: Context) = 
         StringsFactory.`for`(tool = tool, context = context)
-    
-    /**
-     * Variante extensible pour futurs namespaces.
-     * 
-     * @param tool Nom du tooltype 
-     * @param theme Nom du thème
-     * @param zone Nom de la zone
-     * @param context Context Android
-     */
-    fun `for`(
-        tool: String? = null,
-        theme: String? = null, 
-        zone: String? = null,
-        context: Context
-    ) = StringsFactory.`for`(tool = tool, theme = theme, zone = zone, context = context)
+
 }

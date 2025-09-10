@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
 import kotlinx.coroutines.launch
@@ -28,6 +29,7 @@ fun CreateZoneScreen(
     onDelete: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     val coroutineScope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
     
@@ -96,7 +98,7 @@ fun CreateZoneScreen(
     ) {
         // Title - centré (pattern MainScreen)
         UI.Text(
-            text = if (isEditing) "Modifier Zone" else "Créer Zone",
+            text = if (isEditing) s.shared("action_edit_zone") else s.shared("action_create_zone"),
             type = TextType.TITLE,
             fillMaxWidth = true,
             textAlign = TextAlign.Center
@@ -107,7 +109,7 @@ fun CreateZoneScreen(
         
         // Form fields
         UI.FormField(
-            label = "Nom de la zone",
+            label = s.shared("label_name_zone"),
             value = name,
             onChange = { name = it },
             fieldType = FieldType.TEXT,
@@ -115,7 +117,7 @@ fun CreateZoneScreen(
         )
         
         UI.FormField(
-            label = "Description",
+            label = s.shared("label_description"),
             value = description,
             onChange = { description = it },
             fieldType = FieldType.TEXT_MEDIUM,
@@ -138,7 +140,7 @@ fun CreateZoneScreen(
                 UI.ActionButton(
                     action = ButtonAction.DELETE,
                     requireConfirmation = true,
-                    confirmMessage = "Supprimer la zone \"${name.trim()}\" ? Cette action est irréversible.",
+                    confirmMessage = "${s.shared("message_delete_zone_confirmation").format(name.trim())} ${s.shared("message_irreversible_action")}",
                     onClick = {
                         coroutineScope.launch {
                             try {
