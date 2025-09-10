@@ -10,6 +10,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.database.entities.ToolDataEntity
+import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import com.assistant.tools.tracking.TrackingSchemas
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
@@ -22,7 +23,10 @@ import org.json.JSONObject
  */
 object TrackingToolType : ToolTypeContract {
     
-    override fun getDisplayName(): String = "Suivi"
+    override fun getDisplayName(context: Context): String {
+        val s = Strings.`for`(tool = "tracking", context = context)
+        return s.tool("display_name")
+    }
     
     override fun getDefaultConfig(): String {
         return """

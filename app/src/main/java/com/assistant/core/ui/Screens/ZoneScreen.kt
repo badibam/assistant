@@ -246,7 +246,7 @@ fun ZoneScreen(
                                 }
                             ) {
                                 UI.Text(
-                                    text = toolType.getDisplayName(),
+                                    text = toolType.getDisplayName(context),
                                     type = TextType.LABEL
                                 )
                             }

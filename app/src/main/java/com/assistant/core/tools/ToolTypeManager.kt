@@ -18,7 +18,7 @@ object ToolTypeManager {
     
     fun getToolType(id: String): ToolTypeContract? = toolTypes[id]
     
-    fun getToolTypeName(id: String): String = getToolType(id)?.getDisplayName() ?: "Unknown Tool"
+    fun getToolTypeName(id: String, context: Context): String = getToolType(id)?.getDisplayName(context) ?: "Unknown Tool"
     
     fun getAllToolTypes(): Map<String, ToolTypeContract> = toolTypes
     

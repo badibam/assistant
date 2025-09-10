@@ -100,7 +100,23 @@
     <string name="tools_config_option_ai">IA</string>
     <string name="tools_config_option_enabled">Activée</string>
     <string name="tools_config_option_disabled">Désactivée</string>
+    <string name="tools_config_option_yes">Oui</string>
+    <string name="tools_config_option_no">Non</string>
     
     <string name="tools_config_section_general_params">Paramètres généraux</string>
+    
+    <!-- Tools CONFIG - Messages d'erreur -->
+    <string name="tools_config_error_validation">Erreur de validation</string>
+    <string name="tools_config_error_tooltype_not_found">Type d'outil introuvable</string>
+    <string name="tools_config_error_save">Erreur lors de la sauvegarde</string>
+    
+    <!-- Tools CONFIG - Options de display mode -->
+    <string name="tools_config_display_icon">ICON</string>
+    <string name="tools_config_display_minimal">MINIMAL</string>
+    <string name="tools_config_display_line">LINE</string>
+    <string name="tools_config_display_condensed">CONDENSED</string>
+    <string name="tools_config_display_extended">EXTENDED</string>
+    <string name="tools_config_display_square">SQUARE</string>
+    <string name="tools_config_display_full">FULL</string>
 
 </resources>

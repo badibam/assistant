@@ -384,7 +384,7 @@ object UI {
                             modifier = Modifier.weight(1f)
                         ) {
                             UI.Text(
-                                text = ToolTypeManager.getToolTypeName(tool.tool_type),
+                                text = ToolTypeManager.getToolTypeName(tool.tool_type, context),
                                 type = TextType.BODY,
                                 fillMaxWidth = true,
                                 textAlign = TextAlign.Center

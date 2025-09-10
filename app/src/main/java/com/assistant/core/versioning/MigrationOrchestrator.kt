@@ -27,13 +27,13 @@ class MigrationOrchestrator(private val context: Context) {
         // Migrations des outils découverts par ordre alphabétique pour cohérence
         try {
             val allToolTypes = ToolTypeManager.getAllToolTypes().values
-            allToolTypes.sortedBy { it.getDisplayName() }.forEach { toolType ->
+            allToolTypes.sortedBy { it.getDisplayName(context) }.forEach { toolType ->
                 try {
                     val toolMigrations = toolType.getDatabaseMigrations()
                     migrations.addAll(toolMigrations)
                 } catch (e: Exception) {
                     // Log l'erreur mais continue avec les autres outils
-                    println("Erreur lors de la récupération des migrations pour ${toolType.getDisplayName()}: ${e.message}")
+                    println("Erreur lors de la récupération des migrations pour ${toolType.getDisplayName(context)}: ${e.message}")
                 }
             }
         } catch (e: Exception) {

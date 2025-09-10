@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.ui.ThemeIconManager
+import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
@@ -97,6 +98,9 @@ fun TrackingConfigScreen(
     val coordinator = remember { Coordinator(context) }
     val scope = rememberCoroutineScope()
     val isEditing = existingToolId != null
+    
+    // Strings context
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     
     // Helper function pour charger items depuis JSONArray
     fun loadItemsFromJSONArray(itemsArray: JSONArray): MutableList<TrackingItem> {
@@ -271,7 +275,7 @@ fun TrackingConfigScreen(
                     append(newMax)
                     if (newMaxLabel.isNotEmpty()) append(" ($newMaxLabel)")
                 }
-                scaleChangeDetails = "Ancienne échelle : $oldScaleText\nNouvelle échelle : $newScaleText"
+                scaleChangeDetails = s.tool("config_warning_scale_change_old_new").format(oldScaleText, newScaleText)
                 true
             } else false
         } else false
@@ -283,13 +287,13 @@ fun TrackingConfigScreen(
             val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
             val currentConfig = config
             
-            val oldTrueLabel = originalConfig.optString("true_label", "Oui")
-            val oldFalseLabel = originalConfig.optString("false_label", "Non")
-            val newTrueLabel = currentConfig.optString("true_label", "Oui")
-            val newFalseLabel = currentConfig.optString("false_label", "Non")
+            val oldTrueLabel = originalConfig.optString("true_label", s.tool("config_default_true_label"))
+            val oldFalseLabel = originalConfig.optString("false_label", s.tool("config_default_false_label"))
+            val newTrueLabel = currentConfig.optString("true_label", s.tool("config_default_true_label"))
+            val newFalseLabel = currentConfig.optString("false_label", s.tool("config_default_false_label"))
             
             if (oldTrueLabel != newTrueLabel || oldFalseLabel != newFalseLabel) {
-                booleanChangeDetails = "Anciennes étiquettes : \"$oldTrueLabel\" / \"$oldFalseLabel\"\nNouvelles étiquettes : \"$newTrueLabel\" / \"$newFalseLabel\""
+                booleanChangeDetails = s.tool("config_warning_boolean_change_old").format(oldTrueLabel, oldFalseLabel) + "\n" + s.tool("config_warning_boolean_change_new").format(newTrueLabel, newFalseLabel)
                 true
             } else false
         } else false
@@ -314,11 +318,11 @@ fun TrackingConfigScreen(
                 
                 val details = buildString {
                     if (removedOptions.isNotEmpty()) {
-                        append("Options supprimées : ${removedOptions.joinToString(", ") { "\"$it\"" }}")
+                        append(s.tool("config_warning_choice_options_removed").format(removedOptions.joinToString(", ") { "\"$it\"" }))
                     }
                     if (addedOptions.isNotEmpty()) {
                         if (removedOptions.isNotEmpty()) append("\n")
-                        append("Options ajoutées : ${addedOptions.joinToString(", ") { "\"$it\"" }}")
+                        append(s.tool("config_warning_choice_options_added").format(addedOptions.joinToString(", ") { "\"$it\"" }))
                     }
                 }
                 choiceChangeDetails = details
@@ -412,15 +416,15 @@ fun TrackingConfigScreen(
                         onSave(cleanConfig.toString())
                     } else {
                         android.util.Log.e("TrackingConfigScreen", "Validation failed: ${validation.errorMessage}")
-                        errorMessage = validation.errorMessage ?: "Erreur de validation"
+                        errorMessage = validation.errorMessage ?: s.shared("tools_config_error_validation")
                     }
                 } else {
                     android.util.Log.e("TrackingConfigScreen", "ToolType tracking not found")
-                    errorMessage = "Type d'outil introuvable"
+                    errorMessage = s.shared("tools_config_error_tooltype_not_found")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("TrackingConfig", "Error during final save", e)
-                errorMessage = "Erreur lors de la sauvegarde"
+                errorMessage = s.shared("tools_config_error_save")
             }
         }
     }
@@ -451,7 +455,7 @@ fun TrackingConfigScreen(
             }
         ) {
             UI.Text(
-                "Vous avez ${items.size} élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?",
+                s.tool("config_warning_type_change").format(items.size),
                 TextType.BODY
             )
         }
@@ -471,21 +475,21 @@ fun TrackingConfigScreen(
         ) {
             Column {
                 UI.Text(
-                    "Changement de type détecté",
+                    s.tool("config_warning_type_change_title"),
                     TextType.SUBTITLE
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    "Le type passe de \"$originalType\" à \"$trackingType\".",
+                    s.tool("config_warning_type_change_desc").format(originalType, trackingType),
                     TextType.BODY
                 )
                 UI.Text(
-                    "Toutes les données saisies seront supprimées.",
+                    s.tool("config_warning_data_deletion"),
                     TextType.BODY
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    "Continuer ?",
+                    s.tool("config_warning_continue"),
                     TextType.BODY
                 )
             }
@@ -506,7 +510,7 @@ fun TrackingConfigScreen(
         ) {
             Column {
                 UI.Text(
-                    "⚠️ Modification d'échelle détectée",
+                    s.tool("config_warning_scale_change_title"),
                     TextType.SUBTITLE
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -518,12 +522,12 @@ fun TrackingConfigScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 UI.Text(
-                    "Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d'origine.",
+                    s.tool("config_warning_scale_change_desc"),
                     TextType.BODY
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    "Continuer ?",
+                    s.tool("config_warning_continue"),
                     TextType.BODY
                 )
             }
@@ -544,7 +548,7 @@ fun TrackingConfigScreen(
         ) {
             Column {
                 UI.Text(
-                    "⚠️ Modification d'étiquettes détectée",
+                    s.tool("config_warning_boolean_change_title"),
                     TextType.SUBTITLE
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -556,12 +560,12 @@ fun TrackingConfigScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 UI.Text(
-                    "Les données présentes avant ces modifications garderont leurs étiquettes d'origine.",
+                    s.tool("config_warning_boolean_change_desc"),
                     TextType.BODY
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    "Continuer ?",
+                    s.tool("config_warning_continue"),
                     TextType.BODY
                 )
             }
@@ -582,7 +586,7 @@ fun TrackingConfigScreen(
         ) {
             Column {
                 UI.Text(
-                    "⚠️ Modification d'options détectée",
+                    s.tool("config_warning_choice_change_title"),
                     TextType.SUBTITLE
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -594,12 +598,12 @@ fun TrackingConfigScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 UI.Text(
-                    "Les données présentes avant ces modifications garderont leurs options d'origine, même si elles ne sont plus disponibles dans la configuration.",
+                    s.tool("config_warning_choice_desc"),
                     TextType.BODY
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    "Continuer ?",
+                    s.tool("config_warning_continue"),
                     TextType.BODY
                 )
             }
@@ -615,7 +619,7 @@ fun TrackingConfigScreen(
     ) {
         // Header with back button
         UI.PageHeader(
-            title = if (isEditing) "Modifier Suivi" else "Créer Suivi",
+            title = if (isEditing) s.tool("config_title_edit") else s.tool("config_title_create"),
             subtitle = null,
             icon = null,
             leftButton = ButtonAction.BACK,
@@ -632,17 +636,17 @@ fun TrackingConfigScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text("Paramètres généraux", TextType.SUBTITLE)
+                UI.Text(s.shared("tools_config_section_general_params"), TextType.SUBTITLE)
                 
                 UI.FormField(
-                    label = "Nom",
+                    label = s.shared("tools_config_label_name"),
                     value = name,
                     onChange = { updateConfig("name", it) },
                     required = true
                 )
                 
                 UI.FormField(
-                    label = "Description",
+                    label = s.shared("tools_config_label_description"),
                     value = description,
                     onChange = { updateConfig("description", it) },
                     fieldType = FieldType.TEXT_MEDIUM
@@ -654,7 +658,7 @@ fun TrackingConfigScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    UI.Text("Icône:", TextType.LABEL)
+                    UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
                     
                     // Icône actuelle avec SafeIcon
                     UI.Icon(iconName = iconName, size = 32.dp)
@@ -666,25 +670,33 @@ fun TrackingConfigScreen(
                 }
                 
                 UI.FormSelection(
-                    label = "Mode d'affichage",
-                    options = listOf("ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL"),
+                    label = s.shared("tools_config_label_display_mode"),
+                    options = listOf(
+                        s.shared("tools_config_display_icon"), 
+                        s.shared("tools_config_display_minimal"), 
+                        s.shared("tools_config_display_line"), 
+                        s.shared("tools_config_display_condensed"), 
+                        s.shared("tools_config_display_extended"), 
+                        s.shared("tools_config_display_square"), 
+                        s.shared("tools_config_display_full")
+                    ),
                     selected = displayMode,
                     onSelect = { updateConfig("display_mode", it) },
                     required = true
                 )
                 
                 UI.FormSelection(
-                    label = "Gestion",
-                    options = listOf("Manuel", "IA"),
+                    label = s.shared("tools_config_label_management"),
+                    options = listOf(s.shared("tools_config_option_manual"), s.shared("tools_config_option_ai")),
                     selected = when(management) {
-                        "manual" -> "Manuel"
-                        "ai" -> "IA"
+                        "manual" -> s.shared("tools_config_option_manual")
+                        "ai" -> s.shared("tools_config_option_ai")
                         else -> management
                     },
                     onSelect = { selectedLabel ->
                         updateConfig("management", when(selectedLabel) {
-                            "Manuel" -> "manual"
-                            "IA" -> "ai"
+                            s.shared("tools_config_option_manual") -> "manual"
+                            s.shared("tools_config_option_ai") -> "ai"
                             else -> selectedLabel
                         })
                     },
@@ -692,17 +704,17 @@ fun TrackingConfigScreen(
                 )
                 
                 UI.FormSelection(
-                    label = "Validation config par IA",
-                    options = listOf("Activée", "Désactivée"),
+                    label = s.shared("tools_config_label_config_validation"),
+                    options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
                     selected = when(configValidation) {
-                        "enabled" -> "Activée"
-                        "disabled" -> "Désactivée"
+                        "enabled" -> s.shared("tools_config_option_enabled")
+                        "disabled" -> s.shared("tools_config_option_disabled")
                         else -> configValidation
                     },
                     onSelect = { selectedLabel ->
                         updateConfig("config_validation", when(selectedLabel) {
-                            "Activée" -> "enabled"
-                            "Désactivée" -> "disabled"
+                            s.shared("tools_config_option_enabled") -> "enabled"
+                            s.shared("tools_config_option_disabled") -> "disabled"
                             else -> selectedLabel
                         })
                     },
@@ -710,17 +722,17 @@ fun TrackingConfigScreen(
                 )
                 
                 UI.FormSelection(
-                    label = "Validation données par IA",
-                    options = listOf("Activée", "Désactivée"),
+                    label = s.shared("tools_config_label_data_validation"),
+                    options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
                     selected = when(dataValidation) {
-                        "enabled" -> "Activée"
-                        "disabled" -> "Désactivée"
+                        "enabled" -> s.shared("tools_config_option_enabled")
+                        "disabled" -> s.shared("tools_config_option_disabled")
                         else -> dataValidation
                     },
                     onSelect = { selectedLabel ->
                         updateConfig("data_validation", when(selectedLabel) {
-                            "Activée" -> "enabled"
-                            "Désactivée" -> "disabled"
+                            s.shared("tools_config_option_enabled") -> "enabled"
+                            s.shared("tools_config_option_disabled") -> "disabled"
                             else -> selectedLabel
                         })
                     },
@@ -735,38 +747,38 @@ fun TrackingConfigScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text("Paramètres spécifiques", TextType.SUBTITLE)
+                UI.Text(s.tool("config_section_specific_params"), TextType.SUBTITLE)
                 
                 UI.FormSelection(
-                    label = "Type de tracking",
+                    label = s.tool("config_label_tracking_type"),
                     options = listOf(
-                        "Numérique (numeric)",
-                        "Texte (text)", 
-                        "Échelle (scale)",
-                        "Oui/Non (boolean)",
-                        "Timer (timer)",
-                        "Choix (choice)",
-                        "Compteur (counter)"
+                        s.tool("config_option_numeric"),
+                        s.tool("config_option_text"), 
+                        s.tool("config_option_scale"),
+                        s.tool("config_option_boolean"),
+                        s.tool("config_option_timer"),
+                        s.tool("config_option_choice"),
+                        s.tool("config_option_counter")
                     ),
                     selected = when(trackingType) {
-                        "numeric" -> "Numérique (numeric)"
-                        "text" -> "Texte (text)"
-                        "scale" -> "Échelle (scale)"
-                        "boolean" -> "Oui/Non (boolean)"
-                        "timer" -> "Timer (timer)"
-                        "choice" -> "Choix (choice)"
-                        "counter" -> "Compteur (counter)"
+                        "numeric" -> s.tool("config_option_numeric")
+                        "text" -> s.tool("config_option_text")
+                        "scale" -> s.tool("config_option_scale")
+                        "boolean" -> s.tool("config_option_boolean")
+                        "timer" -> s.tool("config_option_timer")
+                        "choice" -> s.tool("config_option_choice")
+                        "counter" -> s.tool("config_option_counter")
                         else -> trackingType
                     },
                     onSelect = { selectedLabel ->
-                        val newType = when {
-                            selectedLabel.contains("(numeric)") -> "numeric"
-                            selectedLabel.contains("(text)") -> "text"
-                            selectedLabel.contains("(scale)") -> "scale"
-                            selectedLabel.contains("(boolean)") -> "boolean"
-                            selectedLabel.contains("(timer)") -> "timer"
-                            selectedLabel.contains("(choice)") -> "choice"
-                            selectedLabel.contains("(counter)") -> "counter"
+                        val newType = when (selectedLabel) {
+                            s.tool("config_option_numeric") -> "numeric"
+                            s.tool("config_option_text") -> "text"
+                            s.tool("config_option_scale") -> "scale"
+                            s.tool("config_option_boolean") -> "boolean"
+                            s.tool("config_option_timer") -> "timer"
+                            s.tool("config_option_choice") -> "choice"
+                            s.tool("config_option_counter") -> "counter"
                             else -> selectedLabel
                         }
                         
@@ -792,7 +804,8 @@ fun TrackingConfigScreen(
                 TypeSpecificParameters(
                     trackingType = trackingType,
                     config = config,
-                    updateConfig = ::updateConfig
+                    updateConfig = ::updateConfig,
+                    s = s
                 )
             }
         }
@@ -809,7 +822,7 @@ fun TrackingConfigScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        UI.Text("Items prédéfinis", TextType.SUBTITLE)
+                        UI.Text(s.tool("config_section_predefined_items"), TextType.SUBTITLE)
                         UI.ActionButton(
                             action = ButtonAction.ADD,
                             onClick = { 
@@ -826,7 +839,7 @@ fun TrackingConfigScreen(
                     // Tableau items
                     if (items.isEmpty()) {
                         UI.Text(
-                            text = "Aucun item défini",
+                            text = s.tool("config_message_no_items"),
                             type = TextType.CAPTION,
                             fillMaxWidth = true,
                             textAlign = TextAlign.Center
@@ -849,7 +862,7 @@ fun TrackingConfigScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 UI.CenteredText(
-                                    text = "Nom",
+                                    text = s.tool("config_header_name"),
                                     type = TextType.CAPTION
                                 )
                             }
@@ -861,7 +874,7 @@ fun TrackingConfigScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     UI.CenteredText(
-                                        text = "Qté",
+                                        text = s.tool("config_header_quantity"),
                                         type = TextType.CAPTION
                                     )
                                 }
@@ -871,7 +884,7 @@ fun TrackingConfigScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     UI.CenteredText(
-                                        text = "Unité",
+                                        text = s.tool("config_header_unit"),
                                         type = TextType.CAPTION
                                     )
                                 }
@@ -1006,12 +1019,12 @@ fun TrackingConfigScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     UI.Text(
-                        if (isCreating) "Créer un élément" else "Modifier l'élément",
+                        if (isCreating) s.tool("config_dialog_create_item") else s.tool("config_dialog_edit_item"),
                         TextType.SUBTITLE
                     )
                     
                     UI.FormField(
-                        label = "Nom",
+                        label = s.shared("tools_config_label_name"),
                         value = editItemName,
                         onChange = { editItemName = it },
                         required = true
@@ -1020,7 +1033,7 @@ fun TrackingConfigScreen(
                     // Champs spécifiques selon le type de tracking
                     if (trackingType == "numeric") {
                         UI.FormField(
-                            label = "Quantité par défaut",
+                            label = s.tool("config_label_default_quantity"),
                             value = editItemDefaultQuantity,
                             onChange = { editItemDefaultQuantity = it },
                             fieldType = FieldType.NUMERIC,
@@ -1028,7 +1041,7 @@ fun TrackingConfigScreen(
                         )
                         
                         UI.FormField(
-                            label = "Unité",
+                            label = s.tool("config_label_unit"),
                             value = editItemUnit,
                             onChange = { editItemUnit = it },
                             required = false
@@ -1047,7 +1060,7 @@ fun TrackingConfigScreen(
                 onCancel = { showIconSelector = false }
             ) {
                 Column {
-                    UI.Text("Choisir une icône", TextType.SUBTITLE)
+                    UI.Text(s.tool("config_dialog_choose_icon"), TextType.SUBTITLE)
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
@@ -1252,7 +1265,8 @@ private fun buildItemPropertiesText(properties: Map<String, Any>, trackingType: 
 private fun TypeSpecificParameters(
     trackingType: String,
     config: JSONObject,
-    updateConfig: (String, Any) -> Unit
+    updateConfig: (String, Any) -> Unit,
+    s: com.assistant.core.strings.StringsContext
 ) {
     when (trackingType) {
         "scale" -> {
@@ -1270,7 +1284,7 @@ private fun TypeSpecificParameters(
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Valeur minimale",
+                            label = s.tool("config_label_min_value"),
                             value = minValue,
                             onChange = { value ->
                                 minValue = value
@@ -1284,7 +1298,7 @@ private fun TypeSpecificParameters(
                     
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Valeur maximale", 
+                            label = s.tool("config_label_max_value"), 
                             value = maxValue,
                             onChange = { value ->
                                 maxValue = value
@@ -1302,7 +1316,7 @@ private fun TypeSpecificParameters(
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Label minimum",
+                            label = s.tool("config_label_min_label"),
                             value = minLabel,
                             onChange = { updateConfig("min_label", it) },
                             fieldType = FieldType.TEXT
@@ -1311,7 +1325,7 @@ private fun TypeSpecificParameters(
                     
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Label maximum",
+                            label = s.tool("config_label_max_label"),
                             value = maxLabel,
                             onChange = { updateConfig("max_label", it) },
                             fieldType = FieldType.TEXT
@@ -1322,15 +1336,15 @@ private fun TypeSpecificParameters(
         }
         
         "boolean" -> {
-            val trueLabel = config.optString("true_label", "Oui")
-            val falseLabel = config.optString("false_label", "Non")
+            val trueLabel = config.optString("true_label", s.tool("config_default_true_label"))
+            val falseLabel = config.optString("false_label", s.tool("config_default_false_label"))
             
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     UI.FormField(
-                        label = "Label \"Vrai\"",
+                        label = s.tool("config_label_true_label"),
                         value = trueLabel,
                         onChange = { updateConfig("true_label", it) },
                         fieldType = FieldType.TEXT
@@ -1339,7 +1353,7 @@ private fun TypeSpecificParameters(
                 
                 Box(modifier = Modifier.weight(1f)) {
                     UI.FormField(
-                        label = "Label \"Faux\"",
+                        label = s.tool("config_label_false_label"),
                         value = falseLabel,
                         onChange = { updateConfig("false_label", it) },
                         fieldType = FieldType.TEXT
@@ -1355,7 +1369,7 @@ private fun TypeSpecificParameters(
             }.toMutableList()
             
             UI.DynamicList(
-                label = "Options disponibles",
+                label = s.tool("config_label_available_options"),
                 items = currentOptions,
                 onItemsChanged = { newOptions ->
                     // Sauvegarder toutes les options (même vides) pour permettre l'édition
@@ -1366,7 +1380,7 @@ private fun TypeSpecificParameters(
                     }
                     updateConfig("options", newArray)
                 },
-                placeholder = "option",
+                placeholder = s.tool("config_default_placeholder"),
                 required = true,
                 minItems = 2 // Au moins 2 options pour un choix
             )
@@ -1376,11 +1390,11 @@ private fun TypeSpecificParameters(
             val allowDecrement = config.optBoolean("allow_decrement", true)
             
             UI.FormSelection(
-                label = "Autoriser décrémentation",
-                options = listOf("Oui", "Non"),
-                selected = if (allowDecrement) "Oui" else "Non",
+                label = s.tool("config_label_allow_decrement"),
+                options = listOf(s.shared("tools_config_option_yes"), s.shared("tools_config_option_no")),
+                selected = if (allowDecrement) s.shared("tools_config_option_yes") else s.shared("tools_config_option_no"),
                 onSelect = { selected ->
-                    updateConfig("allow_decrement", selected == "Oui")
+                    updateConfig("allow_decrement", selected == s.shared("tools_config_option_yes"))
                 }
             )
         }

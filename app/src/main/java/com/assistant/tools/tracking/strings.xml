@@ -48,11 +48,11 @@
     <string name="config_warning_type_change_desc">Le type passe de \"%s\" à \"%s\".</string>
     <string name="config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
     <string name="config_warning_continue">Continuer ?</string>
-    
+
     <!-- CONFIG - Messages de modification d\'échelle -->
     <string name="config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
-    <string name="config_warning_scale_change_old">Ancienne échelle : %s</string>
-    <string name="config_warning_scale_change_new">Nouvelle échelle : %s</string>
+    <string name="config_warning_scale_change_old_new">Ancienne échelle : %s\nNouvelle échelle : %s</string>
+
     <string name="config_warning_scale_change_desc">Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d\'origine.</string>
     
     <!-- CONFIG - Messages de modification de labels booléens -->
@@ -75,4 +75,7 @@
     <!-- CONFIG - Titres d'écran -->
     <string name="config_title_create">Créer Suivi</string>
     <string name="config_title_edit">Modifier Suivi</string>
+    
+    <!-- CONFIG - Messages de warning détaillés pour échelle -->
+
 </resources>
