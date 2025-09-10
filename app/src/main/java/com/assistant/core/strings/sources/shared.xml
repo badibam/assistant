@@ -87,4 +87,20 @@
     <string name="new_item">Nouvel élément</string>
     <string name="unnamed">Sans nom</string>
 
+    <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
+    <string name="tools_config_label_name">Nom</string>
+    <string name="tools_config_label_description">Description</string>
+    <string name="tools_config_label_display_mode">Mode d\'affichage</string>
+    <string name="tools_config_label_icon">Icône</string>
+    <string name="tools_config_label_management">Gestion</string>
+    <string name="tools_config_label_config_validation">Validation config par IA</string>
+    <string name="tools_config_label_data_validation">Validation données par IA</string>
+    
+    <string name="tools_config_option_manual">Manuel</string>
+    <string name="tools_config_option_ai">IA</string>
+    <string name="tools_config_option_enabled">Activée</string>
+    <string name="tools_config_option_disabled">Désactivée</string>
+    
+    <string name="tools_config_section_general_params">Paramètres généraux</string>
+
 </resources>

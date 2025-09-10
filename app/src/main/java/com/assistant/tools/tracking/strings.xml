@@ -1,35 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings pour le tooltype tracking -->
+    <!-- Strings spécifiques au tooltype tracking -->
     
-    <!-- Métadonnées outil -->
+    <!-- Métadonnées -->
     <string name="display_name">Suivi</string>
-    <string name="description_default">Suivez vos métriques quotidiennes</string>
+
+    <!-- CONFIG - Labels de paramètres spécifiques -->
+    <string name="config_label_tracking_type">Type de tracking</string>
+    <string name="config_label_default_quantity">Quantité par défaut</string>
+    <string name="config_label_unit">Unité</string>
+    <string name="config_label_min_value">Valeur minimale</string>
+    <string name="config_label_max_value">Valeur maximale</string>
+    <string name="config_label_min_label">Label minimum</string>
+    <string name="config_label_max_label">Label maximum</string>
+    <string name="config_label_true_label">Label \"Vrai\"</string>
+    <string name="config_label_false_label">Label \"Faux\"</string>
+    <string name="config_label_available_options">Options disponibles</string>
+    <string name="config_label_allow_decrement">Autoriser décrémentation</string>
     
-    <!-- Interface configuration -->
-    <string name="config_title">Configuration du suivi</string>
-    <string name="field_name">Nom du suivi</string>
-    <string name="field_description">Description</string>
-    <string name="field_type">Type de suivi</string>
-    <string name="field_unit">Unité</string>
+    <!-- CONFIG - Options de types de tracking -->
+    <string name="config_option_numeric">Numérique (numeric)</string>
+    <string name="config_option_text">Texte (text)</string>
+    <string name="config_option_scale">Échelle (scale)</string>
+    <string name="config_option_boolean">Oui/Non (boolean)</string>
+    <string name="config_option_timer">Timer (timer)</string>
+    <string name="config_option_choice">Choix (choice)</string>
+    <string name="config_option_counter">Compteur (counter)</string>
     
-    <!-- Types de tracking -->
-    <string name="type_numeric">Numérique</string>
-    <string name="type_text">Texte libre</string>
-    <string name="type_scale">Échelle</string>
-    <string name="type_choice">Choix multiples</string>
-    <string name="type_timer">Minuteur</string>
+    <!-- CONFIG - Sections -->
+    <string name="config_section_specific_params">Paramètres spécifiques</string>
+    <string name="config_section_predefined_items">Items prédéfinis</string>
+
+    <!-- CONFIG - Tableaux et listes -->
+    <string name="config_header_name">Nom</string>
+    <string name="config_header_quantity">Qté</string>
+    <string name="config_header_unit">Unité</string>
+    <string name="config_message_no_items">Aucun élément défini</string>
     
-    <!-- Interface historique -->
-    <string name="history_title">Historique</string>
-    <string name="history_empty">Aucune donnée enregistrée</string>
-    <string name="filter_period">Période</string>
-    <string name="filter_all">Toutes</string>
-    <string name="filter_week">Cette semaine</string>
-    <string name="filter_month">Ce mois</string>
+    <!-- CONFIG - Dialogues -->
+    <string name="config_dialog_create_item">Créer un élément</string>
+    <string name="config_dialog_edit_item">Modifier l\'élément</string>
+    <string name="config_dialog_choose_icon">Choisir une icône</string>
     
-    <!-- Erreurs spécifiques -->
-    <string name="error_invalid_value">Valeur invalide pour ce type de suivi</string>
-    <string name="error_missing_items">Veuillez définir au moins un choix</string>
-    <string name="error_duplicate_item">Ce choix existe déjà</string>
+    <!-- CONFIG - Messages de warning -->
+    <string name="config_warning_type_change">Vous avez %d élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?</string>
+    <string name="config_warning_type_change_title">Changement de type détecté</string>
+    <string name="config_warning_type_change_desc">Le type passe de \"%s\" à \"%s\".</string>
+    <string name="config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
+    <string name="config_warning_continue">Continuer ?</string>
+    
+    <!-- CONFIG - Messages de modification d\'échelle -->
+    <string name="config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
+    <string name="config_warning_scale_change_old">Ancienne échelle : %s</string>
+    <string name="config_warning_scale_change_new">Nouvelle échelle : %s</string>
+    <string name="config_warning_scale_change_desc">Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d\'origine.</string>
+    
+    <!-- CONFIG - Messages de modification de labels booléens -->
+    <string name="config_warning_boolean_change_title">⚠️ Modification d\'étiquettes détectée</string>
+    <string name="config_warning_boolean_change_old">Anciennes étiquettes : \"%s\" / \"%s\"</string>
+    <string name="config_warning_boolean_change_new">Nouvelles étiquettes : \"%s\" / \"%s\"</string>
+    <string name="config_warning_boolean_change_desc">Les données présentes avant ces modifications garderont leurs étiquettes d\'origine.</string>
+    
+    <!-- CONFIG - Messages de modification d\'options de choix -->
+    <string name="config_warning_choice_change_title">⚠️ Modification d\'options détectée</string>
+    <string name="config_warning_choice_removed">Options supprimées : %s</string>
+    <string name="config_warning_choice_added">Options ajoutées : %s</string>
+    <string name="config_warning_choice_desc">Les données présentes avant ces modifications garderont leurs options d\'origine, même si elles ne sont plus disponibles dans la configuration.</string>
+    
+    <!-- CONFIG - Valeurs par défaut -->
+    <string name="config_default_true_label">Oui</string>
+    <string name="config_default_false_label">Non</string>
+    <string name="config_default_placeholder">option</string>
+    
+    <!-- CONFIG - Titres d'écran -->
+    <string name="config_title_create">Créer Suivi</string>
+    <string name="config_title_edit">Modifier Suivi</string>
 </resources>
