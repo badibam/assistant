@@ -27,7 +27,7 @@ object ValidationErrorProcessor {
         
         return errorsByPath.map { (path, pathErrors) ->
             val prioritizedError = selectMostRelevantError(pathErrors)
-            val translatedMessage = replaceFieldNameInMessage(prioritizedError, schemaProvider)
+            val translatedMessage = replaceFieldNameInMessage(prioritizedError, schemaProvider, context)
             translatedMessage
         }.joinToString("\n")
     }
@@ -144,7 +144,7 @@ object ValidationErrorProcessor {
      * - "$.value.quantity: must be a number" -> "Quantité: must be a number"
      * - "$.items[2].default_quantity is invalid" -> "Qté par défaut is invalid"
      */
-    private fun replaceFieldNameInMessage(errorMessage: String, schemaProvider: SchemaProvider?): String {
+    private fun replaceFieldNameInMessage(errorMessage: String, schemaProvider: SchemaProvider?, context: Context): String {
         if (schemaProvider == null) return errorMessage
         
         // Find all $.fieldname patterns in the message
@@ -173,7 +173,7 @@ object ValidationErrorProcessor {
             
             safeLog("DEBUG FIELD REPLACE: extracted fieldName='$fieldName'")
             
-            val translatedName = schemaProvider.getFormFieldName(fieldName)
+            val translatedName = schemaProvider.getFormFieldName(fieldName, context)
             safeLog("DEBUG FIELD REPLACE: translated to='$translatedName'")
             
             // Replace the full $.path with just the translated name

@@ -109,7 +109,7 @@ fun CreateZoneScreen(
         
         // Form fields
         UI.FormField(
-            label = s.shared("label_name_zone"),
+            label = s.shared("label_zone_name"),
             value = name,
             onChange = { name = it },
             fieldType = FieldType.TEXT,

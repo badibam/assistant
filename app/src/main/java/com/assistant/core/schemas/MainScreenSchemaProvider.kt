@@ -21,8 +21,13 @@ object MainScreenSchemaProvider : SchemaProvider {
         return MainScreenSchemas.CONFIG_SCHEMA
     }
     
-    override fun getFormFieldName(fieldName: String): String = when(fieldName) {
-        // To be implemented when MainScreen gets configuration options
-        else -> "Paramètre"
+    override fun getFormFieldName(fieldName: String, context: android.content.Context?): String {
+        if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
+        
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        return when(fieldName) {
+            // To be implemented when MainScreen gets configuration options
+            else -> s.shared("label_field_parameter")
+        }
     }
 }

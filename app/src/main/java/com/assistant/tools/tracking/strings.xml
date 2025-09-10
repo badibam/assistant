@@ -76,6 +76,25 @@
     <string name="config_title_create">Créer Suivi</string>
     <string name="config_title_edit">Modifier Suivi</string>
     
-    <!-- CONFIG - Messages de warning détaillés pour échelle -->
-
+    <!-- VALIDATION - Noms de champs pour affichage -->
+    <string name="field_default_quantity">Qté par défaut</string>
+    <string name="field_quantity">Quantité</string>
+    <string name="field_name">Nom</string>
+    <string name="field_unit">Unité</string>
+    <string name="field_text">Texte</string>
+    <string name="field_rating">Note</string>
+    <string name="field_min_value">Valeur min</string>
+    <string name="field_max_value">Valeur max</string>
+    <string name="field_min_label">Libellé min</string>
+    <string name="field_max_label">Libellé max</string>
+    <string name="field_state">État</string>
+    <string name="field_true_label">Libellé vrai</string>
+    <string name="field_false_label">Libellé faux</string>
+    <string name="field_selected_option">Option sélectionnée</string>
+    <string name="field_available_options">Options disponibles</string>
+    <string name="field_increment">Incrément</string>
+    <string name="field_activity">Activité</string>
+    <string name="field_duration_seconds">Durée</string>
+    <string name="field_unknown">Champ non reconnu</string>
+    
 </resources>

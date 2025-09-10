@@ -19,14 +19,13 @@ class AppConfigSchemaProvider(private val context: Context) : SchemaProvider {
         }
     }
     
-    override fun getFormFieldName(fieldName: String): String {
+    override fun getFormFieldName(fieldName: String, context: android.content.Context?): String {
+        if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
+        
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
         return when (fieldName) {
-            "week_start_day" -> "Premier jour de la semaine"
-            "day_start_hour" -> "Heure de début de journée"
-            // Future field translations:
-            // "theme" -> "Thème"
-            // "default_display_mode" -> "Mode d'affichage par défaut"
-            // "default_history_limit" -> "Limite d'historique par défaut"
+            "week_start_day" -> s.shared("app_config_temporal_week_start_day")
+            "day_start_hour" -> s.shared("app_config_temporal_day_start_hour")
             else -> fieldName
         }
     }

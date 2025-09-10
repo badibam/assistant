@@ -5,6 +5,10 @@
     <!-- App -->
     <string name="app_title">Assistant</string>
 
+    <!-- App config - Temporal -->
+    <string name="app_config_temporal_week_start_day">Premier jour de la semaine</string>
+    <string name="app_config_temporal_day_start_hour">Heure de début de journée</string>
+
     <!-- Actions utilisateur -->
     <string name="action_save">Sauvegarder</string>
     <string name="action_create">Créer</string>
@@ -18,12 +22,14 @@
     <string name="action_ok">OK</string>
     
     <!-- Labels de formulaire -->
-    <string name="label_name_zone">Nom de la zone</string>
+    <string name="label_zone_name">Nom de la zone</string>
     <string name="label_description">Description</string>
     <string name="label_icon">Icône</string>
     <string name="label_page_info">Page %1$d sur %2$d</string>
     <string name="label_enabled">Activé</string>
     <string name="label_disabled">Désactivé</string>
+    <string name="label_field_generic">Champ</string>
+    <string name="label_field_parameter">Paramètre</string>
     
     <!-- Messages et feedback -->
     <string name="message_loading_tools">Chargement des outils...</string>
@@ -118,5 +124,7 @@
     <string name="tools_config_display_extended">EXTENDED</string>
     <string name="tools_config_display_square">SQUARE</string>
     <string name="tools_config_display_full">FULL</string>
+    
+
 
 </resources>

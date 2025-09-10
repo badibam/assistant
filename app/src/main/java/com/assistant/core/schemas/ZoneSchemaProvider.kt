@@ -18,10 +18,15 @@ class ZoneSchemaProvider(private val context: Context) : SchemaProvider {
         }
     }
     
-    override fun getFormFieldName(fieldName: String): String = when(fieldName) {
-        "name" -> "Nom de la zone"
-        "description" -> "Description"
-        else -> "Champ"
+    override fun getFormFieldName(fieldName: String, context: android.content.Context?): String {
+        if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
+        
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        return when(fieldName) {
+            "name" -> s.shared("label_zone_name")
+            "description" -> s.shared("label_description")
+            else -> s.shared("label_field_generic")
+        }
     }
     
     // Companion object for easy access

@@ -199,29 +199,34 @@ object TrackingToolType : ToolTypeContract {
     /**
      * Get user-friendly field name for display
      * @param fieldName The technical field name (e.g., "quantity", "name")
+     * @param context Android context for string resource access
      * @return User-friendly field name for display (e.g., "Quantité", "Nom")
      */
-    override fun getFormFieldName(fieldName: String): String {
+    override fun getFormFieldName(fieldName: String, context: Context?): String {
+        // Context should always be provided by ValidationErrorProcessor
+        if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
+        
+        val s = Strings.`for`(tool = "tracking", context = context)
         return when(fieldName) {
-            "default_quantity" -> "Qté par défaut"
-            "quantity" -> "Quantité"
-            "name" -> "Nom" 
-            "unit" -> "Unité"
-            "text" -> "Texte"
-            "rating" -> "Note"
-            "min_value" -> "Valeur min"
-            "max_value" -> "Valeur max"
-            "min_label" -> "Libellé min"
-            "max_label" -> "Libellé max"
-            "state" -> "État"
-            "true_label" -> "Libellé vrai"
-            "false_label" -> "Libellé faux"
-            "selected_option" -> "Option sélectionnée"
-            "available_options" -> "Options disponibles"
-            "increment" -> "Incrément"
-            "activity" -> "Activité"
-            "duration_seconds" -> "Durée"
-            else -> "Champ non reconnu"
+            "default_quantity" -> s.tool("field_default_quantity")
+            "quantity" -> s.tool("field_quantity")
+            "name" -> s.tool("field_name") 
+            "unit" -> s.tool("field_unit")
+            "text" -> s.tool("field_text")
+            "rating" -> s.tool("field_rating")
+            "min_value" -> s.tool("field_min_value")
+            "max_value" -> s.tool("field_max_value")
+            "min_label" -> s.tool("field_min_label")
+            "max_label" -> s.tool("field_max_label")
+            "state" -> s.tool("field_state")
+            "true_label" -> s.tool("field_true_label")
+            "false_label" -> s.tool("field_false_label")
+            "selected_option" -> s.tool("field_selected_option")
+            "available_options" -> s.tool("field_available_options")
+            "increment" -> s.tool("field_increment")
+            "activity" -> s.tool("field_activity")
+            "duration_seconds" -> s.tool("field_duration_seconds")
+            else -> s.tool("field_unknown")
         }
     }
 }

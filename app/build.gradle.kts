@@ -251,7 +251,7 @@ tasks.register("generateStringResources") {
     
     val toolsDir = file("src/main/java/com/assistant/tools")
     val sharedStringsDir = file("src/main/java/com/assistant/core/strings/sources") // Sources strings shared
-    val outputFile = file("src/main/res/values/tool_strings_generated.xml")
+    val outputFile = file("src/main/res/values/strings_generated.xml")
     
     // Gradle cache: run if any source changed
     inputs.dir(toolsDir)
