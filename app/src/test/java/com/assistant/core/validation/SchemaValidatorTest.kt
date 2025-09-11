@@ -1,7 +1,10 @@
 package com.assistant.core.validation
 
+import android.content.Context
 import org.junit.Test
 import org.junit.Assert.*
+import org.mockito.Mockito.*
+import com.assistant.core.validation.SchemaProvider
 
 /**
  * Basic tests for new SchemaValidator architecture
@@ -27,7 +30,12 @@ class SchemaValidatorTest {
             "age" to 30
         )
         
-        val result = SchemaValidator.validate(schema, validData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schema)
+        
+        val result = SchemaValidator.validate(mockProvider, validData, mockContext, "data")
         
         assertTrue("Validation should succeed", result.isValid)
         assertNull("No error message expected", result.errorMessage)
@@ -51,7 +59,12 @@ class SchemaValidatorTest {
             // name is missing
         )
         
-        val result = SchemaValidator.validate(schema, invalidData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schema)
+        
+        val result = SchemaValidator.validate(mockProvider, invalidData, mockContext, "data")
         
         assertFalse("Validation should fail", result.isValid)
         assertNotNull("Error message expected", result.errorMessage)
@@ -76,7 +89,10 @@ class SchemaValidatorTest {
         }
         
         val validConfig = mapOf("title" to "Test Config")
-        val result = SchemaValidator.validate(testProvider.getConfigSchema(), validConfig)
+        // Create mock Context
+        val mockContext = mock(Context::class.java)
+        
+        val result = SchemaValidator.validate(testProvider, validConfig, mockContext, "config")
         
         assertTrue("Config validation should succeed", result.isValid)
     }
@@ -120,7 +136,12 @@ class SchemaValidatorTest {
             )
         )
         
-        val result = SchemaValidator.validate(schema, wrongTypeData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schema)
+        
+        val result = SchemaValidator.validate(mockProvider, wrongTypeData, mockContext, "data")
         
         assertFalse("Validation should fail", result.isValid)
         
@@ -146,7 +167,12 @@ class SchemaValidatorTest {
         
         val missingData = mapOf<String, Any>()
         
-        val result = SchemaValidator.validate(schema, missingData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schema)
+        
+        val result = SchemaValidator.validate(mockProvider, missingData, mockContext, "data")
         
         assertFalse("Validation should fail", result.isValid)
         assertTrue("Should show required field error", 

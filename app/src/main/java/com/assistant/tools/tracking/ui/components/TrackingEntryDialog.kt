@@ -570,11 +570,11 @@ fun TrackingEntryDialog(
         errorMessage?.let { message ->
             val context = LocalContext.current
             LaunchedEffect(message) {
-                android.widget.Toast.makeText(
+                UI.Toast(
                     context,
                     message,
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                    Duration.LONG
+                )
                 errorMessage = null
             }
         }

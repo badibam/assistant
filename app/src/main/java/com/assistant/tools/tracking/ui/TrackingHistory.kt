@@ -228,15 +228,15 @@ fun TrackingHistory(
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
-                        android.widget.Toast.makeText(context, s.tool("usage_entry_updated"), android.widget.Toast.LENGTH_SHORT).show()
+                        UI.Toast(context, s.tool("usage_entry_updated"), Duration.SHORT)
                         loadData() // Reload data to show changes
                     }
                     else -> {
-                        android.widget.Toast.makeText(context, result.error ?: s.tool("error_entry_update"), android.widget.Toast.LENGTH_LONG).show()
+                        UI.Toast(context, result.error ?: s.tool("error_entry_update"), Duration.LONG)
                     }
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, s.shared("message_error").format(e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
             }
         }
     }
@@ -256,15 +256,15 @@ fun TrackingHistory(
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
-                        android.widget.Toast.makeText(context, s.tool("usage_entry_deleted"), android.widget.Toast.LENGTH_SHORT).show()
+                        UI.Toast(context, s.tool("usage_entry_deleted"), Duration.SHORT)
                         trackingData = trackingData.filter { it.id != entryId }
                     }
                     else -> {
-                        android.widget.Toast.makeText(context, result.error ?: s.tool("error_entry_deletion"), android.widget.Toast.LENGTH_LONG).show()
+                        UI.Toast(context, result.error ?: s.tool("error_entry_deletion"), Duration.LONG)
                     }
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, s.shared("message_error").format(e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
+                UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
             }
         }
     }

@@ -585,19 +585,11 @@ private fun TimerItemsLayout(
                 onEntrySaved()
             } else {
                 // Afficher toast d'erreur
-                android.widget.Toast.makeText(
-                    context,
-                    s.shared("message_error").format(result.error ?: s.tool("error_entry_update_failed")),
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                UI.Toast(context, s.shared("message_error").format(result.error ?: s.tool("error_entry_update_failed")), Duration.LONG)
                 android.util.Log.e("TIMER", "Failed to update timer entry: ${result.error}")
             }
         } catch (e: Exception) {
-            android.widget.Toast.makeText(
-                context,
-                s.shared("message_error").format(e.message ?: ""),
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
             android.util.Log.e("TIMER", "Exception updating timer entry", e)
         }
     }

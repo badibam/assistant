@@ -940,11 +940,7 @@ fun TrackingConfigScreen(
     // Show error toast when errorMessage is set
     errorMessage?.let { message ->
         LaunchedEffect(message) {
-            android.widget.Toast.makeText(
-                context,
-                message,
-                android.widget.Toast.LENGTH_LONG
-            ).show()
+            UI.Toast(context, message, Duration.LONG)
             errorMessage = null
         }
     }

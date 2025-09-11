@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
@@ -82,12 +81,12 @@ fun CreateZoneScreen(
                 }
             } else {
                 // Validation échouée, afficher erreur via Toast
-                Toast.makeText(context, validation.errorMessage, Toast.LENGTH_LONG).show()
+                UI.Toast(context, validation.errorMessage ?: s.shared("message_validation_error_simple"), Duration.LONG)
             }
             
         } catch (e: Exception) {
             // Erreur technique de validation
-            Toast.makeText(context, "Erreur de validation: ${e.message}", Toast.LENGTH_LONG).show()
+            UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
         }
     }
     

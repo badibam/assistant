@@ -198,7 +198,7 @@ UI.FormField(
 ```kotlin
 errorMessage?.let { message ->
     LaunchedEffect(message) {
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        UI.Toast(context, message, Duration.LONG)
         errorMessage = null
     }
 }
@@ -362,8 +362,9 @@ if (showCreateZone) {
 
 ```kotlin
 // Messages temporaires
-UI.Toast(FeedbackType.SUCCESS, "Configuration sauvegardée")
-UI.Snackbar(FeedbackType.ERROR, "Erreur réseau", "RÉESSAYER") { retry() }
+UI.Toast(context, "Configuration sauvegardée", Duration.SHORT)
+UI.Toast(context, "Erreur réseau", Duration.LONG)
+// Note: Snackbar avec actions à implémenter plus tard si nécessaire
 ```
 
 ## ═══════════════════════════════════

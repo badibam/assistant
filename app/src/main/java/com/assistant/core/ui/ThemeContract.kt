@@ -1,5 +1,6 @@
 package com.assistant.core.ui
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
@@ -84,11 +85,10 @@ interface ThemeContract {
     // FEEDBACK SYSTEM
     // =====================================
     
-    @Composable
     fun Toast(
-        type: FeedbackType,
+        context: Context,
         message: String,
-        duration: Duration
+        duration: Duration = Duration.SHORT
     )
     
     @Composable

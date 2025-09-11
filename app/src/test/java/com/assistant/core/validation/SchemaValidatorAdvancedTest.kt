@@ -1,7 +1,10 @@
 package com.assistant.core.validation
 
+import android.content.Context
 import org.junit.Test
 import org.junit.Assert.*
+import org.mockito.Mockito.*
+import com.assistant.core.validation.SchemaProvider
 
 /**
  * Advanced tests for SchemaValidator with complex scenarios
@@ -38,7 +41,12 @@ class SchemaValidatorAdvancedTest {
             )
         )
         
-        val result = SchemaValidator.validate(trackingSchema, validTrackingData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(trackingSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, validTrackingData, mockContext, "data")
         
         assertTrue("Tracking data should be valid", result.isValid)
     }
@@ -77,7 +85,12 @@ class SchemaValidatorAdvancedTest {
             )
         )
         
-        val result = SchemaValidator.validate(nestedSchema, nestedData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(nestedSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, nestedData, mockContext, "data")
         
         assertTrue("Nested objects should validate correctly", result.isValid)
     }
@@ -111,7 +124,12 @@ class SchemaValidatorAdvancedTest {
             )
         )
         
-        val result = SchemaValidator.validate(arraySchema, arrayData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(arraySchema)
+        
+        val result = SchemaValidator.validate(mockProvider, arrayData, mockContext, "data")
         
         assertTrue("Arrays should validate correctly", result.isValid)
     }
@@ -135,7 +153,12 @@ class SchemaValidatorAdvancedTest {
             "value" to 42
         )
         
-        val result = SchemaValidator.validate(simpleSchema, dataWithContext)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(simpleSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, dataWithContext, mockContext, "data")
         
         assertTrue("Auto-detected context should not break validation", result.isValid)
     }
@@ -158,7 +181,12 @@ class SchemaValidatorAdvancedTest {
             "age" to "not-a-number"  // Wrong type
         )
         
-        val result = SchemaValidator.validate(schema, invalidData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schema)
+        
+        val result = SchemaValidator.validate(mockProvider, invalidData, mockContext, "data")
         
         assertFalse("Should fail validation", result.isValid)
         assertNotNull("Should have error message", result.errorMessage)

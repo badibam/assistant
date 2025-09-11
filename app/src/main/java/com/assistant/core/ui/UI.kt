@@ -1,5 +1,5 @@
 package com.assistant.core.ui
-
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
@@ -102,12 +102,11 @@ object UI {
     // FEEDBACK SYSTEM
     // =====================================
     
-    @Composable
     fun Toast(
-        type: FeedbackType,
+        context: Context,
         message: String,
         duration: Duration = Duration.SHORT
-    ) = CurrentTheme.current.Toast(type, message, duration)
+    ) = CurrentTheme.current.Toast(context, message, duration)
     
     @Composable
     fun Snackbar(

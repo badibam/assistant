@@ -1,9 +1,10 @@
 package com.assistant.core.tools.ui
 
 import android.content.Context
-import android.widget.Toast
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.ui.UI
+import com.assistant.core.ui.Duration
 
 /**
  * Helper de validation unifiée pour tous les tooltypes.
@@ -33,7 +34,8 @@ object ValidationHelper {
         val toolType = ToolTypeManager.getToolType(toolTypeName)
         
         if (toolType == null) {
-            val errorMsg = "Type d'outil '$toolTypeName' introuvable"
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val errorMsg = s.shared("error_tooltype_not_found").format(toolTypeName)
             android.util.Log.e("ValidationHelper", errorMsg)
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
@@ -48,7 +50,8 @@ object ValidationHelper {
             onSuccess(jsonString)
             return true
         } else {
-            val errorMsg = validation.errorMessage ?: "Erreur de validation"
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val errorMsg = validation.errorMessage ?: s.shared("message_validation_error_simple")
             android.util.Log.e("ValidationHelper", "Validation failed for $toolTypeName ($schemaType): $errorMsg")
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
@@ -60,7 +63,7 @@ object ValidationHelper {
      * Affiche un toast d'erreur avec durée longue.
      */
     private fun showErrorToast(context: Context, message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        UI.Toast(context, message, Duration.LONG)
     }
     
     /**

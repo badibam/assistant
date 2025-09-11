@@ -1,7 +1,10 @@
 package com.assistant.core.validation
 
+import android.content.Context
 import org.junit.Test
 import org.junit.Assert.*
+import org.mockito.Mockito.*
+import com.assistant.core.validation.SchemaProvider
 
 /**
  * Tests for recursive validation of nested structures
@@ -38,7 +41,12 @@ class SchemaValidatorRecursiveTest {
             )
         )
         
-        val result = SchemaValidator.validate(schemaWithNestedValidation, validArrayData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schemaWithNestedValidation)
+        
+        val result = SchemaValidator.validate(mockProvider, validArrayData, mockContext, "data")
         
         assertTrue("Array items should be validated recursively", result.isValid)
     }
@@ -73,7 +81,12 @@ class SchemaValidatorRecursiveTest {
             )
         )
         
-        val result = SchemaValidator.validate(schemaWithNestedValidation, invalidArrayData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(schemaWithNestedValidation)
+        
+        val result = SchemaValidator.validate(mockProvider, invalidArrayData, mockContext, "data")
         
         assertFalse("Should fail due to invalid item in array", result.isValid)
         assertNotNull("Should have error message", result.errorMessage)
@@ -124,7 +137,12 @@ class SchemaValidatorRecursiveTest {
             )
         )
         
-        val result = SchemaValidator.validate(deepNestedSchema, invalidDeepData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(deepNestedSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, invalidDeepData, mockContext, "data")
         
         assertFalse("Should fail due to invalid email pattern", result.isValid) 
         assertNotNull("Should have error message", result.errorMessage)
@@ -180,7 +198,12 @@ class SchemaValidatorRecursiveTest {
             )
         )
         
-        val result = SchemaValidator.validate(complexSchema, complexValidData)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(complexSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, complexValidData, mockContext, "data")
         
         assertTrue("Complex nested arrays should validate correctly", result.isValid)
     }
@@ -217,7 +240,12 @@ class SchemaValidatorRecursiveTest {
             )
         )
         
-        val result = SchemaValidator.validate(contextualSchema, dataWithContext)
+        // Create mock SchemaProvider and Context
+        val mockProvider = mock(SchemaProvider::class.java)
+        val mockContext = mock(Context::class.java)
+        `when`(mockProvider.getSchema("data")).thenReturn(contextualSchema)
+        
+        val result = SchemaValidator.validate(mockProvider, dataWithContext, mockContext, "data")
         
         assertTrue("Context should not interfere with recursive validation", result.isValid)
     }

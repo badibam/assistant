@@ -596,36 +596,17 @@ object DefaultTheme : ThemeContract {
     // FEEDBACK SYSTEM
     // =====================================
     
-    @Composable
     override fun Toast(
-        type: FeedbackType,
+        context: android.content.Context,
         message: String,
         duration: Duration
     ) {
-        // TODO: Implémenter Toast (pas natif dans Compose, nécessite une lib externe)
-        // Pour l'instant, on simule avec une Card temporaire
-        androidx.compose.material3.Card(
-            colors = CardDefaults.cardColors(
-                containerColor = when (type) {
-                    FeedbackType.SUCCESS -> Colors.SuccessContainer
-                    FeedbackType.ERROR -> Colors.ErrorContainer
-                    FeedbackType.WARNING -> Colors.WarningContainer
-                    FeedbackType.INFO -> Colors.InfoContainer
-                }
-            ),
-            shape = CardShape
-        ) {
-            androidx.compose.material3.Text(
-                text = message,
-                modifier = Modifier.padding(16.dp),
-                color = when (type) {
-                    FeedbackType.SUCCESS -> Colors.OnSuccessContainer
-                    FeedbackType.ERROR -> Colors.OnErrorContainer
-                    FeedbackType.WARNING -> Colors.OnWarningContainer
-                    FeedbackType.INFO -> Colors.OnInfoContainer
-                }
-            )
+        val androidDuration = when (duration) {
+            Duration.SHORT -> android.widget.Toast.LENGTH_SHORT
+            Duration.LONG -> android.widget.Toast.LENGTH_LONG
+            Duration.INDEFINITE -> android.widget.Toast.LENGTH_LONG // Pas d'équivalent, use LONG
         }
+        android.widget.Toast.makeText(context, message, androidDuration).show()
     }
     
     @Composable

@@ -71,11 +71,7 @@ fun TrackingInputManager(
                         android.util.Log.d("VALDEBUG", "=== SAVE SUCCESS ===")
                         
                         // Show success toast
-                        android.widget.Toast.makeText(
-                            context,
-                            s.tool("usage_entry_saved"),
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
+                        UI.Toast(context, s.tool("usage_entry_saved"), Duration.SHORT)
                         
                         onEntrySaved()
                     }
@@ -84,11 +80,7 @@ fun TrackingInputManager(
                         val errorMsg = result.error ?: s.tool("error_entry_saving")
                         android.util.Log.e("VALDEBUG", "=== SAVE FAILED ===")
                         android.util.Log.e("VALDEBUG", "Save failed: status=${result.status}, error=$errorMsg")
-                        android.widget.Toast.makeText(
-                            context,
-                            errorMsg,
-                            android.widget.Toast.LENGTH_LONG
-                        ).show()
+                        UI.Toast(context, errorMsg, Duration.LONG)
                     }
                 }
                 
@@ -96,11 +88,7 @@ fun TrackingInputManager(
                 // Show error toast
                 android.util.Log.e("VALDEBUG", "=== SAVE EXCEPTION ===")
                 android.util.Log.e("VALDEBUG", "Exception during save", e)
-                android.widget.Toast.makeText(
-                    context,
-                    s.shared("message_error").format(e.message ?: ""),
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
             } finally {
                 isLoading = false
             }
