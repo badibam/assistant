@@ -9,12 +9,12 @@ import com.assistant.core.validation.SchemaProvider
  */
 class AppConfigSchemaProvider(private val context: Context) : SchemaProvider {
     
-    override fun getSchema(schemaType: String): String? {
+    override fun getSchema(schemaType: String, context: Context): String? {
         return when (schemaType) {
-            "temporal" -> AppConfigSchemas.TEMPORAL_SCHEMA
+            "temporal" -> AppConfigSchemas.getTemporalSchema(context)
             // Future schema types:
-            // "ui" -> AppConfigSchemas.UI_SCHEMA
-            // "data" -> AppConfigSchemas.DATA_SCHEMA
+            // "ui" -> AppConfigSchemas.getUiSchema(context)
+            // "data" -> AppConfigSchemas.getDataSchema(context)
             else -> null
         }
     }

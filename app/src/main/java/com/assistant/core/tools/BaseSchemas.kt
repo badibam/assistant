@@ -14,7 +14,8 @@ object BaseSchemas {
      * Base configuration schema for all tool types
      * Common fields: name, description, management, display_mode, icon_name
      */
-    fun getBaseConfigSchema(): String {
+    fun getBaseConfigSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
         return """
         {
             "type": "object",
@@ -23,38 +24,38 @@ object BaseSchemas {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 60,
-                    "description": "Display name for this tool instance"
+                    "description": "${s.shared("tools_base_schema_config_name")}"
                 },
                 "description": {
                     "type": "string",
                     "maxLength": 250,
-                    "description": "Optional description for this tool instance"
+                    "description": "${s.shared("tools_base_schema_config_description")}"
                 },
                 "management": {
                     "type": "string",
                     "enum": ["manual", "ai"],
-                    "description": "Management type: manual input or AI-assisted"
+                    "description": "${s.shared("tools_base_schema_config_management")}"
                 },
                 "display_mode": {
                     "type": "string",
                     "enum": ["ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL"],
-                    "description": "Display mode for this tool instance"
+                    "description": "${s.shared("tools_base_schema_config_display_mode")}"
                 },
                 "icon_name": {
                     "type": "string",
                     "maxLength": 60,
                     "default": "activity",
-                    "description": "Icon name for this tool instance"
+                    "description": "${s.shared("tools_base_schema_config_icon_name")}"
                 },
                 "config_validation": {
                     "type": "string",
                     "enum": ["enabled", "disabled"],
-                    "description": "Configuration validation mode"
+                    "description": "${s.shared("tools_base_schema_config_config_validation")}"
                 },
                 "data_validation": {
                     "type": "string", 
                     "enum": ["enabled", "disabled"],
-                    "description": "Data validation mode"
+                    "description": "${s.shared("tools_base_schema_config_data_validation")}"
                 }
             },
             "required": ["name", "management", "display_mode", "config_validation", "data_validation"],
@@ -67,43 +68,44 @@ object BaseSchemas {
      * Base data schema for all tool types
      * Common fields: id, tool_instance_id, tooltype, name, timestamp, created_at, updated_at
      */
-    fun getBaseDataSchema(): String {
+    fun getBaseDataSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
         return """
         {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "string",
-                    "description": "Unique identifier for this data entry"
+                    "description": "${s.shared("tools_base_schema_data_id")}"
                 },
                 "tool_instance_id": {
                     "type": "string",
-                    "description": "ID of the tool instance this data belongs to"
+                    "description": "${s.shared("tools_base_schema_data_tool_instance_id")}"
                 },
                 "tooltype": {
                     "type": "string",
-                    "description": "Type of the tool (tracking, goal, etc.)"
+                    "description": "${s.shared("tools_base_schema_data_tooltype")}"
                 },
                 "name": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 60,
-                    "description": "Name/identifier for this specific data entry"
+                    "description": "${s.shared("tools_base_schema_data_name")}"
                 },
                 "timestamp": {
                     "type": "number",
                     "minimum": 0,
-                    "description": "Timestamp when this data was recorded (user-specified)"
+                    "description": "${s.shared("tools_base_schema_data_timestamp")}"
                 },
                 "created_at": {
                     "type": "integer",
                     "minimum": 0,
-                    "description": "Timestamp when this entry was created in the system"
+                    "description": "${s.shared("tools_base_schema_data_created_at")}"
                 },
                 "updated_at": {
                     "type": "integer",
                     "minimum": 0,
-                    "description": "Timestamp when this entry was last updated"
+                    "description": "${s.shared("tools_base_schema_data_updated_at")}"
                 }
             },
             "required": ["tool_instance_id", "tooltype", "name", "timestamp"]

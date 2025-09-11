@@ -45,19 +45,19 @@ object TrackingToolType : ToolTypeContract {
         )
     }
     
-    override fun getConfigSchema(): String {
+    override fun getConfigSchema(context: Context): String {
         // Combine base schema with tracking-specific schema from external object
         return BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseConfigSchema(),
-            TrackingSchemas.CONFIG_SCHEMA
+            BaseSchemas.getBaseConfigSchema(context),
+            TrackingSchemas.getConfigSchema(context)
         )
     }
     
-    override fun getDataSchema(): String? {
+    override fun getDataSchema(context: Context): String? {
         // Combine base schema with tracking-specific schema from external object
         return BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(),
-            TrackingSchemas.DATA_SCHEMA
+            BaseSchemas.getBaseDataSchema(context),
+            TrackingSchemas.getDataSchema(context)
         )
     }
     
@@ -124,12 +124,6 @@ object TrackingToolType : ToolTypeContract {
             onNavigateBack = onNavigateBack,
             onConfigureClick = onLongClick
         )
-    }
-    
-    override fun validateData(data: Any, operation: String): ValidationResult {
-        // Legacy method - validation is now handled by SchemaValidator V3
-        // This method is kept for compatibility but all validation is centralized
-        return ValidationResult.success()
     }
     
     override fun getDatabaseMigrations(): List<Migration> {

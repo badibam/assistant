@@ -181,6 +181,46 @@
     <string name="tools_loading_config">Chargement de la configuration...</string>
     <string name="tools_error_load_tool">Impossible de charger l\'outil</string>
     <string name="tools_error_loading">Erreur lors du chargement</string>
+
+    <!-- Tools BASE SCHEMA CONFIG - Descriptions communes pour validation des configurations -->
+    <string name="tools_base_schema_config_name"></string>
+    <string name="tools_base_schema_config_description"></string>
+    <string name="tools_base_schema_config_management"></string>
+    <string name="tools_base_schema_config_display_mode"></string>
+    <string name="tools_base_schema_config_icon_name"></string>
+    <string name="tools_base_schema_config_config_validation"></string>
+    <string name="tools_base_schema_config_data_validation"></string>
+    
+    <!-- Tools BASE SCHEMA DATA - Descriptions communes pour validation des données -->
+    <string name="tools_base_schema_data_id"></string>
+    <string name="tools_base_schema_data_tool_instance_id"></string>
+    <string name="tools_base_schema_data_tooltype"></string>
+    <string name="tools_base_schema_data_name"></string>
+    <string name="tools_base_schema_data_timestamp"></string>
+    <string name="tools_base_schema_data_created_at"></string>
+    <string name="tools_base_schema_data_updated_at"></string>
+
+    <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
+    <string name="app_config_schema_temporal_week_start_day"></string>
+    <string name="app_config_schema_temporal_day_start_hour"></string>
+    <string name="app_config_schema_temporal_relative_label_limits"></string>
+    <string name="app_config_schema_temporal_hour_limit"></string>
+    <string name="app_config_schema_temporal_day_limit"></string>
+    <string name="app_config_schema_temporal_week_limit"></string>
+    <string name="app_config_schema_temporal_month_limit"></string>
+    <string name="app_config_schema_temporal_year_limit"></string>
+
+    <!-- MAIN SCREEN SCHEMA - Descriptions pour validation écran principal -->
+    <string name="main_screen_schema_zone_display_mode"></string>
+    <string name="main_screen_schema_show_zone_descriptions"></string>
+    <string name="main_screen_schema_zones_per_row"></string>
+    <string name="main_screen_schema_enable_quick_actions"></string>
+
+    <!-- ZONE SCHEMA - Descriptions pour validation zones -->
+    <string name="zone_schema_name"></string>
+    <string name="zone_schema_description"></string>
+    <string name="zone_schema_icon_name"></string>
+    <string name="zone_schema_color"></string>
     
 
 

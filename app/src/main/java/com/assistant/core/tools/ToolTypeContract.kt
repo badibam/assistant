@@ -27,27 +27,29 @@ interface ToolTypeContract : SchemaProvider {
     fun getDefaultConfig(): String
     
     // ═══ Schema Provider Implementation ═══
-    
+
     /**
      * Override getSchema to delegate to specific methods for ToolTypes
      */
-    override fun getSchema(schemaType: String): String? = when(schemaType) {
-        "config" -> getConfigSchema()
-        "data" -> getDataSchema()
+    override fun getSchema(schemaType: String, context: Context): String? = when(schemaType) {
+        "config" -> getConfigSchema(context)
+        "data" -> getDataSchema(context)
         else -> null
     }
     
     /**
      * Configuration schema for this tool type (REQUIRED)
+     * @param context Android context for string resource access
      * @return JSON Schema string for configuration validation
      */
-    fun getConfigSchema(): String
+    fun getConfigSchema(context: Context): String
     
     /**
      * Data schema for this tool type (OPTIONAL)
+     * @param context Android context for string resource access
      * @return JSON Schema string for data validation, or null if no data schema
      */
-    fun getDataSchema(): String? = null
+    fun getDataSchema(context: Context): String? = null
     
     
     /**
@@ -119,14 +121,6 @@ interface ToolTypeContract : SchemaProvider {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
-    
-    /**
-     * Validate data before storage operation
-     * @param data Complete data entry to validate (type depends on tool)
-     * @param operation Type of operation (create, update, delete)
-     * @return ValidationResult with success/error details
-     */
-    fun validateData(data: Any, operation: String): ValidationResult
     
     /**
      * Get database migrations for this tool type

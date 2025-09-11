@@ -1,5 +1,8 @@
 package com.assistant.core.schemas
 
+import android.content.Context
+import com.assistant.core.strings.Strings
+
 /**
  * Schémas JSON pour la validation des catégories de configuration de l'application
  * Chaque catégorie possède son propre schéma de validation
@@ -10,63 +13,67 @@ object AppConfigSchemas {
      * Schéma pour la catégorie "temporal"
      * Validation des paramètres temporels de l'application
      */
-    const val TEMPORAL_SCHEMA = """
-    {
-        "type": "object",
-        "properties": {
-            "week_start_day": {
-                "type": "string",
-                "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-                "description": "Premier jour de la semaine"
-            },
-            "day_start_hour": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 23,
-                "description": "Heure de début de journée (0-23h)"
-            },
-            "relative_label_limits": {
-                "type": "object",
-                "properties": {
-                    "hour_limit": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 24,
-                        "description": "Limite des labels relatifs pour les heures (±N heures)"
-                    },
-                    "day_limit": {
-                        "type": "integer", 
-                        "minimum": 1,
-                        "maximum": 30,
-                        "description": "Limite des labels relatifs pour les jours (±N jours)"
-                    },
-                    "week_limit": {
-                        "type": "integer",
-                        "minimum": 1, 
-                        "maximum": 12,
-                        "description": "Limite des labels relatifs pour les semaines (±N semaines)"
-                    },
-                    "month_limit": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 24,
-                        "description": "Limite des labels relatifs pour les mois (±N mois)"
-                    },
-                    "year_limit": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 10,
-                        "description": "Limite des labels relatifs pour les années (±N années)"
-                    }
+    fun getTemporalSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return """
+        {
+            "type": "object",
+            "properties": {
+                "week_start_day": {
+                    "type": "string",
+                    "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+                    "description": "${s.shared("app_config_schema_temporal_week_start_day")}"
                 },
-                "required": ["hour_limit", "day_limit", "week_limit", "month_limit", "year_limit"],
-                "additionalProperties": false
-            }
-        },
-        "required": ["week_start_day", "day_start_hour", "relative_label_limits"],
-        "additionalProperties": false
+                "day_start_hour": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23,
+                    "description": "${s.shared("app_config_schema_temporal_day_start_hour")}"
+                },
+                "relative_label_limits": {
+                    "type": "object",
+                    "description": "${s.shared("app_config_schema_temporal_relative_label_limits")}",
+                    "properties": {
+                        "hour_limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 24,
+                            "description": "${s.shared("app_config_schema_temporal_hour_limit")}"
+                        },
+                        "day_limit": {
+                            "type": "integer", 
+                            "minimum": 1,
+                            "maximum": 30,
+                            "description": "${s.shared("app_config_schema_temporal_day_limit")}"
+                        },
+                        "week_limit": {
+                            "type": "integer",
+                            "minimum": 1, 
+                            "maximum": 12,
+                            "description": "${s.shared("app_config_schema_temporal_week_limit")}"
+                        },
+                        "month_limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 24,
+                            "description": "${s.shared("app_config_schema_temporal_month_limit")}"
+                        },
+                        "year_limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10,
+                            "description": "${s.shared("app_config_schema_temporal_year_limit")}"
+                        }
+                    },
+                    "required": ["hour_limit", "day_limit", "week_limit", "month_limit", "year_limit"],
+                    "additionalProperties": false
+                }
+            },
+            "required": ["week_start_day", "day_start_hour", "relative_label_limits"],
+            "additionalProperties": false
+        }
+        """.trimIndent()
     }
-    """
     
     // Future schemas:
     /*
@@ -119,11 +126,11 @@ object AppConfigSchemas {
     /**
      * Récupère le schéma pour une catégorie donnée
      */
-    fun getSchemaForCategory(category: String): String? {
+    fun getSchemaForCategory(category: String, context: Context): String? {
         return when (category) {
-            "temporal" -> TEMPORAL_SCHEMA
-            // "ui" -> UI_SCHEMA
-            // "data" -> DATA_SCHEMA
+            "temporal" -> getTemporalSchema(context)
+            // "ui" -> getUiSchema(context)
+            // "data" -> getDataSchema(context)
             else -> null
         }
     }

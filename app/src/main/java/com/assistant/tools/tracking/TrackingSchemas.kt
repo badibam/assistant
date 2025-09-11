@@ -10,12 +10,6 @@ import com.assistant.core.strings.Strings
  */
 object TrackingSchemas {
     
-    /**
-     * Configuration schema template with placeholders for localized descriptions
-     * @deprecated Use getConfigSchema(context) instead for localized descriptions
-     */
-    @Deprecated("Use getConfigSchema(context) for localized descriptions")
-    val CONFIG_SCHEMA get() = CONFIG_SCHEMA_TEMPLATE
     
     /**
      * Configuration schema template with placeholders
@@ -187,12 +181,6 @@ object TrackingSchemas {
         }
     """.trimIndent()
     
-    /**
-     * Data schema with localized descriptions
-     * @deprecated Use getDataSchema(context) instead for localized descriptions
-     */
-    @Deprecated("Use getDataSchema(context) for localized descriptions")
-    val DATA_SCHEMA get() = DATA_SCHEMA_TEMPLATE
     
     /**
      * Data schema template with placeholders

@@ -1,5 +1,8 @@
 package com.assistant.core.schemas
 
+import android.content.Context
+import com.assistant.core.strings.Strings
+
 /**
  * External JSON schemas for Zone configuration
  * Keeps schemas separate from business logic for better maintainability
@@ -9,7 +12,9 @@ object ZoneSchemas {
     /**
      * Configuration schema for zone creation and modification
      */
-    val CONFIG_SCHEMA = """
+    fun getConfigSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return """
         {
             "type": "object",
             "properties": {
@@ -17,26 +22,27 @@ object ZoneSchemas {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 60,
-                    "description": "Zone display name"
+                    "description": "${s.shared("zone_schema_name")}"
                 },
                 "description": {
                     "type": "string",
                     "maxLength": 250,
-                    "description": "Optional zone description"
+                    "description": "${s.shared("zone_schema_description")}"
                 },
                 "icon_name": {
                     "type": "string",
                     "maxLength": 60,
                     "default": "folder",
-                    "description": "Icon name for this zone"
+                    "description": "${s.shared("zone_schema_icon_name")}"
                 },
                 "color": {
                     "type": "string",
                     "maxLength": 60,
-                    "description": "Color theme for this zone"
+                    "description": "${s.shared("zone_schema_color")}"
                 }
             },
             "required": ["name"]
         }
-    """.trimIndent()
+        """.trimIndent()
+    }
 }

@@ -10,15 +10,15 @@ import com.assistant.core.schemas.MainScreenSchemas
  */
 object MainScreenSchemaProvider : SchemaProvider {
     
-    override fun getSchema(schemaType: String): String? {
+    override fun getSchema(schemaType: String, context: Context): String? {
         return when (schemaType) {
-            "config" -> MainScreenSchemas.CONFIG_SCHEMA
+            "config" -> MainScreenSchemas.getConfigSchema(context)
             else -> null
         }
     }
     
     fun getConfigSchema(context: Context): String {
-        return MainScreenSchemas.CONFIG_SCHEMA
+        return MainScreenSchemas.getConfigSchema(context)
     }
     
     override fun getFormFieldName(fieldName: String, context: android.content.Context?): String {

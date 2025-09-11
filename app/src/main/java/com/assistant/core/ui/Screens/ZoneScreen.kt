@@ -120,7 +120,7 @@ fun ZoneScreen(
             // Update existing tool
             coroutineScope.launch {
                 try {
-                    val configMetadata = ToolTypeManager.getToolType(tool.tool_type)?.getConfigSchema() ?: "{}"
+                    val configMetadata = ToolTypeManager.getToolType(tool.tool_type)?.getConfigSchema(context) ?: "{}"
                     val result = coordinator.processUserAction("update->tool_instance", mapOf(
                         "tool_instance_id" to tool.id,
                         "config_json" to config,
@@ -137,7 +137,7 @@ fun ZoneScreen(
             // Create new tool
             coroutineScope.launch {
                 try {
-                    val configMetadata = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema() ?: "{}"
+                    val configMetadata = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema(context) ?: "{}"
                     val result = coordinator.processUserAction("create->tool_instance", mapOf(
                         "zone_id" to zone.id,
                         "tool_type" to toolTypeId,

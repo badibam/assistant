@@ -31,7 +31,7 @@ object SchemaValidator {
      * @return ValidationResult with success/error status and user-friendly messages
      */
     fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, schemaType: String = "config"): ValidationResult {
-        val schema = schemaProvider.getSchema(schemaType) 
+        val schema = schemaProvider.getSchema(schemaType, context) 
             ?: throw IllegalArgumentException("SchemaProvider has no '$schemaType' schema")
         safeLog("SCHEMADEBUG: SCHEMA VALIDATION START")
         

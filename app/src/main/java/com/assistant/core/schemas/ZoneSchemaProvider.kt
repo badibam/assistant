@@ -11,9 +11,9 @@ import com.assistant.core.schemas.ZoneSchemas
  */
 class ZoneSchemaProvider(private val context: Context) : SchemaProvider {
     
-    override fun getSchema(schemaType: String): String? {
+    override fun getSchema(schemaType: String, context: Context): String? {
         return when (schemaType) {
-            "config" -> ZoneSchemas.CONFIG_SCHEMA
+            "config" -> ZoneSchemas.getConfigSchema(context)
             else -> null
         }
     }

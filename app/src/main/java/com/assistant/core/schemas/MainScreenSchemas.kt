@@ -1,5 +1,8 @@
 package com.assistant.core.schemas
 
+import android.content.Context
+import com.assistant.core.strings.Strings
+
 /**
  * External JSON schemas for MainScreen configuration
  * Keeps schemas separate from business logic for better maintainability
@@ -9,7 +12,9 @@ object MainScreenSchemas {
     /**
      * Configuration schema for main screen layout and display preferences
      */
-    val CONFIG_SCHEMA = """
+    fun getConfigSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return """
         {
             "type": "object",
             "properties": {
@@ -17,27 +22,28 @@ object MainScreenSchemas {
                     "type": "string",
                     "enum": ["list", "grid", "compact"],
                     "default": "list",
-                    "description": "How zones are displayed on the main screen"
+                    "description": "${s.shared("main_screen_schema_zone_display_mode")}"
                 },
                 "show_zone_descriptions": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Whether to show zone descriptions"
+                    "description": "${s.shared("main_screen_schema_show_zone_descriptions")}"
                 },
                 "zones_per_row": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 4,
                     "default": 2,
-                    "description": "Number of zones per row in grid mode"
+                    "description": "${s.shared("main_screen_schema_zones_per_row")}"
                 },
                 "enable_quick_actions": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Enable quick action buttons on zones"
+                    "description": "${s.shared("main_screen_schema_enable_quick_actions")}"
                 }
             },
             "required": []
         }
-    """.trimIndent()
+        """.trimIndent()
+    }
 }
