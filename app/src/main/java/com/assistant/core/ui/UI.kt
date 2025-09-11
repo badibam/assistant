@@ -11,14 +11,13 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.ToolTypeManager
-import com.assistant.themes.default.DefaultTheme
 import org.json.JSONObject
 
 /**
  * UI - API publique unifiée
  * UNIQUEMENT les composants VISUELS (thématisés)
  * 
- * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
+ * LAYOUTS : use Compose Row/Column/Box/Spacer directly
  * VISUELS : utiliser UI.* pour thématisation
  * 
  * Principe : UI.* → délégation au thème actuel via CurrentTheme.current
@@ -26,7 +25,7 @@ import org.json.JSONObject
 object UI {
     
     // =====================================
-    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
+    // LAYOUTS : USE COMPOSE DIRECTLY
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
     // NO wrappers - direct access for maximum flexibility

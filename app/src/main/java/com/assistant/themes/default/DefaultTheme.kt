@@ -34,6 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.ThemeContract
+import com.assistant.core.ui.ThemePalette
+import com.assistant.core.ui.BasePalette
 import com.assistant.core.ui.ButtonType
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
@@ -61,110 +63,68 @@ import com.assistant.core.ui.FieldType
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
     
-    // =====================================
-    // CENTRALIZED COLOR PALETTE
-    // =====================================
-    object Colors {
-        // LIGHT THEME - Material Design (commented)
-        /*
-        // Primary colors
-        val Primary = Color(0xFF1976D2)        // Bleu Material
-        val OnPrimary = Color(0xFFFFFFFF)      // Blanc
-        val Secondary = Color(0xFF03DAC6)      // Teal
-        val OnSecondary = Color(0xFF000000)    // Noir
-        
-        // Surface colors
-        val Surface = Color(0xFFFFFFFF)        // Blanc
-        val OnSurface = Color(0xFF1C1B1F)      // Gris foncé
-        val SurfaceVariant = Color(0xFFF3F0F4) // Gris très clair
-        val OnSurfaceVariant = Color(0xFF49454F) // Gris moyen foncé
-        
-        // Background colors
-        val Background = Color(0xFFFFFBFE)     // Blanc légèrement teinté
-        val OnBackground = Color(0xFF1C1B1F)   // Gris foncé
-        
-        // Feedback colors
-        val Error = Color(0xFFB3261E)          // Rouge
-        val OnError = Color(0xFFFFFFFF)        // Blanc
-        val Success = Color(0xFF4CAF50)        // Vert
-        val OnSuccess = Color(0xFFFFFFFF)      // Blanc
-        val Warning = Color(0xFFFF9800)        // Orange
-        val OnWarning = Color(0xFF000000)      // Noir
-        
-        // Outline & borders
-        val Outline = Color(0xFF79747E)        // Gris moyen
-        val OutlineVariant = Color(0xFFCAC4D0) // Gris clair
-        
-        // Container colors for feedback
-        val SuccessContainer = Color(0xFFD1F2EB) // Vert clair
-        val OnSuccessContainer = Color(0xFF00695C) // Vert foncé
-        val ErrorContainer = Color(0xFFFDEAEA)   // Rouge clair
-        val OnErrorContainer = Color(0xFFD32F2F) // Rouge foncé
-        val WarningContainer = Color(0xFFFFF3CD) // Jaune clair
-        val OnWarningContainer = Color(0xFFE65100) // Orange foncé
-        val InfoContainer = Color(0xFFF5F5F5)    // Gris très clair
-        val OnInfoContainer = Color(0xFF616161)  // Gris moyen
-        */
-        
-        // NERDY DARK THEME - Terminal/Hacker vibes
-        // Primary colors - Vert terminal classique
-        val Primary = Color(0xFF00FF41)        // Vert Matrix/terminal
-        val OnPrimary = Color(0xFF0D1117)      // Noir terminal profond
-        val Secondary = Color(0xFF58A6FF)      // Bleu code (GitHub)
-        val OnSecondary = Color(0xFF0D1117)    // Noir terminal profond
-        
-        // Surface colors - Tons sombres GitHub/VS Code
-        val Surface = Color(0xFF161B22)        // Gris sombre GitHub
-        val OnSurface = Color(0xFFF0F6FC)      // Terminal off-white
-        val SurfaceVariant = Color(0xFF21262D) // Gris moyen GitHub
-        val OnSurfaceVariant = Color(0xFF8B949E) // Gris commentaire
-        
-        // Background colors - Noir terminal profond
-        val Background = Color(0xFF0D1117)     // Noir GitHub/terminal
-        val OnBackground = Color(0xFFF0F6FC)   // Terminal off-white
-        
-        // Feedback colors - Couleurs terminal/code
-        val Error = Color(0xFFFF6B6B)          // Rouge terminal doux
-        val OnError = Color(0xFF0D1117)        // Noir terminal profond
-        val Success = Color(0xFF7CE38B)        // Vert terminal doux
-        val OnSuccess = Color(0xFF0D1117)      // Noir terminal profond
-        val Warning = Color(0xFFFFD93D)        // Jaune terminal
-        val OnWarning = Color(0xFF0D1117)      // Noir terminal profond
-        
-        // Outline & borders - Subtils mais visibles
-        val Outline = Color(0xFF30363D)        // Bordure GitHub subtile
-        val OutlineVariant = Color(0xFF21262D) // Bordure plus subtile
-        
-        // Container colors for feedback - Tons sombres
-        val SuccessContainer = Color(0xFF1A3A2E) // Vert très sombre
-        val OnSuccessContainer = Color(0xFF7CE38B) // Vert terminal doux
-        val ErrorContainer = Color(0xFF3D1A1A)   // Rouge très sombre
-        val OnErrorContainer = Color(0xFFFF6B6B) // Rouge terminal doux
-        val WarningContainer = Color(0xFF3D3A1A) // Jaune très sombre
-        val OnWarningContainer = Color(0xFFFFD93D) // Jaune terminal
-        val InfoContainer = Color(0xFF1A2332)    // Bleu très sombre
-        val OnInfoContainer = Color(0xFF58A6FF)  // Bleu code
-    }
 
     // =====================================
-    // CUSTOM MATERIAL3 COLORSCHEME
+    // PALETTE SYSTEM IMPLEMENTATION
     // =====================================
-    override val colorScheme = darkColorScheme(
-        primary = Colors.Primary,
-        onPrimary = Colors.OnPrimary,
-        secondary = Colors.Secondary,
-        onSecondary = Colors.OnSecondary,
-        surface = Colors.Surface,
-        onSurface = Colors.OnSurface,
-        surfaceVariant = Colors.SurfaceVariant,
-        onSurfaceVariant = Colors.OnSurfaceVariant,
-        background = Colors.Background,
-        onBackground = Colors.OnBackground,
-        error = Colors.Error,
-        onError = Colors.OnError,
-        outline = Colors.Outline,
-        outlineVariant = Colors.OutlineVariant
-    )
+    
+    /**
+     * Base palettes - LIGHT and DARK versions of default theme
+     */
+    override fun getBasePalettes(): List<ThemePalette> {
+        return listOf(
+            ThemePalette.createBase("default", BasePalette.LIGHT),
+            ThemePalette.createBase("default", BasePalette.DARK)
+        )
+    }
+    
+    /**
+     * Custom palettes - none for default theme (minimalist approach)
+     */
+    override fun getCustomPalettes(): List<ThemePalette> {
+        return emptyList()
+    }
+    
+    /**
+     * Gets ColorScheme for specific palette
+     */
+    override fun getColorScheme(paletteId: String): ColorScheme {
+        return when (paletteId) {
+            "default_light" -> lightColorScheme(
+                primary = Color(0xFF1976D2),        // Material Blue
+                onPrimary = Color(0xFFFFFFFF),      // White
+                secondary = Color(0xFF03DAC6),      // Teal
+                onSecondary = Color(0xFF000000),    // Black
+                surface = Color(0xFFFFFFFF),        // White
+                onSurface = Color(0xFF1C1B1F),      // Dark Gray
+                surfaceVariant = Color(0xFFF3F0F4), // Very Light Gray
+                onSurfaceVariant = Color(0xFF49454F), // Medium Dark Gray
+                background = Color(0xFFFFFBFE),     // Off White
+                onBackground = Color(0xFF1C1B1F),   // Dark Gray
+                error = Color(0xFFBA1A1A),          // Red
+                onError = Color(0xFFFFFFFF),        // White
+                outline = Color(0xFF79747E),        // Medium Gray
+                outlineVariant = Color(0xFFCAC4D0)  // Light Gray
+            )
+            "default_dark" -> darkColorScheme(
+                primary = Color(0xFF00FF41),        // Green Matrix/terminal
+                onPrimary = Color(0xFF0D1117),      // Deep terminal black
+                secondary = Color(0xFF58A6FF),      // Code blue (GitHub)
+                onSecondary = Color(0xFF0D1117),    // Deep terminal black
+                surface = Color(0xFF161B22),        // GitHub dark gray
+                onSurface = Color(0xFFF0F6FC),      // Terminal off-white
+                surfaceVariant = Color(0xFF21262D), // GitHub medium gray
+                onSurfaceVariant = Color(0xFF8B949E), // Comment gray
+                background = Color(0xFF0D1117),     // GitHub/terminal black
+                onBackground = Color(0xFFF0F6FC),   // Terminal off-white
+                error = Color(0xFFFF6B6B),          // Soft terminal red
+                onError = Color(0xFF0D1117),        // Deep terminal black
+                outline = Color(0xFF30363D),        // Subtle GitHub border
+                outlineVariant = Color(0xFF21262D)  // More subtle border
+            )
+            else -> getColorScheme("default_dark") // Default fallback
+        }
+    }
 
     // =====================================
     // THEME SHAPE CONSTANTS
@@ -197,18 +157,18 @@ object DefaultTheme : ThemeContract {
     private fun getButtonConfig(size: Size, type: ButtonType): ButtonConfig {
         val (containerColor, contentColor, border) = when (type) {
             ButtonType.PRIMARY -> Triple(
-                Colors.Primary, 
-                Colors.OnPrimary, 
+                colorScheme.primary, 
+                colorScheme.onPrimary, 
                 null
             )
             ButtonType.SECONDARY -> Triple(
-                Colors.ErrorContainer, 
-                Colors.OnErrorContainer, 
+                colorScheme.errorContainer, 
+                colorScheme.onErrorContainer, 
                 null
             )
             ButtonType.DEFAULT -> Triple(
-                Colors.SurfaceVariant, 
-                Colors.OnSurfaceVariant, 
+                colorScheme.surfaceVariant, 
+                colorScheme.onSurfaceVariant, 
                 null
             )
         }
@@ -287,8 +247,8 @@ object DefaultTheme : ThemeContract {
         val config = getButtonConfig(size, type)
         
         Surface(
-            color = if (isEnabled) config.containerColor else Colors.SurfaceVariant,
-            contentColor = if (isEnabled) config.contentColor else Colors.OnSurfaceVariant,
+            color = if (isEnabled) config.containerColor else colorScheme.surfaceVariant,
+            contentColor = if (isEnabled) config.contentColor else colorScheme.onSurfaceVariant,
             shape = config.shape,
             border = if (isEnabled) config.border else null,
             modifier = Modifier
@@ -555,9 +515,9 @@ object DefaultTheme : ThemeContract {
         }
         
         val color = when (type) {
-            TextType.ERROR -> Colors.Error
-            TextType.WARNING -> Colors.Primary // Pas de warning dans M3, utilise primary
-            else -> Colors.OnSurface
+            TextType.ERROR -> colorScheme.error
+            TextType.WARNING -> colorScheme.primary // Pas de warning dans M3, utilise primary
+            else -> colorScheme.onSurface
         }
         
         // Construction du modifier
@@ -588,8 +548,8 @@ object DefaultTheme : ThemeContract {
             elevation = elevation,
             shape = CardShape,
             colors = CardDefaults.cardColors(
-                containerColor = Colors.Surface,
-                contentColor = Colors.OnSurface
+                containerColor = colorScheme.surface,
+                contentColor = colorScheme.onSurface
             ),
             content = { content() }
         )
@@ -631,10 +591,10 @@ object DefaultTheme : ThemeContract {
                 }
             } else null,
             containerColor = when (type) {
-                FeedbackType.SUCCESS -> Colors.OnSuccessContainer
-                FeedbackType.ERROR -> Colors.OnErrorContainer
-                FeedbackType.WARNING -> Colors.OnWarningContainer
-                FeedbackType.INFO -> Colors.OnInfoContainer
+                FeedbackType.SUCCESS -> colorScheme.primary
+                FeedbackType.ERROR -> colorScheme.onErrorContainer
+                FeedbackType.WARNING -> colorScheme.secondary
+                FeedbackType.INFO -> colorScheme.surfaceVariant
             }
         ) {
             androidx.compose.material3.Text(message)
@@ -679,7 +639,7 @@ object DefaultTheme : ThemeContract {
             painter = painterResource(id = resourceId),
             contentDescription = contentDescription,
             modifier = iconModifier,
-            tint = tint ?: Colors.OnSurface
+            tint = tint ?: colorScheme.onSurface
         )
     }
     
@@ -709,13 +669,13 @@ object DefaultTheme : ThemeContract {
                         onClick = onConfirm,
                         colors = if (type == DialogType.DANGER) {
                             ButtonDefaults.buttonColors(
-                                containerColor = Colors.Error,
-                                contentColor = Colors.OnError
+                                containerColor = colorScheme.error,
+                                contentColor = colorScheme.onError
                             )
                         } else {
                             ButtonDefaults.buttonColors(
-                                containerColor = Colors.Primary,
-                                contentColor = Colors.OnPrimary
+                                containerColor = colorScheme.primary,
+                                contentColor = colorScheme.onPrimary
                             )
                         },
                         shape = ButtonTextShape
@@ -754,8 +714,8 @@ object DefaultTheme : ThemeContract {
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Colors.Surface,
-                contentColor = Colors.OnSurface
+                containerColor = colorScheme.surface,
+                contentColor = colorScheme.onSurface
             ),
             shape = CardShape,
             modifier = Modifier
@@ -800,8 +760,8 @@ object DefaultTheme : ThemeContract {
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = CardShape,
             colors = CardDefaults.cardColors(
-                containerColor = Colors.Surface,
-                contentColor = Colors.OnSurface
+                containerColor = colorScheme.surface,
+                contentColor = colorScheme.onSurface
             ),
             modifier = cardModifier.combinedClickable(
                 onClick = onClick,
@@ -978,9 +938,9 @@ object DefaultTheme : ThemeContract {
                         text = if (checked) trueLabel else falseLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                         color = if (checked) {
-                            Colors.Primary
+                            colorScheme.primary
                         } else {
-                            Colors.OnSurfaceVariant
+                            colorScheme.onSurfaceVariant
                         }
                     )
                 }
@@ -1000,9 +960,9 @@ object DefaultTheme : ThemeContract {
                     text = if (checked) trueLabel else falseLabel,
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                     color = if (checked) {
-                        Colors.Primary
+                        colorScheme.primary
                     } else {
-                        Colors.OnSurfaceVariant
+                        colorScheme.onSurfaceVariant
                     }
                 )
             }
@@ -1035,7 +995,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = value.toString(),
                     style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                    color = Colors.Primary
+                    color = colorScheme.primary
                 )
             }
             
@@ -1056,13 +1016,13 @@ object DefaultTheme : ThemeContract {
                     androidx.compose.material3.Text(
                         text = minLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = Colors.OnSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                     )
                     
                     androidx.compose.material3.Text(
                         text = maxLabel,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = Colors.OnSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -1090,7 +1050,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = "Ajouter :",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = Colors.OnSurface
+                    color = colorScheme.onSurface
                 )
                 
                 Row(
@@ -1102,8 +1062,8 @@ object DefaultTheme : ThemeContract {
                             Button(
                                 onClick = { onIncrement(incrementValue) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Colors.SurfaceVariant,
-                                    contentColor = Colors.OnSurfaceVariant
+                                    containerColor = colorScheme.surfaceVariant,
+                                    contentColor = colorScheme.onSurfaceVariant
                                 ),
                                 shape = ButtonTextShape,
                                 modifier = Modifier.weight(1f)
@@ -1120,7 +1080,7 @@ object DefaultTheme : ThemeContract {
                 androidx.compose.material3.Text(
                     text = "Retirer :",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                    color = Colors.OnSurface
+                    color = colorScheme.onSurface
                 )
                 
                 Row(
@@ -1132,8 +1092,8 @@ object DefaultTheme : ThemeContract {
                             Button(
                                 onClick = { onIncrement(-decrementValue) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Colors.ErrorContainer,
-                                    contentColor = Colors.OnErrorContainer
+                                    containerColor = colorScheme.errorContainer,
+                                    contentColor = colorScheme.onErrorContainer
                                 ),
                                 shape = ButtonTextShape,
                                 modifier = Modifier.weight(1f)
@@ -1379,7 +1339,7 @@ object DefaultTheme : ThemeContract {
                                 painter = painterResource(iconResource),
                                 contentDescription = null,
                                 modifier = Modifier.size(24.dp),
-                                tint = Colors.OnSurface
+                                tint = colorScheme.onSurface
                             )
                         }
                     }

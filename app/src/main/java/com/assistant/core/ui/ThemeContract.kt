@@ -247,14 +247,50 @@ interface ThemeContract {
     )
     
     // =====================================
-    // COLORSCHEME MATERIAL3
+    // PALETTE SYSTEM
     // =====================================
     
     /**
-     * ColorScheme Material3 pour ce thème
-     * Utilisé par MainActivity pour configurer MaterialTheme globalement
+     * Gets all base palettes supported by this theme
+     * Every theme must provide LIGHT and DARK as minimum
+     * 
+     * @return List of base palettes (LIGHT, DARK) adapted to theme style
+     */
+    fun getBasePalettes(): List<ThemePalette>
+    
+    /**
+     * Gets custom palettes specific to this theme
+     * Optional - themes can return empty list if no custom palettes
+     * 
+     * @return List of theme-specific custom palettes
+     */
+    fun getCustomPalettes(): List<ThemePalette>
+    
+    /**
+     * Gets all available palettes (base + custom)
+     * Convenience method that combines base and custom palettes
+     * 
+     * @return List of all palettes available for this theme
+     */
+    fun getAllPalettes(): List<ThemePalette> {
+        return getBasePalettes() + getCustomPalettes()
+    }
+    
+    /**
+     * Gets ColorScheme for specific palette
+     * 
+     * @param paletteId The palette identifier (e.g., "default_light", "glass_frosted")
+     * @return ColorScheme for the palette, or default if not found
+     */
+    fun getColorScheme(paletteId: String): ColorScheme
+    
+    /**
+     * Gets default ColorScheme for this theme
+     * Used as fallback and for backward compatibility
+     * Should return the LIGHT base palette by default
      */
     val colorScheme: ColorScheme
+        get() = getColorScheme(getBasePalettes().first { it.base == BasePalette.DARK }.id)
     
     // Anciens boutons supprimés - utiliser ActionButton
 }

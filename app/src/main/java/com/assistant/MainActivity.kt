@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             MaterialTheme(
-                colorScheme = com.assistant.core.ui.CurrentTheme.current.colorScheme
+                colorScheme = com.assistant.core.ui.CurrentTheme.getCurrentColorScheme()
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize()
