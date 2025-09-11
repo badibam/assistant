@@ -26,7 +26,7 @@ object TrackingSchemas {
                 "type": {
                     "type": "string",
                     "enum": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
-                    "description": "{{TYPE_DESC}}"
+                    "description": "{{CONFIG_TYPE_DESC}}"
                 }
             },
             "required": ["type"],
@@ -39,13 +39,13 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{NUMERIC_ITEMS_DESC}}",
+                                "description": "{{CONFIG_NUMERIC_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                        "default_quantity": { "type": "number" },
-                                        "unit": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_NUMERIC_ITEM_NAME_DESC}}" },
+                                        "default_quantity": { "type": "number", "description": "{{CONFIG_NUMERIC_ITEM_DEFAULT_QUANTITY_DESC}}" },
+                                        "unit": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_NUMERIC_ITEM_UNIT_DESC}}" }
                                     },
                                     "required": ["name"]
                                 }
@@ -61,11 +61,11 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{TIMER_ITEMS_DESC}}",
+                                "description": "{{CONFIG_TIMER_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_TIMER_ITEM_NAME_DESC}}" }
                                     },
                                     "required": ["name"]
                                 }
@@ -81,7 +81,7 @@ object TrackingSchemas {
                         "properties": {
                             "options": {
                                 "type": "array",
-                                "description": "{{CHOICE_OPTIONS_DESC}}",
+                                "description": "{{CONFIG_CHOICE_OPTIONS_DESC}}",
                                 "items": {
                                     "type": "string",
                                     "minLength": 1,
@@ -100,19 +100,19 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{SCALE_ITEMS_DESC}}",
+                                "description": "{{CONFIG_SCALE_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_SCALE_ITEM_NAME_DESC}}" }
                                     },
                                     "required": ["name"]
                                 }
                             },
-                            "min": { "type": "integer", "default": 1, "description": "{{SCALE_MIN_DESC}}" },
-                            "max": { "type": "integer", "default": 10, "description": "{{SCALE_MAX_DESC}}" },
-                            "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{SCALE_MIN_LABEL_DESC}}" },
-                            "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{SCALE_MAX_LABEL_DESC}}" }
+                            "min": { "type": "integer", "default": 1, "description": "{{CONFIG_SCALE_MIN_DESC}}" },
+                            "max": { "type": "integer", "default": 10, "description": "{{CONFIG_SCALE_MAX_DESC}}" },
+                            "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_SCALE_MIN_LABEL_DESC}}" },
+                            "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_SCALE_MAX_LABEL_DESC}}" }
                         }
                     }
                 },
@@ -124,11 +124,11 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{COUNTER_ITEMS_DESC}}",
+                                "description": "{{CONFIG_COUNTER_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_COUNTER_ITEM_NAME_DESC}}" }
                                     },
                                     "required": ["name"]
                                 }
@@ -136,7 +136,7 @@ object TrackingSchemas {
                             "allow_decrement": {
                                 "type": "boolean",
                                 "default": true,
-                                "description": "{{COUNTER_ALLOW_DECREMENT_DESC}}"
+                                "description": "{{CONFIG_COUNTER_ALLOW_DECREMENT_DESC}}"
                             }
                         }
                     }
@@ -149,13 +149,13 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{BOOLEAN_ITEMS_DESC}}",
+                                "description": "{{CONFIG_BOOLEAN_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                        "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}},
-                                        "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}}
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_BOOLEAN_ITEM_NAME_DESC}}" },
+                                        "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_BOOLEAN_ITEM_TRUE_LABEL_DESC}}"},
+                                        "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_BOOLEAN_ITEM_FALSE_LABEL_DESC}}"}
                                     },
                                     "required": ["name", "true_label", "false_label"]
                                 }
@@ -171,11 +171,11 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "{{TEXT_ITEMS_DESC}}",
+                                "description": "{{CONFIG_TEXT_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
+                                        "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{CONFIG_TEXT_ITEM_NAME_DESC}}" }
                                     },
                                     "required": ["name"]
                                 }
@@ -200,14 +200,14 @@ object TrackingSchemas {
     private val DATA_SCHEMA_TEMPLATE = """
         {
             "properties": {
-                "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                "timestamp": { "type": "number" },
+                "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_NAME_DESC}}" },
+                "timestamp": { "type": "number", "description": "{{DATA_TIMESTAMP_DESC}}" },
                 "data": {
                     "type": "object",
-                    "description": "{{DATA_DESC}}",
+                    "description": "{{DATA_DATA_DESC}}",
                     "properties": {
-                        "type": { "type": "string" },
-                        "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                        "type": { "type": "string", "description": "{{DATA_TYPE_DESC}}" },
+                        "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                     },
                     "required": ["type"],
                     "additionalProperties": false
@@ -228,9 +228,9 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "numeric" },
-                                    "quantity": { "type": "number" },
-                                    "unit": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "quantity": { "type": "number", "description": "{{DATA_NUMERIC_QUANTITY_DESC}}" },
+                                    "unit": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_NUMERIC_UNIT_DESC}}" },
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "quantity"],
                                 "additionalProperties": false
@@ -251,12 +251,12 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "scale" },
-                                    "rating": { "type": "integer" },
-                                    "min_value": { "type": "integer" },
-                                    "max_value": { "type": "integer" },
-                                    "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "rating": { "type": "integer", "description": "{{DATA_SCALE_RATING_DESC}}" },
+                                    "min_value": { "type": "integer", "description": "{{DATA_SCALE_MIN_VALUE_DESC}}" },
+                                    "max_value": { "type": "integer", "description": "{{DATA_SCALE_MAX_VALUE_DESC}}" },
+                                    "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_SCALE_MIN_LABEL_DESC}}" },
+                                    "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_SCALE_MAX_LABEL_DESC}}" },
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "rating", "min_value", "max_value"],
                                 "additionalProperties": false
@@ -277,10 +277,10 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "boolean" },
-                                    "state": { "type": "boolean" },
-                                    "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "state": { "type": "boolean", "description": "{{DATA_BOOLEAN_STATE_DESC}}" },
+                                    "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_BOOLEAN_TRUE_LABEL_DESC}}" },
+                                    "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_BOOLEAN_FALSE_LABEL_DESC}}" },
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "state"],
                                 "additionalProperties": false
@@ -301,12 +301,13 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "choice" },
-                                    "selected_option": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
+                                    "selected_option": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{DATA_CHOICE_SELECTED_OPTION_DESC}}" },
                                     "available_options": {
                                         "type": "array",
+                                        "description": "{{DATA_CHOICE_AVAILABLE_OPTIONS_DESC}}",
                                         "items": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} }
                                     },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "selected_option", "available_options"],
                                 "additionalProperties": false
@@ -327,8 +328,8 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "counter" },
-                                    "increment": { "type": "integer" },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "increment": { "type": "integer", "description": "{{DATA_COUNTER_INCREMENT_DESC}}" },
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "increment"],
                                 "additionalProperties": false
@@ -349,8 +350,8 @@ object TrackingSchemas {
                             "data": {
                                 "properties": {
                                     "type": { "const": "timer" },
-                                    "duration_seconds": { "type": "integer", "minimum": 0 },
-                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
+                                    "duration_seconds": { "type": "integer", "minimum": 0, "description": "{{DATA_TIMER_DURATION_SECONDS_DESC}}" },
+                                    "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH}, "description": "{{DATA_RAW_DESC}}" }
                                 },
                                 "required": ["type", "duration_seconds"],
                                 "additionalProperties": false
@@ -368,19 +369,29 @@ object TrackingSchemas {
     fun getConfigSchema(context: Context): String {
         val s = Strings.`for`(tool = "tracking", context = context)
         return CONFIG_SCHEMA_TEMPLATE
-            .replace("{{TYPE_DESC}}", s.tool("schema_config_desc_type"))
-            .replace("{{NUMERIC_ITEMS_DESC}}", s.tool("schema_config_desc_numeric_items"))
-            .replace("{{TIMER_ITEMS_DESC}}", s.tool("schema_config_desc_timer_items"))
-            .replace("{{CHOICE_OPTIONS_DESC}}", s.tool("schema_config_desc_choice_options"))
-            .replace("{{SCALE_ITEMS_DESC}}", s.tool("schema_config_desc_scale_items"))
-            .replace("{{SCALE_MIN_DESC}}", s.tool("schema_config_desc_scale_min"))
-            .replace("{{SCALE_MAX_DESC}}", s.tool("schema_config_desc_scale_max"))
-            .replace("{{SCALE_MIN_LABEL_DESC}}", s.tool("schema_config_desc_scale_min_label"))
-            .replace("{{SCALE_MAX_LABEL_DESC}}", s.tool("schema_config_desc_scale_max_label"))
-            .replace("{{COUNTER_ITEMS_DESC}}", s.tool("schema_config_desc_counter_items"))
-            .replace("{{COUNTER_ALLOW_DECREMENT_DESC}}", s.tool("schema_config_desc_counter_allow_decrement"))
-            .replace("{{BOOLEAN_ITEMS_DESC}}", s.tool("schema_config_desc_boolean_items"))
-            .replace("{{TEXT_ITEMS_DESC}}", s.tool("schema_config_desc_text_items"))
+            .replace("{{CONFIG_TYPE_DESC}}", s.tool("schema_config_type"))
+            .replace("{{CONFIG_NUMERIC_ITEMS_DESC}}", s.tool("schema_config_numeric_items"))
+            .replace("{{CONFIG_NUMERIC_ITEM_NAME_DESC}}", s.tool("schema_config_numeric_item_name"))
+            .replace("{{CONFIG_NUMERIC_ITEM_DEFAULT_QUANTITY_DESC}}", s.tool("schema_config_numeric_item_default_quantity"))
+            .replace("{{CONFIG_NUMERIC_ITEM_UNIT_DESC}}", s.tool("schema_config_numeric_item_unit"))
+            .replace("{{CONFIG_TIMER_ITEMS_DESC}}", s.tool("schema_config_timer_items"))
+            .replace("{{CONFIG_TIMER_ITEM_NAME_DESC}}", s.tool("schema_config_timer_item_name"))
+            .replace("{{CONFIG_CHOICE_OPTIONS_DESC}}", s.tool("schema_config_choice_options"))
+            .replace("{{CONFIG_SCALE_ITEMS_DESC}}", s.tool("schema_config_scale_items"))
+            .replace("{{CONFIG_SCALE_ITEM_NAME_DESC}}", s.tool("schema_config_scale_item_name"))
+            .replace("{{CONFIG_SCALE_MIN_DESC}}", s.tool("schema_config_scale_min"))
+            .replace("{{CONFIG_SCALE_MAX_DESC}}", s.tool("schema_config_scale_max"))
+            .replace("{{CONFIG_SCALE_MIN_LABEL_DESC}}", s.tool("schema_config_scale_min_label"))
+            .replace("{{CONFIG_SCALE_MAX_LABEL_DESC}}", s.tool("schema_config_scale_max_label"))
+            .replace("{{CONFIG_COUNTER_ITEMS_DESC}}", s.tool("schema_config_counter_items"))
+            .replace("{{CONFIG_COUNTER_ITEM_NAME_DESC}}", s.tool("schema_config_counter_item_name"))
+            .replace("{{CONFIG_COUNTER_ALLOW_DECREMENT_DESC}}", s.tool("schema_config_counter_allow_decrement"))
+            .replace("{{CONFIG_BOOLEAN_ITEMS_DESC}}", s.tool("schema_config_boolean_items"))
+            .replace("{{CONFIG_BOOLEAN_ITEM_NAME_DESC}}", s.tool("schema_config_boolean_item_name"))
+            .replace("{{CONFIG_BOOLEAN_ITEM_TRUE_LABEL_DESC}}", s.tool("schema_config_boolean_item_true_label"))
+            .replace("{{CONFIG_BOOLEAN_ITEM_FALSE_LABEL_DESC}}", s.tool("schema_config_boolean_item_false_label"))
+            .replace("{{CONFIG_TEXT_ITEMS_DESC}}", s.tool("schema_config_text_items"))
+            .replace("{{CONFIG_TEXT_ITEM_NAME_DESC}}", s.tool("schema_config_text_item_name"))
     }
     
     /**
@@ -389,6 +400,24 @@ object TrackingSchemas {
     fun getDataSchema(context: Context): String {
         val s = Strings.`for`(tool = "tracking", context = context)
         return DATA_SCHEMA_TEMPLATE
-            .replace("{{DATA_DESC}}", s.tool("schema_data_desc_data"))
+            .replace("{{DATA_NAME_DESC}}", s.tool("schema_data_name"))
+            .replace("{{DATA_TIMESTAMP_DESC}}", s.tool("schema_data_timestamp"))
+            .replace("{{DATA_DATA_DESC}}", s.tool("schema_data_data"))
+            .replace("{{DATA_TYPE_DESC}}", s.tool("schema_data_type"))
+            .replace("{{DATA_RAW_DESC}}", s.tool("schema_data_raw"))
+            .replace("{{DATA_NUMERIC_QUANTITY_DESC}}", s.tool("schema_data_numeric_quantity"))
+            .replace("{{DATA_NUMERIC_UNIT_DESC}}", s.tool("schema_data_numeric_unit"))
+            .replace("{{DATA_SCALE_RATING_DESC}}", s.tool("schema_data_scale_rating"))
+            .replace("{{DATA_SCALE_MIN_VALUE_DESC}}", s.tool("schema_data_scale_min_value"))
+            .replace("{{DATA_SCALE_MAX_VALUE_DESC}}", s.tool("schema_data_scale_max_value"))
+            .replace("{{DATA_SCALE_MIN_LABEL_DESC}}", s.tool("schema_data_scale_min_label"))
+            .replace("{{DATA_SCALE_MAX_LABEL_DESC}}", s.tool("schema_data_scale_max_label"))
+            .replace("{{DATA_BOOLEAN_STATE_DESC}}", s.tool("schema_data_boolean_state"))
+            .replace("{{DATA_BOOLEAN_TRUE_LABEL_DESC}}", s.tool("schema_data_boolean_true_label"))
+            .replace("{{DATA_BOOLEAN_FALSE_LABEL_DESC}}", s.tool("schema_data_boolean_false_label"))
+            .replace("{{DATA_CHOICE_SELECTED_OPTION_DESC}}", s.tool("schema_data_choice_selected_option"))
+            .replace("{{DATA_CHOICE_AVAILABLE_OPTIONS_DESC}}", s.tool("schema_data_choice_available_options"))
+            .replace("{{DATA_COUNTER_INCREMENT_DESC}}", s.tool("schema_data_counter_increment"))
+            .replace("{{DATA_TIMER_DURATION_SECONDS_DESC}}", s.tool("schema_data_timer_duration_seconds"))
     }
 }

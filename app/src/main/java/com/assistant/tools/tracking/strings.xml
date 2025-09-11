@@ -117,22 +117,50 @@
     <string name="error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
     
     <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
-    <string name="schema_config_desc_type">Type de données pour tous les éléments de cette instance de suivi</string>
-    <string name="schema_config_desc_numeric_items">Éléments numériques prédéfinis avec quantité et unité</string>
-    <string name="schema_config_desc_timer_items">Activités de minuteur prédéfinies</string>
-    <string name="schema_config_desc_choice_options">Options de choix disponibles</string>
-    <string name="schema_config_desc_scale_items">Éléments d\'échelle prédéfinis (noms seulement, min/max partagés globalement)</string>
-    <string name="schema_config_desc_scale_min">Valeur minimale pour tous les éléments d\'échelle (peut être négative)</string>
-    <string name="schema_config_desc_scale_max">Valeur maximale pour tous les éléments d\'échelle</string>
-    <string name="schema_config_desc_scale_min_label">Libellé pour la valeur minimale</string>
-    <string name="schema_config_desc_scale_max_label">Libellé pour la valeur maximale</string>
-    <string name="schema_config_desc_counter_items">Éléments de compteur prédéfinis</string>
-    <string name="schema_config_desc_counter_allow_decrement">Autoriser les incréments négatifs</string>
-    <string name="schema_config_desc_boolean_items">Éléments booléens prédéfinis avec libellés personnalisés</string>
-    <string name="schema_config_desc_text_items">Éléments de texte prédéfinis</string>
+    <string name="schema_config_type"></string>
+    <string name="schema_config_numeric_items"></string>
+    <string name="schema_config_numeric_item_name"></string>
+    <string name="schema_config_numeric_item_default_quantity"></string>
+    <string name="schema_config_numeric_item_unit"></string>
+    <string name="schema_config_timer_items"></string>
+    <string name="schema_config_timer_item_name"></string>
+    <string name="schema_config_choice_options"></string>
+    <string name="schema_config_scale_items"></string>
+    <string name="schema_config_scale_item_name"></string>
+    <string name="schema_config_scale_min"></string>
+    <string name="schema_config_scale_max"></string>
+    <string name="schema_config_scale_min_label"></string>
+    <string name="schema_config_scale_max_label"></string>
+    <string name="schema_config_counter_items"></string>
+    <string name="schema_config_counter_item_name"></string>
+    <string name="schema_config_counter_allow_decrement"></string>
+    <string name="schema_config_boolean_items"></string>
+    <string name="schema_config_boolean_item_name"></string>
+    <string name="schema_config_boolean_item_true_label"></string>
+    <string name="schema_config_boolean_item_false_label"></string>
+    <string name="schema_config_text_items"></string>
+    <string name="schema_config_text_item_name"></string>
     
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
-    <string name="schema_data_desc_data">Données de suivi spécifiques au type de suivi</string>
+    <string name="schema_data_name"></string>
+    <string name="schema_data_timestamp"></string>
+    <string name="schema_data_data"></string>
+    <string name="schema_data_type"></string>
+    <string name="schema_data_raw"></string>
+    <string name="schema_data_numeric_quantity"></string>
+    <string name="schema_data_numeric_unit"></string>
+    <string name="schema_data_scale_rating"></string>
+    <string name="schema_data_scale_min_value"></string>
+    <string name="schema_data_scale_max_value"></string>
+    <string name="schema_data_scale_min_label"></string>
+    <string name="schema_data_scale_max_label"></string>
+    <string name="schema_data_boolean_state"></string>
+    <string name="schema_data_boolean_true_label"></string>
+    <string name="schema_data_boolean_false_label"></string>
+    <string name="schema_data_choice_selected_option"></string>
+    <string name="schema_data_choice_available_options"></string>
+    <string name="schema_data_counter_increment"></string>
+    <string name="schema_data_timer_duration_seconds"></string>
     
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_default_quantity">Qté par défaut</string>
