@@ -226,6 +226,11 @@
     <string name="shared_tools_config_display_extended">EXTENDED</string>
     <string name="shared_tools_config_display_square">SQUARE</string>
     <string name="shared_tools_config_display_full">FULL</string>
+    <string name="shared_tools_config_dialog_choose_icon">Choisir une icône</string>
+    <string name="shared_tools_config_dialog_suggested_icons">Suggérées</string>
+    <string name="shared_tools_config_dialog_all_icons">Toutes</string>
+    <string name="shared_icon_activity">Activité</string>
+    <string name="shared_icon_trending_up">Tendance croissante</string>
     <string name="shared_tools_loading">Chargement...</string>
     <string name="shared_tools_loading_config">Chargement de la configuration...</string>
     <string name="shared_tools_error_load_tool">Impossible de charger l\'outil</string>

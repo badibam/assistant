@@ -61,6 +61,12 @@ interface ToolTypeContract : SchemaProvider {
     fun getDefaultIconName(): String
     
     /**
+     * Suggested icon names for this tool type (shown first in icon selector)
+     * @return List of icon IDs that make sense for this tool type
+     */
+    fun getSuggestedIcons(): List<String> = emptyList()
+    
+    /**
      * Configuration screen for this tool type
      * @param zoneId ID of the zone where the tool will be created
      * @param onSave Called when configuration is saved with the config JSON

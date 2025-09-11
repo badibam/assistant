@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.*
+import com.assistant.core.strings.Strings
 
 
 /**
@@ -31,22 +32,9 @@ fun IconSelector(
         mutableStateOf(ThemeIconManager.getAvailableIcons(context, "default"))
     }
     
-    // Tri des icônes : suggestions en premier (dans l'ordre), puis le reste
-    val sortedIcons by remember(suggested, allAvailableIcons) {
-        mutableStateOf(
-            buildList {
-                // Ajouter les suggestions qui existent, dans l'ordre de la liste
-                suggested.forEach { suggestedId ->
-                    allAvailableIcons.find { it.id == suggestedId }?.let { add(it) }
-                }
-                
-                // Ajouter le reste des icônes (pas dans les suggestions)
-                addAll(allAvailableIcons.filter { icon -> 
-                    !suggested.contains(icon.id) 
-                })
-            }
-        )
-    }
+    
+    // Strings context  
+    val s = remember { Strings.`for`(context = context) }
     
     // Interface : icône actuelle + bouton SELECT
     Row(
@@ -54,7 +42,7 @@ fun IconSelector(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        UI.Text("Icône:", TextType.LABEL)
+        UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
         
         // Icône actuelle
         UI.Icon(iconName = current, size = 32.dp)
@@ -73,12 +61,73 @@ fun IconSelector(
             onCancel = { showDialog = false }
         ) {
             Column {
-                UI.Text("Choisir une icône", TextType.SUBTITLE)
+                UI.Text(s.shared("tools_config_dialog_choose_icon"), TextType.SUBTITLE)
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Grille d'icônes 3 par ligne
-                sortedIcons.chunked(3).forEach { iconRow ->
+                // Section icônes suggérées
+                if (suggested.isNotEmpty()) {
+                    UI.Text(s.shared("tools_config_dialog_suggested_icons"), TextType.LABEL)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Afficher les suggestions
+                    val suggestedIcons = suggested.mapNotNull { suggestedId ->
+                        allAvailableIcons.find { it.id == suggestedId }
+                    }
+                    
+                    suggestedIcons.chunked(3).forEach { iconRow ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            iconRow.forEach { icon ->
+                                UI.Button(
+                                    type = if (current == icon.id) ButtonType.PRIMARY else ButtonType.DEFAULT,
+                                    onClick = {
+                                        onChange(icon.id)
+                                        showDialog = false
+                                    }
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .padding(8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        UI.Icon(iconName = icon.id, size = 32.dp)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        
+                                        // Nom traduit seulement
+                                        val translatedName = s.shared("icon_${icon.id.replace("-", "_")}")
+                                        UI.Text(
+                                            text = translatedName,
+                                            type = TextType.CAPTION,
+                                            fillMaxWidth = true,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Remplir la ligne avec des espaces vides si nécessaire
+                            repeat(3 - iconRow.size) {
+                                Spacer(modifier = Modifier.size(80.dp))
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Séparateur et section "Toutes"
+                    UI.Text(s.shared("tools_config_dialog_all_icons"), TextType.LABEL)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                // Grille de toutes les icônes 3 par ligne
+                allAvailableIcons.chunked(3).forEach { iconRow ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -100,8 +149,11 @@ fun IconSelector(
                                 ) {
                                     UI.Icon(iconName = icon.id, size = 32.dp)
                                     Spacer(modifier = Modifier.height(4.dp))
+                                    
+                                    // Nom traduit seulement
+                                    val translatedName = s.shared("icon_${icon.id.replace("-", "_")}")
                                     UI.Text(
-                                        text = icon.id,
+                                        text = translatedName,
                                         type = TextType.CAPTION,
                                         fillMaxWidth = true,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center

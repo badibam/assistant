@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
-import com.assistant.core.ui.ThemeIconManager
 import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
@@ -20,6 +19,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.tools.ui.ToolGeneralConfigSection
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -125,14 +125,7 @@ fun TrackingConfigScreen(
     // Single config state - source of truth
     var config by remember { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
     
-    // Derived states from config
-    val name by remember { derivedStateOf { config.optString("name", "") } }
-    val description by remember { derivedStateOf { config.optString("description", "") } }
-    val management by remember { derivedStateOf { config.optString("management", "") } }
-    val configValidation by remember { derivedStateOf { config.optString("config_validation", "") } }
-    val dataValidation by remember { derivedStateOf { config.optString("data_validation", "") } }
-    val displayMode by remember { derivedStateOf { config.optString("display_mode", "") } }
-    val iconName by remember { derivedStateOf { config.optString("icon_name", "") } }
+    // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
     val items by remember { derivedStateOf { 
         val itemsArray = config.optJSONArray("items")
@@ -210,17 +203,11 @@ fun TrackingConfigScreen(
     var editItemDefaultQuantity by remember { mutableStateOf(String()) }
     var editItemUnit by remember { mutableStateOf(String()) }
     
-    // État pour le sélecteur d'icônes
-    var showIconSelector by remember { mutableStateOf(false) }
     
     // État pour la confirmation de changement de type
     var showTypeChangeWarning by remember { mutableStateOf(false) }
     var pendingTrackingType by remember { mutableStateOf<String?>(null) }
     
-    // Chargement dynamique des icônes disponibles
-    val availableIcons by remember { 
-        mutableStateOf(ThemeIconManager.getAvailableIcons(context, "default"))
-    }
     
     
     // State for error messages  
@@ -630,116 +617,12 @@ fun TrackingConfigScreen(
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        // Card 1: Paramètres généraux
-        UI.Card(type = CardType.DEFAULT) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                UI.Text(s.shared("tools_config_section_general_params"), TextType.SUBTITLE)
-                
-                UI.FormField(
-                    label = s.shared("tools_config_label_name"),
-                    value = name,
-                    onChange = { updateConfig("name", it) },
-                    required = true
-                )
-                
-                UI.FormField(
-                    label = s.shared("tools_config_label_description"),
-                    value = description,
-                    onChange = { updateConfig("description", it) },
-                    fieldType = FieldType.TEXT_MEDIUM
-                )
-                
-                // Sélection d'icône
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
-                    
-                    // Icône actuelle avec SafeIcon
-                    UI.Icon(iconName = iconName, size = 32.dp)
-                    
-                    UI.ActionButton(
-                        action = ButtonAction.SELECT,
-                        onClick = { showIconSelector = true }
-                    )
-                }
-                
-                UI.FormSelection(
-                    label = s.shared("tools_config_label_display_mode"),
-                    options = listOf(
-                        s.shared("tools_config_display_icon"), 
-                        s.shared("tools_config_display_minimal"), 
-                        s.shared("tools_config_display_line"), 
-                        s.shared("tools_config_display_condensed"), 
-                        s.shared("tools_config_display_extended"), 
-                        s.shared("tools_config_display_square"), 
-                        s.shared("tools_config_display_full")
-                    ),
-                    selected = displayMode,
-                    onSelect = { updateConfig("display_mode", it) },
-                    required = true
-                )
-                
-                UI.FormSelection(
-                    label = s.shared("tools_config_label_management"),
-                    options = listOf(s.shared("tools_config_option_manual"), s.shared("tools_config_option_ai")),
-                    selected = when(management) {
-                        "manual" -> s.shared("tools_config_option_manual")
-                        "ai" -> s.shared("tools_config_option_ai")
-                        else -> management
-                    },
-                    onSelect = { selectedLabel ->
-                        updateConfig("management", when(selectedLabel) {
-                            s.shared("tools_config_option_manual") -> "manual"
-                            s.shared("tools_config_option_ai") -> "ai"
-                            else -> selectedLabel
-                        })
-                    },
-                    required = true
-                )
-                
-                UI.FormSelection(
-                    label = s.shared("tools_config_label_config_validation"),
-                    options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
-                    selected = when(configValidation) {
-                        "enabled" -> s.shared("tools_config_option_enabled")
-                        "disabled" -> s.shared("tools_config_option_disabled")
-                        else -> configValidation
-                    },
-                    onSelect = { selectedLabel ->
-                        updateConfig("config_validation", when(selectedLabel) {
-                            s.shared("tools_config_option_enabled") -> "enabled"
-                            s.shared("tools_config_option_disabled") -> "disabled"
-                            else -> selectedLabel
-                        })
-                    },
-                    required = true
-                )
-                
-                UI.FormSelection(
-                    label = s.shared("tools_config_label_data_validation"),
-                    options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
-                    selected = when(dataValidation) {
-                        "enabled" -> s.shared("tools_config_option_enabled")
-                        "disabled" -> s.shared("tools_config_option_disabled")
-                        else -> dataValidation
-                    },
-                    onSelect = { selectedLabel ->
-                        updateConfig("data_validation", when(selectedLabel) {
-                            s.shared("tools_config_option_enabled") -> "enabled"
-                            s.shared("tools_config_option_disabled") -> "disabled"
-                            else -> selectedLabel
-                        })
-                    },
-                    required = true
-                )
-            }
-        }
+        // Card 1: Paramètres généraux (composable réutilisable)
+        ToolGeneralConfigSection(
+            config = config,
+            updateConfig = ::updateConfig,
+            toolTypeName = "tracking"
+        )
         
         // Card 2: Paramètres spécifiques tracking
         UI.Card(type = CardType.DEFAULT) {
@@ -1052,63 +935,6 @@ fun TrackingConfigScreen(
         }
         
         
-        // Icon selector dialog  
-        if (showIconSelector) {
-            UI.Dialog(
-                type = DialogType.SELECTION,
-                onConfirm = {},
-                onCancel = { showIconSelector = false }
-            ) {
-                Column {
-                    UI.Text(s.tool("config_dialog_choose_icon"), TextType.SUBTITLE)
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Grille d'icônes 3 par ligne
-                    availableIcons.chunked(3).forEach { iconRow ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            iconRow.forEach { icon ->
-                                // Case carrée avec icône + texte
-                                UI.Button(
-                                    type = if (iconName == icon.id) ButtonType.PRIMARY else ButtonType.DEFAULT,
-                                    onClick = {
-                                        updateConfig("icon_name", icon.id)
-                                        showIconSelector = false
-                                    }
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .size(80.dp)
-                                            .padding(8.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        UI.Icon(iconName = icon.id, size = 32.dp)
-                                        
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        
-                                        UI.Text(
-                                            text = icon.displayName,
-                                            type = TextType.CAPTION
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            // Remplir les cases vides si moins de 3 icônes dans la ligne
-                            repeat(3 - iconRow.size) {
-                                Spacer(modifier = Modifier.size(80.dp))
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-                }
-            }
-        }
     }
     
     // Show error toast when errorMessage is set

@@ -434,29 +434,6 @@ object UI {
         onChange: (String) -> Unit
     ) = com.assistant.core.ui.components.IconSelector(current, suggested, onChange)
     
-    @Composable
-    fun ToolGeneralParams(
-        name: String,
-        description: String,
-        iconName: String,
-        displayMode: String,
-        management: String,
-        configValidation: Boolean,
-        dataValidation: Boolean,
-        onNameChange: (String) -> Unit,
-        onDescriptionChange: (String) -> Unit,
-        onIconChange: (String) -> Unit,
-        onDisplayModeChange: (String) -> Unit,
-        onManagementChange: (String) -> Unit,
-        onConfigValidationChange: (Boolean) -> Unit,
-        onDataValidationChange: (Boolean) -> Unit,
-        suggestedIcons: List<String> = emptyList()
-    ) = com.assistant.core.tools.ui.ToolGeneralParams(
-        name, description, iconName, displayMode, management,
-        configValidation, dataValidation, onNameChange, onDescriptionChange,
-        onIconChange, onDisplayModeChange, onManagementChange,
-        onConfigValidationChange, onDataValidationChange, suggestedIcons
-    )
     
     @Composable
     fun ToolConfigActions(

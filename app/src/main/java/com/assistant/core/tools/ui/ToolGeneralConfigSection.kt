@@ -1,0 +1,150 @@
+package com.assistant.core.tools.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.assistant.core.ui.*
+import com.assistant.core.ui.components.IconSelector
+import com.assistant.core.strings.Strings
+import com.assistant.core.tools.ToolTypeManager
+import org.json.JSONObject
+
+/**
+ * Section réutilisable des paramètres généraux pour tous les tool types
+ * Extrait de TrackingConfigScreen pour généralisation
+ * 
+ * @param config Configuration JSON complète de l'outil
+ * @param updateConfig Callback pour mettre à jour la configuration
+ * @param toolTypeName Nom du tool type pour récupérer les icônes suggérées
+ */
+@Composable
+fun ToolGeneralConfigSection(
+    config: JSONObject,
+    updateConfig: (String, Any) -> Unit,
+    toolTypeName: String
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    
+    // Récupération des icônes suggérées du ToolType
+    val suggestedIcons = remember(toolTypeName) {
+        ToolTypeManager.getToolType(toolTypeName)?.getSuggestedIcons() ?: emptyList()
+    }
+    
+    // Extraction des valeurs depuis config
+    val name = config.optString("name", "")
+    val description = config.optString("description", "")
+    val iconName = config.optString("icon_name", "")
+    val displayMode = config.optString("display_mode", "")
+    val management = config.optString("management", "")
+    val configValidation = config.optString("config_validation", "")
+    val dataValidation = config.optString("data_validation", "")
+
+    UI.Card(type = CardType.DEFAULT) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            UI.Text(s.shared("tools_config_section_general_params"), TextType.SUBTITLE)
+            
+            // 1. Nom (requis)
+            UI.FormField(
+                label = s.shared("tools_config_label_name"),
+                value = name,
+                onChange = { updateConfig("name", it) },
+                required = true
+            )
+            
+            // 2. Description (optionnel)
+            UI.FormField(
+                label = s.shared("tools_config_label_description"),
+                value = description,
+                onChange = { updateConfig("description", it) },
+                fieldType = FieldType.TEXT_MEDIUM
+            )
+            
+            // 3. Sélecteur d'icône avec suggestions
+            IconSelector(
+                current = iconName,
+                suggested = suggestedIcons,
+                onChange = { updateConfig("icon_name", it) }
+            )
+            
+            // 4. Mode d'affichage (requis)
+            UI.FormSelection(
+                label = s.shared("tools_config_label_display_mode"),
+                options = listOf(
+                    s.shared("tools_config_display_icon"), 
+                    s.shared("tools_config_display_minimal"), 
+                    s.shared("tools_config_display_line"), 
+                    s.shared("tools_config_display_condensed"), 
+                    s.shared("tools_config_display_extended"), 
+                    s.shared("tools_config_display_square"), 
+                    s.shared("tools_config_display_full")
+                ),
+                selected = displayMode,
+                onSelect = { updateConfig("display_mode", it) },
+                required = true
+            )
+            
+            // 5. Gestion (requis)
+            UI.FormSelection(
+                label = s.shared("tools_config_label_management"),
+                options = listOf(s.shared("tools_config_option_manual"), s.shared("tools_config_option_ai")),
+                selected = when(management) {
+                    "manual" -> s.shared("tools_config_option_manual")
+                    "ai" -> s.shared("tools_config_option_ai")
+                    else -> management
+                },
+                onSelect = { selectedLabel ->
+                    updateConfig("management", when(selectedLabel) {
+                        s.shared("tools_config_option_manual") -> "manual"
+                        s.shared("tools_config_option_ai") -> "ai"
+                        else -> selectedLabel
+                    })
+                },
+                required = true
+            )
+            
+            // 6. Validation config par IA (requis)
+            UI.FormSelection(
+                label = s.shared("tools_config_label_config_validation"),
+                options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
+                selected = when(configValidation) {
+                    "enabled" -> s.shared("tools_config_option_enabled")
+                    "disabled" -> s.shared("tools_config_option_disabled")
+                    else -> configValidation
+                },
+                onSelect = { selectedLabel ->
+                    updateConfig("config_validation", when(selectedLabel) {
+                        s.shared("tools_config_option_enabled") -> "enabled"
+                        s.shared("tools_config_option_disabled") -> "disabled"
+                        else -> selectedLabel
+                    })
+                },
+                required = true
+            )
+            
+            // 7. Validation données par IA (requis)
+            UI.FormSelection(
+                label = s.shared("tools_config_label_data_validation"),
+                options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
+                selected = when(dataValidation) {
+                    "enabled" -> s.shared("tools_config_option_enabled")
+                    "disabled" -> s.shared("tools_config_option_disabled")
+                    else -> dataValidation
+                },
+                onSelect = { selectedLabel ->
+                    updateConfig("data_validation", when(selectedLabel) {
+                        s.shared("tools_config_option_enabled") -> "enabled"
+                        s.shared("tools_config_option_disabled") -> "disabled"
+                        else -> selectedLabel
+                    })
+                },
+                required = true
+            )
+        }
+    }
+}

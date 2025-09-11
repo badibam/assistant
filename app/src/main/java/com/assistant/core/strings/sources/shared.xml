@@ -137,6 +137,15 @@
     <string name="tools_config_display_square">SQUARE</string>
     <string name="tools_config_display_full">FULL</string>
     
+    <!-- Tools CONFIG - Dialog icônes -->
+    <string name="tools_config_dialog_choose_icon">Choisir une icône</string>
+    <string name="tools_config_dialog_suggested_icons">Suggérées</string>
+    <string name="tools_config_dialog_all_icons">Toutes</string>
+    
+    <!-- Icônes - Noms traduits -->
+    <string name="icon_activity">Activité</string>
+    <string name="icon_trending_up">Tendance croissante</string>
+    
     <!-- Tools USAGE - Chaînes communes aux tooltypes pour l'utilisation -->
     <string name="tools_loading">Chargement...</string>
     <string name="tools_loading_config">Chargement de la configuration...</string>

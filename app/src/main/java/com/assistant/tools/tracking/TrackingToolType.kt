@@ -72,6 +72,10 @@ object TrackingToolType : ToolTypeContract {
         return "activity"
     }
     
+    override fun getSuggestedIcons(): List<String> {
+        return listOf("activity", "trending-up")
+    }
+    
     @Composable
     override fun getConfigScreen(
         zoneId: String,
