@@ -8,9 +8,10 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import com.assistant.core.strings.Strings
 
 /**
- * Vérificateur de mises à jour via GitHub Releases API
+ * Update checker via GitHub Releases API
  */
 class UpdateChecker(private val context: Context) {
     
@@ -20,7 +21,7 @@ class UpdateChecker(private val context: Context) {
     }
     
     /**
-     * Vérifie s'il y a une nouvelle version disponible
+     * Checks if a new version is available
      */
     suspend fun checkForUpdates(): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
@@ -29,10 +30,11 @@ class UpdateChecker(private val context: Context) {
             val latestVersion = parseVersionCode(latestRelease.getString("tag_name"))
             
             if (latestVersion > currentVersion) {
+                val s = Strings.`for`(context = context)
                 return@withContext UpdateInfo(
                     version = latestRelease.getString("tag_name"),
                     versionCode = latestVersion,
-                    changelog = latestRelease.optString("body", "Nouvelles améliorations et corrections"),
+                    changelog = latestRelease.optString("body", s.shared("update_changelog_default")),
                     downloadUrl = findApkDownloadUrl(latestRelease),
                     releaseDate = latestRelease.getString("published_at"),
                     isPrerelease = latestRelease.optBoolean("prerelease", false)
@@ -41,13 +43,13 @@ class UpdateChecker(private val context: Context) {
             
             null
         } catch (e: Exception) {
-            println("Erreur lors de la vérification des mises à jour: ${e.message}")
+            println("Error checking for updates: ${e.message}")
             null
         }
     }
     
     /**
-     * Récupère les informations de la dernière release depuis GitHub API
+     * Fetches latest release information from GitHub API
      */
     private suspend fun fetchLatestRelease(): JSONObject = withContext(Dispatchers.IO) {
         val url = URL(GITHUB_API_URL)
@@ -88,7 +90,7 @@ class UpdateChecker(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            println("Erreur lors de la recherche de l'APK: ${e.message}")
+            println("Error searching for APK: ${e.message}")
         }
         return null
     }

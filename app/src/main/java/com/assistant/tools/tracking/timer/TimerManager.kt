@@ -26,24 +26,24 @@ class TimerManager private constructor() {
     private var updateJob: Job? = null
     
     /**
-     * Démarre un timer pour une activité
+     * Start timer for activity
      */
     fun startTimer(
         activityName: String, 
         toolInstanceId: String, 
         onPreviousTimerUpdate: ((entryId: String, seconds: Int) -> Unit)? = null,
-        onCreateNewEntry: (activityName: String) -> String // Callback qui crée l'entrée et retourne l'ID
+        onCreateNewEntry: (activityName: String) -> String // Callback that creates entry and returns ID
     ) {
-        // Arrêter le timer précédent s'il existe
+        // Stop previous timer if it exists
         stopTimer { entryId, seconds ->
-            // Si un callback est fourni, l'utiliser pour mettre à jour le timer précédent
+            // If callback provided, use it to update previous timer
             onPreviousTimerUpdate?.invoke(entryId, seconds)
         }
         
-        // Créer immédiatement l'entrée avec durée = 0
+        // Create entry immediately with duration = 0
         val newEntryId = onCreateNewEntry(activityName)
         
-        // Démarrer le nouveau timer
+        // Start new timer
         _timerState.value = TimerState(
             isActive = true,
             activityName = activityName,
@@ -53,12 +53,12 @@ class TimerManager private constructor() {
             updateTimestamp = System.currentTimeMillis()
         )
         
-        // Démarrer la mise à jour toutes les secondes
+        // Start updating every second
         startUpdateLoop()
     }
     
     /**
-     * Arrête le timer actuel et retourne l'ID de l'entrée avec la durée en secondes
+     * Stop current timer and return entry ID with duration in seconds
      */
     fun stopTimer(onResult: (entryId: String, seconds: Int) -> Unit) {
         val currentState = _timerState.value
@@ -66,22 +66,22 @@ class TimerManager private constructor() {
             return
         }
         
-        // Calculer la durée
+        // Calculate duration
         val elapsedSeconds = currentState.getElapsedSeconds()
         val entryId = currentState.entryId
         
-        // Arrêter le timer
+        // Stop timer
         _timerState.value = TimerState()
         stopUpdateLoop()
         
-        // Retourner le résultat pour mise à jour
+        // Return result for update
         if (entryId.isNotEmpty()) {
             onResult(entryId, elapsedSeconds)
         }
     }
     
     /**
-     * Arrête le timer actuel manuellement (pour boutons d'interface)
+     * Stop current timer manually (for UI buttons)
      */
     fun stopCurrentTimer(onUpdate: (entryId: String, seconds: Int) -> Unit) {
         stopTimer { entryId, seconds ->
@@ -90,23 +90,23 @@ class TimerManager private constructor() {
     }
     
     /**
-     * Vérifie si une activité spécifique est active
+     * Check if specific activity is active
      */
     fun isActivityActive(activityName: String): Boolean {
         return _timerState.value.isActive && _timerState.value.activityName == activityName
     }
     
     /**
-     * Démarre la boucle de mise à jour toutes les secondes
+     * Start update loop every second
      */
     private fun startUpdateLoop() {
-        stopUpdateLoop() // Arrêter la précédente si elle existe
+        stopUpdateLoop() // Stop previous one if it exists
         
         updateJob = CoroutineScope(Dispatchers.Main).launch {
             while (_timerState.value.isActive) {
-                delay(1000) // Attendre 1 seconde
+                delay(1000) // Wait for 1 second
                 
-                // Force la recomposition avec un nouveau timestamp
+                // Force recomposition with new timesatamp
                 val current = _timerState.value
                 if (current.isActive) {
                     _timerState.value = current.copy(
@@ -118,7 +118,7 @@ class TimerManager private constructor() {
     }
     
     /**
-     * Arrête la boucle de mise à jour
+     * Stop update loop
      */
     private fun stopUpdateLoop() {
         updateJob?.cancel()

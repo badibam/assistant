@@ -3,21 +3,21 @@ package com.assistant.core.strings
 import android.content.Context
 
 /**
- * Gestionnaire central des strings avec support des namespaces modulaires.
+ * Central strings manager with modular namespace support.
  * 
- * Gère la résolution des clés string avec préfixage automatique selon le namespace.
- * Supporte le discovery pattern : ajout de nouveaux namespaces sans modification du core.
+ * Manages string key resolution with automatic prefixing by namespace.
+ * Supports discovery pattern: adding new namespaces without core modification.
  */
 object StringsManager {
     
     /**
-     * Fonction générique de résolution des strings.
+     * Generic string resolution function.
      * 
-     * @param namespace Type de string ("core", "shared", "tool", "theme", etc.)
-     * @param key Clé de la string
-     * @param context Contexte spécifique (tooltype, theme, etc.) - null pour namespaces globaux
-     * @param androidContext Context Android pour accéder aux ressources
-     * @return String localisée
+     * @param namespace String type ("core", "shared", "tool", "theme", etc.)
+     * @param key String key
+     * @param context Specific context (tooltype, theme, etc.) - null for global namespaces
+     * @param androidContext Android Context for resource access
+     * @return Localized string
      */
     fun strings(namespace: String, key: String, context: String? = null, androidContext: Context): String {
         val resourceKey = buildResourceKey(namespace, key, context)

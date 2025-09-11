@@ -102,7 +102,7 @@ object TrackingToolType : ToolTypeContract {
         val database = com.assistant.core.database.AppDatabase.getDatabase(context)
         val baseDao = database.toolDataDao()
         
-        // Utilise l'implémentation générique qui suffit pour le tracking standard
+        // Uses generic implementation which is sufficient for standard tracking
         return com.assistant.core.database.dao.DefaultExtendedToolDataDao(baseDao, "tracking")
     }
     
@@ -133,32 +133,32 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getDatabaseMigrations(): List<Migration> {
-        return emptyList() // Migrations gérées par le core maintenant
+        return emptyList() // Migrations handled by core now
     }
     
     override fun migrateConfig(fromVersion: Int, configJson: String): String {
         return when (fromVersion) {
             1 -> {
-                // Exemple: Migration config v1 → v2
+                // Example: Config migration v1 → v2
                 // val config = JSONObject(configJson)
                 // config.put("new_field", "default_value")
                 // config.toString()
-                configJson // Pas de migration nécessaire pour l'instant
+                configJson // No migration needed for now
             }
-            else -> configJson // Pas de migration connue
+            else -> configJson // No known migration
         }
     }
     
-    // Migrations d'exemple (pour référence future)
+    // Example migrations (for future reference)
     private object Migrations {
-        // Exemple de migration de base de données (pour référence future)
+        // Example database migration (for future reference)
         /*
         val TRACKING_MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Exemple: Ajouter une colonne
+                // Example: Add a column
                 database.execSQL("ALTER TABLE tracking_data ADD COLUMN category TEXT DEFAULT ''")
                 
-                // Exemple: Migrer des données
+                // Example: Migrate data
                 database.execSQL("UPDATE tracking_data SET category = 'health' WHERE tool_instance_name LIKE '%santé%'")
             }
         }
@@ -171,19 +171,19 @@ object TrackingToolType : ToolTypeContract {
     override fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String {
         return when (fromVersion) {
             1 -> upgradeV1ToV2(rawData)
-            else -> rawData // Pas de migration nécessaire
+            else -> rawData // No migration needed
         }
     }
     
     /**
-     * Migration v1 → v2 : Ajout du champ type si manquant
+     * Migration v1 → v2 : Add type field if missing
      */
     private fun upgradeV1ToV2(v1Data: String): String {
         return try {
             val dataJson = JSONObject(v1Data)
-            // Ajouter le champ type si absent (v2 requirement)
+            // Add type field if absent (v2 requirement)
             if (!dataJson.has("type")) {
-                // Inférer le type depuis les données existantes
+                // Infer type from existing data
                 val inferredType = when {
                     dataJson.has("quantity") -> "numeric"
                     dataJson.has("items") -> "choice"
@@ -196,7 +196,7 @@ object TrackingToolType : ToolTypeContract {
             }
             dataJson.toString()
         } catch (e: Exception) {
-            // En cas d'erreur, retourner les données originales
+            // In case of error, return original data
             v1Data
         }
     }
@@ -205,7 +205,7 @@ object TrackingToolType : ToolTypeContract {
      * Get user-friendly field name for display
      * @param fieldName The technical field name (e.g., "quantity", "name")
      * @param context Android context for string resource access
-     * @return User-friendly field name for display (e.g., "Quantité", "Nom")
+     * @return User-friendly field name for display (e.g., "Quantity", "Name")
      */
     override fun getFormFieldName(fieldName: String, context: Context?): String {
         // Context should always be provided by ValidationErrorProcessor
@@ -213,11 +213,11 @@ object TrackingToolType : ToolTypeContract {
         
         val s = Strings.`for`(tool = "tracking", context = context)
         
-        // Essayer d'abord les champs communs à tous les tooltypes
+        // Try common fields for all tooltypes first
         val commonFieldName = BaseSchemas.getCommonFieldName(fieldName, context)
         if (commonFieldName != null) return commonFieldName
         
-        // Ensuite les champs spécifiques au tracking
+        // Then tracking-specific fields
         return when(fieldName) {
             "default_quantity" -> s.tool("field_default_quantity")
             "quantity" -> s.tool("field_quantity")

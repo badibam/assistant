@@ -45,7 +45,7 @@ object ValidationHelper {
         val validation = SchemaValidator.validate(toolType, configData, context, schemaType = schemaType)
         
         if (validation.isValid) {
-            // Conversion Map vers JSON string pour compatibilité
+            // Map to JSON string conversion for compatibility
             val jsonString = mapToJsonString(configData)
             onSuccess(jsonString)
             return true

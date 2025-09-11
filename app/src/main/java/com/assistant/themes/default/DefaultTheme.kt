@@ -51,21 +51,21 @@ import java.util.Calendar
 import com.assistant.core.ui.FieldType
 
 /**
- * DefaultTheme - Implémentation par défaut du ThemeContract
+ * DefaultTheme - Default ThemeContract implementation
  * 
- * Thème moderne basé sur Material 3 avec nos types sémantiques
- * UNIQUEMENT les composants VISUELS (thématisés)
+ * Modern theme based on Material 3 with our semantic types
+ * ONLY VISUAL components (themed)
  * 
- * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
+ * LAYOUTS: use Compose Row/Column/Box/Spacer directly
  */
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
     
     // =====================================
-    // PALETTE DE COULEURS CENTRALISÉE
+    // CENTRALIZED COLOR PALETTE
     // =====================================
     object Colors {
-        // THÈME CLAIR - Material Design (commenté)
+        // LIGHT THEME - Material Design (commented)
         /*
         // Primary colors
         val Primary = Color(0xFF1976D2)        // Bleu Material
@@ -106,7 +106,7 @@ object DefaultTheme : ThemeContract {
         val OnInfoContainer = Color(0xFF616161)  // Gris moyen
         */
         
-        // THÈME SOMBRE NERDY - Terminal/Hacker vibes
+        // NERDY DARK THEME - Terminal/Hacker vibes
         // Primary colors - Vert terminal classique
         val Primary = Color(0xFF00FF41)        // Vert Matrix/terminal
         val OnPrimary = Color(0xFF0D1117)      // Noir terminal profond
@@ -115,13 +115,13 @@ object DefaultTheme : ThemeContract {
         
         // Surface colors - Tons sombres GitHub/VS Code
         val Surface = Color(0xFF161B22)        // Gris sombre GitHub
-        val OnSurface = Color(0xFFF0F6FC)      // Blanc cassé terminal
+        val OnSurface = Color(0xFFF0F6FC)      // Terminal off-white
         val SurfaceVariant = Color(0xFF21262D) // Gris moyen GitHub
         val OnSurfaceVariant = Color(0xFF8B949E) // Gris commentaire
         
         // Background colors - Noir terminal profond
         val Background = Color(0xFF0D1117)     // Noir GitHub/terminal
-        val OnBackground = Color(0xFFF0F6FC)   // Blanc cassé terminal
+        val OnBackground = Color(0xFFF0F6FC)   // Terminal off-white
         
         // Feedback colors - Couleurs terminal/code
         val Error = Color(0xFFFF6B6B)          // Rouge terminal doux
@@ -147,7 +147,7 @@ object DefaultTheme : ThemeContract {
     }
 
     // =====================================
-    // COLORSCHEME MATERIAL3 PERSONNALISÉ
+    // CUSTOM MATERIAL3 COLORSCHEME
     // =====================================
     override val colorScheme = darkColorScheme(
         primary = Colors.Primary,
@@ -167,7 +167,7 @@ object DefaultTheme : ThemeContract {
     )
 
     // =====================================
-    // CONSTANTES DE FORME DU THÈME
+    // THEME SHAPE CONSTANTS
     // =====================================
     private val ButtonTextShape = RoundedCornerShape(2.dp)
     private val ButtonIconShape = RoundedCornerShape(2.dp)
@@ -177,7 +177,7 @@ object DefaultTheme : ThemeContract {
     // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
-    // PAS d'implémentation - accès direct pour flexibilité maximale
+    // NO implementation - direct access for maximum flexibility
     
     // =====================================
     // INTERACTIVE
@@ -320,13 +320,13 @@ object DefaultTheme : ThemeContract {
         // État du dialogue de confirmation
         var showConfirmDialog by remember { mutableStateOf(false) }
         
-        // Déterminer le type par défaut selon l'action
+        // Determine default type based on action
         val buttonType = type ?: getDefaultButtonType(action)
         
-        // Déterminer l'état selon enabled
+        // Determine state based on enabled
         val state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED
         
-        // Utiliser le Button unifié pour tous les cas
+        // Use unified Button for all cases
         Button(
             type = buttonType,
             size = size,
@@ -371,7 +371,7 @@ object DefaultTheme : ThemeContract {
         }
     }
     
-    // Helpers pour le mapping action -> type/texte/icône
+    // Helpers for action -> type/text/icon mapping
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
@@ -385,30 +385,33 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
     private fun getButtonText(action: ButtonAction): String {
-        // TODO: Remplacer par strings.xml pour i18n
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        
         return when (action) {
-            ButtonAction.SAVE -> "Sauvegarder"
-            ButtonAction.CREATE -> "Créer"
-            ButtonAction.UPDATE -> "Modifier"
-            ButtonAction.DELETE -> "Supprimer"
-            ButtonAction.CANCEL -> "Annuler"
-            ButtonAction.BACK -> "Retour"
-            ButtonAction.CONFIGURE -> "Configurer"
-            ButtonAction.ADD -> "Ajouter"
-            ButtonAction.EDIT -> "Modifier"
-            ButtonAction.REFRESH -> "Actualiser"
-            ButtonAction.SELECT -> "Sélectionner"
-            ButtonAction.CONFIRM -> "Confirmer"
-            ButtonAction.UP -> "Monter"
-            ButtonAction.DOWN -> "Descendre"
-            ButtonAction.LEFT -> "Précédent"
-            ButtonAction.RIGHT -> "Suivant"
+            ButtonAction.SAVE -> s.shared("action_save")
+            ButtonAction.CREATE -> s.shared("action_create")
+            ButtonAction.UPDATE -> s.shared("action_update")
+            ButtonAction.DELETE -> s.shared("action_delete")
+            ButtonAction.CANCEL -> s.shared("action_cancel")
+            ButtonAction.BACK -> s.shared("action_back")
+            ButtonAction.CONFIGURE -> s.shared("action_configure")
+            ButtonAction.ADD -> s.shared("action_add")
+            ButtonAction.EDIT -> s.shared("action_edit")
+            ButtonAction.REFRESH -> s.shared("action_refresh")
+            ButtonAction.SELECT -> s.shared("action_select")
+            ButtonAction.CONFIRM -> s.shared("action_confirm")
+            ButtonAction.UP -> s.shared("action_up")
+            ButtonAction.DOWN -> s.shared("action_down")
+            ButtonAction.LEFT -> s.shared("action_left")
+            ButtonAction.RIGHT -> s.shared("action_right")
         }
     }
     
     private fun getButtonIcon(action: ButtonAction): String {
-        // Symboles Unicode pour lisibilité et uniformité
+        // Unicode symbols for readability and consistency
         return when (action) {
             ButtonAction.SAVE -> "✓"      // Check mark
             ButtonAction.CREATE -> "+"    // Plus
@@ -431,8 +434,8 @@ object DefaultTheme : ThemeContract {
     
     private fun getDefaultConfirmMessage(action: ButtonAction): String {
         return when (action) {
-            ButtonAction.DELETE -> "Êtes-vous sûr de vouloir supprimer cet élément ? Cette action est irréversible."
-            else -> "Confirmer cette action ?"
+            ButtonAction.DELETE -> "Are you sure you want to delete this item? This action is irreversible."
+            else -> "Confirm this action?"
         }
     }
     
@@ -498,7 +501,7 @@ object DefaultTheme : ThemeContract {
             )
         }
         
-        // Limite de caractères selon le type de champ
+        // Character limit based on field type
         val maxLength = when (fieldType) {
             FieldType.TEXT -> BaseSchemas.FieldLimits.SHORT_LENGTH
             FieldType.TEXT_MEDIUM -> BaseSchemas.FieldLimits.MEDIUM_LENGTH
@@ -688,11 +691,11 @@ object DefaultTheme : ThemeContract {
         content: @Composable () -> Unit
     ) {
         val (confirmText, cancelText) = when (type) {
-            DialogType.CONFIGURE -> "Valider" to "Annuler"
-            DialogType.CREATE -> "Créer" to "Annuler"
-            DialogType.EDIT -> "Sauvegarder" to "Annuler"
+            DialogType.CONFIGURE -> "Confirm" to "Cancel"
+            DialogType.CREATE -> "Create" to "Cancel"
+            DialogType.EDIT -> "Save" to "Cancel"
             DialogType.CONFIRM -> "Confirmer" to "Annuler"
-            DialogType.DANGER -> "Supprimer" to "Annuler"
+            DialogType.DANGER -> "Delete" to "Cancel"
             DialogType.SELECTION -> null to "Annuler"
             DialogType.INFO -> "OK" to null
         }
@@ -737,7 +740,7 @@ object DefaultTheme : ThemeContract {
     }
     
     // =====================================
-    // CONTAINERS SPÉCIALISÉS (apparence uniquement)
+    // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
     @OptIn(ExperimentalFoundationApi::class)
@@ -747,7 +750,7 @@ object DefaultTheme : ThemeContract {
         onLongClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
-        // Thème défini UNIQUEMENT l'apparence : bordures, couleurs, shadows, etc.
+        // Theme defines ONLY appearance: borders, colors, shadows, etc.
         androidx.compose.material3.Card(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
@@ -776,7 +779,7 @@ object DefaultTheme : ThemeContract {
         onLongClick: () -> Unit,
         content: @Composable () -> Unit
     ) {
-        // Thème défini l'apparence selon le mode d'affichage
+        // Theme defines appearance based on display mode
         val cardModifier = when (displayMode) {
             DisplayMode.ICON -> Modifier.size(64.dp)
             DisplayMode.MINIMAL -> Modifier.height(48.dp).fillMaxWidth()
@@ -1082,7 +1085,7 @@ object DefaultTheme : ThemeContract {
             // Label du champ
             Text(displayLabel, TextType.LABEL, false, null)
             
-            // Boutons d'incrément  
+            // Increment buttons  
             if (incrementButtons.isNotEmpty()) {
                 androidx.compose.material3.Text(
                     text = "Ajouter :",
@@ -1112,7 +1115,7 @@ object DefaultTheme : ThemeContract {
                 }
             }
             
-            // Boutons de décrément
+            // Decrement buttons
             if (decrementButtons.isNotEmpty()) {
                 androidx.compose.material3.Text(
                     text = "Retirer :",
@@ -1137,112 +1140,6 @@ object DefaultTheme : ThemeContract {
                             ) {
                                 androidx.compose.material3.Text(displayText)
                             }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    @Composable
-    override fun TimerField(
-        label: String,
-        activities: List<String>,
-        currentActivity: String?,
-        currentDuration: String,
-        onStartActivity: (String) -> Unit,
-        onStopActivity: () -> Unit,
-        onSaveSession: (String, Int) -> Unit,
-        required: Boolean
-    ) {
-        val displayLabel = if (required) label else "$label (optionnel)"
-        
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Label du champ
-            Text(displayLabel, TextType.LABEL, false, null)
-            
-            // État actuel du timer
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (currentActivity != null) {
-                        Colors.SurfaceVariant
-                    } else {
-                        Colors.InfoContainer
-                    }
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (currentActivity != null) {
-                        androidx.compose.material3.Text(
-                            text = "En cours : $currentActivity",
-                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                            color = Colors.OnSurfaceVariant
-                        )
-                        androidx.compose.material3.Text(
-                            text = currentDuration,
-                            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-                            color = Colors.Primary
-                        )
-                    } else {
-                        androidx.compose.material3.Text(
-                            text = "Arrêté",
-                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                            color = Colors.OnSurfaceVariant
-                        )
-                    }
-                }
-            }
-            
-            // Boutons d'activités
-            if (activities.isNotEmpty()) {
-                androidx.compose.material3.Text(
-                    text = "Activités :",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-                )
-                
-                activities.chunked(2).forEach { rowActivities ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        rowActivities.forEach { activity ->
-                            val isActive = currentActivity == activity
-                            Button(
-                                onClick = {
-                                    if (isActive) {
-                                        onStopActivity()
-                                    } else {
-                                        onStartActivity(activity)
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isActive) {
-                                        Colors.Primary
-                                    } else {
-                                        Colors.Outline
-                                    },
-                                    contentColor = if (isActive) {
-                                        Colors.OnPrimary
-                                    } else {
-                                        Colors.OnSurface
-                                    }
-                                ),
-                                shape = ButtonTextShape,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                androidx.compose.material3.Text(activity)
-                            }
-                        }
-                        
-                        // Fill remaining space if odd number of activities
-                        if (rowActivities.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -1338,7 +1235,7 @@ object DefaultTheme : ThemeContract {
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         
-        // Utiliser key() pour recréer le state à chaque changement d'orientation
+        // Use key() to recreate state on orientation change
         val datePickerState = key(isLandscape) {
             rememberDatePickerState(
                 initialSelectedDateMillis = utcDate,
@@ -1392,7 +1289,7 @@ object DefaultTheme : ThemeContract {
         
         val (hour, minute) = DateUtils.parseTime(selectedTime)
         
-        // Utiliser key() pour recréer le state à chaque changement d'orientation
+        // Use key() to recreate state on orientation change
         val timePickerState = key(isLandscape) {
             rememberTimePickerState(
                 initialHour = hour,
@@ -1464,12 +1361,12 @@ object DefaultTheme : ThemeContract {
                 }
             }
             
-            // Zone centrale (titre centré, flexible)
+            // Central zone (centered title, flexible)
             Column(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Ligne 1: Icône + Titre
+                // Line 1: Icon + Title
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1489,7 +1386,7 @@ object DefaultTheme : ThemeContract {
                     Text(title, TextType.TITLE, false, TextAlign.Center)
                 }
                 
-                // Ligne 2: Sous-titre (forcé centré)
+                // Line 2: Subtitle (forced centered)
                 subtitle?.let { 
                     Box(
                         modifier = Modifier.fillMaxWidth(),

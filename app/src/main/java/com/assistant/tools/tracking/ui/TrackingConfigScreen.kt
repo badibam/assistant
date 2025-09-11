@@ -204,7 +204,7 @@ fun TrackingConfigScreen(
     var editItemUnit by remember { mutableStateOf(String()) }
     
     
-    // État pour la confirmation de changement de type
+    // State for type change confirmation
     var showTypeChangeWarning by remember { mutableStateOf(false) }
     var pendingTrackingType by remember { mutableStateOf<String?>(null) }
     
@@ -251,14 +251,14 @@ fun TrackingConfigScreen(
                 val oldScaleText = buildString {
                     append(oldMin)
                     if (oldMinLabel.isNotEmpty()) append(" ($oldMinLabel)")
-                    append(" à ")
+                    append("->")
                     append(oldMax)
                     if (oldMaxLabel.isNotEmpty()) append(" ($oldMaxLabel)")
                 }
                 val newScaleText = buildString {
                     append(newMin)
                     if (newMinLabel.isNotEmpty()) append(" ($newMinLabel)")
-                    append(" à ")
+                    append("->")
                     append(newMax)
                     if (newMaxLabel.isNotEmpty()) append(" ($newMaxLabel)")
                 }
@@ -353,7 +353,7 @@ fun TrackingConfigScreen(
             cleanConfig.get(key)
         }
         
-        // Utiliser ValidationHelper unifié
+        // Use unified ValidationHelper
         UI.ValidationHelper.validateAndSave(
             toolTypeName = "tracking",
             configData = configMap,
@@ -617,14 +617,14 @@ fun TrackingConfigScreen(
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        // Card 1: Paramètres généraux (composable réutilisable)
+        // Card 1: General parameters (reusable composable)
         ToolGeneralConfigSection(
             config = config,
             updateConfig = ::updateConfig,
             toolTypeName = "tracking"
         )
         
-        // Card 2: Paramètres spécifiques tracking
+        // Card 2: Tracking-specific parameters
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -693,7 +693,7 @@ fun TrackingConfigScreen(
             }
         }
         
-        // Card 3: Liste des items prédéfinis
+        // Card 3: Predefined items list
         if (trackingType.isNotBlank()) {
             UI.Card(type = CardType.DEFAULT) {
                 Column(
@@ -728,7 +728,7 @@ fun TrackingConfigScreen(
                             textAlign = TextAlign.Center
                         )
                     } else{
-                        //Ligne d'en-tête
+                        // Header row
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -750,7 +750,7 @@ fun TrackingConfigScreen(
                                 )
                             }
 
-                            // Colonnes spécifiques au type numeric
+                            // Columns specific to numeric type
                             if (trackingType == "numeric") {
                                 Box(
                                     modifier = Modifier.weight(2f),
@@ -913,7 +913,7 @@ fun TrackingConfigScreen(
                         required = true
                     )
                     
-                    // Champs spécifiques selon le type de tracking
+                    // Specific fields according to tracking type
                     if (trackingType == "numeric") {
                         UI.FormField(
                             label = s.tool("config_label_default_quantity"),
@@ -1002,7 +1002,7 @@ private fun ItemRowReadonly(
             )
         }
         
-        // Champs spécifiques (uniquement pour numeric actuellement)
+        // Specific fields (currently only for numeric)
 
         if (trackingType == "numeric") {
             Box(
@@ -1194,11 +1194,11 @@ private fun TypeSpecificParameters(
                 label = s.tool("config_label_available_options"),
                 items = currentOptions,
                 onItemsChanged = { newOptions ->
-                    // Sauvegarder toutes les options (même vides) pour permettre l'édition
-                    // Le filtrage se fera lors de la sauvegarde finale de la configuration
+                    // Save all options (even empty ones) to allow editing
+                    // Filtering will be done during final configuration save
                     val newArray = JSONArray()
                     newOptions.forEach { option ->
-                        newArray.put(option) // Garder tous les éléments, même vides
+                        newArray.put(option) // Keep all elements, even empty ones
                     }
                     updateConfig("options", newArray)
                 },
@@ -1221,8 +1221,8 @@ private fun TypeSpecificParameters(
             )
         }
         
-        // NUMERIC, TEXT, TIMER n'ont pas de paramètres spécifiques de configuration
-        // Les items prédéfinis suffisent pour leur configuration
+        // NUMERIC, TEXT, TIMER don't have specific configuration parameters
+        // Predefined items are sufficient for their configuration
     }
 }
 
@@ -1252,7 +1252,7 @@ private fun cleanConfiguration(config: JSONObject): JSONObject {
         }
     }
     
-    // Les items prédéfinis sont toujours valides (nom obligatoire dans l'UI)
+    // Predefined items are always valid (name required in UI)
     
     return cleanConfig
 }

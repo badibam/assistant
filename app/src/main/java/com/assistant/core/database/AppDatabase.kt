@@ -20,8 +20,8 @@ import com.assistant.core.versioning.MigrationOrchestrator
         ToolInstance::class,
         ToolDataEntity::class,
         AppSettingsCategory::class
-        // Note: Les entités des outils seront ajoutées dynamiquement
-        // via le système de build et ToolTypeRegistry
+        // Note: Tool entities will be added dynamically
+        // via build system and ToolTypeRegistry
     ],
     version = 3,
     exportSchema = false
@@ -49,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                         super.onOpen(db)
-                        // Base de données ouverte avec succès
+                        // Database opened successfully
                         println("AppDatabase opened successfully - version ${db.version}")
                     }
                 })

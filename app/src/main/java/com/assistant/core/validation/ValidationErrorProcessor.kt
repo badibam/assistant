@@ -83,7 +83,7 @@ object ValidationErrorProcessor {
             msg.contains("boolean found, string expected") ||
             msg.contains("array found, object expected") ||
             msg.contains("object found, array expected") ||
-            msg.contains("trouvé") && msg.contains("attendu")
+            msg.contains("found") && msg.contains("expected")
         }
         if (typeErrors.isNotEmpty()) {
             return typeErrors.first()
@@ -94,7 +94,7 @@ object ValidationErrorProcessor {
             msg.contains("is missing but it is required") ||
             msg.contains("required property") ||
             msg.contains("is required") ||
-            msg.contains("obligatoire")
+            msg.contains("required")
         }
         if (requiredErrors.isNotEmpty()) {
             return requiredErrors.first()
@@ -140,9 +140,9 @@ object ValidationErrorProcessor {
     /**
      * Replaces $.fieldname references in error messages with translated field names
      * Examples:
-     * - "$.name est un champ obligatoire mais manquant" -> "Nom est un champ obligatoire mais manquant"
-     * - "$.value.quantity: must be a number" -> "Quantité: must be a number"
-     * - "$.items[2].default_quantity is invalid" -> "Qté par défaut is invalid"
+     * - "$.name is required but missing" -> "Name is required but missing"
+     * - "$.value.quantity: must be a number" -> "Quantity: must be a number"
+     * - "$.items[2].default_quantity is invalid" -> "Default quantity is invalid"
      */
     private fun replaceFieldNameInMessage(errorMessage: String, schemaProvider: SchemaProvider?, context: Context): String {
         if (schemaProvider == null) return errorMessage

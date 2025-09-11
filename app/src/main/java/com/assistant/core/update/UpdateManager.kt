@@ -6,10 +6,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.assistant.core.strings.Strings
 
 /**
- * Gestionnaire principal des mises à jour
- * Coordonne vérification, téléchargement et installation
+ * Main update manager
+ * Coordinates checking, downloading and installation
  */
 class UpdateManager(private val context: Context) {
     
@@ -21,11 +22,11 @@ class UpdateManager(private val context: Context) {
         private const val PREF_LAST_CHECK = "last_check_timestamp"
         private const val PREF_IGNORED_VERSION = "ignored_version"
         private const val PREF_AUTO_CHECK_ENABLED = "auto_check_enabled"
-        private const val CHECK_INTERVAL_HOURS = 24 // Vérifier une fois par jour
+        private const val CHECK_INTERVAL_HOURS = 24 // Check once per day
     }
     
     /**
-     * Vérifie automatiquement les mises à jour si nécessaire
+     * Automatically checks for updates if needed
      */
     fun scheduleUpdateCheck(onUpdateFound: (UpdateInfo) -> Unit = {}) {
         if (!isAutoCheckEnabled()) return
@@ -40,17 +41,19 @@ class UpdateManager(private val context: Context) {
                 }
                 updateLastCheckTime()
             } catch (e: Exception) {
-                println("Erreur lors de la vérification automatique: ${e.message}")
+                println("Error during automatic check: ${e.message}")
             }
         }
     }
     
     /**
-     * Force une vérification manuelle des mises à jour
+     * Forces manual update check
      */
     suspend fun checkForUpdatesManually(): CheckResult = withContext(Dispatchers.Main) {
+        val s = Strings.`for`(context = context)
+        
         if (!updateChecker.isNetworkAvailable()) {
-            return@withContext CheckResult.NetworkError("Aucune connexion internet")
+            return@withContext CheckResult.NetworkError(s.shared("update_no_internet"))
         }
         
         return@withContext try {
@@ -58,55 +61,57 @@ class UpdateManager(private val context: Context) {
             if (updateInfo != null) {
                 CheckResult.UpdateAvailable(updateInfo)
             } else {
-                CheckResult.NoUpdate("Vous avez la dernière version")
+                CheckResult.NoUpdate(s.shared("update_latest_version"))
             }
         } catch (e: Exception) {
-            CheckResult.Error("Erreur: ${e.message}")
+            CheckResult.Error(s.shared("message_error").format(e.message ?: ""))
         }
     }
     
     /**
-     * Télécharge et installe une mise à jour
+     * Downloads and installs an update
      */
     suspend fun downloadAndInstallUpdate(updateInfo: UpdateInfo, onProgress: (String) -> Unit = {}): InstallResult = withContext(Dispatchers.Main) {
+        val s = Strings.`for`(context = context)
+        
         if (!updateDownloader.canInstallPackages()) {
-            return@withContext InstallResult.PermissionRequired("Autorisation d'installation requise")
+            return@withContext InstallResult.PermissionRequired(s.shared("update_permission_required"))
         }
         
         return@withContext try {
-            onProgress("Téléchargement en cours...")
+            onProgress(s.shared("update_downloading"))
             val downloadResult = updateDownloader.downloadAndInstall(updateInfo)
             
             when (downloadResult) {
                 is DownloadResult.Success -> {
-                    onProgress("Installation lancée...")
-                    InstallResult.Success("Mise à jour téléchargée et installation lancée")
+                    onProgress(s.shared("update_installation_started"))
+                    InstallResult.Success(s.shared("update_success"))
                 }
                 is DownloadResult.Error -> {
                     InstallResult.Error(downloadResult.message)
                 }
             }
         } catch (e: Exception) {
-            InstallResult.Error("Erreur: ${e.message}")
+            InstallResult.Error(s.shared("message_error").format(e.message ?: ""))
         }
     }
     
     /**
-     * Ignore une version spécifique
+     * Ignores a specific version
      */
     fun ignoreVersion(version: String) {
         prefs.edit().putString(PREF_IGNORED_VERSION, version).apply()
     }
     
     /**
-     * Ouvre les paramètres pour autoriser l'installation
+     * Opens settings to authorize installation
      */
     fun openInstallPermissionSettings() {
         updateDownloader.openInstallPermissionSettings()
     }
     
     /**
-     * Active/désactive la vérification automatique
+     * Enables/disables automatic checking
      */
     fun setAutoCheckEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(PREF_AUTO_CHECK_ENABLED, enabled).apply()
@@ -117,7 +122,7 @@ class UpdateManager(private val context: Context) {
     }
     
     /**
-     * Vérifie s'il faut effectuer une vérification
+     * Checks if verification should be performed
      */
     private fun shouldCheckForUpdates(): Boolean {
         val lastCheck = prefs.getLong(PREF_LAST_CHECK, 0)
@@ -128,14 +133,14 @@ class UpdateManager(private val context: Context) {
     }
     
     /**
-     * Met à jour l'horodatage de la dernière vérification
+     * Updates timestamp of last check
      */
     private fun updateLastCheckTime() {
         prefs.edit().putLong(PREF_LAST_CHECK, System.currentTimeMillis()).apply()
     }
     
     /**
-     * Vérifie si une version est ignorée
+     * Checks if a version is ignored
      */
     private fun isVersionIgnored(version: String): Boolean {
         val ignoredVersion = prefs.getString(PREF_IGNORED_VERSION, null)
@@ -143,7 +148,7 @@ class UpdateManager(private val context: Context) {
     }
     
     /**
-     * Réinitialise les préférences de mise à jour
+     * Resets update preferences
      */
     fun resetUpdatePreferences() {
         prefs.edit().clear().apply()
@@ -151,7 +156,7 @@ class UpdateManager(private val context: Context) {
 }
 
 /**
- * Résultat d'une vérification de mise à jour
+ * Update check result
  */
 sealed class CheckResult {
     data class UpdateAvailable(val updateInfo: UpdateInfo) : CheckResult()
@@ -161,7 +166,7 @@ sealed class CheckResult {
 }
 
 /**
- * Résultat d'une installation de mise à jour
+ * Update installation result
  */
 sealed class InstallResult {
     data class Success(val message: String) : InstallResult()

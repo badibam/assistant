@@ -28,7 +28,7 @@ fun ToolGeneralConfigSection(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     
-    // Récupération des icônes suggérées du ToolType
+    // Retrieve suggested icons from ToolType
     val suggestedIcons = remember(toolTypeName) {
         ToolTypeManager.getToolType(toolTypeName)?.getSuggestedIcons() ?: emptyList()
     }

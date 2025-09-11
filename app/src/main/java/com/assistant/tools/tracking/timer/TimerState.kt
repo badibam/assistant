@@ -1,18 +1,18 @@
 package com.assistant.tools.tracking.timer
 
 /**
- * État du timer actuel
+ * Current timer state
  */
 data class TimerState(
     val isActive: Boolean = false,
     val activityName: String = "",
     val startTime: Long = 0L,
     val toolInstanceId: String = "",
-    val entryId: String = "", // ID de l'entrée créée immédiatement
+    val entryId: String = "", // ID of the immediately created entry
     val updateTimestamp: Long = System.currentTimeMillis()
 ) {
     /**
-     * Calcule la durée écoulée en millisecondes
+     * Calculate elapsed duration in milliseconds
      */
     fun getElapsedMillis(): Long {
         return if (isActive) {
@@ -23,21 +23,21 @@ data class TimerState(
     }
     
     /**
-     * Calcule la durée écoulée en minutes
+     * Calculate elapsed duration in minutes
      */
     fun getElapsedMinutes(): Int {
         return (getElapsedMillis() / 60000).toInt()
     }
     
     /**
-     * Calcule la durée écoulée en secondes
+     * Calculate elapsed duration in seconds
      */
     fun getElapsedSeconds(): Int {
         return (getElapsedMillis() / 1000).toInt()
     }
     
     /**
-     * Formate le temps écoulé pour affichage (ex: "2m 34s")
+     * Format elapsed time for display (ex: "2m 34s")
      */
     fun formatElapsedTime(): String {
         val totalSeconds = (getElapsedMillis() / 1000).toInt()
@@ -52,7 +52,7 @@ data class TimerState(
     }
     
     /**
-     * Retourne les données d'affichage pour que l'UI puisse formater avec ses strings
+     * Returns display data so UI can format with its strings
      */
     fun getDisplayData(): TimerDisplayData {
         return if (isActive) {
@@ -84,7 +84,7 @@ data class TimerState(
 }
 
 /**
- * Données d'affichage du timer pour l'UI
+ * Timer display data for UI
  */
 data class TimerDisplayData(
     val activityName: String,

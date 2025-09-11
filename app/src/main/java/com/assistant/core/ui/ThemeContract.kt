@@ -236,18 +236,6 @@ interface ThemeContract {
     )
     
     @Composable
-    fun TimerField(
-        label: String,
-        activities: List<String>,
-        currentActivity: String?,
-        currentDuration: String,
-        onStartActivity: (String) -> Unit,
-        onStopActivity: () -> Unit,
-        onSaveSession: (String, Int) -> Unit,
-        required: Boolean
-    )
-    
-    @Composable
     fun DynamicList(
         label: String,
         items: List<String>,

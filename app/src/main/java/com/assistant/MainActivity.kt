@@ -60,8 +60,8 @@ class MainActivity : ComponentActivity() {
         
         // Check for updates at startup
         updateManager.scheduleUpdateCheck { updateInfo ->
-            Log.i("Updates", "Mise à jour disponible: ${updateInfo.version}")
-            // TODO: Afficher notification ou dialog avec UpdateInfo
+            Log.i("Updates", "Update available: ${updateInfo.version}")
+            // TODO: Show notification or dialog with UpdateInfo
         }
         
         // TODO: Preload icons for current theme

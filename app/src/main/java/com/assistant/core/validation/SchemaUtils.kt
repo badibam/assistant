@@ -44,7 +44,7 @@ object SchemaUtils {
             val base = JSONObject(baseSchema)
             val extension = JSONObject(extensionSchema)
             
-            // Merge des propriétés
+            // Merge properties
             val baseProperties = base.optJSONObject("properties") ?: JSONObject()
             val extensionProperties = extension.optJSONObject("properties") ?: JSONObject()
             
@@ -54,7 +54,7 @@ object SchemaUtils {
             
             base.put("properties", baseProperties)
             
-            // Merge des required arrays si présents
+            // Merge required arrays if present
             val baseRequired = base.optJSONArray("required")
             val extensionRequired = extension.optJSONArray("required")
             

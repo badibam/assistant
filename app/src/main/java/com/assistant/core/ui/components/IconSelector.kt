@@ -27,7 +27,7 @@ fun IconSelector(
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
     
-    // Chargement des icônes disponibles
+    // Loading available icons
     val allAvailableIcons by remember { 
         mutableStateOf(ThemeIconManager.getAvailableIcons(context, "default"))
     }
@@ -36,7 +36,7 @@ fun IconSelector(
     // Strings context  
     val s = remember { Strings.`for`(context = context) }
     
-    // Interface : icône actuelle + bouton SELECT
+    // Interface: current icon + SELECT button
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -44,7 +44,7 @@ fun IconSelector(
     ) {
         UI.Text(s.shared("tools_config_label_icon"), TextType.LABEL)
         
-        // Icône actuelle
+        // Current icon
         UI.Icon(iconName = current, size = 32.dp)
         
         UI.ActionButton(
@@ -53,7 +53,7 @@ fun IconSelector(
         )
     }
     
-    // Dialog de sélection
+    // Selection dialog
     if (showDialog) {
         UI.Dialog(
             type = DialogType.SELECTION,
@@ -65,7 +65,7 @@ fun IconSelector(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Section icônes suggérées
+                // Suggested icons section
                 if (suggested.isNotEmpty()) {
                     UI.Text(s.shared("tools_config_dialog_suggested_icons"), TextType.LABEL)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -110,7 +110,7 @@ fun IconSelector(
                                 }
                             }
                             
-                            // Remplir la ligne avec des espaces vides si nécessaire
+                            // Fill row with empty spaces if needed
                             repeat(3 - iconRow.size) {
                                 Spacer(modifier = Modifier.size(80.dp))
                             }
@@ -121,12 +121,12 @@ fun IconSelector(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Séparateur et section "Toutes"
+                    // Separator and "All" section
                     UI.Text(s.shared("tools_config_dialog_all_icons"), TextType.LABEL)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 
-                // Grille de toutes les icônes 3 par ligne
+                // Grid of all icons 3 per row
                 allAvailableIcons.chunked(3).forEach { iconRow ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),

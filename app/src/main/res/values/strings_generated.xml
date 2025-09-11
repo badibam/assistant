@@ -114,6 +114,13 @@
     <string name="tracking_field_activity">Activité</string>
     <string name="tracking_field_duration_seconds">Durée</string>
     <string name="tracking_field_unknown">Champ non reconnu</string>
+    <string name="tracking_timer_label_optional">%1$s (optionnel)</string>
+    <string name="tracking_timer_status_active">En cours : %1$s</string>
+    <string name="tracking_timer_status_stopped">Arrêté</string>
+    <string name="tracking_timer_activities_header">Activités :</string>
+    <string name="tracking_scale_min_default">Faible</string>
+    <string name="tracking_scale_max_default">Élevé</string>
+    <string name="tracking_scale_range_separator">à</string>
 
     <!-- shared -->
     <string name="shared_app_name">Assistant</string>
@@ -129,6 +136,17 @@
     <string name="shared_action_create_zone">Créer Zone</string>
     <string name="shared_action_edit_zone">Modifier Zone</string>
     <string name="shared_action_ok">OK</string>
+    <string name="shared_action_update">Modifier</string>
+    <string name="shared_action_back">Retour</string>
+    <string name="shared_action_configure">Configurer</string>
+    <string name="shared_action_add">Ajouter</string>
+    <string name="shared_action_edit">Modifier</string>
+    <string name="shared_action_refresh">Actualiser</string>
+    <string name="shared_action_select">Sélectionner</string>
+    <string name="shared_action_up">Monter</string>
+    <string name="shared_action_down">Descendre</string>
+    <string name="shared_action_left">Précédent</string>
+    <string name="shared_action_right">Suivant</string>
     <string name="shared_label_zone_name">Nom de la zone</string>
     <string name="shared_label_description">Description</string>
     <string name="shared_label_icon">Icône</string>
@@ -141,6 +159,9 @@
     <string name="shared_label_time">Heure</string>
     <string name="shared_label_name">Nom</string>
     <string name="shared_label_actions">Actions</string>
+    <string name="shared_ui_toggle_enabled">Activé</string>
+    <string name="shared_ui_toggle_disabled">Désactivé</string>
+    <string name="shared_ui_new_item_placeholder">Nouvel élément</string>
     <string name="shared_message_loading_tools">Chargement des outils...</string>
     <string name="shared_message_validation_error">Erreur de validation: %1$s</string>
     <string name="shared_message_validation_error_simple">Erreur de validation</string>
@@ -150,6 +171,18 @@
     <string name="shared_message_no_zones_created">Aucune zone créée</string>
     <string name="shared_message_available_tool_types">Types d\'outils disponibles</string>
     <string name="shared_message_no_tools_in_zone">Aucun outil dans cette zone</string>
+    <string name="shared_error_tooltype_not_found">Type d\'outil \'%1$s\' introuvable</string>
+    <string name="shared_update_no_internet">Aucune connexion internet</string>
+    <string name="shared_update_latest_version">Vous avez la dernière version</string>
+    <string name="shared_update_permission_required">Autorisation d\'installation requise</string>
+    <string name="shared_update_downloading">Téléchargement en cours...</string>
+    <string name="shared_update_installation_started">Installation lancée...</string>
+    <string name="shared_update_success">Mise à jour téléchargée et installation lancée</string>
+    <string name="shared_update_download_title">Assistant - Mise à jour %1$s</string>
+    <string name="shared_update_download_description">Téléchargement de la nouvelle version...</string>
+    <string name="shared_update_changelog_default">Nouvelles améliorations et corrections</string>
+    <string name="shared_update_no_download_url">Aucune URL de téléchargement disponible</string>
+    <string name="shared_update_download_failed">Échec du téléchargement</string>
     <string name="shared_period_all">Toutes</string>
     <string name="shared_period_hour">Heure</string>
     <string name="shared_period_day">Jour</string>

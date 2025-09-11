@@ -57,7 +57,7 @@ fun CreateZoneScreen(
             )
             
             if (validation.isValid) {
-                // Validation réussie, procéder à la sauvegarde
+                // Validation successful, proceed to save
                 if (isEditing) {
                 // Handle update
                 coroutineScope.launch {
@@ -80,7 +80,7 @@ fun CreateZoneScreen(
                     onCreate?.invoke(name.trim(), description.takeIf { it.isNotBlank() }, null)
                 }
             } else {
-                // Validation échouée, afficher erreur via Toast
+                // Validation failed, show error via Toast
                 UI.Toast(context, validation.errorMessage ?: s.shared("message_validation_error_simple"), Duration.LONG)
             }
             
@@ -95,7 +95,7 @@ fun CreateZoneScreen(
         modifier = Modifier.padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title - centré (pattern MainScreen)
+        // Title - centered (MainScreen pattern)
         UI.Text(
             text = if (isEditing) s.shared("action_edit_zone") else s.shared("action_create_zone"),
             type = TextType.TITLE,

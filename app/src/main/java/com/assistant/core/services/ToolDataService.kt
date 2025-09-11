@@ -51,15 +51,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Validation via ToolType
         val toolType = ToolTypeManager.getToolType(tooltype)
         if (toolType != null) {
-            // Construire la structure complète pour validation (base fields + data field)
+            // Build complete structure for validation (base fields + data field)
             val fullDataMap = mutableMapOf<String, Any>().apply {
-                // Champs de base requis par le schéma
+                // Base fields required by schema
                 put("tool_instance_id", toolInstanceId)
                 put("tooltype", tooltype)
                 timestamp?.let { put("timestamp", it) }
                 name?.let { put("name", it) }
                 
-                // Champ data contenant les données spécifiques au tool type
+                // Data field containing tool type specific data
                 val dataContent = JSONObject(dataJson).let { json ->
                     mutableMapOf<String, Any>().apply {
                         json.keys().forEach { key ->
@@ -117,19 +117,19 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error("Entry not found: $entryId")
 
-        // Validation si nouvelles données fournies
+        // Validation if new data provided
         if (dataJson != null) {
             val toolType = ToolTypeManager.getToolType(existingEntity.tooltype)
             if (toolType != null) {
-                // Construire la structure complète pour validation (base fields + data field)
+                // Build complete structure for validation (base fields + data field)
                 val fullDataMap = mutableMapOf<String, Any>().apply {
-                    // Champs de base requis par le schéma
+                    // Base fields required by schema
                     put("tool_instance_id", existingEntity.toolInstanceId)
                     put("tooltype", existingEntity.tooltype)
                     put("timestamp", timestamp ?: existingEntity.timestamp ?: 0L)
                     put("name", name ?: existingEntity.name ?: "")
                     
-                    // Champ data contenant les données spécifiques au tool type
+                    // Data field containing tool type specific data
                     val dataContent = JSONObject(dataJson).let { json ->
                         mutableMapOf<String, Any>().apply {
                             json.keys().forEach { key ->
@@ -186,7 +186,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
-        // Paramètres de filtrage et pagination
+        // Filtering and pagination parameters
         val limit = params.optInt("limit", 100)
         val page = params.optInt("page", 1)
         val offset = (page - 1) * limit
@@ -201,7 +201,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
             Pair(data, count)
         } else {
-            // Pagination simple (toutes les entrées)
+            // Simple pagination (all entries)
             val count = dao.countByToolInstance(toolInstanceId)
             val data = dao.getByToolInstancePaginated(toolInstanceId, limit, offset)
             Pair(data, count)
@@ -248,7 +248,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             mapOf(
                 "count" to count
-                // TODO: ajouter first_entry et last_entry si nécessaire
+                // TODO: add first_entry and last_entry if necessary
             )
         )
     }

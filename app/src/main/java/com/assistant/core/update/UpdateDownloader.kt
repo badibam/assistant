@@ -11,20 +11,23 @@ import androidx.core.content.FileProvider
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import kotlin.coroutines.resume
+import com.assistant.core.strings.Strings
 
 /**
- * Gestionnaire de téléchargement et installation des mises à jour
+ * Download and installation manager for updates
  */
 class UpdateDownloader(private val context: Context) {
     
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     
     /**
-     * Télécharge et installe une mise à jour
+     * Downloads and installs an update
      */
     suspend fun downloadAndInstall(updateInfo: UpdateInfo): DownloadResult {
+        val s = Strings.`for`(context = context)
+        
         if (!updateInfo.isDownloadable()) {
-            return DownloadResult.Error("Aucune URL de téléchargement disponible")
+            return DownloadResult.Error(s.shared("update_no_download_url"))
         }
         
         return try {
@@ -33,15 +36,15 @@ class UpdateDownloader(private val context: Context) {
                 installApk(apkFile)
                 DownloadResult.Success(apkFile)
             } else {
-                DownloadResult.Error("Échec du téléchargement")
+                DownloadResult.Error(s.shared("update_download_failed"))
             }
         } catch (e: Exception) {
-            DownloadResult.Error("Erreur: ${e.message}")
+            DownloadResult.Error(s.shared("message_error").format(e.message ?: ""))
         }
     }
     
     /**
-     * Télécharge l'APK via DownloadManager
+     * Downloads APK via DownloadManager
      */
     private suspend fun downloadApk(updateInfo: UpdateInfo): File? = suspendCancellableCoroutine { continuation ->
         try {
@@ -54,8 +57,9 @@ class UpdateDownloader(private val context: Context) {
             }
             
             val request = DownloadManager.Request(Uri.parse(updateInfo.downloadUrl)).apply {
-                setTitle("Assistant - Mise à jour ${updateInfo.version}")
-                setDescription("Téléchargement de la nouvelle version...")
+                val s = Strings.`for`(context = context)
+                setTitle(s.shared("update_download_title").format(updateInfo.version))
+                setDescription(s.shared("update_download_description"))
                 setDestinationUri(Uri.fromFile(destination))
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)

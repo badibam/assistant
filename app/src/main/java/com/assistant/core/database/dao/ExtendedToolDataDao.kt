@@ -8,7 +8,7 @@ import com.assistant.core.database.entities.ToolDataEntity
  */
 interface ExtendedToolDataDao {
     
-    // Méthodes communes (délégation vers BaseToolDataDao)
+    // Common methods (delegation to BaseToolDataDao)
     suspend fun insert(entity: ToolDataEntity)
     suspend fun update(entity: ToolDataEntity)
     suspend fun getByToolInstance(toolInstanceId: String): List<ToolDataEntity>
@@ -20,7 +20,7 @@ interface ExtendedToolDataDao {
     suspend fun getByTooltype(tooltype: String): List<ToolDataEntity>
     suspend fun getTooltypeMinVersions(): Map<String, Int>
     
-    // Méthodes de convenance génériques
+    // Generic convenience methods
     suspend fun getLatest(toolInstanceId: String): ToolDataEntity?
     suspend fun getByDateRange(toolInstanceId: String, startTime: Long, endTime: Long): List<ToolDataEntity>
     suspend fun getByItemName(toolInstanceId: String, itemName: String): List<ToolDataEntity>

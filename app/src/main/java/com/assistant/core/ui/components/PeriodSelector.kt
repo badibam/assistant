@@ -13,26 +13,26 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 /**
- * Types de filtres de période réutilisables
+ * Reusable period filter types
  */
 enum class PeriodFilterType {
-    ALL,    // Toutes les données
-    HOUR,   // Filtrage par heure
-    DAY,    // Filtrage par jour  
-    WEEK,   // Filtrage par semaine
-    MONTH,  // Filtrage par mois
-    YEAR    // Filtrage par année
+    ALL,    // All data
+    HOUR,   // Filter by hour
+    DAY,    // Filter by day  
+    WEEK,   // Filter by week
+    MONTH,  // Filter by month
+    YEAR    // Filter by year
 }
 
 /**
- * Enum pour les types de périodes supportés
+ * Enum for supported period types
  */
 enum class PeriodType {
     HOUR, DAY, WEEK, MONTH, YEAR
 }
 
 /**
- * Data class représentant une période
+ * Data class representing a period
  */
 data class Period(
     val timestamp: Long,
@@ -42,14 +42,14 @@ data class Period(
         fun now(type: PeriodType): Period = Period(normalizeTimestamp(System.currentTimeMillis(), type), type)
         
         /**
-         * Normalise un timestamp selon le type de période (version basique sans config)
+         * Normalizes a timestamp according to period type (basic version without config)
          */
         fun normalizeTimestamp(timestamp: Long, type: PeriodType): Long {
             val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
             
             return when (type) {
                 PeriodType.HOUR -> {
-                    // Début de l'heure (XX:00:00.000)
+                    // Start of hour (XX:00:00.000)
                     cal.apply {
                         set(Calendar.MINUTE, 0)
                         set(Calendar.SECOND, 0)
@@ -57,7 +57,7 @@ data class Period(
                     }.timeInMillis
                 }
                 PeriodType.DAY -> {
-                    // Début de la journée (00:00:00.000)
+                    // Start of day (00:00:00.000)
                     cal.apply {
                         set(Calendar.HOUR_OF_DAY, 0)
                         set(Calendar.MINUTE, 0)
@@ -66,7 +66,7 @@ data class Period(
                     }.timeInMillis
                 }
                 PeriodType.WEEK -> {
-                    // Début de la semaine (lundi 00:00:00.000)
+                    // Start of week (Monday 00:00:00.000)
                     // TODO: Utiliser AppConfigService.getWeekStartDay()
                     cal.apply {
                         firstDayOfWeek = Calendar.MONDAY
@@ -88,7 +88,7 @@ data class Period(
                     }.timeInMillis
                 }
                 PeriodType.YEAR -> {
-                    // Premier jour de l'année (01/01/XXXX 00:00:00.000)
+                    // First day of year (01/01/XXXX 00:00:00.000)
                     cal.apply {
                         set(Calendar.MONTH, Calendar.JANUARY)
                         set(Calendar.DAY_OF_MONTH, 1)
@@ -111,7 +111,7 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
     
     return when (type) {
         PeriodType.HOUR -> {
-            // Début de l'heure (XX:00:00.000)
+            // Start of hour (XX:00:00.000)
             cal.apply {
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
@@ -119,7 +119,7 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             }.timeInMillis
         }
         PeriodType.DAY -> {
-            // Début de la journée selon dayStartHour
+            // Start of day according to dayStartHour
             cal.apply {
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
                 set(Calendar.MINUTE, 0)
@@ -128,7 +128,7 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             }.timeInMillis
         }
         PeriodType.WEEK -> {
-            // Début de la semaine selon weekStartDay
+            // Start of week according to weekStartDay
             val calendarDay = when (weekStartDay) {
                 "sunday" -> Calendar.SUNDAY
                 "monday" -> Calendar.MONDAY
@@ -159,7 +159,7 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             }.timeInMillis
         }
         PeriodType.YEAR -> {
-            // Premier jour de l'année avec dayStartHour
+            // First day of year with dayStartHour
             cal.apply {
                 set(Calendar.MONTH, Calendar.JANUARY)
                 set(Calendar.DAY_OF_MONTH, 1)
@@ -187,11 +187,11 @@ fun PeriodSelector(
     weekStartDay: String = "monday"
 ) {
     
-    // État pour le sélecteur de date
+    // State for date selector
     var showPicker by remember { mutableStateOf(false) }
     
     
-    // Génération du label intelligent
+    // Smart label generation
     val label = remember(period, dayStartHour, weekStartDay) {
         generatePeriodLabel(period, dayStartHour, weekStartDay)
     }
@@ -201,7 +201,7 @@ fun PeriodSelector(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Bouton précédent
+        // Previous button
         UI.ActionButton(
             action = ButtonAction.LEFT,
             display = ButtonDisplay.ICON,
@@ -249,7 +249,7 @@ fun PeriodSelector(
         )
     }
     
-    // Sélecteur de date si activé
+    // Date selector if enabled
     if (showPicker && showDatePicker) {
         when (period.type) {
             PeriodType.HOUR -> {
@@ -274,7 +274,7 @@ fun PeriodSelector(
                             set(Calendar.MILLISECOND, 0)
                         }.timeInMillis
                         
-                        // Normaliser pour HOUR (début d'heure)
+                        // Normalize for HOUR (start of hour)
                         val normalizedTimestamp = normalizeTimestampWithConfig(combinedTimestamp, period.type, dayStartHour, weekStartDay)
                         onPeriodChange(Period(normalizedTimestamp, period.type))
                     },
@@ -412,7 +412,7 @@ private fun generateMonthLabel(timestamp: Long, now: Long): String {
  * Labels pour les années
  */
 private fun generateYearLabel(timestamp: Long, now: Long): String {
-    // Normaliser les timestamps pour comparer les années correctement
+    // Normalize timestamps to compare years correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR, 4, "monday")
     
@@ -444,7 +444,7 @@ private fun getPreviousPeriod(period: Period, dayStartHour: Int, weekStartDay: S
         PeriodType.YEAR -> cal.add(Calendar.YEAR, -1)
     }
     
-    // Normaliser le timestamp après le calcul avec les paramètres de configuration
+    // Normalize timestamp after calculation with configuration parameters
     return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay), period.type)
 }
 
@@ -462,7 +462,7 @@ private fun getNextPeriod(period: Period, dayStartHour: Int, weekStartDay: Strin
         PeriodType.YEAR -> cal.add(Calendar.YEAR, 1)
     }
     
-    // Normaliser le timestamp après le calcul avec les paramètres de configuration
+    // Normalize timestamp after calculation with configuration parameters
     return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay), period.type)
 }
 

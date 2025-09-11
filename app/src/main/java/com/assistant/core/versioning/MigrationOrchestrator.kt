@@ -10,21 +10,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Orchestrateur central des migrations de base de données
- * Collecte les migrations via discovery pattern et les exécute dans l'ordre
+ * Central database migration orchestrator
+ * Collects migrations via discovery pattern and executes them in order
  */
 class MigrationOrchestrator(private val context: Context) {
     
     /**
-     * Récupère toutes les migrations disponibles (core + outils)
+     * Gets all available migrations (core + tools)
      */
     fun getAllMigrations(): Array<Migration> {
         val migrations = mutableListOf<Migration>()
         
-        // Migrations core en premier
+        // Core migrations first
         migrations.addAll(getCoreMigrations())
         
-        // Migrations des outils découverts par ordre alphabétique pour cohérence
+        // Tool migrations discovered in alphabetical order for consistency
         try {
             val allToolTypes = ToolTypeManager.getAllToolTypes().values
             allToolTypes.sortedBy { it.getDisplayName(context) }.forEach { toolType ->
@@ -32,37 +32,37 @@ class MigrationOrchestrator(private val context: Context) {
                     val toolMigrations = toolType.getDatabaseMigrations()
                     migrations.addAll(toolMigrations)
                 } catch (e: Exception) {
-                    // Log l'erreur mais continue avec les autres outils
-                    println("Erreur lors de la récupération des migrations pour ${toolType.getDisplayName(context)}: ${e.message}")
+                    // Log the error but continue with other tools
+                    println("Error retrieving migrations for ${toolType.getDisplayName(context)}: ${e.message}")
                 }
             }
         } catch (e: Exception) {
-            println("Erreur lors du discovery des migrations des outils: ${e.message}")
+            println("Error during tool migration discovery: ${e.message}")
         }
         
-        // Tri final par version de départ pour assurer l'ordre
+        // Final sort by start version to ensure order
         return migrations
             .sortedBy { it.startVersion }
             .toTypedArray()
     }
     
     /**
-     * Migrations du système core (zones, tool instances, etc.)
+     * Core system migrations (zones, tool instances, etc.)
      */
     private fun getCoreMigrations(): List<Migration> {
         return listOf(
-            // Migration 1→2 supprimée - architecture unifiée démarre en v3
+            // Migration 1→2 removed - unified architecture starts in v3
             CORE_MIGRATION_2_3
         )
     }
     
     companion object {
         /**
-         * Migration 1→2: Ajout table tool_data unifiée
+         * Migration 1→2: Add unified tool_data table
          */
         val CORE_MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Création table tool_data unifiée
+                // Create unified tool_data table
                 database.execSQL("""
                     CREATE TABLE tool_data (
                         id TEXT PRIMARY KEY NOT NULL,
@@ -85,8 +85,8 @@ class MigrationOrchestrator(private val context: Context) {
                 database.execSQL("CREATE INDEX idx_tool_data_instance_timestamp ON tool_data(tool_instance_id, timestamp)")
                 database.execSQL("CREATE INDEX idx_tool_data_tooltype_version ON tool_data(tooltype, data_version)")
                 
-                // Migration supprimée - wipe complet pour architecture unifiée
-                // Les données précédentes seront perdues (à récupérer par script externe si besoin)
+                // Migration removed - complete wipe for unified architecture
+                // Previous data will be lost (can be recovered by external script if needed)
             }
         }
         
@@ -96,8 +96,8 @@ class MigrationOrchestrator(private val context: Context) {
          */
         val CORE_MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Migration vide - la table tool_data existe déjà en v2
-                // Architecture unifiée déjà en place
+                // Empty migration - tool_data table already exists in v2
+                // Unified architecture already in place
             }
         }
     }
@@ -121,12 +121,12 @@ class MigrationOrchestrator(private val context: Context) {
                     val error = MigrationError(
                         toolType = getToolTypeForMigration(migration),
                         operation = "Migration ${migration.startVersion} → ${migration.endVersion}",
-                        error = e.message ?: "Erreur inconnue",
-                        suggestedAction = "Vérifier la cohérence des données ou contacter le support"
+                        error = e.message ?: "Unknown error",
+                        suggestedAction = "Check data consistency or contact support"
                     )
                     errors.add(error)
                     
-                    // Arrêter en cas d'erreur critique
+                    // Stop on critical error
                     break
                 }
             }
@@ -134,9 +134,9 @@ class MigrationOrchestrator(private val context: Context) {
         } catch (e: Exception) {
             errors.add(MigrationError(
                 toolType = "system",
-                operation = "Discovery des migrations",
-                error = e.message ?: "Erreur inconnue",
-                suggestedAction = "Redémarrer l'application"
+                operation = "Migration discovery",
+                error = e.message ?: "Unknown error",
+                suggestedAction = "Restart the application"
             ))
         }
         
@@ -150,16 +150,16 @@ class MigrationOrchestrator(private val context: Context) {
     }
     
     /**
-     * Détermine le type d'outil responsable d'une migration (pour debugging)
+     * Determines the tool type responsible for a migration (for debugging)
      */
     private fun getToolTypeForMigration(migration: Migration): String {
-        // Logique simple : si la migration vient d'un tool type, on peut le déduire
-        // Pour l'instant, on retourne "unknown"
+        // Simple logic: if migration comes from a tool type, we can deduce it
+        // For now, return "unknown"
         return "unknown"
     }
     
     /**
-     * Génère un rapport des migrations disponibles
+     * Generates a report of available migrations
      */
     fun getMigrationReport(): String {
         val report = JSONObject()
@@ -185,25 +185,25 @@ class MigrationOrchestrator(private val context: Context) {
     }
 
     /**
-     * Effectue les migrations de données au démarrage de l'application
-     * Appelé après discovery des tooltypes pour migrer les données obsolètes
+     * Performs data migrations at application startup
+     * Called after tooltype discovery to migrate obsolete data
      */
     suspend fun performStartupMigrations(context: Context): DataMigrationResult {
         val errors = mutableListOf<MigrationError>()
         val migratedTooltypes = mutableListOf<String>()
         
         try {
-            // 1. Discovery pur des tooltypes
+            // 1. Pure tooltype discovery
             val allToolTypes = ToolTypeManager.getAllToolTypes()
             
-            // 2. Accès à la base de données
+            // 2. Database access
             val database = AppDatabase.getDatabase(context)
             val dao = database.toolDataDao()
             
-            // 3. Scan versions data en DB
+            // 3. Scan data versions in DB
             val dataVersions = dao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
             
-            // 4. Migration autonome par tooltype
+            // 4. Autonomous migration per tooltype
             for ((tooltype: String, minVersion: Int) in dataVersions) {
                 val toolTypeContract = allToolTypes[tooltype]
                 
@@ -218,23 +218,23 @@ class MigrationOrchestrator(private val context: Context) {
                             errors.add(MigrationError(
                                 toolType = tooltype,
                                 operation = "Migration données v$minVersion → v$currentVersion",
-                                error = e.message ?: "Erreur inconnue",
-                                suggestedAction = "Vérifier intégrité des données ou contacter support"
+                                error = e.message ?: "Unknown error",
+                                suggestedAction = "Check data integrity or contact support"
                             ))
                         }
                     }
                 } else {
-                    // ToolType ne supporte pas les migrations de données
-                    // C'est OK, pas d'erreur
+                    // ToolType doesn't support data migrations
+                    // This is OK, no error
                 }
             }
             
         } catch (e: Exception) {
             errors.add(MigrationError(
                 toolType = "system",
-                operation = "Migration startup des données",
-                error = e.message ?: "Erreur inconnue",
-                suggestedAction = "Redémarrer l'application ou contacter support"
+                operation = "Startup data migration",
+                error = e.message ?: "Unknown error",
+                suggestedAction = "Restart application or contact support"
             ))
         }
         
@@ -246,7 +246,7 @@ class MigrationOrchestrator(private val context: Context) {
     }
     
     /**
-     * Migre les données d'un tooltype spécifique
+     * Migrates data for a specific tooltype
      */
     private suspend fun migrateTooltypeData(
         tooltype: String,
@@ -259,10 +259,10 @@ class MigrationOrchestrator(private val context: Context) {
         
         entries.forEach { entry ->
             if (entry.dataVersion < currentVersion) {
-                // Upgrade des données
+                // Data upgrade
                 val upgradedData = toolTypeContract.upgradeDataIfNeeded(entry.data, entry.dataVersion)
                 
-                // Mise à jour en base
+                // Database update
                 val updatedEntity = entry.copy(
                     data = upgradedData,
                     dataVersion = currentVersion,
@@ -276,7 +276,7 @@ class MigrationOrchestrator(private val context: Context) {
 }
 
 /**
- * Résultat d'une migration
+ * Migration result
  */
 data class MigrationResult(
     val success: Boolean,
@@ -287,7 +287,7 @@ data class MigrationResult(
 )
 
 /**
- * Résultat de migration des données au démarrage
+ * Startup data migration result
  */
 data class DataMigrationResult(
     val success: Boolean,
@@ -296,7 +296,7 @@ data class DataMigrationResult(
 )
 
 /**
- * Erreur de migration avec informations de debugging
+ * Migration error with debugging information
  */
 data class MigrationError(
     val toolType: String,
@@ -305,7 +305,7 @@ data class MigrationError(
     val suggestedAction: String
 ) {
     fun toUserFriendlyMessage(): String {
-        return "Erreur dans $toolType lors de '$operation': $error\n" +
-               "Action suggérée: $suggestedAction"
+        return "Error in $toolType during '$operation': $error\n" +
+               "Suggested action: $suggestedAction"
     }
 }

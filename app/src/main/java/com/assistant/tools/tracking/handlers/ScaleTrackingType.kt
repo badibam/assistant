@@ -1,6 +1,8 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
+import com.assistant.core.strings.Strings
 
 /**
  * Handler for scale tracking type
@@ -27,7 +29,7 @@ class ScaleTrackingType : TrackingTypeHandler {
             put("min_label", minLabel)
             put("max_label", maxLabel)
             put("type", "scale")
-            put("raw", "$rating ($minValue à $maxValue)")
+            put("raw", "$rating ($minValue->$maxValue)")
         }.toString()
     }
     
@@ -40,12 +42,23 @@ class ScaleTrackingType : TrackingTypeHandler {
     }
     
     override fun getDefaultConfig(): JSONObject {
+        return getDefaultConfig(null)
+    }
+    
+    fun getDefaultConfig(context: Context?): JSONObject {
         return JSONObject().apply {
             put("type", "scale")
             put("min_value", 1)
             put("max_value", 10)
-            put("min_label", "Faible")
-            put("max_label", "Élevé")
+            if (context != null) {
+                val s = Strings.`for`(tool = "tracking", context = context)
+                put("min_label", s.tool("scale_min_default"))
+                put("max_label", s.tool("scale_max_default"))
+            } else {
+                // Use empty strings when context is not available
+                put("min_label", "")
+                put("max_label", "")
+            }
         }
     }
     

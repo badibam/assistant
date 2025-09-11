@@ -6,23 +6,23 @@ package com.assistant.core.ui
  */
 
 // =====================================
-// ÉTATS UNIFIÉS
+// UNIFIED STATES
 // =====================================
 
 /**
  * État unifié pour tous les composants UI
  */
 enum class ComponentState {
-    NORMAL,     // État standard
+    NORMAL,     // Standard state
     LOADING,    // Traitement en cours
     DISABLED,   // Non interactif
-    ERROR,      // Erreur de validation/système
+    ERROR,      // Validation/system error
     READONLY,   // Lecture seule
     SUCCESS     // Feedback positif
 }
 
 // =====================================
-// TAILLES ÉTENDUES
+// EXTENDED SIZES
 // =====================================
 
 /**
@@ -33,7 +33,7 @@ enum class Size {
 }
 
 // =====================================
-// VALIDATION INTÉGRÉE
+// INTEGRATED VALIDATION
 // =====================================
 
 /**
@@ -76,17 +76,17 @@ enum class Duration {
  * Modes d'affichage des instances d'outils
  */
 enum class DisplayMode {
-    ICON,       // 1/4×1/4 - icône seule
-    MINIMAL,    // 1/2×1/4 - icône + titre côte à côte
-    LINE,       // 1×1/4 - icône + titre à gauche, contenu libre droite
-    CONDENSED,  // 1/2×1/2 - icône + titre en haut, reste libre dessous
-    EXTENDED,   // 1×1/2 - icône + titre en haut, zone libre dessous
-    SQUARE,     // 1×1 - icône + titre en haut, grande zone libre
-    FULL        // 1×∞ - icône + titre en haut, zone libre infinie
+    ICON,       // 1/4×1/4 - icon only
+    MINIMAL,    // 1/2×1/4 - icon + title side by side
+    LINE,       // 1×1/4 - icon + title left, free content right
+    CONDENSED,  // 1/2×1/2 - icon + title top, free space below
+    EXTENDED,   // 1×1/2 - icon + title top, free zone below
+    SQUARE,     // 1×1 - icon + title top, large free zone
+    FULL        // 1×∞ - icon + title top, infinite free zone
 }
 
 // =====================================
-// DIALOG SYSTEM INTÉGRÉ
+// INTEGRATED DIALOG SYSTEM
 // =====================================
 
 /**
@@ -94,16 +94,16 @@ enum class DisplayMode {
  */
 enum class DialogType {
     CONFIGURE,   // → "Valider" + "Annuler"
-    CREATE,      // → "Créer" + "Annuler"
+    CREATE,      // → "Create" + "Cancel"
     EDIT,        // → "Sauvegarder" + "Annuler"
     CONFIRM,     // → "Confirmer" + "Annuler"
     DANGER,      // → "Supprimer" + "Annuler" (rouge)
-    SELECTION,   // → pas de boutons prédéfinis
+    SELECTION,   // → no predefined buttons
     INFO         // → "OK"
 }
 
 // =====================================
-// TYPES MÉTIER PRÉCIS
+// PRECISE BUSINESS TYPES
 // =====================================
 
 /**
@@ -115,7 +115,7 @@ enum class DialogType {
 enum class ButtonType {
     PRIMARY,    // Bouton principal (ex: sauvegarder)
     SECONDARY,  // Bouton secondaire (ex: annuler)
-    DEFAULT     // Bouton neutre (tous les boutons avec icônes)
+    DEFAULT     // Neutral button (all buttons with icons)
 }
 
 /**
@@ -130,8 +130,8 @@ enum class ButtonAction {
  * Modes d'affichage pour les boutons
  */
 enum class ButtonDisplay {
-    ICON,       // Icône seule
-    LABEL       // Texte seul (BOTH sera ajouté plus tard)
+    ICON,       // Icon only
+    LABEL       // Text only (BOTH will be added later)
 }
 
 
@@ -147,5 +147,5 @@ enum class TextType {
  */
 enum class CardType {
     DEFAULT
-    // Types à ajouter au fur et à mesure des besoins
+    // Types to be added as needed
 }

@@ -31,7 +31,7 @@ import org.json.JSONObject
 import java.util.*
 
 /**
- * Crée une période actuelle avec normalisation selon la configuration
+ * Creates current period with normalization according to configuration
  */
 private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDay: String): Period {
     val now = System.currentTimeMillis()
@@ -72,7 +72,7 @@ fun TrackingHistory(
     var totalEntries by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(1) }
     
-    // App config state - null jusqu'au chargement
+    // App config state - null until loading
     var dayStartHour by remember { mutableStateOf<Int?>(null) }
     var weekStartDay by remember { mutableStateOf<String?>(null) }
     
@@ -89,7 +89,7 @@ fun TrackingHistory(
             errorMessage = null
             
             try {
-                // Préparer les paramètres selon le filtre de période
+                // Prepare parameters according to period filter
                 val params = mutableMapOf<String, Any>(
                     "operation" to "get_entries",
                     "toolInstanceId" to toolInstanceId,
@@ -97,10 +97,10 @@ fun TrackingHistory(
                     "page" to currentPage
                 )
                 
-                // Ajouter les filtres temporels selon le type de période
+                // Add temporal filters according to period type
                 when (periodFilter) {
                     PeriodFilterType.ALL -> {
-                        // Pas de filtre temporel, juste la limite
+                        // No temporal filter, only limit
                     }
                     PeriodFilterType.HOUR -> {
                         val periodStart = currentPeriod.timestamp
@@ -122,7 +122,7 @@ fun TrackingHistory(
                     }
                     PeriodFilterType.MONTH -> {
                         val periodStart = currentPeriod.timestamp
-                        // Pour les mois, on calcule le début du mois suivant
+                        // For months, calculate start of next month
                         val periodEnd = Calendar.getInstance().apply {
                             timeInMillis = periodStart
                             add(Calendar.MONTH, 1)
@@ -132,7 +132,7 @@ fun TrackingHistory(
                     }
                     PeriodFilterType.YEAR -> {
                         val periodStart = currentPeriod.timestamp
-                        // Pour les années, on calcule le début de l'année suivante
+                        // For years, calculate start of next year
                         val periodEnd = Calendar.getInstance().apply {
                             timeInMillis = periodStart
                             add(Calendar.YEAR, 1)
@@ -149,14 +149,14 @@ fun TrackingHistory(
                         val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
                         val paginationData = result.data?.get("pagination") as? Map<*, *>
                         
-                        // Mise à jour des données de pagination
+                        // Update pagination data
                         paginationData?.let { pagination ->
                             totalPages = (pagination["totalPages"] as? Number)?.toInt() ?: 1
                             totalEntries = (pagination["totalEntries"] as? Number)?.toInt() ?: 0
                             currentPage = (pagination["currentPage"] as? Number)?.toInt() ?: 1
                         }
                         
-                        // Obtenir l'ID de l'entrée timer en cours pour l'exclure
+                        // Get current timer entry ID to exclude it
                         val activeTimerEntryId = TimerManager.getInstance().timerState.value.entryId
                         
                         trackingData = entriesData.mapNotNull { entryMap ->
@@ -164,7 +164,7 @@ fun TrackingHistory(
                                 try {
                                     val entryId = entryMap["id"] as? String ?: ""
                                     
-                                    // Exclure l'entrée du timer en cours (durée = 0)
+                                    // Exclude current timer entry (duration = 0)
                                     if (activeTimerEntryId.isNotEmpty() && entryId == activeTimerEntryId) {
                                         return@mapNotNull null
                                     }
@@ -283,7 +283,7 @@ fun TrackingHistory(
         }
     }
     
-    // Attendre que la config soit chargée
+    // Wait for config to be loaded
     if (dayStartHour == null || weekStartDay == null) {
         Column(
             modifier = modifier.fillMaxWidth(),
@@ -427,14 +427,14 @@ fun TrackingHistory(
                     UI.Text(s.shared("label_date"), TextType.CAPTION)
                 }
                 
-                // Nom header (weight=3f)
+                // Name header (weight=3f)
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
                     UI.Text(s.shared("label_name"), TextType.CAPTION)
                 }
                 
-                // Valeur header (weight=3f)
+                // Value header (weight=3f)
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
@@ -596,7 +596,7 @@ private fun TrackingHistoryRow(
             )
         }
         
-        // Nom (weight=3f)  
+        // Name (weight=3f)
         Box(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
@@ -606,7 +606,7 @@ private fun TrackingHistoryRow(
             )
         }
         
-        // Valeur (weight=3f)
+        // Value (weight=3f)
         Box(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
@@ -616,7 +616,7 @@ private fun TrackingHistoryRow(
             )
         }
         
-        // Modifier (weight=1f)
+        // Update (weight=1f)
         Box(
             modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center
@@ -629,7 +629,7 @@ private fun TrackingHistoryRow(
             )
         }
         
-        // Supprimer (weight=1f)
+        // Delete (weight=1f)
         Box(
             modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center

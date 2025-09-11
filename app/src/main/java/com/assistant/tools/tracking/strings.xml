@@ -155,4 +155,16 @@
     <string name="field_duration_seconds">Durée</string>
     <string name="field_unknown">Champ non reconnu</string>
     
+    <!-- TIMER FIELD -->
+    <string name="timer_label_optional">%s (optionnel)</string>
+    <string name="timer_status_active">En cours : %s</string>
+    <string name="timer_status_stopped">Arrêté</string>
+    <string name="timer_activities_header">Activités :</string>
+    
+    <!-- SCALE DEFAULTS -->
+    <string name="scale_min_default">Faible</string>
+    <string name="scale_max_default">Élevé</string>
+    <string name="scale_range_separator"> à </string>
+
+    
 </resources>

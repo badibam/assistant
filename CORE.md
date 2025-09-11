@@ -298,7 +298,7 @@ val handleSave = {
     if (validation.isValid) {
         // Sauvegarder
     } else {
-        Toast.makeText(context, validation.errorMessage, LENGTH_LONG).show()
+       UI.Toast(...)
     }
 }
 ```

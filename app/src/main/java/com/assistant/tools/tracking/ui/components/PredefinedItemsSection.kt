@@ -528,7 +528,7 @@ private fun TimerItemsLayout(
     val timerState by timerManager.timerState
     val coordinator = remember { Coordinator(context) }
     
-    // Fonction pour créer une entrée timer avec durée = 0
+    // Function to create a timer entry with duration = 0
     val createTimerEntry: (String) -> String = { name ->
         val timerValueJson = JSONObject().apply {
             put("type", "timer")
@@ -556,7 +556,7 @@ private fun TimerItemsLayout(
         }
     }
     
-    // Fonction pour mettre à jour une entrée timer avec la durée finale
+    // Function to update a timer entry with final duration
     val updateTimerEntry: (String, Int) -> Unit = { entryId, durationSeconds ->
         val timerValueJson = JSONObject().apply {
             put("type", "timer")
@@ -575,16 +575,16 @@ private fun TimerItemsLayout(
         val params = mutableMapOf<String, Any>(
             "id" to entryId,
             "data" to JSONObject(timerValueJson)
-            // On n'inclut pas "name" pour garder le nom existant
+            // We don't include 'name' in order to keep existing name
         )
         
         try {
             val result = runBlocking { coordinator.processUserAction("update->tool_data", params) }
             if (result.status == CommandStatus.SUCCESS) {
-                // Refresh de l'historique après mise à jour réussie
+                // Refresh history after successful update
                 onEntrySaved()
             } else {
-                // Afficher toast d'erreur
+                // Show error toast
                 UI.Toast(context, s.shared("message_error").format(result.error ?: s.tool("error_entry_update_failed")), Duration.LONG)
                 android.util.Log.e("TIMER", "Failed to update timer entry: ${result.error}")
             }
@@ -620,27 +620,27 @@ private fun TimerItemsLayout(
                             type = if (isActive) ButtonType.PRIMARY else ButtonType.DEFAULT,
                             onClick = {
                                 if (useCustomTimestamp) {
-                                    // Mode date personnalisée : ouvrir dialogue pour saisie manuelle
+                                    // Custom date mode: open dialog for manual input
                                     onOpenDialog(item.name, item.properties)
                                 } else {
-                                    // Mode temps réel : comportement timer normal
+                                    // Real-time mode: normal timer behavior
                                     if (isActive) {
-                                        // Arrêter le timer actuel
+                                        // Stop current timer
                                         timerManager.stopCurrentTimer { entryId, seconds ->
-                                            // Mettre à jour l'entrée existante avec la durée finale
+                                            // Update existing entry with final duration
                                             updateTimerEntry(entryId, seconds)
                                         }
                                     } else {
-                                        // Démarrer nouveau timer (auto-switch si besoin)
+                                        // Start new timer (auto-switch if needed)
                                         timerManager.startTimer(
                                             activityName = item.name,
                                             toolInstanceId = toolInstanceId,
                                             onPreviousTimerUpdate = { entryId, seconds ->
-                                                // Mettre à jour le timer précédent avec la durée finale
+                                                // Update previous timer with final duration
                                                 updateTimerEntry(entryId, seconds)
                                             },
                                             onCreateNewEntry = { activityName ->
-                                                // Créer immédiatement l'entrée avec durée = 0
+                                                // Create entry immediately with duration = 0
                                                 createTimerEntry(activityName)
                                             }
                                         )

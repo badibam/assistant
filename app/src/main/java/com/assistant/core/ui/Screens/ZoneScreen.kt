@@ -232,7 +232,7 @@ fun ZoneScreen(
 
                     )
                     
-                    // List all available tool types - centrés
+                    // List all available tool types - centered
                     ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),

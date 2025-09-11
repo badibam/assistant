@@ -1,7 +1,9 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 import org.json.JSONArray
+import com.assistant.core.strings.Strings
 
 /**
  * Handler for timer tracking type
@@ -33,14 +35,12 @@ class TimerTrackingType : TrackingTypeHandler {
     }
     
     override fun getDefaultConfig(): JSONObject {
+        return getDefaultConfig(null)
+    }
+    
+    fun getDefaultConfig(context: Context?): JSONObject {
         return JSONObject().apply {
             put("type", "timer")
-            put("activities", JSONArray().apply {
-                put("Travail")
-                put("Pause")
-                put("Sport")
-                put("Lecture")
-            })
         }
     }
     

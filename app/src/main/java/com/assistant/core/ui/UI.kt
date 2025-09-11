@@ -29,7 +29,7 @@ object UI {
     // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
-    // PAS de wrappers - accès direct pour flexibilité maximale
+    // NO wrappers - direct access for maximum flexibility
     
     // =====================================
     // INTERACTIVE
@@ -49,10 +49,10 @@ object UI {
         action: ButtonAction,
         display: ButtonDisplay = ButtonDisplay.LABEL,
         size: Size = Size.M,
-        type: ButtonType? = null,  // Override optionnel du type par défaut
+        type: ButtonType? = null,  // Optional override of default type
         enabled: Boolean = true,
         requireConfirmation: Boolean = false,  // Dialogue de confirmation automatique
-        confirmMessage: String? = null,        // Message custom (null = message par défaut)
+        confirmMessage: String? = null,        // Custom message (null = default message)
         onClick: () -> Unit
     ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
     
@@ -144,7 +144,7 @@ object UI {
                 background = background
             )
         } else {
-            // Fallback : afficher les 2 premières lettres du nom
+            // Fallback: display first 2 letters of name
             Text(
                 text = iconName.take(2).uppercase(),
                 type = TextType.CAPTION,
@@ -176,7 +176,7 @@ object UI {
     ) = CurrentTheme.current.TimePicker(selectedTime, onTimeSelected, onDismiss)
     
     // =====================================
-    // FORMULAIRES UNIFIÉS
+    // UNIFIED FORMS
     // =====================================
     
     @Composable
@@ -234,10 +234,21 @@ object UI {
         label: String,
         checked: Boolean,
         onCheckedChange: (Boolean) -> Unit,
-        trueLabel: String = "Activé",
-        falseLabel: String = "Désactivé",
+        trueLabel: String? = null,
+        falseLabel: String? = null,
         required: Boolean = true
-    ) = CurrentTheme.current.ToggleField(label, checked, onCheckedChange, trueLabel, falseLabel, required)
+    ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        CurrentTheme.current.ToggleField(
+            label, 
+            checked, 
+            onCheckedChange, 
+            trueLabel ?: s.shared("ui_toggle_enabled"), 
+            falseLabel ?: s.shared("ui_toggle_disabled"), 
+            required
+        )
+    }
     
     @Composable
     fun SliderField(
@@ -260,36 +271,36 @@ object UI {
     ) = CurrentTheme.current.CounterField(label, incrementButtons, decrementButtons, onIncrement, required)
     
     @Composable
-    fun TimerField(
-        label: String,
-        activities: List<String>, // List of predefined activity names
-        currentActivity: String?, // Currently active activity (null if stopped)
-        currentDuration: String, // Current session duration (formatted string)
-        onStartActivity: (String) -> Unit,
-        onStopActivity: () -> Unit,
-        onSaveSession: (String, Int) -> Unit, // (activityName, durationMinutes)
-        required: Boolean = true
-    ) = CurrentTheme.current.TimerField(label, activities, currentActivity, currentDuration, onStartActivity, onStopActivity, onSaveSession, required)
-    
-    @Composable
     fun DynamicList(
         label: String,
         items: List<String>,
         onItemsChanged: (List<String>) -> Unit,
-        placeholder: String = "Nouvel élément",
+        placeholder: String? = null,
         required: Boolean = true,
         minItems: Int = 0,
         maxItems: Int = Int.MAX_VALUE
-    ) = CurrentTheme.current.DynamicList(label, items, onItemsChanged, placeholder, required, minItems, maxItems)
+    ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        CurrentTheme.current.DynamicList(
+            label, 
+            items, 
+            onItemsChanged, 
+            placeholder ?: s.shared("ui_new_item_placeholder"), 
+            required, 
+            minItems, 
+            maxItems
+        )
+    }
     
     // =====================================
-    // BOUTONS AVEC ICÔNES AUTOMATIQUES
+    // BUTTONS WITH AUTOMATIC ICONS
     // =====================================
     
-    // Anciens boutons prédéfinis supprimés - utiliser UI.ActionButton à la place
+    // Old predefined buttons removed - use UI.ActionButton instead
     
     // =====================================
-    // COMPOSANTS SPÉCIALISÉS
+    // SPECIALIZED COMPONENTS
     // =====================================
     
     @Composable
@@ -298,7 +309,7 @@ object UI {
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
     ) {
-        // Container thématisé + contenu standard avec UI.*
+        // Themed container + standard content with UI.*
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             Column {
                 Text(zone.name, TextType.TITLE)
@@ -329,7 +340,7 @@ object UI {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icône réelle
+            // Real icon
             val iconName = JSONObject(tool.config_json).optString("icon", "activity")
             Icon(
                 iconName = iconName,
@@ -351,7 +362,7 @@ object UI {
         onClick: () -> Unit,
         onLongClick: () -> Unit = { }
     ) {
-        // Contenu défini au niveau core + tool types avec UI.*
+        // Content defined at core level + tool types with UI.*
         CurrentTheme.current.ToolCardContainer(
             displayMode = displayMode,
             onClick = onClick, 
@@ -359,7 +370,7 @@ object UI {
         ) {
             when (displayMode) {
                 DisplayMode.ICON -> {
-                    // TODO: Icône seule via tool type
+                    // TODO: Icon only via tool type
                     Text("T", TextType.BODY) // Placeholder
                 }
                 DisplayMode.MINIMAL -> {
@@ -370,7 +381,7 @@ object UI {
                         modifier = Modifier.fillMaxHeight(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Moitié gauche : ToolCardHeader centré verticalement et horizontalement
+                        // Left half: ToolCardHeader centered vertically and horizontally
                         Box(
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                             contentAlignment = Alignment.Center
@@ -394,16 +405,16 @@ object UI {
                 DisplayMode.CONDENSED, DisplayMode.EXTENDED, DisplayMode.SQUARE, DisplayMode.FULL -> {
                     Column {
                         Row {
-                            // Icône + titre à gauche (partie fixe)
+                            // Icon + title on left (fixed part)
                             ToolCardHeader(tool, context)
-                            // Zone libre en haut à droite définie par tool type
+                            // Free zone at top right defined by tool type
                             Box {
-                                // TODO: Contenu libre haut défini par tool type selon mode
+                                // TODO: Top free content defined by tool type according to mode
                             }
                         }
-                        // Zone libre en-dessous définie par tool type
+                        // Free zone below defined by tool type
                         Box {
-                            // TODO: Contenu libre bas défini par tool type selon mode
+                            // TODO: Bottom free content defined by tool type according to mode
                         }
                     }
                 }

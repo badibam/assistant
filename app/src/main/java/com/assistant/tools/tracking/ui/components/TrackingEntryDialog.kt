@@ -83,7 +83,7 @@ fun TrackingEntryDialog(
         mutableStateOf(initialData["increment"]?.toString() ?: initialData["default_increment"]?.toString() ?: "1") 
     }
     
-    // Timer: 3 champs séparés H/M/S
+    // Timer: 3 separate H/M/S fields
     val initialSeconds = (initialData["duration_seconds"] as? Number)?.toInt() ?: 0
     var timerHours by remember(isVisible) { 
         mutableStateOf((initialSeconds / 3600).toString()) 
@@ -112,7 +112,7 @@ fun TrackingEntryDialog(
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
 
-    // ═══ Vraies valeurs centralisées pour tous les types (utilisées dans validateForm ET UI) ═══
+    // ═══ Centralized actual values for all types (used in validateForm AND UI) ═══
     val realValues = remember(trackingType, config, initialData, s) {
         when (trackingType) {
             "scale" -> mapOf(
@@ -200,7 +200,7 @@ fun TrackingEntryDialog(
                     if (maxValue != null) put("max_value", maxValue)
                     if (minLabel != null) put("min_label", minLabel)
                     if (maxLabel != null) put("max_label", maxLabel)
-                    val rangeText = if (minValue != null && maxValue != null) " ($minValue à $maxValue)" else ""
+                    val rangeText = if (minValue != null && maxValue != null) " ($minValue->$maxValue)" else ""
                     put("raw", "$scaleRating$rangeText")
                 }.toString()
             }
@@ -236,13 +236,13 @@ fun TrackingEntryDialog(
             }.toString()
             
             "timer" -> {
-                // Convertir H/M/S vers secondes totales
+                // Convert H/M/S into total seconds
                 val h = timerHours.trim().toIntOrNull() ?: 0
                 val m = timerMinutes.trim().toIntOrNull() ?: 0  
                 val s = timerSeconds.trim().toIntOrNull() ?: 0
                 val totalSeconds = h * 3600 + m * 60 + s
                 
-                // Format intelligent pour raw
+                // Smart format for raw
                 val rawText = buildString {
                     if (h > 0) append("${h}h ")
                     if (m > 0) append("${m}m ")
@@ -397,7 +397,7 @@ fun TrackingEntryDialog(
                     }
                     
                     "scale" -> {
-                        // Utiliser les vraies valeurs centralisées
+                        // Use centralized actual values
                         val minValue = realValues["minValue"] as? Int
                         val maxValue = realValues["maxValue"] as? Int
                         val minLabel = realValues["minLabel"] as? String
@@ -406,7 +406,7 @@ fun TrackingEntryDialog(
                         android.util.Log.d("SCALE_DEBUG", "Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
                         
                         if (minValue != null && maxValue != null) {
-                            // Initialiser à la valeur min si pas encore définie
+                            // Initialize to min value if not yet defined
                             val currentRating = scaleRating ?: minValue
                             if (scaleRating == null) {
                                 scaleRating = currentRating
@@ -422,7 +422,7 @@ fun TrackingEntryDialog(
                                 required = true
                             )
                         } else {
-                            // Pas de données min/max valides - afficher erreur
+                            // No valid min/max data - show error
                             UI.Text(s.tool("usage_error_scale_config"), TextType.BODY)
                             android.util.Log.e("SCALE_DEBUG", "minValue ou maxValue null - impossible d'afficher le slider")
                         }
@@ -473,7 +473,7 @@ fun TrackingEntryDialog(
                     }
                     
                     "timer" -> {
-                        // 3 champs séparés pour H/M/S
+                        // 3 separate fields for H/M/S
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.Bottom

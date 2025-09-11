@@ -20,6 +20,17 @@
     <string name="action_create_zone">Créer Zone</string>
     <string name="action_edit_zone">Modifier Zone</string>
     <string name="action_ok">OK</string>
+    <string name="action_update">Modifier</string>
+    <string name="action_back">Retour</string>
+    <string name="action_configure">Configurer</string>
+    <string name="action_add">Ajouter</string>
+    <string name="action_edit">Modifier</string>
+    <string name="action_refresh">Actualiser</string>
+    <string name="action_select">Sélectionner</string>
+    <string name="action_up">Monter</string>
+    <string name="action_down">Descendre</string>
+    <string name="action_left">Précédent</string>
+    <string name="action_right">Suivant</string>
     
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>
@@ -35,6 +46,11 @@
     <string name="label_name">Nom</string>
     <string name="label_actions">Actions</string>
     
+    <!-- UI Component defaults -->
+    <string name="ui_toggle_enabled">Activé</string>
+    <string name="ui_toggle_disabled">Désactivé</string>
+    <string name="ui_new_item_placeholder">Nouvel élément</string>
+    
     <!-- Messages et feedback -->
     <string name="message_loading_tools">Chargement des outils...</string>
     <string name="message_validation_error">Erreur de validation: %s</string>
@@ -45,6 +61,20 @@
     <string name="message_no_zones_created">Aucune zone créée</string>
     <string name="message_available_tool_types">Types d'outils disponibles</string>
     <string name="message_no_tools_in_zone">Aucun outil dans cette zone</string>
+    <string name="error_tooltype_not_found">Type d'outil '%s' introuvable</string>
+    
+    <!-- Update Manager -->
+    <string name="update_no_internet">Aucune connexion internet</string>
+    <string name="update_latest_version">Vous avez la dernière version</string>
+    <string name="update_permission_required">Autorisation d'installation requise</string>
+    <string name="update_downloading">Téléchargement en cours...</string>
+    <string name="update_installation_started">Installation lancée...</string>
+    <string name="update_success">Mise à jour téléchargée et installation lancée</string>
+    <string name="update_download_title">Assistant - Mise à jour %s</string>
+    <string name="update_download_description">Téléchargement de la nouvelle version...</string>
+    <string name="update_changelog_default">Nouvelles améliorations et corrections</string>
+    <string name="update_no_download_url">Aucune URL de téléchargement disponible</string>
+    <string name="update_download_failed">Échec du téléchargement</string>
     
     <!-- Périodes temporelles -->
     <string name="period_all">Toutes</string>
