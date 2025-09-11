@@ -13,6 +13,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.ui.ThemeIconManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
 /**
@@ -30,6 +31,7 @@ fun TrackingScreen(
     
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     
     // State
     var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
@@ -54,11 +56,11 @@ fun TrackingScreen(
                     }
                 }
                 else -> {
-                    errorMessage = result.error ?: "Impossible de charger l'outil"
+                    errorMessage = result.error ?: s.shared("tools_error_load_tool")
                 }
             }
         } catch (e: Exception) {
-            errorMessage = "Erreur: ${e.message}"
+            errorMessage = s.shared("message_error").format(e.message ?: "")
         } finally {
             isLoading = false
         }
@@ -86,7 +88,7 @@ fun TrackingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                UI.CenteredText("Chargement...", TextType.BODY)
+                UI.CenteredText(s.shared("tools_loading"), TextType.BODY)
             }
         } else if (errorMessage != null) {
             UI.Card(type = CardType.DEFAULT) {
@@ -99,7 +101,7 @@ fun TrackingScreen(
             )
         } else if (toolInstance != null) {
             // Tool header with UI.PageHeader
-            val toolName = config.optString("name", "Suivi")
+            val toolName = config.optString("name", s.tool("display_name"))
             val toolDescription = config.optString("description", "")
             val iconName = config.optString("icon_name", "activity")
             
@@ -119,7 +121,7 @@ fun TrackingScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    UI.Text("Nouvelle entrée", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+                    UI.Text(s.tool("usage_section_new_entry"), TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
                     key(configRefreshTrigger) {
                         TrackingInputManager(
@@ -142,7 +144,7 @@ fun TrackingScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    UI.Text("Historique", TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
+                    UI.Text(s.tool("usage_section_history"), TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
                     TrackingHistory(
                         toolInstanceId = toolInstanceId,

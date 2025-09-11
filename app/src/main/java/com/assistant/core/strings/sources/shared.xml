@@ -3,7 +3,7 @@
     <!-- Strings partagées core app + modules -->
 
     <!-- App -->
-    <string name="app_title">Assistant</string>
+    <string name="app_name">Assistant</string>
 
     <!-- App config - Temporal -->
     <string name="app_config_temporal_week_start_day">Premier jour de la semaine</string>
@@ -30,10 +30,16 @@
     <string name="label_disabled">Désactivé</string>
     <string name="label_field_generic">Champ</string>
     <string name="label_field_parameter">Paramètre</string>
+    <string name="label_date">Date</string>
+    <string name="label_time">Heure</string>
+    <string name="label_name">Nom</string>
+    <string name="label_actions">Actions</string>
     
     <!-- Messages et feedback -->
     <string name="message_loading_tools">Chargement des outils...</string>
     <string name="message_validation_error">Erreur de validation: %s</string>
+    <string name="message_validation_error_simple">Erreur de validation</string>
+    <string name="message_error">Erreur: %s</string>
     <string name="message_irreversible_action">Cette action est irréversible.</string>
     <string name="message_delete_zone_confirmation">Supprimer la zone "%s" ?</string>
     <string name="message_no_zones_created">Aucune zone créée</string>
@@ -41,6 +47,12 @@
     <string name="message_no_tools_in_zone">Aucun outil dans cette zone</string>
     
     <!-- Périodes temporelles -->
+    <string name="period_all">Toutes</string>
+    <string name="period_hour">Heure</string>
+    <string name="period_day">Jour</string>
+    <string name="period_week">Semaine</string>
+    <string name="period_month">Mois</string>
+    <string name="period_year">Année</string>
     <string name="period_this_hour">Cette heure-ci</string>
     <string name="period_hours_ago_singular">Il y a %d heure</string>
     <string name="period_hours_ago_plural">Il y a %d heures</string>
@@ -124,6 +136,12 @@
     <string name="tools_config_display_extended">EXTENDED</string>
     <string name="tools_config_display_square">SQUARE</string>
     <string name="tools_config_display_full">FULL</string>
+    
+    <!-- Tools USAGE - Chaînes communes aux tooltypes pour l'utilisation -->
+    <string name="tools_loading">Chargement...</string>
+    <string name="tools_loading_config">Chargement de la configuration...</string>
+    <string name="tools_error_load_tool">Impossible de charger l\'outil</string>
+    <string name="tools_error_loading">Erreur lors du chargement</string>
     
 
 

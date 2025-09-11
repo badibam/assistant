@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
@@ -35,6 +36,8 @@ fun PredefinedItemsSection(
     defaultTimestamp: Long = System.currentTimeMillis(),
     onDefaultTimestampChange: (Long) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     // Parse predefined items from config
     val predefinedItems = remember(config) {
         val itemsArray = config.optJSONArray("items") ?: JSONArray()
@@ -132,8 +135,8 @@ fun PredefinedItemsSection(
                 UI.ToggleField(
                     label = "",
                     checked = useCustomTimestamp && canUseCustomTimestamp,
-                    trueLabel = "Date personnalisée",
-                    falseLabel = "Date = maintenant",
+                    trueLabel = s.tool("usage_custom_date"),
+                    falseLabel = s.tool("usage_current_time"),
                     onCheckedChange = { checked ->
                         if (canUseCustomTimestamp) {
                             useCustomTimestamp = checked
@@ -151,7 +154,7 @@ fun PredefinedItemsSection(
                     // Date field
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Date",
+                            label = s.shared("label_date"),
                             value = customDate,
                             onChange = { customDate = it },
                             fieldType = FieldType.TEXT,
@@ -164,7 +167,7 @@ fun PredefinedItemsSection(
                     // Time field
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Heure",
+                            label = s.shared("label_time"),
                             value = customTime,
                             onChange = { customTime = it },
                             fieldType = FieldType.TEXT,
@@ -203,7 +206,8 @@ fun PredefinedItemsSection(
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
                         },
-                        customTimestamp = finalTimestamp
+                        customTimestamp = finalTimestamp,
+                        context = context
                     )
                 }
                 
@@ -372,8 +376,10 @@ private fun BooleanItemsLayout(
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
     onOpenDialog: (String, Map<String, Any>) -> Unit,
-    customTimestamp: Long = System.currentTimeMillis()
+    customTimestamp: Long = System.currentTimeMillis(),
+    context: android.content.Context
 ) {
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     items.forEach { item ->
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -388,8 +394,8 @@ private fun BooleanItemsLayout(
             }
             
             // Get labels from config 
-            val trueLabel = config.optString("true_label", "Oui")
-            val falseLabel = config.optString("false_label", "Non")
+            val trueLabel = config.optString("true_label", s.tool("config_default_true_label"))
+            val falseLabel = config.optString("false_label", s.tool("config_default_false_label"))
             
             // Thumbs up button (true)
             UI.Button(
@@ -517,6 +523,7 @@ private fun TimerItemsLayout(
     customTimestamp: Long = System.currentTimeMillis()
 ) {
     val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     val timerManager = remember { TimerManager.getInstance() }
     val timerState by timerManager.timerState
     val coordinator = remember { Coordinator(context) }
@@ -580,7 +587,7 @@ private fun TimerItemsLayout(
                 // Afficher toast d'erreur
                 android.widget.Toast.makeText(
                     context,
-                    "Erreur: ${result.error ?: "Impossible de mettre à jour l'entrée"}",
+                    s.shared("message_error").format(result.error ?: s.tool("error_entry_update_failed")),
                     android.widget.Toast.LENGTH_LONG
                 ).show()
                 android.util.Log.e("TIMER", "Failed to update timer entry: ${result.error}")
@@ -588,7 +595,7 @@ private fun TimerItemsLayout(
         } catch (e: Exception) {
             android.widget.Toast.makeText(
                 context,
-                "Erreur: ${e.message}",
+                s.shared("message_error").format(e.message ?: ""),
                 android.widget.Toast.LENGTH_LONG
             ).show()
             android.util.Log.e("TIMER", "Exception updating timer entry", e)
@@ -599,7 +606,13 @@ private fun TimerItemsLayout(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Barre de timer active
-        UI.Text(timerState.formatDisplayText(), TextType.CAPTION)
+        val displayData = timerState.getDisplayData()
+        val displayText = if (displayData.isActive) {
+            "${displayData.activityName} : ${displayData.elapsedTime}"
+        } else {
+            s.tool("usage_timer_idle")
+        }
+        UI.Text(displayText, TextType.CAPTION)
         
         // Activity buttons
         items.chunked(2).forEach { rowItems ->

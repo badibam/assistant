@@ -12,8 +12,8 @@ class BooleanTrackingType : TrackingTypeHandler {
     
     override fun createDataJson(properties: Map<String, Any>): String? {
         val state = properties["state"] as? Boolean ?: return null
-        val trueLabel = properties["true_label"] as? String ?: "Oui"
-        val falseLabel = properties["false_label"] as? String ?: "Non"
+        val trueLabel = properties["true_label"] as? String ?: ""
+        val falseLabel = properties["false_label"] as? String ?: ""
         
         return JSONObject().apply {
             put("state", state)
@@ -31,8 +31,8 @@ class BooleanTrackingType : TrackingTypeHandler {
     override fun getDefaultConfig(): JSONObject {
         return JSONObject().apply {
             put("type", "boolean")
-            put("true_label", "Oui")
-            put("false_label", "Non")
+            put("true_label", "")
+            put("false_label", "")
         }
     }
     

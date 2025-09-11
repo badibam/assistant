@@ -312,7 +312,7 @@ Architecture unifiée pour internationalisation avec discovery pattern et géné
 
 ### Structure
 - **Sources** : `core/strings/sources/shared.xml` + `tools/*/strings.xml`
-- **Génération** : Script Gradle → `res/values/tool_strings_generated.xml`
+- **Génération** : Script Gradle → `res/values/strings_generated.xml`
 - **API** : `Strings.for(context)` pour shared, `Strings.for(tool = "tracking", context)` pour tools
 
 ### Usage
@@ -335,7 +335,7 @@ s.shared("action_cancel")         // shared_action_cancel (toujours accessible)
 - **label_*** : name_zone, description, icon, enabled, disabled, etc.
 - **message_*** : loading_tools, validation_error, no_zones_created, etc.
 - **period_*** : today, yesterday, this_week, last_month, etc.
-- **content_*** : app_title, tool_description, unnamed, etc.
+- **content_*** : app_name, tool_description, unnamed, etc.
 - **month_*** : january, february, march, etc.
 
 ### Échappement Automatique

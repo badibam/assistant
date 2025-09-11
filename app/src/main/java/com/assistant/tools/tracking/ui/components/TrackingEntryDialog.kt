@@ -16,6 +16,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -107,8 +108,12 @@ fun TrackingEntryDialog(
     // Validation state
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
 
+    // Get Android context for string resources
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
+
     // ═══ Vraies valeurs centralisées pour tous les types (utilisées dans validateForm ET UI) ═══
-    val realValues = remember(trackingType, config, initialData) {
+    val realValues = remember(trackingType, config, initialData, s) {
         when (trackingType) {
             "scale" -> mapOf(
                 "minValue" to ((initialData["min_value"] as? Number)?.toInt() 
@@ -122,9 +127,9 @@ fun TrackingEntryDialog(
             )
             "boolean" -> mapOf(
                 "trueLabel" to ((initialData["true_label"] as? String)
-                    ?: if (config.has("true_label")) config.getString("true_label") else "Oui"),
+                    ?: if (config.has("true_label")) config.getString("true_label") else s.tool("config_default_true_label")),
                 "falseLabel" to ((initialData["false_label"] as? String)
-                    ?: if (config.has("false_label")) config.getString("false_label") else "Non")
+                    ?: if (config.has("false_label")) config.getString("false_label") else s.tool("config_default_false_label"))
             )
             "choice" -> mapOf(
                 "options" to (config.optJSONArray("options")?.let { array ->
@@ -140,20 +145,17 @@ fun TrackingEntryDialog(
     
     // State for validated data object (single source of truth)
     var dataObject by remember { mutableStateOf<Any>(emptyMap<String, Any>()) }
-    
-    // Get Android context for string resources
-    val context = LocalContext.current
 
     // UI behavior based on context
     val isNameEditable = true // Name is always editable
     val showAddToPredefinedCheckbox = itemType == ItemType.FREE && actionType == ActionType.CREATE
     val dialogTitle = when (actionType) {
         ActionType.CREATE -> when (itemType) {
-            ItemType.FREE -> "Créer une entrée"
-            ItemType.PREDEFINED -> "Utiliser l'élément"
-            null -> "Créer une entrée"
+            ItemType.FREE -> s.tool("usage_dialog_create_entry")
+            ItemType.PREDEFINED -> s.tool("usage_dialog_use_item")
+            null -> s.tool("usage_dialog_create_entry")
         }
-        ActionType.UPDATE -> "Modifier l'entrée"
+        ActionType.UPDATE -> s.tool("usage_dialog_edit_entry")
     }
 
     // Sync date/time with timestamp
@@ -215,8 +217,8 @@ fun TrackingEntryDialog(
             }
             
             "boolean" -> {
-                val trueLabel = realValues["trueLabel"] as? String ?: "Oui"
-                val falseLabel = realValues["falseLabel"] as? String ?: "Non"
+                val trueLabel = realValues["trueLabel"] as? String ?: s.tool("config_default_true_label")
+                val falseLabel = realValues["falseLabel"] as? String ?: s.tool("config_default_false_label")
                 
                 JSONObject().apply {
                     put("type", "boolean")
@@ -338,7 +340,7 @@ fun TrackingEntryDialog(
                     android.util.Log.e("VALDEBUG", "Device: Android ${android.os.Build.VERSION.RELEASE}")
                     
                     // Set error message for toast display
-                    errorMessage = validationResult.errorMessage ?: "Erreur de validation"
+                    errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
                 }
             },
             onCancel = onCancel
@@ -350,7 +352,7 @@ fun TrackingEntryDialog(
                 
                 // Name field
                 UI.FormField(
-                    label = "Nom",
+                    label = s.shared("tools_config_label_name"),
                     value = name,
                     onChange = { name = it },
                     required = true,
@@ -366,7 +368,7 @@ fun TrackingEntryDialog(
                         ) {
                             Box(modifier = Modifier.weight(2f)) {
                                 UI.FormField(
-                                    label = "Quantité",
+                                    label = s.tool("usage_label_quantity"),
                                     value = numericQuantity,
                                     onChange = { numericQuantity = it },
                                     required = true,
@@ -375,7 +377,7 @@ fun TrackingEntryDialog(
                             }
                             Box(modifier = Modifier.weight(1f)) {
                                 UI.FormField(
-                                    label = "Unité",
+                                    label = s.tool("usage_label_unit"),
                                     value = numericUnit,
                                     onChange = { numericUnit = it },
                                     fieldType = FieldType.TEXT
@@ -386,7 +388,7 @@ fun TrackingEntryDialog(
                     
                     "text" -> {
                         UI.FormField(
-                            label = "Texte",
+                            label = s.tool("usage_label_text"),
                             value = textValue,
                             onChange = { textValue = it },
                             required = true,
@@ -411,7 +413,7 @@ fun TrackingEntryDialog(
                             }
                             
                             UI.SliderField(
-                                label = "Note",
+                                label = s.tool("usage_label_rating"),
                                 value = currentRating,
                                 onValueChange = { scaleRating = it },
                                 range = minValue..maxValue,
@@ -421,7 +423,7 @@ fun TrackingEntryDialog(
                             )
                         } else {
                             // Pas de données min/max valides - afficher erreur
-                            UI.Text("Erreur: min/max non définis pour cette entry", TextType.BODY)
+                            UI.Text(s.tool("usage_error_scale_config"), TextType.BODY)
                             android.util.Log.e("SCALE_DEBUG", "minValue ou maxValue null - impossible d'afficher le slider")
                         }
                     }
@@ -432,13 +434,13 @@ fun TrackingEntryDialog(
                         // Show available options (readonly context)
                         if (options.isNotEmpty()) {
                             UI.Text(
-                                text = "Options: ${options.joinToString(", ")}",
+                                text = s.tool("usage_available_options").format(options.joinToString(", ")),
                                 type = TextType.CAPTION
                             )
                         }
                         
                         UI.FormSelection(
-                            label = "Choix",
+                            label = s.tool("usage_label_choice"),
                             options = options,
                             selected = choiceValue,
                             onSelect = { choiceValue = it },
@@ -447,11 +449,11 @@ fun TrackingEntryDialog(
                     }
                     
                     "boolean" -> {
-                        val trueLabel = realValues["trueLabel"] as? String ?: "Oui"
-                        val falseLabel = realValues["falseLabel"] as? String ?: "Non"
+                        val trueLabel = realValues["trueLabel"] as? String ?: s.tool("config_default_true_label")
+                        val falseLabel = realValues["falseLabel"] as? String ?: s.tool("config_default_false_label")
                         
                         UI.ToggleField(
-                            label = "État",
+                            label = s.tool("usage_label_state"),
                             checked = booleanValue,
                             onCheckedChange = { booleanValue = it },
                             trueLabel = trueLabel,
@@ -462,7 +464,7 @@ fun TrackingEntryDialog(
                     
                     "counter" -> {
                         UI.FormField(
-                            label = "Incrément",
+                            label = s.tool("usage_label_increment"),
                             value = counterIncrement,
                             onChange = { counterIncrement = it },
                             required = true,
@@ -478,7 +480,7 @@ fun TrackingEntryDialog(
                         ) {
                             Box(modifier = Modifier.weight(1f)) {
                                 UI.FormField(
-                                    label = "Heures",
+                                    label = s.tool("usage_label_hours"),
                                     value = timerHours,
                                     onChange = { timerHours = it },
                                     fieldType = FieldType.NUMERIC
@@ -486,7 +488,7 @@ fun TrackingEntryDialog(
                             }
                             Box(modifier = Modifier.weight(1f)) {
                                 UI.FormField(
-                                    label = "Minutes", 
+                                    label = s.tool("usage_label_minutes"), 
                                     value = timerMinutes,
                                     onChange = { timerMinutes = it },
                                     fieldType = FieldType.NUMERIC
@@ -494,7 +496,7 @@ fun TrackingEntryDialog(
                             }
                             Box(modifier = Modifier.weight(1f)) {
                                 UI.FormField(
-                                    label = "Secondes",
+                                    label = s.tool("usage_label_seconds"),
                                     value = timerSeconds,
                                     onChange = { timerSeconds = it },
                                     fieldType = FieldType.NUMERIC
@@ -510,7 +512,7 @@ fun TrackingEntryDialog(
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Date",
+                            label = s.shared("label_date"),
                             value = dateString,
                             onChange = { /* readonly, use picker */ },
                             readonly = true,
@@ -521,7 +523,7 @@ fun TrackingEntryDialog(
                     
                     Box(modifier = Modifier.weight(1f)) {
                         UI.FormField(
-                            label = "Heure",
+                            label = s.shared("label_time"),
                             value = timeString,
                             onChange = { /* readonly, use picker */ },
                             readonly = true,
@@ -536,7 +538,7 @@ fun TrackingEntryDialog(
                     UI.Checkbox(
                         checked = addToPredefined,
                         onCheckedChange = { addToPredefined = it },
-                        label = "Ajouter aux raccourcis"
+                        label = s.tool("usage_add_to_shortcuts")
                     )
                 }
             }

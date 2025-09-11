@@ -164,7 +164,7 @@ fun MainScreen() {
         ) {
             // Header with configure and add zone buttons
             UI.PageHeader(
-                title = s.shared("app_title"),
+                title = s.shared("app_name"),
                 subtitle = null,
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,

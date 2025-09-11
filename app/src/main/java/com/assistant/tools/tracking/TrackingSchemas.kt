@@ -1,6 +1,8 @@
 package com.assistant.tools.tracking
 
+import android.content.Context
 import com.assistant.core.tools.BaseSchemas
+import com.assistant.core.strings.Strings
 
 /**
  * External JSON schemas for Tracking tool type
@@ -9,16 +11,22 @@ import com.assistant.core.tools.BaseSchemas
 object TrackingSchemas {
     
     /**
-     * Configuration schema specific to tracking tools
-     * Combined with base config schema via BaseSchemas.createExtendedSchema()
+     * Configuration schema template with placeholders for localized descriptions
+     * @deprecated Use getConfigSchema(context) instead for localized descriptions
      */
-    val CONFIG_SCHEMA = """
+    @Deprecated("Use getConfigSchema(context) for localized descriptions")
+    val CONFIG_SCHEMA get() = CONFIG_SCHEMA_TEMPLATE
+    
+    /**
+     * Configuration schema template with placeholders
+     */
+    private val CONFIG_SCHEMA_TEMPLATE = """
         {
             "properties": {
                 "type": {
                     "type": "string",
                     "enum": ["numeric", "text", "scale", "boolean", "timer", "choice", "counter"],
-                    "description": "Data type for all items in this tracking instance"
+                    "description": "{{TYPE_DESC}}"
                 }
             },
             "required": ["type"],
@@ -31,7 +39,7 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined numeric items with quantity and unit",
+                                "description": "{{NUMERIC_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -53,7 +61,7 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined timer activities",
+                                "description": "{{TIMER_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -73,7 +81,7 @@ object TrackingSchemas {
                         "properties": {
                             "options": {
                                 "type": "array",
-                                "description": "Available choice options",
+                                "description": "{{CHOICE_OPTIONS_DESC}}",
                                 "items": {
                                     "type": "string",
                                     "minLength": 1,
@@ -92,7 +100,7 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined scale items (names only, min/max shared globally)",
+                                "description": "{{SCALE_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -101,10 +109,10 @@ object TrackingSchemas {
                                     "required": ["name"]
                                 }
                             },
-                            "min": { "type": "integer", "default": 1, "description": "Minimum value for all scale items (can be negative)" },
-                            "max": { "type": "integer", "default": 10, "description": "Maximum value for all scale items" },
-                            "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for minimum value" },
-                            "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "Label for maximum value" }
+                            "min": { "type": "integer", "default": 1, "description": "{{SCALE_MIN_DESC}}" },
+                            "max": { "type": "integer", "default": 10, "description": "{{SCALE_MAX_DESC}}" },
+                            "min_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{SCALE_MIN_LABEL_DESC}}" },
+                            "max_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "description": "{{SCALE_MAX_LABEL_DESC}}" }
                         }
                     }
                 },
@@ -116,7 +124,7 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined counter items",
+                                "description": "{{COUNTER_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -128,7 +136,7 @@ object TrackingSchemas {
                             "allow_decrement": {
                                 "type": "boolean",
                                 "default": true,
-                                "description": "Allow negative increments"
+                                "description": "{{COUNTER_ALLOW_DECREMENT_DESC}}"
                             }
                         }
                     }
@@ -141,15 +149,15 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined boolean items with custom labels",
+                                "description": "{{BOOLEAN_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
                                         "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
-                                        "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "default": "Oui" },
-                                        "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}, "default": "Non" }
+                                        "true_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}},
+                                        "false_label": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH}}
                                     },
-                                    "required": ["name"]
+                                    "required": ["name", "true_label", "false_label"]
                                 }
                             }
                         }
@@ -163,7 +171,7 @@ object TrackingSchemas {
                         "properties": {
                             "items": {
                                 "type": "array",
-                                "description": "Predefined text items",
+                                "description": "{{TEXT_ITEMS_DESC}}",
                                 "items": {
                                     "type": "object",
                                     "properties": {
@@ -180,17 +188,23 @@ object TrackingSchemas {
     """.trimIndent()
     
     /**
-     * Data schema specific to tracking data entries
-     * Combined with base data schema via BaseSchemas.createExtendedSchema()
+     * Data schema with localized descriptions
+     * @deprecated Use getDataSchema(context) instead for localized descriptions
      */
-    val DATA_SCHEMA = """
+    @Deprecated("Use getDataSchema(context) for localized descriptions")
+    val DATA_SCHEMA get() = DATA_SCHEMA_TEMPLATE
+    
+    /**
+     * Data schema template with placeholders
+     */
+    private val DATA_SCHEMA_TEMPLATE = """
         {
             "properties": {
                 "name": { "type": "string", "minLength": 1, "maxLength": ${BaseSchemas.FieldLimits.SHORT_LENGTH} },
                 "timestamp": { "type": "number" },
                 "data": {
                     "type": "object",
-                    "description": "Tracking data specific to the tracking type",
+                    "description": "{{DATA_DESC}}",
                     "properties": {
                         "type": { "type": "string" },
                         "raw": { "type": "string", "maxLength": ${BaseSchemas.FieldLimits.MEDIUM_LENGTH} }
@@ -347,4 +361,34 @@ object TrackingSchemas {
             ]
         }
     """.trimIndent()
+    
+    /**
+     * Get config schema with localized descriptions
+     */
+    fun getConfigSchema(context: Context): String {
+        val s = Strings.`for`(tool = "tracking", context = context)
+        return CONFIG_SCHEMA_TEMPLATE
+            .replace("{{TYPE_DESC}}", s.tool("schema_config_desc_type"))
+            .replace("{{NUMERIC_ITEMS_DESC}}", s.tool("schema_config_desc_numeric_items"))
+            .replace("{{TIMER_ITEMS_DESC}}", s.tool("schema_config_desc_timer_items"))
+            .replace("{{CHOICE_OPTIONS_DESC}}", s.tool("schema_config_desc_choice_options"))
+            .replace("{{SCALE_ITEMS_DESC}}", s.tool("schema_config_desc_scale_items"))
+            .replace("{{SCALE_MIN_DESC}}", s.tool("schema_config_desc_scale_min"))
+            .replace("{{SCALE_MAX_DESC}}", s.tool("schema_config_desc_scale_max"))
+            .replace("{{SCALE_MIN_LABEL_DESC}}", s.tool("schema_config_desc_scale_min_label"))
+            .replace("{{SCALE_MAX_LABEL_DESC}}", s.tool("schema_config_desc_scale_max_label"))
+            .replace("{{COUNTER_ITEMS_DESC}}", s.tool("schema_config_desc_counter_items"))
+            .replace("{{COUNTER_ALLOW_DECREMENT_DESC}}", s.tool("schema_config_desc_counter_allow_decrement"))
+            .replace("{{BOOLEAN_ITEMS_DESC}}", s.tool("schema_config_desc_boolean_items"))
+            .replace("{{TEXT_ITEMS_DESC}}", s.tool("schema_config_desc_text_items"))
+    }
+    
+    /**
+     * Get data schema with localized descriptions
+     */
+    fun getDataSchema(context: Context): String {
+        val s = Strings.`for`(tool = "tracking", context = context)
+        return DATA_SCHEMA_TEMPLATE
+            .replace("{{DATA_DESC}}", s.tool("schema_data_desc_data"))
+    }
 }

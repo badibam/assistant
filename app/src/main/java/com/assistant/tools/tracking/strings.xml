@@ -76,6 +76,64 @@
     <string name="config_title_create">Créer Suivi</string>
     <string name="config_title_edit">Modifier Suivi</string>
     
+    <!-- USAGE - Interface d'utilisation -->
+    <string name="usage_section_new_entry">Nouvelle entrée</string>
+    <string name="usage_section_history">Historique</string>
+    
+    <!-- USAGE - Dialogues de saisie -->
+    <string name="usage_dialog_create_entry">Créer une entrée</string>
+    <string name="usage_dialog_use_item">Utiliser l\'élément</string>
+    <string name="usage_dialog_edit_entry">Modifier l\'entrée</string>
+    
+    <!-- USAGE - Labels de champs -->
+    <string name="usage_label_quantity">Quantité</string>
+    <string name="usage_label_unit">Unité</string>
+    <string name="usage_label_text">Texte</string>
+    <string name="usage_label_rating">Note</string>
+    <string name="usage_label_choice">Choix</string>
+    <string name="usage_label_state">État</string>
+    <string name="usage_label_increment">Incrément</string>
+    <string name="usage_label_hours">Heures</string>
+    <string name="usage_label_minutes">Minutes</string>
+    <string name="usage_label_seconds">Secondes</string>
+    
+    <!-- USAGE - Messages d'interface -->
+    <string name="usage_available_options">Options : %s</string>
+    <string name="usage_error_scale_config">Erreur : min/max non définis pour cette entrée</string>
+    <string name="usage_add_to_shortcuts">Ajouter aux raccourcis</string>
+    <string name="usage_entry_updated">Entrée modifiée</string>
+    <string name="usage_entry_deleted">Entrée supprimée</string>
+    <string name="usage_entry_saved">Entrée sauvegardée</string>
+    <string name="usage_no_entries">Aucune entrée enregistrée</string>
+    <string name="usage_label_value">Valeur</string>
+    <string name="usage_custom_date">Date personnalisée</string>
+    <string name="usage_current_time">Date = maintenant</string>
+    <string name="usage_timer_idle">En cours : -</string>
+    
+    <!-- USAGE - Messages d'erreur -->
+    <string name="error_entry_update">Erreur lors de la modification</string>
+    <string name="error_entry_deletion">Erreur lors de la suppression</string>
+    <string name="error_entry_saving">Erreur lors de la sauvegarde</string>
+    <string name="error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
+    
+    <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
+    <string name="schema_config_desc_type">Type de données pour tous les éléments de cette instance de suivi</string>
+    <string name="schema_config_desc_numeric_items">Éléments numériques prédéfinis avec quantité et unité</string>
+    <string name="schema_config_desc_timer_items">Activités de minuteur prédéfinies</string>
+    <string name="schema_config_desc_choice_options">Options de choix disponibles</string>
+    <string name="schema_config_desc_scale_items">Éléments d\'échelle prédéfinis (noms seulement, min/max partagés globalement)</string>
+    <string name="schema_config_desc_scale_min">Valeur minimale pour tous les éléments d\'échelle (peut être négative)</string>
+    <string name="schema_config_desc_scale_max">Valeur maximale pour tous les éléments d\'échelle</string>
+    <string name="schema_config_desc_scale_min_label">Libellé pour la valeur minimale</string>
+    <string name="schema_config_desc_scale_max_label">Libellé pour la valeur maximale</string>
+    <string name="schema_config_desc_counter_items">Éléments de compteur prédéfinis</string>
+    <string name="schema_config_desc_counter_allow_decrement">Autoriser les incréments négatifs</string>
+    <string name="schema_config_desc_boolean_items">Éléments booléens prédéfinis avec libellés personnalisés</string>
+    <string name="schema_config_desc_text_items">Éléments de texte prédéfinis</string>
+    
+    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
+    <string name="schema_data_desc_data">Données de suivi spécifiques au type de suivi</string>
+    
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_default_quantity">Qté par défaut</string>
     <string name="field_quantity">Quantité</string>

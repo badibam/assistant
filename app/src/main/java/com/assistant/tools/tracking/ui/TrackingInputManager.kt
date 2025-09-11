@@ -10,6 +10,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.ui.components.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -29,6 +30,7 @@ fun TrackingInputManager(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     
     // Extract tracking configuration
     val trackingType = config.optString("type", "numeric")
@@ -71,7 +73,7 @@ fun TrackingInputManager(
                         // Show success toast
                         android.widget.Toast.makeText(
                             context,
-                            "Entrée sauvegardée",
+                            s.tool("usage_entry_saved"),
                             android.widget.Toast.LENGTH_SHORT
                         ).show()
                         
@@ -79,7 +81,7 @@ fun TrackingInputManager(
                     }
                     else -> {
                         // Show error toast with detailed error
-                        val errorMsg = result.error ?: "Erreur lors de la sauvegarde"
+                        val errorMsg = result.error ?: s.tool("error_entry_saving")
                         android.util.Log.e("VALDEBUG", "=== SAVE FAILED ===")
                         android.util.Log.e("VALDEBUG", "Save failed: status=${result.status}, error=$errorMsg")
                         android.widget.Toast.makeText(
@@ -96,7 +98,7 @@ fun TrackingInputManager(
                 android.util.Log.e("VALDEBUG", "Exception during save", e)
                 android.widget.Toast.makeText(
                     context,
-                    "Erreur: ${e.message}",
+                    s.shared("message_error").format(e.message ?: ""),
                     android.widget.Toast.LENGTH_LONG
                 ).show()
             } finally {
@@ -197,8 +199,8 @@ fun TrackingInputManager(
                     "boolean" -> JSONObject().apply {
                         put("type", "boolean")
                         put("state", properties["state"] ?: true)
-                        val trueLabel = properties["true_label"]?.toString() ?: "Oui"
-                        val falseLabel = properties["false_label"]?.toString() ?: "Non"
+                        val trueLabel = properties["true_label"]?.toString() ?: s.tool("config_default_true_label")
+                        val falseLabel = properties["false_label"]?.toString() ?: s.tool("config_default_false_label")
                         put("true_label", trueLabel)
                         put("false_label", falseLabel)
                         val state = properties["state"] as? Boolean ?: true

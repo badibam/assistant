@@ -17,6 +17,7 @@ import com.assistant.tools.tracking.ui.components.ItemType
 import com.assistant.tools.tracking.ui.components.ActionType
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.TrackingUtils
 import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.utils.DateUtils
@@ -52,6 +53,7 @@ fun TrackingHistory(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
     
     // State
     var trackingData by remember { mutableStateOf<List<ToolDataEntity>>(emptyList()) }
@@ -187,11 +189,11 @@ fun TrackingHistory(
                         }
                     }
                     else -> {
-                        errorMessage = result.error ?: "Erreur lors du chargement"
+                        errorMessage = result.error ?: s.shared("tools_error_loading")
                     }
                 }
             } catch (e: Exception) {
-                errorMessage = "Erreur: ${e.message}"
+                errorMessage = s.shared("message_error").format(e.message ?: "")
             } finally {
                 isLoading = false
             }
@@ -226,15 +228,15 @@ fun TrackingHistory(
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
-                        android.widget.Toast.makeText(context, "Entrée modifiée", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, s.tool("usage_entry_updated"), android.widget.Toast.LENGTH_SHORT).show()
                         loadData() // Reload data to show changes
                     }
                     else -> {
-                        android.widget.Toast.makeText(context, result.error ?: "Erreur lors de la modification", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, result.error ?: s.tool("error_entry_update"), android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "Erreur: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(context, s.shared("message_error").format(e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -254,15 +256,15 @@ fun TrackingHistory(
                 
                 when (result.status) {
                     CommandStatus.SUCCESS -> {
-                        android.widget.Toast.makeText(context, "Entrée supprimée", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, s.tool("usage_entry_deleted"), android.widget.Toast.LENGTH_SHORT).show()
                         trackingData = trackingData.filter { it.id != entryId }
                     }
                     else -> {
-                        android.widget.Toast.makeText(context, result.error ?: "Erreur lors de la suppression", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, result.error ?: s.tool("error_entry_deletion"), android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "Erreur: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(context, s.shared("message_error").format(e.message ?: ""), android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -288,7 +290,7 @@ fun TrackingHistory(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            UI.Text(text = "Chargement de la configuration...", type = TextType.BODY)
+            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
         }
         return
     }
@@ -317,23 +319,23 @@ fun TrackingHistory(
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
                     label = "",
-                    options = listOf("Toutes", "Heure", "Jour", "Semaine", "Mois", "Année"),
+                    options = listOf(s.shared("period_all"), s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year")),
                     selected = when(periodFilter) {
-                        PeriodFilterType.ALL -> "Toutes"
-                        PeriodFilterType.HOUR -> "Heure"
-                        PeriodFilterType.DAY -> "Jour"
-                        PeriodFilterType.WEEK -> "Semaine"
-                        PeriodFilterType.MONTH -> "Mois"
-                        PeriodFilterType.YEAR -> "Année"
+                        PeriodFilterType.ALL -> s.shared("period_all")
+                        PeriodFilterType.HOUR -> s.shared("period_hour")
+                        PeriodFilterType.DAY -> s.shared("period_day")
+                        PeriodFilterType.WEEK -> s.shared("period_week")
+                        PeriodFilterType.MONTH -> s.shared("period_month")
+                        PeriodFilterType.YEAR -> s.shared("period_year")
                     },
                     onSelect = { selection ->
                         periodFilter = when(selection) {
-                            "Toutes" -> PeriodFilterType.ALL
-                            "Heure" -> PeriodFilterType.HOUR
-                            "Jour" -> PeriodFilterType.DAY
-                            "Semaine" -> PeriodFilterType.WEEK
-                            "Mois" -> PeriodFilterType.MONTH
-                            "Année" -> PeriodFilterType.YEAR
+                            s.shared("period_all") -> PeriodFilterType.ALL
+                            s.shared("period_hour") -> PeriodFilterType.HOUR
+                            s.shared("period_day") -> PeriodFilterType.DAY
+                            s.shared("period_week") -> PeriodFilterType.WEEK
+                            s.shared("period_month") -> PeriodFilterType.MONTH
+                            s.shared("period_year") -> PeriodFilterType.YEAR
                             else -> PeriodFilterType.DAY
                         }
                         // Update current period when filter changes
@@ -401,14 +403,14 @@ fun TrackingHistory(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                UI.CenteredText("Chargement...", TextType.BODY)
+                UI.CenteredText(s.shared("tools_loading"), TextType.BODY)
             }
         }
         
         // Empty state
         if (!isLoading && trackingData.isEmpty() && errorMessage == null) {
             UI.Card(type = CardType.DEFAULT) {
-                UI.Text("Aucune entrée enregistrée", TextType.BODY)
+                UI.Text(s.tool("usage_no_entries"), TextType.BODY)
             }
         }
         
@@ -422,21 +424,21 @@ fun TrackingHistory(
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
-                    UI.Text("Date", TextType.CAPTION)
+                    UI.Text(s.shared("label_date"), TextType.CAPTION)
                 }
                 
                 // Nom header (weight=3f)
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
-                    UI.Text("Nom", TextType.CAPTION)
+                    UI.Text(s.shared("label_name"), TextType.CAPTION)
                 }
                 
                 // Valeur header (weight=3f)
                 Box(
                     modifier = Modifier.weight(3f).padding(8.dp)
                 ) {
-                    UI.Text("Valeur", TextType.CAPTION)
+                    UI.Text(s.tool("usage_label_value"), TextType.CAPTION)
                 }
                 
                 // Actions headers (weight=1f chaque)
@@ -444,7 +446,7 @@ fun TrackingHistory(
                     modifier = Modifier.weight(2f),
                     contentAlignment = Alignment.Center
                 ) {
-                    UI.CenteredText("Actions", TextType.CAPTION)
+                    UI.CenteredText(s.shared("label_actions"), TextType.CAPTION)
                 }
             }
         }
@@ -490,8 +492,8 @@ fun TrackingHistory(
                     )
                     "boolean" -> mapOf(
                         "state" to json.optBoolean("state", false),
-                        "true_label" to json.optString("true_label", "Oui"),
-                        "false_label" to json.optString("false_label", "Non")
+                        "true_label" to json.optString("true_label", s.tool("config_default_true_label")),
+                        "false_label" to json.optString("false_label", s.tool("config_default_false_label"))
                     )
                     "scale" -> {
                         android.util.Log.d("SCALE_DEBUG", "Données JSON scale: $json")

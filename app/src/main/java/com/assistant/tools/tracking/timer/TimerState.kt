@@ -52,8 +52,28 @@ data class TimerState(
     }
     
     /**
-     * Formate l'affichage complet pour la barre (ex: "Lecture : 2m 34s")
+     * Retourne les données d'affichage pour que l'UI puisse formater avec ses strings
      */
+    fun getDisplayData(): TimerDisplayData {
+        return if (isActive) {
+            TimerDisplayData(
+                activityName = activityName,
+                elapsedTime = formatElapsedTime(),
+                isActive = true
+            )
+        } else {
+            TimerDisplayData(
+                activityName = "",
+                elapsedTime = "",
+                isActive = false
+            )
+        }
+    }
+    
+    /**
+     * @deprecated Use getDisplayData() instead to allow UI formatting with proper strings
+     */
+    @Deprecated("Use getDisplayData() for proper UI string formatting")
     fun formatDisplayText(): String {
         return if (isActive) {
             "$activityName : ${formatElapsedTime()}"
@@ -62,3 +82,12 @@ data class TimerState(
         }
     }
 }
+
+/**
+ * Données d'affichage du timer pour l'UI
+ */
+data class TimerDisplayData(
+    val activityName: String,
+    val elapsedTime: String,
+    val isActive: Boolean
+)
