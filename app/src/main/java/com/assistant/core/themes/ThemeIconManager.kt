@@ -1,4 +1,4 @@
-package com.assistant.core.ui
+package com.assistant.core.themes
 
 import android.content.Context
 
@@ -49,7 +49,7 @@ object ThemeIconManager {
      */
     fun getAvailableIcons(context: Context, themeName: String): List<AvailableIcon> {
         return when (themeName) {
-            "default" -> GeneratedThemeResources.getDefaultThemeIcons()
+            "default" -> com.assistant.core.ui.GeneratedThemeResources.getDefaultThemeIcons()
             else -> emptyList() // Add other themes here as needed
         }
     }

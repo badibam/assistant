@@ -76,11 +76,6 @@ fun TrackingHistory(
     var dayStartHour by remember { mutableStateOf<Int?>(null) }
     var weekStartDay by remember { mutableStateOf<String?>(null) }
     
-    // Legacy state for compatibility during transition
-    var selectedDate by remember { 
-        mutableStateOf(DateUtils.getTodayFormatted())
-    }
-    var showDatePicker by remember { mutableStateOf(false) }
     
     // Load data
     val loadData = {
@@ -556,18 +551,6 @@ fun TrackingHistory(
             )
         }
         
-        // Date picker dialog
-        if (showDatePicker) {
-            UI.DatePicker(
-                selectedDate = selectedDate,
-                onDateSelected = { newDate ->
-                    selectedDate = newDate
-                },
-                onDismiss = {
-                    showDatePicker = false
-                }
-            )
-        }
     }
 }
 

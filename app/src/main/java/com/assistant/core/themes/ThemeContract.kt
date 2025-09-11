@@ -1,4 +1,4 @@
-package com.assistant.core.ui
+package com.assistant.core.themes
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
@@ -9,6 +9,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.ColorScheme
+import com.assistant.core.ui.ButtonType
+import com.assistant.core.ui.Size
+import com.assistant.core.ui.ComponentState
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.ButtonDisplay
+import com.assistant.core.ui.FieldType
+import com.assistant.core.ui.TextType
+import com.assistant.core.ui.CardType
+import com.assistant.core.ui.Duration
+import com.assistant.core.ui.FeedbackType
+import com.assistant.core.ui.DialogType
+import com.assistant.core.ui.DisplayMode
 
 /**
  * ThemeContract - Interface que tous les thèmes doivent implémenter
@@ -284,13 +296,6 @@ interface ThemeContract {
      */
     fun getColorScheme(paletteId: String): ColorScheme
     
-    /**
-     * Gets default ColorScheme for this theme
-     * Used as fallback and for backward compatibility
-     * Should return the LIGHT base palette by default
-     */
-    val colorScheme: ColorScheme
-        get() = getColorScheme(getBasePalettes().first { it.base == BasePalette.DARK }.id)
     
     // Anciens boutons supprimés - utiliser ActionButton
 }

@@ -1,5 +1,6 @@
 package com.assistant.core.validation
 
+import android.util.Log
 import org.json.JSONObject
 
 /**
@@ -19,10 +20,11 @@ object SchemaUtils {
             val schemaJson = JSONObject(completeSchema)
             val properties = schemaJson.optJSONObject("properties") ?: return null
             
-            // Cherche d'abord "data", puis "value" en fallback
-            val dataSchema = properties.optJSONObject("data") 
-                ?: properties.optJSONObject("value") 
-                ?: return null
+            // Cherche le champ "data" requis (plus de fallback legacy)
+            val dataSchema = properties.optJSONObject("data") ?: run {
+                Log.w("SchemaUtils", "No 'data' field found in schema properties")
+                return null
+            }
             
             dataSchema.toString()
             
@@ -76,7 +78,8 @@ object SchemaUtils {
             base.toString()
             
         } catch (e: Exception) {
-            baseSchema // Fallback sur schéma de base
+            Log.e("SchemaUtils", "Schema merge failed: ${e.message}")
+            throw ValidationException("Schema merge failed", e)
         }
     }
 }

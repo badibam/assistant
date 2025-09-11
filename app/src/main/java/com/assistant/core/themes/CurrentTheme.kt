@@ -1,4 +1,4 @@
-package com.assistant.core.ui
+package com.assistant.core.themes
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,13 +48,6 @@ object CurrentTheme {
         }
     }
     
-    /**
-     * Changes current theme with direct instance
-     * Used for compatibility with legacy system
-     */
-    fun switchTheme(newTheme: ThemeContract) {
-        current = newTheme
-    }
     
     /**
      * Gets the list of available themes

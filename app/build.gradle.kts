@@ -479,6 +479,7 @@ fun generateKotlinThemeResources() {
         appendLine("package com.assistant.core.ui")
         appendLine("")
         appendLine("import com.assistant.R")
+        appendLine("import com.assistant.core.themes.AvailableIcon")
         appendLine("")
         appendLine("/**")
         appendLine(" * Generated theme resources with direct R.drawable references")

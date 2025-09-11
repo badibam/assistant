@@ -1,6 +1,7 @@
 package com.assistant.core.ui
 
 import com.assistant.R
+import com.assistant.core.themes.AvailableIcon
 
 /**
  * Generated theme resources with direct R.drawable references

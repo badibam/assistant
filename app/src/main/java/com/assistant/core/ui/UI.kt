@@ -11,6 +11,8 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.themes.CurrentTheme
+import com.assistant.core.themes.ThemeIconManager
 import org.json.JSONObject
 
 /**

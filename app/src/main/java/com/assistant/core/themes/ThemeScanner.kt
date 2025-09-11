@@ -1,4 +1,4 @@
-package com.assistant.core.ui
+package com.assistant.core.themes
 
 import com.assistant.themes.default.DefaultTheme
 import com.assistant.themes.dflt.DfltTheme

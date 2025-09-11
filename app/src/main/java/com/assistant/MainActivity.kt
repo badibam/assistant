@@ -11,6 +11,7 @@ import com.assistant.core.ui.Screens.MainScreen
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.update.UpdateManager
 import com.assistant.core.versioning.MigrationOrchestrator
 import kotlinx.coroutines.CoroutineScope
@@ -75,7 +76,7 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             MaterialTheme(
-                colorScheme = com.assistant.core.ui.CurrentTheme.getCurrentColorScheme()
+                colorScheme = CurrentTheme.getCurrentColorScheme()
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize()

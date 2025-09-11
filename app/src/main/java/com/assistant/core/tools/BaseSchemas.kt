@@ -1,7 +1,9 @@
 package com.assistant.core.tools
 
 import android.content.Context
+import android.util.Log
 import com.assistant.core.strings.Strings
+import com.assistant.core.validation.ValidationException
 
 /**
  * Base JSON Schemas for all ToolTypes
@@ -144,15 +146,8 @@ object BaseSchemas {
             objectMapper.writeValueAsString(result)
             
         } catch (e: Exception) {
-            // Fallback to old behavior if JSON parsing fails
-            """
-            {
-                "allOf": [
-                    $baseSchema,
-                    $specificSchema
-                ]
-            }
-            """.trimIndent()
+            Log.e("BaseSchemas", "Schema merge failed in createExtendedSchema: ${e.message}")
+            throw ValidationException("Failed to create extended schema", e)
         }
     }
     
@@ -333,8 +328,8 @@ object BaseSchemas {
             objectMapper.writeValueAsString(result)
             
         } catch (e: Exception) {
-            // Fallback: just return specific config if merge fails
-            specificDefaults
+            Log.e("BaseSchemas", "Config merge failed in mergeDefaultConfigs: ${e.message}")
+            throw ValidationException("Failed to merge default configs", e)
         }
     }
     

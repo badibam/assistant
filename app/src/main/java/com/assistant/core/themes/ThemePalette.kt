@@ -1,4 +1,4 @@
-package com.assistant.core.ui
+package com.assistant.core.themes
 
 /**
  * Base palette categories that all themes should support
