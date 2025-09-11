@@ -84,8 +84,28 @@ fun ToolGeneralConfigSection(
                     s.shared("tools_config_display_square"), 
                     s.shared("tools_config_display_full")
                 ),
-                selected = displayMode,
-                onSelect = { updateConfig("display_mode", it) },
+                selected = when(displayMode) {
+                    "ICON" -> s.shared("tools_config_display_icon")
+                    "MINIMAL" -> s.shared("tools_config_display_minimal")
+                    "LINE" -> s.shared("tools_config_display_line")
+                    "CONDENSED" -> s.shared("tools_config_display_condensed")
+                    "EXTENDED" -> s.shared("tools_config_display_extended")
+                    "SQUARE" -> s.shared("tools_config_display_square")
+                    "FULL" -> s.shared("tools_config_display_full")
+                    else -> displayMode
+                },
+                onSelect = { selectedLabel ->
+                    updateConfig("display_mode", when(selectedLabel) {
+                        s.shared("tools_config_display_icon") -> "ICON"
+                        s.shared("tools_config_display_minimal") -> "MINIMAL"
+                        s.shared("tools_config_display_line") -> "LINE"
+                        s.shared("tools_config_display_condensed") -> "CONDENSED"
+                        s.shared("tools_config_display_extended") -> "EXTENDED"
+                        s.shared("tools_config_display_square") -> "SQUARE"
+                        s.shared("tools_config_display_full") -> "FULL"
+                        else -> selectedLabel
+                    })
+                },
                 required = true
             )
             

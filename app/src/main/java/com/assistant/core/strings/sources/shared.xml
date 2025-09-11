@@ -129,13 +129,13 @@
     <string name="tools_config_error_save">Erreur lors de la sauvegarde</string>
     
     <!-- Tools CONFIG - Options de display mode -->
-    <string name="tools_config_display_icon">ICON</string>
-    <string name="tools_config_display_minimal">MINIMAL</string>
-    <string name="tools_config_display_line">LINE</string>
-    <string name="tools_config_display_condensed">CONDENSED</string>
-    <string name="tools_config_display_extended">EXTENDED</string>
-    <string name="tools_config_display_square">SQUARE</string>
-    <string name="tools_config_display_full">FULL</string>
+    <string name="tools_config_display_icon">Icône</string>
+    <string name="tools_config_display_minimal">Minimal</string>
+    <string name="tools_config_display_line">Ligne</string>
+    <string name="tools_config_display_condensed">Compact</string>
+    <string name="tools_config_display_extended">Étendu</string>
+    <string name="tools_config_display_square">Carré</string>
+    <string name="tools_config_display_full">Complet</string>
     
     <!-- Tools CONFIG - Dialog icônes -->
     <string name="tools_config_dialog_choose_icon">Choisir une icône</string>

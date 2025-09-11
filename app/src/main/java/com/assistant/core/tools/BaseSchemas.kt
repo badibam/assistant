@@ -1,5 +1,8 @@
 package com.assistant.core.tools
 
+import android.content.Context
+import com.assistant.core.strings.Strings
+
 /**
  * Base JSON Schemas for all ToolTypes
  * Provides common fields to reduce token usage in AI prompts
@@ -34,6 +37,7 @@ object BaseSchemas {
                 },
                 "display_mode": {
                     "type": "string",
+                    "enum": ["ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL"],
                     "description": "Display mode for this tool instance"
                 },
                 "icon_name": {
@@ -53,7 +57,7 @@ object BaseSchemas {
                     "description": "Data validation mode"
                 }
             },
-            "required": ["name", "management"],
+            "required": ["name", "management", "display_mode", "config_validation", "data_validation"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -281,6 +285,75 @@ object BaseSchemas {
                     baseNode.get("additionalProperties"))
             else -> 
                 result.put("additionalProperties", false)
+        }
+    }
+    
+    /**
+     * Get base default configuration JSON for all ToolTypes
+     * Contains common fields with sensible defaults
+     * @return JSON string with base configuration
+     */
+    fun getBaseDefaultConfig(): String {
+        return """
+        {
+            "management": "manual",
+            "config_validation": "disabled",
+            "data_validation": "disabled", 
+            "display_mode": "LINE"
+        }
+        """.trimIndent()
+    }
+    
+    /**
+     * Merge base default config with specific ToolType config
+     * @param baseDefaults Base configuration JSON
+     * @param specificDefaults ToolType-specific configuration JSON  
+     * @return Merged configuration JSON
+     */
+    fun mergeDefaultConfigs(baseDefaults: String, specificDefaults: String): String {
+        return try {
+            val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+            val baseNode = objectMapper.readTree(baseDefaults)
+            val specificNode = objectMapper.readTree(specificDefaults)
+            
+            val result = objectMapper.createObjectNode()
+            
+            // Add base fields
+            baseNode.fields().forEach { (key, value) ->
+                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+            }
+            
+            // Override with specific fields
+            specificNode.fields().forEach { (key, value) ->
+                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
+            }
+            
+            objectMapper.writeValueAsString(result)
+            
+        } catch (e: Exception) {
+            // Fallback: just return specific config if merge fails
+            specificDefaults
+        }
+    }
+    
+    /**
+     * Get human-readable name for common ToolType fields
+     * Used for validation error messages
+     * @param fieldName Technical field name (e.g., "management", "display_mode")
+     * @param context Android context for string resource access
+     * @return Translated field name or null if not a common field
+     */
+    fun getCommonFieldName(fieldName: String, context: Context): String? {
+        val s = Strings.`for`(context = context)
+        return when(fieldName) {
+            "name" -> s.shared("tools_config_label_name")
+            "description" -> s.shared("tools_config_label_description") 
+            "management" -> s.shared("tools_config_label_management")
+            "display_mode" -> s.shared("tools_config_label_display_mode")
+            "icon_name" -> s.shared("tools_config_label_icon")
+            "config_validation" -> s.shared("tools_config_label_config_validation")
+            "data_validation" -> s.shared("tools_config_label_data_validation")
+            else -> null
         }
     }
     

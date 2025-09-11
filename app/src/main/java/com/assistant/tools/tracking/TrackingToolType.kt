@@ -29,19 +29,20 @@ object TrackingToolType : ToolTypeContract {
     }
     
     override fun getDefaultConfig(): String {
-        return """
+        val trackingSpecificConfig = """
         {
+            "type": "numeric",
+            "items": [],
             "name": "",
             "description": "",
-            "management": "",
-            "config_validation": "",
-            "data_validation": "",
-            "display_mode": "",
-            "icon_name": "activity",
-            "type": "numeric",
-            "items": []
+            "icon_name": "activity"
         }
         """.trimIndent()
+        
+        return BaseSchemas.mergeDefaultConfigs(
+            BaseSchemas.getBaseDefaultConfig(),
+            trackingSpecificConfig
+        )
     }
     
     override fun getConfigSchema(): String {
@@ -211,10 +212,15 @@ object TrackingToolType : ToolTypeContract {
         if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
         
         val s = Strings.`for`(tool = "tracking", context = context)
+        
+        // Essayer d'abord les champs communs à tous les tooltypes
+        val commonFieldName = BaseSchemas.getCommonFieldName(fieldName, context)
+        if (commonFieldName != null) return commonFieldName
+        
+        // Ensuite les champs spécifiques au tracking
         return when(fieldName) {
             "default_quantity" -> s.tool("field_default_quantity")
             "quantity" -> s.tool("field_quantity")
-            "name" -> s.tool("field_name") 
             "unit" -> s.tool("field_unit")
             "text" -> s.tool("field_text")
             "rating" -> s.tool("field_rating")
