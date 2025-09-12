@@ -139,7 +139,7 @@ class Coordinator(context: Context) {
                         error = "Service not found for resource: $resource"
                     )
                 } else {
-                    executeServiceOperation(command, service, operation)
+                    executeServiceOperation(command, service, operation, queuedOp.phase)
                 }
             } catch (e: IllegalArgumentException) {
                 CommandResult(
@@ -230,9 +230,10 @@ class Coordinator(context: Context) {
     private suspend fun executeServiceOperation(
         command: DispatchCommand,
         service: ExecutableService,
-        operation: String
+        operation: String,
+        phase: Int = 1
     ): CommandResult {
-        android.util.Log.d("Coordinator", "executeServiceOperation: operation=$operation, params=${command.params}")
+        android.util.Log.d("Coordinator", "executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
@@ -242,6 +243,7 @@ class Coordinator(context: Context) {
                 command.params.forEach { (key, value) ->
                     put(key, value)
                 }
+                put("phase", phase)
             }
             
             android.util.Log.d("Coordinator", "Calling service.execute with params: $params")

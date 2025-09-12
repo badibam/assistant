@@ -16,10 +16,10 @@ class IconPreloadService(private val context: Context) : ExecutableService {
     
     companion object {
         private const val TAG = "IconPreloadService"
+        
+        // Temporary data storage for multi-step operations (shared across instances)
+        private val tempData = ConcurrentHashMap<String, Any>()
     }
-    
-    // Temporary data storage for multi-step operations
-    private val tempData = ConcurrentHashMap<String, Any>()
     
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         val operationId = params.optString("operationId")
@@ -33,7 +33,9 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                     val availableIcons = ThemeIconManager.getAvailableIcons(context, currentThemeId)
                     
                     Log.d(TAG, "Phase 1: Found ${availableIcons.size} icons for theme '$currentThemeId'")
+                    Log.d(TAG, "Phase 1: Storing data for operationId='$operationId'")
                     tempData[operationId] = availableIcons
+                    Log.d(TAG, "Phase 1: tempData size = ${tempData.size}, keys = ${tempData.keys}")
                     
                     OperationResult.success(requiresBackground = true)
                 }
