@@ -342,7 +342,7 @@ object UI {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Real icon
-            val iconName = JSONObject(tool.config_json).optString("icon", "activity")
+            val iconName = JSONObject(tool.config_json).optString("icon_name", "activity")
             Icon(
                 iconName = iconName,
                 size = 24.dp,
