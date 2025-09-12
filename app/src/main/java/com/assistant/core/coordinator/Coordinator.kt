@@ -163,6 +163,7 @@ class Coordinator(context: Context) {
             
             val result = when {
                 command.action.startsWith("execute->tools->") -> handleToolCommand(command)
+                command.action.startsWith("execute->service->") -> handleServiceCommand(command)
                 command.action.startsWith("create->") -> handleCreateCommand(command)
                 command.action.startsWith("get->") -> handleGetCommand(command)
                 command.action.startsWith("update->") -> handleUpdateCommand(command)
@@ -229,10 +230,17 @@ class Coordinator(context: Context) {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val bgResult = executeQueuedOperation(backgroundSlot!!)
+                Log.d("Coordinator", "Background result: status=${bgResult.status}, requiresContinuation=${bgResult.requiresContinuation}")
                 if (bgResult.requiresContinuation) {
                     // Queue final step
                     val finalStep = queuedOp.copy(phase = 3)
                     normalQueue.addLast(finalStep)
+                    Log.d("Coordinator", "Phase 3 queued: ${finalStep.command.action} phase=${finalStep.phase}")
+                    
+                    // Process the queue to execute Phase 3
+                    CoroutineScope(Dispatchers.Main).launch {
+                        processQueue()
+                    }
                 }
             } finally {
                 isBackgroundSlotBusy = false
@@ -248,6 +256,26 @@ class Coordinator(context: Context) {
             status = CommandStatus.SUCCESS,
             message = "Tool command executed (TODO: implement actual routing)"
         )
+    }
+    
+    /**
+     * Handle direct service commands: execute->service->service_name->operation
+     */
+    private suspend fun handleServiceCommand(command: Command): CommandResult {
+        // Parse: execute->service->icon_preload_service->preload_theme_icons
+        val parts = command.action.split("->")
+        if (parts.size != 4) {
+            return CommandResult(
+                commandId = command.id,
+                status = CommandStatus.ERROR,
+                error = "Invalid service command format. Expected: execute->service->service_name->operation"
+            )
+        }
+        
+        val serviceName = parts[2]
+        val operation = parts[3]
+        
+        return executeServiceOperation(command, serviceName, operation)
     }
     
     /**
@@ -288,7 +316,7 @@ class Coordinator(context: Context) {
                 is ExecutableService -> service.execute(operation, params, token)
                 else -> OperationResult.error("Service does not implement ExecutableService interface: $serviceName")
             }
-            android.util.Log.d("Coordinator", "Service result: success=${result.success}, error=${result.error}, data=${result.data}")
+            android.util.Log.d("Coordinator", "Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}")
             
             CommandResult(
                 commandId = command.id,

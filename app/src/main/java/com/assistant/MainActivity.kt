@@ -65,11 +65,8 @@ class MainActivity : ComponentActivity() {
             // TODO: Show notification or dialog with UpdateInfo
         }
         
-        // TODO: Preload icons for current theme
-        // CoroutineScope(Dispatchers.IO).launch {
-        //     val currentTheme = ThemeManager.getCurrentThemeName()
-        //     IconManager.preloadThemeIcons(this@MainActivity, currentTheme)
-        // }
+        // Preload icons for current theme using multi-step operations
+        startIconPreloading()
         
         // Test multi-step operations (uncomment to test)
         //testMultiStepOperations()
@@ -151,6 +148,25 @@ class MainActivity : ComponentActivity() {
             Log.d("MultiStepTest", "Queue status: $queueInfo")
             
             Log.d("MultiStepTest", "Multi-step test completed. Check logs for background completion.")
+        }
+    }
+    
+    /**
+     * Start icon preloading in background using multi-step operations
+     * Non-blocking operation that loads all theme icons for better UX
+     */
+    private fun startIconPreloading() {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val result = coordinator.processUserAction("execute->service->icon_preload_service->preload_theme_icons", mapOf(
+                    "operationId" to "startup_preload_${System.currentTimeMillis()}"
+                ))
+                
+                Log.d("IconPreload", "Started icon preloading: ${result.status} - ${result.message}")
+                
+            } catch (e: Exception) {
+                Log.w("IconPreload", "Failed to start icon preloading: ${e.message}")
+            }
         }
     }
 }

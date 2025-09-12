@@ -28,6 +28,16 @@ service.execute("create", params, cancellationToken)
 - `tracking_service` → TrackingService
 - Pattern : `{toolType}_service` → ToolTypeManager.getServiceForToolType()
 
+### Action Patterns
+
+Actions routées automatiquement par le Coordinator :
+- `create->resource` → handleCreateCommand() → service.execute("create", ...)
+- `get->resource` → handleGetCommand() → service.execute("get", ...)
+- `update->resource` → handleUpdateCommand() → service.execute("update", ...)
+- `delete->resource` → handleDeleteCommand() → service.execute("delete", ...)
+- `execute->tools->tool_type->operation` → handleToolCommand() → tool service
+- `execute->service->service_name->operation` → handleServiceCommand() → core service
+
 ### Gestion des Tokens
 
 ```kotlin
