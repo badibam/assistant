@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -11,7 +12,7 @@ class CounterTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "counter"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val increment = properties["increment"] as? Int ?: return null
         
         return JSONObject().apply {
@@ -21,7 +22,7 @@ class CounterTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         return properties["increment"] is Int
     }
     

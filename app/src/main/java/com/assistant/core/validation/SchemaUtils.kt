@@ -20,7 +20,7 @@ object SchemaUtils {
             val schemaJson = JSONObject(completeSchema)
             val properties = schemaJson.optJSONObject("properties") ?: return null
             
-            // Look for required "data" field (no more legacy fallback)
+            // Look for required "data" field
             val dataSchema = properties.optJSONObject("data") ?: run {
                 Log.w("SchemaUtils", "No 'data' field found in schema properties")
                 return null

@@ -13,7 +13,7 @@ class TimerTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "timer"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val activity = properties["activity"] as? String ?: return null
         val durationSeconds = properties["duration_seconds"] as? Int ?: return null
         
@@ -27,7 +27,7 @@ class TimerTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         val activity = properties["activity"] as? String ?: return false
         val durationSeconds = properties["duration_seconds"] as? Int ?: return false
         

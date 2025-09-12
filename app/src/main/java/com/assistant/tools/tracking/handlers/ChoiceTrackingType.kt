@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -11,7 +12,7 @@ class ChoiceTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "choice"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val selectedOption = properties["selected_option"] as? String
         val availableOptions = properties["available_options"] as? List<*>
         
@@ -31,7 +32,7 @@ class ChoiceTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         val selectedOption = properties["selected_option"] as? String
         val availableOptions = properties["available_options"] as? List<*>
         

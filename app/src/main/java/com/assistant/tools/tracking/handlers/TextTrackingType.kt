@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 
 /**
@@ -10,7 +11,7 @@ class TextTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "text"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val text = properties["text"] as? String ?: return null
         
         // Basic validation - not empty
@@ -23,7 +24,7 @@ class TextTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         val text = properties["text"] as? String ?: return false
         return text.isNotBlank()
     }

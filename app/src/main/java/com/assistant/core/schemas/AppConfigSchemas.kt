@@ -10,10 +10,10 @@ import com.assistant.core.strings.Strings
 object AppConfigSchemas {
     
     /**
-     * Schema for "temporal" category
-     * Validation of application temporal parameters
+     * Schema for "format" category
+     * Validation of application format parameters (temporal, locale, display)
      */
-    fun getTemporalSchema(context: Context): String {
+    fun getFormatSchema(context: Context): String {
         val s = Strings.`for`(context = context)
         return """
         {
@@ -22,47 +22,51 @@ object AppConfigSchemas {
                 "week_start_day": {
                     "type": "string",
                     "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-                    "description": "${s.shared("app_config_schema_temporal_week_start_day")}"
+                    "description": "${s.shared("app_config_schema_format_week_start_day")}"
                 },
                 "day_start_hour": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 23,
-                    "description": "${s.shared("app_config_schema_temporal_day_start_hour")}"
+                    "description": "${s.shared("app_config_schema_format_day_start_hour")}"
+                },
+                "locale_override": {
+                    "type": ["string", "null"],
+                    "description": "${s.shared("app_config_schema_format_locale_override")}"
                 },
                 "relative_label_limits": {
                     "type": "object",
-                    "description": "${s.shared("app_config_schema_temporal_relative_label_limits")}",
+                    "description": "${s.shared("app_config_schema_format_relative_label_limits")}",
                     "properties": {
                         "hour_limit": {
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 24,
-                            "description": "${s.shared("app_config_schema_temporal_hour_limit")}"
+                            "description": "${s.shared("app_config_schema_format_hour_limit")}"
                         },
                         "day_limit": {
                             "type": "integer", 
                             "minimum": 1,
                             "maximum": 30,
-                            "description": "${s.shared("app_config_schema_temporal_day_limit")}"
+                            "description": "${s.shared("app_config_schema_format_day_limit")}"
                         },
                         "week_limit": {
                             "type": "integer",
                             "minimum": 1, 
                             "maximum": 12,
-                            "description": "${s.shared("app_config_schema_temporal_week_limit")}"
+                            "description": "${s.shared("app_config_schema_format_week_limit")}"
                         },
                         "month_limit": {
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 24,
-                            "description": "${s.shared("app_config_schema_temporal_month_limit")}"
+                            "description": "${s.shared("app_config_schema_format_month_limit")}"
                         },
                         "year_limit": {
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 10,
-                            "description": "${s.shared("app_config_schema_temporal_year_limit")}"
+                            "description": "${s.shared("app_config_schema_format_year_limit")}"
                         }
                     },
                     "required": ["hour_limit", "day_limit", "week_limit", "month_limit", "year_limit"],
@@ -128,7 +132,7 @@ object AppConfigSchemas {
      */
     fun getSchemaForCategory(category: String, context: Context): String? {
         return when (category) {
-            "temporal" -> getTemporalSchema(context)
+            "format" -> getFormatSchema(context)
             // "ui" -> getUiSchema(context)
             // "data" -> getDataSchema(context)
             else -> null
@@ -139,7 +143,7 @@ object AppConfigSchemas {
      * List of supported categories
      */
     fun getSupportedCategories(): List<String> {
-        return listOf("temporal")
-        // return listOf("temporal", "ui", "data")
+        return listOf("format")
+        // return listOf("format", "ui", "data")
     }
 }

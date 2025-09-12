@@ -295,6 +295,7 @@ private fun NumericItemsLayout(
     onOpenDialog: (String, Map<String, Any>) -> Unit,
     customTimestamp: Long = System.currentTimeMillis()
 ) {
+    val context = LocalContext.current
     items.forEach { item ->
         val defaultQuantity = item.getProperty("default_quantity")
         val hasDefaultQuantity = defaultQuantity.isNotBlank()
@@ -338,7 +339,7 @@ private fun NumericItemsLayout(
                 onClick = {
                     if (hasDefaultQuantity) {
                         // Quick save with default quantity
-                        val numericQuantity = NumberFormatting.parseUserInput(defaultQuantity)
+                        val numericQuantity = NumberFormatting.parseUserInput(defaultQuantity, context)
                         if (numericQuantity != null) {
                             onQuickSave(item.name, mapOf(
                                 "quantity" to defaultQuantity,

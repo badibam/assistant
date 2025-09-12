@@ -12,7 +12,7 @@ class ScaleTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "scale"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val rating = properties["rating"] as? Int ?: return null
         val minValue = properties["min_value"] as? Int ?: 1
         val maxValue = properties["max_value"] as? Int ?: 10
@@ -33,7 +33,7 @@ class ScaleTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         val rating = properties["rating"] as? Int ?: return false
         val minValue = properties["min_value"] as? Int ?: 1
         val maxValue = properties["max_value"] as? Int ?: 10

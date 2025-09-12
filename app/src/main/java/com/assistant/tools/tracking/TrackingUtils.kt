@@ -1,6 +1,5 @@
 package com.assistant.tools.tracking
 
-import com.assistant.tools.tracking.handlers.NumericTrackingType
 import org.json.JSONObject
 
 /**
@@ -10,7 +9,6 @@ import org.json.JSONObject
  */
 object TrackingUtils {
     
-    private val numericHandler = NumericTrackingType()
     
     /**
      * Convert JSON data object to validation format
@@ -44,21 +42,4 @@ object TrackingUtils {
         }
     }
 
-    /**
-     * Create JSON data for numeric tracking data
-     * Returns null if the quantity cannot be parsed as a valid number
-     * 
-     * @param quantity The numeric quantity as string (from user input)
-     * @param unit The unit string (can be empty)
-     * @return JSON string or null if parsing fails
-     * 
-     * @deprecated Use NumericTrackingType directly via TrackingTypeFactory
-     */
-    @Deprecated("Use NumericTrackingType via TrackingTypeFactory instead")
-    fun createNumericDataJson(quantity: String, unit: String): String? {
-        return numericHandler.createDataJson(mapOf(
-            "quantity" to quantity,
-            "unit" to unit
-        ))
-    }
 }

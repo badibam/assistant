@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import com.assistant.core.utils.NumberFormatting
 import org.json.JSONObject
 
@@ -11,11 +12,11 @@ class NumericTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "numeric"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val quantity = properties["quantity"] as? String ?: return null
         val unit = properties["unit"] as? String ?: ""
         
-        val numericValue = NumberFormatting.parseUserInput(quantity) ?: return null
+        val numericValue = NumberFormatting.parseUserInput(quantity, context) ?: return null
         
         return JSONObject().apply {
             put("quantity", numericValue)
@@ -25,9 +26,9 @@ class NumericTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         val quantity = properties["quantity"] as? String ?: return false
-        return NumberFormatting.parseUserInput(quantity) != null
+        return NumberFormatting.parseUserInput(quantity, context) != null
     }
     
     override fun getDefaultConfig(): JSONObject {

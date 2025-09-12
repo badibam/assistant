@@ -4,7 +4,7 @@ import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
-import com.assistant.core.database.entities.DefaultTemporalSettings
+import com.assistant.core.database.entities.DefaultFormatSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
@@ -23,76 +23,87 @@ class AppConfigService(private val context: Context) : ExecutableService {
     private val settingsDao = database.appSettingsCategoryDao()
 
     /**
-     * Temporal configuration
+     * Format configuration
      */
     suspend fun getWeekStartDay(): String {
-        val settings = getTemporalSettings()
+        val settings = getFormatSettings()
         return settings.optString("week_start_day", "monday")
     }
 
     suspend fun getDayStartHour(): Int {
-        val settings = getTemporalSettings()
+        val settings = getFormatSettings()
         return settings.optInt("day_start_hour", 4)
     }
 
+    suspend fun getLocaleOverride(): String? {
+        val settings = getFormatSettings()
+        return settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }
+    }
+
     suspend fun setWeekStartDay(day: String) {
-        updateTemporalSetting("week_start_day", day)
+        updateFormatSetting("week_start_day", day)
     }
 
     suspend fun setDayStartHour(hour: Int) {
-        updateTemporalSetting("day_start_hour", hour)
+        updateFormatSetting("day_start_hour", hour)
+    }
+
+    suspend fun setLocaleOverride(locale: String?) {
+        updateFormatSetting("locale_override", locale)
     }
 
     /**
-     * Internal temporal settings management
+     * Internal format settings management
      */
-    private suspend fun getTemporalSettings(): JSONObject {
-        Log.d("CONFIGDEBUG", "Getting temporal settings from database")
-        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.TEMPORAL)
+    private suspend fun getFormatSettings(): JSONObject {
+        Log.d("CONFIGDEBUG", "Getting format settings from database")
+        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.FORMAT)
         return if (settingsJson != null) {
             try {
-                Log.d("CONFIGDEBUG", "Found existing temporal settings: $settingsJson")
+                Log.d("CONFIGDEBUG", "Found existing format settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
-                Log.e("CONFIGDEBUG", "Error parsing temporal settings JSON: ${e.message}", e)
-                createDefaultTemporalSettings()
+                Log.e("CONFIGDEBUG", "Error parsing format settings JSON: ${e.message}", e)
+                createDefaultFormatSettings()
             }
         } else {
-            Log.d("CONFIGDEBUG", "No temporal settings found, creating defaults")
-            createDefaultTemporalSettings()
+            Log.d("CONFIGDEBUG", "No format settings found, creating defaults")
+            createDefaultFormatSettings()
         }
     }
 
-    private suspend fun createDefaultTemporalSettings(): JSONObject {
-        Log.d("CONFIGDEBUG", "Creating default temporal settings")
-        val defaultSettings = JSONObject(DefaultTemporalSettings.JSON.trimIndent())
+    private suspend fun createDefaultFormatSettings(): JSONObject {
+        Log.d("CONFIGDEBUG", "Creating default format settings")
+        val defaultSettings = JSONObject(DefaultFormatSettings.JSON.trimIndent())
         settingsDao.insertOrUpdateSettings(
             AppSettingsCategory(
-                category = AppSettingCategories.TEMPORAL,
+                category = AppSettingCategories.FORMAT,
                 settings = defaultSettings.toString()
             )
         )
-        Log.d("CONFIGDEBUG", "Default temporal settings inserted: $defaultSettings")
+        Log.d("CONFIGDEBUG", "Default format settings inserted: $defaultSettings")
         return defaultSettings
     }
 
-    private suspend fun updateTemporalSetting(key: String, value: Any) {
-        val settings = getTemporalSettings()
+    private suspend fun updateFormatSetting(key: String, value: Any?) {
+        val settings = getFormatSettings()
         settings.put(key, value)
         
         // Validation with SchemaValidator
-        val dataMap = mapOf(
-            "week_start_day" to settings.optString("week_start_day"),
-            "day_start_hour" to settings.optInt("day_start_hour")
-        )
+        val dataMap = mutableMapOf<String, Any>()
+        dataMap["week_start_day"] = settings.optString("week_start_day")
+        dataMap["day_start_hour"] = settings.optInt("day_start_hour")
+        settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }?.let { 
+            dataMap["locale_override"] = it 
+        }
         val schemaProvider = AppConfigSchemaProvider.create(context)
-        val validation = SchemaValidator.validate(schemaProvider, dataMap, context, schemaType = "temporal")
+        val validation = SchemaValidator.validate(schemaProvider, dataMap, context, schemaType = "format")
         
         if (!validation.isValid) {
             throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
         }
         
-        settingsDao.updateSettings(AppSettingCategories.TEMPORAL, settings.toString())
+        settingsDao.updateSettings(AppSettingCategories.FORMAT, settings.toString())
     }
 
     /**
@@ -111,8 +122,8 @@ class AppConfigService(private val context: Context) : ExecutableService {
 
     suspend fun resetToDefaults(category: String) {
         when (category) {
-            AppSettingCategories.TEMPORAL -> {
-                settingsDao.updateSettings(category, DefaultTemporalSettings.JSON.trimIndent())
+            AppSettingCategories.FORMAT -> {
+                settingsDao.updateSettings(category, DefaultFormatSettings.JSON.trimIndent())
             }
             // Future categories handled here
         }
@@ -122,12 +133,12 @@ class AppConfigService(private val context: Context) : ExecutableService {
         Log.d("CONFIGDEBUG", "AppConfigService.execute: operation=$operation, params=$params")
         return when (operation) {
             "get_config" -> {
-                val category = params.optString("category", "temporal")
+                val category = params.optString("category", "format")
                 Log.d("CONFIGDEBUG", "Getting config for category: $category")
                 when (category) {
-                    AppSettingCategories.TEMPORAL -> {
-                        val settings = getTemporalSettings()
-                        Log.d("CONFIGDEBUG", "Temporal settings retrieved: $settings")
+                    AppSettingCategories.FORMAT -> {
+                        val settings = getFormatSettings()
+                        Log.d("CONFIGDEBUG", "Format settings retrieved: $settings")
                         OperationResult.success(mapOf("settings" to settings.toMap()))
                     }
                     else -> {
@@ -146,7 +157,11 @@ class AppConfigService(private val context: Context) : ExecutableService {
     private fun JSONObject.toMap(): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
         keys().forEach { key ->
-            map[key] = get(key)
+            val value = get(key)
+            map[key] = when (value) {
+                JSONObject.NULL -> null
+                else -> value
+            } ?: ""
         }
         return map
     }

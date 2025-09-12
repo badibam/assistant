@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 
 /**
@@ -17,16 +18,18 @@ interface TrackingTypeHandler {
     /**
      * Create JSON data from user input properties
      * @param properties Map of input properties from the UI
+     * @param context Application context for locale handling
      * @return JSON string for storage, or null if validation fails
      */
-    fun createDataJson(properties: Map<String, Any>): String?
+    fun createDataJson(properties: Map<String, Any>, context: Context): String?
     
     /**
      * Validate input properties before creating JSON
      * @param properties Map of input properties to validate
+     * @param context Application context for locale handling
      * @return True if the input is valid, false otherwise
      */
-    fun validateInput(properties: Map<String, Any>): Boolean
+    fun validateInput(properties: Map<String, Any>, context: Context): Boolean
     
     /**
      * Get default configuration for this tracking type

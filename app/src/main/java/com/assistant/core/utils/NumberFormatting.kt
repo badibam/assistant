@@ -1,5 +1,6 @@
 package com.assistant.core.utils
 
+import android.content.Context
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.text.NumberFormat
@@ -14,34 +15,24 @@ object NumberFormatting {
     
     /**
      * Get app's configured locale
-     * Uses AppConfig locale override if available, falls back to system locale
+     * Uses centralized LocaleUtils for consistent locale management
      */
-    private fun getAppLocale(): Locale {
-        return try {
-            // TODO: Integrate with AppConfigService when available
-            // val localeString = AppConfigService.get("locale") as? String
-            // return localeString?.let { Locale.forLanguageTag(it) } ?: Locale.getDefault()
-            
-            // For now, use system locale
-            Locale.getDefault()
-        } catch (e: Exception) {
-            // Fallback to system locale if config unavailable
-            Locale.getDefault()
-        }
+    private fun getAppLocale(context: Context): Locale {
+        return LocaleUtils.getAppLocale(context)
     }
     
     /**
      * Get configured locale's decimal separator
      */
-    private fun getDecimalSeparator(): Char {
-        return DecimalFormatSymbols.getInstance(getAppLocale()).decimalSeparator
+    private fun getDecimalSeparator(context: Context): Char {
+        return DecimalFormatSymbols.getInstance(getAppLocale(context)).decimalSeparator
     }
     
     /**
      * Get configured locale's grouping separator (thousands)
      */
-    private fun getGroupingSeparator(): Char {
-        return DecimalFormatSymbols.getInstance(getAppLocale()).groupingSeparator
+    private fun getGroupingSeparator(context: Context): Char {
+        return DecimalFormatSymbols.getInstance(getAppLocale(context)).groupingSeparator
     }
     
     /**
@@ -49,22 +40,23 @@ object NumberFormatting {
      * @param amount The parsed numeric value
      * @param userInput The original string user typed
      * @param unit Optional unit to append
+     * @param context Application context for locale access
      * @return Formatted string exactly as user would expect to see
      */
-    fun formatRawValue(amount: Double, userInput: String, unit: String = ""): String {
+    fun formatRawValue(amount: Double, userInput: String, unit: String = "", context: Context): String {
         val cleanInput = userInput.trim()
         
         // Preserve user's decimal separator preference if different from locale
         val userDecimalSep = when {
             cleanInput.contains(',') && !cleanInput.contains('.') -> ','
             cleanInput.contains('.') && !cleanInput.contains(',') -> '.'
-            else -> getDecimalSeparator() // Use locale default
+            else -> getDecimalSeparator(context) // Use locale default
         }
         
         // Format preserving user's style
-        val formatted = if (userDecimalSep != getDecimalSeparator()) {
+        val formatted = if (userDecimalSep != getDecimalSeparator(context)) {
             // Convert to user's preferred separator
-            cleanInput.replace(getDecimalSeparator(), userDecimalSep)
+            cleanInput.replace(getDecimalSeparator(context), userDecimalSep)
         } else {
             cleanInput
         }
@@ -79,15 +71,17 @@ object NumberFormatting {
     /**
      * Parse user numeric input handling locale separators
      * @param input User's numeric input string
+     * @param context Application context for locale access
      * @return Parsed Double or null if invalid
      */
-    fun parseUserInput(input: String): Double? {
+    fun parseUserInput(input: String, context: Context): Double? {
         return try {
             val cleanInput = input.trim()
             if (cleanInput.isEmpty()) return null
             
-            val decimalSep = getDecimalSeparator()
-            val groupingSep = getGroupingSeparator()
+            val locale = LocaleUtils.getAppLocale(context)
+            val decimalSep = DecimalFormatSymbols.getInstance(locale).decimalSeparator
+            val groupingSep = DecimalFormatSymbols.getInstance(locale).groupingSeparator
             
             // Handle different separator conventions
             val normalized = when {
@@ -124,10 +118,11 @@ object NumberFormatting {
     /**
      * Check if a string represents a valid numeric input
      * @param input User input to validate
+     * @param context Application context for locale access
      * @return true if input can be parsed as a number
      */
-    fun isValidNumericInput(input: String): Boolean {
-        return parseUserInput(input) != null
+    fun isValidNumericInput(input: String, context: Context): Boolean {
+        return parseUserInput(input, context) != null
     }
     
     /**
@@ -145,10 +140,11 @@ object NumberFormatting {
      * Uses app's configured locale formatting conventions
      * @param value Number to format
      * @param maxDecimalPlaces Maximum decimal places to show
+     * @param context Application context for locale access
      * @return Localized formatted string
      */
-    fun formatForDisplay(value: Double, maxDecimalPlaces: Int = 2): String {
-        val formatter = NumberFormat.getNumberInstance(getAppLocale())
+    fun formatForDisplay(value: Double, maxDecimalPlaces: Int = 2, context: Context): String {
+        val formatter = NumberFormat.getNumberInstance(getAppLocale(context))
         formatter.maximumFractionDigits = maxDecimalPlaces
         formatter.isGroupingUsed = true // Show thousands separators
         return formatter.format(value)
@@ -168,10 +164,11 @@ object NumberFormatting {
      * Validate and normalize user input for storage
      * Combines parsing and storage formatting
      * @param input User's numeric input
+     * @param context Application context for locale access
      * @return Normalized string for storage or null if invalid
      */
-    fun validateAndNormalize(input: String): String? {
-        val parsed = parseUserInput(input)
+    fun validateAndNormalize(input: String, context: Context): String? {
+        val parsed = parseUserInput(input, context)
         return parsed?.let { formatForStorage(it) }
     }
 }

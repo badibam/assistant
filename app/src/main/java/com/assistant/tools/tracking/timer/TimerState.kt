@@ -69,18 +69,6 @@ data class TimerState(
             )
         }
     }
-    
-    /**
-     * @deprecated Use getDisplayData() instead to allow UI formatting with proper strings
-     */
-    @Deprecated("Use getDisplayData() for proper UI string formatting")
-    fun formatDisplayText(): String {
-        return if (isActive) {
-            "$activityName : ${formatElapsedTime()}"
-        } else {
-            "En cours : -"
-        }
-    }
 }
 
 /**

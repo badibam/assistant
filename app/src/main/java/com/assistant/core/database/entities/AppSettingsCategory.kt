@@ -19,7 +19,7 @@ data class AppSettingsCategory(
  * Available configuration categories
  */
 object AppSettingCategories {
-    const val TEMPORAL = "temporal"
+    const val FORMAT = "format"
     
     // Future categories:
     // const val UI = "ui"
@@ -27,13 +27,14 @@ object AppSettingCategories {
 }
 
 /**
- * Default temporal configuration
+ * Default format configuration
  */
-object DefaultTemporalSettings {
+object DefaultFormatSettings {
     const val JSON = """
     {
         "week_start_day": "monday",
         "day_start_hour": 4,
+        "locale_override": null,
         "relative_label_limits": {
             "hour_limit": 12,
             "day_limit": 7,
@@ -44,8 +45,9 @@ object DefaultTemporalSettings {
     }
     """
     
-    // Future temporal settings:
+    // Future format settings:
     // "timezone": "Europe/Paris"
     // "date_format": "dd/MM/yyyy" 
     // "time_format": "24h"
+    // "number_format_preference": "locale" // vs "user"
 }

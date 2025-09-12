@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.handlers
 
+import android.content.Context
 import org.json.JSONObject
 
 /**
@@ -10,7 +11,7 @@ class BooleanTrackingType : TrackingTypeHandler {
     
     override fun getType(): String = "boolean"
     
-    override fun createDataJson(properties: Map<String, Any>): String? {
+    override fun createDataJson(properties: Map<String, Any>, context: Context): String? {
         val state = properties["state"] as? Boolean ?: return null
         val trueLabel = properties["true_label"] as? String ?: ""
         val falseLabel = properties["false_label"] as? String ?: ""
@@ -24,7 +25,7 @@ class BooleanTrackingType : TrackingTypeHandler {
         }.toString()
     }
     
-    override fun validateInput(properties: Map<String, Any>): Boolean {
+    override fun validateInput(properties: Map<String, Any>, context: Context): Boolean {
         return properties["state"] is Boolean
     }
     
