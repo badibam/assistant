@@ -13,11 +13,11 @@ import com.assistant.core.strings.Strings
 
 
 /**
- * Sélecteur d'icône réutilisable
+ * Reusable icon selector
  * 
- * @param current Icône actuellement sélectionnée
- * @param suggested Liste d'icônes suggérées (affichées en premier)
- * @param onChange Callback appelé quand une icône est sélectionnée
+ * @param current Currently selected icon
+ * @param suggested List of suggested icons (displayed first)
+ * @param onChange Callback called when an icon is selected
  */
 @Composable
 fun IconSelector(
@@ -71,7 +71,7 @@ fun IconSelector(
                     UI.Text(s.shared("tools_config_dialog_suggested_icons"), TextType.LABEL)
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // Afficher les suggestions
+                    // Display suggestions
                     val suggestedIcons = suggested.mapNotNull { suggestedId ->
                         allAvailableIcons.find { it.id == suggestedId }
                     }
@@ -99,7 +99,7 @@ fun IconSelector(
                                         UI.Icon(iconName = icon.id, size = 32.dp)
                                         Spacer(modifier = Modifier.height(4.dp))
                                         
-                                        // Nom traduit seulement
+                                        // Translated name only
                                         val translatedName = s.shared("icon_${icon.id.replace("-", "_")}")
                                         UI.Text(
                                             text = translatedName,
@@ -163,7 +163,7 @@ fun IconSelector(
                             }
                         }
                         
-                        // Remplir la ligne avec des espaces vides si nécessaire
+                        // Fill row with empty spaces if needed
                         repeat(3 - iconRow.size) {
                             Spacer(modifier = Modifier.size(80.dp))
                         }

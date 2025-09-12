@@ -142,18 +142,18 @@ interface ToolTypeContract : SchemaProvider {
     // ═══ Data Migration Capabilities (from ToolTypeDataContract) ═══
     
     /**
-     * Version actuelle des données pour ce tooltype
-     * @return Version numérique (ex: 1, 2, 3...)
+     * Current data version for this tooltype
+     * @return Numeric version (e.g., 1, 2, 3...)
      */
     fun getCurrentDataVersion(): Int = 1
     
     /**
-     * Upgrade des données si nécessaire
-     * Appelé au démarrage pour chaque entrée de données obsolète
+     * Upgrades data if necessary
+     * Called at startup for each obsolete data entry
      * 
-     * @param rawData Données JSON existantes 
-     * @param fromVersion Version actuelle des données
-     * @return Données JSON upgradées vers getCurrentDataVersion()
+     * @param rawData Existing JSON data 
+     * @param fromVersion Current data version
+     * @return JSON data upgraded to getCurrentDataVersion()
      */
     fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String = rawData
 }

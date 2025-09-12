@@ -4,14 +4,14 @@ import android.content.Context
 import com.assistant.core.strings.Strings
 
 /**
- * Schémas JSON pour la validation des catégories de configuration de l'application
- * Chaque catégorie possède son propre schéma de validation
+ * JSON schemas for application configuration categories validation
+ * Each category has its own validation schema
  */
 object AppConfigSchemas {
     
     /**
-     * Schéma pour la catégorie "temporal"
-     * Validation des paramètres temporels de l'application
+     * Schema for "temporal" category
+     * Validation of application temporal parameters
      */
     fun getTemporalSchema(context: Context): String {
         val s = Strings.`for`(context = context)
@@ -124,7 +124,7 @@ object AppConfigSchemas {
     */
     
     /**
-     * Récupère le schéma pour une catégorie donnée
+     * Gets schema for a given category
      */
     fun getSchemaForCategory(category: String, context: Context): String? {
         return when (category) {
@@ -136,7 +136,7 @@ object AppConfigSchemas {
     }
     
     /**
-     * Liste des catégories supportées
+     * List of supported categories
      */
     fun getSupportedCategories(): List<String> {
         return listOf("temporal")

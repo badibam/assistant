@@ -3,15 +3,15 @@ package com.assistant.core.strings
 import android.content.Context
 
 /**
- * API publique principale pour l'accès aux strings.
- * Point d'entrée unique pour tout le système de strings modulaire.
+ * Main public API for string access.
+ * Single entry point for the entire modular string system.
  */
 object Strings {
     
     /**
-     * Crée un contexte strings avec chargement automatique.
+     * Creates strings context with automatic loading.
      * 
-     * Usage typique:
+     * Typical usage:
      * ```
      * val s = Strings.for(tool = "tracking", context)
      * 
@@ -20,9 +20,9 @@ object Strings {
      * s.tool("display_name")  // tracking_display_name
      * ```
      * 
-     * @param tool Nom du tooltype si contexte tool requis
-     * @param context Context Android
-     * @return StringsContext avec namespaces chargés
+     * @param tool Tooltype name if tool context required
+     * @param context Android Context
+     * @return StringsContext with loaded namespaces
      */
     fun `for`(tool: String? = null, context: Context) = 
         StringsFactory.`for`(tool = tool, context = context)

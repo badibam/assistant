@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
+import com.assistant.core.strings.Strings
 
 /**
- * Composant de pagination réutilisable.
- * Affiche les boutons LEFT/RIGHT et l'indicateur de page actuelle.
+ * Reusable pagination component.
+ * Displays LEFT/RIGHT buttons and current page indicator.
  */
 @Composable
 fun Pagination(
@@ -20,6 +23,8 @@ fun Pagination(
     onPageChange: (Int) -> Unit,
     showPageInfo: Boolean = true
 ) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -47,7 +52,7 @@ fun Pagination(
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(
-                    "Page $currentPage sur $totalPages",
+                    s.shared("label_page_info").format(currentPage, totalPages),
                     TextType.CAPTION
                 )
             }

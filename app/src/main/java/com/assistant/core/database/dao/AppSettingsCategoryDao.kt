@@ -8,7 +8,7 @@ import androidx.room.Update
 import com.assistant.core.database.entities.AppSettingsCategory
 
 /**
- * DAO pour la gestion des catégories de configuration de l'application
+ * DAO for managing application configuration categories
  */
 @Dao
 interface AppSettingsCategoryDao {

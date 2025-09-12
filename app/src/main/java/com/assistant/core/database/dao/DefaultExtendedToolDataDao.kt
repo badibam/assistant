@@ -3,15 +3,15 @@ package com.assistant.core.database.dao
 import com.assistant.core.database.entities.ToolDataEntity
 
 /**
- * Implémentation par défaut d'ExtendedToolDataDao
- * Fournit les méthodes communes + méthodes de convenance pour tous les tooltypes
+ * Default implementation of ExtendedToolDataDao
+ * Provides common methods + convenience methods for all tooltypes
  */
 class DefaultExtendedToolDataDao(
     private val baseDao: BaseToolDataDao,
     private val tooltype: String
 ) : ExtendedToolDataDao {
     
-    // === Délégation vers BaseToolDataDao ===
+    // === Delegation to BaseToolDataDao ===
     
     override suspend fun insert(entity: ToolDataEntity) = baseDao.insert(entity)
     
@@ -41,7 +41,7 @@ class DefaultExtendedToolDataDao(
     override suspend fun getTooltypeMinVersions(): Map<String, Int> = 
         baseDao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
     
-    // === Méthodes de convenance génériques ===
+    // === Generic convenience methods ===
     
     override suspend fun getLatest(toolInstanceId: String): ToolDataEntity? {
         return getByToolInstance(toolInstanceId).firstOrNull()

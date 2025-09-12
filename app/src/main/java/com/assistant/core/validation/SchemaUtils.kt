@@ -4,23 +4,23 @@ import android.util.Log
 import org.json.JSONObject
 
 /**
- * Utilitaires pour manipulation et extraction de schémas JSON
+ * Utilities for JSON schema manipulation and extraction
  */
 object SchemaUtils {
     
     /**
-     * Extrait le schéma du champ "data" ou "value" depuis un schéma complet
-     * Utilisé pour la validation des données lors des migrations
+     * Extracts "data" or "value" field schema from complete schema
+     * Used for data validation during migrations
      * 
-     * @param completeSchema Schéma JSON complet contenant les champs métier
-     * @return Schéma JSON du contenu données seulement, ou null si pas trouvé
+     * @param completeSchema Complete JSON schema containing business fields
+     * @return JSON schema of data content only, or null if not found
      */
     fun extractDataFieldSchema(completeSchema: String): String? {
         return try {
             val schemaJson = JSONObject(completeSchema)
             val properties = schemaJson.optJSONObject("properties") ?: return null
             
-            // Cherche le champ "data" requis (plus de fallback legacy)
+            // Look for required "data" field (no more legacy fallback)
             val dataSchema = properties.optJSONObject("data") ?: run {
                 Log.w("SchemaUtils", "No 'data' field found in schema properties")
                 return null
@@ -34,12 +34,12 @@ object SchemaUtils {
     }
     
     /**
-     * Combine deux schémas JSON (merge des propriétés)
-     * Utilisé si on veut composer des schémas modulaires
+     * Combines two JSON schemas (merges properties)
+     * Used for composing modular schemas
      * 
-     * @param baseSchema Schéma de base
-     * @param extensionSchema Schéma d'extension
-     * @return Schéma combiné
+     * @param baseSchema Base schema
+     * @param extensionSchema Extension schema
+     * @return Combined schema
      */
     fun combineSchemas(baseSchema: String, extensionSchema: String): String {
         return try {

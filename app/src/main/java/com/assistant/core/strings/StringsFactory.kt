@@ -3,10 +3,10 @@ package com.assistant.core.strings
 import android.content.Context
 
 /**
- * Factory pour créer des instances de strings avec chargement automatique.
+ * Factory for creating string instances with automatic loading.
  * 
- * Charge automatiquement les namespaces disponibles selon le contexte demandé.
- * API finale: s.shared() et s.tool() directement.
+ * Automatically loads available namespaces according to requested context.
+ * Final API: s.shared() and s.tool() directly.
  */
 class StringsContext(
     private val sharedStrings: SharedStrings,
@@ -14,12 +14,12 @@ class StringsContext(
 ) {
     
     /**
-     * Accès aux strings partagées (app core + modules)
+     * Access to shared strings (app core + modules)
      */
     fun shared(key: String): String = sharedStrings.s(key)
     
     /**
-     * Accès aux strings spécifiques au tooltype
+     * Access to tooltype-specific strings
      */
     fun tool(key: String): String = toolStrings?.s(key) ?: "[$key]"
 }
@@ -27,11 +27,11 @@ class StringsContext(
 object StringsFactory {
     
     /**
-     * Crée un contexte strings avec chargement automatique.
+     * Creates strings context with automatic loading.
      * 
-     * @param tool Nom du tooltype si contexte tool requis
-     * @param context Context Android
-     * @return StringsContext avec namespaces chargés automatiquement
+     * @param tool Tooltype name if tool context required
+     * @param context Android Context
+     * @return StringsContext with automatically loaded namespaces
      */
     fun `for`(tool: String? = null, context: Context): StringsContext {
         return StringsContext(

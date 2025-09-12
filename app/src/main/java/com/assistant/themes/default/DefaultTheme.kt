@@ -135,7 +135,7 @@ object DefaultTheme : ThemeContract {
     private val CardShape = RectangleShape
     
     // =====================================
-    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
+    // LAYOUTS: USE COMPOSE DIRECTLY
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
     // NO implementation - direct access for maximum flexibility
@@ -144,7 +144,7 @@ object DefaultTheme : ThemeContract {
     // INTERACTIVE
     // =====================================
     
-    // Configuration des boutons par taille
+    // Button configuration by size
     private data class ButtonConfig(
         val minWidth: Dp,
         val minHeight: Dp,
@@ -318,7 +318,7 @@ object DefaultTheme : ThemeContract {
                 type = DialogType.DANGER,
                 onConfirm = {
                     showConfirmDialog = false
-                    onClick()  // Exécuter l'action après confirmation
+                    onClick()  // Execute action after confirmation
                 },
                 onCancel = {
                     showConfirmDialog = false
@@ -568,7 +568,7 @@ object DefaultTheme : ThemeContract {
         val androidDuration = when (duration) {
             Duration.SHORT -> android.widget.Toast.LENGTH_SHORT
             Duration.LONG -> android.widget.Toast.LENGTH_LONG
-            Duration.INDEFINITE -> android.widget.Toast.LENGTH_LONG // Pas d'équivalent, use LONG
+            Duration.INDEFINITE -> android.widget.Toast.LENGTH_LONG // No equivalent, use LONG
         }
         android.widget.Toast.makeText(context, message, androidDuration).show()
     }

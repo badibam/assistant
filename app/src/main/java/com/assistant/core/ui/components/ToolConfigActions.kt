@@ -5,8 +5,8 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
 
 /**
- * Actions standard pour tous les écrans de configuration d'outils.
- * Composant réutilisable qui gère la logique des boutons CREATE/SAVE/CANCEL/DELETE.
+ * Standard actions for all tool configuration screens.
+ * Reusable component that handles CREATE/SAVE/CANCEL/DELETE button logic.
  */
 @Composable
 fun ToolConfigActions(

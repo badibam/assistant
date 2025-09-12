@@ -153,7 +153,7 @@ object TrackingToolType : ToolTypeContract {
                 database.execSQL("ALTER TABLE tracking_data ADD COLUMN category TEXT DEFAULT ''")
                 
                 // Example: Migrate data
-                database.execSQL("UPDATE tracking_data SET category = 'health' WHERE tool_instance_name LIKE '%santé%'")
+                database.execSQL("UPDATE tracking_data SET category = 'health' WHERE tool_instance_name LIKE '%health%'")
             }
         }
         */

@@ -51,7 +51,7 @@ class UpdateDownloader(private val context: Context) {
             val fileName = "assistant-${updateInfo.version}.apk"
             val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
             
-            // Supprimer ancien fichier si existant
+            // Remove old file if exists
             if (destination.exists()) {
                 destination.delete()
             }
@@ -68,7 +68,7 @@ class UpdateDownloader(private val context: Context) {
             
             val downloadId = downloadManager.enqueue(request)
             
-            // Écouter la fin du téléchargement
+            // Listen for download completion
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
@@ -97,7 +97,7 @@ class UpdateDownloader(private val context: Context) {
             
             context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
             
-            // Annulation si coroutine annulée
+            // Cancellation if coroutine is cancelled
             continuation.invokeOnCancellation {
                 try {
                     context.unregisterReceiver(receiver)
@@ -113,7 +113,7 @@ class UpdateDownloader(private val context: Context) {
     }
     
     /**
-     * Lance l'installation de l'APK
+     * Launches APK installation
      */
     private fun installApk(apkFile: File) {
         try {
@@ -132,24 +132,24 @@ class UpdateDownloader(private val context: Context) {
             context.startActivity(installIntent)
             
         } catch (e: Exception) {
-            throw Exception("Impossible de lancer l'installation: ${e.message}")
+            throw Exception("Unable to launch installation: ${e.message}")
         }
     }
     
     /**
-     * Vérifie si l'application peut installer des packages
+     * Checks if application can install packages
      */
     fun canInstallPackages(): Boolean {
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             context.packageManager.canRequestPackageInstalls()
         } else {
-            // Sur Android < 8.0, vérifier "Sources inconnues" n'est pas possible programmatiquement
+            // On Android < 8.0, checking "Unknown sources" is not programmatically possible
             true
         }
     }
     
     /**
-     * Ouvre les paramètres pour autoriser l'installation depuis sources inconnues
+     * Opens settings to allow installation from unknown sources
      */
     fun openInstallPermissionSettings() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -163,7 +163,7 @@ class UpdateDownloader(private val context: Context) {
 }
 
 /**
- * Résultat d'un téléchargement de mise à jour
+ * Update download result
  */
 sealed class DownloadResult {
     data class Success(val apkFile: File) : DownloadResult()

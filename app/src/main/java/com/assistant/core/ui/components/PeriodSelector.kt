@@ -67,7 +67,7 @@ data class Period(
                 }
                 PeriodType.WEEK -> {
                     // Start of week (Monday 00:00:00.000)
-                    // TODO: Utiliser AppConfigService.getWeekStartDay()
+                    // TODO: Use AppConfigService.getWeekStartDay()
                     cal.apply {
                         firstDayOfWeek = Calendar.MONDAY
                         set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
@@ -78,7 +78,7 @@ data class Period(
                     }.timeInMillis
                 }
                 PeriodType.MONTH -> {
-                    // Premier jour du mois (01/XX/XXXX 00:00:00.000)
+                    // First day of month (01/XX/XXXX 00:00:00.000)
                     cal.apply {
                         set(Calendar.DAY_OF_MONTH, 1)
                         set(Calendar.HOUR_OF_DAY, 0)
@@ -104,7 +104,7 @@ data class Period(
 }
 
 /**
- * Normalise un timestamp selon le type de période avec paramètres de configuration
+ * Normalizes a timestamp according to period type with configuration parameters
  */
 fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour: Int, weekStartDay: String): Long {
     val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
@@ -149,7 +149,7 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             }.timeInMillis
         }
         PeriodType.MONTH -> {
-            // Premier jour du mois avec dayStartHour
+            // First day of month with dayStartHour
             cal.apply {
                 set(Calendar.DAY_OF_MONTH, 1)
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
@@ -173,9 +173,9 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
 }
 
 /**
- * Composant générique de sélection de période avec navigation intelligente
- * Affiche des labels relatifs (Aujourd'hui, Cette semaine, etc.) avec flèches de navigation
- * et possibilité de cliquer pour ouvrir un sélecteur de date
+ * Generic period selection component with smart navigation
+ * Displays relative labels (Today, This week, etc.) with navigation arrows
+ * and ability to click to open date selector
  */
 @Composable
 fun PeriodSelector(
@@ -212,7 +212,7 @@ fun PeriodSelector(
             }
         )
         
-        // Label cliquable au centre
+        // Clickable label in center
         Box(modifier = Modifier.weight(1f)) {
             if (showDatePicker) {
                 UI.Button(
@@ -237,7 +237,7 @@ fun PeriodSelector(
             }
         }
         
-        // Bouton suivant
+        // Next button
         UI.ActionButton(
             action = ButtonAction.RIGHT,
             display = ButtonDisplay.ICON,
@@ -253,11 +253,11 @@ fun PeriodSelector(
     if (showPicker && showDatePicker) {
         when (period.type) {
             PeriodType.HOUR -> {
-                // Pour HOUR : DatePicker garde l'heure existante
+                // For HOUR: DatePicker keeps existing hour
                 UI.DatePicker(
                     selectedDate = DateUtils.formatDateForDisplay(period.timestamp),
                     onDateSelected = { selectedDate ->
-                        // Combiner nouvelle date + heure existante
+                        // Combine new date + existing hour
                         val existingHour = Calendar.getInstance().apply { 
                             timeInMillis = period.timestamp 
                         }.get(Calendar.HOUR_OF_DAY)
@@ -282,7 +282,7 @@ fun PeriodSelector(
                 )
             }
             else -> {
-                // Pour les autres types : DatePicker classique
+                // For other types: classic DatePicker
                 UI.DatePicker(
                     selectedDate = DateUtils.formatDateForDisplay(period.timestamp),
                     onDateSelected = { selectedDate ->
@@ -297,7 +297,7 @@ fun PeriodSelector(
 }
 
 /**
- * Génère le label intelligent pour une période donnée
+ * Generates smart label for given period
  */
 private fun generatePeriodLabel(period: Period, dayStartHour: Int, weekStartDay: String): String {
     val now = System.currentTimeMillis()
@@ -312,19 +312,19 @@ private fun generatePeriodLabel(period: Period, dayStartHour: Int, weekStartDay:
 }
 
 /**
- * Labels pour les heures
+ * Labels for hours
  */
 private fun generateHourLabel(timestamp: Long, now: Long): String {
-    // Normaliser les deux timestamps pour comparer les heures correctement
+    // Normalize both timestamps to compare hours correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.HOUR, 0, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.HOUR, 0, "monday")
     
     val diffHours = ((normalizedNow - normalizedTimestamp) / (60 * 60 * 1000)).toInt()
     
     return when {
-        diffHours == 0 -> "Cette heure-ci"
-        diffHours > 0 && diffHours <= 12 -> "Il y a $diffHours heure${if (diffHours > 1) "s" else ""}"
-        diffHours < 0 && diffHours >= -12 -> "Dans ${-diffHours} heure${if (-diffHours > 1) "s" else ""}"
+        diffHours == 0 -> "This hour"
+        diffHours > 0 && diffHours <= 12 -> "$diffHours hour${if (diffHours > 1) "s" else ""} ago"
+        diffHours < 0 && diffHours >= -12 -> "In ${-diffHours} hour${if (-diffHours > 1) "s" else ""}"
         else -> {
             val date = DateUtils.formatDateForDisplay(timestamp)
             val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
@@ -334,53 +334,53 @@ private fun generateHourLabel(timestamp: Long, now: Long): String {
 }
 
 /**
- * Labels pour les jours
+ * Labels for days
  */
 private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int): String {
-    // Normaliser les timestamps pour les comparer selon dayStartHour
+    // Normalize timestamps to compare them according to dayStartHour
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.DAY, dayStartHour, "monday")
     
     val diffDays = ((normalizedNow - normalizedTimestamp) / (24 * 60 * 60 * 1000)).toInt()
     
     return when {
-        diffDays == 0 -> "Aujourd'hui"
-        diffDays == 1 -> "Hier"
-        diffDays == -1 -> "Demain"
-        diffDays > 0 && diffDays <= 7 -> "Il y a $diffDays jour${if (diffDays > 1) "s" else ""}"
-        diffDays < 0 && diffDays >= -7 -> "Dans ${-diffDays} jour${if (-diffDays > 1) "s" else ""}"
+        diffDays == 0 -> "Today"
+        diffDays == 1 -> "Yesterday"
+        diffDays == -1 -> "Tomorrow"
+        diffDays > 0 && diffDays <= 7 -> "$diffDays day${if (diffDays > 1) "s" else ""} ago"
+        diffDays < 0 && diffDays >= -7 -> "In ${-diffDays} day${if (-diffDays > 1) "s" else ""}"
         else -> DateUtils.formatDateForDisplay(timestamp)
     }
 }
 
 /**
- * Labels pour les semaines
+ * Labels for weeks
  */
 private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String): String {
-    // Normaliser les timestamps pour comparer les semaines correctement
+    // Normalize timestamps to compare weeks correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.WEEK, 4, weekStartDay)
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.WEEK, 4, weekStartDay)
     
     val diffWeeks = ((normalizedNow - normalizedTimestamp) / (7 * 24 * 60 * 60 * 1000)).toInt()
     
     return when {
-        diffWeeks == 0 -> "Cette semaine"
-        diffWeeks == 1 -> "La semaine dernière"
-        diffWeeks == -1 -> "La semaine prochaine"
-        diffWeeks > 0 && diffWeeks <= 4 -> "Il y a $diffWeeks semaine${if (diffWeeks > 1) "s" else ""}"
-        diffWeeks < 0 && diffWeeks >= -4 -> "Dans ${-diffWeeks} semaine${if (-diffWeeks > 1) "s" else ""}"
+        diffWeeks == 0 -> "This week"
+        diffWeeks == 1 -> "Last week"
+        diffWeeks == -1 -> "Next week"
+        diffWeeks > 0 && diffWeeks <= 4 -> "$diffWeeks week${if (diffWeeks > 1) "s" else ""} ago"
+        diffWeeks < 0 && diffWeeks >= -4 -> "In ${-diffWeeks} week${if (-diffWeeks > 1) "s" else ""}"
         else -> {
             val weekStart = getWeekStart(timestamp, weekStartDay)
-            "Semaine du ${DateUtils.formatDateForDisplay(weekStart)}"
+            "Week of ${DateUtils.formatDateForDisplay(weekStart)}"
         }
     }
 }
 
 /**
- * Labels pour les mois
+ * Labels for months
  */
 private fun generateMonthLabel(timestamp: Long, now: Long): String {
-    // Normaliser les timestamps pour comparer les mois correctement
+    // Normalize timestamps to compare months correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH, 4, "monday")
     
@@ -391,15 +391,15 @@ private fun generateMonthLabel(timestamp: Long, now: Long): String {
                     (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH))
     
     return when {
-        diffMonths == 0 -> "Ce mois-ci"
-        diffMonths == 1 -> "Le mois dernier"
-        diffMonths == -1 -> "Le mois prochain"
-        diffMonths > 0 && diffMonths <= 6 -> "Il y a $diffMonths mois"
-        diffMonths < 0 && diffMonths >= -6 -> "Dans ${-diffMonths} mois"
+        diffMonths == 0 -> "This month"
+        diffMonths == 1 -> "Last month"
+        diffMonths == -1 -> "Next month"
+        diffMonths > 0 && diffMonths <= 6 -> "$diffMonths months ago"
+        diffMonths < 0 && diffMonths >= -6 -> "In ${-diffMonths} months"
         else -> {
             val monthNames = arrayOf(
-                "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-                "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
             )
             val month = monthNames[tsCal.get(Calendar.MONTH)]
             val year = tsCal.get(Calendar.YEAR)
@@ -409,7 +409,7 @@ private fun generateMonthLabel(timestamp: Long, now: Long): String {
 }
 
 /**
- * Labels pour les années
+ * Labels for years
  */
 private fun generateYearLabel(timestamp: Long, now: Long): String {
     // Normalize timestamps to compare years correctly
@@ -421,17 +421,17 @@ private fun generateYearLabel(timestamp: Long, now: Long): String {
     val diffYears = nowYear - tsYear
     
     return when {
-        diffYears == 0 -> "Cette année"
-        diffYears == 1 -> "L'année dernière"
-        diffYears == -1 -> "L'année prochaine"
-        diffYears > 0 && diffYears <= 3 -> "Il y a $diffYears an${if (diffYears > 1) "s" else ""}"
-        diffYears < 0 && diffYears >= -3 -> "Dans ${-diffYears} an${if (-diffYears > 1) "s" else ""}"
+        diffYears == 0 -> "This year"
+        diffYears == 1 -> "Last year"
+        diffYears == -1 -> "Next year"
+        diffYears > 0 && diffYears <= 3 -> "$diffYears year${if (diffYears > 1) "s" else ""} ago"
+        diffYears < 0 && diffYears >= -3 -> "In ${-diffYears} year${if (-diffYears > 1) "s" else ""}"
         else -> tsYear.toString()
     }
 }
 
 /**
- * Calcule la période précédente avec normalisation
+ * Calculates previous period with normalization
  */
 private fun getPreviousPeriod(period: Period, dayStartHour: Int, weekStartDay: String): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
@@ -449,7 +449,7 @@ private fun getPreviousPeriod(period: Period, dayStartHour: Int, weekStartDay: S
 }
 
 /**
- * Calcule la période suivante avec normalisation
+ * Calculates next period with normalization
  */
 private fun getNextPeriod(period: Period, dayStartHour: Int, weekStartDay: String): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
@@ -467,7 +467,7 @@ private fun getNextPeriod(period: Period, dayStartHour: Int, weekStartDay: Strin
 }
 
 /**
- * Calcule le début de la semaine selon la configuration
+ * Calculates week start according to configuration
  */
 private fun getWeekStart(timestamp: Long, weekStartDay: String): Long {
     val calendarDay = when (weekStartDay) {

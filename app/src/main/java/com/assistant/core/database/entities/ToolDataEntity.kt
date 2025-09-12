@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Index
 
 /**
- * Entité unifiée pour stocker toutes les données des outils
- * Remplace les tables spécialisées (tracking_data, journal_data, etc.)
+ * Unified entity for storing all tool data
+ * Replaces specialized tables (tracking_data, journal_data, etc.)
  */
 @Entity(
     tableName = "tool_data",

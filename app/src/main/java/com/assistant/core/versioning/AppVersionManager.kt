@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import org.json.JSONObject
 
 /**
- * Gestionnaire de version de l'application et des migrations
+ * Application version and migration manager
  */
 class AppVersionManager(private val context: Context) {
     
@@ -23,63 +23,63 @@ class AppVersionManager(private val context: Context) {
     }
     
     /**
-     * Version actuelle de l'app installée
+     * Current installed app version
      */
     fun getCurrentAppVersion(): Int {
         return prefs.getInt(PREF_APP_VERSION, 0)
     }
     
     /**
-     * Version actuelle de la base de données
+     * Current database version
      */
     fun getCurrentDatabaseVersion(): Int {
         return prefs.getInt(PREF_DATABASE_VERSION, 0)
     }
     
     /**
-     * Version actuelle des configurations
+     * Current configuration version
      */
     fun getCurrentConfigVersion(): Int {
         return prefs.getInt(PREF_CONFIG_VERSION, 0)
     }
     
     /**
-     * Première installation de l'app
+     * First app installation
      */
     fun isFirstLaunch(): Boolean {
         return prefs.getBoolean(PREF_FIRST_LAUNCH, true)
     }
     
     /**
-     * Met à jour la version de l'app
+     * Updates app version
      */
     fun updateAppVersion(version: Int) {
         prefs.edit().putInt(PREF_APP_VERSION, version).apply()
     }
     
     /**
-     * Met à jour la version de la base de données
+     * Updates database version
      */
     fun updateDatabaseVersion(version: Int) {
         prefs.edit().putInt(PREF_DATABASE_VERSION, version).apply()
     }
     
     /**
-     * Met à jour la version des configurations
+     * Updates configuration version
      */
     fun updateConfigVersion(version: Int) {
         prefs.edit().putInt(PREF_CONFIG_VERSION, version).apply()
     }
     
     /**
-     * Marque la première installation comme terminée
+     * Marks first installation as complete
      */
     fun markFirstLaunchComplete() {
         prefs.edit().putBoolean(PREF_FIRST_LAUNCH, false).apply()
     }
     
     /**
-     * Vérifie si des migrations sont nécessaires
+     * Checks if migrations are necessary
      */
     fun needsMigration(): MigrationInfo {
         val currentApp = getCurrentAppVersion()
@@ -100,7 +100,7 @@ class AppVersionManager(private val context: Context) {
     }
     
     /**
-     * Finalise la migration en mettant à jour toutes les versions
+     * Finalizes migration by updating all versions
      */
     fun completeMigration() {
         prefs.edit()
@@ -112,7 +112,7 @@ class AppVersionManager(private val context: Context) {
     }
     
     /**
-     * Génère un rapport de version pour debugging
+     * Generates version report for debugging
      */
     fun getVersionReport(): String {
         return JSONObject().apply {
@@ -128,7 +128,7 @@ class AppVersionManager(private val context: Context) {
 }
 
 /**
- * Informations sur les migrations nécessaires
+ * Information about necessary migrations
  */
 data class MigrationInfo(
     val needsAppMigration: Boolean,

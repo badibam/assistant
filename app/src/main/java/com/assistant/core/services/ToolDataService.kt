@@ -12,8 +12,8 @@ import org.json.JSONObject
 import java.util.*
 
 /**
- * Service centralisé pour toutes les opérations sur tool_data
- * Remplace les services spécialisés (TrackingService, etc.)
+ * Centralized service for all tool_data operations
+ * Replaces specialized services (TrackingService, etc.)
  */
 class ToolDataService(private val context: Context) : ExecutableService {
 
@@ -196,7 +196,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         
         val (entries, totalCount) = if (startTime != null && endTime != null) {
-            // Filtrage par plage de temps avec pagination
+            // Time range filtering with pagination
             val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)
             val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
             Pair(data, count)
@@ -268,7 +268,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Récupère le DAO unifié tool_data
+     * Gets the unified tool_data DAO
      */
     private fun getToolDataDao(): BaseToolDataDao {
         return AppDatabase.getDatabase(context).toolDataDao()

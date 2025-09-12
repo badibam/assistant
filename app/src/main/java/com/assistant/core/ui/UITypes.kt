@@ -1,8 +1,8 @@
 package com.assistant.core.ui
 
 /**
- * Types unifiés pour la nouvelle architecture UI
- * UNIQUEMENT les éléments convenus dans UI_DECISIONS.md
+ * Unified types for new UI architecture
+ * ONLY elements agreed upon in UI_DECISIONS.md
  */
 
 // =====================================
@@ -10,7 +10,7 @@ package com.assistant.core.ui
 // =====================================
 
 /**
- * État unifié pour tous les composants UI
+ * Unified state for all UI components
  */
 enum class ComponentState {
     NORMAL,     // Standard state
@@ -26,7 +26,7 @@ enum class ComponentState {
 // =====================================
 
 /**
- * Système de tailles étendu
+ * Extended size system
  */
 enum class Size {
     XS, S, M, L, XL, XXL
@@ -37,7 +37,7 @@ enum class Size {
 // =====================================
 
 /**
- * Types de champs pour validation et comportement
+ * Field types for validation and behavior
  */
 enum class FieldType {
     TEXT,           // 60 chars - identifiants, noms, labels
@@ -55,14 +55,14 @@ enum class FieldType {
 // =====================================
 
 /**
- * Types de messages de feedback
+ * Feedback message types
  */
 enum class FeedbackType {
     SUCCESS, ERROR, WARNING, INFO
 }
 
 /**
- * Durée d'affichage des messages
+ * Message display duration
  */
 enum class Duration {
     SHORT, LONG, INDEFINITE
@@ -73,7 +73,7 @@ enum class Duration {
 // =====================================
 
 /**
- * Modes d'affichage des instances d'outils
+ * Display modes for tool instances
  */
 enum class DisplayMode {
     ICON,       // 1/4×1/4 - icon only
@@ -90,7 +90,7 @@ enum class DisplayMode {
 // =====================================
 
 /**
- * Types de dialog avec logique de boutons automatique
+ * Dialog types with automatic button logic
  */
 enum class DialogType {
     CONFIGURE,   // → "Valider" + "Annuler"
@@ -107,19 +107,19 @@ enum class DialogType {
 // =====================================
 
 /**
- * Types de boutons avec sémantique métier
+ * Button types with business semantics
  */
 /**
- * Types de boutons simplifiés
+ * Simplified button types
  */
 enum class ButtonType {
-    PRIMARY,    // Bouton principal (ex: sauvegarder)
-    SECONDARY,  // Bouton secondaire (ex: annuler)
+    PRIMARY,    // Primary button (e.g., save)
+    SECONDARY,  // Secondary button (e.g., cancel)
     DEFAULT     // Neutral button (all buttons with icons)
 }
 
 /**
- * Actions prédéfinies pour les boutons standardisés
+ * Predefined actions for standardized buttons
  */
 enum class ButtonAction {
     SAVE, CREATE, UPDATE, DELETE, CANCEL, BACK, 
@@ -127,7 +127,7 @@ enum class ButtonAction {
 }
 
 /**
- * Modes d'affichage pour les boutons
+ * Display modes for buttons
  */
 enum class ButtonDisplay {
     ICON,       // Icon only
@@ -136,14 +136,14 @@ enum class ButtonDisplay {
 
 
 /**
- * Types de texte avec hiérarchie
+ * Text types with hierarchy
  */
 enum class TextType {
     TITLE, SUBTITLE, BODY, CAPTION, LABEL, ERROR, WARNING
 }
 
 /**
- * Types de cartes
+ * Card types
  */
 enum class CardType {
     DEFAULT

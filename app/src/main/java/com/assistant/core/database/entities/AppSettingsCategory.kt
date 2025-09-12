@@ -5,8 +5,8 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * Configuration de l'application organisée par catégories
- * Chaque catégorie contient ses paramètres au format JSON
+ * Application configuration organized by categories
+ * Each category contains its parameters in JSON format
  */
 @Entity(tableName = "app_settings_categories")
 data class AppSettingsCategory(
@@ -16,7 +16,7 @@ data class AppSettingsCategory(
 )
 
 /**
- * Catégories de configuration disponibles
+ * Available configuration categories
  */
 object AppSettingCategories {
     const val TEMPORAL = "temporal"
@@ -27,7 +27,7 @@ object AppSettingCategories {
 }
 
 /**
- * Configuration temporelle par défaut
+ * Default temporal configuration
  */
 object DefaultTemporalSettings {
     const val JSON = """

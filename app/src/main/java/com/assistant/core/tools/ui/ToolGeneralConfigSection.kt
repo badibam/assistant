@@ -12,12 +12,12 @@ import com.assistant.core.tools.ToolTypeManager
 import org.json.JSONObject
 
 /**
- * Section réutilisable des paramètres généraux pour tous les tool types
- * Extrait de TrackingConfigScreen pour généralisation
+ * Reusable general settings section for all tool types
+ * Extracted from TrackingConfigScreen for generalization
  * 
- * @param config Configuration JSON complète de l'outil
- * @param updateConfig Callback pour mettre à jour la configuration
- * @param toolTypeName Nom du tool type pour récupérer les icônes suggérées
+ * @param config Complete JSON configuration of the tool
+ * @param updateConfig Callback to update configuration
+ * @param toolTypeName Tool type name to retrieve suggested icons
  */
 @Composable
 fun ToolGeneralConfigSection(
@@ -33,7 +33,7 @@ fun ToolGeneralConfigSection(
         ToolTypeManager.getToolType(toolTypeName)?.getSuggestedIcons() ?: emptyList()
     }
     
-    // Extraction des valeurs depuis config
+    // Extract values from config
     val name = config.optString("name", "")
     val description = config.optString("description", "")
     val iconName = config.optString("icon_name", "")
@@ -49,7 +49,7 @@ fun ToolGeneralConfigSection(
         ) {
             UI.Text(s.shared("tools_config_section_general_params"), TextType.SUBTITLE)
             
-            // 1. Nom (requis)
+            // 1. Name (required)
             UI.FormField(
                 label = s.shared("tools_config_label_name"),
                 value = name,
@@ -57,7 +57,7 @@ fun ToolGeneralConfigSection(
                 required = true
             )
             
-            // 2. Description (optionnel)
+            // 2. Description (optional)
             UI.FormField(
                 label = s.shared("tools_config_label_description"),
                 value = description,
@@ -65,14 +65,14 @@ fun ToolGeneralConfigSection(
                 fieldType = FieldType.TEXT_MEDIUM
             )
             
-            // 3. Sélecteur d'icône avec suggestions
+            // 3. Icon selector with suggestions
             IconSelector(
                 current = iconName,
                 suggested = suggestedIcons,
                 onChange = { updateConfig("icon_name", it) }
             )
             
-            // 4. Mode d'affichage (requis)
+            // 4. Display mode (required)
             UI.FormSelection(
                 label = s.shared("tools_config_label_display_mode"),
                 options = listOf(
@@ -109,7 +109,7 @@ fun ToolGeneralConfigSection(
                 required = true
             )
             
-            // 5. Gestion (requis)
+            // 5. Management (required)
             UI.FormSelection(
                 label = s.shared("tools_config_label_management"),
                 options = listOf(s.shared("tools_config_option_manual"), s.shared("tools_config_option_ai")),
@@ -128,7 +128,7 @@ fun ToolGeneralConfigSection(
                 required = true
             )
             
-            // 6. Validation config par IA (requis)
+            // 6. AI config validation (required)
             UI.FormSelection(
                 label = s.shared("tools_config_label_config_validation"),
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
@@ -147,7 +147,7 @@ fun ToolGeneralConfigSection(
                 required = true
             )
             
-            // 7. Validation données par IA (requis)
+            // 7. AI data validation (required)
             UI.FormSelection(
                 label = s.shared("tools_config_label_data_validation"),
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),

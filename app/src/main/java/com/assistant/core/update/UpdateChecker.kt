@@ -77,7 +77,7 @@ class UpdateChecker(private val context: Context) {
     }
     
     /**
-     * Trouve l'URL de téléchargement de l'APK dans les assets de la release
+     * Finds APK download URL in release assets
      */
     private fun findApkDownloadUrl(release: JSONObject): String? {
         try {
@@ -96,20 +96,20 @@ class UpdateChecker(private val context: Context) {
     }
     
     /**
-     * Récupère le versionCode actuel de l'application
+     * Gets current application versionCode
      */
     private fun getCurrentVersionCode(): Int {
         return try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionCode
         } catch (e: Exception) {
-            1 // Version par défaut si erreur
+            1 // Default version if error
         }
     }
     
     /**
-     * Parse le tag version (ex: "v1.2.0") en versionCode
-     * Assume format: v{major}.{minor}.{patch} → {major}{minor}{patch}
+     * Parses version tag (e.g., "v1.2.0") to versionCode
+     * Assumes format: v{major}.{minor}.{patch} → {major}{minor}{patch}
      */
     private fun parseVersionCode(tagName: String): Int {
         return try {
@@ -119,7 +119,7 @@ class UpdateChecker(private val context: Context) {
                 val minor = version[1].toIntOrNull() ?: 0
                 val patch = version[2].toIntOrNull() ?: 0
                 
-                // Conversion en versionCode (ex: 1.2.3 → 10203)
+                // Convert to versionCode (e.g., 1.2.3 → 10203)
                 major * 10000 + minor * 100 + patch
             } else {
                 tagName.removePrefix("v").toIntOrNull() ?: 0
@@ -130,7 +130,7 @@ class UpdateChecker(private val context: Context) {
     }
     
     /**
-     * Vérifie la connectivité réseau
+     * Checks network connectivity
      */
     fun isNetworkAvailable(): Boolean {
         return try {
@@ -145,15 +145,15 @@ class UpdateChecker(private val context: Context) {
 }
 
 /**
- * Informations sur une mise à jour disponible
+ * Information about an available update
  */
 data class UpdateInfo(
     val version: String,         // ex: "v1.2.0"
     val versionCode: Int,        // ex: 10200
-    val changelog: String,       // Notes de release
-    val downloadUrl: String?,    // URL de téléchargement APK
-    val releaseDate: String,     // Date de publication
-    val isPrerelease: Boolean    // Version beta/preview
+    val changelog: String,       // Release notes
+    val downloadUrl: String?,    // APK download URL
+    val releaseDate: String,     // Release date
+    val isPrerelease: Boolean    // Beta/preview version
 ) {
     fun isDownloadable(): Boolean = !downloadUrl.isNullOrBlank()
     

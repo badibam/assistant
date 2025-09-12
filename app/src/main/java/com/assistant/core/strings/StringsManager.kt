@@ -25,11 +25,11 @@ object StringsManager {
     }
     
     /**
-     * Construit la clé de ressource selon la convention de nommage.
+     * Builds the resource key according to naming convention.
      * 
      * Format: 
-     * - Sans contexte: ${namespace}_${key}
-     * - Avec contexte: ${namespace}_${context}_${key}
+     * - Without context: ${namespace}_${key}
+     * - With context: ${namespace}_${context}_${key}
      */
     private fun buildResourceKey(namespace: String, key: String, context: String?): String {
         return if (context != null) {
@@ -40,8 +40,8 @@ object StringsManager {
     }
     
     /**
-     * Récupère la string depuis les ressources Android.
-     * Gère les cas d'erreur avec fallback approprié.
+     * Retrieves string from Android resources.
+     * Handles error cases with appropriate fallback.
      */
     private fun getStringResource(resourceKey: String, context: Context): String {
         try {

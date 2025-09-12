@@ -91,8 +91,8 @@ class MigrationOrchestrator(private val context: Context) {
         }
         
         /**
-         * Migration 2→3: Transition vers architecture unifiée propre
-         * Aucune migration de données - démarrage propre
+         * Migration 2→3: Transition to clean unified architecture
+         * No data migration - clean start
          */
         val CORE_MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
@@ -103,7 +103,7 @@ class MigrationOrchestrator(private val context: Context) {
     }
     
     /**
-     * Exécute toutes les migrations nécessaires
+     * Executes all necessary migrations
      */
     fun performMigrations(database: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int): MigrationResult {
         val errors = mutableListOf<MigrationError>()
@@ -217,7 +217,7 @@ class MigrationOrchestrator(private val context: Context) {
                         } catch (e: Exception) {
                             errors.add(MigrationError(
                                 toolType = tooltype,
-                                operation = "Migration données v$minVersion → v$currentVersion",
+                                operation = "Data migration v$minVersion → v$currentVersion",
                                 error = e.message ?: "Unknown error",
                                 suggestedAction = "Check data integrity or contact support"
                             ))

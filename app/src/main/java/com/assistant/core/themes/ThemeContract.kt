@@ -23,22 +23,22 @@ import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
 
 /**
- * ThemeContract - Interface que tous les thèmes doivent implémenter
- * UNIQUEMENT les composants VISUELS (thématisés)
+ * ThemeContract - Interface that all themes must implement
+ * ONLY VISUAL components (themed)
  * 
- * LAYOUTS : utiliser Row/Column/Box/Spacer de Compose directement
- * VISUELS : définis par ce contrat pour thématisation
+ * LAYOUTS: use Compose Row/Column/Box/Spacer directly
+ * VISUALS: defined by this contract for theming
  * 
- * Chaque thème (DefaultTheme, RetroTheme, etc.) implémente cette interface
- * pour fournir son propre style visuel aux composants
+ * Each theme (DefaultTheme, RetroTheme, etc.) implements this interface
+ * to provide its own visual style to components
  */
 interface ThemeContract {
     
     // =====================================
-    // LAYOUTS : UTILISER COMPOSE DIRECTEMENT
+    // LAYOUTS: USE COMPOSE DIRECTLY
     // =====================================
     // Row(..), Column(..), Box(..), Spacer(..) + modifiers Compose
-    // PAS d'interface - accès direct pour flexibilité maximale
+    // NO interface - direct access for maximum flexibility
     
     // =====================================
     // INTERACTIVE
@@ -150,7 +150,7 @@ interface ThemeContract {
     )
     
     // =====================================
-    // CONTAINERS SPÉCIALISÉS (apparence uniquement)
+    // SPECIALIZED CONTAINERS (appearance only)
     // =====================================
     
     @Composable
@@ -297,5 +297,5 @@ interface ThemeContract {
     fun getColorScheme(paletteId: String): ColorScheme
     
     
-    // Anciens boutons supprimés - utiliser ActionButton
+    // Old buttons removed - use ActionButton
 }

@@ -491,7 +491,7 @@ fun TrackingHistory(
                         "false_label" to json.optString("false_label", s.tool("config_default_false_label"))
                     )
                     "scale" -> {
-                        android.util.Log.d("SCALE_DEBUG", "Données JSON scale: $json")
+                        android.util.Log.d("SCALE_DEBUG", "Scale JSON data: $json")
                         mapOf(
                             "rating" to json.optInt("rating"),
                             "min_value" to json.optInt("min_value"),
@@ -499,7 +499,7 @@ fun TrackingHistory(
                             "min_label" to json.optString("min_label"),
                             "max_label" to json.optString("max_label")
                         ).also { 
-                            android.util.Log.d("SCALE_DEBUG", "InitialProperties créées: $it")
+                            android.util.Log.d("SCALE_DEBUG", "InitialProperties created: $it")
                         }
                     }
                     "text" -> mapOf(

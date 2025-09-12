@@ -14,8 +14,8 @@ import android.util.Log
 import org.json.JSONObject
 
 /**
- * Service centralisé pour la gestion de la configuration de l'application
- * Fournit un accès typé aux paramètres stockés par catégorie en base
+ * Centralized service for application configuration management
+ * Provides typed access to parameters stored by category in database
  */
 class AppConfigService(private val context: Context) : ExecutableService {
 
@@ -23,7 +23,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
     private val settingsDao = database.appSettingsCategoryDao()
 
     /**
-     * Configuration temporelle
+     * Temporal configuration
      */
     suspend fun getWeekStartDay(): String {
         val settings = getTemporalSettings()
@@ -44,7 +44,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Gestion interne des paramètres temporels
+     * Internal temporal settings management
      */
     private suspend fun getTemporalSettings(): JSONObject {
         Log.d("CONFIGDEBUG", "Getting temporal settings from database")
@@ -80,7 +80,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
         val settings = getTemporalSettings()
         settings.put(key, value)
         
-        // Validation avec SchemaValidator
+        // Validation with SchemaValidator
         val dataMap = mapOf(
             "week_start_day" to settings.optString("week_start_day"),
             "day_start_hour" to settings.optInt("day_start_hour")
@@ -89,14 +89,14 @@ class AppConfigService(private val context: Context) : ExecutableService {
         val validation = SchemaValidator.validate(schemaProvider, dataMap, context, schemaType = "temporal")
         
         if (!validation.isValid) {
-            throw IllegalArgumentException("Configuration invalide: ${validation.errorMessage}")
+            throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
         }
         
         settingsDao.updateSettings(AppSettingCategories.TEMPORAL, settings.toString())
     }
 
     /**
-     * Utilitaires génériques
+     * Generic utilities
      */
     suspend fun getCategorySettings(category: String): JSONObject? {
         val settingsJson = settingsDao.getSettingsJsonForCategory(category)

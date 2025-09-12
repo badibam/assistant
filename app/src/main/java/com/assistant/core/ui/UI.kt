@@ -16,13 +16,13 @@ import com.assistant.core.themes.ThemeIconManager
 import org.json.JSONObject
 
 /**
- * UI - API publique unifiée
- * UNIQUEMENT les composants VISUELS (thématisés)
+ * UI - Unified public API
+ * ONLY VISUAL components (themed)
  * 
- * LAYOUTS : use Compose Row/Column/Box/Spacer directly
- * VISUELS : utiliser UI.* pour thématisation
+ * LAYOUTS: use Compose Row/Column/Box/Spacer directly
+ * VISUALS: use UI.* for theming
  * 
- * Principe : UI.* → délégation au thème actuel via CurrentTheme.current
+ * Principle: UI.* → delegation to current theme via CurrentTheme.current
  */
 object UI {
     
@@ -52,7 +52,7 @@ object UI {
         size: Size = Size.M,
         type: ButtonType? = null,  // Optional override of default type
         enabled: Boolean = true,
-        requireConfirmation: Boolean = false,  // Dialogue de confirmation automatique
+        requireConfirmation: Boolean = false,  // Automatic confirmation dialog
         confirmMessage: String? = null,        // Custom message (null = default message)
         onClick: () -> Unit
     ) = CurrentTheme.current.ActionButton(action, display, size, type, enabled, requireConfirmation, confirmMessage, onClick)
@@ -81,7 +81,7 @@ object UI {
     }
     
     /**
-     * Texte centré même si multiligne - à utiliser dans Box avec contentAlignment = Alignment.Center
+     * Centered text even if multiline - use in Box with contentAlignment = Alignment.Center
      */
     @Composable
     fun CenteredText(
@@ -349,8 +349,8 @@ object UI {
                 contentDescription = null
             )
             
-            // Nom de l'instance
-            val toolInstanceName = JSONObject(tool.config_json).optString("name", "Sans nom")
+            // Instance name
+            val toolInstanceName = JSONObject(tool.config_json).optString("name", "Unnamed")
             Text(toolInstanceName, TextType.BODY)
         }
     }
@@ -390,7 +390,7 @@ object UI {
                             ToolCardHeader(tool, context)
                         }
                         
-                        // Utiliser Box + weight pour le texte
+                        // Use Box + weight for text
                         Box(
                             modifier = Modifier.weight(1f)
                         ) {
@@ -462,7 +462,7 @@ object UI {
     // =====================================
     
     /**
-     * Helper de validation unifiée pour tous les tooltypes.
+     * Unified validation helper for all tooltypes.
      */
     object ValidationHelper {
         fun validateAndSave(

@@ -7,21 +7,21 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.Duration
 
 /**
- * Helper de validation unifiée pour tous les tooltypes.
- * Centralise la logique ToolTypeManager + SchemaValidator + Toast + Logging.
+ * Unified validation helper for all tooltypes.
+ * Centralizes ToolTypeManager + SchemaValidator + Toast + Logging logic.
  */
 object ValidationHelper {
 
     /**
-     * Valide les données et affiche automatiquement un toast en cas d'erreur.
+     * Validates data and automatically displays toast on error.
      * 
-     * @param toolTypeName Nom du tooltype (ex: "tracking", "notes")
-     * @param configData Données à valider sous forme Map
-     * @param context Contexte Android pour le toast
-     * @param schemaType Type de schéma à utiliser ("config" ou "data")
-     * @param onSuccess Callback appelé si validation réussie avec JSON string
-     * @param onError Callback optionnel appelé en cas d'erreur (en plus du toast)
-     * @return true si validation réussie, false sinon
+     * @param toolTypeName Tooltype name (e.g., "tracking", "notes")
+     * @param configData Data to validate as Map
+     * @param context Android context for toast
+     * @param schemaType Schema type to use ("config" or "data")
+     * @param onSuccess Callback called if validation succeeds with JSON string
+     * @param onError Optional callback called on error (in addition to toast)
+     * @return true if validation succeeded, false otherwise
      */
     fun validateAndSave(
         toolTypeName: String,
@@ -60,14 +60,14 @@ object ValidationHelper {
     }
     
     /**
-     * Affiche un toast d'erreur avec durée longue.
+     * Shows error toast with long duration.
      */
     private fun showErrorToast(context: Context, message: String) {
         UI.Toast(context, message, Duration.LONG)
     }
     
     /**
-     * Convertit une Map en JSON string pour compatibilité avec l'API existante.
+     * Converts Map to JSON string for compatibility with existing API.
      */
     private fun mapToJsonString(data: Map<String, Any>): String {
         return org.json.JSONObject(data).toString()

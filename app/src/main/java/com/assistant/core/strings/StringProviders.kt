@@ -3,14 +3,14 @@ package com.assistant.core.strings
 import android.content.Context
 
 /**
- * Providers de strings pour chaque namespace.
- * Encapsulent la logique de résolution des strings avec préfixage automatique.
+ * String providers for each namespace.
+ * Encapsulate string resolution logic with automatic prefixing.
  */
 
 /**
- * Provider pour les strings partagées de l'application (core + modules).
- * Inclut UI commune, boutons, actions, et toutes les fonctionnalités core.
- * Namespace global, pas de contexte spécifique.
+ * Provider for shared application strings (core + modules).
+ * Includes common UI, buttons, actions, and all core functionalities.
+ * Global namespace, no specific context.
  */
 class SharedStrings(private val context: Context) {
     fun s(key: String): String {
@@ -19,8 +19,8 @@ class SharedStrings(private val context: Context) {
 }
 
 /**
- * Provider pour les strings spécifiques à un tooltype.
- * Utilise directement le nom du tooltype comme namespace.
+ * Provider for tooltype-specific strings.
+ * Uses tooltype name directly as namespace.
  */
 class ToolStrings(private val toolType: String, private val context: Context) {
     fun s(key: String): String {

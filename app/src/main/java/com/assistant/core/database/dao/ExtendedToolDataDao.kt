@@ -3,8 +3,8 @@ package com.assistant.core.database.dao
 import com.assistant.core.database.entities.ToolDataEntity
 
 /**
- * Interface pour DAOs étendus qui combinent les opérations de base
- * avec des méthodes de convenance communes à tous les tooltypes
+ * Interface for extended DAOs that combine base operations
+ * with convenience methods common to all tooltypes
  */
 interface ExtendedToolDataDao {
     
