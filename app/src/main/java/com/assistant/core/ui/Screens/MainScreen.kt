@@ -33,6 +33,7 @@ fun MainScreen() {
     // Load zones via command pattern
     var zones by remember { mutableStateOf<List<Zone>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     // Navigation states - persistent across orientation changes
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
@@ -47,7 +48,8 @@ fun MainScreen() {
     LaunchedEffect(Unit) {
         coordinator.executeWithLoading(
             operation = "get->zones",
-            onLoading = { isLoading = it }
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
         )?.let { result ->
             zones = result.mapData("zones") { map ->
                 Zone(
@@ -67,7 +69,8 @@ fun MainScreen() {
         coroutineScope.launch {
             coordinator.executeWithLoading(
                 operation = "get->zones",
-                onLoading = { isLoading = it }
+                onLoading = { isLoading = it },
+                onError = { error -> errorMessage = error }
             )?.let { result ->
                 zones = result.mapData("zones") { map ->
                     Zone(
@@ -179,6 +182,14 @@ fun MainScreen() {
                     )
                 }
             }
+        }
+    }
+    
+    // Error handling with Toast
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
         }
     }
 }

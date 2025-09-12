@@ -2,7 +2,7 @@ package com.assistant.core.coordinator
 
 import android.util.Log
 import com.assistant.core.commands.CommandStatus
-import com.assistant.core.commands.OperationResult
+import com.assistant.core.commands.CommandResult
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -17,7 +17,7 @@ suspend fun Coordinator.executeWithLoading(
     params: Map<String, Any> = emptyMap(),
     onLoading: (Boolean) -> Unit = {},
     onError: (String) -> Unit = {}
-): OperationResult? {
+): CommandResult? {
     return try {
         onLoading(true)
         val result = processUserAction(operation, params)
@@ -40,7 +40,7 @@ suspend fun Coordinator.executeWithLoading(
 /**
  * Map data from OperationResult to typed objects with safe error handling
  */
-inline fun <reified T> OperationResult.mapData(
+inline fun <reified T> CommandResult.mapData(
     key: String,
     mapper: (Map<String, Any>) -> T
 ): List<T> {
@@ -59,7 +59,7 @@ inline fun <reified T> OperationResult.mapData(
 /**
  * Extract single object from OperationResult with safe error handling
  */
-inline fun <reified T> OperationResult.mapSingleData(
+inline fun <reified T> CommandResult.mapSingleData(
     key: String,
     mapper: (Map<String, Any>) -> T
 ): T? {
@@ -75,5 +75,5 @@ inline fun <reified T> OperationResult.mapSingleData(
 /**
  * Check if operation was successful
  */
-val OperationResult.isSuccess: Boolean
+val CommandResult.isSuccess: Boolean
     get() = status == CommandStatus.SUCCESS

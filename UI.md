@@ -386,6 +386,43 @@ Le système de thème utilise une palette de couleurs personnalisée branchée s
 - **Sections hors cards** : `padding(horizontal = 16.dp)`
 
 ## ═══════════════════════════════════
+## Pattern Loading/Error Standard 🆕
+
+### États Obligatoires
+```kotlin
+var data by remember { mutableStateOf<DataType?>(null) }
+var isLoading by remember { mutableStateOf(true) }
+var errorMessage by remember { mutableStateOf<String?>(null) }
+```
+
+### Affichage Conditionnel
+```kotlin
+// Early return pour loading
+if (isLoading) {
+    UI.Text(s.shared("tools_loading"), TextType.BODY)
+    return
+}
+
+// Toast automatique pour erreurs
+errorMessage?.let { message ->
+    LaunchedEffect(message) {
+        UI.Toast(context, message, Duration.LONG)
+        errorMessage = null
+    }
+}
+```
+
+### INTERDIT : Valeurs par défaut silencieuses
+```kotlin
+// ❌ MAUVAIS - masque les erreurs
+Period.now(PeriodType.DAY, 0, "monday")
+
+// ✅ BON - erreur explicite
+if (config == null) return
+Period.now(PeriodType.DAY, config.dayStartHour, config.weekStartDay)
+```
+
+## ═══════════════════════════════════
 ## Règles d'Usage
 
 ### À Faire
@@ -395,12 +432,16 @@ Le système de thème utilise une palette de couleurs personnalisée branchée s
 - **FormActions** pour tous boutons de formulaire
 - **Box wrappers** pour layout et interactions UI.Text
 - **Validation centralisée** via SchemaValidator
+- **isLoading pattern** pour tous états async
+- **rememberSaveable** pour navigation (rotation safe)
 
 ### À Éviter
 
 - Mélanger ActionButton et UI.Button dans même écran
 - Boutons Row/Column manuels au lieu de FormActions  
 - Layout modifiers directement sur UI.Text
+- Valeurs par défaut qui masquent erreurs de config
+- Strings hardcodées (toujours s.shared/s.tool)
 
 ---
 

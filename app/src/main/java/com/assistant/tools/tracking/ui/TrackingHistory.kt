@@ -64,7 +64,7 @@ fun TrackingHistory(
     
     // New filter system state
     var periodFilter by remember { mutableStateOf(PeriodFilterType.DAY) }
-    var currentPeriod by remember { mutableStateOf(Period.now(PeriodType.DAY)) }
+    var currentPeriod by remember { mutableStateOf<Period?>(null) }
     var entriesLimit by remember { mutableStateOf(100) }
     
     // Pagination state
@@ -72,9 +72,10 @@ fun TrackingHistory(
     var totalEntries by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(1) }
     
-    // App config state - null until loading
+    // App config state
     var dayStartHour by remember { mutableStateOf<Int?>(null) }
     var weekStartDay by remember { mutableStateOf<String?>(null) }
+    var isConfigLoading by remember { mutableStateOf(true) }
     
     
     // Load data
@@ -98,25 +99,25 @@ fun TrackingHistory(
                         // No temporal filter, only limit
                     }
                     PeriodFilterType.HOUR -> {
-                        val periodStart = currentPeriod.timestamp
+                        val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
                         params["startTime"] = periodStart
                         params["endTime"] = periodEnd
                     }
                     PeriodFilterType.DAY -> {
-                        val periodStart = currentPeriod.timestamp
+                        val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
                         params["startTime"] = periodStart
                         params["endTime"] = periodEnd
                     }
                     PeriodFilterType.WEEK -> {
-                        val periodStart = currentPeriod.timestamp
+                        val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
                         params["startTime"] = periodStart
                         params["endTime"] = periodEnd
                     }
                     PeriodFilterType.MONTH -> {
-                        val periodStart = currentPeriod.timestamp
+                        val periodStart = currentPeriod!!.timestamp
                         // For months, calculate start of next month
                         val periodEnd = Calendar.getInstance().apply {
                             timeInMillis = periodStart
@@ -126,7 +127,7 @@ fun TrackingHistory(
                         params["endTime"] = periodEnd
                     }
                     PeriodFilterType.YEAR -> {
-                        val periodStart = currentPeriod.timestamp
+                        val periodStart = currentPeriod!!.timestamp
                         // For years, calculate start of next year
                         val periodEnd = Calendar.getInstance().apply {
                             timeInMillis = periodStart
@@ -275,11 +276,18 @@ fun TrackingHistory(
             }
         } catch (e: Exception) {
             // Config loading failed
+        } finally {
+            isConfigLoading = false
         }
     }
     
-    // Wait for config to be loaded
-    if (dayStartHour == null || weekStartDay == null) {
+    // Initialize currentPeriod when config is loaded
+    if (dayStartHour != null && weekStartDay != null && currentPeriod == null) {
+        currentPeriod = Period.now(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
+    }
+    
+    // Show loading state while config is being loaded
+    if (isConfigLoading || dayStartHour == null || weekStartDay == null || currentPeriod == null) {
         Column(
             modifier = modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -375,7 +383,7 @@ fun TrackingHistory(
         // Level 2: Period selector (hidden for ALL filter)
         if (periodFilter != PeriodFilterType.ALL) {
             PeriodSelector(
-                period = currentPeriod,
+                period = currentPeriod!!,
                 onPeriodChange = { newPeriod ->
                     currentPeriod = newPeriod
                     loadData()

@@ -39,67 +39,14 @@ data class Period(
     val type: PeriodType
 ) {
     companion object {
-        fun now(type: PeriodType): Period = Period(normalizeTimestamp(System.currentTimeMillis(), type), type)
-        
-        /**
-         * Normalizes a timestamp according to period type (basic version without config)
-         */
-        fun normalizeTimestamp(timestamp: Long, type: PeriodType): Long {
-            val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
-            
-            return when (type) {
-                PeriodType.HOUR -> {
-                    // Start of hour (XX:00:00.000)
-                    cal.apply {
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                }
-                PeriodType.DAY -> {
-                    // Start of day (00:00:00.000)
-                    cal.apply {
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                }
-                PeriodType.WEEK -> {
-                    // Start of week (Monday 00:00:00.000)
-                    // TODO: Use AppConfigService.getWeekStartDay()
-                    cal.apply {
-                        firstDayOfWeek = Calendar.MONDAY
-                        set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                }
-                PeriodType.MONTH -> {
-                    // First day of month (01/XX/XXXX 00:00:00.000)
-                    cal.apply {
-                        set(Calendar.DAY_OF_MONTH, 1)
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                }
-                PeriodType.YEAR -> {
-                    // First day of year (01/01/XXXX 00:00:00.000)
-                    cal.apply {
-                        set(Calendar.MONTH, Calendar.JANUARY)
-                        set(Calendar.DAY_OF_MONTH, 1)
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }.timeInMillis
-                }
-            }
-        }
+        fun now(
+            type: PeriodType, 
+            dayStartHour: Int, 
+            weekStartDay: String
+        ): Period = Period(
+            normalizeTimestampWithConfig(System.currentTimeMillis(), type, dayStartHour, weekStartDay), 
+            type
+        )
     }
 }
 

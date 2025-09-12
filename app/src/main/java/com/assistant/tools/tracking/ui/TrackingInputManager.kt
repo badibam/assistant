@@ -66,8 +66,8 @@ fun TrackingInputManager(
                 android.util.Log.d("VALDEBUG", "Result error: ${result.error}")
                 android.util.Log.d("VALDEBUG", "Result data: ${result.data}")
                 
-                when (result.status) {
-                    CommandStatus.SUCCESS -> {
+                when {
+                    result.isSuccess -> {
                         android.util.Log.d("VALDEBUG", "=== SAVE SUCCESS ===")
                         
                         // Show success toast

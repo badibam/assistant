@@ -36,6 +36,7 @@ fun CreateZoneScreen(
     var name by rememberSaveable(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
     var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
     var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val isEditing = existingZone != null
     
@@ -72,7 +73,7 @@ fun CreateZoneScreen(
                         )
                         onUpdate?.invoke()
                     } catch (e: Exception) {
-                        // TODO: Error handling
+                        errorMessage = "Update error: ${e.message}"
                     }
                 }
                 } else {
@@ -149,7 +150,7 @@ fun CreateZoneScreen(
                                 )
                                 onDelete?.invoke()
                             } catch (e: Exception) {
-                                // TODO: Error handling
+                                errorMessage = "Delete error: ${e.message}"
                             }
                         }
                     }
@@ -157,5 +158,13 @@ fun CreateZoneScreen(
             }
         }
         
+    }
+    
+    // Error handling with Toast
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
+        }
     }
 }

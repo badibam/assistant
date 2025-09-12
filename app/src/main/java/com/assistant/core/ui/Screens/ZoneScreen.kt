@@ -36,6 +36,7 @@ fun ZoneScreen(
     // Load tool instances via command pattern
     var toolInstances by remember { mutableStateOf<List<ToolInstance>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     // State for showing/hiding available tools list - persiste orientation changes
     var showAvailableTools by rememberSaveable { mutableStateOf(false) }
@@ -56,7 +57,8 @@ fun ZoneScreen(
         coordinator.executeWithLoading(
             operation = "get->tool_instances",
             params = mapOf("zone_id" to zone.id),
-            onLoading = { isLoading = it }
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
         )?.let { result ->
             toolInstances = result.mapData("tool_instances") { map ->
                 ToolInstance(
@@ -79,7 +81,8 @@ fun ZoneScreen(
             coordinator.executeWithLoading(
                 operation = "get->tool_instances",
                 params = mapOf("zone_id" to zone.id),
-                onLoading = { isLoading = it }
+                onLoading = { isLoading = it },
+                onError = { error -> errorMessage = error }
             )?.let { result ->
                 toolInstances = result.mapData("tool_instances") { map ->
                     ToolInstance(
@@ -113,7 +116,7 @@ fun ZoneScreen(
                     showingConfigFor = null
                     reloadToolInstances()
                 } catch (e: Exception) {
-                    // TODO: Error handling
+                    errorMessage = "Update tool error: ${e.message}"
                 }
             }
         } ?: showingConfigFor?.let { toolTypeId ->
@@ -130,7 +133,7 @@ fun ZoneScreen(
                     showingConfigFor = null
                     reloadToolInstances()
                 } catch (e: Exception) {
-                    // TODO: Error handling
+                    errorMessage = "Create tool error: ${e.message}"
                 }
             }
         }
@@ -157,7 +160,7 @@ fun ZoneScreen(
                             showingConfigFor = null
                             reloadToolInstances()
                         } catch (e: Exception) {
-                            // TODO: Error handling
+                            errorMessage = "Delete tool error: ${e.message}"
                         }
                     }
                 }
@@ -268,6 +271,14 @@ fun ZoneScreen(
                     }
                 )
             }
+        }
+    }
+    
+    // Error handling with Toast
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
         }
     }
 }

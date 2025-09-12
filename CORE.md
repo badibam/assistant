@@ -230,6 +230,25 @@ versionName = "0.1.1"
 - Schémas JSON pour validation automatique
 - Standalone databases pour discovery
 
+### Coordinator Extensions Pattern 🆕
+
+```kotlin
+// Utiliser les extensions pour réduire boilerplate
+coordinator.executeWithLoading(
+    operation = "get->data",
+    onLoading = { isLoading = it },
+    onError = { errorMessage = it }
+)?.let { result ->
+    data = result.mapData("key") { map -> DataClass(map) }
+}
+
+// Smart cast automatique avec result.isSuccess
+when {
+    result.isSuccess -> { /* succès garanti */ }
+    else -> { /* erreur */ }
+}
+```
+
 ## ═══════════════════════════════════
 ## Validation JSON Schema V3
 

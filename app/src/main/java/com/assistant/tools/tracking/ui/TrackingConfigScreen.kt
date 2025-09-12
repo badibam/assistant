@@ -381,7 +381,7 @@ fun TrackingConfigScreen(
                         )
                     )
                     android.util.Log.d("TrackingConfig", "Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
-                    if (deleteResult.status != CommandStatus.SUCCESS) {
+                    if (!deleteResult.isSuccess) {
                         android.util.Log.w("TrackingConfig", "Failed to delete existing data: ${deleteResult.message}")
                     } else {
                         android.util.Log.d("TrackingConfig", "Data deletion successful")
