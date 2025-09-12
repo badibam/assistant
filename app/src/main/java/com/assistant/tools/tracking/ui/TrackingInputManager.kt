@@ -59,7 +59,7 @@ fun TrackingInputManager(
                 )
                 android.util.Log.d("VALDEBUG", "Final params being sent: $params")
                 
-                val result = coordinator.processUserAction("create->tool_data", params)
+                val result = coordinator.processUserAction("tool_data.create", params)
                 
                 android.util.Log.d("VALDEBUG", "=== COORDINATOR RESULT ===")
                 android.util.Log.d("VALDEBUG", "Result status: ${result.status}")
@@ -141,7 +141,7 @@ fun TrackingInputManager(
                 
                 android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: $params")
                 
-                val result = coordinator.processUserAction("update->tool_instance", params)
+                val result = coordinator.processUserAction("tools.update", params)
                 if (result.isSuccess) {
                     android.util.Log.d("TRACKING_DEBUG", "Successfully added item to predefined shortcuts")
                     onConfigChanged()

@@ -1,59 +1,69 @@
 package com.assistant.core.services
 
 import android.util.Log
+import com.assistant.core.coordinator.CancellationToken
+import org.json.JSONObject
 
 /**
  * Backup service - handles data backup operations
  * Current implementation: stub with TODO markers
  */
-class BackupService {
+class BackupService : ExecutableService {
+    
+    override suspend fun execute(
+        operation: String,
+        params: JSONObject,
+        token: CancellationToken
+    ): OperationResult {
+        return when (operation) {
+            "create" -> performFullBackup()
+            "restore" -> restoreFromBackup(params.optString("backup_id"))
+            "list" -> listBackups()
+            else -> OperationResult.error("Unknown backup operation: $operation")
+        }
+    }
     
     /**
      * Perform full backup of all user data
      */
-    suspend fun performFullBackup(): BackupResult {
+    private suspend fun performFullBackup(): OperationResult {
         Log.d("BackupService", "TODO: implement full backup")
         // TODO: Collect all data from database
         // TODO: Create backup archive
         // TODO: Store to configured backup location
         
-        return BackupResult.success("Backup completed (stub)")
+        return OperationResult.success(mapOf(
+            "backup_id" to "backup_${System.currentTimeMillis()}",
+            "message" to "Backup completed (stub)"
+        ))
     }
     
     /**
-     * Perform incremental backup of recent changes
+     * Restore data from a backup
      */
-    suspend fun performIncrementalBackup(): BackupResult {
-        Log.d("BackupService", "TODO: implement incremental backup")
-        // TODO: Identify changes since last backup
-        // TODO: Create incremental backup
+    private suspend fun restoreFromBackup(backupId: String): OperationResult {
+        Log.d("BackupService", "TODO: implement restore from backup: $backupId")
+        // TODO: Load backup archive by ID
+        // TODO: Validate backup integrity
+        // TODO: Restore data to database
         
-        return BackupResult.success("Incremental backup completed (stub)")
+        return OperationResult.success(mapOf(
+            "backup_id" to backupId,
+            "message" to "Restore completed (stub)"
+        ))
     }
     
     /**
-     * Restore from backup file
+     * List available backups
      */
-    suspend fun restoreFromBackup(backupPath: String): BackupResult {
-        Log.d("BackupService", "TODO: implement restore from $backupPath")
-        // TODO: Validate backup file
-        // TODO: Restore database
-        // TODO: Handle conflicts
+    private suspend fun listBackups(): OperationResult {
+        Log.d("BackupService", "TODO: implement list backups")
+        // TODO: Scan backup storage for available backups
+        // TODO: Return metadata for each backup
         
-        return BackupResult.success("Restore completed (stub)")
+        return OperationResult.success(mapOf(
+            "backups" to emptyList<Map<String, Any>>()
+        ))
     }
 }
 
-/**
- * Result of a backup operation
- */
-data class BackupResult(
-    val success: Boolean,
-    val message: String,
-    val error: String? = null
-) {
-    companion object {
-        fun success(message: String) = BackupResult(true, message)
-        fun failure(error: String) = BackupResult(false, "Backup failed", error)
-    }
-}

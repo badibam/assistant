@@ -546,7 +546,7 @@ private fun TimerItemsLayout(
         )
         
         try {
-            val result = runBlocking { coordinator.processUserAction("create->tool_data", params) }
+            val result = runBlocking { coordinator.processUserAction("tool_data.create", params) }
             if (result.isSuccess) {
                 result.data?.get("id") as? String ?: "error_no_id"
             } else {
@@ -580,7 +580,7 @@ private fun TimerItemsLayout(
         )
         
         try {
-            val result = runBlocking { coordinator.processUserAction("update->tool_data", params) }
+            val result = runBlocking { coordinator.processUserAction("tool_data.update", params) }
             if (result.isSuccess) {
                 // Refresh history after successful update
                 onEntrySaved()

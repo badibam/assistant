@@ -169,7 +169,7 @@ fun TrackingConfigScreen(
         
         android.util.Log.d("CONFIGDEBUG", "Calling coordinator.processUserAction for toolId: $existingToolId")
         val result = coordinator.processUserAction(
-            "get->tool_instance",
+            "tools.get",
             mapOf("tool_instance_id" to existingToolId)
         )
         
@@ -373,10 +373,10 @@ fun TrackingConfigScreen(
                 if (existingToolId != null) {
                     android.util.Log.d("TrackingConfig", "About to call delete_all_entries for tool: $existingToolId")
                     val deleteResult = coordinator.processUserAction(
-                        "delete->tool_data", 
+                        "tool_data.delete", 
                         mapOf(
                             "tool_type" to "tracking",
-                            "operation" to "delete_all_entries",
+                            "operation" to "delete_all",
                             "tool_instance_id" to existingToolId
                         )
                     )

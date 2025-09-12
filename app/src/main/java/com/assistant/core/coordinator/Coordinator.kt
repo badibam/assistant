@@ -2,22 +2,13 @@ package com.assistant.core.coordinator
 
 import android.content.Context
 import android.util.Log
-import com.assistant.core.commands.Command
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
-import com.assistant.core.commands.CommandParser
-import com.assistant.core.commands.ParseResult
-import com.assistant.core.services.ServiceManager
-import com.assistant.core.services.ZoneService
-import com.assistant.core.services.ToolInstanceService
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
-import com.assistant.core.database.AppDatabase
-import com.assistant.core.database.entities.ToolInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
@@ -25,21 +16,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import com.assistant.core.coordinator.CancellationToken
 import java.util.ArrayDeque
 
 /**
  * Represents a queued operation with its execution context
  */
 data class QueuedOperation(
-    val command: Command,
+    val command: DispatchCommand,
     val operationId: String = UUID.randomUUID().toString(),
-    val phase: Int = 1,
-    val source: OperationSource
+    val phase: Int = 1
 )
 
 /**
- * Central Coordinator - orchestrates all operations and maintains app state
+ * CommandDispatcher - orchestrates all operations with unified resource.operation pattern
  * Implements multi-step operations with background processing slot
  */
 class Coordinator(context: Context) {
@@ -51,72 +40,49 @@ class Coordinator(context: Context) {
     private var backgroundSlot: QueuedOperation? = null
     private var isBackgroundSlotBusy = false
     
-    private val commandParser = CommandParser()
-    private val serviceManager = ServiceManager(context)
+    private val serviceRegistry = ServiceRegistry(context)
     private val tokens = ConcurrentHashMap<String, CancellationToken>()
-    private val database = AppDatabase.getDatabase(context)
     
     /**
      * Process user action from UI - simple interface for UI layer
      */
     suspend fun processUserAction(action: String, params: Map<String, Any> = emptyMap()): CommandResult {
-        val command = convertToCommand(action, params, OperationSource.USER)
-        val queuedOp = QueuedOperation(command, source = OperationSource.USER)
+        val command = convertToDispatchCommand(action, params, Source.USER)
+        val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
     }
     
     /**
-     * Process AI command from JSON interface - handles raw JSON from AI
+     * Process AI command - simplified for new resource.operation format
+     * AI must now send actions in format: "zones.create", "tools.update", etc.
      */
-    suspend fun processAICommand(json: String): List<CommandResult> {
-        return try {
-            // Parse JSON to commands
-            val parseResult = commandParser.parseCommands(json)
-            
-            when (parseResult) {
-                is ParseResult.Success -> {
-                    // Execute all commands from AI
-                    parseResult.data.mapIndexed { index, command ->
-                        val queuedOp = QueuedOperation(command, source = OperationSource.AI)
-                        enqueueAndProcess(queuedOp).copy(commandIndex = index)
-                    }
-                }
-                is ParseResult.Failure -> {
-                    listOf(CommandResult(
-                        status = CommandStatus.INVALID_FORMAT,
-                        error = parseResult.error
-                    ))
-                }
-            }
-        } catch (e: Exception) {
-            listOf(CommandResult(
-                status = CommandStatus.ERROR,
-                error = "Failed to process AI command: ${e.message}"
-            ))
-        }
+    suspend fun processAICommand(action: String, params: Map<String, Any> = emptyMap()): CommandResult {
+        val command = convertToDispatchCommand(action, params, Source.AI)
+        val queuedOp = QueuedOperation(command)
+        return enqueueAndProcess(queuedOp)
     }
     
     /**
      * Process scheduled task - simple interface for scheduler
      */
     suspend fun processScheduledTask(task: String, params: Map<String, Any> = emptyMap()): CommandResult {
-        val command = convertToCommand(task, params, OperationSource.SCHEDULER)
-        val queuedOp = QueuedOperation(command, source = OperationSource.SCHEDULER)
+        val command = convertToDispatchCommand(task, params, Source.SCHEDULER)
+        val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
     }
     
     /**
-     * Convert action/params to Command object (internal translation)
+     * Convert action/params to DispatchCommand object
      */
-    private fun convertToCommand(action: String, params: Map<String, Any>, source: OperationSource): Command {
-        return Command(
+    private fun convertToDispatchCommand(action: String, params: Map<String, Any>, source: Source): DispatchCommand {
+        return DispatchCommand(
             action = action,
             params = params,
-            id = null,
-            description = null, // Only AI provides description
-            reason = null       // Only AI provides reason
+            source = source,
+            id = null
         )
     }
+    
     
     /**
      * Enqueue operation and process queue
@@ -161,17 +127,25 @@ class Coordinator(context: Context) {
                 )
             )
             
-            val result = when {
-                command.action.startsWith("execute->tools->") -> handleToolCommand(command)
-                command.action.startsWith("execute->service->") -> handleServiceCommand(command)
-                command.action.startsWith("create->") -> handleCreateCommand(command)
-                command.action.startsWith("get->") -> handleGetCommand(command)
-                command.action.startsWith("update->") -> handleUpdateCommand(command)
-                command.action.startsWith("delete->") -> handleDeleteCommand(command)
-                else -> CommandResult(
+            // New unified dispatch logic
+            val result = try {
+                val (resource, operation) = command.parseAction()
+                val service = serviceRegistry.getService(resource)
+                
+                if (service == null) {
+                    CommandResult(
+                        commandId = command.id,
+                        status = CommandStatus.ERROR,
+                        error = "Service not found for resource: $resource"
+                    )
+                } else {
+                    executeServiceOperation(command, service, operation)
+                }
+            } catch (e: IllegalArgumentException) {
+                CommandResult(
                     commandId = command.id,
                     status = CommandStatus.UNKNOWN_ACTION,
-                    error = "Unknown action pattern: ${command.action}"
+                    error = "Invalid action format: ${command.action}"
                 )
             }
             
@@ -249,60 +223,21 @@ class Coordinator(context: Context) {
         }
     }
     
-    // TODO: Implement command handlers
-    private suspend fun handleToolCommand(command: Command): CommandResult {
-        return CommandResult(
-            commandId = command.id,
-            status = CommandStatus.SUCCESS,
-            message = "Tool command executed (TODO: implement actual routing)"
-        )
-    }
     
     /**
-     * Handle direct service commands: execute->service->service_name->operation
-     */
-    private suspend fun handleServiceCommand(command: Command): CommandResult {
-        // Parse: execute->service->icon_preload_service->preload_theme_icons
-        val parts = command.action.split("->")
-        if (parts.size != 4) {
-            return CommandResult(
-                commandId = command.id,
-                status = CommandStatus.ERROR,
-                error = "Invalid service command format. Expected: execute->service->service_name->operation"
-            )
-        }
-        
-        val serviceName = parts[2]
-        val operation = parts[3]
-        
-        return executeServiceOperation(command, serviceName, operation)
-    }
-    
-    /**
-     * Generic method to execute service operations - eliminates duplication
+     * Generic method to execute service operations - simplified for new architecture
      */
     private suspend fun executeServiceOperation(
-        command: Command,
-        serviceName: String,
+        command: DispatchCommand,
+        service: ExecutableService,
         operation: String
     ): CommandResult {
-        android.util.Log.d("Coordinator", "executeServiceOperation: service=$serviceName, operation=$operation, params=${command.params}")
+        android.util.Log.d("Coordinator", "executeServiceOperation: operation=$operation, params=${command.params}")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
         
         return try {
-            val service = serviceManager.getService(serviceName)
-            android.util.Log.d("Coordinator", "Service retrieved: $service")
-            if (service == null) {
-                android.util.Log.e("Coordinator", "Service not found: $serviceName")
-                return CommandResult(
-                    commandId = command.id,
-                    status = CommandStatus.ERROR,
-                    error = "Service not found: $serviceName"
-                )
-            }
-            
             val params = JSONObject().apply {
                 command.params.forEach { (key, value) ->
                     put(key, value)
@@ -310,12 +245,7 @@ class Coordinator(context: Context) {
             }
             
             android.util.Log.d("Coordinator", "Calling service.execute with params: $params")
-            val result = when (service) {
-                is ZoneService -> service.execute(operation, params, token)
-                is ToolInstanceService -> service.execute(operation, params, token)
-                is ExecutableService -> service.execute(operation, params, token)
-                else -> OperationResult.error("Service does not implement ExecutableService interface: $serviceName")
-            }
+            val result = service.execute(operation, params, token)
             android.util.Log.d("Coordinator", "Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}")
             
             CommandResult(
@@ -341,68 +271,6 @@ class Coordinator(context: Context) {
         }
     }
 
-    private suspend fun handleCreateCommand(command: Command): CommandResult {
-        return when {
-            command.action == "create->zone" -> executeServiceOperation(command, "zone_service", "create")
-            command.action == "create->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "create")
-            command.action == "create->tool_data" -> executeServiceOperation(command, "tool_data_service", "create")
-            else -> CommandResult(
-                commandId = command.id,
-                status = CommandStatus.SUCCESS,
-                message = "Create command (TODO: implement other types)"
-            )
-        }
-    }
-    
-    private suspend fun handleGetCommand(command: Command): CommandResult {
-        return when {
-            command.action == "get->zones" -> executeServiceOperation(command, "zone_service", "get_all")
-            command.action == "get->tool_instances" -> executeServiceOperation(command, "tool_instance_service", "get_by_zone")
-            command.action == "get->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "get_by_id")
-            command.action == "get->tool_data" -> {
-                val operation = command.params["operation"] as? String ?: "get_entries"
-                executeServiceOperation(command, "tool_data_service", operation)
-            }
-            command.action == "get->app_config" -> {
-                Log.d("CONFIGDEBUG", "Coordinator handling get->app_config command: ${command.params}")
-                executeServiceOperation(command, "app_config_service", "get_config")
-            }
-            else -> CommandResult(
-                commandId = command.id,
-                status = CommandStatus.SUCCESS,
-                message = "Get command (TODO: implement other types)"
-            )
-        }
-    }
-    
-    private suspend fun handleUpdateCommand(command: Command): CommandResult {
-        return when {
-            command.action == "update->zone" -> executeServiceOperation(command, "zone_service", "update")
-            command.action == "update->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "update")
-            command.action == "update->tool_data" -> executeServiceOperation(command, "tool_data_service", "update")
-            else -> CommandResult(
-                commandId = command.id,
-                status = CommandStatus.SUCCESS,
-                message = "Update command (TODO: implement other types)"
-            )
-        }
-    }
-    
-    private suspend fun handleDeleteCommand(command: Command): CommandResult {
-        return when {
-            command.action == "delete->zone" -> executeServiceOperation(command, "zone_service", "delete")
-            command.action == "delete->tool_instance" -> executeServiceOperation(command, "tool_instance_service", "delete")
-            command.action == "delete->tool_data" -> {
-                val operation = command.params["operation"] as? String ?: "delete"
-                executeServiceOperation(command, "tool_data_service", operation)
-            }
-            else -> CommandResult(
-                commandId = command.id,
-                status = CommandStatus.SUCCESS,
-                message = "Delete command (TODO: implement other types)"
-            )
-        }
-    }
     
     /**
      * Check if a new operation can be started

@@ -64,7 +64,7 @@ fun CreateZoneScreen(
                 coroutineScope.launch {
                     try {
                         val result = coordinator.processUserAction(
-                            "update->zone",
+                            "zones.update",
                             mapOf(
                                 "zone_id" to existingZone!!.id,
                                 "name" to name.trim(),
@@ -145,7 +145,7 @@ fun CreateZoneScreen(
                         coroutineScope.launch {
                             try {
                                 val result = coordinator.processUserAction(
-                                    "delete->zone",
+                                    "zones.delete",
                                     mapOf("zone_id" to existingZone!!.id)
                                 )
                                 onDelete?.invoke()

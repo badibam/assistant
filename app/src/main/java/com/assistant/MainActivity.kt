@@ -93,14 +93,14 @@ class MainActivity : ComponentActivity() {
             
             // Test 1: Create a zone first
             Log.d("MultiStepTest", "Creating test zone...")
-            val zoneResult = coordinator.processUserAction("create->zone", mapOf(
+            val zoneResult = coordinator.processUserAction("zones.create", mapOf(
                 "name" to "Test Zone"
             ))
             Log.d("MultiStepTest", "Zone creation result: ${zoneResult.status}")
             
             // Test 2: Create a tool instance 
             Log.d("MultiStepTest", "Creating tool instance...")
-            val toolResult = coordinator.processUserAction("create->tool_instance", mapOf(
+            val toolResult = coordinator.processUserAction("tools.create", mapOf(
                 "zone_id" to "test-zone-id",
                 "tool_type" to "tracking",
                 "name" to "Test Tracking Tool"
@@ -110,7 +110,7 @@ class MainActivity : ComponentActivity() {
             // Test 3: Add some tracking data
             Log.d("MultiStepTest", "Adding tracking data...")
             repeat(5) { i ->
-                coordinator.processUserAction("create->tracking_data", mapOf(
+                coordinator.processUserAction("tool_data.create", mapOf(
                     "tool_instance_id" to "test-tool-id",
                     "zone_name" to "Test Zone",
                     "tool_instance_name" to "Test Tracking Tool",
@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
             
             // Test 4: Launch multi-step correlation analysis
             Log.d("MultiStepTest", "Launching correlation analysis (multi-step)...")
-            val correlationResult = coordinator.processUserAction("create->correlation_analysis", mapOf(
+            val correlationResult = coordinator.processUserAction("correlation.create", mapOf(
                 "tool_instance_id" to "test-tool-id"
             ))
             
@@ -133,7 +133,7 @@ class MainActivity : ComponentActivity() {
             // Test 5: Add more operations while correlation is running
             Log.d("MultiStepTest", "Adding more operations while background processing...")
             repeat(3) { i ->
-                val quickResult = coordinator.processUserAction("create->tracking_data", mapOf(
+                val quickResult = coordinator.processUserAction("tool_data.create", mapOf(
                     "tool_instance_id" to "test-tool-id",
                     "zone_name" to "Test Zone", 
                     "tool_instance_name" to "Test Tracking Tool",
@@ -158,7 +158,7 @@ class MainActivity : ComponentActivity() {
     private fun startIconPreloading() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val result = coordinator.processUserAction("execute->service->icon_preload_service->preload_theme_icons", mapOf(
+                val result = coordinator.processUserAction("icon_preload.preload_theme_icons", mapOf(
                     "operationId" to "startup_preload_${System.currentTimeMillis()}"
                 ))
                 

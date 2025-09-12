@@ -132,7 +132,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         Log.d("CONFIGDEBUG", "AppConfigService.execute: operation=$operation, params=$params")
         return when (operation) {
-            "get_config" -> {
+            "get" -> {
                 val category = params.optString("category", "format")
                 Log.d("CONFIGDEBUG", "Getting config for category: $category")
                 when (category) {

@@ -11,14 +11,14 @@ import org.json.JSONObject
  * Zone Service - Core service for zone operations
  * Implements the standard service pattern with cancellation token
  */
-class ZoneService(private val context: Context) {
+class ZoneService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val zoneDao by lazy { database.zoneDao() }
     
     /**
      * Execute zone operation with cancellation support
      */
-    suspend fun execute(
+    override suspend fun execute(
         operation: String, 
         params: JSONObject, 
         token: CancellationToken
@@ -29,7 +29,6 @@ class ZoneService(private val context: Context) {
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
                 "get" -> handleGet(params, token)
-                "get_all" -> handleGetAll(params, token)
                 "list" -> handleList(params, token)
                 else -> OperationResult.error("Unknown zone operation: $operation")
             }
@@ -155,31 +154,6 @@ class ZoneService(private val context: Context) {
         ))
     }
     
-    /**
-     * Get all zones
-     */
-    private suspend fun handleGetAll(params: JSONObject, token: CancellationToken): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        val zones = zoneDao.getAllZones()
-        if (token.isCancelled) return OperationResult.cancelled()
-        
-        val zoneData = zones.map { zone ->
-            mapOf(
-                "id" to zone.id,
-                "name" to zone.name,
-                "description" to zone.description,
-                "order_index" to zone.order_index,
-                "created_at" to zone.created_at,
-                "updated_at" to zone.updated_at
-            )
-        }
-        
-        return OperationResult.success(mapOf(
-            "zones" to zoneData,
-            "count" to zoneData.size
-        ))
-    }
     
     /**
      * List all zones

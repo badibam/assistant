@@ -47,7 +47,7 @@ fun MainScreen() {
     // Load zones on first composition
     LaunchedEffect(Unit) {
         coordinator.executeWithLoading(
-            operation = "get->zones",
+            operation = "zones.list",
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
@@ -68,7 +68,7 @@ fun MainScreen() {
     val reloadZones = {
         coroutineScope.launch {
             coordinator.executeWithLoading(
-                operation = "get->zones",
+                operation = "zones.list",
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
@@ -126,7 +126,7 @@ fun MainScreen() {
                 coroutineScope.launch {
                     try {
                         val result = coordinator.processUserAction(
-                            "create->zone",
+                            "zones.create",
                             mapOf(
                                 "name" to name,
                                 "description" to (description ?: ""),

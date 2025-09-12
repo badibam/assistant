@@ -55,7 +55,7 @@ fun ZoneScreen(
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
         coordinator.executeWithLoading(
-            operation = "get->tool_instances",
+            operation = "tools.list",
             params = mapOf("zone_id" to zone.id),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
@@ -79,7 +79,7 @@ fun ZoneScreen(
     val reloadToolInstances = {
         coroutineScope.launch {
             coordinator.executeWithLoading(
-                operation = "get->tool_instances",
+                operation = "tools.list",
                 params = mapOf("zone_id" to zone.id),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
@@ -107,7 +107,7 @@ fun ZoneScreen(
             coroutineScope.launch {
                 try {
                     val configMetadata = ToolTypeManager.getToolType(tool.tool_type)?.getConfigSchema(context) ?: "{}"
-                    val result = coordinator.processUserAction("update->tool_instance", mapOf(
+                    val result = coordinator.processUserAction("tools.update", mapOf(
                         "tool_instance_id" to tool.id,
                         "config_json" to config,
                         "config_metadata_json" to configMetadata
@@ -124,7 +124,7 @@ fun ZoneScreen(
             coroutineScope.launch {
                 try {
                     val configMetadata = ToolTypeManager.getToolType(toolTypeId)?.getConfigSchema(context) ?: "{}"
-                    val result = coordinator.processUserAction("create->tool_instance", mapOf(
+                    val result = coordinator.processUserAction("tools.create", mapOf(
                         "zone_id" to zone.id,
                         "tool_type" to toolTypeId,
                         "config_json" to config,
@@ -155,7 +155,7 @@ fun ZoneScreen(
                 {
                     coroutineScope.launch {
                         try {
-                            coordinator.processUserAction("delete->tool_instance", mapOf("tool_instance_id" to tool.id))
+                            coordinator.processUserAction("tools.delete", mapOf("tool_instance_id" to tool.id))
                             editingToolId = null
                             showingConfigFor = null
                             reloadToolInstances()

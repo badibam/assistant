@@ -138,7 +138,7 @@ fun TrackingHistory(
                     }
                 }
                 
-                val result = coordinator.processUserAction("get->tool_data", params)
+                val result = coordinator.processUserAction("tool_data.get", params)
                 
                 when {
                     result.isSuccess -> {
@@ -215,7 +215,7 @@ fun TrackingHistory(
                 
                 android.util.Log.d("VALDEBUG", "Final update params: $params")
                 
-                val result = coordinator.processUserAction("update->tool_data", params)
+                val result = coordinator.processUserAction("tool_data.update", params)
                 
                 android.util.Log.d("VALDEBUG", "=== UPDATE RESULT ===")
                 android.util.Log.d("VALDEBUG", "Result status: ${result.status}")
@@ -242,7 +242,7 @@ fun TrackingHistory(
         scope.launch {
             try {
                 val result = coordinator.processUserAction(
-                    "delete->tool_data",
+                    "tool_data.delete",
                     mapOf(
                         "tool_type" to "tracking",
                         "operation" to "delete",
@@ -268,7 +268,7 @@ fun TrackingHistory(
     // Load app config on composition
     LaunchedEffect(Unit) {
         try {
-            val configResult = coordinator.processUserAction("get->app_config", mapOf("category" to "temporal"))
+            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "temporal"))
             if (configResult.isSuccess) {
                 val config = configResult.data?.get("settings") as? Map<String, Any>
                 dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()

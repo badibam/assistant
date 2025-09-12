@@ -11,14 +11,14 @@ import org.json.JSONObject
  * ToolInstance Service - Core service for tool instance operations
  * Implements the standard service pattern with cancellation token
  */
-class ToolInstanceService(private val context: Context) {
+class ToolInstanceService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val toolInstanceDao by lazy { database.toolInstanceDao() }
     
     /**
      * Execute tool instance operation with cancellation support
      */
-    suspend fun execute(
+    override suspend fun execute(
         operation: String, 
         params: JSONObject, 
         token: CancellationToken
@@ -28,8 +28,8 @@ class ToolInstanceService(private val context: Context) {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
-                "get_by_zone" -> handleGetByZone(params, token)
-                "get_by_id" -> handleGetById(params, token)
+                "list" -> handleGetByZone(params, token)  // zones/{id}/tools pattern
+                "get" -> handleGetById(params, token)      // tools/{id} pattern
                 else -> OperationResult.error("Unknown tool instance operation: $operation")
             }
         } catch (e: Exception) {

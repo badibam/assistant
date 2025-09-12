@@ -25,9 +25,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "create" -> createEntry(params, token)
                 "update" -> updateEntry(params, token)
                 "delete" -> deleteEntry(params, token)
-                "get_entries" -> getEntries(params, token)
-                "get_stats" -> getStats(params, token)
-                "delete_all_entries" -> deleteAllEntries(params, token)
+                "get" -> getEntries(params, token)       // Standard REST GET
+                "stats" -> getStats(params, token)       // GET /tool_data/stats
+                "delete_all" -> deleteAllEntries(params, token)  // POST /tool_data/delete_all
                 else -> OperationResult.error("Unknown operation: $operation")
             }
         } catch (e: Exception) {

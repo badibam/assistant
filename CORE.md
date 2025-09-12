@@ -3,40 +3,48 @@
 Guide technique de l'architecture système centrale.
 
 ## ═══════════════════════════════════
-## Flow Principal : UI → Coordinator → Service
+## Flow Principal : UI → CommandDispatcher → Service
 
 ```kotlin
-// UI déclenche
-coordinator.processUserAction("create->zone", mapOf("name" to name))
+// UI déclenche (nouveau pattern resource.operation)
+coordinator.processUserAction("zones.create", mapOf("name" to name))
 
-// Coordinator route automatiquement  
-executeServiceOperation(command, "zone_service", "create")
-
-// Service exécute avec validation
-service.execute("create", params, cancellationToken)
+// CommandDispatcher parse et route directement
+val (resource, operation) = command.parseAction()  // "zones", "create"
+val service = serviceRegistry.getService(resource)  // ZoneService
+service.execute(operation, params, token)           // Direct dispatch
 ```
 
-### Pattern de Coordination
+### Pattern CommandDispatcher
 
-**Principe** : Toute modification passe par le Coordinator pour cohérence IA/scheduler.
+**Principe** : Architecture unifiée `resource.operation` pour UI, IA, et Scheduler.
 
-**Services Core** (hardcodés) :
-- `zone_service` → ZoneService  
-- `tool_instance_service` → ToolInstanceService
+**Format standardisé** :
+- `zones.create` - Créer une zone
+- `tools.list` - Lister les outils d'une zone  
+- `tool_data.get` - Récupérer des données d'outil
+- `app_config.get` - Configuration application
 
-**Services Tools** (découverts dynamiquement) :
-- `tracking_service` → TrackingService
-- Pattern : `{toolType}_service` → ToolTypeManager.getServiceForToolType()
+### ServiceRegistry
 
-### Action Patterns
+**Services Core** (ServiceRegistry) :
+- `zones` → ZoneService
+- `tools` → ToolInstanceService  
+- `tool_data` → ToolDataService
+- `app_config` → AppConfigService
+- `icon_preload` → IconPreloadService
+- `backup` → BackupService
 
-Actions routées automatiquement par le Coordinator :
-- `create->resource` → handleCreateCommand() → service.execute("create", ...)
-- `get->resource` → handleGetCommand() → service.execute("get", ...)
-- `update->resource` → handleUpdateCommand() → service.execute("update", ...)
-- `delete->resource` → handleDeleteCommand() → service.execute("delete", ...)
-- `execute->tools->tool_type->operation` → handleToolCommand() → tool service
-- `execute->service->service_name->operation` → handleServiceCommand() → core service
+**Services Tools** (découverte dynamique) :
+- `tracking` → ToolTypeManager.getServiceForToolType()
+- Pattern : `{toolType}` → Service générique ou spécialisé
+
+### Dispatch Direct
+
+Plus de parsing complexe, routing direct :
+1. **Parse** : `"zones.create"` → `resource="zones"`, `operation="create"`
+2. **Resolve** : `ServiceRegistry.getService("zones")` → `ZoneService`
+3. **Execute** : `service.execute("create", params, token)`
 
 ### Gestion des Tokens
 
@@ -44,28 +52,36 @@ Actions routées automatiquement par le Coordinator :
 if (token.isCancelled) return OperationResult.cancelled()
 ```
 
-Chaque opération reçoit un token d'annulation.
+Chaque opération reçoit automatiquement un `CancellationToken` unique :
+- **Création** : Générée par CommandDispatcher
+- **Stockage** : `ConcurrentHashMap<String, CancellationToken>`
+- **Nettoyage** : Suppression automatique en `finally`
 
 ## ═══════════════════════════════════  
 ## Discovery Pattern
 
-Architecture sans imports hardcodés dans Core.
+Architecture sans imports hardcodés dans Core, avec ServiceRegistry centralisé.
 
-### ServiceManager Générique
+### ServiceRegistry + ServiceFactory
 
 ```kotlin
-// Core services
-"zone_service" -> ZoneService(context)
-"tool_instance_service" -> ToolInstanceService(context)
+// ServiceRegistry.kt
+private val coreServices = mapOf<String, KClass<*>>(
+    "zones" to ZoneService::class,
+    "tools" to ToolInstanceService::class,
+    "tool_data" to ToolDataService::class,
+    // ...
+)
 
-// Tool services (discovery)
-else -> {
-    val toolTypeId = serviceName.removeSuffix("_service")
-    ToolTypeManager.getServiceForToolType(toolTypeId, context)
+fun getService(resource: String): ExecutableService? {
+    // Core services via ServiceFactory
+    return coreServices[resource]?.let { ServiceFactory.create(it, context) }
+        // Tool services via discovery
+        ?: ToolTypeManager.getServiceForToolType(resource, context)
 }
 ```
 
-### ToolTypeManager
+### ToolTypeManager (inchangé)
 
 API unifiée pour découverte dynamique :
 
@@ -79,14 +95,17 @@ val name = ToolTypeManager.getToolTypeName("tracking") // "Suivi"
 val allTypes = ToolTypeManager.getAllToolTypes()
 ```
 
+**Note** : Pattern `resource.operation` mais ToolTypeManager API reste identique.
+
 ### Extension Automatique
 
 **Nouveau tool type** :
 1. Service implémente `ExecutableService`
 2. ToolType implémente `ToolTypeContract` 
 3. Ajouter au `ToolTypeScanner`
+4. **Usage** : `coordinator.processUserAction("{toolType}.operation", params)`
 
-Aucune modification Core nécessaire.
+Aucune modification Core nécessaire, juste nouveau pattern d'appel.
 
 ## ═══════════════════════════════════
 ## Gestion des Données
@@ -240,16 +259,17 @@ versionName = "0.1.1"
 - Schémas JSON pour validation automatique
 - Standalone databases pour discovery
 
-### Coordinator Extensions Pattern 🆕
+### CommandDispatcher Extensions Pattern 🆕
 
 ```kotlin
 // Utiliser les extensions pour réduire boilerplate
 coordinator.executeWithLoading(
-    operation = "get->data",
+    operation = "tool_data.get",  // Nouveau pattern resource.operation
+    params = mapOf("tool_instance_id" to toolId),
     onLoading = { isLoading = it },
     onError = { errorMessage = it }
 )?.let { result ->
-    data = result.mapData("key") { map -> DataClass(map) }
+    data = result.mapData("entries") { map -> DataEntry(map) }
 }
 
 // Smart cast automatique avec result.isSuccess
@@ -257,6 +277,23 @@ when {
     result.isSuccess -> { /* succès garanti */ }
     else -> { /* erreur */ }
 }
+```
+
+### Pattern Migration 🆕
+
+**Ancien système** → **Nouveau système**
+
+```kotlin
+// AVANT (legacy patterns - SUPPRIMÉS)
+"create->zone"                              → "zones.create"
+"get->zones"                               → "zones.list"  
+"execute->tools->tracking->add_entry"      → "tracking.add_entry"
+"execute->service->icon_preload->preload"  → "icon_preload.preload_theme_icons"
+
+// Interface identique, seuls les patterns changent
+coordinator.processUserAction("zones.create", params)
+coordinator.processAICommand("tools.list", params)
+coordinator.processScheduledTask("backup.create", params)
 ```
 
 ## ═══════════════════════════════════
