@@ -268,7 +268,7 @@ fun TrackingHistory(
     // Load app config on composition
     LaunchedEffect(Unit) {
         try {
-            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "temporal"))
+            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
             if (configResult.isSuccess) {
                 val config = configResult.data?.get("settings") as? Map<String, Any>
                 dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()

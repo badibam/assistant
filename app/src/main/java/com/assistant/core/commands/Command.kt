@@ -4,7 +4,7 @@ package com.assistant.core.commands
  * Represents a JSON command - universal format for AI, App, and internal communication
  */
 data class Command(
-    val action: String,                    // "create->tool_instance", "execute->tools->tracking->add_entry"
+    val action: String,
     val params: Map<String, Any> = emptyMap(), // Command parameters
     val id: String? = null,               // Optional command ID for reference
     // AI-specific fields (optional)

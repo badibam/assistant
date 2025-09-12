@@ -201,14 +201,14 @@
     <string name="tools_base_schema_data_updated_at"></string>
 
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
-    <string name="app_config_schema_temporal_week_start_day"></string>
-    <string name="app_config_schema_temporal_day_start_hour"></string>
-    <string name="app_config_schema_temporal_relative_label_limits"></string>
-    <string name="app_config_schema_temporal_hour_limit"></string>
-    <string name="app_config_schema_temporal_day_limit"></string>
-    <string name="app_config_schema_temporal_week_limit"></string>
-    <string name="app_config_schema_temporal_month_limit"></string>
-    <string name="app_config_schema_temporal_year_limit"></string>
+    <string name="app_config_schema_format_week_start_day"></string>
+    <string name="app_config_schema_format_day_start_hour"></string>
+    <string name="app_config_schema_format_relative_label_limits"></string>
+    <string name="app_config_schema_format_hour_limit"></string>
+    <string name="app_config_schema_format_day_limit"></string>
+    <string name="app_config_schema_format_week_limit"></string>
+    <string name="app_config_schema_format_month_limit"></string>
+    <string name="app_config_schema_format_year_limit"></string>
 
     <!-- MAIN SCREEN SCHEMA - Descriptions pour validation écran principal -->
     <string name="main_screen_schema_zone_display_mode"></string>

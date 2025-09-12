@@ -45,7 +45,7 @@ fun TrackingScreen(
     // Load tool instance data
     LaunchedEffect(toolInstanceId, configRefreshTrigger) {
         coordinator.executeWithLoading(
-            operation = "get->tool_instance",
+            operation = "tools.get",
             params = mapOf("tool_instance_id" to toolInstanceId),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
