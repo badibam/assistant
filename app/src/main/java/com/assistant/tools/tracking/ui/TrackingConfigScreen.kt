@@ -16,7 +16,8 @@ import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.mapSingleData
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.tools.ui.ToolGeneralConfigSection
@@ -174,11 +175,11 @@ fun TrackingConfigScreen(
         
         android.util.Log.d("CONFIGDEBUG", "Coordinator result - status: ${result.status}, data: ${result.data}")
         
-        if (result.status != CommandStatus.SUCCESS) {
+        if (!result.isSuccess) {
             throw RuntimeException("CONFIGDEBUG: DB call failed - status: ${result.status}, error: ${result.error}")
         }
         
-        val toolInstanceData = result.data?.get("tool_instance") as? Map<String, Any>
+        val toolInstanceData = result.mapSingleData("tool_instance") { it }
             ?: throw RuntimeException("CONFIGDEBUG: No tool_instance in result.data: ${result.data}")
             
         val configString = toolInstanceData["config_json"] as? String

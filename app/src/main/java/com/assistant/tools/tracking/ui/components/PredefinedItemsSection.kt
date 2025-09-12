@@ -13,7 +13,7 @@ import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -546,7 +546,7 @@ private fun TimerItemsLayout(
         
         try {
             val result = runBlocking { coordinator.processUserAction("create->tool_data", params) }
-            if (result.status == CommandStatus.SUCCESS) {
+            if (result.isSuccess) {
                 result.data?.get("id") as? String ?: "error_no_id"
             } else {
                 "error_${System.currentTimeMillis()}"
@@ -580,7 +580,7 @@ private fun TimerItemsLayout(
         
         try {
             val result = runBlocking { coordinator.processUserAction("update->tool_data", params) }
-            if (result.status == CommandStatus.SUCCESS) {
+            if (result.isSuccess) {
                 // Refresh history after successful update
                 onEntrySaved()
             } else {

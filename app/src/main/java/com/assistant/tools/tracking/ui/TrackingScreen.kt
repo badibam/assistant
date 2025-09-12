@@ -12,7 +12,9 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.themes.ThemeIconManager
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.mapSingleData
+import com.assistant.core.coordinator.executeWithLoading
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
@@ -42,27 +44,13 @@ fun TrackingScreen(
     
     // Load tool instance data
     LaunchedEffect(toolInstanceId, configRefreshTrigger) {
-        try {
-            val result = coordinator.processUserAction(
-                "get->tool_instance",
-                mapOf("tool_instance_id" to toolInstanceId)
-            )
-            
-            when (result.status) {
-                CommandStatus.SUCCESS -> {
-                    val toolInstanceData = result.data?.get("tool_instance") as? Map<String, Any>
-                    if (toolInstanceData != null) {
-                        toolInstance = toolInstanceData
-                    }
-                }
-                else -> {
-                    errorMessage = result.error ?: s.shared("tools_error_load_tool")
-                }
-            }
-        } catch (e: Exception) {
-            errorMessage = s.shared("message_error").format(e.message ?: "")
-        } finally {
-            isLoading = false
+        coordinator.executeWithLoading(
+            operation = "get->tool_instance",
+            params = mapOf("tool_instance_id" to toolInstanceId),
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
+        )?.let { result ->
+            toolInstance = result.mapSingleData("tool_instance") { map -> map }
         }
     }
     

@@ -14,7 +14,8 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.mapData
+import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.launch
 
@@ -52,64 +53,46 @@ fun ZoneScreen(
     
     // Load tool instances on first composition and when zone changes
     LaunchedEffect(zone.id) {
-        isLoading = true
-        try {
-            val result = coordinator.processUserAction("get->tool_instances", mapOf("zone_id" to zone.id))
-            if (result.status == CommandStatus.SUCCESS && result.data != null) {
-                val instancesData = result.data["tool_instances"] as? List<Map<String, Any>> ?: emptyList()
-                toolInstances = instancesData.mapNotNull { instanceMap ->
-                    try {
-                        ToolInstance(
-                            id = instanceMap["id"] as String,
-                            zone_id = instanceMap["zone_id"] as String,
-                            tool_type = instanceMap["tool_type"] as String,
-                            config_json = instanceMap["config_json"] as String,
-                            config_metadata_json = instanceMap["config_metadata_json"] as String,
-                            order_index = (instanceMap["order_index"] as Number).toInt(),
-                            created_at = (instanceMap["created_at"] as Number).toLong(),
-                            updated_at = (instanceMap["updated_at"] as Number).toLong()
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
+        coordinator.executeWithLoading(
+            operation = "get->tool_instances",
+            params = mapOf("zone_id" to zone.id),
+            onLoading = { isLoading = it }
+        )?.let { result ->
+            toolInstances = result.mapData("tool_instances") { map ->
+                ToolInstance(
+                    id = map["id"] as String,
+                    zone_id = map["zone_id"] as String,
+                    tool_type = map["tool_type"] as String,
+                    config_json = map["config_json"] as String,
+                    config_metadata_json = map["config_metadata_json"] as String,
+                    order_index = (map["order_index"] as Number).toInt(),
+                    created_at = (map["created_at"] as Number).toLong(),
+                    updated_at = (map["updated_at"] as Number).toLong()
+                )
             }
-        } catch (e: Exception) {
-            // TODO: Error handling
-        } finally {
-            isLoading = false
         }
     }
     
     // Function to reload tool instances after operations
     val reloadToolInstances = {
         coroutineScope.launch {
-            isLoading = true
-            try {
-                val result = coordinator.processUserAction("get->tool_instances", mapOf("zone_id" to zone.id))
-                if (result.status == CommandStatus.SUCCESS && result.data != null) {
-                    val instancesData = result.data["tool_instances"] as? List<Map<String, Any>> ?: emptyList()
-                    toolInstances = instancesData.mapNotNull { instanceMap ->
-                        try {
-                            ToolInstance(
-                                id = instanceMap["id"] as String,
-                                zone_id = instanceMap["zone_id"] as String,
-                                tool_type = instanceMap["tool_type"] as String,
-                                config_json = instanceMap["config_json"] as String,
-                                config_metadata_json = instanceMap["config_metadata_json"] as String,
-                                order_index = (instanceMap["order_index"] as Number).toInt(),
-                                created_at = (instanceMap["created_at"] as Number).toLong(),
-                                updated_at = (instanceMap["updated_at"] as Number).toLong()
-                            )
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
+            coordinator.executeWithLoading(
+                operation = "get->tool_instances",
+                params = mapOf("zone_id" to zone.id),
+                onLoading = { isLoading = it }
+            )?.let { result ->
+                toolInstances = result.mapData("tool_instances") { map ->
+                    ToolInstance(
+                        id = map["id"] as String,
+                        zone_id = map["zone_id"] as String,
+                        tool_type = map["tool_type"] as String,
+                        config_json = map["config_json"] as String,
+                        config_metadata_json = map["config_metadata_json"] as String,
+                        order_index = (map["order_index"] as Number).toInt(),
+                        created_at = (map["created_at"] as Number).toLong(),
+                        updated_at = (map["updated_at"] as Number).toLong()
+                    )
                 }
-            } catch (e: Exception) {
-                // TODO: Error handling
-            } finally {
-                isLoading = false
             }
         }
     }

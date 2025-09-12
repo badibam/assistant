@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
@@ -142,7 +142,7 @@ fun TrackingInputManager(
                 android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: $params")
                 
                 val result = coordinator.processUserAction("update->tool_instance", params)
-                if (result.status == CommandStatus.SUCCESS) {
+                if (result.isSuccess) {
                     android.util.Log.d("TRACKING_DEBUG", "Successfully added item to predefined shortcuts")
                     onConfigChanged()
                 } else {

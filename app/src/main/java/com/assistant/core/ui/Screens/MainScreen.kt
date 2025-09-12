@@ -13,9 +13,10 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.mapData
+import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
-import com.assistant.core.commands.CommandStatus
 import kotlinx.coroutines.launch
 
 /**
@@ -44,60 +45,40 @@ fun MainScreen() {
     
     // Load zones on first composition
     LaunchedEffect(Unit) {
-        isLoading = true
-        try {
-            val result = coordinator.processUserAction("get->zones")
-            if (result.status == CommandStatus.SUCCESS && result.data != null) {
-                val zonesData = result.data["zones"] as? List<Map<String, Any>> ?: emptyList()
-                zones = zonesData.mapNotNull { zoneMap ->
-                    try {
-                        Zone(
-                            id = zoneMap["id"] as String,
-                            name = zoneMap["name"] as String,
-                            description = zoneMap["description"] as? String,
-                            order_index = (zoneMap["order_index"] as Number).toInt(),
-                            created_at = (zoneMap["created_at"] as Number).toLong(),
-                            updated_at = (zoneMap["updated_at"] as Number).toLong()
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
+        coordinator.executeWithLoading(
+            operation = "get->zones",
+            onLoading = { isLoading = it }
+        )?.let { result ->
+            zones = result.mapData("zones") { map ->
+                Zone(
+                    id = map["id"] as String,
+                    name = map["name"] as String,
+                    description = map["description"] as? String,
+                    order_index = (map["order_index"] as Number).toInt(),
+                    created_at = (map["created_at"] as Number).toLong(),
+                    updated_at = (map["updated_at"] as Number).toLong()
+                )
             }
-        } catch (e: Exception) {
-            // TODO: Error handling
-        } finally {
-            isLoading = false
         }
     }
     
     // Function to reload zones after operations
     val reloadZones = {
         coroutineScope.launch {
-            isLoading = true
-            try {
-                val result = coordinator.processUserAction("get->zones")
-                if (result.status == CommandStatus.SUCCESS && result.data != null) {
-                    val zonesData = result.data["zones"] as? List<Map<String, Any>> ?: emptyList()
-                    zones = zonesData.mapNotNull { zoneMap ->
-                        try {
-                            Zone(
-                                id = zoneMap["id"] as String,
-                                name = zoneMap["name"] as String,
-                                description = zoneMap["description"] as? String,
-                                order_index = (zoneMap["order_index"] as Number).toInt(),
-                                created_at = (zoneMap["created_at"] as Number).toLong(),
-                                updated_at = (zoneMap["updated_at"] as Number).toLong()
-                            )
-                        } catch (e: Exception) {
-                            null
-                        }
-                    }
+            coordinator.executeWithLoading(
+                operation = "get->zones",
+                onLoading = { isLoading = it }
+            )?.let { result ->
+                zones = result.mapData("zones") { map ->
+                    Zone(
+                        id = map["id"] as String,
+                        name = map["name"] as String,
+                        description = map["description"] as? String,
+                        order_index = (map["order_index"] as Number).toInt(),
+                        created_at = (map["created_at"] as Number).toLong(),
+                        updated_at = (map["updated_at"] as Number).toLong()
+                    )
                 }
-            } catch (e: Exception) {
-                // TODO: Error handling
-            } finally {
-                isLoading = false
             }
         }
     }

@@ -16,7 +16,7 @@ import com.assistant.tools.tracking.ui.components.TrackingEntryDialog
 import com.assistant.tools.tracking.ui.components.ItemType
 import com.assistant.tools.tracking.ui.components.ActionType
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.commands.CommandStatus
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.tools.tracking.TrackingUtils
 import com.assistant.tools.tracking.timer.TimerManager
@@ -139,8 +139,8 @@ fun TrackingHistory(
                 
                 val result = coordinator.processUserAction("get->tool_data", params)
                 
-                when (result.status) {
-                    CommandStatus.SUCCESS -> {
+                when {
+                    result.isSuccess -> {
                         val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
                         val paginationData = result.data?.get("pagination") as? Map<*, *>
                         
@@ -221,8 +221,8 @@ fun TrackingHistory(
                 android.util.Log.d("VALDEBUG", "Result error: ${result.error}")
                 android.util.Log.d("VALDEBUG", "Result data: ${result.data}")
                 
-                when (result.status) {
-                    CommandStatus.SUCCESS -> {
+                when {
+                    result.isSuccess -> {
                         UI.Toast(context, s.tool("usage_entry_updated"), Duration.SHORT)
                         loadData() // Reload data to show changes
                     }
@@ -249,8 +249,8 @@ fun TrackingHistory(
                     )
                 )
                 
-                when (result.status) {
-                    CommandStatus.SUCCESS -> {
+                when {
+                    result.isSuccess -> {
                         UI.Toast(context, s.tool("usage_entry_deleted"), Duration.SHORT)
                         trackingData = trackingData.filter { it.id != entryId }
                     }
@@ -268,7 +268,7 @@ fun TrackingHistory(
     LaunchedEffect(Unit) {
         try {
             val configResult = coordinator.processUserAction("get->app_config", mapOf("category" to "temporal"))
-            if (configResult.status == CommandStatus.SUCCESS) {
+            if (configResult.isSuccess) {
                 val config = configResult.data?.get("settings") as? Map<String, Any>
                 dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()
                 weekStartDay = config?.get("week_start_day") as? String
