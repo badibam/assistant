@@ -45,26 +45,26 @@
     <!-- CONFIG - Messages de warning -->
     <string name="config_warning_type_change">Vous avez %d élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?</string>
     <string name="config_warning_type_change_title">Changement de type détecté</string>
-    <string name="config_warning_type_change_desc">Le type passe de \"%s\" à \"%s\".</string>
+    <string name="config_warning_type_change_desc">Le type passe de \"%1$s\" à \"%2$s\".</string>
     <string name="config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
     <string name="config_warning_continue">Continuer ?</string>
 
     <!-- CONFIG - Messages de modification d\'échelle -->
     <string name="config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
-    <string name="config_warning_scale_change_old_new">Ancienne échelle : %s\nNouvelle échelle : %s</string>
+    <string name="config_warning_scale_change_old_new">Ancienne échelle : %1$s\nNouvelle échelle : %2$s</string>
 
     <string name="config_warning_scale_change_desc">Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d\'origine.</string>
     
     <!-- CONFIG - Messages de modification de labels booléens -->
     <string name="config_warning_boolean_change_title">⚠️ Modification d\'étiquettes détectée</string>
-    <string name="config_warning_boolean_change_old">Anciennes étiquettes : \"%s\" / \"%s\"</string>
-    <string name="config_warning_boolean_change_new">Nouvelles étiquettes : \"%s\" / \"%s\"</string>
+    <string name="config_warning_boolean_change_old">Anciennes étiquettes : \"%1$s\" / \"%2$s\"</string>
+    <string name="config_warning_boolean_change_new">Nouvelles étiquettes : \"%1$s\" / \"%2$s\"</string>
     <string name="config_warning_boolean_change_desc">Les données présentes avant ces modifications garderont leurs étiquettes d\'origine.</string>
     
     <!-- CONFIG - Messages de modification d\'options de choix -->
     <string name="config_warning_choice_change_title">⚠️ Modification d\'options détectée</string>
-    <string name="config_warning_choice_removed">Options supprimées : %s</string>
-    <string name="config_warning_choice_added">Options ajoutées : %s</string>
+    <string name="config_warning_choice_removed">Options supprimées : %1$s</string>
+    <string name="config_warning_choice_added">Options ajoutées : %1$s</string>
     <string name="config_warning_choice_desc">Les données présentes avant ces modifications garderont leurs options d\'origine, même si elles ne sont plus disponibles dans la configuration.</string>
     
     <!-- CONFIG - Valeurs par défaut -->
@@ -98,7 +98,7 @@
     <string name="usage_label_seconds">Secondes</string>
     
     <!-- USAGE - Messages d'interface -->
-    <string name="usage_available_options">Options : %s</string>
+    <string name="usage_available_options">Options : %1$s</string>
     <string name="usage_error_scale_config">Erreur : min/max non définis pour cette entrée</string>
     <string name="usage_add_to_shortcuts">Ajouter aux raccourcis</string>
     <string name="usage_entry_updated">Entrée modifiée</string>
@@ -184,8 +184,8 @@
     <string name="field_unknown">Champ non reconnu</string>
     
     <!-- TIMER FIELD -->
-    <string name="timer_label_optional">%s (optionnel)</string>
-    <string name="timer_status_active">En cours : %s</string>
+    <string name="timer_label_optional">%1$s (optionnel)</string>
+    <string name="timer_status_active">En cours : %1$s</string>
     <string name="timer_status_stopped">Arrêté</string>
     <string name="timer_activities_header">Activités :</string>
     

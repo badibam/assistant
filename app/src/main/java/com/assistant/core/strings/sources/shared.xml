@@ -53,15 +53,15 @@
     
     <!-- Messages et feedback -->
     <string name="message_loading_tools">Chargement des outils...</string>
-    <string name="message_validation_error">Erreur de validation: %s</string>
+    <string name="message_validation_error">Erreur de validation: %1$s</string>
     <string name="message_validation_error_simple">Erreur de validation</string>
-    <string name="message_error">Erreur: %s</string>
+    <string name="message_error">Erreur: %1$s</string>
     <string name="message_irreversible_action">Cette action est irréversible.</string>
-    <string name="message_delete_zone_confirmation">Supprimer la zone "%s" ?</string>
+    <string name="message_delete_zone_confirmation">Supprimer la zone "%1$s" ?</string>
     <string name="message_no_zones_created">Aucune zone créée</string>
     <string name="message_available_tool_types">Types d'outils disponibles</string>
     <string name="message_no_tools_in_zone">Aucun outil dans cette zone</string>
-    <string name="error_tooltype_not_found">Type d'outil '%s' introuvable</string>
+    <string name="error_tooltype_not_found">Type d'outil '%1$s' introuvable</string>
     
     <!-- Update Manager -->
     <string name="update_no_internet">Aucune connexion internet</string>
@@ -70,7 +70,7 @@
     <string name="update_downloading">Téléchargement en cours...</string>
     <string name="update_installation_started">Installation lancée...</string>
     <string name="update_success">Mise à jour téléchargée et installation lancée</string>
-    <string name="update_download_title">Assistant - Mise à jour %s</string>
+    <string name="update_download_title">Assistant - Mise à jour %1$s</string>
     <string name="update_download_description">Téléchargement de la nouvelle version...</string>
     <string name="update_changelog_default">Nouvelles améliorations et corrections</string>
     <string name="update_no_download_url">Aucune URL de téléchargement disponible</string>
@@ -102,7 +102,7 @@
     <string name="period_weeks_ago_plural">Il y a %d semaines</string>
     <string name="period_weeks_from_now_singular">Dans %d semaine</string>
     <string name="period_weeks_from_now_plural">Dans %d semaines</string>
-    <string name="period_week_of">Semaine du %s</string>
+    <string name="period_week_of">Semaine du %1$s</string>
     <string name="period_this_month">Ce mois-ci</string>
     <string name="period_last_month">Le mois dernier</string>
     <string name="period_next_month">Le mois prochain</string>

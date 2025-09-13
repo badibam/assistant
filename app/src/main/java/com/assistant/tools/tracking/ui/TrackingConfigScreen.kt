@@ -322,9 +322,16 @@ fun TrackingConfigScreen(
 
     // Save function avec validation V3
     val handleSave = handleSave@{
+        // Debug logs for type change detection
+        LogManager.tracking("handleSave - isEditing: $isEditing")
+        LogManager.tracking("handleSave - originalType: '$originalType'")
+        LogManager.tracking("handleSave - trackingType: '$trackingType'")
+        LogManager.tracking("handleSave - condition result: ${isEditing && originalType.isNotEmpty() && originalType != trackingType}")
+
         // Check if type changed and we're editing an existing tool
         if (isEditing && originalType.isNotEmpty() && originalType != trackingType) {
             // Show data deletion warning
+            LogManager.tracking("Showing data deletion warning")
             showDataDeletionWarning = true
             return@handleSave
         }
@@ -374,11 +381,9 @@ fun TrackingConfigScreen(
                 if (existingToolId != null) {
                     LogManager.tracking("About to call delete_all_entries for tool: $existingToolId")
                     val deleteResult = coordinator.processUserAction(
-                        "tool_data.delete", 
+                        "tool_data.delete_all",
                         mapOf(
-                            "tool_type" to "tracking",
-                            "operation" to "delete_all",
-                            "tool_instance_id" to existingToolId
+                            "toolInstanceId" to existingToolId
                         )
                     )
                     LogManager.tracking("Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
@@ -469,7 +474,9 @@ fun TrackingConfigScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 UI.Text(
-                    s.tool("config_warning_type_change_desc").format(originalType, trackingType),
+                    s.tool("config_warning_type_change_desc").format(originalType, trackingType).also { formatted ->
+                        LogManager.tracking("Dialog message: '$formatted' (originalType='$originalType', trackingType='$trackingType')")
+                    },
                     TextType.BODY
                 )
                 UI.Text(

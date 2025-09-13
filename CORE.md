@@ -407,6 +407,12 @@ Le script Gradle gère automatiquement :
 - Guillemets : `"texte"` → `\"texte\"`
 - Placeholders : `%s` → `%1$s`, `%d` → `%1$d`
 
+### Strings Android
+**Format requis** : Placeholders numérotés `%1$s`, `%2$s` et pas `%s`
+```xml
+<!-- Correct -->
+<string name="type_change">Le type passe de "%1$s" à "%2$s"</string>
+```
 ## ═══════════════════════════════════
 ## Système de Logs Unifié
 

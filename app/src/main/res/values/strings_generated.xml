@@ -32,7 +32,7 @@
     <string name="tracking_config_dialog_choose_icon">Choisir une icône</string>
     <string name="tracking_config_warning_type_change">Vous avez %1$d élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?</string>
     <string name="tracking_config_warning_type_change_title">Changement de type détecté</string>
-    <string name="tracking_config_warning_type_change_desc">Le type passe de \"%1$s\" à \"%1$s\".</string>
+    <string name="tracking_config_warning_type_change_desc">Le type passe de \"%1$s\" à \"%2$s\".</string>
     <string name="tracking_config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
     <string name="tracking_config_warning_continue">Continuer ?</string>
     <string name="tracking_config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
