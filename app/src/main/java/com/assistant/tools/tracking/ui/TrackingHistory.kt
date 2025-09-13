@@ -1,6 +1,6 @@
 package com.assistant.tools.tracking.ui
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -166,7 +166,7 @@ fun TrackingHistory(
                                     }
                                     
                                     val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
-                                    Log.d("TIMESTAMP_DEBUG", "Entry ${entryMap["id"]}: timestamp=$timestamp (${DateUtils.formatFullDateTime(timestamp ?: 0)})")
+                                    LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${DateUtils.formatFullDateTime(timestamp ?: 0)})")
                                     ToolDataEntity(
                                         id = entryId,
                                         toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
@@ -178,7 +178,7 @@ fun TrackingHistory(
                                         updatedAt = (entryMap["updatedAt"] as? Number)?.toLong() ?: 0L
                                     )
                                 } catch (e: Exception) {
-                                    Log.e("TrackingHistory", "Failed to map entry", e)
+                                    LogManager.tracking("Failed to map entry", "ERROR", e)
                                     null
                                 }
                             } else null
@@ -198,8 +198,8 @@ fun TrackingHistory(
     
     // Update entry - name, data and timestamp can be changed
     val updateEntry = { entryId: String, name: String, dataJson: String, newTimestamp: Long? ->
-        android.util.Log.d("VALDEBUG", "=== UPDATEENTRY START ===")
-        android.util.Log.d("VALDEBUG", "updateEntry called: entryId=$entryId, name=$name, dataJson=$dataJson, newTimestamp=$newTimestamp")
+        LogManager.tracking("=== UpdateEntry start ===")
+        LogManager.tracking("updateEntry called: entryId=$entryId, name=$name, dataJson=$dataJson, newTimestamp=$newTimestamp")
         scope.launch {
             try {
                 val params = mutableMapOf<String, Any>(
@@ -213,14 +213,14 @@ fun TrackingHistory(
                     params["timestamp"] = it
                 }
                 
-                android.util.Log.d("VALDEBUG", "Final update params: $params")
+                LogManager.tracking("Final update params: $params")
                 
                 val result = coordinator.processUserAction("tool_data.update", params)
                 
-                android.util.Log.d("VALDEBUG", "=== UPDATE RESULT ===")
-                android.util.Log.d("VALDEBUG", "Result status: ${result.status}")
-                android.util.Log.d("VALDEBUG", "Result error: ${result.error}")
-                android.util.Log.d("VALDEBUG", "Result data: ${result.data}")
+                LogManager.tracking("=== Update result ===")
+                LogManager.tracking("Result status: ${result.status}")
+                LogManager.tracking("Result error: ${result.error}")
+                LogManager.tracking("Result data: ${result.data}")
                 
                 when {
                     result.isSuccess -> {
@@ -499,7 +499,7 @@ fun TrackingHistory(
                         "false_label" to json.optString("false_label", s.tool("config_default_false_label"))
                     )
                     "scale" -> {
-                        android.util.Log.d("SCALE_DEBUG", "Scale JSON data: $json")
+                        LogManager.tracking("Scale JSON data: $json")
                         mapOf(
                             "rating" to json.optInt("rating"),
                             "min_value" to json.optInt("min_value"),
@@ -507,7 +507,7 @@ fun TrackingHistory(
                             "min_label" to json.optString("min_label"),
                             "max_label" to json.optString("max_label")
                         ).also { 
-                            android.util.Log.d("SCALE_DEBUG", "InitialProperties created: $it")
+                            LogManager.tracking("InitialProperties created: $it")
                         }
                     }
                     "text" -> mapOf(
@@ -545,9 +545,9 @@ fun TrackingHistory(
                 initialData = initialProperties,
                 initialTimestamp = entry.timestamp ?: System.currentTimeMillis(),
                 onConfirm = { name, dataJson, _, timestamp ->
-                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - onConfirm called: name='$name', dataJson=$dataJson, trackingType=$trackingType")
+                    LogManager.tracking("TrackingHistory - onConfirm called: name='$name', dataJson=$dataJson, trackingType=$trackingType")
                     
-                    android.util.Log.d("TRACKING_DEBUG", "TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', dataJson=$dataJson, timestamp=$timestamp")
+                    LogManager.tracking("TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', dataJson=$dataJson, timestamp=$timestamp")
                     updateEntry(entry.id, name, dataJson, timestamp)
                     showEditDialog = false
                     editingEntry = null

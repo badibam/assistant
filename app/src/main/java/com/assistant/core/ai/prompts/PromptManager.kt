@@ -1,6 +1,6 @@
 package com.assistant.core.ai.prompts
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 /**
  * Prompt Manager - assembles contextual prompts for AI interactions
@@ -12,7 +12,7 @@ class PromptManager {
      * Build a complete prompt for the given context
      */
     fun buildPrompt(context: PromptContext): String {
-        Log.d("PromptManager", "TODO: assemble prompt fragments for context: $context")
+        LogManager.service("TODO: assemble prompt fragments for context: $context")
         // TODO: Gather base prompt fragments
         // TODO: Add contextual information
         // TODO: Include relevant metadata
@@ -25,7 +25,7 @@ class PromptManager {
      * Process AI response and extract commands
      */
     fun processAIResponse(response: String): AIResponseResult {
-        Log.d("PromptManager", "TODO: process AI response")
+        LogManager.service("TODO: process AI response")
         // TODO: Parse response for JSON commands
         // TODO: Extract dialogue messages
         // TODO: Validate command structure
@@ -37,7 +37,7 @@ class PromptManager {
      * Get appropriate prompt fragments for tool type
      */
     fun getToolPromptFragments(toolType: String): List<String> {
-        Log.d("PromptManager", "TODO: get prompt fragments for tool: $toolType")
+        LogManager.service("TODO: get prompt fragments for tool: $toolType")
         // TODO: Load tool-specific documentation fragments
         // TODO: Include command interface docs
         

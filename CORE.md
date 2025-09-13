@@ -408,6 +408,43 @@ Le script Gradle gère automatiquement :
 - Placeholders : `%s` → `%1$s`, `%d` → `%1$d`
 
 ## ═══════════════════════════════════
+## Système de Logs Unifié
+
+Architecture centralisée pour tous les logs du projet avec tags structurés et gestion d'erreurs robuste.
+
+### LogManager Centralisé
+
+**Emplacement** : `core/utils/LogManager.kt`
+
+**Tags disponibles** :
+- `Schema` - Validation JSON Schema et schémas
+- `Coordination` - CommandDispatcher et orchestration
+- `Tracking` - Tool type tracking et données métier
+- `Database` - Base de données et migrations
+- `UI` - Interface utilisateur
+- `Service` - Services core et discovery
+
+### API Standardisée
+
+```kotlin
+// Niveau DEBUG par défaut
+LogManager.schema("Schema validation start")
+
+// Avec niveau spécifique
+LogManager.coordination("Operation failed", "ERROR", throwable)
+
+// Niveaux : DEBUG (défaut), INFO, WARN, ERROR
+LogManager.tracking("Invalid data format", "WARN")
+LogManager.database("Migration completed", "INFO")
+```
+
+### Gestion d'Erreurs Robuste
+
+- **try/catch** automatique avec fallback `println()` pour tests unitaires
+- **Throwable optionnel** : Inclut stack trace complète si fournie
+- **Compatibility** : Fonctionne en environnement Android et tests
+
+## ═══════════════════════════════════
 
 ---
 

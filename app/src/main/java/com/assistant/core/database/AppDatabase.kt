@@ -13,6 +13,7 @@ import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.versioning.MigrationOrchestrator
+import com.assistant.core.utils.LogManager
 
 @Database(
     entities = [
@@ -50,7 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                         super.onOpen(db)
                         // Database opened successfully
-                        println("AppDatabase opened successfully - version ${db.version}")
+                        LogManager.database("AppDatabase opened successfully - version ${db.version}")
                     }
                 })
                 .build()

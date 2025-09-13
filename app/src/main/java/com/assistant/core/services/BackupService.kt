@@ -1,6 +1,6 @@
 package com.assistant.core.services
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import com.assistant.core.coordinator.CancellationToken
 import org.json.JSONObject
 
@@ -27,7 +27,7 @@ class BackupService : ExecutableService {
      * Perform full backup of all user data
      */
     private suspend fun performFullBackup(): OperationResult {
-        Log.d("BackupService", "TODO: implement full backup")
+        LogManager.service("TODO: implement full backup")
         // TODO: Collect all data from database
         // TODO: Create backup archive
         // TODO: Store to configured backup location
@@ -42,7 +42,7 @@ class BackupService : ExecutableService {
      * Restore data from a backup
      */
     private suspend fun restoreFromBackup(backupId: String): OperationResult {
-        Log.d("BackupService", "TODO: implement restore from backup: $backupId")
+        LogManager.service("TODO: implement restore from backup: $backupId")
         // TODO: Load backup archive by ID
         // TODO: Validate backup integrity
         // TODO: Restore data to database
@@ -57,7 +57,7 @@ class BackupService : ExecutableService {
      * List available backups
      */
     private suspend fun listBackups(): OperationResult {
-        Log.d("BackupService", "TODO: implement list backups")
+        LogManager.service("TODO: implement list backups")
         // TODO: Scan backup storage for available backups
         // TODO: Return metadata for each backup
         

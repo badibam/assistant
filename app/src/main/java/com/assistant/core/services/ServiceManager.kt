@@ -2,7 +2,7 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.tools.ToolTypeManager
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 /**
  * Service Manager - manages core services
@@ -15,10 +15,10 @@ class ServiceManager(private val context: Context) {
      * Get a service by name
      */
     fun getService(serviceName: String): Any? {
-        Log.d("ServiceManager", "Getting service: $serviceName")
+        LogManager.service("Getting service: $serviceName")
         return services.getOrPut(serviceName) {
             val service = createService(serviceName)
-            Log.d("ServiceManager", "Created service: $serviceName -> ${service.javaClass.simpleName}")
+            LogManager.service("Created service: $serviceName -> ${service.javaClass.simpleName}")
             service
         }
     }
@@ -40,9 +40,9 @@ class ServiceManager(private val context: Context) {
             else -> {
                 // Convert "tracking_service" -> "tracking"
                 val toolTypeId = serviceName.removeSuffix("_service")
-                Log.d("ServiceManager", "Looking for tool type: $toolTypeId")
+                LogManager.service("Looking for tool type: $toolTypeId")
                 val service = ToolTypeManager.getServiceForToolType(toolTypeId, context)
-                Log.d("ServiceManager", "ToolTypeManager returned: $service")
+                LogManager.service("ToolTypeManager returned: $service")
                 service ?: throw IllegalArgumentException("Unknown service: $serviceName")
             }
         }

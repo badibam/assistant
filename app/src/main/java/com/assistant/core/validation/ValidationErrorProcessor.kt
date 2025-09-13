@@ -3,6 +3,7 @@ package com.assistant.core.validation
 import android.content.Context
 import com.assistant.R
 import com.networknt.schema.ValidationMessage
+import com.assistant.core.utils.LogManager
 
 /**
  * Processes and formats NetworkNT validation errors
@@ -42,7 +43,7 @@ object ValidationErrorProcessor {
         // Robust detection of conditional validation using JSON parsing
         val hasConditionalValidation = detectConditionalValidation(schema)
         
-        safeLog("Schema has conditional validation: $hasConditionalValidation")
+        LogManager.schema("Schema has conditional validation: $hasConditionalValidation")
         
         if (!hasConditionalValidation) {
             // No conditional validation, keep all errors
@@ -57,14 +58,14 @@ object ValidationErrorProcessor {
                                    !error.schemaPath.contains("/else/")
             
             if (isBaseSchemaError) {
-                safeLog("Filtering out base schema error: ${error.message}")
+                LogManager.schema("Filtering out base schema error: ${error.message}")
             }
             
             // Keep error if it's not a base schema error
             !isBaseSchemaError
         }
         
-        safeLog("Filtered errors: ${filteredErrors.size} out of ${errorList.size}")
+        LogManager.schema("Filtered errors: ${filteredErrors.size} out of ${errorList.size}")
         return filteredErrors
     }
     
@@ -157,7 +158,7 @@ object ValidationErrorProcessor {
             val fieldPath = match.groupValues[1] // e.g., "value.quantity"
             
             // DEBUG: Log field replacement process
-            safeLog("DEBUG FIELD REPLACE: fullPath='$fullPath', fieldPath='$fieldPath'")
+            LogManager.schema("Field replace: fullPath='$fullPath', fieldPath='$fieldPath'")
             
             // Get the actual field name (last component)
             val fieldName = when {
@@ -171,10 +172,10 @@ object ValidationErrorProcessor {
                 }
             }
             
-            safeLog("DEBUG FIELD REPLACE: extracted fieldName='$fieldName'")
+            LogManager.schema("Field replace: extracted fieldName='$fieldName'")
             
             val translatedName = schemaProvider.getFormFieldName(fieldName, context)
-            safeLog("DEBUG FIELD REPLACE: translated to='$translatedName'")
+            LogManager.schema("Field replace: translated to='$translatedName'")
             
             // Replace the full $.path with just the translated name
             translatedMessage = translatedMessage.replace(fullPath, translatedName)
@@ -192,14 +193,4 @@ object ValidationErrorProcessor {
                schemaJson.contains(Regex("\"then\"\\s*:\\s*\\{"))
     }
     
-    /**
-     * Safe logging that works in both Android and unit test environments
-     */
-    private fun safeLog(message: String) {
-        try {
-            android.util.Log.d("VALDEBUG", message)
-        } catch (e: RuntimeException) {
-            println("VALDEBUG: $message")
-        }
-    }
 }

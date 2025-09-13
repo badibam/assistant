@@ -1,7 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.themes.ThemeIconManager
@@ -32,10 +32,10 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                     val currentThemeId = CurrentTheme.getCurrentThemeId()
                     val availableIcons = ThemeIconManager.getAvailableIcons(context, currentThemeId)
                     
-                    Log.d(TAG, "Phase 1: Found ${availableIcons.size} icons for theme '$currentThemeId'")
-                    Log.d(TAG, "Phase 1: Storing data for operationId='$operationId'")
+                    LogManager.service("Phase 1: Found ${availableIcons.size} icons for theme '$currentThemeId'")
+                    LogManager.service("Phase 1: Storing data for operationId='$operationId'")
                     tempData[operationId] = availableIcons
-                    Log.d(TAG, "Phase 1: tempData size = ${tempData.size}, keys = ${tempData.keys}")
+                    LogManager.service("Phase 1: tempData size = ${tempData.size}, keys = ${tempData.keys}")
                     
                     OperationResult.success(requiresBackground = true)
                 }
@@ -62,7 +62,7 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                                 successCount++
                             } ?: errorCount++
                         } catch (e: Exception) {
-                            Log.w(TAG, "Failed to preload icon ${icon.id}: ${e.message}")
+                            LogManager.service("Failed to preload icon ${icon.id}: ${e.message}", "WARN")
                             errorCount++
                         }
                     }
@@ -73,7 +73,7 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                         "totalCount" to icons.size
                     )
                     
-                    Log.d(TAG, "Phase 2: Preloaded $successCount/${icons.size} icons (${errorCount} errors)")
+                    LogManager.service("Phase 2: Preloaded $successCount/${icons.size} icons (${errorCount} errors)")
                     
                     OperationResult.success(requiresContinuation = true)
                 }
@@ -89,7 +89,7 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                     val errorCount = results["errorCount"] ?: 0
                     val totalCount = results["totalCount"] ?: 0
                     
-                    Log.i(TAG, "Icon preloading completed: $successCount/$totalCount icons loaded successfully")
+                    LogManager.service("Icon preloading completed: $successCount/$totalCount icons loaded successfully")
                     
                     OperationResult.success(
                         mapOf(

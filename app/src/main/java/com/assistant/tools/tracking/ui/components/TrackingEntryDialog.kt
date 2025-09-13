@@ -17,6 +17,7 @@ import com.assistant.core.utils.DateUtils
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -275,42 +276,42 @@ fun TrackingEntryDialog(
         )
 
         // Log data being validated
-        android.util.Log.d("VALDEBUG", "=== VALIDATION START ===")
-        android.util.Log.d("VALDEBUG", "trackingType: $trackingType")
-        android.util.Log.d("VALDEBUG", "dataJson: $dataJson")
-        android.util.Log.d("VALDEBUG", "dataObject: $dataObject")
-        android.util.Log.d("VALDEBUG", "entryData: $entryData")
+        LogManager.tracking("=== Validation start ===")
+        LogManager.tracking("trackingType: $trackingType")
+        LogManager.tracking("dataJson: $dataJson")
+        LogManager.tracking("dataObject: $dataObject")
+        LogManager.tracking("entryData: $entryData")
         
         val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
-            android.util.Log.d("VALDEBUG", "DataSchema being used: ${toolType.getDataSchema(context)?.take(200)}...")
+            LogManager.tracking("DataSchema being used: ${toolType.getDataSchema(context)?.take(200)}...")
             validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
         } else {
             validationResult = ValidationResult.error("Tool type 'tracking' not found")
         }
         
         // Log validation result for debugging
-        android.util.Log.d("VALDEBUG", "TrackingEntryDialog validation result: isValid=${validationResult.isValid}")
+        LogManager.tracking("TrackingEntryDialog validation result: isValid=${validationResult.isValid}")
         if (!validationResult.isValid) {
-            android.util.Log.d("VALDEBUG", "TrackingEntryDialog validation error: ${validationResult.errorMessage}")
+            LogManager.tracking("TrackingEntryDialog validation error: ${validationResult.errorMessage}")
         }
         
         // Debug: Log additional details
         try {
-            android.util.Log.d("VALDEBUG", "Using new SchemaValidator API")
+            LogManager.tracking("Using new SchemaValidator API")
         } catch (e: Exception) {
-            android.util.Log.d("VALDEBUG", "Debug validation failed: ${e.message}")
+            LogManager.tracking("Debug validation failed: ${e.message}", "ERROR", e)
         }
-        android.util.Log.d("VALDEBUG", "=== VALIDATION END ===")
+        LogManager.tracking("=== Validation end ===")
     }
 
     if (isVisible) {
         UI.Dialog(
             type = DialogType.CONFIRM,
             onConfirm = {
-                android.util.Log.d("VALDEBUG", "=== ONCONFIRM CALLED ===")
+                LogManager.tracking("=== OnConfirm called ===")
                 validateForm()
-                android.util.Log.d("VALDEBUG", "After validation: isValid=${validationResult.isValid}")
+                LogManager.tracking("After validation: isValid=${validationResult.isValid}")
                 if (validationResult.isValid) {
                     // Use validated and transformed dataObject (single source of truth)
                     // This ensures Dialog and Service use exactly the same data format
@@ -324,20 +325,20 @@ fun TrackingEntryDialog(
                         }
                     }.toString()
                     
-                    android.util.Log.d("VALDEBUG", "=== CALLING PARENT ONCONFIRM ===")
-                    android.util.Log.d("VALDEBUG", "Final name: '${name.trim()}'")
-                    android.util.Log.d("VALDEBUG", "Final dataJson: $dataJson")
-                    android.util.Log.d("VALDEBUG", "Final addToPredefined: $addToPredefined")
-                    android.util.Log.d("VALDEBUG", "Final timestamp: $timestamp")
+                    LogManager.tracking("=== Calling parent onConfirm ===")
+                    LogManager.tracking("Final name: '${name.trim()}'")
+                    LogManager.tracking("Final dataJson: $dataJson")
+                    LogManager.tracking("Final addToPredefined: $addToPredefined")
+                    LogManager.tracking("Final timestamp: $timestamp")
                     
                     onConfirm(name.trim(), dataJson, addToPredefined, timestamp)
                 } else {
                     // DEBUG: Detailed error logging
-                    android.util.Log.e("VALDEBUG", "=== VALIDATION FAILED ===")
-                    android.util.Log.e("VALDEBUG", "Field data: $dataObject")
-                    android.util.Log.e("VALDEBUG", "Error: ${validationResult.errorMessage}")
-                    android.util.Log.e("VALDEBUG", "Tracking type: $trackingType")
-                    android.util.Log.e("VALDEBUG", "Device: Android ${android.os.Build.VERSION.RELEASE}")
+                    LogManager.tracking("=== Validation failed ===", "ERROR")
+                    LogManager.tracking("Field data: $dataObject", "ERROR")
+                    LogManager.tracking("Error: ${validationResult.errorMessage}", "ERROR")
+                    LogManager.tracking("Tracking type: $trackingType", "ERROR")
+                    LogManager.tracking("Device: Android ${android.os.Build.VERSION.RELEASE}", "ERROR")
                     
                     // Set error message for toast display
                     errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
@@ -403,7 +404,7 @@ fun TrackingEntryDialog(
                         val minLabel = realValues["minLabel"] as? String
                         val maxLabel = realValues["maxLabel"] as? String
                         
-                        android.util.Log.d("SCALE_DEBUG", "Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
+                        LogManager.tracking("Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
                         
                         if (minValue != null && maxValue != null) {
                             // Initialize to min value if not yet defined
@@ -424,7 +425,7 @@ fun TrackingEntryDialog(
                         } else {
                             // No valid min/max data - show error
                             UI.Text(s.tool("usage_error_scale_config"), TextType.BODY)
-                            android.util.Log.e("SCALE_DEBUG", "minValue ou maxValue null - impossible d'afficher le slider")
+                            LogManager.tracking("minValue ou maxValue null - impossible d'afficher le slider", "ERROR")
                         }
                     }
                     

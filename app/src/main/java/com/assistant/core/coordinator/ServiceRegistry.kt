@@ -9,6 +9,7 @@ import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.utils.LogManager
 import kotlin.reflect.KClass
 
 /**
@@ -41,7 +42,7 @@ class ServiceRegistry(private val context: Context) {
             // Try tool services via discovery
             ?: ToolTypeManager.getServiceForToolType(resource, context)
         } catch (e: Exception) {
-            android.util.Log.w("ServiceRegistry", "Failed to get service for resource: $resource", e)
+            LogManager.service("Failed to get service for resource: $resource", "WARN", e)
             null
         }
     }

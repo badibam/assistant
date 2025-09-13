@@ -1,7 +1,7 @@
 package com.assistant.core.tools
 
 import android.content.Context
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
 import com.assistant.core.validation.ValidationException
 
@@ -146,7 +146,7 @@ object BaseSchemas {
             objectMapper.writeValueAsString(result)
             
         } catch (e: Exception) {
-            Log.e("BaseSchemas", "Schema merge failed in createExtendedSchema: ${e.message}")
+            LogManager.schema("Schema merge failed in createExtendedSchema: ${e.message}", "ERROR", e)
             throw ValidationException("Failed to create extended schema", e)
         }
     }
@@ -328,7 +328,7 @@ object BaseSchemas {
             objectMapper.writeValueAsString(result)
             
         } catch (e: Exception) {
-            Log.e("BaseSchemas", "Config merge failed in mergeDefaultConfigs: ${e.message}")
+            LogManager.schema("Config merge failed in mergeDefaultConfigs: ${e.message}", "ERROR", e)
             throw ValidationException("Failed to merge default configs", e)
         }
     }

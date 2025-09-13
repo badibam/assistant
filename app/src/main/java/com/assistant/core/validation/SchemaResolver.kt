@@ -1,6 +1,6 @@
 package com.assistant.core.validation
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 /**
  * Utility for resolving conditional JSON schemas
@@ -16,7 +16,7 @@ object SchemaResolver {
      * @return Flattened schema with conditions resolved
      */
     fun resolve(schema: String, context: Map<String, Any>): String {
-        safeLog("Resolving conditional schema with context: $context")
+        LogManager.schema("Resolving conditional schema with context: $context")
         
         return try {
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
@@ -31,13 +31,13 @@ object SchemaResolver {
             }
             
             val result = objectMapper.writeValueAsString(resolved)
-            safeLog("=== SCHEMA RESOLVED ===")
-            safeLog(result)
-            safeLog("=== END RESOLVED ===")
+            LogManager.schema("=== Schema resolved ===")
+            LogManager.schema(result)
+            LogManager.schema("=== End resolved ===")
             result
             
         } catch (e: Exception) {
-            safeLog("Error resolving schema: ${e.message}")
+            LogManager.schema("Error resolving schema: ${e.message}", "ERROR", e)
             schema // Return original on error
         }
     }
@@ -62,16 +62,16 @@ object SchemaResolver {
         
         // Process each condition in allOf
         for (condition in allOf) {
-            safeLog("Processing allOf condition: $condition")
+            LogManager.schema("Processing allOf condition: $condition")
             if (condition.has("if") && condition.has("then")) {
-                safeLog("Found if/then condition - checking match...")
+                LogManager.schema("Found if/then condition - checking match...")
                 if (matchesCondition(condition.get("if"), context)) {
-                    safeLog("Condition matched in allOf")
+                    LogManager.schema("Condition matched in allOf")
                     // Merge the "then" part into result
                     mergeSchemas(result, condition.get("then"), objectMapper)
                 }
             } else {
-                safeLog("Direct schema without condition - merging...")
+                LogManager.schema("Direct schema without condition - merging...")
                 // Direct schema without condition - always merge
                 mergeSchemas(result, condition, objectMapper)
             }
@@ -102,7 +102,7 @@ object SchemaResolver {
         for (condition in oneOf) {
             if (condition.has("if")) {
                 if (matchesCondition(condition.get("if"), context)) {
-                    safeLog("Condition matched in oneOf")
+                    LogManager.schema("Condition matched in oneOf")
                     mergeSchemas(result, condition, objectMapper)
                     break
                 }
@@ -132,12 +132,12 @@ object SchemaResolver {
         // Apply if/then/else logic
         val ifCondition = schemaNode.get("if")
         if (matchesCondition(ifCondition, context)) {
-            safeLog("If condition matched")
+            LogManager.schema("If condition matched")
             schemaNode.get("then")?.let { thenSchema ->
                 mergeSchemas(result, thenSchema, objectMapper)
             }
         } else {
-            safeLog("If condition not matched")
+            LogManager.schema("If condition not matched")
             schemaNode.get("else")?.let { elseSchema ->
                 mergeSchemas(result, elseSchema, objectMapper)
             }
@@ -154,32 +154,32 @@ object SchemaResolver {
         condition: com.fasterxml.jackson.databind.JsonNode,
         context: Map<String, Any>
     ): Boolean {
-        safeLog("=== MATCH CONDITION START ===")
-        safeLog("Checking condition: $condition")
-        safeLog("Against context: $context")
+        LogManager.schema("=== Match condition start ===")
+        LogManager.schema("Checking condition: $condition")
+        LogManager.schema("Against context: $context")
         
         val properties = condition.get("properties")
         if (properties == null) {
-            safeLog("No properties in condition - returning false")
-            safeLog("=== MATCH CONDITION END (FALSE) ===")
+            LogManager.schema("No properties in condition - returning false")
+            LogManager.schema("=== Match condition end (FALSE) ===")
             return false
         }
         
         // Check each property condition
         properties.fields().forEach { (key, value) ->
-            safeLog("Checking key '$key' with condition: $value")
+            LogManager.schema("Checking key '$key' with condition: $value")
             
             if (!matchesPropertyCondition(key, value, context)) {
-                safeLog("Property condition failed for '$key'")
-                safeLog("=== MATCH CONDITION END (FALSE) ===")
+                LogManager.schema("Property condition failed for '$key'")
+                LogManager.schema("=== Match condition end (FALSE) ===")
                 return false
             }
             
-            safeLog("Property condition matched for '$key' - continuing...")
+            LogManager.schema("Property condition matched for '$key' - continuing...")
         }
         
-        safeLog("All conditions matched - returning true")
-        safeLog("=== MATCH CONDITION END (TRUE) ===")
+        LogManager.schema("All conditions matched - returning true")
+        LogManager.schema("=== Match condition end (TRUE) ===")
         return true
     }
     
@@ -192,38 +192,38 @@ object SchemaResolver {
         condition: com.fasterxml.jackson.databind.JsonNode,
         context: Map<String, Any>
     ): Boolean {
-        safeLog("Matching property '$propertyPath' with condition: $condition")
+        LogManager.schema("Matching property '$propertyPath' with condition: $condition")
         
         // Get the value from context (could be nested)
         val contextValue = getNestedValue(propertyPath, context)
-        safeLog("Context value for '$propertyPath': $contextValue")
+        LogManager.schema("Context value for '$propertyPath': $contextValue")
         
         if (contextValue == null) {
-            safeLog("Property '$propertyPath' not found in context")
+            LogManager.schema("Property '$propertyPath' not found in context")
             return false
         }
         
         // Handle direct const/enum conditions: "type": { "const": "numeric" }
         if (condition.has("const")) {
             val expectedValue = condition.get("const").asText()
-            safeLog("Direct const check: expected='$expectedValue', actual='${contextValue.toString()}'")
+            LogManager.schema("Direct const check: expected='$expectedValue', actual='${contextValue.toString()}'")
             return contextValue.toString() == expectedValue
         }
         
         if (condition.has("enum")) {
             val enumValues = condition.get("enum").map { it.asText() }
-            safeLog("Direct enum check: expected=$enumValues, actual='${contextValue.toString()}'")
+            LogManager.schema("Direct enum check: expected=$enumValues, actual='${contextValue.toString()}'")
             return contextValue.toString() in enumValues
         }
         
         // Handle nested object conditions: "value": { "properties": { "type": { "const": "numeric" } } }
         if (condition.has("properties")) {
-            safeLog("Nested properties condition detected")
+            LogManager.schema("Nested properties condition detected")
             val nestedProperties = condition.get("properties")
             val nestedContext = contextValue as? Map<*, *>
             
             if (nestedContext == null) {
-                safeLog("Expected nested object but got: ${contextValue::class.simpleName}")
+                LogManager.schema("Expected nested object but got: ${contextValue::class.simpleName}")
                 return false
             }
             
@@ -234,16 +234,16 @@ object SchemaResolver {
             // Check all nested properties
             nestedProperties.fields().forEach { (nestedKey, nestedCondition) ->
                 if (!matchesPropertyCondition(nestedKey, nestedCondition, stringKeyContext)) {
-                    safeLog("Nested property '$nestedKey' condition failed")
+                    LogManager.schema("Nested property '$nestedKey' condition failed")
                     return false
                 }
             }
             
-            safeLog("All nested properties matched")
+            LogManager.schema("All nested properties matched")
             return true
         }
         
-        safeLog("No recognizable condition type found")
+        LogManager.schema("No recognizable condition type found")
         return false
     }
     
@@ -275,14 +275,4 @@ object SchemaResolver {
         }
     }
     
-    /**
-     * Safe logging that works in both Android and unit test environments
-     */
-    private fun safeLog(message: String) {
-        try {
-            Log.d("SCHEMADEBUG", "RESOLVER: $message")
-        } catch (e: RuntimeException) {
-            println("SCHEMADEBUG: RESOLVER: $message")
-        }
-    }
 }

@@ -9,6 +9,7 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 
 /**
  * Update checker via GitHub Releases API
@@ -43,7 +44,7 @@ class UpdateChecker(private val context: Context) {
             
             null
         } catch (e: Exception) {
-            println("Error checking for updates: ${e.message}")
+            LogManager.service("Error checking for updates: ${e.message}", "ERROR", e)
             null
         }
     }
@@ -90,7 +91,7 @@ class UpdateChecker(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            println("Error searching for APK: ${e.message}")
+            LogManager.service("Error searching for APK: ${e.message}", "ERROR", e)
         }
         return null
     }

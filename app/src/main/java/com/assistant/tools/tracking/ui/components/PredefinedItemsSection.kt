@@ -11,6 +11,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -81,22 +82,22 @@ fun PredefinedItemsSection(
     
     // Update defaultTimestamp when custom date/time changes
     LaunchedEffect(customDate, customTime, useCustomTimestamp) {
-        android.util.Log.d("TIMESTAMP_DEBUG", "LaunchedEffect: customDate=$customDate, customTime=$customTime, useCustom=$useCustomTimestamp")
+        LogManager.tracking("LaunchedEffect: customDate=$customDate, customTime=$customTime, useCustom=$useCustomTimestamp")
         if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
             val newTimestamp = try {
                 val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
                 val dateTimeString = "$customDate $customTime"
                 val parsed = dateFormat.parse(dateTimeString)?.time ?: System.currentTimeMillis()
-                android.util.Log.d("TIMESTAMP_DEBUG", "Parsed custom timestamp: $parsed ($dateTimeString)")
+                LogManager.tracking("Parsed custom timestamp: $parsed ($dateTimeString)")
                 parsed
             } catch (e: Exception) {
-                android.util.Log.e("TIMESTAMP_DEBUG", "Error parsing custom timestamp", e)
+                LogManager.tracking("Error parsing custom timestamp", "ERROR", e)
                 System.currentTimeMillis()
             }
-            android.util.Log.d("TIMESTAMP_DEBUG", "Calling onDefaultTimestampChange with: $newTimestamp")
+            LogManager.tracking("Calling onDefaultTimestampChange with: $newTimestamp")
             onDefaultTimestampChange(newTimestamp)
         } else {
-            android.util.Log.d("TIMESTAMP_DEBUG", "Not updating timestamp - conditions not met")
+            LogManager.tracking("Not updating timestamp - conditions not met")
         }
     }
     
@@ -587,11 +588,11 @@ private fun TimerItemsLayout(
             } else {
                 // Show error toast
                 UI.Toast(context, s.shared("message_error").format(result.error ?: s.tool("error_entry_update_failed")), Duration.LONG)
-                android.util.Log.e("TIMER", "Failed to update timer entry: ${result.error}")
+                LogManager.tracking("Failed to update timer entry: ${result.error}", "ERROR")
             }
         } catch (e: Exception) {
             UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
-            android.util.Log.e("TIMER", "Exception updating timer entry", e)
+            LogManager.tracking("Exception updating timer entry", "ERROR", e)
         }
     }
     

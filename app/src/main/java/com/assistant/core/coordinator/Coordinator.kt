@@ -1,7 +1,7 @@
 package com.assistant.core.coordinator
 
 import android.content.Context
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.ExecutableService
@@ -204,12 +204,12 @@ class Coordinator(context: Context) {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val bgResult = executeQueuedOperation(backgroundSlot!!)
-                Log.d("Coordinator", "Background result: status=${bgResult.status}, requiresContinuation=${bgResult.requiresContinuation}")
+                LogManager.coordination("Background result: status=${bgResult.status}, requiresContinuation=${bgResult.requiresContinuation}")
                 if (bgResult.requiresContinuation) {
                     // Queue final step
                     val finalStep = queuedOp.copy(phase = 3)
                     normalQueue.addLast(finalStep)
-                    Log.d("Coordinator", "Phase 3 queued: ${finalStep.command.action} phase=${finalStep.phase}")
+                    LogManager.coordination("Phase 3 queued: ${finalStep.command.action} phase=${finalStep.phase}")
                     
                     // Process the queue to execute Phase 3
                     CoroutineScope(Dispatchers.Main).launch {
@@ -233,7 +233,7 @@ class Coordinator(context: Context) {
         operation: String,
         phase: Int = 1
     ): CommandResult {
-        android.util.Log.d("Coordinator", "executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase")
+        LogManager.coordination("executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
@@ -246,9 +246,9 @@ class Coordinator(context: Context) {
                 put("phase", phase)
             }
             
-            android.util.Log.d("Coordinator", "Calling service.execute with params: $params")
+            LogManager.coordination("Calling service.execute with params: $params")
             val result = service.execute(operation, params, token)
-            android.util.Log.d("Coordinator", "Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}")
+            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}")
             
             CommandResult(
                 commandId = command.id,

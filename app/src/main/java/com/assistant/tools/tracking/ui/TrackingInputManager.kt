@@ -11,6 +11,7 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import com.assistant.tools.tracking.ui.components.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -43,8 +44,8 @@ fun TrackingInputManager(
     
     // Save function with new dataJson signature
     val saveEntry: (String, String, Long) -> Unit = { itemName, dataJson, timestamp ->
-        android.util.Log.d("VALDEBUG", "=== SAVEENTRY START ===")
-        android.util.Log.d("VALDEBUG", "saveEntry called: itemName=$itemName, dataJson=$dataJson, timestamp=$timestamp, trackingType=$trackingType")
+        LogManager.tracking("=== SaveEntry start ===")
+        LogManager.tracking("saveEntry called: itemName=$itemName, dataJson=$dataJson, timestamp=$timestamp, trackingType=$trackingType")
         scope.launch {
             isLoading = true
             
@@ -57,18 +58,18 @@ fun TrackingInputManager(
                     "name" to itemName,
                     "data" to JSONObject(dataJson)
                 )
-                android.util.Log.d("VALDEBUG", "Final params being sent: $params")
+                LogManager.tracking("Final params being sent: $params")
                 
                 val result = coordinator.processUserAction("tool_data.create", params)
                 
-                android.util.Log.d("VALDEBUG", "=== COORDINATOR RESULT ===")
-                android.util.Log.d("VALDEBUG", "Result status: ${result.status}")
-                android.util.Log.d("VALDEBUG", "Result error: ${result.error}")
-                android.util.Log.d("VALDEBUG", "Result data: ${result.data}")
+                LogManager.tracking("=== Coordinator result ===")
+                LogManager.tracking("Result status: ${result.status}")
+                LogManager.tracking("Result error: ${result.error}")
+                LogManager.tracking("Result data: ${result.data}")
                 
                 when {
                     result.isSuccess -> {
-                        android.util.Log.d("VALDEBUG", "=== SAVE SUCCESS ===")
+                        LogManager.tracking("=== Save success ===")
                         
                         // Show success toast
                         UI.Toast(context, s.tool("usage_entry_saved"), Duration.SHORT)
@@ -78,16 +79,16 @@ fun TrackingInputManager(
                     else -> {
                         // Show error toast with detailed error
                         val errorMsg = result.error ?: s.tool("error_entry_saving")
-                        android.util.Log.e("VALDEBUG", "=== SAVE FAILED ===")
-                        android.util.Log.e("VALDEBUG", "Save failed: status=${result.status}, error=$errorMsg")
+                        LogManager.tracking("=== Save failed ===", "ERROR")
+                        LogManager.tracking("Save failed: status=${result.status}, error=$errorMsg", "ERROR")
                         UI.Toast(context, errorMsg, Duration.LONG)
                     }
                 }
                 
             } catch (e: Exception) {
                 // Show error toast
-                android.util.Log.e("VALDEBUG", "=== SAVE EXCEPTION ===")
-                android.util.Log.e("VALDEBUG", "Exception during save", e)
+                LogManager.tracking("=== Save exception ===", "ERROR")
+                LogManager.tracking("Exception during save", "ERROR", e)
                 UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
             } finally {
                 isLoading = false
@@ -106,7 +107,7 @@ fun TrackingInputManager(
     val addToPredefined: (String, Map<String, Any>) -> Unit = { itemName, properties ->
         scope.launch {
             try {
-                android.util.Log.d("TRACKING_DEBUG", "Adding to predefined: $itemName with $properties")
+                LogManager.tracking("Adding to predefined: $itemName with $properties")
                 
                 // Get current items array from config
                 val currentItems = config.optJSONArray("items") ?: JSONArray()
@@ -139,17 +140,17 @@ fun TrackingInputManager(
                     "config_json" to updatedConfigJson
                 )
                 
-                android.util.Log.d("TRACKING_DEBUG", "Updating config with new item: $params")
+                LogManager.tracking("Updating config with new item: $params")
                 
                 val result = coordinator.processUserAction("tools.update", params)
                 if (result.isSuccess) {
-                    android.util.Log.d("TRACKING_DEBUG", "Successfully added item to predefined shortcuts")
+                    LogManager.tracking("Successfully added item to predefined shortcuts")
                     onConfigChanged()
                 } else {
-                    android.util.Log.e("TRACKING_DEBUG", "Failed to add item to predefined: ${result.error}")
+                    LogManager.tracking("Failed to add item to predefined: ${result.error}", "ERROR")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("TRACKING_DEBUG", "Error adding to predefined: ${e.message}", e)
+                LogManager.tracking("Error adding to predefined: ${e.message}", "ERROR", e)
             }
         }
     }
@@ -284,7 +285,7 @@ fun TrackingInputManager(
                     }
                     addToPredefined(name, properties)
                 } catch (e: Exception) {
-                    android.util.Log.e("TRACKING_DEBUG", "Error parsing data JSON for predefined: ${e.message}")
+                    LogManager.tracking("Error parsing data JSON for predefined: ${e.message}", "ERROR", e)
                 }
             }
             

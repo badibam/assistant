@@ -10,7 +10,7 @@ import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.coordinator.CancellationToken
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
@@ -56,24 +56,24 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * Internal format settings management
      */
     private suspend fun getFormatSettings(): JSONObject {
-        Log.d("CONFIGDEBUG", "Getting format settings from database")
+        LogManager.service("Getting format settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.FORMAT)
         return if (settingsJson != null) {
             try {
-                Log.d("CONFIGDEBUG", "Found existing format settings: $settingsJson")
+                LogManager.service("Found existing format settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
-                Log.e("CONFIGDEBUG", "Error parsing format settings JSON: ${e.message}", e)
+                LogManager.service("Error parsing format settings JSON: ${e.message}", "ERROR", e)
                 createDefaultFormatSettings()
             }
         } else {
-            Log.d("CONFIGDEBUG", "No format settings found, creating defaults")
+            LogManager.service("No format settings found, creating defaults")
             createDefaultFormatSettings()
         }
     }
 
     private suspend fun createDefaultFormatSettings(): JSONObject {
-        Log.d("CONFIGDEBUG", "Creating default format settings")
+        LogManager.service("Creating default format settings")
         val defaultSettings = JSONObject(DefaultFormatSettings.JSON.trimIndent())
         settingsDao.insertOrUpdateSettings(
             AppSettingsCategory(
@@ -81,7 +81,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 settings = defaultSettings.toString()
             )
         )
-        Log.d("CONFIGDEBUG", "Default format settings inserted: $defaultSettings")
+        LogManager.service("Default format settings inserted: $defaultSettings")
         return defaultSettings
     }
 
@@ -130,25 +130,25 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
-        Log.d("CONFIGDEBUG", "AppConfigService.execute: operation=$operation, params=$params")
+        LogManager.service("AppConfigService.execute: operation=$operation, params=$params")
         return when (operation) {
             "get" -> {
                 val category = params.optString("category", "format")
-                Log.d("CONFIGDEBUG", "Getting config for category: $category")
+                LogManager.service("Getting config for category: $category")
                 when (category) {
                     AppSettingCategories.FORMAT -> {
                         val settings = getFormatSettings()
-                        Log.d("CONFIGDEBUG", "Format settings retrieved: $settings")
+                        LogManager.service("Format settings retrieved: $settings")
                         OperationResult.success(mapOf("settings" to settings.toMap()))
                     }
                     else -> {
-                        Log.w("CONFIGDEBUG", "Unknown category: $category")
+                        LogManager.service("Unknown category: $category", "WARN")
                         OperationResult.error("Unknown category: $category")
                     }
                 }
             }
             else -> {
-                Log.w("CONFIGDEBUG", "Unknown operation: $operation")
+                LogManager.service("Unknown operation: $operation", "WARN")
                 OperationResult.error("Unknown operation: $operation")
             }
         }

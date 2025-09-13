@@ -17,7 +17,7 @@ import com.assistant.core.versioning.MigrationOrchestrator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 class MainActivity : ComponentActivity() {
     
@@ -39,29 +39,29 @@ class MainActivity : ComponentActivity() {
         
         // Perform startup data migrations
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("Migrations", "Starting data migrations...")
+            LogManager.database("Starting data migrations...")
             val result = migrationOrchestrator.performStartupMigrations(this@MainActivity)
             
             if (result.success) {
                 if (result.migratedTooltypes.isNotEmpty()) {
-                    Log.i("Migrations", "Data migrations completed successfully:")
+                    LogManager.database("Data migrations completed successfully:")
                     result.migratedTooltypes.forEach { migration ->
-                        Log.i("Migrations", "  - $migration")
+                        LogManager.database("  - $migration")
                     }
                 } else {
-                    Log.i("Migrations", "No data migrations needed")
+                    LogManager.database("No data migrations needed")
                 }
             } else {
-                Log.e("Migrations", "Data migration errors:")
+                LogManager.database("Data migration errors:", "ERROR")
                 result.errors.forEach { error ->
-                    Log.e("Migrations", "  - ${error.toUserFriendlyMessage()}")
+                    LogManager.database("  - ${error.toUserFriendlyMessage()}", "ERROR")
                 }
             }
         }
         
         // Check for updates at startup
         updateManager.scheduleUpdateCheck { updateInfo ->
-            Log.i("Updates", "Update available: ${updateInfo.version}")
+            LogManager.service("Update available: ${updateInfo.version}")
             // TODO: Show notification or dialog with UpdateInfo
         }
         
@@ -89,26 +89,26 @@ class MainActivity : ComponentActivity() {
      */
     private fun testMultiStepOperations() {
         CoroutineScope(Dispatchers.Main).launch {
-            Log.d("MultiStepTest", "Starting multi-step operations test")
+            LogManager.coordination("Starting multi-step operations test")
             
             // Test 1: Create a zone first
-            Log.d("MultiStepTest", "Creating test zone...")
+            LogManager.coordination("Creating test zone...")
             val zoneResult = coordinator.processUserAction("zones.create", mapOf(
                 "name" to "Test Zone"
             ))
-            Log.d("MultiStepTest", "Zone creation result: ${zoneResult.status}")
+            LogManager.coordination("Zone creation result: ${zoneResult.status}")
             
             // Test 2: Create a tool instance 
-            Log.d("MultiStepTest", "Creating tool instance...")
+            LogManager.coordination("Creating tool instance...")
             val toolResult = coordinator.processUserAction("tools.create", mapOf(
                 "zone_id" to "test-zone-id",
                 "tool_type" to "tracking",
                 "name" to "Test Tracking Tool"
             ))
-            Log.d("MultiStepTest", "Tool creation result: ${toolResult.status}")
+            LogManager.coordination("Tool creation result: ${toolResult.status}")
             
             // Test 3: Add some tracking data
-            Log.d("MultiStepTest", "Adding tracking data...")
+            LogManager.coordination("Adding tracking data...")
             repeat(5) { i ->
                 coordinator.processUserAction("tool_data.create", mapOf(
                     "tool_instance_id" to "test-tool-id",
@@ -120,18 +120,18 @@ class MainActivity : ComponentActivity() {
             }
             
             // Test 4: Launch multi-step correlation analysis
-            Log.d("MultiStepTest", "Launching correlation analysis (multi-step)...")
+            LogManager.coordination("Launching correlation analysis (multi-step)...")
             val correlationResult = coordinator.processUserAction("correlation.create", mapOf(
                 "tool_instance_id" to "test-tool-id"
             ))
             
-            Log.d("MultiStepTest", "Correlation analysis started:")
-            Log.d("MultiStepTest", "- Status: ${correlationResult.status}")
-            Log.d("MultiStepTest", "- Requires Background: ${correlationResult.requiresBackground}")
-            Log.d("MultiStepTest", "- Message: ${correlationResult.message}")
+            LogManager.coordination("Correlation analysis started:")
+            LogManager.coordination("- Status: ${correlationResult.status}")
+            LogManager.coordination("- Requires Background: ${correlationResult.requiresBackground}")
+            LogManager.coordination("- Message: ${correlationResult.message}")
             
             // Test 5: Add more operations while correlation is running
-            Log.d("MultiStepTest", "Adding more operations while background processing...")
+            LogManager.coordination("Adding more operations while background processing...")
             repeat(3) { i ->
                 val quickResult = coordinator.processUserAction("tool_data.create", mapOf(
                     "tool_instance_id" to "test-tool-id",
@@ -140,14 +140,14 @@ class MainActivity : ComponentActivity() {
                     "name" to "quick_metric_$i",
                     "value" to "${i + 100}"
                 ))
-                Log.d("MultiStepTest", "Quick operation $i result: ${quickResult.status}")
+                LogManager.coordination("Quick operation $i result: ${quickResult.status}")
             }
             
             // Check queue status
             val queueInfo = coordinator.getQueueInfo()
-            Log.d("MultiStepTest", "Queue status: $queueInfo")
+            LogManager.coordination("Queue status: $queueInfo")
             
-            Log.d("MultiStepTest", "Multi-step test completed. Check logs for background completion.")
+            LogManager.coordination("Multi-step test completed. Check logs for background completion.")
         }
     }
     
@@ -162,10 +162,10 @@ class MainActivity : ComponentActivity() {
                     "operationId" to "startup_preload_${System.currentTimeMillis()}"
                 ))
                 
-                Log.d("IconPreload", "Started icon preloading: ${result.status} - ${result.message}")
+                LogManager.service("Started icon preloading: ${result.status} - ${result.message}")
                 
             } catch (e: Exception) {
-                Log.w("IconPreload", "Failed to start icon preloading: ${e.message}")
+                LogManager.service("Failed to start icon preloading: ${e.message}", "WARN", e)
             }
         }
     }

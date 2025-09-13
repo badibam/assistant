@@ -1,6 +1,6 @@
 package com.assistant.core.validation
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
@@ -22,7 +22,7 @@ object SchemaUtils {
             
             // Look for required "data" field
             val dataSchema = properties.optJSONObject("data") ?: run {
-                Log.w("SchemaUtils", "No 'data' field found in schema properties")
+                LogManager.schema("No 'data' field found in schema properties", "WARN")
                 return null
             }
             
@@ -78,7 +78,7 @@ object SchemaUtils {
             base.toString()
             
         } catch (e: Exception) {
-            Log.e("SchemaUtils", "Schema merge failed: ${e.message}")
+            LogManager.schema("Schema merge failed: ${e.message}", "ERROR", e)
             throw ValidationException("Schema merge failed", e)
         }
     }

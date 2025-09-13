@@ -2,7 +2,7 @@ package com.assistant.core.tools
 
 import android.content.Context
 import com.assistant.core.services.ExecutableService
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 /**
  * ToolTypeManager with automatic discovery via runtime scanning
@@ -12,7 +12,7 @@ object ToolTypeManager {
     
     private val toolTypes: Map<String, ToolTypeContract> by lazy {
         val types = ToolTypeScanner.scanForToolTypes()
-        Log.d("ToolTypeManager", "Loaded tool types: ${types.keys}")
+        LogManager.service("Loaded tool types: ${types.keys}")
         types
     }
     
@@ -31,11 +31,11 @@ object ToolTypeManager {
      * @return Service instance or null if tool type doesn't have a service
      */
     fun getServiceForToolType(toolTypeId: String, context: Context): ExecutableService? {
-        Log.d("ToolTypeManager", "getServiceForToolType: $toolTypeId")
+        LogManager.service("getServiceForToolType: $toolTypeId")
         val toolType = getToolType(toolTypeId)
-        Log.d("ToolTypeManager", "Found tool type: $toolType")
+        LogManager.service("Found tool type: $toolType")
         val service = toolType?.getService(context)
-        Log.d("ToolTypeManager", "Created service: $service")
+        LogManager.service("Created service: $service")
         return service
     }
     

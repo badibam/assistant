@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 
 /**
  * Main update manager
@@ -41,7 +42,7 @@ class UpdateManager(private val context: Context) {
                 }
                 updateLastCheckTime()
             } catch (e: Exception) {
-                println("Error during automatic check: ${e.message}")
+                LogManager.service("Error during automatic check: ${e.message}", "ERROR", e)
             }
         }
     }

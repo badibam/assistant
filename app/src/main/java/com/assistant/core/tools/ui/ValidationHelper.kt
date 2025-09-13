@@ -5,6 +5,7 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.Duration
+import com.assistant.core.utils.LogManager
 
 /**
  * Unified validation helper for all tooltypes.
@@ -36,7 +37,7 @@ object ValidationHelper {
         if (toolType == null) {
             val s = com.assistant.core.strings.Strings.`for`(context = context)
             val errorMsg = s.shared("error_tooltype_not_found").format(toolTypeName)
-            android.util.Log.e("ValidationHelper", errorMsg)
+            LogManager.service(errorMsg, "ERROR")
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
             return false
@@ -52,7 +53,7 @@ object ValidationHelper {
         } else {
             val s = com.assistant.core.strings.Strings.`for`(context = context)
             val errorMsg = validation.errorMessage ?: s.shared("message_validation_error_simple")
-            android.util.Log.e("ValidationHelper", "Validation failed for $toolTypeName ($schemaType): $errorMsg")
+            LogManager.service("Validation failed for $toolTypeName ($schemaType): $errorMsg", "ERROR")
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
             return false

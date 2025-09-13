@@ -1,6 +1,6 @@
 package com.assistant.core.coordinator
 
-import android.util.Log
+import com.assistant.core.utils.LogManager
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.commands.CommandResult
 import kotlinx.coroutines.CancellationException
@@ -50,7 +50,7 @@ inline fun <reified T> CommandResult.mapData(
             val map = item as? Map<String, Any> ?: return@mapNotNull null
             mapper(map)
         } catch (e: Exception) {
-            Log.w("DataMapping", "Failed to map $key item: ${e.message}", e)
+            LogManager.coordination("Failed to map $key item: ${e.message}", "WARN", e)
             null
         }
     }
@@ -67,7 +67,7 @@ inline fun <reified T> CommandResult.mapSingleData(
         val map = this.data?.get(key) as? Map<String, Any> ?: return null
         mapper(map)
     } catch (e: Exception) {
-        Log.w("DataMapping", "Failed to map single $key: ${e.message}", e)
+        LogManager.coordination("Failed to map single $key: ${e.message}", "WARN", e)
         null
     }
 }

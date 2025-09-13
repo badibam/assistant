@@ -1,6 +1,7 @@
 package com.assistant.core.strings
 
 import android.content.Context
+import com.assistant.core.utils.LogManager
 
 /**
  * Central strings manager with modular namespace support.
@@ -54,11 +55,11 @@ object StringsManager {
             if (resourceId != 0) {
                 return context.getString(resourceId)
             } else {
-                android.util.Log.w("StringsManager", "String resource not found: $resourceKey")
+                LogManager.service("String resource not found: $resourceKey", "WARN")
                 return "[$resourceKey]" // Debug fallback
             }
         } catch (e: Exception) {
-            android.util.Log.e("StringsManager", "Error loading string resource: $resourceKey", e)
+            LogManager.service("Error loading string resource: $resourceKey", "ERROR", e)
             return "[$resourceKey]" // Debug fallback
         }
     }

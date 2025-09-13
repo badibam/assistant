@@ -16,6 +16,7 @@ import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
@@ -29,7 +30,7 @@ fun TrackingScreen(
     onNavigateBack: () -> Unit,
     onConfigureClick: () -> Unit = {}
 ) {
-    android.util.Log.d("CONFIGDEBUG", "TrackingScreen called with toolInstanceId: $toolInstanceId")
+    LogManager.tracking("TrackingScreen called with toolInstanceId: $toolInstanceId")
     
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }

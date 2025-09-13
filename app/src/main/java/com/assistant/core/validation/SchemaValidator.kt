@@ -6,7 +6,7 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
 import org.json.JSONObject
-import android.util.Log
+import com.assistant.core.utils.LogManager
 
 /**
  * Unified JSON Schema validator with recursive validation support
@@ -33,16 +33,16 @@ object SchemaValidator {
     fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, schemaType: String = "config"): ValidationResult {
         val schema = schemaProvider.getSchema(schemaType, context) 
             ?: throw IllegalArgumentException("SchemaProvider has no '$schemaType' schema")
-        safeLog("SCHEMADEBUG: SCHEMA VALIDATION START")
+        LogManager.schema("Schema validation start")
         
         return try {
             // Convert any JSONObject to Map for Jackson compatibility and filter empty values
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
             
             // DEBUG: Log schema being used
-            safeLog("SCHEMADEBUG: === SCHEMA BEING VALIDATED ===")
-            safeLog("SCHEMADEBUG: $schema")
-            safeLog("SCHEMADEBUG: === END SCHEMA ===")
+            LogManager.schema("=== Schema being validated ===")
+            LogManager.schema("$schema")
+            LogManager.schema("=== End schema ===")
             
             // Schema is flattened by createExtendedSchema, but still need SchemaResolver 
             // to resolve if/then conditions before passing to NetworkNT
@@ -53,36 +53,36 @@ object SchemaValidator {
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val dataNode = objectMapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(cleanData)
             
-            safeLog("SCHEMADEBUG: DATA MAP: $cleanData")
-            safeLog("SCHEMADEBUG: NETWORKNT DATANODE: $dataNode")
+            LogManager.schema("Data map: $cleanData")
+            LogManager.schema("NetworkNT datanode: $dataNode")
             
             // DEBUG: Check conditional validation
             if (schema.contains("\"if\"") && schema.contains("\"then\"")) {
-                safeLog("SCHEMADEBUG: CONDITIONAL SCHEMA DETECTED")
+                LogManager.schema("Conditional schema detected")
                 val dataObject = cleanData["data"] as? Map<*, *>
                 if (dataObject != null) {
                     val dataType = dataObject["type"]
-                    safeLog("SCHEMADEBUG: DATA TYPE in data: '$dataType'")
+                    LogManager.schema("Data type in data: '$dataType'")
                 }
             }
             
             // NetworkNT validates against the full schema including allOf/if/then conditions
             val errors = jsonSchema.validate(dataNode)
-            safeLog("SCHEMADEBUG: NETWORKNT ERRORS COUNT: ${errors.size}")
+            LogManager.schema("NetworkNT errors count: ${errors.size}")
             errors.forEach { error ->
-                safeLog("SCHEMADEBUG: ERROR Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
+                LogManager.schema("Error Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
             }
             
             val result = if (errors.isEmpty()) {
-                safeLog("SCHEMADEBUG: VALIDATION SUCCESS")
+                LogManager.schema("Validation success")
                 ValidationResult.success()
             } else {
                 val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, context, schemaProvider)
                 if (errorMessage.isEmpty()) {
-                    safeLog("SCHEMADEBUG: VALIDATION SUCCESS (errors filtered out)")
+                    LogManager.schema("Validation success (errors filtered out)")
                     ValidationResult.success()
                 } else {
-                    safeLog("SCHEMADEBUG: VALIDATION FAILED: $errorMessage")
+                    LogManager.schema("Validation failed: $errorMessage", "ERROR")
                     ValidationResult.error(errorMessage)
                 }
             }
@@ -90,7 +90,7 @@ object SchemaValidator {
             result
             
         } catch (e: Exception) {
-            safeLog("SCHEMADEBUG: Exception during validation: ${e.message}")
+            LogManager.schema("Exception during validation: ${e.message}", "ERROR", e)
             ValidationResult.error("Erreur de validation: ${e.message}")
         }
     }
@@ -187,11 +187,11 @@ object SchemaValidator {
         
         return if (cacheEnabled) {
             schemaCache.getOrPut(cacheKey) {
-                safeLog("SCHEMADEBUG: Compiling and caching schema")
+                LogManager.schema("Compiling and caching schema")
                 compileSchema(schemaJson)
             }
         } else {
-            safeLog("SCHEMADEBUG: Compiling schema (no cache)")
+            LogManager.schema("Compiling schema (no cache)")
             compileSchema(schemaJson)
         }
     }
@@ -210,17 +210,7 @@ object SchemaValidator {
      */
     fun clearCache() {
         schemaCache.clear()
-        safeLog("SCHEMADEBUG: Schema cache cleared")
+        LogManager.schema("Schema cache cleared")
     }
     
-    /**
-     * Safe logging that works in both Android and unit test environments
-     */
-    private fun safeLog(message: String) {
-        try {
-            android.util.Log.d("SCHEMADEBUG", message)
-        } catch (e: RuntimeException) {
-            println("SCHEMADEBUG: $message")
-        }
-    }
 }

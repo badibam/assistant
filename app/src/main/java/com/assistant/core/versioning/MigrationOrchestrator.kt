@@ -6,6 +6,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.tools.ToolTypeContract
+import com.assistant.core.utils.LogManager
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -33,11 +34,11 @@ class MigrationOrchestrator(private val context: Context) {
                     migrations.addAll(toolMigrations)
                 } catch (e: Exception) {
                     // Log the error but continue with other tools
-                    println("Error retrieving migrations for ${toolType.getDisplayName(context)}: ${e.message}")
+                    LogManager.database("Error retrieving migrations for ${toolType.getDisplayName(context)}: ${e.message}", "ERROR", e)
                 }
             }
         } catch (e: Exception) {
-            println("Error during tool migration discovery: ${e.message}")
+            LogManager.database("Error during tool migration discovery: ${e.message}", "ERROR", e)
         }
         
         // Final sort by start version to ensure order

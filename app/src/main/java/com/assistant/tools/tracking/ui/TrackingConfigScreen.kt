@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.Dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
@@ -90,10 +91,10 @@ fun TrackingConfigScreen(
     onDelete: (() -> Unit)? = null
 ) {
     // VALDEBUG: Screen startup debug
-    android.util.Log.d("VALDEBUG", "TrackingConfigScreen opened - existingToolId=$existingToolId")
-    println("===============================")
-    println("TrackingConfigScreen called with existingToolId: $existingToolId")
-    println("===============================")
+    LogManager.tracking("TrackingConfigScreen opened - existingToolId=$existingToolId")
+    LogManager.tracking("===============================")
+    LogManager.tracking("TrackingConfigScreen called with existingToolId: $existingToolId")
+    LogManager.tracking("===============================")
     
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
@@ -159,21 +160,21 @@ fun TrackingConfigScreen(
     
     // Load config: NO FALLBACKS - CRASH IF DB FAILS
     LaunchedEffect(existingToolId) {
-        android.util.Log.d("CONFIGDEBUG", "LaunchedEffect triggered - existingToolId: $existingToolId")
+        LogManager.tracking("LaunchedEffect triggered - existingToolId: $existingToolId")
         
         if (existingToolId == null) {
-            android.util.Log.d("CONFIGDEBUG", "No existingToolId, using default config for creation")
+            LogManager.tracking("No existingToolId, using default config for creation")
             config = JSONObject(TrackingToolType.getDefaultConfig())
             return@LaunchedEffect
         }
         
-        android.util.Log.d("CONFIGDEBUG", "Calling coordinator.processUserAction for toolId: $existingToolId")
+        LogManager.tracking("Calling coordinator.processUserAction for toolId: $existingToolId")
         val result = coordinator.processUserAction(
             "tools.get",
             mapOf("tool_instance_id" to existingToolId)
         )
         
-        android.util.Log.d("CONFIGDEBUG", "Coordinator result - status: ${result.status}, data: ${result.data}")
+        LogManager.tracking("Coordinator result - status: ${result.status}, data: ${result.data}")
         
         if (!result.isSuccess) {
             throw RuntimeException("CONFIGDEBUG: DB call failed - status: ${result.status}, error: ${result.error}")
@@ -185,14 +186,14 @@ fun TrackingConfigScreen(
         val configString = toolInstanceData["config_json"] as? String
             ?: throw RuntimeException("CONFIGDEBUG: No config_json in toolInstanceData: $toolInstanceData")
             
-        android.util.Log.d("CONFIGDEBUG", "Config string from DB: $configString")
+        LogManager.tracking("Config string from DB: $configString")
         val newConfig = JSONObject(configString)
-        android.util.Log.d("CONFIGDEBUG", "New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
+        LogManager.tracking("New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
         
         // Capture original config and type before updating
         initialConfigString = configString
         originalType = newConfig.optString("type", "")
-        android.util.Log.d("CONFIGDEBUG", "Original type captured: $originalType")
+        LogManager.tracking("Original type captured: $originalType")
         
         config = newConfig
     }
@@ -366,12 +367,12 @@ fun TrackingConfigScreen(
     
     // Final save with data deletion
     val handleFinalSave = {
-        android.util.Log.d("TrackingConfig", "=== FINAL SAVE STARTED ===")
+        LogManager.tracking("=== Final save started ===")
         scope.launch {
             try {
                 // Delete existing data first
                 if (existingToolId != null) {
-                    android.util.Log.d("TrackingConfig", "About to call delete_all_entries for tool: $existingToolId")
+                    LogManager.tracking("About to call delete_all_entries for tool: $existingToolId")
                     val deleteResult = coordinator.processUserAction(
                         "tool_data.delete", 
                         mapOf(
@@ -380,14 +381,14 @@ fun TrackingConfigScreen(
                             "tool_instance_id" to existingToolId
                         )
                     )
-                    android.util.Log.d("TrackingConfig", "Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
+                    LogManager.tracking("Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
                     if (!deleteResult.isSuccess) {
-                        android.util.Log.w("TrackingConfig", "Failed to delete existing data: ${deleteResult.message}")
+                        LogManager.tracking("Failed to delete existing data: ${deleteResult.message}", "WARN")
                     } else {
-                        android.util.Log.d("TrackingConfig", "Data deletion successful")
+                        LogManager.tracking("Data deletion successful")
                     }
                 } else {
-                    android.util.Log.d("TrackingConfig", "No existingToolId, skipping data deletion")
+                    LogManager.tracking("No existingToolId, skipping data deletion")
                 }
                 
                 // Then proceed with normal save
@@ -403,15 +404,15 @@ fun TrackingConfigScreen(
                     if (validation.isValid) {
                         onSave(cleanConfig.toString())
                     } else {
-                        android.util.Log.e("TrackingConfigScreen", "Validation failed: ${validation.errorMessage}")
+                        LogManager.tracking("Validation failed: ${validation.errorMessage}", "ERROR")
                         errorMessage = validation.errorMessage ?: s.shared("tools_config_error_validation")
                     }
                 } else {
-                    android.util.Log.e("TrackingConfigScreen", "ToolType tracking not found")
+                    LogManager.tracking("ToolType tracking not found", "ERROR")
                     errorMessage = s.shared("tools_config_error_tooltype_not_found")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("TrackingConfig", "Error during final save", e)
+                LogManager.tracking("Error during final save", "ERROR", e)
                 errorMessage = s.shared("tools_config_error_save")
             }
         }
@@ -1235,20 +1236,20 @@ private fun cleanConfiguration(config: JSONObject): JSONObject {
     
     // Nettoyer les options vides pour les types CHOICE
     if (cleanConfig.optString("type") == "choice") {
-        android.util.Log.d("CONFIG_CLEAN", "Cleaning CHOICE config")
+        LogManager.tracking("Cleaning CHOICE config")
         val optionsArray = cleanConfig.optJSONArray("options")
         if (optionsArray != null) {
-            android.util.Log.d("CONFIG_CLEAN", "Original options: $optionsArray")
+            LogManager.tracking("Original options: $optionsArray")
             val cleanArray = JSONArray()
             for (i in 0 until optionsArray.length()) {
                 val option = optionsArray.optString(i, "")
                 val trimmedOption = option.trim()
-                android.util.Log.d("CONFIG_CLEAN", "Option '$option' -> trimmed '$trimmedOption'")
+                LogManager.tracking("Option '$option' -> trimmed '$trimmedOption'")
                 if (trimmedOption.isNotBlank()) {
                     cleanArray.put(trimmedOption)
                 }
             }
-            android.util.Log.d("CONFIG_CLEAN", "Clean options: $cleanArray")
+            LogManager.tracking("Clean options: $cleanArray")
             cleanConfig.put("options", cleanArray)
         }
     }
