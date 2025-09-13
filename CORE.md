@@ -17,7 +17,7 @@ service.execute(operation, params, token)           // Direct dispatch
 
 ### Pattern CommandDispatcher
 
-**Principe** : Architecture unifiée `resource.operation` pour UI, IA, et Scheduler.
+**Principe** : Architecture unifiée `resource.operation` pour UI, IA, Scheduler et System.
 
 **Format standardisé** :
 - `zones.create` - Créer une zone
@@ -39,9 +39,8 @@ service.execute(operation, params, token)           // Direct dispatch
 - `tracking` → ToolTypeManager.getServiceForToolType()
 - Pattern : `{toolType}` → Service générique ou spécialisé
 
-### Dispatch Direct
+### Dispatch des commandes
 
-Plus de parsing complexe, routing direct :
 1. **Parse** : `"zones.create"` → `resource="zones"`, `operation="create"`
 2. **Resolve** : `ServiceRegistry.getService("zones")` → `ZoneService`
 3. **Execute** : `service.execute("create", params, token)`
@@ -95,8 +94,6 @@ val name = ToolTypeManager.getToolTypeName("tracking") // "Suivi"
 val allTypes = ToolTypeManager.getAllToolTypes()
 ```
 
-**Note** : Pattern `resource.operation` mais ToolTypeManager API reste identique.
-
 ### Extension Automatique
 
 **Nouveau tool type** :
@@ -105,7 +102,7 @@ val allTypes = ToolTypeManager.getAllToolTypes()
 3. Ajouter au `ToolTypeScanner`
 4. **Usage** : `coordinator.processUserAction("{toolType}.operation", params)`
 
-Aucune modification Core nécessaire, juste nouveau pattern d'appel.
+Aucune modification Core nécessaire.
 
 ## ═══════════════════════════════════
 ## Gestion des Données
@@ -114,7 +111,7 @@ Aucune modification Core nécessaire, juste nouveau pattern d'appel.
 
 Toutes les modifications passent par des événements :
 
-- Logging automatique des modifications
+- Logging automatique des modifications possible
 - Cohérence sans synchronisation manuelle  
 - Historique pour IA et audit
 
@@ -259,7 +256,7 @@ versionName = "0.1.1"
 - Schémas JSON pour validation automatique
 - Standalone databases pour discovery
 
-### CommandDispatcher Extensions Pattern 🆕
+### CommandDispatcher Extensions Pattern
 
 ```kotlin
 // Utiliser les extensions pour réduire boilerplate

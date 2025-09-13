@@ -275,7 +275,7 @@ Box(modifier = Modifier.padding(horizontal = 16.dp)) {
 ## ═══════════════════════════════════
 ## Changements d'Orientation
 
-### Problem : États perdus lors de rotation écran
+### Pour conserver états lors de rotation écran
 
 ```kotlin
 // ❌ État perdu  
@@ -386,7 +386,7 @@ Le système de thème utilise une palette de couleurs personnalisée branchée s
 - **Sections hors cards** : `padding(horizontal = 16.dp)`
 
 ## ═══════════════════════════════════
-## Pattern Loading/Error Standard 🆕
+## Pattern Loading/Error Standard
 
 ### États Obligatoires
 ```kotlin
