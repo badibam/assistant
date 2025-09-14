@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings spécifiques au tooltype notes -->
+
+    <!-- Métadonnées -->
+    <string name="display_name">Notes</string>
+
+    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
+    <string name="schema_data_name">Nom de l\'entrée de note</string>
+    <string name="schema_data_timestamp">Horodatage de création de la note</string>
+    <string name="schema_data_data">Données de contenu de la note</string>
+    <string name="schema_data_content">Contenu de la note</string>
+
+    <!-- VALIDATION - Noms de champs pour affichage -->
+    <string name="field_content">Contenu</string>
+    <string name="field_unknown">Champ non reconnu</string>
+
+    <!-- ACTIONS - Actions spécifiques aux notes -->
+    <string name="action_add_above">Ajouter au-dessus</string>
+    <string name="action_move">Déplacer</string>
+
+    <!-- MOVEMENT - Interface de déplacement -->
+    <string name="move_ok">Ok</string>
+
+</resources>

@@ -26,6 +26,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "update" -> updateEntry(params, token)
                 "delete" -> deleteEntry(params, token)
                 "get" -> getEntries(params, token)       // Standard REST GET
+                "get_single" -> getSingleEntry(params, token)  // GET single entry by ID
                 "stats" -> getStats(params, token)       // GET /tool_data/stats
                 "delete_all" -> deleteAllEntries(params, token)  // POST /tool_data/delete_all
                 else -> OperationResult.error("Unknown operation: $operation")
@@ -181,8 +182,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun getEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
+        // Debug logging
+        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - Received params: $params")
+
         val toolInstanceId = params.optString("toolInstanceId")
+        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - toolInstanceId='$toolInstanceId' (length=${toolInstanceId.length})")
+        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - params keys: ${params.keys().asSequence().toList()}")
+
         if (toolInstanceId.isEmpty()) {
+            com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - toolInstanceId is empty, returning error", "ERROR")
             return OperationResult.error("Missing required parameter: toolInstanceId")
         }
 
@@ -229,6 +237,35 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "totalPages" to totalPages,
                     "totalEntries" to totalCount,
                     "entriesPerPage" to limit
+                )
+            )
+        )
+    }
+
+    private suspend fun getSingleEntry(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val entryId = params.optString("entry_id")
+        if (entryId.isEmpty()) {
+            return OperationResult.error("Missing required parameter: entry_id")
+        }
+
+        val dao = getToolDataDao()
+        val entity = dao.getById(entryId)
+            ?: return OperationResult.error("Entry not found: $entryId")
+
+        return OperationResult.success(
+            data = mapOf(
+                "entry" to mapOf(
+                    "id" to entity.id,
+                    "toolInstanceId" to entity.toolInstanceId,
+                    "tooltype" to entity.tooltype,
+                    "dataVersion" to entity.dataVersion,
+                    "timestamp" to entity.timestamp,
+                    "name" to entity.name,
+                    "data" to entity.data,
+                    "createdAt" to entity.createdAt,
+                    "updatedAt" to entity.updatedAt
                 )
             )
         )

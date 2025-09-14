@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
+    <!-- notes -->
+    <string name="notes_display_name">Notes</string>
+    <string name="notes_schema_data_name">Nom de l\'entrée de note</string>
+    <string name="notes_schema_data_timestamp">Horodatage de création de la note</string>
+    <string name="notes_schema_data_data">Données de contenu de la note</string>
+    <string name="notes_schema_data_content">Contenu de la note</string>
+    <string name="notes_field_content">Contenu</string>
+    <string name="notes_field_unknown">Champ non reconnu</string>
+    <string name="notes_action_add_above">Ajouter au-dessus</string>
+    <string name="notes_action_move">Déplacer</string>
+    <string name="notes_move_ok">Ok</string>
+
     <!-- tracking -->
     <string name="tracking_display_name">Suivi</string>
     <string name="tracking_config_label_tracking_type">Type de tracking</string>
@@ -36,11 +48,11 @@
     <string name="tracking_config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
     <string name="tracking_config_warning_continue">Continuer ?</string>
     <string name="tracking_config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
-    <string name="tracking_config_warning_scale_change_old_new">Ancienne échelle : %1$s\nNouvelle échelle : %1$s</string>
+    <string name="tracking_config_warning_scale_change_old_new">Ancienne échelle : %1$s\nNouvelle échelle : %2$s</string>
     <string name="tracking_config_warning_scale_change_desc">Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d\'origine.</string>
     <string name="tracking_config_warning_boolean_change_title">⚠️ Modification d\'étiquettes détectée</string>
-    <string name="tracking_config_warning_boolean_change_old">Anciennes étiquettes : \"%1$s\" / \"%1$s\"</string>
-    <string name="tracking_config_warning_boolean_change_new">Nouvelles étiquettes : \"%1$s\" / \"%1$s\"</string>
+    <string name="tracking_config_warning_boolean_change_old">Anciennes étiquettes : \"%1$s\" / \"%2$s\"</string>
+    <string name="tracking_config_warning_boolean_change_new">Nouvelles étiquettes : \"%1$s\" / \"%2$s\"</string>
     <string name="tracking_config_warning_boolean_change_desc">Les données présentes avant ces modifications garderont leurs étiquettes d\'origine.</string>
     <string name="tracking_config_warning_choice_change_title">⚠️ Modification d\'options détectée</string>
     <string name="tracking_config_warning_choice_removed">Options supprimées : %1$s</string>
