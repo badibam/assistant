@@ -1,5 +1,7 @@
 package com.assistant.core.ui
 
+import androidx.compose.ui.focus.FocusRequester
+
 /**
  * Unified types for new UI architecture
  * ONLY elements agreed upon in UI_DECISIONS.md
@@ -44,10 +46,28 @@ enum class FieldType {
     TEXT_MEDIUM,    // 250 chars - descriptions, valeurs tracking texte
     TEXT_LONG,      // 1500 chars - contenu libre long
     TEXT_UNLIMITED, // Aucune limite - documentation, exports
-    NUMERIC, 
-    EMAIL, 
-    PASSWORD, 
+    NUMERIC,
+    EMAIL,
+    PASSWORD,
     SEARCH
+}
+
+/**
+ * Controlled modifier system for FormField
+ * Prevents uncontrolled modifier usage while allowing field-specific behaviors
+ */
+data class FieldModifier(
+    val focusRequester: FocusRequester? = null,
+    val onFocusChanged: ((Boolean) -> Unit)? = null
+    // Extensible for other field-specific behaviors
+) {
+    companion object {
+        /**
+         * Create FieldModifier with focus requester
+         */
+        fun withFocus(focusRequester: FocusRequester): FieldModifier =
+            FieldModifier(focusRequester = focusRequester)
+    }
 }
 
 // =====================================

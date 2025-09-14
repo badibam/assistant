@@ -190,17 +190,19 @@ object UI {
         state: ComponentState = ComponentState.NORMAL,
         readonly: Boolean = false,
         onClick: (() -> Unit)? = null,
-        contentDescription: String? = null
+        contentDescription: String? = null,
+        fieldModifier: FieldModifier = FieldModifier()
     ) = CurrentTheme.current.FormField(
         label = label,
-        value = value, 
+        value = value,
         onChange = onChange,
         fieldType = fieldType,
         state = state,
         readonly = readonly,
         onClick = onClick,
         contentDescription = contentDescription,
-        required = required
+        required = required,
+        fieldModifier = fieldModifier
     )
     
     @Composable

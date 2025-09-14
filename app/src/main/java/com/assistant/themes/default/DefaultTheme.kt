@@ -23,6 +23,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,6 +44,8 @@ import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.ButtonDisplay
 import com.assistant.core.ui.Size
 import com.assistant.core.ui.ComponentState
+import com.assistant.core.ui.FieldType
+import com.assistant.core.ui.FieldModifier
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.CardType
 import com.assistant.core.ui.FeedbackType
@@ -406,7 +410,8 @@ object DefaultTheme : ThemeContract {
         state: ComponentState,
         value: String,
         onChange: (String) -> Unit,
-        placeholder: String
+        placeholder: String,
+        fieldModifier: FieldModifier
     ) {
         val isError = state == ComponentState.ERROR
         val isReadOnly = state == ComponentState.READONLY
@@ -490,7 +495,14 @@ object DefaultTheme : ThemeContract {
             readOnly = isReadOnly,
             enabled = state != ComponentState.DISABLED,
             keyboardOptions = keyboardOptions,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .let { mod ->
+                    fieldModifier.focusRequester?.let { focusReq -> mod.focusRequester(focusReq) } ?: mod
+                }
+                .let { mod ->
+                    fieldModifier.onFocusChanged?.let { callback -> mod.onFocusChanged(callback) } ?: mod
+                }
         )
     }
     
@@ -790,7 +802,8 @@ object DefaultTheme : ThemeContract {
         readonly: Boolean,
         onClick: (() -> Unit)?,
         contentDescription: String?,
-        required: Boolean
+        required: Boolean,
+        fieldModifier: FieldModifier
     ) {
         val displayLabel = if (required) label else "$label (optionnel)"
         
@@ -819,7 +832,8 @@ object DefaultTheme : ThemeContract {
                     state = state,
                     value = value,
                     onChange = onChange,
-                    placeholder = label
+                    placeholder = label,
+                    fieldModifier = fieldModifier
                 )
             }
         }

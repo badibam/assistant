@@ -120,7 +120,8 @@ fun NoteCard(
                         label = "",
                         value = content,
                         onChange = { content = it },
-                        fieldType = FieldType.TEXT_LONG
+                        fieldType = FieldType.TEXT_LONG,
+                        fieldModifier = FieldModifier.withFocus(focusRequester)
                     )
 
                     // Edit mode buttons

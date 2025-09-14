@@ -21,6 +21,7 @@ import com.assistant.core.ui.Duration
 import com.assistant.core.ui.FeedbackType
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.ui.FieldModifier
 
 /**
  * ThemeContract - Interface that all themes must implement
@@ -71,7 +72,8 @@ interface ThemeContract {
         state: ComponentState,
         value: String,
         onChange: (String) -> Unit,
-        placeholder: String
+        placeholder: String,
+        fieldModifier: FieldModifier
     )
     
     // =====================================
@@ -193,7 +195,8 @@ interface ThemeContract {
         readonly: Boolean,
         onClick: (() -> Unit)?,
         contentDescription: String?,
-        required: Boolean
+        required: Boolean,
+        fieldModifier: FieldModifier
     )
     
     @Composable

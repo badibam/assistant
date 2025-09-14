@@ -93,7 +93,8 @@ fun CreateNoteCard(
                 value = content,
                 onChange = { content = it },
                 fieldType = FieldType.TEXT_LONG,
-                required = true
+                required = true,
+                fieldModifier = FieldModifier.withFocus(focusRequester)
             )
 
             Row(
