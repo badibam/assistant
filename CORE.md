@@ -45,6 +45,37 @@ service.execute(operation, params, token)           // Direct dispatch
 2. **Resolve** : `ServiceRegistry.getService("zones")` → `ZoneService`
 3. **Execute** : `service.execute("create", params, token)`
 
+### Nommage des Paramètres par Service
+
+**ATTENTION** : Chaque service utilise ses propres conventions de nommage :
+
+- **`tools.*`** (ToolInstanceService) : `tool_instance_id` (underscore)
+- **`tool_data.*`** (ToolDataService) : `toolInstanceId` (camelCase)
+
+```kotlin
+// Récupérer instance d'outil
+coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to id))
+
+// Récupérer données de l'outil
+coordinator.processUserAction("tool_data.get", mapOf("toolInstanceId" to id))
+```
+
+### Opérations CRUD Complètes ToolDataService
+
+**Opérations disponibles** :
+- `create` - Créer nouvelle entrée
+- `update` - Modifier entrée existante
+- `delete` - Supprimer entrée
+- `get` - Récupérer toutes les entrées (avec pagination)
+- **`get_single`** - Récupérer une entrée par ID ⚠️
+- `stats` - Statistiques du tool
+- `delete_all` - Supprimer toutes les entrées
+
+```kotlin
+// Récupérer une entrée spécifique pour édition
+coordinator.processUserAction("tool_data.get_single", mapOf("entry_id" to entryId))
+```
+
 ### Gestion des Tokens
 
 ```kotlin
@@ -313,7 +344,7 @@ app/src/main/java/com/assistant/core/validation/
 ```kotlin
 // Usage standard pour tous types d'outils
 val toolType = ToolTypeManager.getToolType("tracking")
-val result = SchemaValidator.validate(toolType, data, context, useDataSchema = true)
+val result = SchemaValidator.validate(toolType, data, context, schemaType = "data")
 
 if (result.isValid) {
     // Validation réussie
@@ -345,10 +376,10 @@ interface SchemaProvider {
 
 ```kotlin
 // Validation configuration outil (création/modification)
-SchemaValidator.validate(toolType, configData, context, useDataSchema = false)
+SchemaValidator.validate(toolType, configData, context, schemaType = "config")
 
-// Validation données métier (entries)  
-SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
+// Validation données métier (entries)
+SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
 ```
 
 ## SchemaValidator V3 + Schémas Externes 🆕
@@ -449,6 +480,40 @@ LogManager.database("Migration completed", "INFO")
 - **try/catch** automatique avec fallback `println()` pour tests unitaires
 - **Throwable optionnel** : Inclut stack trace complète si fournie
 - **Compatibility** : Fonctionne en environnement Android et tests
+
+### Guide de Debugging Service Resolution
+
+**Problèmes courants et diagnostics** :
+
+1. **"Service not found"**
+   ```kotlin
+   // Ajouter logs dans le service
+   LogManager.service("Service called: $operation with params: $params")
+   ```
+
+2. **"Tool instance ID is required"**
+   - Vérifier noms des paramètres : `tool_instance_id` vs `toolInstanceId`
+   - Logs ToolDataService affichent les paramètres reçus
+
+3. **Mauvais routing entre services**
+   ```kotlin
+   // CommandDispatcher logs automatiquement
+   LogManager.coordination("Routing $resource.$operation to ${service::class.simpleName}")
+   ```
+
+4. **LaunchedEffect ne se redéclenche pas**
+   - Ajouter TOUTES les variables vérifiées dans le scope aux dépendances
+   ```kotlin
+   // ❌ INCORRECT
+   LaunchedEffect(toolInstanceId) {
+       if (toolInstance != null) { ... }
+   }
+
+   // ✅ CORRECT
+   LaunchedEffect(toolInstanceId, toolInstance) {
+       if (toolInstance != null) { ... }
+   }
+   ```
 
 ## ═══════════════════════════════════
 

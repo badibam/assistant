@@ -71,9 +71,31 @@ interface ToolTypeContract {
 ```
 
 ## ═══════════════════════════════════
+## Méthodologie d'Implémentation
+
+**Règle d'or** : Toujours copier-coller Tracking d'abord, adapter ensuite.
+
+### Ordre d'Implémentation
+
+1. **ToolType** avec configuration complète par défaut
+2. **Schémas externes** (MyToolSchemas.kt)
+3. **ConfigScreen** avec ToolGeneralConfigSection
+4. **Service** avec validation stricte
+5. **UI screens** avec parsing robuste
+6. **Enregistrement** dans ToolTypeScanner
+
+### Points de Vérification Critiques
+
+- API SchemaValidator : `schemaType = "config|data"`
+- Services : `tools.*` utilise `tool_instance_id`, `tool_data.*` utilise `toolInstanceId`
+- LaunchedEffect : toutes variables vérifiées dans le scope = dépendances
+- ToolGeneralConfigSection : 7 champs obligatoires
+- Validation : au save uniquement, pas préventive
+
+## ═══════════════════════════════════
 ## Création d'un Nouvel Outil
 
-### Étape 1: Structure de Base
+### Structure de Base
 
 ```kotlin
 // 1. Entité données
@@ -295,10 +317,10 @@ Validation unifiée pour tous les types d'outils via SchemaValidator.
 val toolType = ToolTypeManager.getToolType("tracking")
 
 // Validation données métier (entries)
-val dataResult = SchemaValidator.validate(toolType, entryData, context, useDataSchema = true)
+val dataResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
 
 // Validation configuration outil
-val configResult = SchemaValidator.validate(toolType, configData, context, useDataSchema = false)
+val configResult = SchemaValidator.validate(toolType, configData, context, schemaType = "config")
 
 // Gestion résultat
 if (dataResult.isValid) {
@@ -317,7 +339,7 @@ class MyToolService(private val context: Context) : ExecutableService {
         // Validation automatique via ToolType
         val toolType = ToolTypeManager.getToolType("my_tool")
         if (toolType != null) {
-            val validation = SchemaValidator.validate(toolType, dataMap, context, useDataSchema = true)
+            val validation = SchemaValidator.validate(toolType, dataMap, context, schemaType = "data")
             if (!validation.isValid) {
                 return OperationResult.error("Validation failed: ${validation.errorMessage}")
             }
@@ -342,7 +364,7 @@ fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () ->
         val toolTypeProvider = ToolTypeManager.getToolType("my_tool")
         val configData = mapOf("name" to name, "type" to toolType)
         toolTypeProvider?.let { 
-            SchemaValidator.validate(it, configData, context, useDataSchema = false) 
+            SchemaValidator.validate(it, configData, context, schemaType = "config") 
         }
     }
     
@@ -385,6 +407,40 @@ fun MyToolConfigScreen(zoneId: String, onSave: (String) -> Unit, onCancel: () ->
             )
             UI.ActionButton(action = ButtonAction.CANCEL, onClick = onCancel)
         }
+    }
+}
+```
+
+## ═══════════════════════════════════
+## Patterns de Parsing Robuste
+
+### entity.data peut être String ou Map
+
+```kotlin
+// Parsing robuste avec try/catch
+val parsedData = try {
+    when (val data = map["data"]) {
+        is Map<*, *> -> data as Map<String, Any>
+        is String -> JSONObject(data).let { json ->
+            mutableMapOf<String, Any>().apply {
+                json.keys().forEach { key -> put(key, json.get(key)) }
+            }
+        }
+        else -> emptyMap()
+    }
+} catch (e: Exception) {
+    LogManager.service("Failed to parse entry data: ${e.message}", "ERROR")
+    emptyMap<String, Any>()
+}
+```
+
+### LaunchedEffect avec Dépendances Complètes
+
+```kotlin
+// Inclure TOUTES les variables vérifiées dans le scope
+LaunchedEffect(toolInstanceId, toolInstance) {  // toolInstance ajouté aux dépendances
+    if (toolInstance != null) {
+        // Logique de chargement
     }
 }
 ```
