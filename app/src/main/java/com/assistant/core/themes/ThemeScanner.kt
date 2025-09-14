@@ -1,7 +1,6 @@
 package com.assistant.core.themes
 
 import com.assistant.themes.default.DefaultTheme
-import com.assistant.themes.dflt.DfltTheme
 
 /**
  * ThemeScanner - Discovery pattern for themes

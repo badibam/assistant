@@ -7,11 +7,15 @@
     <string name="notes_schema_data_timestamp">Horodatage de création de la note</string>
     <string name="notes_schema_data_data">Données de contenu de la note</string>
     <string name="notes_schema_data_content">Contenu de la note</string>
+    <string name="notes_schema_data_position">Position pour tri manuel des notes</string>
     <string name="notes_field_content">Contenu</string>
+    <string name="notes_field_position">Position</string>
     <string name="notes_field_unknown">Champ non reconnu</string>
     <string name="notes_action_add_above">Ajouter au-dessus</string>
     <string name="notes_action_move">Déplacer</string>
     <string name="notes_move_ok">Ok</string>
+    <string name="notes_save_in_progress">Sauvegarde...</string>
+    <string name="notes_delete_confirm_template">Supprimer \"%1$s\" ?</string>
 
     <!-- tracking -->
     <string name="tracking_display_name">Suivi</string>

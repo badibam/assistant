@@ -1,8 +1,6 @@
 package com.assistant.tools.notes.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -15,7 +13,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.coordinator.isSuccess
@@ -23,9 +20,9 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.tools.notes.ui.components.NoteCard
 import com.assistant.tools.notes.ui.components.PlaceholderCard
+import com.assistant.tools.notes.ui.components.CreateNoteCard
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * Data class for note entries
@@ -34,12 +31,12 @@ data class NoteEntry(
     val id: String,
     val content: String,
     val timestamp: Long,
-    val position: Int = 0 // For manual ordering
+    val position: Int = 0
 )
 
 /**
  * Main usage screen for Notes tool instance
- * Displays notes in adaptive grid layout with manual ordering
+ * Displays notes in adaptive grid layout with inline creation
  */
 @Composable
 fun NotesScreen(
@@ -54,6 +51,7 @@ fun NotesScreen(
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "notes", context = context) }
     val configuration = LocalConfiguration.current
+    val coroutineScope = rememberCoroutineScope()
 
     // State
     var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
@@ -61,18 +59,13 @@ fun NotesScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
-    var showEditScreen by remember { mutableStateOf(false) }
-    var editingNoteId by remember { mutableStateOf<String?>(null) }
-    var insertPosition by remember { mutableStateOf<Int?>(null) }
-
-    // Movement state
-    var movingNoteId by remember { mutableStateOf<String?>(null) }
+    var creatingNotePosition by remember { mutableStateOf<Int?>(null) }
 
     // Load tool instance data
     LaunchedEffect(toolInstanceId) {
         coordinator.executeWithLoading(
             operation = "tools.get",
-            params = mapOf("tool_instance_id" to toolInstanceId), // Correct parameter name for ToolInstanceService
+            params = mapOf("tool_instance_id" to toolInstanceId),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
@@ -83,10 +76,9 @@ fun NotesScreen(
     // Load notes data
     LaunchedEffect(toolInstance, refreshTrigger) {
         if (toolInstance != null) {
-            // Use same API as Tracking
             val params = mapOf(
                 "toolInstanceId" to toolInstanceId,
-                "limit" to 100 // Load all notes for now
+                "limit" to 100
             )
 
             val result = coordinator.processUserAction("tool_data.get", params)
@@ -99,41 +91,39 @@ fun NotesScreen(
                         val id = map["id"] as? String ?: return@mapNotNull null
                         val timestamp = (map["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
 
-                        // Handle data as JSON string (entity.data is already a JSON string)
                         val dataValue = map["data"]
-                        val content = when (dataValue) {
-                            is String -> {
-                                try {
-                                    // Parse JSON string
+                        val parsedData = try {
+                            when (dataValue) {
+                                is Map<*, *> -> dataValue as Map<String, Any>
+                                is String -> {
                                     val dataJson = JSONObject(dataValue)
-                                    dataJson.optString("content", "")
-                                } catch (e: Exception) {
-                                    LogManager.ui("Error parsing note data JSON: ${e.message}", "ERROR")
-                                    ""
+                                    mutableMapOf<String, Any>().apply {
+                                        dataJson.keys().forEach { key -> put(key, dataJson.get(key)) }
+                                    }
                                 }
+                                else -> emptyMap()
                             }
-                            is Map<*, *> -> dataValue["content"] as? String ?: ""
-                            else -> {
-                                LogManager.ui("Unexpected data type: ${dataValue?.javaClass?.name}", "WARN")
-                                ""
-                            }
+                        } catch (e: Exception) {
+                            LogManager.ui("Error parsing note data: ${e.message}", "ERROR")
+                            emptyMap<String, Any>()
                         }
 
-                        LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content")
-                        NoteEntry(id, content, timestamp)
+                        val content = parsedData["content"] as? String ?: ""
+                        val position = (parsedData["position"] as? Number)?.toInt() ?: 0
+
+                        LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position")
+                        NoteEntry(id, content, timestamp, position)
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing note entry: ${e.message}", "ERROR")
                         null
                     }
                 }
 
-                // Sort by timestamp for manual ordering (oldest first as base order)
-                notes = entries.sortedBy { it.timestamp }
+                notes = entries.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
                 LogManager.ui("Loaded ${notes.size} notes")
             } else {
                 notes = emptyList()
                 LogManager.ui("No notes found or error loading notes")
-                LogManager.ui("Result status: ${result?.status}, error: ${result?.error}")
             }
         }
     }
@@ -158,27 +148,6 @@ fun NotesScreen(
 
     // Determine grid columns based on orientation
     val columns = if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 2 else 1
-
-    // Edit screen overlay
-    if (showEditScreen) {
-        NotesEditScreen(
-            noteId = editingNoteId,
-            toolInstanceId = toolInstanceId,
-            insertPosition = insertPosition,
-            onSave = {
-                showEditScreen = false
-                editingNoteId = null
-                insertPosition = null
-                refreshTrigger++
-            },
-            onCancel = {
-                showEditScreen = false
-                editingNoteId = null
-                insertPosition = null
-            }
-        )
-        return
-    }
 
     Column(
         modifier = Modifier
@@ -212,8 +181,7 @@ fun NotesScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Notes grid
-            if (notes.isEmpty()) {
-                // Empty state - just show placeholder
+            if (notes.isEmpty() && creatingNotePosition == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,11 +189,7 @@ fun NotesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     PlaceholderCard(
-                        onClick = {
-                            showEditScreen = true
-                            editingNoteId = null
-                            insertPosition = null
-                        }
+                        onClick = { creatingNotePosition = 0 }
                     )
                 }
             } else {
@@ -237,59 +201,87 @@ fun NotesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalItemSpacing = 16.dp
                 ) {
-                    // Existing notes
-                    items(notes, key = { it.id }) { note ->
-                        NoteCard(
-                            note = note,
-                            isMoving = movingNoteId == note.id,
-                            onClick = {
-                                if (movingNoteId == null) {
-                                    editingNoteId = note.id
-                                    showEditScreen = true
-                                }
-                            },
-                            onLongClick = {
-                                if (movingNoteId == null) {
-                                    // Show context menu
-                                    // For now, implement basic actions directly
-                                }
-                            },
-                            onStartMoving = {
-                                movingNoteId = note.id
-                            },
-                            onMoveUp = {
-                                moveNoteUp(note, notes) { newNotes ->
-                                    notes = newNotes
-                                    saveNotePositions(coordinator, toolInstanceId, newNotes)
-                                }
-                            },
-                            onMoveDown = {
-                                moveNoteDown(note, notes) { newNotes ->
-                                    notes = newNotes
-                                    saveNotePositions(coordinator, toolInstanceId, newNotes)
-                                }
-                            },
-                            onStopMoving = {
-                                movingNoteId = null
-                            },
-                            onAddAbove = {
-                                val position = notes.indexOf(note)
-                                insertPosition = position
-                                showEditScreen = true
-                                editingNoteId = null
-                            }
-                        )
-                    }
+                    creatingNotePosition?.let { createPos ->
+                        // Creating note - insert at specific position
+                        val notesBeforeCreate = notes.take(createPos)
+                        val notesAfterCreate = notes.drop(createPos)
 
-                    // Placeholder card at the end
-                    item(key = "placeholder") {
-                        PlaceholderCard(
-                            onClick = {
-                                showEditScreen = true
-                                editingNoteId = null
-                                insertPosition = null
-                            }
-                        )
+                        // Notes before creation position
+                        items(notesBeforeCreate, key = { "note_${it.id}" }) { note ->
+                            NoteCard(
+                                note = note,
+                                toolInstanceId = toolInstanceId,
+                                onNoteUpdated = { updatedNote ->
+                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                },
+                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
+                                onDelete = {
+                                    coroutineScope.launch {
+                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                    }
+                                }
+                            )
+                        }
+
+                        // Creation card
+                        item(key = "creating") {
+                            CreateNoteCard(
+                                toolInstanceId = toolInstanceId,
+                                insertPosition = createPos,
+                                onSave = {
+                                    creatingNotePosition = null
+                                    refreshTrigger++
+                                },
+                                onCancel = { creatingNotePosition = null }
+                            )
+                        }
+
+                        // Notes after creation position
+                        items(notesAfterCreate, key = { "note_${it.id}" }) { note ->
+                            NoteCard(
+                                note = note,
+                                toolInstanceId = toolInstanceId,
+                                onNoteUpdated = { updatedNote ->
+                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                },
+                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
+                                onDelete = {
+                                    coroutineScope.launch {
+                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                    }
+                                }
+                            )
+                        }
+                    } ?: run {
+                        // No creation - normal display
+                        items(notes, key = { "note_${it.id}" }) { note ->
+                            NoteCard(
+                                note = note,
+                                toolInstanceId = toolInstanceId,
+                                onNoteUpdated = { updatedNote ->
+                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                },
+                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
+                                onDelete = {
+                                    coroutineScope.launch {
+                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                    }
+                                }
+                            )
+                        }
+
+                        // Placeholder at end
+                        item(key = "placeholder") {
+                            PlaceholderCard(
+                                onClick = { creatingNotePosition = notes.size }
+                            )
+                        }
                     }
                 }
             }
@@ -332,14 +324,16 @@ private fun moveNoteDown(
 }
 
 /**
- * Save note positions (placeholder for future implementation)
+ * Delete a note
  */
-private fun saveNotePositions(
+private suspend fun deleteNote(
     coordinator: Coordinator,
-    toolInstanceId: String,
-    notes: List<NoteEntry>
+    noteId: String,
+    onSuccess: () -> Unit
 ) {
-    // For now, positions are maintained by the list order
-    // In future, this could update position fields in the database
-    LogManager.ui("Note positions updated for tool $toolInstanceId")
+    val params = mapOf("entryId" to noteId)
+    val result = coordinator.processUserAction("tool_data.delete", params)
+    if (result?.isSuccess == true) {
+        onSuccess()
+    }
 }

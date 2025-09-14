@@ -42,6 +42,11 @@ object NotesSchemas {
                             "minLength": 1,
                             "maxLength": ${BaseSchemas.FieldLimits.LONG_LENGTH},
                             "description": "{{DATA_CONTENT_DESC}}"
+                        },
+                        "position": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "{{DATA_POSITION_DESC}}"
                         }
                     },
                     "required": ["content"],
@@ -71,5 +76,6 @@ object NotesSchemas {
             .replace("{{DATA_TIMESTAMP_DESC}}", s.tool("schema_data_timestamp"))
             .replace("{{DATA_DATA_DESC}}", s.tool("schema_data_data"))
             .replace("{{DATA_CONTENT_DESC}}", s.tool("schema_data_content"))
+            .replace("{{DATA_POSITION_DESC}}", s.tool("schema_data_position"))
     }
 }

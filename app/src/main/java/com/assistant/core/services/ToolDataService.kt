@@ -44,6 +44,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
         val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else null
         val name = params.optString("name", null)
+        val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
             return OperationResult.error("Missing required parameters: toolInstanceId, tooltype")
@@ -77,6 +78,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
         }
 
+        // Handle position-based insertion
+        var finalDataJson = dataJson
+        if (insertPosition != null) {
+            finalDataJson = handlePositionInsertion(toolInstanceId, tooltype, dataJson, insertPosition)
+        }
+
         val now = System.currentTimeMillis()
         val dataVersion = toolType?.getCurrentDataVersion() ?: 1
         val entity = ToolDataEntity(
@@ -86,7 +93,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             dataVersion = dataVersion,
             timestamp = timestamp,
             name = name,
-            data = dataJson,
+            data = finalDataJson,
             createdAt = now,
             updatedAt = now
         )
@@ -100,6 +107,40 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "createdAt" to entity.createdAt
             )
         )
+    }
+
+    /**
+     * Handle position-based insertion by shifting existing positions and setting new position
+     */
+    private suspend fun handlePositionInsertion(
+        toolInstanceId: String,
+        tooltype: String,
+        dataJson: String,
+        insertPosition: Int
+    ): String {
+        val dao = getToolDataDao()
+        val existingEntries = dao.getByToolInstance(toolInstanceId)
+
+        // 1. Shift positions >= insertPosition
+        existingEntries.forEach { entry ->
+            val entryData = JSONObject(entry.data)
+            val currentPosition = entryData.optInt("position", -1)
+
+            if (currentPosition >= insertPosition) {
+                entryData.put("position", currentPosition + 1)
+                // Update in DB
+                val updatedEntity = entry.copy(
+                    data = entryData.toString(),
+                    updatedAt = System.currentTimeMillis()
+                )
+                dao.update(updatedEntity)
+            }
+        }
+
+        // 2. Set position for new entry
+        val newData = JSONObject(dataJson)
+        newData.put("position", insertPosition)
+        return newData.toString()
     }
 
     private suspend fun updateEntry(params: JSONObject, token: CancellationToken): OperationResult {

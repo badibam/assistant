@@ -10,9 +10,11 @@
     <string name="schema_data_timestamp">Horodatage de création de la note</string>
     <string name="schema_data_data">Données de contenu de la note</string>
     <string name="schema_data_content">Contenu de la note</string>
+    <string name="schema_data_position">Position pour tri manuel des notes</string>
 
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_content">Contenu</string>
+    <string name="field_position">Position</string>
     <string name="field_unknown">Champ non reconnu</string>
 
     <!-- ACTIONS - Actions spécifiques aux notes -->
@@ -21,5 +23,11 @@
 
     <!-- MOVEMENT - Interface de déplacement -->
     <string name="move_ok">Ok</string>
+
+    <!-- STATUS - État des opérations -->
+    <string name="save_in_progress">Sauvegarde...</string>
+
+    <!-- CONFIRMATIONS - Messages de confirmation -->
+    <string name="delete_confirm_template">Supprimer \"%1$s\" ?</string>
 
 </resources>
