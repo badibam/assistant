@@ -152,8 +152,8 @@ fun TrackingHistory(
                             currentPage = (pagination["currentPage"] as? Number)?.toInt() ?: 1
                         }
                         
-                        // Get current timer entry ID to exclude it
-                        val activeTimerEntryId = TimerManager.getInstance().timerState.value.entryId
+                        // Get current timer entry ID for this instance to exclude it
+                        val activeTimerEntryId = TimerManager.getInstance().getTimerState(toolInstanceId).value.entryId
                         
                         trackingData = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {

@@ -127,7 +127,7 @@ fun PredefinedItemsSection(
                 // Toggle for custom timestamp - disabled if timer running (only for timer type)
                 val canUseCustomTimestamp = if (trackingType == "timer") {
                     val timerManager = remember { TimerManager.getInstance() }
-                    val timerState by timerManager.timerState
+                    val timerState by timerManager.getTimerState(toolInstanceId)
                     !timerState.isActive
                 } else {
                     true // Always enabled for non-timer types
@@ -527,7 +527,7 @@ private fun TimerItemsLayout(
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
     val timerManager = remember { TimerManager.getInstance() }
-    val timerState by timerManager.timerState
+    val timerState by timerManager.getTimerState(toolInstanceId)
     val coordinator = remember { Coordinator(context) }
     
     // Function to create a timer entry with duration = 0
@@ -616,7 +616,7 @@ private fun TimerItemsLayout(
             ) {
                 rowItems.forEach { item ->
                     Box(modifier = Modifier.weight(1f)) {
-                        val isActive = timerManager.isActivityActive(item.name)
+                        val isActive = timerManager.isActivityActive(toolInstanceId, item.name)
                         
                         UI.Button(
                             type = if (isActive) ButtonType.PRIMARY else ButtonType.DEFAULT,
@@ -627,8 +627,8 @@ private fun TimerItemsLayout(
                                 } else {
                                     // Real-time mode: normal timer behavior
                                     if (isActive) {
-                                        // Stop current timer
-                                        timerManager.stopCurrentTimer { entryId, seconds ->
+                                        // Stop current timer for this instance
+                                        timerManager.stopCurrentTimer(toolInstanceId) { entryId, seconds ->
                                             // Update existing entry with final duration
                                             updateTimerEntry(entryId, seconds)
                                         }
