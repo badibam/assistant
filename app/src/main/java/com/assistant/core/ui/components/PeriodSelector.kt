@@ -9,6 +9,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -161,8 +163,10 @@ fun PeriodSelector(
     
     
     // Smart label generation
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     val label = remember(period, dayStartHour, weekStartDay) {
-        generatePeriodLabel(period, dayStartHour, weekStartDay)
+        generatePeriodLabel(period, dayStartHour, weekStartDay, s)
     }
     
     Row(
@@ -268,32 +272,45 @@ fun PeriodSelector(
 /**
  * Generates smart label for given period
  */
-private fun generatePeriodLabel(period: Period, dayStartHour: Int, weekStartDay: String): String {
+private fun generatePeriodLabel(period: Period, dayStartHour: Int, weekStartDay: String, s: StringsContext): String {
     val now = System.currentTimeMillis()
-    
+
     return when (period.type) {
-        PeriodType.HOUR -> generateHourLabel(period.timestamp, now)
-        PeriodType.DAY -> generateDayLabel(period.timestamp, now, dayStartHour)
-        PeriodType.WEEK -> generateWeekLabel(period.timestamp, now, weekStartDay)
-        PeriodType.MONTH -> generateMonthLabel(period.timestamp, now)
-        PeriodType.YEAR -> generateYearLabel(period.timestamp, now)
+        PeriodType.HOUR -> generateHourLabel(period.timestamp, now, s)
+        PeriodType.DAY -> generateDayLabel(period.timestamp, now, dayStartHour, s)
+        PeriodType.WEEK -> generateWeekLabel(period.timestamp, now, weekStartDay, s)
+        PeriodType.MONTH -> generateMonthLabel(period.timestamp, now, s)
+        PeriodType.YEAR -> generateYearLabel(period.timestamp, now, s)
     }
 }
 
 /**
  * Labels for hours
  */
-private fun generateHourLabel(timestamp: Long, now: Long): String {
+private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext): String {
     // Normalize both timestamps to compare hours correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.HOUR, 0, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.HOUR, 0, "monday")
-    
+
     val diffHours = ((normalizedNow - normalizedTimestamp) / (60 * 60 * 1000)).toInt()
-    
+
     return when {
-        diffHours == 0 -> "This hour"
-        diffHours > 0 && diffHours <= 12 -> "$diffHours hour${if (diffHours > 1) "s" else ""} ago"
-        diffHours < 0 && diffHours >= -12 -> "In ${-diffHours} hour${if (-diffHours > 1) "s" else ""}"
+        diffHours == 0 -> s.shared("period_this_hour")
+        diffHours > 0 && diffHours <= 12 -> {
+            if (diffHours == 1) {
+                s.shared("period_hours_ago_singular").format(diffHours)
+            } else {
+                s.shared("period_hours_ago_plural").format(diffHours)
+            }
+        }
+        diffHours < 0 && diffHours >= -12 -> {
+            val absDiff = -diffHours
+            if (absDiff == 1) {
+                s.shared("period_hours_from_now_singular").format(absDiff)
+            } else {
+                s.shared("period_hours_from_now_plural").format(absDiff)
+            }
+        }
         else -> {
             val date = DateUtils.formatDateForDisplay(timestamp)
             val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
@@ -305,19 +322,32 @@ private fun generateHourLabel(timestamp: Long, now: Long): String {
 /**
  * Labels for days
  */
-private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int): String {
+private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: StringsContext): String {
     // Normalize timestamps to compare them according to dayStartHour
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.DAY, dayStartHour, "monday")
-    
+
     val diffDays = ((normalizedNow - normalizedTimestamp) / (24 * 60 * 60 * 1000)).toInt()
-    
+
     return when {
-        diffDays == 0 -> "Today"
-        diffDays == 1 -> "Yesterday"
-        diffDays == -1 -> "Tomorrow"
-        diffDays > 0 && diffDays <= 7 -> "$diffDays day${if (diffDays > 1) "s" else ""} ago"
-        diffDays < 0 && diffDays >= -7 -> "In ${-diffDays} day${if (-diffDays > 1) "s" else ""}"
+        diffDays == 0 -> s.shared("period_today")
+        diffDays == 1 -> s.shared("period_yesterday")
+        diffDays == -1 -> s.shared("period_tomorrow")
+        diffDays > 0 && diffDays <= 7 -> {
+            if (diffDays == 1) {
+                s.shared("period_days_ago_singular").format(diffDays)
+            } else {
+                s.shared("period_days_ago_plural").format(diffDays)
+            }
+        }
+        diffDays < 0 && diffDays >= -7 -> {
+            val absDiff = -diffDays
+            if (absDiff == 1) {
+                s.shared("period_days_from_now_singular").format(absDiff)
+            } else {
+                s.shared("period_days_from_now_plural").format(absDiff)
+            }
+        }
         else -> DateUtils.formatDateForDisplay(timestamp)
     }
 }
@@ -325,22 +355,35 @@ private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int): Str
 /**
  * Labels for weeks
  */
-private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String): String {
+private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, s: StringsContext): String {
     // Normalize timestamps to compare weeks correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.WEEK, 4, weekStartDay)
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.WEEK, 4, weekStartDay)
-    
+
     val diffWeeks = ((normalizedNow - normalizedTimestamp) / (7 * 24 * 60 * 60 * 1000)).toInt()
-    
+
     return when {
-        diffWeeks == 0 -> "This week"
-        diffWeeks == 1 -> "Last week"
-        diffWeeks == -1 -> "Next week"
-        diffWeeks > 0 && diffWeeks <= 4 -> "$diffWeeks week${if (diffWeeks > 1) "s" else ""} ago"
-        diffWeeks < 0 && diffWeeks >= -4 -> "In ${-diffWeeks} week${if (-diffWeeks > 1) "s" else ""}"
+        diffWeeks == 0 -> s.shared("period_this_week")
+        diffWeeks == 1 -> s.shared("period_last_week")
+        diffWeeks == -1 -> s.shared("period_next_week")
+        diffWeeks > 0 && diffWeeks <= 4 -> {
+            if (diffWeeks == 1) {
+                s.shared("period_weeks_ago_singular").format(diffWeeks)
+            } else {
+                s.shared("period_weeks_ago_plural").format(diffWeeks)
+            }
+        }
+        diffWeeks < 0 && diffWeeks >= -4 -> {
+            val absDiff = -diffWeeks
+            if (absDiff == 1) {
+                s.shared("period_weeks_from_now_singular").format(absDiff)
+            } else {
+                s.shared("period_weeks_from_now_plural").format(absDiff)
+            }
+        }
         else -> {
             val weekStart = getWeekStart(timestamp, weekStartDay)
-            "Week of ${DateUtils.formatDateForDisplay(weekStart)}"
+            s.shared("period_week_of").format(DateUtils.formatDateForDisplay(weekStart))
         }
     }
 }
@@ -348,29 +391,29 @@ private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String):
 /**
  * Labels for months
  */
-private fun generateMonthLabel(timestamp: Long, now: Long): String {
+private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext): String {
     // Normalize timestamps to compare months correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH, 4, "monday")
-    
+
     val nowCal = Calendar.getInstance().apply { timeInMillis = normalizedNow }
     val tsCal = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }
-    
-    val diffMonths = (nowCal.get(Calendar.YEAR) - tsCal.get(Calendar.YEAR)) * 12 + 
+
+    val diffMonths = (nowCal.get(Calendar.YEAR) - tsCal.get(Calendar.YEAR)) * 12 +
                     (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH))
-    
+
     return when {
-        diffMonths == 0 -> "This month"
-        diffMonths == 1 -> "Last month"
-        diffMonths == -1 -> "Next month"
-        diffMonths > 0 && diffMonths <= 6 -> "$diffMonths months ago"
-        diffMonths < 0 && diffMonths >= -6 -> "In ${-diffMonths} months"
+        diffMonths == 0 -> s.shared("period_this_month")
+        diffMonths == 1 -> s.shared("period_last_month")
+        diffMonths == -1 -> s.shared("period_next_month")
+        diffMonths > 0 && diffMonths <= 6 -> s.shared("period_months_ago").format(diffMonths)
+        diffMonths < 0 && diffMonths >= -6 -> s.shared("period_months_from_now").format(-diffMonths)
         else -> {
-            val monthNames = arrayOf(
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
+            val monthKeys = arrayOf(
+                "month_january", "month_february", "month_march", "month_april", "month_may", "month_june",
+                "month_july", "month_august", "month_september", "month_october", "month_november", "month_december"
             )
-            val month = monthNames[tsCal.get(Calendar.MONTH)]
+            val month = s.shared(monthKeys[tsCal.get(Calendar.MONTH)])
             val year = tsCal.get(Calendar.YEAR)
             "$month $year"
         }
@@ -380,21 +423,34 @@ private fun generateMonthLabel(timestamp: Long, now: Long): String {
 /**
  * Labels for years
  */
-private fun generateYearLabel(timestamp: Long, now: Long): String {
+private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext): String {
     // Normalize timestamps to compare years correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR, 4, "monday")
-    
+
     val nowYear = Calendar.getInstance().apply { timeInMillis = normalizedNow }.get(Calendar.YEAR)
     val tsYear = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }.get(Calendar.YEAR)
     val diffYears = nowYear - tsYear
-    
+
     return when {
-        diffYears == 0 -> "This year"
-        diffYears == 1 -> "Last year"
-        diffYears == -1 -> "Next year"
-        diffYears > 0 && diffYears <= 3 -> "$diffYears year${if (diffYears > 1) "s" else ""} ago"
-        diffYears < 0 && diffYears >= -3 -> "In ${-diffYears} year${if (-diffYears > 1) "s" else ""}"
+        diffYears == 0 -> s.shared("period_this_year")
+        diffYears == 1 -> s.shared("period_last_year")
+        diffYears == -1 -> s.shared("period_next_year")
+        diffYears > 0 && diffYears <= 3 -> {
+            if (diffYears == 1) {
+                s.shared("period_years_ago_singular").format(diffYears)
+            } else {
+                s.shared("period_years_ago_plural").format(diffYears)
+            }
+        }
+        diffYears < 0 && diffYears >= -3 -> {
+            val absDiff = -diffYears
+            if (absDiff == 1) {
+                s.shared("period_years_from_now_singular").format(absDiff)
+            } else {
+                s.shared("period_years_from_now_plural").format(absDiff)
+            }
+        }
         else -> tsYear.toString()
     }
 }
