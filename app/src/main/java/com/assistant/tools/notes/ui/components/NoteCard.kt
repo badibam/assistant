@@ -53,7 +53,8 @@ fun NoteCard(
     // Determine card state
     val isPlaceholder = note == null && !isCreating
     val isThisCardActive = when {
-        isCreating -> true
+        isCreating && editingNoteId == "creating" -> true // Creation avec spotlight
+        isCreating -> true // Fallback pour création
         isPlaceholder -> false
         note != null && editingNoteId == note.id -> true
         note != null && contextMenuNoteId == note.id -> true

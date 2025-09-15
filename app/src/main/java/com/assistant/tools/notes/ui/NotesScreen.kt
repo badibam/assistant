@@ -235,6 +235,7 @@ fun NotesScreen(
                             onContextMenuChanged = { if (!it) contextMenuNoteId = null },
                             onAddAbove = {
                                 creatingNotePosition = if (notes.isEmpty()) 0 else (notes.maxOfOrNull { it.position } ?: 0) + 1
+                                editingNoteId = "creating" // Activate spotlight
                             }
                         )
                     }
@@ -274,6 +275,7 @@ fun NotesScreen(
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
+                                        editingNoteId = "creating" // Activate spotlight
                                     },
                                     onDelete = {
                                         coroutineScope.launch {
@@ -290,13 +292,17 @@ fun NotesScreen(
                                     toolInstanceId = toolInstanceId,
                                     isCreating = true,
                                     insertPosition = createPos,
-                                    editingNoteId = editingNoteId,
+                                    editingNoteId = "creating", // Force spotlight activation
                                     contextMenuNoteId = contextMenuNoteId,
                                     onNoteCreated = {
+                                        editingNoteId = null // Clear on creation
                                         creatingNotePosition = null
                                         refreshTrigger++
                                     },
-                                    onCreationCancelled = { creatingNotePosition = null }
+                                    onCreationCancelled = {
+                                        editingNoteId = null // Clear on cancel
+                                        creatingNotePosition = null
+                                    }
                                 )
                             }
 
@@ -322,6 +328,7 @@ fun NotesScreen(
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
+                                        editingNoteId = "creating" // Activate spotlight
                                     },
                                     onDelete = {
                                         coroutineScope.launch {
@@ -353,6 +360,7 @@ fun NotesScreen(
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
+                                        editingNoteId = "creating" // Activate spotlight
                                     },
                                     onDelete = {
                                         coroutineScope.launch {
@@ -373,6 +381,7 @@ fun NotesScreen(
                                     onContextMenuChanged = { if (!it) contextMenuNoteId = null },
                                     onAddAbove = {
                                         creatingNotePosition = if (notes.isEmpty()) 0 else (notes.maxOfOrNull { it.position } ?: 0) + 1
+                                        editingNoteId = "creating" // Activate spotlight
                                     }
                                 )
                             }
