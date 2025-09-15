@@ -204,6 +204,34 @@ errorMessage?.let { message ->
 }
 ```
 
+### Validation Pré-Envoi (Dialogs)
+
+**Pattern** : Validation avant envoi au service via SchemaValidator
+
+```kotlin
+// State validation
+var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
+
+// Fonction validation
+fun validateForm() {
+    val toolType = ToolTypeManager.getToolType("tooltype")
+    if (toolType != null) {
+        val entryData = mapOf(/* données comme service attend */)
+        validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
+    }
+}
+
+// Usage dans onConfirm
+onConfirm = {
+    validateForm()
+    if (validationResult.isValid) {
+        // Envoyer au service
+    } else {
+        errorMessage = validationResult.errorMessage
+    }
+}
+```
+
 ### Composants Formulaire
 
 **UI.FormField** - Champ standard :

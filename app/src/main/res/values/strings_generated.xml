@@ -18,6 +18,9 @@
     <string name="notes_save_in_progress">Sauvegarde...</string>
     <string name="notes_delete_confirm_template">Supprimer \"%1$s\" ?</string>
     <string name="notes_delete_confirm_empty_note">Supprimer cette note vide ?</string>
+    <string name="notes_create_note_title">Créer une note</string>
+    <string name="notes_edit_note_title">Modifier la note</string>
+    <string name="notes_label_content">Contenu</string>
 
     <!-- tracking -->
     <string name="tracking_display_name">Suivi</string>

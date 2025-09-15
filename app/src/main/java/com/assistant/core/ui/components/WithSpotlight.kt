@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.zIndex
  * @param contextMenuNoteId Global context menu state (spotlight trigger)
  * @param onCloseSpotlight Callback to close any active spotlight interactions
  * @param modifier Modifier for the outer container
+ * @param fillParentSize Forces overlay to fill parent size even if content is smaller (for external scroll)
  * @param content The content to be wrapped
  */
 @Composable
@@ -30,6 +32,7 @@ fun WithSpotlight(
     contextMenuNoteId: String?,
     onCloseSpotlight: () -> Unit = {},
     modifier: Modifier = Modifier,
+    fillParentSize: Boolean = false,
     content: @Composable () -> Unit
 ) {
     Box(
@@ -44,7 +47,10 @@ fun WithSpotlight(
         if (!isActive && (editingNoteId != null || contextMenuNoteId != null)) {
             Box(
                 modifier = Modifier
-                    .matchParentSize()
+                    .let {
+                        if (fillParentSize) it.fillMaxSize()
+                        else it.matchParentSize()
+                    }
                     .background(Color.Black.copy(alpha = 0.5f))
                     .clickable(
                         indication = null,
