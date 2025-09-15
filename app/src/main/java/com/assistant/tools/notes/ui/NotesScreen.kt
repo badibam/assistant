@@ -270,8 +270,16 @@ fun NotesScreen(
                                     onNoteUpdated = { updatedNote ->
                                         notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
                                     },
-                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onMoveUp = {
+                                        coroutineScope.launch {
+                                            moveNoteUp(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        coroutineScope.launch {
+                                            moveNoteDown(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
@@ -323,8 +331,16 @@ fun NotesScreen(
                                     onNoteUpdated = { updatedNote ->
                                         notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
                                     },
-                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onMoveUp = {
+                                        coroutineScope.launch {
+                                            moveNoteUp(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        coroutineScope.launch {
+                                            moveNoteDown(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
@@ -355,8 +371,16 @@ fun NotesScreen(
                                     onNoteUpdated = { updatedNote ->
                                         notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
                                     },
-                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onMoveUp = {
+                                        coroutineScope.launch {
+                                            moveNoteUp(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
+                                    onMoveDown = {
+                                        coroutineScope.launch {
+                                            moveNoteDown(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        }
+                                    },
                                     onAddAbove = {
                                         // Use the note's actual position, not its index in the sorted list
                                         creatingNotePosition = note.position
@@ -397,34 +421,114 @@ fun NotesScreen(
 /**
  * Move note up in the list
  */
-private fun moveNoteUp(
+private suspend fun moveNoteUp(
     note: NoteEntry,
     currentNotes: List<NoteEntry>,
+    coordinator: Coordinator,
+    toolInstanceId: String,
     onUpdate: (List<NoteEntry>) -> Unit
 ) {
     val currentIndex = currentNotes.indexOf(note)
     if (currentIndex > 0) {
-        val mutableNotes = currentNotes.toMutableList()
-        mutableNotes.removeAt(currentIndex)
-        mutableNotes.add(currentIndex - 1, note)
-        onUpdate(mutableNotes)
+        val targetNote = currentNotes[currentIndex - 1]
+
+        // Swap positions
+        val newPosition = targetNote.position
+        val targetNewPosition = note.position
+
+        // Update note position in database
+        val params = mapOf(
+            "id" to note.id,
+            "toolInstanceId" to toolInstanceId,
+            "data" to JSONObject().apply {
+                put("content", note.content)
+                put("position", newPosition)
+            }
+        )
+
+        val result = coordinator.processUserAction("tool_data.update", params)
+        if (result?.isSuccess == true) {
+            // Update target note position
+            val targetParams = mapOf(
+                "id" to targetNote.id,
+                "toolInstanceId" to toolInstanceId,
+                "data" to JSONObject().apply {
+                    put("content", targetNote.content)
+                    put("position", targetNewPosition)
+                }
+            )
+
+            val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
+            if (targetResult?.isSuccess == true) {
+                // Update local state
+                val updatedNotes = currentNotes.map { noteItem ->
+                    when (noteItem.id) {
+                        note.id -> noteItem.copy(position = newPosition)
+                        targetNote.id -> noteItem.copy(position = targetNewPosition)
+                        else -> noteItem
+                    }
+                }.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
+
+                onUpdate(updatedNotes)
+            }
+        }
     }
 }
 
 /**
  * Move note down in the list
  */
-private fun moveNoteDown(
+private suspend fun moveNoteDown(
     note: NoteEntry,
     currentNotes: List<NoteEntry>,
+    coordinator: Coordinator,
+    toolInstanceId: String,
     onUpdate: (List<NoteEntry>) -> Unit
 ) {
     val currentIndex = currentNotes.indexOf(note)
     if (currentIndex < currentNotes.size - 1) {
-        val mutableNotes = currentNotes.toMutableList()
-        mutableNotes.removeAt(currentIndex)
-        mutableNotes.add(currentIndex + 1, note)
-        onUpdate(mutableNotes)
+        val targetNote = currentNotes[currentIndex + 1]
+
+        // Swap positions
+        val newPosition = targetNote.position
+        val targetNewPosition = note.position
+
+        // Update note position in database
+        val params = mapOf(
+            "id" to note.id,
+            "toolInstanceId" to toolInstanceId,
+            "data" to JSONObject().apply {
+                put("content", note.content)
+                put("position", newPosition)
+            }
+        )
+
+        val result = coordinator.processUserAction("tool_data.update", params)
+        if (result?.isSuccess == true) {
+            // Update target note position
+            val targetParams = mapOf(
+                "id" to targetNote.id,
+                "toolInstanceId" to toolInstanceId,
+                "data" to JSONObject().apply {
+                    put("content", targetNote.content)
+                    put("position", targetNewPosition)
+                }
+            )
+
+            val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
+            if (targetResult?.isSuccess == true) {
+                // Update local state
+                val updatedNotes = currentNotes.map { noteItem ->
+                    when (noteItem.id) {
+                        note.id -> noteItem.copy(position = newPosition)
+                        targetNote.id -> noteItem.copy(position = targetNewPosition)
+                        else -> noteItem
+                    }
+                }.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
+
+                onUpdate(updatedNotes)
+            }
+        }
     }
 }
 
