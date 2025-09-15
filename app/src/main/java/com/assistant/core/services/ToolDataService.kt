@@ -8,6 +8,7 @@ import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 import java.util.*
 
@@ -16,6 +17,8 @@ import java.util.*
  * Replaces specialized services (TrackingService, etc.)
  */
 class ToolDataService(private val context: Context) : ExecutableService {
+
+    private val s = Strings.`for`(context = context)
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -29,10 +32,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "get_single" -> getSingleEntry(params, token)  // GET single entry by ID
                 "stats" -> getStats(params, token)       // GET /tool_data/stats
                 "delete_all" -> deleteAllEntries(params, token)  // POST /tool_data/delete_all
-                else -> OperationResult.error("Unknown operation: $operation")
+                else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
-            OperationResult.error("ToolDataService error: ${e.message}")
+            OperationResult.error(s.shared("service_error_tool_data_service").format(e.message ?: ""))
         }
     }
 
@@ -47,7 +50,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
-            return OperationResult.error("Missing required parameters: toolInstanceId, tooltype")
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
         }
 
         // Validation via ToolType
@@ -74,7 +77,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             
             val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
             if (!validation.isValid) {
-                return OperationResult.error("Validation failed: ${validation.errorMessage}")
+                return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
             }
         }
 
@@ -152,12 +155,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val name = params.optString("name", null)
 
         if (entryId.isEmpty()) {
-            return OperationResult.error("Missing required parameter: id")
+            return OperationResult.error(s.shared("service_error_missing_id"))
         }
 
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
-            ?: return OperationResult.error("Entry not found: $entryId")
+            ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
         // Validation if new data provided
         if (dataJson != null) {
@@ -184,7 +187,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 
                 val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
                 if (!validation.isValid) {
-                    return OperationResult.error("Validation failed: ${validation.errorMessage}")
+                    return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
                 }
             }
         }
@@ -211,7 +214,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val entryId = params.optString("id")
         if (entryId.isEmpty()) {
-            return OperationResult.error("Missing required parameter: id")
+            return OperationResult.error(s.shared("service_error_missing_id"))
         }
 
         val dao = getToolDataDao()
@@ -232,7 +235,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         if (toolInstanceId.isEmpty()) {
             com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - toolInstanceId is empty, returning error", "ERROR")
-            return OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
 
         // Filtering and pagination parameters
@@ -288,12 +291,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val entryId = params.optString("entry_id")
         if (entryId.isEmpty()) {
-            return OperationResult.error("Missing required parameter: entry_id")
+            return OperationResult.error(s.shared("service_error_missing_entry_id"))
         }
 
         val dao = getToolDataDao()
         val entity = dao.getById(entryId)
-            ?: return OperationResult.error("Entry not found: $entryId")
+            ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
         return OperationResult.success(
             data = mapOf(
@@ -317,7 +320,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val toolInstanceId = params.optString("toolInstanceId")
         if (toolInstanceId.isEmpty()) {
-            return OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
 
         val dao = getToolDataDao()
@@ -336,7 +339,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val toolInstanceId = params.optString("toolInstanceId")
         if (toolInstanceId.isEmpty()) {
-            return OperationResult.error("Missing required parameter: toolInstanceId")
+            return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
 
         val dao = getToolDataDao()
