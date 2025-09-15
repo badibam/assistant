@@ -221,7 +221,17 @@
     <string name="zone_schema_description"></string>
     <string name="zone_schema_icon_name"></string>
     <string name="zone_schema_color"></string>
-    
+
+    <!-- SERVICES ERROR MESSAGES - Messages d'erreur des services -->
+    <string name="service_error_unknown_operation">Opération inconnue: %1$s</string>
+    <string name="service_error_tool_data_service">Erreur ToolDataService: %1$s</string>
+    <string name="service_error_missing_required_params">Paramètres obligatoires manquants: %1$s</string>
+    <string name="service_error_validation_failed">Validation échouée: %1$s</string>
+    <string name="service_error_missing_id">Paramètre obligatoire manquant: id</string>
+    <string name="service_error_entry_not_found">Entrée introuvable: %1$s</string>
+    <string name="service_error_missing_tool_instance_id">Paramètre obligatoire manquant: toolInstanceId</string>
+    <string name="service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
+
 
 
 </resources>

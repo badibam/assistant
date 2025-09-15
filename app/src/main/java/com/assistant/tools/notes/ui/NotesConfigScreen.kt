@@ -77,12 +77,12 @@ fun NotesConfigScreen(
                         LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
-                        errorMessage = "Erreur lors du chargement de la configuration"
+                        errorMessage = s.tool("error_config_load")
                     }
                 }
             } else {
                 LogManager.ui("Failed to load existing tool", "ERROR")
-                errorMessage = "Impossible de charger la configuration existante"
+                errorMessage = s.tool("error_config_not_found")
             }
             isLoading = false
         }
@@ -183,15 +183,15 @@ fun NotesConfigScreen(
                             onSave(configJson.toString())
                         } else {
                             LogManager.ui("Validation failed: ${validation.errorMessage}", "ERROR")
-                            errorMessage = validation.errorMessage ?: "Erreur de validation"
+                            errorMessage = validation.errorMessage ?: s.tool("error_validation")
                         }
                     } else {
                         LogManager.ui("ToolType notes not found", "ERROR")
-                        errorMessage = "Type d'outil introuvable"
+                        errorMessage = s.shared("error_tooltype_not_found").format("notes")
                     }
                 } catch (e: Exception) {
                     LogManager.ui("Error during save: ${e.message}", "ERROR")
-                    errorMessage = "Erreur lors de la sauvegarde"
+                    errorMessage = s.tool("error_save")
                 } finally {
                     isSaving = false
                 }

@@ -39,4 +39,11 @@
     <string name="edit_note_title">Modifier la note</string>
     <string name="label_content">Contenu</string>
 
+    <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
+    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
+    <string name="error_config_not_found">Impossible de charger la configuration existante</string>
+    <string name="error_validation">Erreur de validation</string>
+    <string name="error_save">Erreur lors de la sauvegarde</string>
+
+
 </resources>
