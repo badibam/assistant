@@ -32,5 +32,6 @@
 
     <!-- CONFIRMATIONS - Messages de confirmation -->
     <string name="delete_confirm_template">Supprimer \"%1$s\" ?</string>
+    <string name="delete_confirm_empty_note">Supprimer cette note vide ?</string>
 
 </resources>

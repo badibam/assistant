@@ -67,11 +67,14 @@ fun NoteCard(
         mutableStateOf(if (isCreating) "" else (note?.content ?: ""))
     }
     var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     // Extracted save function to avoid duplication
     val saveNote: (Boolean) -> Unit = { exitEditMode ->
         when {
-            note != null && content.trim() != note.content && content.trim().isNotEmpty() -> {
+            note != null && content.trim() != note.content -> {
+                // Launch save regardless of content being empty - let validation decide
                 coroutineScope.launch {
                     isSaving = true
                     try {
@@ -92,10 +95,12 @@ fun NoteCard(
                                 isEditing = false
                             }
                         } else {
+                            errorMessage = result?.error ?: s.shared("message_validation_error_simple")
                             isEditing = true // Stay in edit mode on error
                         }
                     } catch (e: Exception) {
                         LogManager.ui("Error saving note: ${e.message}", "ERROR")
+                        errorMessage = s.shared("message_error").format(e.message ?: "")
                         isEditing = true
                     } finally {
                         isSaving = false
@@ -103,11 +108,8 @@ fun NoteCard(
                 }
             }
             exitEditMode -> {
-                // No changes or empty content - just exit edit mode
+                // No changes - just exit edit mode
                 isEditing = false
-                if (note != null) {
-                    content = note.content // Restore original content if empty
-                }
             }
         }
     }
@@ -171,10 +173,12 @@ fun NoteCard(
                             if (result?.isSuccess == true) {
                                 onNoteCreated()
                             } else {
+                                errorMessage = result?.error ?: s.shared("message_validation_error_simple")
                                 LogManager.ui("Failed to create note", "ERROR")
                             }
                         } catch (e: Exception) {
                             LogManager.ui("Error creating note: ${e.message}", "ERROR")
+                            errorMessage = s.shared("message_error").format(e.message ?: "")
                         } finally {
                             isSaving = false
                         }
@@ -184,9 +188,40 @@ fun NoteCard(
                 }
             }
             note != null -> {
-                // Update logic for existing notes - use shared function
-                saveNote(true) // Exit edit mode after save
+                // Check if content is empty for existing notes - propose deletion
+                if (content.trim().isEmpty()) {
+                    // Show custom confirmation dialog for empty content
+                    showDeleteConfirmation = true
+                } else {
+                    // Update logic for existing notes - use shared function
+                    saveNote(true) // Exit edit mode after save
+                }
             }
+        }
+    }
+
+    // Error message display
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
+        }
+    }
+
+    // Delete confirmation dialog for empty content
+    if (showDeleteConfirmation && note != null) {
+        UI.Dialog(
+            type = DialogType.DANGER,
+            onConfirm = {
+                showDeleteConfirmation = false
+                onDelete()
+            },
+            onCancel = { showDeleteConfirmation = false }
+        ) {
+            UI.Text(
+                text = s.tool("delete_confirm_empty_note"),
+                type = TextType.BODY
+            )
         }
     }
 
