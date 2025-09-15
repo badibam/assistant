@@ -68,6 +68,11 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
         PeriodType.DAY -> {
             // Start of day according to dayStartHour
             cal.apply {
+                // If current hour is before dayStartHour, we need to go back to previous day
+                val currentHour = get(Calendar.HOUR_OF_DAY)
+                if (currentHour < dayStartHour) {
+                    add(Calendar.DAY_OF_MONTH, -1)
+                }
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
@@ -89,6 +94,13 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             cal.apply {
                 firstDayOfWeek = calendarDay
                 set(Calendar.DAY_OF_WEEK, calendarDay)
+                // If current hour is before dayStartHour, we need to go back to previous day
+                val currentHour = get(Calendar.HOUR_OF_DAY)
+                if (currentHour < dayStartHour) {
+                    add(Calendar.DAY_OF_MONTH, -1)
+                    // After going back a day, we might need to adjust the week
+                    set(Calendar.DAY_OF_WEEK, calendarDay)
+                }
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
@@ -99,6 +111,11 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             // First day of month with dayStartHour
             cal.apply {
                 set(Calendar.DAY_OF_MONTH, 1)
+                // If current hour is before dayStartHour, we need to go back to previous day
+                val currentHour = get(Calendar.HOUR_OF_DAY)
+                if (currentHour < dayStartHour) {
+                    add(Calendar.DAY_OF_MONTH, -1)
+                }
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
@@ -110,6 +127,11 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
             cal.apply {
                 set(Calendar.MONTH, Calendar.JANUARY)
                 set(Calendar.DAY_OF_MONTH, 1)
+                // If current hour is before dayStartHour, we need to go back to previous day
+                val currentHour = get(Calendar.HOUR_OF_DAY)
+                if (currentHour < dayStartHour) {
+                    add(Calendar.DAY_OF_MONTH, -1)
+                }
                 set(Calendar.HOUR_OF_DAY, dayStartHour)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
