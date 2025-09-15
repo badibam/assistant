@@ -55,7 +55,6 @@ import com.assistant.core.ui.DisplayMode
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.tools.BaseSchemas
 import java.util.Calendar
-import com.assistant.core.ui.FieldType
 
 /**
  * DefaultTheme - Default ThemeContract implementation

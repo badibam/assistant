@@ -64,7 +64,7 @@ object UI {
         value: String,
         onChange: (String) -> Unit,
         placeholder: String
-    ) = CurrentTheme.current.TextField(fieldType, state, value, onChange, placeholder)
+    ) = CurrentTheme.current.TextField(fieldType, state, value, onChange, placeholder, FieldModifier())
     
     // =====================================
     // DISPLAY

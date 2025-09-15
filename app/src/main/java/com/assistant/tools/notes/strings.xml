@@ -17,6 +17,9 @@
     <string name="field_position">Position</string>
     <string name="field_unknown">Champ non reconnu</string>
 
+    <!-- CONTENT - États du contenu -->
+    <string name="content_empty">Aucun texte</string>
+
     <!-- ACTIONS - Actions spécifiques aux notes -->
     <string name="action_add_above">Ajouter au-dessus</string>
     <string name="action_move">Déplacer</string>

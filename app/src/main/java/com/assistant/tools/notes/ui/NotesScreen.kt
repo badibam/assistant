@@ -1,5 +1,7 @@
 package com.assistant.tools.notes.ui
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -12,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
+import com.assistant.core.ui.components.WithSpotlight
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.mapSingleData
@@ -19,8 +22,6 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.tools.notes.ui.components.NoteCard
-import com.assistant.tools.notes.ui.components.PlaceholderCard
-import com.assistant.tools.notes.ui.components.CreateNoteCard
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -60,6 +61,8 @@ fun NotesScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
     var creatingNotePosition by remember { mutableStateOf<Int?>(null) }
+    var editingNoteId by remember { mutableStateOf<String?>(null) }
+    var contextMenuNoteId by remember { mutableStateOf<String?>(null) }
 
     // Load tool instance data
     LaunchedEffect(toolInstanceId) {
@@ -138,6 +141,11 @@ fun NotesScreen(
         }
     }
 
+    // Debug state changes
+    LaunchedEffect(editingNoteId, contextMenuNoteId) {
+        LogManager.ui("🔵 STATE CHANGE: editingNoteId=$editingNoteId, contextMenuNoteId=$contextMenuNoteId", "DEBUG")
+    }
+
     // Error message display
     errorMessage?.let { message ->
         LaunchedEffect(message) {
@@ -149,144 +157,232 @@ fun NotesScreen(
     // Determine grid columns based on orientation
     val columns = if (configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 2 else 1
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(vertical = 16.dp)
-    ) {
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Layer 1: Background + Header with common spotlight (zIndex 0)
+        WithSpotlight(
+            isActive = false, // Background + Header never active
+            editingNoteId = editingNoteId,
+            contextMenuNoteId = contextMenuNoteId,
+            onCloseSpotlight = {
+                editingNoteId = null
+                contextMenuNoteId = null
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 16.dp)
             ) {
-                UI.Text(s.shared("tools_loading"), TextType.BODY)
-            }
-        } else if (toolInstance != null) {
-            // Tool header
-            val toolName = config.optString("name", s.tool("display_name"))
-            val toolDescription = config.optString("description", "")
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.Text(s.shared("tools_loading"), TextType.BODY)
+                    }
+                } else if (toolInstance != null) {
+                    // Tool header WITHOUT individual spotlight
+                    val toolName = config.optString("name", s.tool("display_name"))
+                    val toolDescription = config.optString("description", "")
 
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                UI.PageHeader(
-                    title = toolName,
-                    subtitle = toolDescription.takeIf { it.isNotBlank() },
-                    icon = config.optString("icon_name", "note"),
-                    leftButton = ButtonAction.BACK,
-                    rightButton = ButtonAction.CONFIGURE,
-                    onLeftClick = onNavigateBack,
-                    onRightClick = onConfigureClick
-                )
-            }
+                    Column(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        UI.PageHeader(
+                            title = toolName,
+                            subtitle = toolDescription.takeIf { it.isNotBlank() },
+                            icon = config.optString("icon_name", "note"),
+                            leftButton = ButtonAction.BACK,
+                            rightButton = ButtonAction.CONFIGURE,
+                            onLeftClick = onNavigateBack,
+                            onRightClick = onConfigureClick
+                        )
+                    }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // Notes grid
-            if (notes.isEmpty() && creatingNotePosition == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    PlaceholderCard(
-                        onClick = { creatingNotePosition = 0 }
-                    )
+                    // Background space (clickable through WithSpotlight)
+                    Spacer(modifier = Modifier.weight(1f))
                 }
-            } else {
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(columns),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 16.dp
-                ) {
-                    creatingNotePosition?.let { createPos ->
-                        // Creating note - insert at specific position
-                        val notesBeforeCreate = notes.take(createPos)
-                        val notesAfterCreate = notes.drop(createPos)
+            }
+        }
 
-                        // Notes before creation position
-                        items(notesBeforeCreate, key = { "note_${it.id}" }) { note ->
-                            NoteCard(
-                                note = note,
-                                toolInstanceId = toolInstanceId,
-                                onNoteUpdated = { updatedNote ->
-                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
-                                },
-                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
-                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
-                                onDelete = {
-                                    coroutineScope.launch {
-                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+        // Layer 2: Cards with individual spotlights (zIndex 2f when active)
+        if (!isLoading && toolInstance != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 16.dp)
+            ) {
+                // Spacer to position cards below header
+                Spacer(modifier = Modifier.height(80.dp)) // Approximate header height
+
+                // Notes grid
+                if (notes.isEmpty() && creatingNotePosition == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        NoteCard(
+                            note = null, // Placeholder mode
+                            toolInstanceId = toolInstanceId,
+                            editingNoteId = editingNoteId,
+                            contextMenuNoteId = contextMenuNoteId,
+                            onEditingChanged = { if (!it) editingNoteId = null },
+                            onContextMenuChanged = { if (!it) contextMenuNoteId = null },
+                            onAddAbove = {
+                                creatingNotePosition = if (notes.isEmpty()) 0 else (notes.maxOfOrNull { it.position } ?: 0) + 1
+                            }
+                        )
+                    }
+                } else {
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(columns),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 16.dp
+                    ) {
+                        creatingNotePosition?.let { createPos ->
+                            // Creating note - insert at specific position
+                            val notesBeforeCreate = notes.filter { it.position < createPos }
+                            val notesAfterCreate = notes.filter { it.position >= createPos }
+
+                            // Notes before creation position
+                            items(notesBeforeCreate, key = { "note_${it.id}" }) { note ->
+                                NoteCard(
+                                    note = note,
+                                    toolInstanceId = toolInstanceId,
+                                    showContextMenu = contextMenuNoteId == note.id,
+                                    editingNoteId = editingNoteId, // États globaux
+                                    contextMenuNoteId = contextMenuNoteId,
+                                    onEditingChanged = { isEditing ->
+                                        editingNoteId = if (isEditing) note.id else null
+                                    },
+                                    onContextMenuChanged = { showMenu ->
+                                        contextMenuNoteId = if (showMenu) note.id else null
+                                    },
+                                    onNoteUpdated = { updatedNote ->
+                                        notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                    },
+                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onAddAbove = {
+                                        // Use the note's actual position, not its index in the sorted list
+                                        creatingNotePosition = note.position
+                                    },
+                                    onDelete = {
+                                        coroutineScope.launch {
+                                            deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                        }
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        // Creation card
-                        item(key = "creating") {
-                            CreateNoteCard(
-                                toolInstanceId = toolInstanceId,
-                                insertPosition = createPos,
-                                onSave = {
-                                    creatingNotePosition = null
-                                    refreshTrigger++
-                                },
-                                onCancel = { creatingNotePosition = null }
-                            )
-                        }
+                            // Creation card
+                            item(key = "creating") {
+                                NoteCard(
+                                    note = null,
+                                    toolInstanceId = toolInstanceId,
+                                    isCreating = true,
+                                    insertPosition = createPos,
+                                    editingNoteId = editingNoteId,
+                                    contextMenuNoteId = contextMenuNoteId,
+                                    onNoteCreated = {
+                                        creatingNotePosition = null
+                                        refreshTrigger++
+                                    },
+                                    onCreationCancelled = { creatingNotePosition = null }
+                                )
+                            }
 
-                        // Notes after creation position
-                        items(notesAfterCreate, key = { "note_${it.id}" }) { note ->
-                            NoteCard(
-                                note = note,
-                                toolInstanceId = toolInstanceId,
-                                onNoteUpdated = { updatedNote ->
-                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
-                                },
-                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
-                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
-                                onDelete = {
-                                    coroutineScope.launch {
-                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+                            // Notes after creation position
+                            items(notesAfterCreate, key = { "note_${it.id}" }) { note ->
+                                NoteCard(
+                                    note = note,
+                                    toolInstanceId = toolInstanceId,
+                                    showContextMenu = contextMenuNoteId == note.id,
+                                    editingNoteId = editingNoteId, // États globaux
+                                    contextMenuNoteId = contextMenuNoteId,
+                                    onEditingChanged = { isEditing ->
+                                        editingNoteId = if (isEditing) note.id else null
+                                    },
+                                    onContextMenuChanged = { showMenu ->
+                                        contextMenuNoteId = if (showMenu) note.id else null
+                                    },
+                                    onNoteUpdated = { updatedNote ->
+                                        notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                    },
+                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onAddAbove = {
+                                        // Use the note's actual position, not its index in the sorted list
+                                        creatingNotePosition = note.position
+                                    },
+                                    onDelete = {
+                                        coroutineScope.launch {
+                                            deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                        }
                                     }
-                                }
-                            )
-                        }
-                    } ?: run {
-                        // No creation - normal display
-                        items(notes, key = { "note_${it.id}" }) { note ->
-                            NoteCard(
-                                note = note,
-                                toolInstanceId = toolInstanceId,
-                                onNoteUpdated = { updatedNote ->
-                                    notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
-                                },
-                                onMoveUp = { moveNoteUp(note, notes) { notes = it } },
-                                onMoveDown = { moveNoteDown(note, notes) { notes = it } },
-                                onAddAbove = { creatingNotePosition = notes.indexOf(note) },
-                                onDelete = {
-                                    coroutineScope.launch {
-                                        deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                )
+                            }
+                        } ?: run {
+                            // No creation - normal display
+                            items(notes, key = { "note_${it.id}" }) { note ->
+                                NoteCard(
+                                    note = note,
+                                    toolInstanceId = toolInstanceId,
+                                    showContextMenu = contextMenuNoteId == note.id,
+                                    editingNoteId = editingNoteId, // États globaux
+                                    contextMenuNoteId = contextMenuNoteId,
+                                    onEditingChanged = { isEditing ->
+                                        editingNoteId = if (isEditing) note.id else null
+                                    },
+                                    onContextMenuChanged = { showMenu ->
+                                        contextMenuNoteId = if (showMenu) note.id else null
+                                    },
+                                    onNoteUpdated = { updatedNote ->
+                                        notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
+                                    },
+                                    onMoveUp = { moveNoteUp(note, notes) { notes = it } },
+                                    onMoveDown = { moveNoteDown(note, notes) { notes = it } },
+                                    onAddAbove = {
+                                        // Use the note's actual position, not its index in the sorted list
+                                        creatingNotePosition = note.position
+                                    },
+                                    onDelete = {
+                                        coroutineScope.launch {
+                                            deleteNote(coordinator, note.id) { refreshTrigger++ }
+                                        }
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        // Placeholder at end
-                        item(key = "placeholder") {
-                            PlaceholderCard(
-                                onClick = { creatingNotePosition = notes.size }
-                            )
+                            // Placeholder at end
+                            item(key = "placeholder") {
+                                NoteCard(
+                                    note = null, // Placeholder mode
+                                    toolInstanceId = toolInstanceId,
+                                    editingNoteId = editingNoteId,
+                                    contextMenuNoteId = contextMenuNoteId,
+                                    onEditingChanged = { if (!it) editingNoteId = null },
+                                    onContextMenuChanged = { if (!it) contextMenuNoteId = null },
+                                    onAddAbove = {
+                                        creatingNotePosition = if (notes.isEmpty()) 0 else (notes.maxOfOrNull { it.position } ?: 0) + 1
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
     }
+
 }
 
 /**
@@ -331,7 +427,7 @@ private suspend fun deleteNote(
     noteId: String,
     onSuccess: () -> Unit
 ) {
-    val params = mapOf("entryId" to noteId)
+    val params = mapOf("id" to noteId)
     val result = coordinator.processUserAction("tool_data.delete", params)
     if (result?.isSuccess == true) {
         onSuccess()

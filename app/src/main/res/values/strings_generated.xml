@@ -11,6 +11,7 @@
     <string name="notes_field_content">Contenu</string>
     <string name="notes_field_position">Position</string>
     <string name="notes_field_unknown">Champ non reconnu</string>
+    <string name="notes_content_empty">Aucun texte</string>
     <string name="notes_action_add_above">Ajouter au-dessus</string>
     <string name="notes_action_move">Déplacer</string>
     <string name="notes_move_ok">Ok</string>

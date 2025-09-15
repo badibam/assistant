@@ -58,7 +58,7 @@ enum class FieldType {
  */
 data class FieldModifier(
     val focusRequester: FocusRequester? = null,
-    val onFocusChanged: ((Boolean) -> Unit)? = null
+    val onFocusChanged: ((androidx.compose.ui.focus.FocusState) -> Unit)? = null
     // Extensible for other field-specific behaviors
 ) {
     companion object {
