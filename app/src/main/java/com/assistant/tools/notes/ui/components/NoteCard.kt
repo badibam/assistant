@@ -67,6 +67,68 @@ fun NoteCard(
     }
     var isSaving by remember { mutableStateOf(false) }
 
+    // Extracted save function to avoid duplication
+    val saveNote: (Boolean) -> Unit = { exitEditMode ->
+        when {
+            note != null && content.trim() != note.content && content.trim().isNotEmpty() -> {
+                coroutineScope.launch {
+                    isSaving = true
+                    try {
+                        val params = mapOf(
+                            "id" to note.id,
+                            "toolInstanceId" to toolInstanceId,
+                            "data" to JSONObject().apply {
+                                put("content", content.trim())
+                                put("position", note.position)
+                            }
+                        )
+
+                        val result = coordinator.processUserAction("tool_data.update", params)
+                        if (result?.isSuccess == true) {
+                            val updatedNote = note.copy(content = content.trim())
+                            onNoteUpdated(updatedNote)
+                            if (exitEditMode) {
+                                isEditing = false
+                            }
+                        } else {
+                            isEditing = true // Stay in edit mode on error
+                        }
+                    } catch (e: Exception) {
+                        LogManager.ui("Error saving note: ${e.message}", "ERROR")
+                        isEditing = true
+                    } finally {
+                        isSaving = false
+                    }
+                }
+            }
+            exitEditMode -> {
+                // No changes or empty content - just exit edit mode
+                isEditing = false
+                if (note != null) {
+                    content = note.content // Restore original content if empty
+                }
+            }
+        }
+    }
+
+    // Sync local isEditing with global editingNoteId
+    LaunchedEffect(editingNoteId, note?.id) {
+        if (note != null) {
+            val shouldBeEditing = editingNoteId == note.id
+            if (isEditing != shouldBeEditing) {
+                LogManager.ui("🔵 SYNC: isEditing $isEditing -> $shouldBeEditing for note ${note.id}", "DEBUG")
+
+                // Auto-save if exiting edit mode (was editing, now not)
+                if (isEditing && !shouldBeEditing) {
+                    LogManager.ui("🔵 AUTO-SAVE: Exiting edit mode, saving note ${note.id}", "DEBUG")
+                    saveNote(false) // Don't set isEditing here, will be set below
+                }
+
+                isEditing = shouldBeEditing
+            }
+        }
+    }
+
     // Auto-focus when entering edit mode or creating
     LaunchedEffect(isEditing, isCreating) {
         if (isEditing) {
@@ -121,40 +183,8 @@ fun NoteCard(
                 }
             }
             note != null -> {
-                // Update logic for existing notes
-                if (content.trim() != note.content && content.trim().isNotEmpty()) {
-                    coroutineScope.launch {
-                        isSaving = true
-                        try {
-                            val params = mapOf(
-                                "entryId" to note.id,
-                                "toolInstanceId" to toolInstanceId,
-                                "data" to JSONObject().apply {
-                                    put("content", content.trim())
-                                    put("position", note.position)
-                                }
-                            )
-
-                            val result = coordinator.processUserAction("tool_data.update", params)
-                            if (result?.isSuccess == true) {
-                                val updatedNote = note.copy(content = content.trim())
-                                onNoteUpdated(updatedNote)
-                                isEditing = false
-                            } else {
-                                isEditing = true // Stay in edit mode on error
-                            }
-                        } catch (e: Exception) {
-                            LogManager.ui("Error updating note: ${e.message}", "ERROR")
-                            isEditing = true
-                        } finally {
-                            isSaving = false
-                        }
-                    }
-                } else {
-                    // No changes or empty content - just exit edit mode
-                    isEditing = false
-                    content = note.content // Restore original content if empty
-                }
+                // Update logic for existing notes - use shared function
+                saveNote(true) // Exit edit mode after save
             }
         }
     }
@@ -165,8 +195,21 @@ fun NoteCard(
         contextMenuNoteId = contextMenuNoteId,
         onCloseSpotlight = {
             if (!isCreating) { // Don't close creation from other cards
-                onEditingChanged(false)
-                onContextMenuChanged(false)
+                // Check if THIS note is being edited
+                val isThisNoteEditing = note != null && editingNoteId == note.id
+                LogManager.ui("🔴 onCloseSpotlight called: isThisNoteEditing=$isThisNoteEditing, editingNoteId=$editingNoteId, note=${note?.id}", "DEBUG")
+
+                // If this note is being edited, save it
+                if (isThisNoteEditing) {
+                    LogManager.ui("🔴 Triggering performSave from onCloseSpotlight", "DEBUG")
+                    performSave()
+                } else {
+                    // If ANY note is being edited (not this one), just close spotlight
+                    // The edited note will handle its own save when its state changes
+                    LogManager.ui("🔴 Just closing spotlight (this note not editing, but editingNoteId=$editingNoteId)", "DEBUG")
+                    onEditingChanged(false)
+                    onContextMenuChanged(false)
+                }
             }
         }
     ) {
