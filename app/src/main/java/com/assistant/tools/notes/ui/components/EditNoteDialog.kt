@@ -3,6 +3,7 @@ package com.assistant.tools.notes.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
@@ -39,6 +40,9 @@ fun EditNoteDialog(
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
     val coroutineScope = rememberCoroutineScope()
 
+    // Focus management
+    val focusRequester = remember { FocusRequester() }
+
     // Get strings
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "notes", context = context) }
@@ -47,6 +51,13 @@ fun EditNoteDialog(
     LaunchedEffect(isVisible) {
         if (isVisible) {
             validationResult = ValidationResult.success()
+        }
+    }
+
+    // Request focus when dialog opens
+    LaunchedEffect(isVisible) {
+        if (isVisible) {
+            focusRequester.requestFocus()
         }
     }
 
@@ -129,7 +140,8 @@ fun EditNoteDialog(
                     value = content,
                     onChange = { content = it },
                     required = true,
-                    fieldType = FieldType.TEXT_MEDIUM
+                    fieldType = FieldType.TEXT_MEDIUM,
+                    fieldModifier = FieldModifier.withFocus(focusRequester)
                 )
 
             }

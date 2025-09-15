@@ -57,14 +57,14 @@ fun NotesConfigScreen(
         if (existingToolId != null) {
             LogManager.ui("Loading existing tool configuration for ID: $existingToolId")
             val result = coordinator.processUserAction(
-                "tools.get_single",
+                "tools.get",
                 mapOf("tool_instance_id" to existingToolId)
             )
 
             if (result?.isSuccess == true) {
                 val toolData = result.mapSingleData("tool_instance") { map -> map }
                 toolData?.let { data ->
-                    val configJson = data["config"] as? String ?: "{}"
+                    val configJson = data["config_json"] as? String ?: "{}"
                     try {
                         val config = JSONObject(configJson)
                         name = config.optString("name", "")
@@ -100,7 +100,7 @@ fun NotesConfigScreen(
 
     // Early return for loading state
     if (isLoading) {
-        UI.Text(s.shared("message_loading"), TextType.BODY)
+        UI.Text(s.shared("tools_loading_config"), TextType.BODY)
         return
     }
 
