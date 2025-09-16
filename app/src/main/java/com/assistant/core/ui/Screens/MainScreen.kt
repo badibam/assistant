@@ -17,6 +17,7 @@ import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
+import com.assistant.core.ai.ui.dialogs.DataEnrichmentDialog
 import kotlinx.coroutines.launch
 
 /**
@@ -39,6 +40,7 @@ fun MainScreen() {
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showDataEnrichmentDialog by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
     val selectedZone = zones.find { it.id == selectedZoneId }
@@ -153,7 +155,7 @@ fun MainScreen() {
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,
                 rightButton = ButtonAction.ADD,
-                onLeftClick = { /* Pas d'action pour le moment */ },
+                onLeftClick = { showDataEnrichmentDialog = true },
                 onRightClick = { showCreateZone = true }
             )
             
@@ -185,6 +187,19 @@ fun MainScreen() {
         }
     }
     
+    // Show DataEnrichmentDialog when requested
+    if (showDataEnrichmentDialog) {
+        DataEnrichmentDialog(
+            onDismiss = { showDataEnrichmentDialog = false },
+            onConfirm = { selectedPath, selectedValues ->
+                showDataEnrichmentDialog = false
+                // Log the result for testing
+                android.util.Log.d("DataEnrichment", "Selected path: $selectedPath")
+                android.util.Log.d("DataEnrichment", "Selected values: $selectedValues")
+            }
+        )
+    }
+
     // Error handling with Toast
     errorMessage?.let { message ->
         LaunchedEffect(message) {
