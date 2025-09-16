@@ -32,7 +32,7 @@ class ServiceManager(private val context: Context) {
             "zone_service" -> ZoneService(context)
             "tool_instance_service" -> ToolInstanceService(context)
             "tool_data_service" -> ToolDataService(context)
-            "backup_service" -> BackupService()
+            "backup_service" -> BackupService(context)
             "app_config_service" -> AppConfigService(context)
             "icon_preload_service" -> IconPreloadService(context)
             

@@ -5,6 +5,7 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.OperationResult
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
 /**
@@ -14,6 +15,7 @@ import org.json.JSONObject
 class ZoneService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val zoneDao by lazy { database.zoneDao() }
+    private val s = Strings.`for`(context = context)
     
     /**
      * Execute zone operation with cancellation support
@@ -30,10 +32,10 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "delete" -> handleDelete(params, token)
                 "get" -> handleGet(params, token)
                 "list" -> handleList(params, token)
-                else -> OperationResult.error("Unknown zone operation: $operation")
+                else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
-            OperationResult.error("Zone operation failed: ${e.message}")
+            OperationResult.error(s.shared("service_error_zone_service").format(e.message ?: ""))
         }
     }
     
@@ -45,7 +47,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val name = params.optString("name")
         if (name.isBlank()) {
-            return OperationResult.error("Zone name is required")
+            return OperationResult.error(s.shared("service_error_zone_name_required"))
         }
         
         val description = params.optString("description").takeIf { it.isNotBlank() }
@@ -81,11 +83,11 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
-            return OperationResult.error("Zone ID is required")
+            return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
         
         val existingZone = zoneDao.getZoneById(zoneId)
-            ?: return OperationResult.error("Zone not found")
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -111,12 +113,12 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
-            return OperationResult.error("Zone ID is required")
+            return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
         
         // Verify zone exists
         val existingZone = zoneDao.getZoneById(zoneId)
-            ?: return OperationResult.error("Zone not found")
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -136,11 +138,11 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
-            return OperationResult.error("Zone ID is required")
+            return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
         
         val zone = zoneDao.getZoneById(zoneId)
-            ?: return OperationResult.error("Zone not found")
+            ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
         
         return OperationResult.success(mapOf(
             "zone" to mapOf(

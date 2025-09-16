@@ -11,6 +11,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.utils.LogManager
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
 /**
@@ -21,6 +22,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
 
     private val database = AppDatabase.getDatabase(context)
     private val settingsDao = database.appSettingsCategoryDao()
+    private val s = Strings.`for`(context = context)
 
     /**
      * Format configuration
@@ -143,13 +145,13 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     }
                     else -> {
                         LogManager.service("Unknown category: $category", "WARN")
-                        OperationResult.error("Unknown category: $category")
+                        OperationResult.error(s.shared("service_error_unknown_category").format(category))
                     }
                 }
             }
             else -> {
                 LogManager.service("Unknown operation: $operation", "WARN")
-                OperationResult.error("Unknown operation: $operation")
+                OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         }
     }

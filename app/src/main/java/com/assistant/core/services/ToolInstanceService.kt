@@ -5,6 +5,7 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.OperationResult
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
 /**
@@ -14,6 +15,7 @@ import org.json.JSONObject
 class ToolInstanceService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val toolInstanceDao by lazy { database.toolInstanceDao() }
+    private val s = Strings.`for`(context = context)
     
     /**
      * Execute tool instance operation with cancellation support
@@ -30,10 +32,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "delete" -> handleDelete(params, token)
                 "list" -> handleGetByZone(params, token)  // zones/{id}/tools pattern
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
-                else -> OperationResult.error("Unknown tool instance operation: $operation")
+                else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
-            OperationResult.error("Tool instance operation failed: ${e.message}")
+            OperationResult.error(s.shared("service_error_tool_instance_service").format(e.message ?: ""))
         }
     }
     
@@ -49,7 +51,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val configMetadataJson = params.optString("config_metadata_json", "{}")
         
         if (zoneId.isBlank() || toolType.isBlank()) {
-            return OperationResult.error("Zone ID and tool type are required")
+            return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
         }
         
         if (token.isCancelled) return OperationResult.cancelled()
@@ -83,11 +85,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val configMetadataJson = params.optString("config_metadata_json")
         
         if (toolInstanceId.isBlank()) {
-            return OperationResult.error("Tool instance ID is required")
+            return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
         }
         
         val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
-            ?: return OperationResult.error("Tool instance not found")
+            ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -116,11 +118,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val toolInstanceId = params.optString("tool_instance_id")
         
         if (toolInstanceId.isBlank()) {
-            return OperationResult.error("Tool instance ID is required")
+            return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
         }
         
         val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
-            ?: return OperationResult.error("Tool instance not found")
+            ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
         
         if (token.isCancelled) return OperationResult.cancelled()
         
@@ -140,7 +142,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
-            return OperationResult.error("Zone ID is required")
+            return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
         
         val toolInstances = toolInstanceDao.getToolInstancesByZone(zoneId)
@@ -173,11 +175,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         
         val toolInstanceId = params.optString("tool_instance_id")
         if (toolInstanceId.isBlank()) {
-            return OperationResult.error("Tool instance ID is required")
+            return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
         }
         
         val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
-            ?: return OperationResult.error("Tool instance not found")
+            ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
         
         return OperationResult.success(mapOf(
             "tool_instance" to mapOf(

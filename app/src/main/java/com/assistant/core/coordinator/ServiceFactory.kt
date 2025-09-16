@@ -26,7 +26,7 @@ object ServiceFactory {
             ToolDataService::class -> ToolDataService(context)
             AppConfigService::class -> AppConfigService(context)
             IconPreloadService::class -> IconPreloadService(context)
-            BackupService::class -> BackupService()
+            BackupService::class -> BackupService(context)
             else -> throw IllegalArgumentException("Unknown service class: ${serviceClass.simpleName}")
         }
     }

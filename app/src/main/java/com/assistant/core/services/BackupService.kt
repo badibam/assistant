@@ -1,14 +1,18 @@
 package com.assistant.core.services
 
+import android.content.Context
 import com.assistant.core.utils.LogManager
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.strings.Strings
 import org.json.JSONObject
 
 /**
  * Backup service - handles data backup operations
  * Current implementation: stub with TODO markers
  */
-class BackupService : ExecutableService {
+class BackupService(private val context: Context) : ExecutableService {
+
+    private val s = Strings.`for`(context = context)
     
     override suspend fun execute(
         operation: String,
@@ -19,7 +23,7 @@ class BackupService : ExecutableService {
             "create" -> performFullBackup()
             "restore" -> restoreFromBackup(params.optString("backup_id"))
             "list" -> listBackups()
-            else -> OperationResult.error("Unknown backup operation: $operation")
+            else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
         }
     }
     

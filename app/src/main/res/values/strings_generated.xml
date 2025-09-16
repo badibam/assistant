@@ -21,6 +21,10 @@
     <string name="notes_create_note_title">Créer une note</string>
     <string name="notes_edit_note_title">Modifier la note</string>
     <string name="notes_label_content">Contenu</string>
+    <string name="notes_error_config_load">Erreur lors du chargement de la configuration</string>
+    <string name="notes_error_config_not_found">Impossible de charger la configuration existante</string>
+    <string name="notes_error_validation">Erreur de validation</string>
+    <string name="notes_error_save">Erreur lors de la sauvegarde</string>
 
     <!-- tracking -->
     <string name="tracking_display_name">Suivi</string>
@@ -347,5 +351,25 @@
     <string name="shared_zone_schema_description"></string>
     <string name="shared_zone_schema_icon_name"></string>
     <string name="shared_zone_schema_color"></string>
+    <string name="shared_service_error_unknown_operation">Opération inconnue: %1$s</string>
+    <string name="shared_service_error_tool_data_service">Erreur ToolDataService: %1$s</string>
+    <string name="shared_service_error_zone_service">Erreur ZoneService: %1$s</string>
+    <string name="shared_service_error_tool_instance_service">Erreur ToolInstanceService: %1$s</string>
+    <string name="shared_service_error_missing_required_params">Paramètres obligatoires manquants: %1$s</string>
+    <string name="shared_service_error_validation_failed">Validation échouée: %1$s</string>
+    <string name="shared_service_error_missing_id">Paramètre obligatoire manquant: id</string>
+    <string name="shared_service_error_entry_not_found">Entrée introuvable: %1$s</string>
+    <string name="shared_service_error_missing_tool_instance_id">Paramètre obligatoire manquant: toolInstanceId</string>
+    <string name="shared_service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
+    <string name="shared_service_error_zone_name_required">Nom de zone obligatoire</string>
+    <string name="shared_service_error_zone_id_required">ID de zone obligatoire</string>
+    <string name="shared_service_error_zone_not_found">Zone introuvable</string>
+    <string name="shared_service_error_zone_id_tool_type_required">ID de zone et type d\'outil obligatoires</string>
+    <string name="shared_service_error_tool_instance_id_required">ID d\'instance d\'outil obligatoire</string>
+    <string name="shared_service_error_tool_instance_not_found">Instance d\'outil introuvable</string>
+    <string name="shared_service_error_no_data_found">Aucune donnée trouvée pour l\'opération %1$s</string>
+    <string name="shared_service_error_no_results_found">Aucun résultat trouvé pour l\'opération %1$s</string>
+    <string name="shared_service_error_invalid_phase">Phase invalide: %1$s</string>
+    <string name="shared_service_error_unknown_category">Catégorie inconnue: %1$s</string>
 
 </resources>
