@@ -50,6 +50,24 @@ interface ToolTypeContract : SchemaProvider {
      * @return JSON Schema string for data validation, or null if no data schema
      */
     fun getDataSchema(context: Context): String? = null
+
+    /**
+     * Get resolved data schema for a specific tool instance configuration
+     * This method should create a data skeleton based on the config and resolve conditional schemas
+     * Only the ToolType knows its own resolution logic
+     *
+     * @param configJson Configuration JSON of the tool instance
+     * @param context Android context for resource access
+     * @return Resolved JSON Schema string adapted to the config, or null if no data schema
+     */
+    fun getResolvedDataSchema(configJson: String, context: Context): String? {
+        // TODO: Implement tool-specific schema resolution
+        // 1. Parse configJson to extract configuration parameters
+        // 2. Create data skeleton adapted to this config
+        // 3. Use SchemaResolver.resolve(baseSchema, dataSkeleton) to get resolved schema
+        // 4. Return resolved schema
+        return getDataSchema(context) // Default fallback - return base schema
+    }
     
     
     /**

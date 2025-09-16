@@ -233,4 +233,32 @@ object TrackingToolType : ToolTypeContract {
             else -> s.tool("field_unknown")
         }
     }
+
+    /**
+     * Override to implement tracking-specific schema resolution
+     * ARCHITECTURE CORRECTE: Seul le ToolType connaît sa logique de résolution
+     */
+    override fun getResolvedDataSchema(configJson: String, context: Context): String? {
+        // TODO: Implement tracking-specific schema resolution
+        // 1. Parse configJson to extract tracking configuration
+        //    val config = parseConfig(configJson) // {"value_type": "numeric", "unit": "kg", ...}
+        //
+        // 2. Create data skeleton adapted to this config
+        //    val dataSkeleton = when(config.value_type) {
+        //        "numeric" -> mapOf("type" to "numeric", "quantity" to 0.0, "unit" to config.unit)
+        //        "scale" -> mapOf("type" to "scale", "rating" to config.default_rating)
+        //        "choice" -> mapOf("type" to "choice", "selected_option" to "", "available_options" to config.predefined_items)
+        //        "timer" -> mapOf("type" to "timer", "duration_seconds" to 0, "activity" to "")
+        //        "boolean" -> mapOf("type" to "boolean", "state" to false)
+        //        "text" -> mapOf("type" to "text", "text" to "")
+        //        else -> mapOf("type" to "text", "text" to "")
+        //    }
+        //
+        // 3. Use SchemaResolver to resolve conditional schema
+        //    val baseSchema = getDataSchema(context) ?: return null
+        //    return SchemaResolver.resolve(baseSchema, dataSkeleton)
+
+        // For now, return base schema as fallback
+        return getDataSchema(context)
+    }
 }
