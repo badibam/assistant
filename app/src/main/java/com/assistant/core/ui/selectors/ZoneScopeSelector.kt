@@ -76,6 +76,8 @@ private fun getFieldSpecificData(state: ZoneScopeState): FieldSpecificData? {
     }
 }
 
+
+
 /**
  * Creates current period with normalization according to configuration
  */
@@ -276,8 +278,8 @@ fun ZoneScopeSelector(
                                     nameSelection = NameSelection()
                                 )
 
-                                // Load contextual values only for data.* fields (NONE type) and not for "all" selections
-                                if (isComplete && fieldSpecificType == FieldSelectionType.NONE &&
+                                // Load contextual values for data.* fields when field is complete and value selection is allowed
+                                if (config.allowValueSelection && isComplete && fieldSpecificType == FieldSelectionType.NONE &&
                                     selectedNode.path != "tools.all" && selectedNode.path != "fields.all") {
                                     val contextualData = navigator.getDistinctValues(selectedNode.path)
                                     state = state.copy(
@@ -296,8 +298,8 @@ fun ZoneScopeSelector(
                     s = s
                 )
 
-                // Section 2: Field-specific value selector (only if at field level and complete)
-                if (state.isComplete && state.selectionChain.lastOrNull()?.selectedNode?.type == NodeType.FIELD) {
+                // Section 2: Field-specific value selector (only if allowValueSelection is true)
+                if (config.allowValueSelection && state.isComplete && state.selectionChain.lastOrNull()?.selectedNode?.type == NodeType.FIELD) {
                     when (state.fieldSpecificType) {
                         FieldSelectionType.TIMESTAMP -> {
                             TimestampSelectorSection(

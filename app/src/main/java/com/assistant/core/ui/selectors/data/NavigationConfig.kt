@@ -4,19 +4,20 @@ package com.assistant.core.ui.selectors.data
  * Configuration for hierarchical navigation behavior in selectors
  */
 data class NavigationConfig(
-    val allowInstanceSelection: Boolean = true,     // Can stop at tool instances?
-    val allowFieldSelection: Boolean = true,        // Can navigate to fields?
+    val allowZoneSelection: Boolean = true,         // Can confirm selection at zone level?
+    val allowInstanceSelection: Boolean = true,     // Can confirm selection at instance level?
+    val allowFieldSelection: Boolean = true,        // Can confirm selection at field level?
+    val allowValueSelection: Boolean = true,        // Can navigate to value selection level?
     val title: String = "",                         // Custom title or use default scope_selector_title
     val showQueryPreview: Boolean = false,          // Show SQL preview section?
-    val showFieldSpecificSelectors: Boolean = true, // Show timestamp/name selectors?
-    val requireCompleteSelection: Boolean = false   // Force selection to the deepest level?
+    val showFieldSpecificSelectors: Boolean = true  // Show timestamp/name selectors?
 ) {
     /**
-     * Determines if a selection is valid based on current level and config
+     * Determines if a selection can be confirmed at the current level
      */
     fun isValidSelection(selectionLevel: SelectionLevel): Boolean {
         return when (selectionLevel) {
-            SelectionLevel.ZONE -> true // Always valid to select zone
+            SelectionLevel.ZONE -> allowZoneSelection
             SelectionLevel.INSTANCE -> allowInstanceSelection
             SelectionLevel.FIELD -> allowFieldSelection
         }
@@ -31,7 +32,7 @@ data class NavigationConfig(
         return when (currentLevel) {
             SelectionLevel.ZONE -> true // Always allow zone → instance
             SelectionLevel.INSTANCE -> allowFieldSelection
-            SelectionLevel.FIELD -> false // Never go deeper than field
+            SelectionLevel.FIELD -> allowValueSelection // Only show value selectors if allowed
         }
     }
 }

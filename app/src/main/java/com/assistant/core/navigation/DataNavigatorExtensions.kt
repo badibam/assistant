@@ -9,6 +9,9 @@ import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandResult
+import com.assistant.core.commands.CommandStatus
 
 /**
  * Extensions pour l'intégration du DataNavigator avec l'architecture existante
@@ -117,6 +120,64 @@ data class FilterCriteria(
 )
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
+// Tool Instance Resolution
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Tool instance information resolved from coordinator
+ */
+data class ToolInstanceInfo(
+    val toolType: String,
+    val configJson: String
+)
+
+/**
+ * Resolve tool instance ID to tool type and config JSON via coordinator
+ */
+suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolInstanceInfo? = withContext(Dispatchers.IO) {
+    try {
+        LogManager.schema("🔍 RESOLVE: Attempting to resolve tool instance: '$toolInstanceId'")
+
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction(
+            action = "tools.get",
+            params = mapOf("tool_instance_id" to toolInstanceId)
+        )
+
+        LogManager.schema("🔍 RESOLVE: Coordinator result status: ${result.status}, error: ${result.error}")
+
+        if (result.status != CommandStatus.SUCCESS) {
+            LogManager.schema("❌ RESOLVE: Failed to resolve tool instance $toolInstanceId: ${result.error}", "ERROR")
+            return@withContext null
+        }
+
+        val toolInstance = result.data?.get("tool_instance") as? Map<String, Any>
+        if (toolInstance == null) {
+            LogManager.schema("❌ RESOLVE: No tool_instance in result for $toolInstanceId", "ERROR")
+            LogManager.schema("🔍 RESOLVE: Available result data keys: ${result.data?.keys}", "DEBUG")
+            return@withContext null
+        }
+
+        val toolType = toolInstance["tool_type"] as? String
+        val configJson = toolInstance["config_json"] as? String
+
+        LogManager.schema("🔍 RESOLVE: tool_type='$toolType', config_json length=${configJson?.length}")
+
+        if (toolType.isNullOrBlank() || configJson.isNullOrBlank()) {
+            LogManager.schema("❌ RESOLVE: Missing tool_type or config_json for $toolInstanceId", "ERROR")
+            return@withContext null
+        }
+
+        LogManager.schema("✅ RESOLVE: Successfully resolved $toolInstanceId -> tool_type: '$toolType'")
+        ToolInstanceInfo(toolType, configJson)
+
+    } catch (e: Exception) {
+        LogManager.schema("Error resolving tool instance $toolInstanceId: ${e.message}", "ERROR", e)
+        null
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
 // Extensions pour utiliser la structure commune ToolDataEntity
 // ═══════════════════════════════════════════════════════════════════════════════════════
 
@@ -165,25 +226,30 @@ suspend fun DataNavigator.getAvailableFields(toolPath: String, context: Context)
  */
 suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): List<SchemaNode> = withContext(Dispatchers.IO) {
     try {
-        // TODO: Implement proper tool instance -> tool type + config mapping
-        // ARCHITECTURE CORRECT FLOW:
-        // 1. Extract tool_instance_id from toolPath
-        // 2. Get tool instance from database with config_json
-        // 3. Get toolType from tool_instance.tool_type
-        // 4. Use toolType.getResolvedDataSchema(config_json, context) instead of getDataSchema
+        LogManager.schema("🔍 DATA_FIELDS: Getting data fields for tool instance: '$toolPath'")
 
-        // For now, assume tracking type as placeholder since we don't have the mapping function
-        val toolType = ToolTypeManager.getToolType("tracking")
-        if (toolType == null) {
-            LogManager.schema("No tool type found for path: $toolPath", "ERROR")
+        // Resolve tool instance to get real tool type and config
+        val toolInstanceInfo = resolveToolInstance(toolPath, context)
+        if (toolInstanceInfo == null) {
+            LogManager.schema("❌ DATA_FIELDS: Could not resolve tool instance: '$toolPath'", "ERROR")
             return@withContext emptyList()
         }
 
-        // TODO: Replace with resolved schema once we have config_json
-        // val schemaString = toolType.getResolvedDataSchema(config_json, context)
-        val schemaString = toolType.getDataSchema(context)
+        LogManager.schema("✅ DATA_FIELDS: Resolved to toolType: '${toolInstanceInfo.toolType}'")
+
+        val toolType = ToolTypeManager.getToolType(toolInstanceInfo.toolType)
+        if (toolType == null) {
+            LogManager.schema("❌ DATA_FIELDS: No tool type found for: '${toolInstanceInfo.toolType}'", "ERROR")
+            return@withContext emptyList()
+        }
+
+        LogManager.schema("✅ DATA_FIELDS: Found ToolType: ${toolType::class.simpleName}")
+
+        // Use resolved schema with real config_json
+        val schemaString = toolType.getResolvedDataSchema(toolInstanceInfo.configJson, context)
+        LogManager.schema("🔍 DATA_FIELDS: Schema string length: ${schemaString?.length ?: 0}")
         if (schemaString.isNullOrBlank()) {
-            LogManager.schema("No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
+            LogManager.schema("❌ DATA_FIELDS: No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
             return@withContext emptyList()
         }
 
@@ -215,23 +281,28 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
             val fieldName = keys.next()
             val fieldSchema = dataProperties.getJSONObject(fieldName)
             val fieldType = fieldSchema.optString("type", "unknown")
-            val description = fieldSchema.optString("description", fieldName)
+
+            // Use ToolType's getFormFieldName for proper localized field names
+            val displayName = toolType.getFormFieldName(fieldName, context)
             val hasChildren = (fieldType == "object") || fieldSchema.has("properties")
 
             fields.add(SchemaNode(
                 path = "$toolPath.data.$fieldName",
-                displayName = description,
+                displayName = displayName,
                 type = NodeType.FIELD,
                 hasChildren = hasChildren,
                 fieldType = fieldType
             ))
         }
 
-        LogManager.schema("Generated ${fields.size} data fields for $toolPath")
+        LogManager.schema("✅ DATA_FIELDS: Generated ${fields.size} data fields for '$toolPath'")
+        fields.forEach { field ->
+            LogManager.schema("🔍 DATA_FIELDS: Field - path: '${field.path}', display: '${field.displayName}', type: '${field.fieldType}'")
+        }
         fields
 
     } catch (e: Exception) {
-        LogManager.schema("Error getting data fields for $toolPath: ${e.message}", "ERROR", e)
+        LogManager.schema("❌ DATA_FIELDS: Error getting data fields for '$toolPath': ${e.message}", "ERROR", e)
         emptyList()
     }
 }
@@ -254,19 +325,24 @@ suspend fun DataNavigator.getFieldChildrenFromCommonStructure(toolPath: String, 
         val toolName = toolPath.substringBefore('.')
         val fieldPath = toolPath.substringAfter("$toolName.")
 
-        // TODO: Implement proper tool instance -> tool type + config mapping
-        // ARCHITECTURE CORRECT FLOW: same as getDataFields above
+        // Extract tool instance ID from complex path
+        val toolInstanceId = toolName
 
-        // For now, assume tracking type as placeholder
-        val toolType = ToolTypeManager.getToolType("tracking")
-        if (toolType == null) {
-            LogManager.schema("No tool type found for path: $toolPath", "ERROR")
+        // Resolve tool instance to get real tool type and config
+        val toolInstanceInfo = resolveToolInstance(toolInstanceId, context)
+        if (toolInstanceInfo == null) {
+            LogManager.schema("Could not resolve tool instance: $toolInstanceId", "ERROR")
             return@withContext emptyList()
         }
 
-        // TODO: Replace with resolved schema once we have config_json
-        // val schemaString = toolType.getResolvedDataSchema(config_json, context)
-        val schemaString = toolType.getDataSchema(context)
+        val toolType = ToolTypeManager.getToolType(toolInstanceInfo.toolType)
+        if (toolType == null) {
+            LogManager.schema("No tool type found for: ${toolInstanceInfo.toolType}", "ERROR")
+            return@withContext emptyList()
+        }
+
+        // Use resolved schema with real config_json
+        val schemaString = toolType.getResolvedDataSchema(toolInstanceInfo.configJson, context)
         if (schemaString.isNullOrBlank()) {
             LogManager.schema("No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
             return@withContext emptyList()
@@ -288,12 +364,14 @@ suspend fun DataNavigator.getFieldChildrenFromCommonStructure(toolPath: String, 
             val fieldName = keys.next()
             val fieldSchema = properties.getJSONObject(fieldName)
             val fieldType = fieldSchema.optString("type", "unknown")
-            val description = fieldSchema.optString("description", fieldName)
+
+            // Use ToolType's getFormFieldName for proper localized field names
+            val displayName = toolType.getFormFieldName(fieldName, context)
             val hasChildren = (fieldType == "object") || fieldSchema.has("properties")
 
             children.add(SchemaNode(
                 path = "$toolPath.$fieldName",
-                displayName = description,
+                displayName = displayName,
                 type = NodeType.FIELD,
                 hasChildren = hasChildren,
                 fieldType = fieldType

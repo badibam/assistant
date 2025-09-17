@@ -11,6 +11,9 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaResolver
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
+import com.assistant.core.commands.CommandStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * DataNavigator - Navigation hiérarchique dans les données via schémas
@@ -121,23 +124,96 @@ class DataNavigator(private val context: Context) {
     /**
      * Récupère les valeurs distinctes d'un champ (avec garde-fous)
      */
-    suspend fun getDistinctValues(path: String): ContextualDataResult {
+    suspend fun getDistinctValues(path: String): ContextualDataResult = withContext(Dispatchers.IO) {
         LogManager.coordination("DataNavigator: Getting distinct values for path: $path")
 
-        return try {
-            // TODO: Implémenter vraie logique avec garde-fous
-            // Pour l'instant, toujours OK
+        try {
+            // Parse path to extract tool_instance_id and field
+            // Path format: "instance_123.data.weight" or "instance_123.name" or "instance_123.timestamp"
+            val pathParts = path.split(".")
+            if (pathParts.isEmpty()) {
+                return@withContext ContextualDataResult(
+                    status = DataResultStatus.ERROR,
+                    message = "Invalid path format: $path"
+                )
+            }
+
+            val toolInstanceId = pathParts[0]
+            val fieldPath = if (pathParts.size > 1) pathParts.drop(1).joinToString(".") else ""
+
+            LogManager.coordination("DataNavigator: Resolved path - instance: $toolInstanceId, field: $fieldPath")
+
+            // Use coordinator to get all tool data entries
+            val coordinator = Coordinator(context)
+            val result = coordinator.processUserAction(
+                action = "tool_data.get",
+                params = mapOf("toolInstanceId" to toolInstanceId)
+            )
+
+            if (result.status != CommandStatus.SUCCESS) {
+                LogManager.coordination("Failed to get tool data for $path: ${result.error}", "ERROR")
+                return@withContext ContextualDataResult(
+                    status = DataResultStatus.ERROR,
+                    message = result.error ?: "Unknown error"
+                )
+            }
+
+            // Extract entries and get distinct values for the specified field
+            val entries = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
+            val distinctValues = mutableSetOf<String>()
+
+            entries.forEach { entry ->
+                val entryMap = entry as? Map<*, *>
+                if (entryMap != null) {
+                    val value = extractFieldValue(entryMap, fieldPath)
+                    if (value != null && value.isNotBlank()) {
+                        distinctValues.add(value)
+                    }
+                }
+            }
+
+            val values = distinctValues.toList().sorted()
+
+            LogManager.coordination("DataNavigator: Found ${values.size} distinct values for $path")
+
             ContextualDataResult(
                 status = DataResultStatus.OK,
-                data = listOf("exemple1", "exemple2", "exemple3"),
-                totalCount = 3
+                data = values,
+                totalCount = values.size
             )
+
         } catch (e: Exception) {
             LogManager.coordination("Error getting distinct values for $path: ${e.message}", "ERROR", e)
             ContextualDataResult(
                 status = DataResultStatus.ERROR,
                 message = e.message ?: "Unknown error"
             )
+        }
+    }
+
+    /**
+     * Extract field value from entry map based on field path
+     */
+    private fun extractFieldValue(entryMap: Map<*, *>, fieldPath: String): String? {
+        return when (fieldPath) {
+            "name" -> entryMap["name"]?.toString()
+            "timestamp" -> entryMap["timestamp"]?.toString()
+            else -> {
+                // For data.* fields, navigate into the data JSON
+                if (fieldPath.startsWith("data.")) {
+                    val dataField = fieldPath.substringAfter("data.")
+                    val dataJson = entryMap["data"]?.toString()
+                    if (dataJson != null) {
+                        try {
+                            val jsonObject = JSONObject(dataJson)
+                            jsonObject.opt(dataField)?.toString()
+                        } catch (e: Exception) {
+                            LogManager.coordination("Error parsing data JSON for field $dataField: ${e.message}", "WARN")
+                            null
+                        }
+                    } else null
+                } else null
+            }
         }
     }
 

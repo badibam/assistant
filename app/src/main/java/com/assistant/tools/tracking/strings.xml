@@ -181,6 +181,8 @@
     <string name="field_increment">Incrément</string>
     <string name="field_activity">Activité</string>
     <string name="field_duration_seconds">Durée</string>
+    <string name="field_type">Type</string>
+    <string name="field_raw">Valeur brute</string>
     <string name="field_unknown">Champ non reconnu</string>
     
     <!-- TIMER FIELD -->

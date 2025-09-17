@@ -166,6 +166,8 @@
     <string name="tracking_field_increment">Incrément</string>
     <string name="tracking_field_activity">Activité</string>
     <string name="tracking_field_duration_seconds">Durée</string>
+    <string name="tracking_field_type">Type</string>
+    <string name="tracking_field_raw">Valeur brute</string>
     <string name="tracking_field_unknown">Champ non reconnu</string>
     <string name="tracking_timer_label_optional">%1$s (optionnel)</string>
     <string name="tracking_timer_status_active">En cours : %1$s</string>

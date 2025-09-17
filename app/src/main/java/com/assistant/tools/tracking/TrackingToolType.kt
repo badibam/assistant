@@ -230,6 +230,8 @@ object TrackingToolType : ToolTypeContract {
             "increment" -> s.tool("field_increment")
             "activity" -> s.tool("field_activity")
             "duration_seconds" -> s.tool("field_duration_seconds")
+            "type" -> s.tool("field_type")
+            "raw" -> s.tool("field_raw")
             else -> s.tool("field_unknown")
         }
     }

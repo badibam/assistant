@@ -39,12 +39,13 @@ fun ZoneScopeSelector(
 
 ```kotlin
 data class NavigationConfig(
-    val allowInstanceSelection: Boolean = true,     // Peut-on s'arrêter aux instances ?
-    val allowFieldSelection: Boolean = true,        // Peut-on aller jusqu'aux champs ?
+    val allowZoneSelection: Boolean = true,         // Peut-on CONFIRMER aux zones ?
+    val allowInstanceSelection: Boolean = true,     // Peut-on CONFIRMER aux instances ?
+    val allowFieldSelection: Boolean = true,        // Peut-on CONFIRMER aux champs ?
+    val allowValueSelection: Boolean = true,        // Afficher les sélecteurs de valeurs ?
     val title: String = "",                         // Titre custom ou utilise scope_selector_title
     val showQueryPreview: Boolean = false,          // Afficher preview SQL ?
-    val showFieldSpecificSelectors: Boolean = true, // Timestamp/Name selectors ?
-    val requireCompleteSelection: Boolean = false   // Forcer sélection jusqu'au bout ?
+    val showFieldSpecificSelectors: Boolean = true  // Timestamp/Name selectors ?
 )
 ```
 
@@ -52,13 +53,45 @@ data class NavigationConfig(
 
 ```kotlin
 // Sélection zones seulement
-NavigationConfig(allowInstanceSelection = false, allowFieldSelection = false)
+NavigationConfig(
+    allowZoneSelection = true,
+    allowInstanceSelection = false,
+    allowFieldSelection = false,
+    allowValueSelection = false
+)
 
-// Navigation complète pour graphiques
-NavigationConfig(allowInstanceSelection = true, allowFieldSelection = true, showQueryPreview = true)
+// Navigation complète pour graphiques avec sélection de valeurs
+NavigationConfig(
+    allowZoneSelection = true,
+    allowInstanceSelection = true,
+    allowFieldSelection = true,
+    allowValueSelection = true,
+    showQueryPreview = true
+)
 
-// Sélection d'outils uniquement
-NavigationConfig(allowInstanceSelection = true, allowFieldSelection = false)
+// Sélection d'outils uniquement (passage obligé par zones, arrêt possible aux instances)
+NavigationConfig(
+    allowZoneSelection = false,
+    allowInstanceSelection = true,
+    allowFieldSelection = false,
+    allowValueSelection = false
+)
+
+// Doit aller jusqu'aux champs et DOIT s'arrêter là (pas de sélecteurs de valeurs)
+NavigationConfig(
+    allowZoneSelection = false,
+    allowInstanceSelection = false,
+    allowFieldSelection = true,
+    allowValueSelection = false
+)
+
+// Navigation jusqu'aux champs, PEUT continuer vers les valeurs (sélecteurs affichés)
+NavigationConfig(
+    allowZoneSelection = false,
+    allowInstanceSelection = false,
+    allowFieldSelection = true,
+    allowValueSelection = true
+)
 ```
 
 #### SelectionResult

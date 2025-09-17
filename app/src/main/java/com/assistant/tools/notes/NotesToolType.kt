@@ -167,6 +167,7 @@ object NotesToolType : ToolTypeContract {
         // Then notes-specific fields
         return when(fieldName) {
             "content" -> s.tool("field_content")
+            "position" -> s.tool("field_position")
             else -> s.tool("field_unknown")
         }
     }
