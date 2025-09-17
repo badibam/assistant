@@ -1,6 +1,8 @@
 package com.assistant.core.navigation
 
 import android.content.Context
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.NodeType
 import com.assistant.core.navigation.data.ContextualDataResult
@@ -18,6 +20,8 @@ import org.json.JSONObject
  */
 class DataNavigator(private val context: Context) {
 
+    private val coordinator = Coordinator(context)
+
     /**
      * Récupère les nœuds racine (zones)
      */
@@ -25,22 +29,26 @@ class DataNavigator(private val context: Context) {
         LogManager.coordination("DataNavigator: Getting root nodes (zones)")
 
         return try {
-            // TODO: Récupérer vraies zones via ZoneService
-            // Pour l'instant, placeholder
-            listOf(
-                SchemaNode(
-                    path = "zones.health",
-                    displayName = "Santé",
-                    type = NodeType.ZONE,
-                    hasChildren = true
-                ),
-                SchemaNode(
-                    path = "zones.productivity",
-                    displayName = "Productivité",
-                    type = NodeType.ZONE,
-                    hasChildren = true
-                )
-            )
+            // Load real zones via coordinator
+            val result = coordinator.processUserAction("zones.list", emptyMap())
+
+            if (result.isSuccess) {
+                val zones = result.data?.get("zones") as? List<Map<String, Any>> ?: emptyList()
+                zones.map { zone ->
+                    val zoneId = zone["id"] as? String ?: ""
+                    val zoneName = zone["name"] as? String ?: "Zone sans nom"
+
+                    SchemaNode(
+                        path = "zones.$zoneId",
+                        displayName = zoneName,
+                        type = NodeType.ZONE,
+                        hasChildren = true
+                    )
+                }
+            } else {
+                LogManager.coordination("Failed to load zones: ${result.message}", "ERROR")
+                emptyList()
+            }
         } catch (e: Exception) {
             LogManager.coordination("Error getting root nodes: ${e.message}", "ERROR", e)
             emptyList()
@@ -77,10 +85,14 @@ class DataNavigator(private val context: Context) {
         LogManager.coordination("DataNavigator: Getting field children for tool: $toolInstanceId")
 
         return try {
-            // TODO: Récupérer vraie instance via ToolInstanceService
+            // Load real tool instance via coordinator
             val toolInstance = getToolInstance(toolInstanceId)
-            val toolType = ToolTypeManager.getToolType(toolInstance.toolType)
+            if (toolInstance == null) {
+                LogManager.coordination("Tool instance not found: $toolInstanceId", "ERROR")
+                return emptyList()
+            }
 
+            val toolType = ToolTypeManager.getToolType(toolInstance.toolType)
             if (toolType == null) {
                 LogManager.coordination("ToolType not found: ${toolInstance.toolType}", "ERROR")
                 return emptyList()
@@ -176,34 +188,73 @@ class DataNavigator(private val context: Context) {
     // ═══ Private Methods ═══
 
     private suspend fun getToolsInZone(zoneId: String): List<SchemaNode> {
-        // TODO: Récupérer vrais outils via ToolInstanceService
-        // Pour l'instant, placeholder
-        return listOf(
-            SchemaNode(
-                path = "tools.weight_tracker",
-                displayName = "Suivi Poids",
-                type = NodeType.TOOL,
-                hasChildren = true,
-                toolType = "tracking"
-            ),
-            SchemaNode(
-                path = "tools.mood_tracker",
-                displayName = "Suivi Humeur",
-                type = NodeType.TOOL,
-                hasChildren = true,
-                toolType = "tracking"
-            )
-        )
+        return try {
+            // Load real tool instances via coordinator
+            val result = coordinator.processUserAction("tools.list", mapOf("zone_id" to zoneId))
+
+            if (result.isSuccess) {
+                val toolInstances = result.data?.get("tool_instances") as? List<Map<String, Any>> ?: emptyList()
+                toolInstances.map { toolInstance ->
+                    val instanceId = toolInstance["id"] as? String ?: ""
+                    val instanceName = toolInstance["name"] as? String ?: ""
+                    val toolType = toolInstance["tool_type"] as? String ?: ""
+
+                    // Format: "Nom de l'instance (type)" or just type if no name
+                    val displayName = if (instanceName.isNotBlank()) {
+                        "$instanceName ($toolType)"
+                    } else {
+                        toolType.replaceFirstChar { it.uppercase() }
+                    }
+
+                    SchemaNode(
+                        path = "tools.$instanceId",
+                        displayName = displayName,
+                        type = NodeType.TOOL,
+                        hasChildren = true,
+                        toolType = toolType
+                    )
+                }
+            } else {
+                LogManager.coordination("Failed to load tools for zone $zoneId: ${result.message}", "ERROR")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            LogManager.coordination("Error loading tools for zone $zoneId: ${e.message}", "ERROR", e)
+            emptyList()
+        }
     }
 
-    private fun getToolInstance(toolInstanceId: String): ToolInstancePlaceholder {
-        // TODO: Remplacer par vraie récupération via services
-        return ToolInstancePlaceholder(
-            id = toolInstanceId,
-            name = "Outil Test",
-            toolType = "tracking",
-            config = """{"value_type": "numeric", "unit": "kg"}"""
-        )
+    private suspend fun getToolInstance(toolInstanceId: String): ToolInstanceData? {
+        return try {
+            // Load real tool instance via coordinator
+            val result = coordinator.processUserAction(
+                "tools.get",
+                mapOf("tool_instance_id" to toolInstanceId)
+            )
+
+            if (result.isSuccess) {
+                val instance = result.data?.get("tool_instance") as? Map<String, Any>
+                if (instance != null) {
+                    val instanceName = instance["name"] as? String ?: ""
+                    val toolType = instance["tool_type"] as? String ?: ""
+                    ToolInstanceData(
+                        id = instance["id"] as? String ?: toolInstanceId,
+                        name = instanceName.ifBlank { toolType.replaceFirstChar { it.uppercase() } },
+                        toolType = toolType,
+                        config = instance["config_json"] as? String ?: "{}"
+                    )
+                } else {
+                    LogManager.coordination("Tool instance not found in response: $toolInstanceId", "ERROR")
+                    null
+                }
+            } else {
+                LogManager.coordination("Failed to load tool instance $toolInstanceId: ${result.message}", "ERROR")
+                null
+            }
+        } catch (e: Exception) {
+            LogManager.coordination("Error loading tool instance $toolInstanceId: ${e.message}", "ERROR", e)
+            null
+        }
     }
 
     private fun parseJsonToMap(jsonString: String): Map<String, Any> {
@@ -254,8 +305,8 @@ class DataNavigator(private val context: Context) {
         }
     }
 
-    // Placeholder data class - TODO: remplacer par vraies entités
-    private data class ToolInstancePlaceholder(
+    // Data class for tool instance information
+    private data class ToolInstanceData(
         val id: String,
         val name: String,
         val toolType: String,

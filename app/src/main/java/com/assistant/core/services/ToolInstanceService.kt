@@ -49,7 +49,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val toolType = params.optString("tool_type")
         val configJson = params.optString("config_json", "{}")
         val configMetadataJson = params.optString("config_metadata_json", "{}")
-        
+
         if (zoneId.isBlank() || toolType.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
         }
@@ -149,9 +149,17 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         val toolInstanceData = toolInstances.map { tool ->
+            // Extract name from config JSON
+            val name = try {
+                JSONObject(tool.config_json).optString("name", "")
+            } catch (e: Exception) {
+                ""
+            }
+
             mapOf(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
+                "name" to name,
                 "tool_type" to tool.tool_type,
                 "config_json" to tool.config_json,
                 "config_metadata_json" to tool.config_metadata_json,
@@ -180,11 +188,19 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         
         val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
-        
+
+        // Extract name from config JSON
+        val name = try {
+            JSONObject(toolInstance.config_json).optString("name", "")
+        } catch (e: Exception) {
+            ""
+        }
+
         return OperationResult.success(mapOf(
             "tool_instance" to mapOf(
                 "id" to toolInstance.id,
                 "zone_id" to toolInstance.zone_id,
+                "name" to name,
                 "tool_type" to toolInstance.tool_type,
                 "config_json" to toolInstance.config_json,
                 "config_metadata_json" to toolInstance.config_metadata_json,
