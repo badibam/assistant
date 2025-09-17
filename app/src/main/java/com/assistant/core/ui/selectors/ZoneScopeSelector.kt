@@ -502,9 +502,9 @@ private fun ValueSelectorSection(
                                     onSelectionChange(newSelection)
                                 }
                             )
-                            Box(modifier = Modifier.padding(start = 8.dp)) {
+                            Box(modifier = Modifier.padding(start = 8.dp).weight(1f)) {
                                 UI.Text(
-                                    text = value,
+                                    text = if (value.length > 50) "${value.take(47)}..." else value,
                                     type = TextType.BODY
                                 )
                             }
@@ -550,7 +550,7 @@ private fun QueryPreviewSection(
         // Description
         val description = buildQueryDescription(selectionChain, selectedValues, fieldSpecificType, timestampSelection, nameSelection)
         UI.Text(
-            text = description,
+            text = if (description.length > 200) "${description.take(197)}..." else description,
             type = TextType.BODY
         )
 
@@ -563,7 +563,7 @@ private fun QueryPreviewSection(
                     type = TextType.LABEL
                 )
                 UI.Text(
-                    text = sqlQuery,
+                    text = if (sqlQuery.length > 300) "${sqlQuery.take(297)}..." else sqlQuery,
                     type = TextType.CAPTION
                 )
             }
@@ -662,7 +662,16 @@ private fun buildQueryDescription(
                 }
                 FieldSelectionType.NAME -> {
                     when {
-                        nameSelection.selectedNames.isNotEmpty() -> "noms: ${nameSelection.selectedNames.joinToString(", ")}"
+                        nameSelection.selectedNames.isNotEmpty() -> {
+                            if (nameSelection.selectedNames.size <= 3) {
+                                val truncatedNames = nameSelection.selectedNames.map { name ->
+                                    if (name.length > 20) "${name.take(17)}..." else name
+                                }
+                                "noms: ${truncatedNames.joinToString(", ")}"
+                            } else {
+                                "${nameSelection.selectedNames.size} noms sélectionnés"
+                            }
+                        }
                         nameSelection.availableNames.isNotEmpty() -> "tous les noms disponibles"
                         else -> "tous les noms"
                     }
@@ -670,7 +679,16 @@ private fun buildQueryDescription(
                 FieldSelectionType.NONE -> {
                     when {
                         selectedValues.isEmpty() -> "toutes les valeurs"
-                        selectedValues.size == 1 -> "valeur: ${selectedValues.first()}"
+                        selectedValues.size == 1 -> {
+                            val value = selectedValues.first()
+                            "valeur: ${if (value.length > 30) "${value.take(27)}..." else value}"
+                        }
+                        selectedValues.size <= 3 -> {
+                            val truncatedValues = selectedValues.map { value ->
+                                if (value.length > 20) "${value.take(17)}..." else value
+                            }
+                            "valeurs: ${truncatedValues.joinToString(", ")}"
+                        }
                         else -> "${selectedValues.size} valeurs sélectionnées"
                     }
                 }
@@ -1149,9 +1167,9 @@ private fun NameSelectorSection(
                                 onNameSelectionChange(nameSelection.copy(selectedNames = newSelection))
                             }
                         )
-                        Box(modifier = Modifier.padding(start = 8.dp)) {
+                        Box(modifier = Modifier.padding(start = 8.dp).weight(1f)) {
                             UI.Text(
-                                text = name,
+                                text = if (name.length > 50) "${name.take(47)}..." else name,
                                 type = TextType.BODY
                             )
                         }
