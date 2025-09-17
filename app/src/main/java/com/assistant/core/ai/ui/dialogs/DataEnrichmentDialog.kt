@@ -25,6 +25,7 @@ import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.NodeType
 import com.assistant.core.navigation.data.ContextualDataResult
 import com.assistant.core.navigation.data.DataResultStatus
+import com.assistant.core.strings.Strings
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.TextType
@@ -60,6 +61,7 @@ fun DataEnrichmentDialog(
     val scope = rememberCoroutineScope()
     val navigator = remember { DataNavigator(context) }
     val coordinator = remember { Coordinator(context) }
+    val s = remember { Strings.`for`(context = context) }
 
     var state by remember { mutableStateOf(DataEnrichmentState()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -104,7 +106,7 @@ fun DataEnrichmentDialog(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    UI.Text(text = "Chargement de la configuration...", type = TextType.BODY)
+                    UI.Text(text = s.shared("ai_enrichment_loading_config"), type = TextType.BODY)
                 }
             }
         }
@@ -128,7 +130,7 @@ fun DataEnrichmentDialog(
 
                 // Header
                 UI.Text(
-                    text = "Enrichissement Données",
+                    text = s.shared("ai_enrichment_dialog_title"),
                     type = TextType.TITLE
                 )
 
@@ -161,21 +163,31 @@ fun DataEnrichmentDialog(
                                     when (selectedNode.type) {
                                         NodeType.ZONE -> navigator.getChildren(selectedNode.path)
                                         NodeType.TOOL -> {
-                                            // Use the new common structure approach
-                                            try {
-                                                navigator.getAvailableFields(selectedNode.path.substringAfter("tools."), context)
-                                            } catch (e: Exception) {
-                                                LogManager.coordination("Error loading available fields for ${selectedNode.path}: ${e.message}", "ERROR", e)
+                                            // Skip loading fields for "all tools" selection
+                                            if (selectedNode.path == "tools.all") {
                                                 emptyList()
+                                            } else {
+                                                // Use the new common structure approach
+                                                try {
+                                                    navigator.getAvailableFields(selectedNode.path.substringAfter("tools."), context)
+                                                } catch (e: Exception) {
+                                                    LogManager.coordination("Error loading available fields for ${selectedNode.path}: ${e.message}", "ERROR", e)
+                                                    emptyList()
+                                                }
                                             }
                                         }
                                         NodeType.FIELD -> {
-                                            // Fields can have sub-fields (nested structure)
-                                            try {
-                                                navigator.getFieldChildrenFromCommonStructure(selectedNode.path, context)
-                                            } catch (e: Exception) {
-                                                LogManager.coordination("Error loading field children for ${selectedNode.path}: ${e.message}", "ERROR", e)
+                                            // Skip loading sub-fields for "all fields" selection
+                                            if (selectedNode.path == "fields.all") {
                                                 emptyList()
+                                            } else {
+                                                // Fields can have sub-fields (nested structure)
+                                                try {
+                                                    navigator.getFieldChildrenFromCommonStructure(selectedNode.path, context)
+                                                } catch (e: Exception) {
+                                                    LogManager.coordination("Error loading field children for ${selectedNode.path}: ${e.message}", "ERROR", e)
+                                                    emptyList()
+                                                }
                                             }
                                         }
                                     }
@@ -201,6 +213,7 @@ fun DataEnrichmentDialog(
                                 // Determine field-specific selection type
                                 val fieldSpecificType = if (isComplete && selectedNode.type == NodeType.FIELD) {
                                     when {
+                                        selectedNode.path == "fields.all" -> FieldSelectionType.NONE // All fields = no specific type
                                         selectedNode.path.endsWith(".timestamp") -> FieldSelectionType.TIMESTAMP
                                         selectedNode.path.endsWith(".name") -> FieldSelectionType.NAME
                                         else -> FieldSelectionType.NONE // data.* fields
@@ -225,8 +238,9 @@ fun DataEnrichmentDialog(
                                     nameSelection = NameSelection()
                                 )
 
-                                // Load contextual values only for data.* fields (NONE type)
-                                if (isComplete && fieldSpecificType == FieldSelectionType.NONE) {
+                                // Load contextual values only for data.* fields (NONE type) and not for "all" selections
+                                if (isComplete && fieldSpecificType == FieldSelectionType.NONE &&
+                                    selectedNode.path != "tools.all" && selectedNode.path != "fields.all") {
                                     val contextualData = navigator.getDistinctValues(selectedNode.path)
                                     state = state.copy(
                                         availableValues = contextualData.data.map { it.toString() },
@@ -240,7 +254,8 @@ fun DataEnrichmentDialog(
                                 isLoading = false
                             }
                         }
-                    }
+                    },
+                    s = s
                 )
 
                 // Section 2: Field-specific value selector (only if at field level and complete)
@@ -253,7 +268,8 @@ fun DataEnrichmentDialog(
                                     state = state.copy(timestampSelection = newTimestampSelection)
                                 },
                                 dayStartHour = dayStartHour!!,
-                                weekStartDay = weekStartDay!!
+                                weekStartDay = weekStartDay!!,
+                                s = s
                             )
                         }
                         FieldSelectionType.NAME -> {
@@ -261,7 +277,8 @@ fun DataEnrichmentDialog(
                                 nameSelection = state.nameSelection,
                                 onNameSelectionChange = { newNameSelection ->
                                     state = state.copy(nameSelection = newNameSelection)
-                                }
+                                },
+                                s = s
                             )
                         }
                         FieldSelectionType.NONE -> {
@@ -272,7 +289,8 @@ fun DataEnrichmentDialog(
                                 contextualDataStatus = state.contextualDataStatus,
                                 onSelectionChange = { selectedValues ->
                                     state = state.copy(selectedValues = selectedValues)
-                                }
+                                },
+                                s = s
                             )
                         }
                     }
@@ -285,7 +303,8 @@ fun DataEnrichmentDialog(
                         selectedValues = state.selectedValues,
                         fieldSpecificType = state.fieldSpecificType,
                         timestampSelection = state.timestampSelection,
-                        nameSelection = state.nameSelection
+                        nameSelection = state.nameSelection,
+                        s = s
                     )
                 }
 
@@ -316,11 +335,12 @@ fun DataEnrichmentDialog(
 private fun MetadataSelectorSection(
     state: DataEnrichmentState,
     isLoading: Boolean,
-    onSelectionChange: (SchemaNode) -> Unit
+    onSelectionChange: (SchemaNode) -> Unit,
+    s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         UI.Text(
-            text = "Sélection des données",
+            text = s.shared("ai_enrichment_data_selection"),
             type = TextType.SUBTITLE
         )
 
@@ -331,14 +351,53 @@ private fun MetadataSelectorSection(
                 val label = getLevelLabel(level, options.firstOrNull()?.type)
                 val selectedValue = state.selectionChain.getOrNull(level)?.selectedValue ?: ""
 
+                // Add "All" option for tools and fields levels
+                val allOptions = when (level) {
+                    1 -> listOf(s.shared("ai_enrichment_all_tools")) + options.map { it.displayName }
+                    2 -> listOf(s.shared("ai_enrichment_all_fields")) + options.map { it.displayName }
+                    else -> options.map { it.displayName }
+                }
+
+                // Set default selection to "All" option for tools and fields
+                val effectiveSelected = if (selectedValue.isEmpty() && (level == 1 || level == 2)) {
+                    when (level) {
+                        1 -> s.shared("ai_enrichment_all_tools")
+                        2 -> s.shared("ai_enrichment_all_fields")
+                        else -> selectedValue
+                    }
+                } else {
+                    selectedValue
+                }
+
                 UI.FormSelection(
                     label = label,
-                    options = options.map { it.displayName },
-                    selected = selectedValue,
+                    options = allOptions,
+                    selected = effectiveSelected,
                     onSelect = { selectedOption ->
-                        val selectedNode = options.find { it.displayName == selectedOption }
-                        if (selectedNode != null) {
-                            onSelectionChange(selectedNode)
+                        // Handle "All" selections
+                        if (selectedOption == s.shared("ai_enrichment_all_tools") || selectedOption == s.shared("ai_enrichment_all_fields")) {
+                            // Create a virtual node for "All" selection
+                            val allNode = SchemaNode(
+                                path = when (level) {
+                                    1 -> "tools.all"
+                                    2 -> "fields.all"
+                                    else -> "all"
+                                },
+                                displayName = selectedOption,
+                                type = when (level) {
+                                    1 -> NodeType.TOOL
+                                    2 -> NodeType.FIELD
+                                    else -> NodeType.ZONE
+                                },
+                                hasChildren = false
+                            )
+                            onSelectionChange(allNode)
+                        } else {
+                            // Handle regular node selection
+                            val selectedNode = options.find { it.displayName == selectedOption }
+                            if (selectedNode != null) {
+                                onSelectionChange(selectedNode)
+                            }
                         }
                     }
                 )
@@ -350,7 +409,7 @@ private fun MetadataSelectorSection(
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
                 Box(modifier = Modifier.padding(start = 8.dp)) {
                     UI.Text(
-                        text = "Chargement...",
+                        text = s.shared("ai_enrichment_loading"),
                         type = TextType.LABEL
                     )
                 }
@@ -364,11 +423,12 @@ private fun ValueSelectorSection(
     availableValues: List<String>,
     selectedValues: List<String>,
     contextualDataStatus: DataResultStatus,
-    onSelectionChange: (List<String>) -> Unit
+    onSelectionChange: (List<String>) -> Unit,
+    s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = "Valeurs disponibles",
+            text = s.shared("ai_enrichment_available_values"),
             type = TextType.SUBTITLE
         )
 
@@ -405,7 +465,7 @@ private fun ValueSelectorSection(
 
                     if (availableValues.size > 10) {
                         UI.Text(
-                            text = "... et ${availableValues.size - 10} autres valeurs",
+                            text = String.format(s.shared("ai_enrichment_more_values"), availableValues.size - 10),
                             type = TextType.LABEL
                         )
                     }
@@ -413,7 +473,7 @@ private fun ValueSelectorSection(
             }
             DataResultStatus.ERROR -> {
                 UI.Text(
-                    text = "Erreur lors du chargement des valeurs",
+                    text = s.shared("ai_enrichment_error_loading_values"),
                     type = TextType.BODY
                 )
             }
@@ -430,11 +490,12 @@ private fun QueryPreviewSection(
     selectedValues: List<String>,
     fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
     timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection()
+    nameSelection: NameSelection = NameSelection(),
+    s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = "Aperçu",
+            text = s.shared("ai_enrichment_preview"),
             type = TextType.SUBTITLE
         )
 
@@ -450,7 +511,7 @@ private fun QueryPreviewSection(
         Card {
             Column(modifier = Modifier.padding(12.dp)) {
                 UI.Text(
-                    text = "Requête SQL:",
+                    text = s.shared("ai_enrichment_sql_query"),
                     type = TextType.LABEL
                 )
                 UI.Text(
@@ -466,27 +527,27 @@ private fun QueryPreviewSection(
 
 private fun getSelectionLabel(nodeType: NodeType, level: Int): String {
     return when (nodeType) {
-        NodeType.ZONE -> "Zone"
-        NodeType.TOOL -> "Outil"
-        NodeType.FIELD -> if (level <= 2) "Champ" else "Sous-champ ${level - 1}"
+        NodeType.ZONE -> "Zone" // Keep hardcoded for now - used internally
+        NodeType.TOOL -> "Outil" // Keep hardcoded for now - used internally
+        NodeType.FIELD -> if (level <= 2) "Champ" else "Sous-champ ${level - 1}" // Keep hardcoded for now - used internally
     }
 }
 
 private fun getLevelLabel(level: Int, nodeType: NodeType?): String {
     return when {
-        level == 0 -> "Zone"
-        level == 1 -> "Outil"
-        level == 2 -> "Champ"
-        nodeType == NodeType.FIELD -> "Sous-champ ${level - 1}"
-        else -> "Niveau ${level + 1}"
+        level == 0 -> "Zone" // Keep hardcoded for now - used internally
+        level == 1 -> "Outil" // Keep hardcoded for now - used internally
+        level == 2 -> "Champ" // Keep hardcoded for now - used internally
+        nodeType == NodeType.FIELD -> "Sous-champ ${level - 1}" // Keep hardcoded for now - used internally
+        else -> "Niveau ${level + 1}" // Keep hardcoded for now - used internally
     }
 }
 
 private fun getNextSelectionLabel(currentNodeType: NodeType): String {
     return when (currentNodeType) {
-        NodeType.ZONE -> "Outil"
-        NodeType.TOOL -> "Champ"
-        NodeType.FIELD -> "Sous-champ"
+        NodeType.ZONE -> "Outil" // Keep hardcoded for now - used internally
+        NodeType.TOOL -> "Champ" // Keep hardcoded for now - used internally
+        NodeType.FIELD -> "Sous-champ" // Keep hardcoded for now - used internally
     }
 }
 
@@ -513,7 +574,12 @@ private fun buildQueryDescription(
     val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
 
     val zoneId = zoneStep?.selectedNode?.path?.substringAfter("zones.")?.substringBefore(".")
-    val toolInstanceId = toolStep?.selectedNode?.path?.substringAfter("tools.")?.substringBefore(".")
+    val toolInstanceId = toolStep?.selectedNode?.path?.let { path ->
+        when {
+            path == "tools.all" -> "all"
+            else -> path.substringAfter("tools.").substringBefore(".")
+        }
+    }
 
     // Adapt description based on selection level
     return when {
@@ -522,8 +588,13 @@ private fun buildQueryDescription(
             "Focus sur la zone '$zoneName' (zone_id: $zoneId)"
 
         // Zone + Tool
-        zoneName != null && toolInstanceName != null && fieldPath.isEmpty() ->
-            "Focus sur l'outil '$toolInstanceName' (tool_instance_id: $toolInstanceId, zone: $zoneName)"
+        zoneName != null && toolInstanceName != null && fieldPath.isEmpty() -> {
+            if (toolInstanceId == "all") {
+                "Focus sur tous les outils de la zone '$zoneName'"
+            } else {
+                "Focus sur l'outil '$toolInstanceName' (tool_instance_id: $toolInstanceId, zone: $zoneName)"
+            }
+        }
 
         // Zone + Tool + Field(s)
         fieldPath.isNotEmpty() -> {
@@ -556,7 +627,11 @@ private fun buildQueryDescription(
                     }
                 }
             }
-            "Focus sur '$path' pour $valuesPart (tool_instance_id: $toolInstanceId)"
+            if (toolInstanceId == "all") {
+                "Focus sur '$path' pour $valuesPart (tous les outils)"
+            } else {
+                "Focus sur '$path' pour $valuesPart (tool_instance_id: $toolInstanceId)"
+            }
         }
 
         else -> "Focus sur '$path'"
@@ -609,7 +684,12 @@ private fun buildSqlQuery(
     val tableName = "tool_data"
 
     // Extract tool instance ID from path (e.g., "tools.instance_123" -> "instance_123")
-    val toolInstanceId = toolStep.selectedNode.path.substringAfter("tools.").substringBefore(".")
+    val toolInstanceId = toolStep.selectedNode.path.let { path ->
+        when {
+            path == "tools.all" -> "all"
+            else -> path.substringAfter("tools.").substringBefore(".")
+        }
+    }
 
     val (fieldName, isJsonField) = if (fieldStep != null) {
         val fieldPath = fieldStep.selectedNode.path
@@ -629,8 +709,10 @@ private fun buildSqlQuery(
 
     val whereConditions = mutableListOf<String>()
 
-    // Always filter by tool instance
-    whereConditions.add("tool_instance_id = '$toolInstanceId'")
+    // Filter by tool instance (skip for "all" tools)
+    if (toolInstanceId != "all") {
+        whereConditions.add("tool_instance_id = '$toolInstanceId'")
+    }
 
     // Add field-specific filters
     if (fieldStep != null) {
@@ -666,7 +748,11 @@ private fun buildSqlQuery(
         }
     }
 
-    val whereClause = "WHERE ${whereConditions.joinToString(" AND ")}"
+    val whereClause = if (whereConditions.isNotEmpty()) {
+        "WHERE ${whereConditions.joinToString(" AND ")}"
+    } else {
+        ""
+    }
 
     // Select clause based on field type
     val selectClause = when {
@@ -675,7 +761,7 @@ private fun buildSqlQuery(
         else -> "SELECT $fieldName"
     }
 
-    return "$selectClause FROM $tableName $whereClause"
+    return "$selectClause FROM $tableName $whereClause".trim()
 }
 
 /**
@@ -686,17 +772,18 @@ private fun TimestampSelectorSection(
     timestampSelection: TimestampSelection,
     onTimestampSelectionChange: (TimestampSelection) -> Unit,
     dayStartHour: Int,
-    weekStartDay: String
+    weekStartDay: String,
+    s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         UI.Text(
-            text = "Sélection temporelle",
+            text = s.shared("ai_enrichment_temporal_selection"),
             type = TextType.SUBTITLE
         )
 
         // Date minimum
         TimestampRangeSelector(
-            label = "Date minimum",
+            label = s.shared("ai_enrichment_date_start"),
             periodType = timestampSelection.minPeriodType,
             period = timestampSelection.minPeriod,
             customDateTime = timestampSelection.minCustomDateTime,
@@ -716,12 +803,13 @@ private fun TimestampSelectorSection(
                 )
             },
             dayStartHour = dayStartHour,
-            weekStartDay = weekStartDay
+            weekStartDay = weekStartDay,
+            s = s
         )
 
         // Date maximum
         TimestampRangeSelector(
-            label = "Date maximum",
+            label = s.shared("ai_enrichment_date_end"),
             periodType = timestampSelection.maxPeriodType,
             period = timestampSelection.maxPeriod,
             customDateTime = timestampSelection.maxCustomDateTime,
@@ -741,7 +829,8 @@ private fun TimestampSelectorSection(
                 )
             },
             dayStartHour = dayStartHour,
-            weekStartDay = weekStartDay
+            weekStartDay = weekStartDay,
+            s = s
         )
     }
 }
@@ -759,7 +848,8 @@ private fun TimestampRangeSelector(
     onPeriodChange: (Period) -> Unit,
     onCustomDateTimeChange: (Long) -> Unit,
     dayStartHour: Int,
-    weekStartDay: String
+    weekStartDay: String,
+    s: com.assistant.core.strings.StringsContext
 ) {
     // State for date/time pickers
     var showDatePicker by remember { mutableStateOf(false) }
@@ -773,24 +863,24 @@ private fun TimestampRangeSelector(
 
         // Period type selector
         UI.FormSelection(
-            label = "Type de période",
-            options = listOf("Heure", "Jour", "Semaine", "Mois", "Année", "Date personnalisée"),
+            label = s.shared("ai_enrichment_period_type"),
+            options = listOf(s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year"), s.shared("ai_enrichment_period_custom")),
             selected = when (periodType) {
-                PeriodType.HOUR -> "Heure"
-                PeriodType.DAY -> "Jour"
-                PeriodType.WEEK -> "Semaine"
-                PeriodType.MONTH -> "Mois"
-                PeriodType.YEAR -> "Année"
-                null -> "Date personnalisée" // Fix: always show "Date personnalisée" when periodType is null
+                PeriodType.HOUR -> s.shared("period_hour")
+                PeriodType.DAY -> s.shared("period_day")
+                PeriodType.WEEK -> s.shared("period_week")
+                PeriodType.MONTH -> s.shared("period_month")
+                PeriodType.YEAR -> s.shared("period_year")
+                null -> s.shared("ai_enrichment_period_custom") // Fix: always show "Date personnalisée" when periodType is null
             },
             onSelect = { selected ->
                 val newPeriodType = when (selected) {
-                    "Heure" -> PeriodType.HOUR
-                    "Jour" -> PeriodType.DAY
-                    "Semaine" -> PeriodType.WEEK
-                    "Mois" -> PeriodType.MONTH
-                    "Année" -> PeriodType.YEAR
-                    "Date personnalisée" -> null // Will show custom picker
+                    s.shared("period_hour") -> PeriodType.HOUR
+                    s.shared("period_day") -> PeriodType.DAY
+                    s.shared("period_week") -> PeriodType.WEEK
+                    s.shared("period_month") -> PeriodType.MONTH
+                    s.shared("period_year") -> PeriodType.YEAR
+                    s.shared("ai_enrichment_period_custom") -> null // Will show custom picker
                     else -> null
                 }
                 onPeriodTypeChange(newPeriodType)
@@ -818,8 +908,8 @@ private fun TimestampRangeSelector(
             customDateTime == null -> {
                 // Show custom date/time picker button
                 UI.FormField(
-                    label = "Date et heure personnalisée",
-                    value = "Sélectionner...",
+                    label = s.shared("ai_enrichment_custom_datetime"),
+                    value = s.shared("ai_enrichment_select_datetime"),
                     onChange = { },
                     readonly = true,
                     onClick = {
@@ -838,7 +928,7 @@ private fun TimestampRangeSelector(
                         // Date field
                         Box(modifier = Modifier.weight(1f)) {
                             UI.FormField(
-                                label = "Date",
+                                label = s.shared("label_date"),
                                 value = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
                                     .format(java.util.Date(customDateTime!!)),
                                 onChange = { },
@@ -850,7 +940,7 @@ private fun TimestampRangeSelector(
                         // Time field
                         Box(modifier = Modifier.weight(1f)) {
                             UI.FormField(
-                                label = "Heure",
+                                label = s.shared("label_time"),
                                 value = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
                                     .format(java.util.Date(customDateTime)),
                                 onChange = { },
@@ -936,11 +1026,12 @@ private fun TimestampRangeSelector(
 @Composable
 private fun NameSelectorSection(
     nameSelection: NameSelection,
-    onNameSelectionChange: (NameSelection) -> Unit
+    onNameSelectionChange: (NameSelection) -> Unit,
+    s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = "Sélection par nom",
+            text = s.shared("ai_enrichment_name_selection"),
             type = TextType.SUBTITLE
         )
 
@@ -953,7 +1044,7 @@ private fun NameSelectorSection(
 
         if (nameSelection.availableNames.isNotEmpty()) {
             UI.Text(
-                text = "Noms d'entrées disponibles",
+                text = s.shared("ai_enrichment_available_entry_names"),
                 type = TextType.LABEL
             )
 
@@ -986,14 +1077,14 @@ private fun NameSelectorSection(
 
                 if (nameSelection.availableNames.size > 10) {
                     UI.Text(
-                        text = "... et ${nameSelection.availableNames.size - 10} autres",
+                        text = String.format(s.shared("ai_enrichment_more_names"), nameSelection.availableNames.size - 10),
                         type = TextType.CAPTION
                     )
                 }
             }
         } else {
             UI.Text(
-                text = "Chargement des noms...",
+                text = s.shared("ai_enrichment_loading_names"),
                 type = TextType.BODY
             )
         }
