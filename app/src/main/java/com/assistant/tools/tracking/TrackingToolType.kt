@@ -11,6 +11,8 @@ import com.assistant.core.validation.ValidationResult
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.strings.Strings
+import com.assistant.core.validation.SchemaResolver
+import com.assistant.core.utils.LogManager
 import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import com.assistant.tools.tracking.TrackingSchemas
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
@@ -241,26 +243,31 @@ object TrackingToolType : ToolTypeContract {
      * ARCHITECTURE CORRECTE: Seul le ToolType connaît sa logique de résolution
      */
     override fun getResolvedDataSchema(configJson: String, context: Context): String? {
-        // TODO: Implement tracking-specific schema resolution
-        // 1. Parse configJson to extract tracking configuration
-        //    val config = parseConfig(configJson) // {"value_type": "numeric", "unit": "kg", ...}
-        //
-        // 2. Create data skeleton adapted to this config
-        //    val dataSkeleton = when(config.value_type) {
-        //        "numeric" -> mapOf("type" to "numeric", "quantity" to 0.0, "unit" to config.unit)
-        //        "scale" -> mapOf("type" to "scale", "rating" to config.default_rating)
-        //        "choice" -> mapOf("type" to "choice", "selected_option" to "", "available_options" to config.predefined_items)
-        //        "timer" -> mapOf("type" to "timer", "duration_seconds" to 0, "activity" to "")
-        //        "boolean" -> mapOf("type" to "boolean", "state" to false)
-        //        "text" -> mapOf("type" to "text", "text" to "")
-        //        else -> mapOf("type" to "text", "text" to "")
-        //    }
-        //
-        // 3. Use SchemaResolver to resolve conditional schema
-        //    val baseSchema = getDataSchema(context) ?: return null
-        //    return SchemaResolver.resolve(baseSchema, dataSkeleton)
+        try {
+            // 1. Parse configJson to extract tracking type
+            val config = JSONObject(configJson)
+            val valueType = config.optString("type")
 
-        // For now, return base schema as fallback
-        return getDataSchema(context)
+            LogManager.tracking("🔍 SCHEMA_RESOLVE: configJson='$configJson'")
+            LogManager.tracking("🔍 SCHEMA_RESOLVE: extracted value_type='$valueType'")
+
+            // 2. Create minimal data skeleton to trigger schema resolution
+            val dataSkeleton = mapOf(
+                "data" to mapOf(
+                    "type" to valueType
+                )
+            )
+
+            LogManager.tracking("🔍 SCHEMA_RESOLVE: dataSkeleton='$dataSkeleton'")
+
+            // 3. Use SchemaResolver to resolve conditional schema
+            val baseSchema = getDataSchema(context) ?: return null
+            return SchemaResolver.resolve(baseSchema, dataSkeleton)
+
+        } catch (e: Exception) {
+            LogManager.tracking("Error resolving data schema: ${e.message}", "ERROR", e)
+            // Fallback to base schema
+            return getDataSchema(context)
+        }
     }
 }
