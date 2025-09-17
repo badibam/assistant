@@ -222,41 +222,41 @@
     <string name="zone_schema_icon_name"></string>
     <string name="zone_schema_color"></string>
 
-    <!-- AI ENRICHMENT - Libellés pour enrichissement de données -->
-    <string name="ai_enrichment_all_tools">Tous les outils</string>
-    <string name="ai_enrichment_all_fields">Tous les champs</string>
-    <string name="ai_enrichment_dialog_title">Enrichissement Données</string>
-    <string name="ai_enrichment_data_selection">Sélection des données</string>
-    <string name="ai_enrichment_available_values">Valeurs disponibles</string>
-    <string name="ai_enrichment_preview">Aperçu</string>
-    <string name="ai_enrichment_temporal_selection">Sélection temporelle</string>
-    <string name="ai_enrichment_name_selection">Sélection par nom</string>
-    <string name="ai_enrichment_loading_config">Chargement de la configuration...</string>
-    <string name="ai_enrichment_loading">Chargement...</string>
-    <string name="ai_enrichment_error_loading_values">Erreur lors du chargement des valeurs</string>
-    <string name="ai_enrichment_no_selection">Aucune sélection</string>
-    <string name="ai_enrichment_sql_query">Requête SQL:</string>
-    <string name="ai_enrichment_more_values">... et %1$d autres valeurs</string>
-    <string name="ai_enrichment_loading_names">Chargement des noms...</string>
-    <string name="ai_enrichment_more_names">... et %1$d autres</string>
+    <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
+    <string name="scope_all_instances">Tous les outils</string>
+    <string name="scope_all_fields">Tous les champs</string>
+    <string name="scope_selector_title">Sélection de données</string>
+    <string name="scope_navigation_selection">Navigation hiérarchique</string>
+    <string name="scope_available_values">Valeurs disponibles</string>
+    <string name="scope_preview">Aperçu</string>
+    <string name="scope_temporal_selection">Sélection temporelle</string>
+    <string name="scope_name_selection">Sélection par nom</string>
+    <string name="scope_loading_config">Chargement de la configuration...</string>
+    <string name="scope_loading">Chargement...</string>
+    <string name="scope_error_loading_values">Erreur lors du chargement des valeurs</string>
+    <string name="scope_no_selection">Aucune sélection</string>
+    <string name="scope_sql_query">Requête SQL:</string>
+    <string name="scope_more_values">... et %1$d autres valeurs</string>
+    <string name="scope_loading_names">Chargement des noms...</string>
+    <string name="scope_more_names">... et %1$d autres</string>
 
-    <!-- AI ENRICHMENT - Date range labels -->
-    <string name="ai_enrichment_date_start">Début</string>
-    <string name="ai_enrichment_date_end">Fin</string>
-    <string name="ai_enrichment_period_type">Type de période</string>
-    <string name="ai_enrichment_custom_datetime">Date et heure personnalisée</string>
-    <string name="ai_enrichment_select_datetime">Sélectionner...</string>
-    <string name="ai_enrichment_period_custom">Date personnalisée</string>
+    <!-- SCOPE SELECTOR - Date range labels -->
+    <string name="scope_date_start">Début</string>
+    <string name="scope_date_end">Fin</string>
+    <string name="scope_period_type">Type de période</string>
+    <string name="scope_custom_datetime">Date et heure personnalisée</string>
+    <string name="scope_select_datetime">Sélectionner...</string>
+    <string name="scope_period_custom">Date personnalisée</string>
 
-    <!-- AI ENRICHMENT - Level labels -->
-    <string name="ai_enrichment_level_zone">Zone</string>
-    <string name="ai_enrichment_level_tool">Outil</string>
-    <string name="ai_enrichment_level_field">Champ</string>
-    <string name="ai_enrichment_level_subfield">Sous-champ %1$d</string>
-    <string name="ai_enrichment_level_generic">Niveau %1$d</string>
+    <!-- SCOPE SELECTOR - Level labels -->
+    <string name="scope_level_zone">Zone</string>
+    <string name="scope_level_instance">Outil</string>
+    <string name="scope_level_field">Champ</string>
+    <string name="scope_level_subfield">Sous-champ %1$d</string>
+    <string name="scope_level_generic">Niveau %1$d</string>
 
-    <!-- AI ENRICHMENT - Available entry names -->
-    <string name="ai_enrichment_available_entry_names">Noms d'entrées disponibles</string>
+    <!-- SCOPE SELECTOR - Available entry names -->
+    <string name="scope_available_entry_names">Noms d'entrées disponibles</string>
 
     <!-- SERVICES ERROR MESSAGES - Messages d'erreur des services -->
     <string name="service_error_unknown_operation">Opération inconnue: %1$s</string>

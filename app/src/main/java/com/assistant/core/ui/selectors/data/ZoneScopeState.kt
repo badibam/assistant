@@ -1,4 +1,4 @@
-package com.assistant.core.ai.ui.dialogs.data
+package com.assistant.core.ui.selectors.data
 
 import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.DataResultStatus
@@ -6,9 +6,9 @@ import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.Period
 
 /**
- * État du dialog d'enrichissement de données
+ * State for zone scope navigation and selection
  */
-data class DataEnrichmentState(
+data class ZoneScopeState(
     // Navigation state
     val selectionChain: List<SelectionStep> = emptyList(),
     val selectedPath: String = "",

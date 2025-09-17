@@ -17,7 +17,8 @@ import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
-import com.assistant.core.ai.ui.dialogs.DataEnrichmentDialog
+import com.assistant.core.ui.selectors.ZoneScopeSelector
+import com.assistant.core.ui.selectors.data.NavigationConfig
 import kotlinx.coroutines.launch
 
 /**
@@ -40,7 +41,7 @@ fun MainScreen() {
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
-    var showDataEnrichmentDialog by rememberSaveable { mutableStateOf(false) }
+    var showZoneScopeSelector by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
     val selectedZone = zones.find { it.id == selectedZoneId }
@@ -155,7 +156,7 @@ fun MainScreen() {
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,
                 rightButton = ButtonAction.ADD,
-                onLeftClick = { showDataEnrichmentDialog = true },
+                onLeftClick = { showZoneScopeSelector = true },
                 onRightClick = { showCreateZone = true }
             )
             
@@ -187,15 +188,22 @@ fun MainScreen() {
         }
     }
     
-    // Show DataEnrichmentDialog when requested
-    if (showDataEnrichmentDialog) {
-        DataEnrichmentDialog(
-            onDismiss = { showDataEnrichmentDialog = false },
-            onConfirm = { selectedPath, selectedValues ->
-                showDataEnrichmentDialog = false
+    // Show ZoneScopeSelector when requested
+    if (showZoneScopeSelector) {
+        ZoneScopeSelector(
+            config = NavigationConfig(
+                allowInstanceSelection = true,
+                allowFieldSelection = true,
+                title = "Explorateur de données",
+                showQueryPreview = true
+            ),
+            onDismiss = { showZoneScopeSelector = false },
+            onConfirm = { result ->
+                showZoneScopeSelector = false
                 // Log the result for testing
-                android.util.Log.d("DataEnrichment", "Selected path: $selectedPath")
-                android.util.Log.d("DataEnrichment", "Selected values: $selectedValues")
+                android.util.Log.d("ZoneScopeSelector", "Selected path: ${result.selectedPath}")
+                android.util.Log.d("ZoneScopeSelector", "Selection level: ${result.selectionLevel}")
+                android.util.Log.d("ZoneScopeSelector", "Selected values: ${result.selectedValues}")
             }
         )
     }

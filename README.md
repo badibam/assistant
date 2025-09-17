@@ -101,7 +101,8 @@ app/src/main/res/                   # Ressources Android
 
 ## Documentation Technique
 
-- **CORE.md** : Architecture système, coordination, données
+- **CORE.md** : Architecture système, coordination, services
+- **DATA.md** : Navigation hiérarchique, validation, patterns de données
 - **UI.md** : Composants interface, formulaires, thèmes
 - **TOOLS.md** : Architecture des outils
 

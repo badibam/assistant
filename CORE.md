@@ -138,42 +138,7 @@ Aucune modification Core nécessaire.
 ## ═══════════════════════════════════
 ## Gestion des Données
 
-### Event Sourcing
-
-Toutes les modifications passent par des événements :
-
-- Logging automatique des modifications possible
-- Cohérence sans synchronisation manuelle  
-- Historique pour IA et audit
-
-### Schémas JSON Auto-descriptifs
-
-```kotlin
-// Validation et navigation IA sans accès aux données
-val schema = toolType.getConfigSchema()
-val validation = toolType.validateData(data, operation)
-```
-
-### Databases Standalone
-
-**Structure** : 1 database par tool type pour discovery pure
-- TrackingDatabase → TrackingData
-- JournalDatabase → JournalData  
-- Pas de foreign keys, indices de performance seulement
-
-### Verbalisation
-
-Système de templates pour actions, états et résultats :
-
-```kotlin
-// Template
-"[source] [verb] le titre [old_value] en [new_value]"
-
-// Résultat  
-"L'IA a modifié le titre Blup en Blip"
-```
-
-**Usage** : Historique, validation utilisateur, feedback IA.
+**Voir DATA.md** pour navigation hiérarchique, validation et patterns de données.
 
 ## ═══════════════════════════════════
 ## Operations Multi-Étapes
@@ -325,79 +290,9 @@ coordinator.processScheduledTask("backup.create", params)
 ```
 
 ## ═══════════════════════════════════
-## Validation JSON Schema V3
+## Validation des Données
 
-Architecture centralisée de validation basée sur JSON Schema avec traduction automatique.
-
-### Structure Validation
-
-```
-app/src/main/java/com/assistant/core/validation/
-├── SchemaValidator.kt           ← API principale
-├── ValidationErrorProcessor.kt  ← Traitement erreurs  
-├── SchemaProvider.kt            ← Interface schémas
-└── ValidationResult.kt          ← Data class résultat
-```
-
-### API Unifiée
-
-```kotlin
-// Usage standard pour tous types d'outils
-val toolType = ToolTypeManager.getToolType("tracking")
-val result = SchemaValidator.validate(toolType, data, context, schemaType = "data")
-
-if (result.isValid) {
-    // Validation réussie
-} else {
-    // Erreur traduite en français : result.errorMessage
-}
-```
-
-### Interface SchemaProvider
-
-Tous les ToolTypes implémentent SchemaProvider :
-
-```kotlin
-interface SchemaProvider {
-    fun getConfigSchema(): String        // Schéma configuration outil
-    fun getDataSchema(): String?         // Schéma données métier
-    fun getFormFieldName(String): String // Traductions champs
-}
-```
-
-### Fonctionnalités Automatiques
-
-- **Filtrage valeurs vides** : Supprime `""` et `null` avant validation
-- **Traduction erreurs** : Messages français avec noms traduits  
-- **Schémas conditionnels** : Support `allOf/if/then` natif
-- **Cache performance** : Schémas mis en cache automatiquement
-
-### Types de Validation
-
-```kotlin
-// Validation configuration outil (création/modification)
-SchemaValidator.validate(toolType, configData, context, schemaType = "config")
-
-// Validation données métier (entries)
-SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
-```
-
-## SchemaValidator V3 + Schémas Externes 🆕
-
-**Pattern Validation Unifié** : Validation au clic + Toast + Schémas JSON externes
-
-```kotlin
-val handleSave = {
-    val validation = SchemaValidator.validate(provider, data, context)
-    if (validation.isValid) {
-        // Sauvegarder
-    } else {
-       UI.Toast(...)
-    }
-}
-```
-
-**Architecture** : Schémas externalisés en objets Kotlin
+**Voir DATA.md** pour SchemaValidator V3, validation centralisée et patterns de données.
 
 ## ═══════════════════════════════════
 ## Système de Strings Modulaire

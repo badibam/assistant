@@ -1,4 +1,4 @@
-package com.assistant.core.ai.ui.dialogs
+package com.assistant.core.ui.selectors
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,11 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.assistant.core.ai.ui.dialogs.data.DataEnrichmentState
-import com.assistant.core.ai.ui.dialogs.data.SelectionStep
-import com.assistant.core.ai.ui.dialogs.data.FieldSelectionType
-import com.assistant.core.ai.ui.dialogs.data.TimestampSelection
-import com.assistant.core.ai.ui.dialogs.data.NameSelection
+import com.assistant.core.ui.selectors.data.ZoneScopeState
+import com.assistant.core.ui.selectors.data.SelectionStep
+import com.assistant.core.ui.selectors.data.FieldSelectionType
+import com.assistant.core.ui.selectors.data.TimestampSelection
+import com.assistant.core.ui.selectors.data.NameSelection
+import com.assistant.core.ui.selectors.data.NavigationConfig
+import com.assistant.core.ui.selectors.data.SelectionResult
+import com.assistant.core.ui.selectors.data.SelectionLevel
+import com.assistant.core.ui.selectors.data.FieldSpecificData
 import com.assistant.core.navigation.DataNavigator
 import com.assistant.core.navigation.getAvailableFields
 import com.assistant.core.navigation.getFieldChildrenFromCommonStructure
@@ -38,6 +42,40 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
 
+// Helper functions for SelectionLevel and validation
+private fun getCurrentSelectionLevel(selectionChain: List<SelectionStep>): SelectionLevel {
+    return when (selectionChain.lastOrNull()?.selectedNode?.type) {
+        NodeType.ZONE -> SelectionLevel.ZONE
+        NodeType.TOOL -> SelectionLevel.INSTANCE
+        NodeType.FIELD -> SelectionLevel.FIELD
+        else -> SelectionLevel.ZONE
+    }
+}
+
+private fun getFieldSpecificData(state: ZoneScopeState): FieldSpecificData? {
+    return when (state.fieldSpecificType) {
+        FieldSelectionType.TIMESTAMP -> {
+            val minTimestamp = state.timestampSelection.minCustomDateTime ?: state.timestampSelection.minPeriod?.timestamp
+            val maxTimestamp = state.timestampSelection.maxCustomDateTime ?: state.timestampSelection.maxPeriod?.timestamp
+            FieldSpecificData.TimestampData(
+                minTimestamp = minTimestamp,
+                maxTimestamp = maxTimestamp
+            )
+        }
+        FieldSelectionType.NAME -> {
+            FieldSpecificData.NameData(
+                selectedNames = state.nameSelection.selectedNames,
+                availableNames = state.nameSelection.availableNames
+            )
+        }
+        FieldSelectionType.NONE -> {
+            if (state.selectedValues.isNotEmpty()) {
+                FieldSpecificData.DataValues(state.selectedValues)
+            } else null
+        }
+    }
+}
+
 /**
  * Creates current period with normalization according to configuration
  */
@@ -48,14 +86,14 @@ private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDa
 }
 
 /**
- * Dialog pour configurer un enrichissement de données (🔍)
- * Permet de sélectionner une donnée via navigation hiérarchique
- * et de spécifier les critères de filtrage
+ * Zone scope selector - Hierarchical navigation through zones, tool instances, and data fields
+ * Configurable navigation depth and field-specific selection capabilities
  */
 @Composable
-fun DataEnrichmentDialog(
+fun ZoneScopeSelector(
+    config: NavigationConfig,
     onDismiss: () -> Unit,
-    onConfirm: (selectedPath: String, selectedValues: List<String>) -> Unit
+    onConfirm: (SelectionResult) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -63,7 +101,7 @@ fun DataEnrichmentDialog(
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(context = context) }
 
-    var state by remember { mutableStateOf(DataEnrichmentState()) }
+    var state by remember { mutableStateOf(ZoneScopeState()) }
     var isLoading by remember { mutableStateOf(false) }
 
     // App config state
@@ -91,7 +129,7 @@ fun DataEnrichmentDialog(
                 currentLevel = 0
             )
         } catch (e: Exception) {
-            LogManager.coordination("Error loading initial data in DataEnrichmentDialog: ${e.message}", "ERROR", e)
+            LogManager.coordination("Error loading initial data in ZoneScopeSelector: ${e.message}", "ERROR", e)
         } finally {
             isLoading = false
             isConfigLoading = false
@@ -106,7 +144,7 @@ fun DataEnrichmentDialog(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    UI.Text(text = s.shared("ai_enrichment_loading_config"), type = TextType.BODY)
+                    UI.Text(text = s.shared("scope_loading_config"), type = TextType.BODY)
                 }
             }
         }
@@ -130,7 +168,7 @@ fun DataEnrichmentDialog(
 
                 // Header
                 UI.Text(
-                    text = s.shared("ai_enrichment_dialog_title"),
+                    text = if (config.title.isNotEmpty()) config.title else s.shared("scope_selector_title"),
                     type = TextType.TITLE
                 )
 
@@ -322,9 +360,15 @@ fun DataEnrichmentDialog(
 
                     UI.ActionButton(
                         action = ButtonAction.CONFIRM,
-                        enabled = state.selectionChain.isNotEmpty(),
+                        enabled = config.isValidSelection(getCurrentSelectionLevel(state.selectionChain)),
                         onClick = {
-                            onConfirm(state.selectedPath, state.selectedValues)
+                            val result = SelectionResult(
+                                selectedPath = state.selectedPath,
+                                selectedValues = state.selectedValues,
+                                selectionLevel = getCurrentSelectionLevel(state.selectionChain),
+                                fieldSpecificData = getFieldSpecificData(state)
+                            )
+                            onConfirm(result)
                         }
                     )
                 }
@@ -335,14 +379,14 @@ fun DataEnrichmentDialog(
 
 @Composable
 private fun MetadataSelectorSection(
-    state: DataEnrichmentState,
+    state: ZoneScopeState,
     isLoading: Boolean,
     onSelectionChange: (SchemaNode) -> Unit,
     s: com.assistant.core.strings.StringsContext
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         UI.Text(
-            text = s.shared("ai_enrichment_data_selection"),
+            text = s.shared("scope_navigation_selection"),
             type = TextType.SUBTITLE
         )
 
@@ -355,16 +399,16 @@ private fun MetadataSelectorSection(
 
                 // Add "All" option for tools and fields levels
                 val allOptions = when (level) {
-                    1 -> listOf(s.shared("ai_enrichment_all_tools")) + options.map { it.displayName }
-                    2 -> listOf(s.shared("ai_enrichment_all_fields")) + options.map { it.displayName }
+                    1 -> listOf(s.shared("scope_all_instances")) + options.map { it.displayName }
+                    2 -> listOf(s.shared("scope_all_fields")) + options.map { it.displayName }
                     else -> options.map { it.displayName }
                 }
 
                 // Set default selection to "All" option for tools and fields
                 val effectiveSelected = if (selectedValue.isEmpty() && (level == 1 || level == 2)) {
                     when (level) {
-                        1 -> s.shared("ai_enrichment_all_tools")
-                        2 -> s.shared("ai_enrichment_all_fields")
+                        1 -> s.shared("scope_all_instances")
+                        2 -> s.shared("scope_all_fields")
                         else -> selectedValue
                     }
                 } else {
@@ -377,7 +421,7 @@ private fun MetadataSelectorSection(
                     selected = effectiveSelected,
                     onSelect = { selectedOption ->
                         // Handle "All" selections
-                        if (selectedOption == s.shared("ai_enrichment_all_tools") || selectedOption == s.shared("ai_enrichment_all_fields")) {
+                        if (selectedOption == s.shared("scope_all_instances") || selectedOption == s.shared("scope_all_fields")) {
                             // Create a virtual node for "All" selection
                             val allNode = SchemaNode(
                                 path = when (level) {
@@ -411,7 +455,7 @@ private fun MetadataSelectorSection(
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
                 Box(modifier = Modifier.padding(start = 8.dp)) {
                     UI.Text(
-                        text = s.shared("ai_enrichment_loading"),
+                        text = s.shared("scope_loading"),
                         type = TextType.LABEL
                     )
                 }
@@ -430,7 +474,7 @@ private fun ValueSelectorSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = s.shared("ai_enrichment_available_values"),
+            text = s.shared("scope_available_values"),
             type = TextType.SUBTITLE
         )
 
@@ -467,7 +511,7 @@ private fun ValueSelectorSection(
 
                     if (availableValues.size > 10) {
                         UI.Text(
-                            text = String.format(s.shared("ai_enrichment_more_values"), availableValues.size - 10),
+                            text = String.format(s.shared("scope_more_values"), availableValues.size - 10),
                             type = TextType.LABEL
                         )
                     }
@@ -475,7 +519,7 @@ private fun ValueSelectorSection(
             }
             DataResultStatus.ERROR -> {
                 UI.Text(
-                    text = s.shared("ai_enrichment_error_loading_values"),
+                    text = s.shared("scope_error_loading_values"),
                     type = TextType.BODY
                 )
             }
@@ -497,7 +541,7 @@ private fun QueryPreviewSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = s.shared("ai_enrichment_preview"),
+            text = s.shared("scope_preview"),
             type = TextType.SUBTITLE
         )
 
@@ -513,7 +557,7 @@ private fun QueryPreviewSection(
         Card {
             Column(modifier = Modifier.padding(12.dp)) {
                 UI.Text(
-                    text = s.shared("ai_enrichment_sql_query"),
+                    text = s.shared("scope_sql_query"),
                     type = TextType.LABEL
                 )
                 UI.Text(
@@ -779,13 +823,13 @@ private fun TimestampSelectorSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         UI.Text(
-            text = s.shared("ai_enrichment_temporal_selection"),
+            text = s.shared("scope_temporal_selection"),
             type = TextType.SUBTITLE
         )
 
         // Date minimum
         TimestampRangeSelector(
-            label = s.shared("ai_enrichment_date_start"),
+            label = s.shared("scope_date_start"),
             periodType = timestampSelection.minPeriodType,
             period = timestampSelection.minPeriod,
             customDateTime = timestampSelection.minCustomDateTime,
@@ -811,7 +855,7 @@ private fun TimestampSelectorSection(
 
         // Date maximum
         TimestampRangeSelector(
-            label = s.shared("ai_enrichment_date_end"),
+            label = s.shared("scope_date_end"),
             periodType = timestampSelection.maxPeriodType,
             period = timestampSelection.maxPeriod,
             customDateTime = timestampSelection.maxCustomDateTime,
@@ -865,15 +909,15 @@ private fun TimestampRangeSelector(
 
         // Period type selector
         UI.FormSelection(
-            label = s.shared("ai_enrichment_period_type"),
-            options = listOf(s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year"), s.shared("ai_enrichment_period_custom")),
+            label = s.shared("scope_period_type"),
+            options = listOf(s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year"), s.shared("scope_period_custom")),
             selected = when (periodType) {
                 PeriodType.HOUR -> s.shared("period_hour")
                 PeriodType.DAY -> s.shared("period_day")
                 PeriodType.WEEK -> s.shared("period_week")
                 PeriodType.MONTH -> s.shared("period_month")
                 PeriodType.YEAR -> s.shared("period_year")
-                null -> s.shared("ai_enrichment_period_custom") // Fix: always show "Date personnalisée" when periodType is null
+                null -> s.shared("scope_period_custom") // Fix: always show "Date personnalisée" when periodType is null
             },
             onSelect = { selected ->
                 val newPeriodType = when (selected) {
@@ -882,7 +926,7 @@ private fun TimestampRangeSelector(
                     s.shared("period_week") -> PeriodType.WEEK
                     s.shared("period_month") -> PeriodType.MONTH
                     s.shared("period_year") -> PeriodType.YEAR
-                    s.shared("ai_enrichment_period_custom") -> null // Will show custom picker
+                    s.shared("scope_period_custom") -> null // Will show custom picker
                     else -> null
                 }
                 onPeriodTypeChange(newPeriodType)
@@ -910,8 +954,8 @@ private fun TimestampRangeSelector(
             customDateTime == null -> {
                 // Show custom date/time picker button
                 UI.FormField(
-                    label = s.shared("ai_enrichment_custom_datetime"),
-                    value = s.shared("ai_enrichment_select_datetime"),
+                    label = s.shared("scope_custom_datetime"),
+                    value = s.shared("scope_select_datetime"),
                     onChange = { },
                     readonly = true,
                     onClick = {
@@ -1035,7 +1079,7 @@ private fun NameSelectorSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
-            text = s.shared("ai_enrichment_name_selection"),
+            text = s.shared("scope_name_selection"),
             type = TextType.SUBTITLE
         )
 
@@ -1081,7 +1125,7 @@ private fun NameSelectorSection(
 
         if (nameSelection.availableNames.isNotEmpty()) {
             UI.Text(
-                text = s.shared("ai_enrichment_available_entry_names"),
+                text = s.shared("scope_available_entry_names"),
                 type = TextType.LABEL
             )
 
@@ -1114,14 +1158,14 @@ private fun NameSelectorSection(
 
                 if (nameSelection.availableNames.size > 10) {
                     UI.Text(
-                        text = String.format(s.shared("ai_enrichment_more_names"), nameSelection.availableNames.size - 10),
+                        text = String.format(s.shared("scope_more_names"), nameSelection.availableNames.size - 10),
                         type = TextType.CAPTION
                     )
                 }
             }
         } else {
             UI.Text(
-                text = s.shared("ai_enrichment_loading_names"),
+                text = s.shared("scope_loading_names"),
                 type = TextType.BODY
             )
         }
