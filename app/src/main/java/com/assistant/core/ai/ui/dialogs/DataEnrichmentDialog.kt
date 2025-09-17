@@ -278,7 +278,9 @@ fun DataEnrichmentDialog(
                                 onNameSelectionChange = { newNameSelection ->
                                     state = state.copy(nameSelection = newNameSelection)
                                 },
-                                s = s
+                                s = s,
+                                selectionChain = state.selectionChain,
+                                coordinator = coordinator
                             )
                         }
                         FieldSelectionType.NONE -> {
@@ -506,7 +508,7 @@ private fun QueryPreviewSection(
             type = TextType.BODY
         )
 
-        // SQL (placeholder for now)
+        // SQL Query Preview
         val sqlQuery = buildSqlQuery(selectionChain, selectedValues, fieldSpecificType, timestampSelection, nameSelection)
         Card {
             Column(modifier = Modifier.padding(12.dp)) {
@@ -1027,7 +1029,9 @@ private fun TimestampRangeSelector(
 private fun NameSelectorSection(
     nameSelection: NameSelection,
     onNameSelectionChange: (NameSelection) -> Unit,
-    s: com.assistant.core.strings.StringsContext
+    s: com.assistant.core.strings.StringsContext,
+    selectionChain: List<SelectionStep>,
+    coordinator: Coordinator
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.Text(
@@ -1035,11 +1039,44 @@ private fun NameSelectorSection(
             type = TextType.SUBTITLE
         )
 
-        // TODO: Load available names from database
-        LaunchedEffect(Unit) {
-            // Placeholder - would load from DataNavigator
-            val mockNames = listOf("Entrée 1", "Entrée 2", "Entrée 3", "Entrée du matin", "Entrée du soir")
-            onNameSelectionChange(nameSelection.copy(availableNames = mockNames))
+        // Load available names from tool data via coordinator
+        LaunchedEffect(selectionChain) {
+            try {
+                // Extract tool instance ID from selection chain
+                val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
+                val toolInstanceId = toolStep?.selectedNode?.path?.let { path ->
+                    when {
+                        path == "tools.all" -> null // Skip loading for "all tools"
+                        else -> path.substringAfter("tools.").substringBefore(".")
+                    }
+                }
+
+                if (toolInstanceId != null) {
+                    // Load tool data to get available names
+                    val result = coordinator.processUserAction(
+                        "tool_data.get",
+                        mapOf("toolInstanceId" to toolInstanceId)
+                    )
+
+                    if (result.isSuccess) {
+                        val entries = result.data?.get("entries") as? List<Map<String, Any>> ?: emptyList()
+                        val names = entries.mapNotNull { entry ->
+                            (entry["name"] as? String)?.takeIf { it.isNotBlank() }
+                        }.distinct().sorted()
+
+                        onNameSelectionChange(nameSelection.copy(availableNames = names))
+                    } else {
+                        LogManager.coordination("Failed to load names for tool $toolInstanceId: ${result.message}", "ERROR")
+                        onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
+                    }
+                } else {
+                    // No specific tool selected or "all tools" - clear names
+                    onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
+                }
+            } catch (e: Exception) {
+                LogManager.coordination("Error loading available names: ${e.message}", "ERROR", e)
+                onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
+            }
         }
 
         if (nameSelection.availableNames.isNotEmpty()) {
