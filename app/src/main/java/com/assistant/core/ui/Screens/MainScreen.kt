@@ -19,6 +19,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.ui.selectors.ZoneScopeSelector
 import com.assistant.core.ui.selectors.data.NavigationConfig
+import com.assistant.core.ai.ui.chat.AIFloatingChat
 import kotlinx.coroutines.launch
 
 /**
@@ -187,17 +188,21 @@ fun MainScreen() {
                     )
                 }
             }
+        } // Close Column
 
-            // AI Chat floating button
+        // AI Chat floating button (in Box, not Column)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
             UI.ActionButton(
                 action = ButtonAction.AI_CHAT,
                 display = ButtonDisplay.ICON,
                 size = Size.L,
-                onClick = { showAIChat = true },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                onClick = { showAIChat = true }
             )
+        }
         }
     }
     
@@ -222,6 +227,12 @@ fun MainScreen() {
             }
         )
     }
+
+    // AI Floating Chat
+    AIFloatingChat(
+        isVisible = showAIChat,
+        onDismiss = { showAIChat = false }
+    )
 
     // Error handling with Toast
     errorMessage?.let { message ->
