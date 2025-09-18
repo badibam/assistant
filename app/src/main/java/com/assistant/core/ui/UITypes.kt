@@ -142,8 +142,9 @@ enum class ButtonType {
  * Predefined actions for standardized buttons
  */
 enum class ButtonAction {
-    SAVE, CREATE, UPDATE, DELETE, CANCEL, BACK, 
-    CONFIGURE, ADD, EDIT, REFRESH, SELECT, CONFIRM, UP, DOWN, LEFT, RIGHT
+    SAVE, CREATE, UPDATE, DELETE, CANCEL, BACK,
+    CONFIGURE, ADD, EDIT, REFRESH, SELECT, CONFIRM, UP, DOWN, LEFT, RIGHT,
+    AI_CHAT
 }
 
 /**

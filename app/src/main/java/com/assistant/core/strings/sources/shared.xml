@@ -31,6 +31,7 @@
     <string name="action_down">Descendre</string>
     <string name="action_left">Précédent</string>
     <string name="action_right">Suivant</string>
+    <string name="action_ai_chat">Assistant IA</string>
     
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>

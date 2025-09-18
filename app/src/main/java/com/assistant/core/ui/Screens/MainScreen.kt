@@ -42,6 +42,7 @@ fun MainScreen() {
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var showZoneScopeSelector by rememberSaveable { mutableStateOf(false) }
+    var showAIChat by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
     val selectedZone = zones.find { it.id == selectedZoneId }
@@ -145,10 +146,11 @@ fun MainScreen() {
         )
     } else {
         // Main content using hybrid system: Compose layouts + UI.* components
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // Header with configure and add zone buttons
             UI.PageHeader(
                 title = s.shared("app_name"),
@@ -185,6 +187,17 @@ fun MainScreen() {
                     )
                 }
             }
+
+            // AI Chat floating button
+            UI.ActionButton(
+                action = ButtonAction.AI_CHAT,
+                display = ButtonDisplay.ICON,
+                size = Size.L,
+                onClick = { showAIChat = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            )
         }
     }
     
@@ -192,8 +205,10 @@ fun MainScreen() {
     if (showZoneScopeSelector) {
         ZoneScopeSelector(
             config = NavigationConfig(
-                allowInstanceSelection = true,
+                allowZoneSelection = true,
+                allowInstanceSelection = false,
                 allowFieldSelection = true,
+                allowValueSelection = false,
                 title = "Explorateur de données",
                 showQueryPreview = true
             ),

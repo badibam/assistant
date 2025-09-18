@@ -339,7 +339,7 @@ object DefaultTheme : ThemeContract {
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM -> ButtonType.PRIMARY
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT -> ButtonType.PRIMARY
             
             // SECONDARY: Actions destructives/dangereuses avec confirmation
             ButtonAction.DELETE -> ButtonType.SECONDARY
@@ -371,6 +371,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DOWN -> s.shared("action_down")
             ButtonAction.LEFT -> s.shared("action_left")
             ButtonAction.RIGHT -> s.shared("action_right")
+            ButtonAction.AI_CHAT -> s.shared("action_ai_chat")
         }
     }
     
@@ -393,6 +394,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DOWN -> "▼"      // Triangle bas
             ButtonAction.LEFT -> "◀"      // Triangle gauche
             ButtonAction.RIGHT -> "▶"     // Triangle droite
+            ButtonAction.AI_CHAT -> "🤖"   // Robot face
         }
     }
     
