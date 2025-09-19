@@ -55,6 +55,24 @@ data class Period(
 }
 
 /**
+ * Get the end timestamp of a period (last millisecond of the period)
+ */
+fun getPeriodEndTimestamp(period: Period, dayStartHour: Int, weekStartDay: String): Long {
+    // Get the start of the next period
+    val nextPeriodStart = getNextPeriod(period, dayStartHour, weekStartDay).timestamp
+    // End of current period is 1ms before start of next period
+    return nextPeriodStart - 1
+}
+
+/**
+ * Extension function to get the end timestamp of a period
+ * Simplifies usage: period.getEndTimestamp(dayStartHour, weekStartDay)
+ */
+fun Period.getEndTimestamp(dayStartHour: Int, weekStartDay: String): Long {
+    return getPeriodEndTimestamp(this, dayStartHour, weekStartDay)
+}
+
+/**
  * Normalizes a timestamp according to period type with configuration parameters
  */
 fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour: Int, weekStartDay: String): Long {
@@ -753,6 +771,41 @@ fun PeriodRangeSelector(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
+    // App configuration state
+    var dayStartHour by remember { mutableStateOf(0) }
+    var weekStartDay by remember { mutableStateOf("monday") }
+    var isConfigLoading by remember { mutableStateOf(true) }
+
+    // Load app configuration
+    LaunchedEffect(Unit) {
+        try {
+            val coordinator = Coordinator(context)
+            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
+            if (configResult.isSuccess) {
+                val config = configResult.data?.get("settings") as? Map<String, Any>
+                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
+                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
+            }
+        } catch (e: Exception) {
+            // Use defaults if config loading fails
+            dayStartHour = 0
+            weekStartDay = "monday"
+        } finally {
+            isConfigLoading = false
+        }
+    }
+
+    // Show loading state while config is loading
+    if (isConfigLoading) {
+        Box(
+            modifier = modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
+        }
+        return
+    }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -793,6 +846,16 @@ fun PeriodRangeSelector(
                         else -> null // Custom
                     }
                     onStartTypeChange(newType)
+
+                    // Create default period when type changes (like TrackingHistory does)
+                    if (newType != null && !isConfigLoading) {
+                        val now = System.currentTimeMillis()
+                        val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                        val newPeriod = Period(normalizedTimestamp, newType)
+                        onStartPeriodChange(newPeriod)
+                    } else {
+                        onStartPeriodChange(null)
+                    }
                 }
             )
 
@@ -870,6 +933,16 @@ fun PeriodRangeSelector(
                         else -> null // Custom
                     }
                     onEndTypeChange(newType)
+
+                    // Create default period when type changes (like TrackingHistory does)
+                    if (newType != null && !isConfigLoading) {
+                        val now = System.currentTimeMillis()
+                        val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                        val newPeriod = Period(normalizedTimestamp, newType)
+                        onEndPeriodChange(newPeriod)
+                    } else {
+                        onEndPeriodChange(null)
+                    }
                 }
             )
 

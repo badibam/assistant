@@ -406,7 +406,7 @@ private fun PointerEnrichmentDialog(
                 allowZoneSelection = true,
                 allowInstanceSelection = true,
                 allowFieldSelection = true,
-                allowValueSelection = true,
+                allowValueSelection = false,
                 title = s.shared("pointer_enrichment_selector_title")
             ),
             onDismiss = onDismiss,

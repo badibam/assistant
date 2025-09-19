@@ -451,6 +451,68 @@ Period.now(PeriodType.DAY, config.dayStartHour, config.weekStartDay)
 ```
 
 ## ═══════════════════════════════════
+## Sélection Temporelle
+
+### Composants de Période
+
+**SinglePeriodSelector** - Navigation périodique avec flèches :
+```kotlin
+UI.SinglePeriodSelector(
+    period = currentPeriod,
+    onPeriodChange = { newPeriod -> currentPeriod = newPeriod },
+    showDatePicker = false,           // true = label cliquable pour datepicker
+    useOnlyRelativeLabels = false     // true = force labels relatifs
+)
+```
+
+**PeriodRangeSelector** - Sélection de plages temporelles :
+```kotlin
+UI.PeriodRangeSelector(
+    startPeriodType = PeriodType.DAY,
+    startPeriod = startPeriod,
+    startCustomDate = null,
+    endPeriodType = PeriodType.DAY,
+    endPeriod = endPeriod,
+    endCustomDate = null,
+    onStartTypeChange = { type -> /* ... */ },
+    onStartPeriodChange = { period -> /* ... */ },
+    useOnlyRelativeLabels = false     // Contexte chat/automation
+)
+```
+
+### Logique Labels Relatifs vs Absolus
+
+**Paramètre `useOnlyRelativeLabels`** :
+- `false` (défaut) : "Semaine du 15 mars" pour navigation claire
+- `true` : "il y a 125 semaines" pour cohérence automation
+
+**Contextes d'usage** :
+- **Chat IA** : `useOnlyRelativeLabels = false` → Timestamps absolus
+- **Automation IA** : `useOnlyRelativeLabels = true` → Périodes relatives
+
+### Gestion Configuration App
+
+Les composants chargent automatiquement :
+- `dayStartHour` : Heure de début de journée
+- `weekStartDay` : Jour de début de semaine
+
+**Période de fin** : Extension `Period.getEndTimestamp(dayStartHour, weekStartDay)` calcule la fin exacte d'une période.
+
+### Utilitaires Période
+
+```kotlin
+// Normalisation début de période
+val startTimestamp = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, weekStartDay)
+
+// Fin de période (dernière milliseconde)
+val endTimestamp = period.getEndTimestamp(dayStartHour, weekStartDay)
+
+// Navigation périodes
+val nextPeriod = getNextPeriod(currentPeriod, dayStartHour, weekStartDay)
+val prevPeriod = getPreviousPeriod(currentPeriod, dayStartHour, weekStartDay)
+```
+
+## ═══════════════════════════════════
 ## Règles d'Usage
 
 ### À Faire

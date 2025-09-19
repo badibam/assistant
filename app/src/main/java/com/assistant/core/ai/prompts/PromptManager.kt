@@ -223,25 +223,7 @@ object PromptManager {
         return params // For now, return as-is
     }
 
-    // === Legacy compatibility (TODO: remove when all migrated) ===
 
-    @Deprecated("Use buildPrompt(AISession, Context) instead")
-    fun buildPrompt(context: PromptContext): String {
-        return "Legacy prompt building not supported - use new 4-level system"
-    }
-
-    @Deprecated("Use new AIMessage parsing instead")
-    fun processAIResponse(response: String): AIResponseResult {
-        return AIResponseResult(
-            commands = emptyList(),
-            error = "Legacy response processing not supported"
-        )
-    }
-
-    @Deprecated("Use new documentation system instead")
-    fun getToolPromptFragments(toolType: String): List<String> {
-        return emptyList()
-    }
 }
 
 /**
@@ -254,20 +236,4 @@ data class PromptResult(
     val level3Tokens: Int,
     val level4Tokens: Int,
     val totalTokens: Int
-)
-
-// === Legacy structures for compatibility ===
-
-data class PromptContext(
-    val type: String,
-    val sourceScreen: String? = null,
-    val toolType: String? = null,
-    val instanceId: String? = null,
-    val userMessage: String? = null
-)
-
-data class AIResponseResult(
-    val commands: List<String>,
-    val message: String? = null,
-    val error: String? = null
 )

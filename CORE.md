@@ -272,18 +272,10 @@ when {
 }
 ```
 
-### Pattern Migration 🆕
-
-**Ancien système** → **Nouveau système**
+### Pattern de commandes
 
 ```kotlin
-// AVANT (legacy patterns - SUPPRIMÉS)
-"create->zone"                              → "zones.create"
-"get->zones"                               → "zones.list"  
-"execute->tools->tracking->add_entry"      → "tracking.add_entry"
-"execute->service->icon_preload->preload"  → "icon_preload.preload_theme_icons"
 
-// Interface identique, seuls les patterns changent
 coordinator.processUserAction("zones.create", params)
 coordinator.processAICommand("tools.list", params)
 coordinator.processScheduledTask("backup.create", params)

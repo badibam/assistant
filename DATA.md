@@ -24,7 +24,7 @@ class DataNavigator(private val context: Context) {
 
 ### ZoneScopeSelector
 
-Sélecteur hiérarchique pour navigation Zone → Tool Instance → Data Fields avec configuration flexible.
+Sélecteur hiérarchique pour navigation Zone → Tool Instance → Data Fields avec configuration flexible et gestion temporelle.
 
 ```kotlin
 @Composable
@@ -49,7 +49,15 @@ data class NavigationConfig(
 )
 ```
 
-#### Cas d'usage
+#### Intégration Temporelle
+
+**Paramètre `useOnlyRelativeLabels`** propagé vers PeriodRangeSelector :
+- **Chat context** : Labels absolus ("Semaine du 15 mars") pour navigation claire
+- **Automation context** : Labels relatifs ("il y a 3 semaines") pour cohérence
+
+**Gestion période de fin** : Les sélections de période dans ZoneScopeSelector utilisent automatiquement les timestamps de fin appropriés via `Period.getEndTimestamp()`.
+
+### Cas d'usage
 
 ```kotlin
 // Sélection zones seulement
