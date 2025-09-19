@@ -20,7 +20,8 @@ data class AppSettingsCategory(
  */
 object AppSettingCategories {
     const val FORMAT = "format"
-    
+    const val AI_LIMITS = "ai_limits"
+
     // Future categories:
     // const val UI = "ui"
     // const val DATA = "data"
@@ -44,10 +45,23 @@ object DefaultFormatSettings {
         }
     }
     """
-    
+
     // Future format settings:
     // "timezone": "Europe/Paris"
-    // "date_format": "dd/MM/yyyy" 
+    // "date_format": "dd/MM/yyyy"
     // "time_format": "24h"
     // "number_format_preference": "locale" // vs "user"
+}
+
+/**
+ * Default AI limits configuration
+ */
+object DefaultAILimitsSettings {
+    const val JSON = """
+    {
+        "defaultQueryMaxTokens": 2000,
+        "defaultCharsPerToken": 4.5,
+        "defaultPromptMaxTokens": 15000
+    }
+    """
 }

@@ -11,6 +11,7 @@ data class Zone(
     val name: String,
     val description: String? = null,
     val color: String? = null,
+    val active: Boolean = true,
     val order_index: Int = 0,
     val created_at: Long = System.currentTimeMillis(),
     val updated_at: Long = System.currentTimeMillis()

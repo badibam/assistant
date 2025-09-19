@@ -23,6 +23,7 @@ data class ToolInstance(
     val tool_type: String, // "tracking", "objective", etc.
     val config_json: String, // Configuration spécifique à l'outil
     val config_metadata_json: String, // Métadonnées décrivant la config
+    val enabled: Boolean = true,
     val order_index: Int = 0,
     val created_at: Long = System.currentTimeMillis(),
     val updated_at: Long = System.currentTimeMillis()

@@ -53,7 +53,8 @@ class MigrationOrchestrator(private val context: Context) {
     private fun getCoreMigrations(): List<Migration> {
         return listOf(
             // Migration 1→2 removed - unified architecture starts in v3
-            CORE_MIGRATION_2_3
+            CORE_MIGRATION_2_3,
+            CORE_MIGRATION_3_4
         )
     }
     
@@ -99,6 +100,20 @@ class MigrationOrchestrator(private val context: Context) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Empty migration - tool_data table already exists in v2
                 // Unified architecture already in place
+            }
+        }
+
+        /**
+         * Migration 3→4: Add enabled/active fields
+         * Add active field to zones and enabled field to tool_instances
+         */
+        val CORE_MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add active field to zones table with default value true
+                database.execSQL("ALTER TABLE zones ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
+
+                // Add enabled field to tool_instances table with default value true
+                database.execSQL("ALTER TABLE tool_instances ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1")
             }
         }
     }
