@@ -36,6 +36,8 @@
     <!-- AI Interface -->
     <string name="ai_composer_placeholder">Écris ton message...</string>
     <string name="ai_enrichment_config">Configuration enrichissement</string>
+    <string name="pointer_enrichment_selector_title">Sélectionner données</string>
+    <string name="pointer_enrichment_config">Configuration Pointer</string>
 
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>
@@ -116,6 +118,14 @@
     <string name="period_this_year">Cette année</string>
     <string name="period_last_year">L'année dernière</string>
     <string name="period_next_year">L'année prochaine</string>
+    <string name="period_custom">Personnalisé</string>
+
+    <!-- Range selectors -->
+    <string name="range_start">De</string>
+    <string name="range_end">À</string>
+    <string name="range_start_date">Date début</string>
+    <string name="range_end_date">Date fin</string>
+    <string name="select_date">Choisir date</string>
     <string name="period_years_ago_singular">Il y a %d an</string>
     <string name="period_years_ago_plural">Il y a %d ans</string>
     <string name="period_years_from_now_singular">Dans %d an</string>

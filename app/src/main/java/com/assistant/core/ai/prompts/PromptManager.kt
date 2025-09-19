@@ -211,6 +211,18 @@ object PromptManager {
         return text.length / 4
     }
 
+    /**
+     * Resolve relative parameters to absolute values at execution time
+     * Used for automation queries that need to adapt to current date/time
+     *
+     * TODO Phase 2A+: Implement full logic for all relative period types
+     */
+    private fun resolveRelativeParams(params: Map<String, Any>): Map<String, Any> {
+        LogManager.service("resolveRelativeParams() - stub implementation")
+        // TODO: Implement in Phase 2A+ when enrichments need it
+        return params // For now, return as-is
+    }
+
     // === Legacy compatibility (TODO: remove when all migrated) ===
 
     @Deprecated("Use buildPrompt(AISession, Context) instead")

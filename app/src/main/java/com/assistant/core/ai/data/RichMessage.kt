@@ -25,19 +25,23 @@ sealed class MessageSegment {
 /**
  * Data query for prompt system integration
  *
- * IMPORTANT: Queries use ABSOLUTE timestamps/periods for consistency:
+ * DUAL MODE: Absolute vs Relative queries based on session type:
+ *
+ * CHAT (isRelative = false):
  * - "cette semaine" → "nutrition.week_2024_12_09_2024_12_15"
- * - "aujourd'hui" → "tracking.day_2024_12_15"
- *
- * This ensures:
- * - Conversation context remains stable across days
+ * - Ensures conversation context remains stable across days
  * - Reproducible results when reviewing old conversations
- * - Clear traceability of what data was actually used
  *
- * Enrichment blocks must calculate absolute timestamps at creation time.
+ * AUTOMATION (isRelative = true):
+ * - "cette semaine" → "nutrition.current_week"
+ * - Resolves to current week at execution time
+ * - Allows automation queries to adapt to execution date
+ *
+ * Custom date fields are always absolute regardless of session type.
  */
 data class DataQuery(
     val id: String,              // Format: "type.param1_value1.param2_value2"
     val type: String,            // Query type (ZONE_DATA, TOOL_ENTRIES, etc.)
-    val params: Map<String, Any> // Query parameters with absolute values
+    val params: Map<String, Any>, // Query parameters (absolute or relative)
+    val isRelative: Boolean = false // true for automation, false for chat
 )

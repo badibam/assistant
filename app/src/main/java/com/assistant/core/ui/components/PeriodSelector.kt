@@ -11,6 +11,8 @@ import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.launch
 import java.util.*
 
@@ -144,29 +146,65 @@ fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour
 }
 
 /**
- * Generic period selection component with smart navigation
+ * Single period selector with navigation arrows (◀▶).
  * Displays relative labels (Today, This week, etc.) with navigation arrows
- * and ability to click to open date selector
+ * and ability to click to open date selector. Loads its own temporal configuration.
  */
 @Composable
-fun PeriodSelector(
+fun SinglePeriodSelector(
     period: Period,
     onPeriodChange: (Period) -> Unit,
     modifier: Modifier = Modifier,
     showDatePicker: Boolean = true,
-    dayStartHour: Int = 0,
-    weekStartDay: String = "monday"
+    useOnlyRelativeLabels: Boolean = false
 ) {
-    
-    // State for date selector
-    var showPicker by remember { mutableStateOf(false) }
-    
-    
-    // Smart label generation
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val label = remember(period, dayStartHour, weekStartDay) {
-        generatePeriodLabel(period, dayStartHour, weekStartDay, s)
+
+    // Load app configuration internally
+    var dayStartHour by remember { mutableStateOf(0) }
+    var weekStartDay by remember { mutableStateOf("monday") }
+    var isConfigLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val coordinator = Coordinator(context)
+            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
+            if (configResult.isSuccess) {
+                val config = configResult.data?.get("settings") as? Map<String, Any>
+                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
+                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
+            }
+        } catch (e: Exception) {
+            // Use defaults if config loading fails
+            dayStartHour = 0
+            weekStartDay = "monday"
+        } finally {
+            isConfigLoading = false
+        }
+    }
+
+    // State for date selector
+    var showPicker by remember { mutableStateOf(false) }
+
+    // Smart label generation
+    val label = remember(period, dayStartHour, weekStartDay, isConfigLoading, useOnlyRelativeLabels) {
+        if (isConfigLoading) {
+            s.shared("tools_loading")
+        } else {
+            generatePeriodLabel(period, dayStartHour, weekStartDay, s, useOnlyRelativeLabels)
+        }
+    }
+
+    if (isConfigLoading) {
+        // Show loading state
+        Box(
+            modifier = modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
+        }
+        return
     }
     
     Row(
@@ -271,23 +309,31 @@ fun PeriodSelector(
 
 /**
  * Generates smart label for given period
+ * @param useOnlyRelativeLabels if true, always use relative labels ("dans 145 ans"),
+ *                             if false, fallback to absolute dates for distant periods
  */
-private fun generatePeriodLabel(period: Period, dayStartHour: Int, weekStartDay: String, s: StringsContext): String {
+private fun generatePeriodLabel(
+    period: Period,
+    dayStartHour: Int,
+    weekStartDay: String,
+    s: StringsContext,
+    useOnlyRelativeLabels: Boolean = false
+): String {
     val now = System.currentTimeMillis()
 
     return when (period.type) {
-        PeriodType.HOUR -> generateHourLabel(period.timestamp, now, s)
-        PeriodType.DAY -> generateDayLabel(period.timestamp, now, dayStartHour, s)
-        PeriodType.WEEK -> generateWeekLabel(period.timestamp, now, weekStartDay, s)
-        PeriodType.MONTH -> generateMonthLabel(period.timestamp, now, s)
-        PeriodType.YEAR -> generateYearLabel(period.timestamp, now, s)
+        PeriodType.HOUR -> generateHourLabel(period.timestamp, now, s, useOnlyRelativeLabels)
+        PeriodType.DAY -> generateDayLabel(period.timestamp, now, dayStartHour, s, useOnlyRelativeLabels)
+        PeriodType.WEEK -> generateWeekLabel(period.timestamp, now, weekStartDay, s, useOnlyRelativeLabels)
+        PeriodType.MONTH -> generateMonthLabel(period.timestamp, now, s, useOnlyRelativeLabels)
+        PeriodType.YEAR -> generateYearLabel(period.timestamp, now, s, useOnlyRelativeLabels)
     }
 }
 
 /**
  * Labels for hours
  */
-private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext): String {
+private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean): String {
     // Normalize both timestamps to compare hours correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.HOUR, 0, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.HOUR, 0, "monday")
@@ -296,22 +342,35 @@ private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext): St
 
     return when {
         diffHours == 0 -> s.shared("period_this_hour")
-        diffHours > 0 && diffHours <= 12 -> {
-            if (diffHours == 1) {
-                s.shared("period_hours_ago_singular").format(diffHours)
+        diffHours > 0 -> {
+            if (useOnlyRelativeLabels || diffHours <= 12) {
+                if (diffHours == 1) {
+                    s.shared("period_hours_ago_singular").format(diffHours)
+                } else {
+                    s.shared("period_hours_ago_plural").format(diffHours)
+                }
             } else {
-                s.shared("period_hours_ago_plural").format(diffHours)
+                val date = DateUtils.formatDateForDisplay(timestamp)
+                val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
+                "$date ${hour}h"
             }
         }
-        diffHours < 0 && diffHours >= -12 -> {
+        diffHours < 0 -> {
             val absDiff = -diffHours
-            if (absDiff == 1) {
-                s.shared("period_hours_from_now_singular").format(absDiff)
+            if (useOnlyRelativeLabels || absDiff <= 12) {
+                if (absDiff == 1) {
+                    s.shared("period_hours_from_now_singular").format(absDiff)
+                } else {
+                    s.shared("period_hours_from_now_plural").format(absDiff)
+                }
             } else {
-                s.shared("period_hours_from_now_plural").format(absDiff)
+                val date = DateUtils.formatDateForDisplay(timestamp)
+                val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
+                "$date ${hour}h"
             }
         }
         else -> {
+            // Fallback case should never happen
             val date = DateUtils.formatDateForDisplay(timestamp)
             val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
             "$date ${hour}h"
@@ -322,7 +381,7 @@ private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext): St
 /**
  * Labels for days
  */
-private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: StringsContext): String {
+private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: StringsContext, useOnlyRelativeLabels: Boolean): String {
     // Normalize timestamps to compare them according to dayStartHour
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.DAY, dayStartHour, "monday")
@@ -333,19 +392,27 @@ private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: S
         diffDays == 0 -> s.shared("period_today")
         diffDays == 1 -> s.shared("period_yesterday")
         diffDays == -1 -> s.shared("period_tomorrow")
-        diffDays > 0 && diffDays <= 7 -> {
-            if (diffDays == 1) {
-                s.shared("period_days_ago_singular").format(diffDays)
+        diffDays > 0 -> {
+            if (useOnlyRelativeLabels || diffDays <= 7) {
+                if (diffDays == 1) {
+                    s.shared("period_days_ago_singular").format(diffDays)
+                } else {
+                    s.shared("period_days_ago_plural").format(diffDays)
+                }
             } else {
-                s.shared("period_days_ago_plural").format(diffDays)
+                DateUtils.formatDateForDisplay(timestamp)
             }
         }
-        diffDays < 0 && diffDays >= -7 -> {
+        diffDays < 0 -> {
             val absDiff = -diffDays
-            if (absDiff == 1) {
-                s.shared("period_days_from_now_singular").format(absDiff)
+            if (useOnlyRelativeLabels || absDiff <= 7) {
+                if (absDiff == 1) {
+                    s.shared("period_days_from_now_singular").format(absDiff)
+                } else {
+                    s.shared("period_days_from_now_plural").format(absDiff)
+                }
             } else {
-                s.shared("period_days_from_now_plural").format(absDiff)
+                DateUtils.formatDateForDisplay(timestamp)
             }
         }
         else -> DateUtils.formatDateForDisplay(timestamp)
@@ -355,7 +422,7 @@ private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: S
 /**
  * Labels for weeks
  */
-private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, s: StringsContext): String {
+private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare weeks correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.WEEK, 4, weekStartDay)
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.WEEK, 4, weekStartDay)
@@ -366,22 +433,33 @@ private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, 
         diffWeeks == 0 -> s.shared("period_this_week")
         diffWeeks == 1 -> s.shared("period_last_week")
         diffWeeks == -1 -> s.shared("period_next_week")
-        diffWeeks > 0 && diffWeeks <= 4 -> {
-            if (diffWeeks == 1) {
-                s.shared("period_weeks_ago_singular").format(diffWeeks)
+        diffWeeks > 0 -> {
+            if (useOnlyRelativeLabels || diffWeeks <= 4) {
+                if (diffWeeks == 1) {
+                    s.shared("period_weeks_ago_singular").format(diffWeeks)
+                } else {
+                    s.shared("period_weeks_ago_plural").format(diffWeeks)
+                }
             } else {
-                s.shared("period_weeks_ago_plural").format(diffWeeks)
+                val weekStart = getWeekStart(timestamp, weekStartDay)
+                s.shared("period_week_of").format(DateUtils.formatDateForDisplay(weekStart))
             }
         }
-        diffWeeks < 0 && diffWeeks >= -4 -> {
+        diffWeeks < 0 -> {
             val absDiff = -diffWeeks
-            if (absDiff == 1) {
-                s.shared("period_weeks_from_now_singular").format(absDiff)
+            if (useOnlyRelativeLabels || absDiff <= 4) {
+                if (absDiff == 1) {
+                    s.shared("period_weeks_from_now_singular").format(absDiff)
+                } else {
+                    s.shared("period_weeks_from_now_plural").format(absDiff)
+                }
             } else {
-                s.shared("period_weeks_from_now_plural").format(absDiff)
+                val weekStart = getWeekStart(timestamp, weekStartDay)
+                s.shared("period_week_of").format(DateUtils.formatDateForDisplay(weekStart))
             }
         }
         else -> {
+            // Fallback case should never happen
             val weekStart = getWeekStart(timestamp, weekStartDay)
             s.shared("period_week_of").format(DateUtils.formatDateForDisplay(weekStart))
         }
@@ -391,7 +469,7 @@ private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, 
 /**
  * Labels for months
  */
-private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext): String {
+private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare months correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH, 4, "monday")
@@ -406,9 +484,35 @@ private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext): S
         diffMonths == 0 -> s.shared("period_this_month")
         diffMonths == 1 -> s.shared("period_last_month")
         diffMonths == -1 -> s.shared("period_next_month")
-        diffMonths > 0 && diffMonths <= 6 -> s.shared("period_months_ago").format(diffMonths)
-        diffMonths < 0 && diffMonths >= -6 -> s.shared("period_months_from_now").format(-diffMonths)
+        diffMonths > 0 -> {
+            if (useOnlyRelativeLabels || diffMonths <= 6) {
+                s.shared("period_months_ago").format(diffMonths)
+            } else {
+                val monthKeys = arrayOf(
+                    "month_january", "month_february", "month_march", "month_april", "month_may", "month_june",
+                    "month_july", "month_august", "month_september", "month_october", "month_november", "month_december"
+                )
+                val month = s.shared(monthKeys[tsCal.get(Calendar.MONTH)])
+                val year = tsCal.get(Calendar.YEAR)
+                "$month $year"
+            }
+        }
+        diffMonths < 0 -> {
+            val absDiff = -diffMonths
+            if (useOnlyRelativeLabels || absDiff <= 6) {
+                s.shared("period_months_from_now").format(absDiff)
+            } else {
+                val monthKeys = arrayOf(
+                    "month_january", "month_february", "month_march", "month_april", "month_may", "month_june",
+                    "month_july", "month_august", "month_september", "month_october", "month_november", "month_december"
+                )
+                val month = s.shared(monthKeys[tsCal.get(Calendar.MONTH)])
+                val year = tsCal.get(Calendar.YEAR)
+                "$month $year"
+            }
+        }
         else -> {
+            // Fallback case should never happen
             val monthKeys = arrayOf(
                 "month_january", "month_february", "month_march", "month_april", "month_may", "month_june",
                 "month_july", "month_august", "month_september", "month_october", "month_november", "month_december"
@@ -423,7 +527,7 @@ private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext): S
 /**
  * Labels for years
  */
-private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext): String {
+private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare years correctly
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR, 4, "monday")
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR, 4, "monday")
@@ -436,22 +540,33 @@ private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext): St
         diffYears == 0 -> s.shared("period_this_year")
         diffYears == 1 -> s.shared("period_last_year")
         diffYears == -1 -> s.shared("period_next_year")
-        diffYears > 0 && diffYears <= 3 -> {
-            if (diffYears == 1) {
-                s.shared("period_years_ago_singular").format(diffYears)
+        diffYears > 0 -> {
+            if (useOnlyRelativeLabels || diffYears <= 3) {
+                if (diffYears == 1) {
+                    s.shared("period_years_ago_singular").format(diffYears)
+                } else {
+                    s.shared("period_years_ago_plural").format(diffYears)
+                }
             } else {
-                s.shared("period_years_ago_plural").format(diffYears)
+                tsYear.toString()
             }
         }
-        diffYears < 0 && diffYears >= -3 -> {
+        diffYears < 0 -> {
             val absDiff = -diffYears
-            if (absDiff == 1) {
-                s.shared("period_years_from_now_singular").format(absDiff)
+            if (useOnlyRelativeLabels || absDiff <= 3) {
+                if (absDiff == 1) {
+                    s.shared("period_years_from_now_singular").format(absDiff)
+                } else {
+                    s.shared("period_years_from_now_plural").format(absDiff)
+                }
             } else {
-                s.shared("period_years_from_now_plural").format(absDiff)
+                tsYear.toString()
             }
         }
-        else -> tsYear.toString()
+        else -> {
+            // Fallback case should never happen
+            tsYear.toString()
+        }
     }
 }
 
@@ -512,3 +627,289 @@ private fun getWeekStart(timestamp: Long, weekStartDay: String): Long {
     }
     return cal.timeInMillis
 }
+
+/**
+ * Simple date range picker with two DatePickers (start/end)
+ * No navigation arrows, just direct date selection
+ */
+@Composable
+fun CustomDateRangePicker(
+    startDate: Long?,
+    endDate: Long?,
+    onStartDateChange: (Long?) -> Unit,
+    onEndDateChange: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Start date picker
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(
+                text = s.shared("range_start_date") + ":",
+                type = TextType.LABEL
+            )
+
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showStartDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = startDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                        type = TextType.BODY,
+                        fillMaxWidth = true,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        // End date picker
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(
+                text = s.shared("range_end_date") + ":",
+                type = TextType.LABEL
+            )
+
+            Box(modifier = Modifier.weight(1f)) {
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showEndDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = endDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                        type = TextType.BODY,
+                        fillMaxWidth = true,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    // DatePicker dialogs
+    if (showStartDatePicker) {
+        UI.DatePicker(
+            selectedDate = startDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+            onDateSelected = { dateString ->
+                val timestamp = DateUtils.parseDateForFilter(dateString)
+                onStartDateChange(timestamp)
+            },
+            onDismiss = { showStartDatePicker = false }
+        )
+    }
+
+    if (showEndDatePicker) {
+        UI.DatePicker(
+            selectedDate = endDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+            onDateSelected = { dateString ->
+                val timestamp = DateUtils.parseDateForFilter(dateString)
+                onEndDateChange(timestamp)
+            },
+            onDismiss = { showEndDatePicker = false }
+        )
+    }
+}
+
+/**
+ * Period range selector - wrapper that combines dropdowns with period selectors
+ * Supports both standard periods (with navigation) and custom date ranges
+ */
+@Composable
+fun PeriodRangeSelector(
+    startPeriodType: PeriodType?,
+    startPeriod: Period?,
+    startCustomDate: Long?,
+    endPeriodType: PeriodType?,
+    endPeriod: Period?,
+    endCustomDate: Long?,
+    onStartTypeChange: (PeriodType?) -> Unit,
+    onStartPeriodChange: (Period?) -> Unit,
+    onStartCustomDateChange: (Long?) -> Unit,
+    onEndTypeChange: (PeriodType?) -> Unit,
+    onEndPeriodChange: (Period?) -> Unit,
+    onEndCustomDateChange: (Long?) -> Unit,
+    modifier: Modifier = Modifier,
+    useOnlyRelativeLabels: Boolean = false
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Start section
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            UI.Text(
+                text = s.shared("range_start") + ":",
+                type = TextType.SUBTITLE
+            )
+
+            // Start period type dropdown
+            UI.FormSelection(
+                label = "",
+                options = listOf(
+                    s.shared("period_hour"),
+                    s.shared("period_day"),
+                    s.shared("period_week"),
+                    s.shared("period_month"),
+                    s.shared("period_year"),
+                    s.shared("period_custom")
+                ),
+                selected = when(startPeriodType) {
+                    PeriodType.HOUR -> s.shared("period_hour")
+                    PeriodType.DAY -> s.shared("period_day")
+                    PeriodType.WEEK -> s.shared("period_week")
+                    PeriodType.MONTH -> s.shared("period_month")
+                    PeriodType.YEAR -> s.shared("period_year")
+                    null -> s.shared("period_custom")
+                },
+                onSelect = { selection ->
+                    val newType = when(selection) {
+                        s.shared("period_hour") -> PeriodType.HOUR
+                        s.shared("period_day") -> PeriodType.DAY
+                        s.shared("period_week") -> PeriodType.WEEK
+                        s.shared("period_month") -> PeriodType.MONTH
+                        s.shared("period_year") -> PeriodType.YEAR
+                        else -> null // Custom
+                    }
+                    onStartTypeChange(newType)
+                }
+            )
+
+            // Start period selector or custom date
+            if (startPeriodType != null && startPeriod != null) {
+                SinglePeriodSelector(
+                    period = startPeriod,
+                    onPeriodChange = { period -> onStartPeriodChange(period) },
+                    showDatePicker = true,
+                    useOnlyRelativeLabels = useOnlyRelativeLabels
+                )
+            } else {
+                // Custom date picker - simplified
+                var showDatePicker by remember { mutableStateOf(false) }
+
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                        type = TextType.BODY,
+                        fillMaxWidth = true,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                if (showDatePicker) {
+                    UI.DatePicker(
+                        selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+                        onDateSelected = { dateString ->
+                            val timestamp = DateUtils.parseDateForFilter(dateString)
+                            onStartCustomDateChange(timestamp)
+                        },
+                        onDismiss = { showDatePicker = false }
+                    )
+                }
+            }
+        }
+
+        // End section
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            UI.Text(
+                text = s.shared("range_end") + ":",
+                type = TextType.SUBTITLE
+            )
+
+            // End period type dropdown
+            UI.FormSelection(
+                label = "",
+                options = listOf(
+                    s.shared("period_hour"),
+                    s.shared("period_day"),
+                    s.shared("period_week"),
+                    s.shared("period_month"),
+                    s.shared("period_year"),
+                    s.shared("period_custom")
+                ),
+                selected = when(endPeriodType) {
+                    PeriodType.HOUR -> s.shared("period_hour")
+                    PeriodType.DAY -> s.shared("period_day")
+                    PeriodType.WEEK -> s.shared("period_week")
+                    PeriodType.MONTH -> s.shared("period_month")
+                    PeriodType.YEAR -> s.shared("period_year")
+                    null -> s.shared("period_custom")
+                },
+                onSelect = { selection ->
+                    val newType = when(selection) {
+                        s.shared("period_hour") -> PeriodType.HOUR
+                        s.shared("period_day") -> PeriodType.DAY
+                        s.shared("period_week") -> PeriodType.WEEK
+                        s.shared("period_month") -> PeriodType.MONTH
+                        s.shared("period_year") -> PeriodType.YEAR
+                        else -> null // Custom
+                    }
+                    onEndTypeChange(newType)
+                }
+            )
+
+            // End period selector or custom date
+            if (endPeriodType != null && endPeriod != null) {
+                SinglePeriodSelector(
+                    period = endPeriod,
+                    onPeriodChange = { period -> onEndPeriodChange(period) },
+                    showDatePicker = true,
+                    useOnlyRelativeLabels = useOnlyRelativeLabels
+                )
+            } else {
+                // Custom date picker - simplified
+                var showDatePicker by remember { mutableStateOf(false) }
+
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                        type = TextType.BODY,
+                        fillMaxWidth = true,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                if (showDatePicker) {
+                    UI.DatePicker(
+                        selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+                        onDateSelected = { dateString ->
+                            val timestamp = DateUtils.parseDateForFilter(dateString)
+                            onEndCustomDateChange(timestamp)
+                        },
+                        onDismiss = { showDatePicker = false }
+                    )
+                }
+            }
+        }
+    }
+}
+

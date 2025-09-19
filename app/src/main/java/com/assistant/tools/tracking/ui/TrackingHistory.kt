@@ -24,7 +24,7 @@ import com.assistant.core.utils.DateUtils
 import com.assistant.core.ui.components.PeriodFilterType
 import com.assistant.core.ui.components.Period
 import com.assistant.core.ui.components.PeriodType
-import com.assistant.core.ui.components.PeriodSelector
+import com.assistant.core.ui.components.SinglePeriodSelector
 import com.assistant.core.ui.components.normalizeTimestampWithConfig
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -382,14 +382,12 @@ fun TrackingHistory(
         
         // Level 2: Period selector (hidden for ALL filter)
         if (periodFilter != PeriodFilterType.ALL) {
-            PeriodSelector(
+            SinglePeriodSelector(
                 period = currentPeriod!!,
                 onPeriodChange = { newPeriod ->
                     currentPeriod = newPeriod
                     loadData()
-                },
-                dayStartHour = dayStartHour!!,
-                weekStartDay = weekStartDay!!
+                }
             )
         }
         

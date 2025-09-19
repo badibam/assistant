@@ -141,15 +141,12 @@ class PromptManager(private val context: Context) {
         // 2. Configs des instances référencées (avec cache par hash)
         enrichments.forEach { enrichment ->
             when (enrichment) {
-                is Enrichment.Data -> {
-                    val zone = aiContext.zones.find { it.id == enrichment.zoneId }
-                    zone?.let { addZoneConfigToDoc(it, documentation, schemasToInclude) }
+                is Enrichment.Pointer -> {
+                    // Parse selectedPath to extract zone/tool info if needed
+                    // For now, we can skip detailed config inclusion for POINTER
+                    // since it's mainly for referencing existing data
                 }
-                is Enrichment.Modify -> {
-                    val toolInstance = aiContext.getToolInstance(enrichment.toolInstanceId)
-                    toolInstance?.let { addToolConfigToDoc(it, documentation, schemasToInclude) }
-                }
-                // Autres cas selon les enrichments
+                // TODO: Add other enrichment types when implemented
                 else -> {} // Pas de config spécifique à inclure
             }
         }

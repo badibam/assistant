@@ -16,24 +16,33 @@ sealed class Enrichment {
     abstract fun getSchema(): String
 
     /**
-     * 🔍 Données - Lecture/accès aux données existantes
+     * 🔍 Pointer - Référencer des données existantes
      */
-    data class Data(
-        val zoneId: String,
-        val period: String,
-        val toolInstanceId: String? = null,
-        val detailLevel: String = "summary"
+    data class Pointer(
+        val selectedPath: String,                    // Chemin sélectionné via ZoneScopeSelector
+        val selectedValues: List<String> = emptyList(), // Valeurs spécifiques sélectionnées
+        val selectionLevel: String,                  // ZONE, INSTANCE, FIELD
+        val importance: String = "important",        // optionnel, important, essentiel
+        val période: String? = null,                 // Filtre temporel optionnel
+        val description: String? = null              // Description optionnelle
     ) : Enrichment() {
 
         override fun getDisplayLabel(): String {
-            return if (toolInstanceId != null) {
-                "données $toolInstanceId $period"
+            val baseLabel = when (selectionLevel) {
+                "ZONE" -> "données zone"
+                "INSTANCE" -> "données outil"
+                "FIELD" -> "champ données"
+                else -> "données"
+            }
+
+            return if (période != null) {
+                "$baseLabel $période"
             } else {
-                "données zone $period"
+                baseLabel
             }
         }
 
-        override fun getSchema(): String = DataEnrichmentSchema.SCHEMA
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA
     }
 
     /**
@@ -49,7 +58,7 @@ sealed class Enrichment {
             return "utiliser $toolInstanceId"
         }
 
-        override fun getSchema(): String = UseEnrichmentSchema.SCHEMA
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement UseEnrichmentSchema
     }
 
     /**
@@ -60,12 +69,8 @@ sealed class Enrichment {
         val zoneName: String,
         val suggestedName: String? = null
     ) : Enrichment() {
-
-        override fun getDisplayLabel(): String {
-            return "créer $toolType"
-        }
-
-        override fun getSchema(): String = CreateEnrichmentSchema.SCHEMA
+        override fun getDisplayLabel(): String = "créer $toolType"
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement CreateEnrichmentSchema
     }
 
     /**
@@ -76,12 +81,8 @@ sealed class Enrichment {
         val aspect: String = "config",
         val description: String? = null
     ) : Enrichment() {
-
-        override fun getDisplayLabel(): String {
-            return "modifier $toolInstanceId"
-        }
-
-        override fun getSchema(): String = ModifyEnrichmentSchema.SCHEMA
+        override fun getDisplayLabel(): String = "modifier $toolInstanceId"
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement ModifyEnrichmentSchema
     }
 
     /**
@@ -92,12 +93,8 @@ sealed class Enrichment {
         val elementId: String,
         val targetId: String? = null
     ) : Enrichment() {
-
-        override fun getDisplayLabel(): String {
-            return "organiser $action"
-        }
-
-        override fun getSchema(): String = OrganizeEnrichmentSchema.SCHEMA
+        override fun getDisplayLabel(): String = "organiser $action"
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement OrganizeEnrichmentSchema
     }
 
     /**
@@ -108,11 +105,7 @@ sealed class Enrichment {
         val elementId: String,
         val docType: String = "description"
     ) : Enrichment() {
-
-        override fun getDisplayLabel(): String {
-            return "documenter $elementType"
-        }
-
-        override fun getSchema(): String = DocumentEnrichmentSchema.SCHEMA
+        override fun getDisplayLabel(): String = "documenter $elementType"
+        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement DocumentEnrichmentSchema
     }
 }

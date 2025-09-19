@@ -27,4 +27,6 @@ $ARGUMENTS
 - TOUJOURS vérifier les patterns dans la doc et / ou dans les autres fichiers avant d'implémenter une logique...
 - Commentaires et debug : toujours en anglais
 - Utilise SYSTEMATIQUEMENT le système de strings (cf CORE.md) : s.tool(), s.shared() : pas de 'string' hardcodée.
+- Ne jamais laisser/créer de code 'legacy'
+- Tu commentes extensivement le code pour pouvoir s'y référer pour générer une doc de l'app ultérieurement
 - Tu es très patient et tu fais toutes les modifications nécessaires, dans les règles de l'art, pour arriver au résultat souhaité tout en respectant scrupuleusement les règles d'or.

@@ -35,7 +35,8 @@ import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.Period
-import com.assistant.core.ui.components.PeriodSelector
+import com.assistant.core.ui.components.PeriodRangeSelector
+import com.assistant.core.ui.components.SinglePeriodSelector
 import com.assistant.core.ui.components.normalizeTimestampWithConfig
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -49,6 +50,15 @@ private fun getCurrentSelectionLevel(selectionChain: List<SelectionStep>): Selec
         NodeType.TOOL -> SelectionLevel.INSTANCE
         NodeType.FIELD -> SelectionLevel.FIELD
         else -> SelectionLevel.ZONE
+    }
+}
+
+/**
+ * Build human-readable display chain from selection steps
+ */
+private fun buildDisplayChain(selectionChain: List<SelectionStep>): List<String> {
+    return selectionChain.map { step ->
+        "${step.label}: ${step.selectedValue}"
     }
 }
 
@@ -95,7 +105,8 @@ private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDa
 fun ZoneScopeSelector(
     config: NavigationConfig,
     onDismiss: () -> Unit,
-    onConfirm: (SelectionResult) -> Unit
+    onConfirm: (SelectionResult) -> Unit,
+    useOnlyRelativeLabels: Boolean = false
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -302,14 +313,32 @@ fun ZoneScopeSelector(
                 if (config.allowValueSelection && state.isComplete && state.selectionChain.lastOrNull()?.selectedNode?.type == NodeType.FIELD) {
                     when (state.fieldSpecificType) {
                         FieldSelectionType.TIMESTAMP -> {
-                            TimestampSelectorSection(
-                                timestampSelection = state.timestampSelection,
-                                onTimestampSelectionChange = { newTimestampSelection ->
-                                    state = state.copy(timestampSelection = newTimestampSelection)
+                            PeriodRangeSelector(
+                                startPeriodType = state.timestampSelection.minPeriodType,
+                                startPeriod = state.timestampSelection.minPeriod,
+                                startCustomDate = state.timestampSelection.minCustomDateTime,
+                                endPeriodType = state.timestampSelection.maxPeriodType,
+                                endPeriod = state.timestampSelection.maxPeriod,
+                                endCustomDate = state.timestampSelection.maxCustomDateTime,
+                                onStartTypeChange = { newType ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minPeriodType = newType))
                                 },
-                                dayStartHour = dayStartHour!!,
-                                weekStartDay = weekStartDay!!,
-                                s = s
+                                onStartPeriodChange = { newPeriod ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minPeriod = newPeriod))
+                                },
+                                onStartCustomDateChange = { newDate ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minCustomDateTime = newDate))
+                                },
+                                onEndTypeChange = { newType ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxPeriodType = newType))
+                                },
+                                onEndPeriodChange = { newPeriod ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxPeriod = newPeriod))
+                                },
+                                onEndCustomDateChange = { newDate ->
+                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxCustomDateTime = newDate))
+                                },
+                                useOnlyRelativeLabels = useOnlyRelativeLabels
                             )
                         }
                         FieldSelectionType.NAME -> {
@@ -368,7 +397,8 @@ fun ZoneScopeSelector(
                                 selectedPath = state.selectedPath,
                                 selectedValues = state.selectedValues,
                                 selectionLevel = getCurrentSelectionLevel(state.selectionChain),
-                                fieldSpecificData = getFieldSpecificData(state)
+                                fieldSpecificData = getFieldSpecificData(state),
+                                displayChain = buildDisplayChain(state.selectionChain)
                             )
                             onConfirm(result)
                         }
@@ -833,258 +863,7 @@ private fun buildSqlQuery(
 /**
  * Component for timestamp field selection (date range)
  */
-@Composable
-private fun TimestampSelectorSection(
-    timestampSelection: TimestampSelection,
-    onTimestampSelectionChange: (TimestampSelection) -> Unit,
-    dayStartHour: Int,
-    weekStartDay: String,
-    s: com.assistant.core.strings.StringsContext
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        UI.Text(
-            text = s.shared("scope_temporal_selection"),
-            type = TextType.SUBTITLE
-        )
 
-        // Date minimum
-        TimestampRangeSelector(
-            label = s.shared("scope_date_start"),
-            periodType = timestampSelection.minPeriodType,
-            period = timestampSelection.minPeriod,
-            customDateTime = timestampSelection.minCustomDateTime,
-            onPeriodTypeChange = { newPeriodType ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(minPeriodType = newPeriodType, minPeriod = null, minCustomDateTime = null)
-                )
-            },
-            onPeriodChange = { newPeriod ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(minPeriod = newPeriod, minCustomDateTime = null)
-                )
-            },
-            onCustomDateTimeChange = { newDateTime ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(minCustomDateTime = newDateTime, minPeriod = null)
-                )
-            },
-            dayStartHour = dayStartHour,
-            weekStartDay = weekStartDay,
-            s = s
-        )
-
-        // Date maximum
-        TimestampRangeSelector(
-            label = s.shared("scope_date_end"),
-            periodType = timestampSelection.maxPeriodType,
-            period = timestampSelection.maxPeriod,
-            customDateTime = timestampSelection.maxCustomDateTime,
-            onPeriodTypeChange = { newPeriodType ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(maxPeriodType = newPeriodType, maxPeriod = null, maxCustomDateTime = null)
-                )
-            },
-            onPeriodChange = { newPeriod ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(maxPeriod = newPeriod, maxCustomDateTime = null)
-                )
-            },
-            onCustomDateTimeChange = { newDateTime ->
-                onTimestampSelectionChange(
-                    timestampSelection.copy(maxCustomDateTime = newDateTime, maxPeriod = null)
-                )
-            },
-            dayStartHour = dayStartHour,
-            weekStartDay = weekStartDay,
-            s = s
-        )
-    }
-}
-
-/**
- * Component for a single timestamp range selector (min or max)
- */
-@Composable
-private fun TimestampRangeSelector(
-    label: String,
-    periodType: PeriodType?,
-    period: Period?,
-    customDateTime: Long?,
-    onPeriodTypeChange: (PeriodType?) -> Unit,
-    onPeriodChange: (Period) -> Unit,
-    onCustomDateTimeChange: (Long) -> Unit,
-    dayStartHour: Int,
-    weekStartDay: String,
-    s: com.assistant.core.strings.StringsContext
-) {
-    // State for date/time pickers
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        UI.Text(
-            text = label,
-            type = TextType.LABEL
-        )
-
-        // Period type selector
-        UI.FormSelection(
-            label = s.shared("scope_period_type"),
-            options = listOf(s.shared("period_hour"), s.shared("period_day"), s.shared("period_week"), s.shared("period_month"), s.shared("period_year"), s.shared("scope_period_custom")),
-            selected = when (periodType) {
-                PeriodType.HOUR -> s.shared("period_hour")
-                PeriodType.DAY -> s.shared("period_day")
-                PeriodType.WEEK -> s.shared("period_week")
-                PeriodType.MONTH -> s.shared("period_month")
-                PeriodType.YEAR -> s.shared("period_year")
-                null -> s.shared("scope_period_custom") // Fix: always show "Date personnalisée" when periodType is null
-            },
-            onSelect = { selected ->
-                val newPeriodType = when (selected) {
-                    s.shared("period_hour") -> PeriodType.HOUR
-                    s.shared("period_day") -> PeriodType.DAY
-                    s.shared("period_week") -> PeriodType.WEEK
-                    s.shared("period_month") -> PeriodType.MONTH
-                    s.shared("period_year") -> PeriodType.YEAR
-                    s.shared("scope_period_custom") -> null // Will show custom picker
-                    else -> null
-                }
-                onPeriodTypeChange(newPeriodType)
-            }
-        )
-
-        // Period or custom selector based on type
-        when {
-            periodType != null && period != null -> {
-                // Show period selector with existing period system
-                PeriodSelector(
-                    period = period,
-                    onPeriodChange = onPeriodChange,
-                    dayStartHour = dayStartHour,
-                    weekStartDay = weekStartDay
-                )
-            }
-            periodType != null -> {
-                // Initialize period for this type
-                LaunchedEffect(periodType) {
-                    val initialPeriod = createCurrentPeriod(periodType, dayStartHour, weekStartDay)
-                    onPeriodChange(initialPeriod)
-                }
-            }
-            customDateTime == null -> {
-                // Show custom date/time picker button
-                UI.FormField(
-                    label = s.shared("scope_custom_datetime"),
-                    value = s.shared("scope_select_datetime"),
-                    onChange = { },
-                    readonly = true,
-                    onClick = {
-                        // Initialize with current date/time
-                        onCustomDateTimeChange(System.currentTimeMillis())
-                    }
-                )
-            }
-            else -> {
-                // Show selected custom date/time with edit option
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // Date field
-                        Box(modifier = Modifier.weight(1f)) {
-                            UI.FormField(
-                                label = s.shared("label_date"),
-                                value = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                                    .format(java.util.Date(customDateTime!!)),
-                                onChange = { },
-                                readonly = true,
-                                onClick = { showDatePicker = true }
-                            )
-                        }
-
-                        // Time field
-                        Box(modifier = Modifier.weight(1f)) {
-                            UI.FormField(
-                                label = s.shared("label_time"),
-                                value = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                                    .format(java.util.Date(customDateTime)),
-                                onChange = { },
-                                readonly = true,
-                                onClick = { showTimePicker = true }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Date picker dialog
-        if (showDatePicker && customDateTime != null) {
-            UI.DatePicker(
-                selectedDate = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                    .format(java.util.Date(customDateTime)),
-                onDateSelected = { newDateString ->
-                    // Combine new date with existing time
-                    try {
-                        val existingTime = java.util.Calendar.getInstance().apply {
-                            timeInMillis = customDateTime
-                        }
-                        val newDate = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                            .parse(newDateString)
-
-                        val combined = java.util.Calendar.getInstance().apply {
-                            time = newDate!!
-                            set(java.util.Calendar.HOUR_OF_DAY, existingTime.get(java.util.Calendar.HOUR_OF_DAY))
-                            set(java.util.Calendar.MINUTE, existingTime.get(java.util.Calendar.MINUTE))
-                            set(java.util.Calendar.SECOND, 0)
-                            set(java.util.Calendar.MILLISECOND, 0)
-                        }
-
-                        onCustomDateTimeChange(combined.timeInMillis)
-                    } catch (e: Exception) {
-                        // Fallback: keep original datetime
-                    }
-                    showDatePicker = false
-                },
-                onDismiss = { showDatePicker = false }
-            )
-        }
-
-        // Time picker dialog
-        if (showTimePicker && customDateTime != null) {
-            UI.TimePicker(
-                selectedTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-                    .format(java.util.Date(customDateTime)),
-                onTimeSelected = { newTimeString ->
-                    // Combine existing date with new time
-                    try {
-                        val existingDate = java.util.Calendar.getInstance().apply {
-                            timeInMillis = customDateTime
-                        }
-                        val timeParts = newTimeString.split(":")
-                        val hour = timeParts[0].toInt()
-                        val minute = timeParts[1].toInt()
-
-                        val combined = java.util.Calendar.getInstance().apply {
-                            timeInMillis = customDateTime
-                            set(java.util.Calendar.HOUR_OF_DAY, hour)
-                            set(java.util.Calendar.MINUTE, minute)
-                            set(java.util.Calendar.SECOND, 0)
-                            set(java.util.Calendar.MILLISECOND, 0)
-                        }
-
-                        onCustomDateTimeChange(combined.timeInMillis)
-                    } catch (e: Exception) {
-                        // Fallback: keep original datetime
-                    }
-                    showTimePicker = false
-                },
-                onDismiss = { showTimePicker = false }
-            )
-        }
-    }
-}
 
 /**
  * Component for name field selection

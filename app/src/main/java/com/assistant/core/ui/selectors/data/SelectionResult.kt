@@ -7,7 +7,8 @@ data class SelectionResult(
     val selectedPath: String,                       // Full path of selection (e.g., "zones.zone1.tools.instance1.data.field")
     val selectedValues: List<String>,               // Selected values for the path
     val selectionLevel: SelectionLevel,             // Level where selection stopped
-    val fieldSpecificData: FieldSpecificData? = null // Additional data for specific field types
+    val fieldSpecificData: FieldSpecificData? = null, // Additional data for specific field types
+    val displayChain: List<String> = emptyList()    // Human-readable labels for display (e.g., ["Zone: Santé", "Outil: Suivi Poids"])
 )
 
 /**

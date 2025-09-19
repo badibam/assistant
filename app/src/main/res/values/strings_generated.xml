@@ -205,6 +205,8 @@
     <string name="shared_action_ai_chat">Assistant IA</string>
     <string name="shared_ai_composer_placeholder">Écris ton message...</string>
     <string name="shared_ai_enrichment_config">Configuration enrichissement</string>
+    <string name="shared_pointer_enrichment_selector_title">Sélectionner données</string>
+    <string name="shared_pointer_enrichment_config">Configuration Pointer</string>
     <string name="shared_label_zone_name">Nom de la zone</string>
     <string name="shared_label_description">Description</string>
     <string name="shared_label_icon">Icône</string>
@@ -275,6 +277,12 @@
     <string name="shared_period_this_year">Cette année</string>
     <string name="shared_period_last_year">L\'année dernière</string>
     <string name="shared_period_next_year">L\'année prochaine</string>
+    <string name="shared_period_custom">Personnalisé</string>
+    <string name="shared_range_start">De</string>
+    <string name="shared_range_end">À</string>
+    <string name="shared_range_start_date">Date début</string>
+    <string name="shared_range_end_date">Date fin</string>
+    <string name="shared_select_date">Choisir date</string>
     <string name="shared_period_years_ago_singular">Il y a %1$d an</string>
     <string name="shared_period_years_ago_plural">Il y a %1$d ans</string>
     <string name="shared_period_years_from_now_singular">Dans %1$d an</string>

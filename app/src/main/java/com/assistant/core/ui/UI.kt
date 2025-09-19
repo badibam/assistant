@@ -429,16 +429,6 @@ object UI {
     // REUSABLE COMPONENTS
     // =====================================
     
-    @Composable
-    fun PeriodSelector(
-        period: com.assistant.core.ui.components.Period,
-        onPeriodChange: (com.assistant.core.ui.components.Period) -> Unit,
-        modifier: Modifier = Modifier,
-        showDatePicker: Boolean = true,
-        dayStartHour: Int = 0
-    ) = com.assistant.core.ui.components.PeriodSelector(
-        period, onPeriodChange, modifier, showDatePicker, dayStartHour
-    )
     
     @Composable
     fun IconSelector(

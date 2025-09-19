@@ -8,6 +8,17 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
+import com.assistant.core.ui.selectors.ZoneScopeSelector
+import com.assistant.core.ui.components.PeriodRangeSelector
+import com.assistant.core.ui.selectors.data.NavigationConfig
+import com.assistant.core.ui.selectors.data.SelectionResult
+import com.assistant.core.ui.selectors.data.FieldSpecificData
+import com.assistant.core.ui.selectors.data.TimestampSelection
+import com.assistant.core.ui.components.PeriodType
+import com.assistant.core.ui.components.Period
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import org.json.JSONObject
 
 /**
  * RichComposer component following UI.* pattern
@@ -22,7 +33,8 @@ fun UI.RichComposer(
     placeholder: String = "",
     showEnrichmentButtons: Boolean = true,
     enrichmentTypes: List<EnrichmentType> = EnrichmentType.values().toList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sessionType: SessionType = SessionType.CHAT
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -122,7 +134,8 @@ fun UI.RichComposer(
                 val newSegments = segments + newBlock
                 onSegmentsChange(newSegments)
                 showEnrichmentDialog = null
-            }
+            },
+            sessionType = sessionType
         )
     }
 }
@@ -209,16 +222,85 @@ private fun createRichMessage(segments: List<MessageSegment>): RichMessage {
 
 /**
  * Parse enrichment config JSON and create DataQuery
- * TODO: Implement based on actual config structures
  */
 private fun createDataQueryFromConfig(config: String): DataQuery? {
-    // Placeholder implementation
-    return DataQuery(
-        id = "placeholder_query_${System.currentTimeMillis()}",
-        type = "PLACEHOLDER",
-        params = emptyMap()
-    )
+    return try {
+        val json = JSONObject(config)
+        val selectedPath = json.getString("selectedPath")
+        val selectionLevel = json.getString("selectionLevel")
+        val importance = json.optString("importance", "important")
+
+        // Skip if importance is "optionnel" - will be included only if AI specifically requests it
+        if (importance == "optionnel") {
+            return null
+        }
+
+        // Parse TimestampSelection if present
+        val timestampData = json.optJSONObject("timestampSelection")?.let { timestampJson ->
+            val minTimestamp = timestampJson.optLong("minTimestamp")
+            val maxTimestamp = timestampJson.optLong("maxTimestamp")
+            val minCustomDateTime = timestampJson.optLong("minCustomDateTime")
+            val maxCustomDateTime = timestampJson.optLong("maxCustomDateTime")
+
+            // Use custom datetime if available, otherwise use period timestamps
+            val effectiveMinTimestamp = if (minCustomDateTime > 0) minCustomDateTime else if (minTimestamp > 0) minTimestamp else null
+            val effectiveMaxTimestamp = if (maxCustomDateTime > 0) maxCustomDateTime else if (maxTimestamp > 0) maxTimestamp else null
+
+            mutableMapOf<String, Any>().apply {
+                effectiveMinTimestamp?.let { put("startTimestamp", it) }
+                effectiveMaxTimestamp?.let { put("endTimestamp", it) }
+            }
+        } ?: emptyMap()
+
+        // Create query ID from path + timestamps for uniqueness
+        val queryId = buildString {
+            append("pointer.")
+            append(selectedPath.replace("/", "_"))
+            if (timestampData.isNotEmpty()) {
+                val startTs = timestampData["startTimestamp"] ?: "none"
+                val endTs = timestampData["endTimestamp"] ?: "none"
+                append(".ts_${startTs}_${endTs}")
+            }
+            append(".generated_${System.currentTimeMillis()}")
+        }
+
+        // Build query params
+        val params = mutableMapOf<String, Any>().apply {
+            put("selectedPath", selectedPath)
+            put("selectionLevel", selectionLevel)
+            put("importance", importance)
+
+            // Add timestamp data if present
+            putAll(timestampData)
+
+            // Add selected values if present
+            json.optJSONArray("selectedValues")?.let { valuesArray ->
+                val values = mutableListOf<String>()
+                for (i in 0 until valuesArray.length()) {
+                    values.add(valuesArray.getString(i))
+                }
+                if (values.isNotEmpty()) {
+                    put("selectedValues", values)
+                }
+            }
+
+            // Add field-specific data if present
+            json.optJSONObject("fieldSpecificData")?.let { fieldData ->
+                put("fieldSpecificData", fieldData.toString())
+            }
+        }
+
+        DataQuery(
+            id = queryId,
+            type = "POINTER_DATA",
+            params = params
+        )
+
+    } catch (e: Exception) {
+        null // Skip invalid configs
+    }
 }
+
 
 /**
  * Get button action for enrichment type
@@ -245,11 +327,190 @@ private fun getEnrichmentIcon(type: EnrichmentType): String {
 }
 
 /**
- * Enrichment configuration dialog
- * TODO: Implement specific UIs for each enrichment type
+ * Enrichment configuration dialog with specific UI for each enrichment type
  */
 @Composable
 private fun EnrichmentConfigDialog(
+    type: EnrichmentType,
+    existingConfig: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (config: String, preview: String) -> Unit,
+    sessionType: SessionType = SessionType.CHAT
+) {
+    when (type) {
+        EnrichmentType.POINTER -> {
+            PointerEnrichmentDialog(
+                existingConfig = existingConfig,
+                onDismiss = onDismiss,
+                onConfirm = onConfirm,
+                sessionType = sessionType
+            )
+        }
+        else -> {
+            // Placeholder for other enrichment types
+            PlaceholderEnrichmentDialog(
+                type = type,
+                existingConfig = existingConfig,
+                onDismiss = onDismiss,
+                onConfirm = onConfirm
+            )
+        }
+    }
+}
+
+/**
+ * Specific dialog for POINTER enrichment with ZoneScopeSelector
+ */
+@Composable
+private fun PointerEnrichmentDialog(
+    existingConfig: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (config: String, preview: String) -> Unit,
+    sessionType: SessionType = SessionType.CHAT
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    var showZoneScopeSelector by remember { mutableStateOf(true) }
+    var selectionResult by remember { mutableStateOf<SelectionResult?>(null) }
+
+    // Additional fields
+    var importance by remember { mutableStateOf("important") }
+        var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
+    var description by remember { mutableStateOf("") }
+
+    // App configuration for timestamp handling
+    var dayStartHour by remember { mutableStateOf(0) }
+    var weekStartDay by remember { mutableStateOf("monday") }
+
+    // Load app configuration
+    LaunchedEffect(Unit) {
+        try {
+            val coordinator = Coordinator(context)
+            val configResult = coordinator.processUserAction("app_config.get", emptyMap())
+            if (configResult.isSuccess) {
+                val config = configResult.data?.get("settings") as? Map<String, Any>
+                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
+                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
+            }
+        } catch (e: Exception) {
+            // Use defaults if config loading fails
+            dayStartHour = 0
+            weekStartDay = "monday"
+        }
+    }
+
+    if (showZoneScopeSelector) {
+        ZoneScopeSelector(
+            config = NavigationConfig(
+                allowZoneSelection = true,
+                allowInstanceSelection = true,
+                allowFieldSelection = true,
+                allowValueSelection = true,
+                title = s.shared("pointer_enrichment_selector_title")
+            ),
+            onDismiss = onDismiss,
+            onConfirm = { result ->
+                selectionResult = result
+                showZoneScopeSelector = false
+            },
+            useOnlyRelativeLabels = (sessionType == SessionType.AUTOMATION)
+        )
+    } else {
+        // Additional configuration fields after selection
+        val useRelativeLabels = (sessionType == SessionType.AUTOMATION)
+        UI.Dialog(
+            type = DialogType.CONFIGURE,
+            onConfirm = {
+                selectionResult?.let { result ->
+                    val config = createPointerConfig(result, importance, timestampSelection, description)
+                    val preview = createPointerPreview(result, timestampSelection, importance)
+                    onConfirm(config, preview)
+                }
+            },
+            onCancel = onDismiss
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("pointer_enrichment_config"),
+                    type = TextType.TITLE
+                )
+
+                // Show selected path with human-readable labels
+                selectionResult?.let { result ->
+                    UI.Text(
+                        text = if (result.displayChain.isNotEmpty()) {
+                            "Sélection: ${result.displayChain.joinToString(" → ")}"
+                        } else {
+                            "Sélection: ${result.selectedPath}"
+                        },
+                        type = TextType.BODY
+                    )
+                }
+
+                // Importance selector
+                UI.FormSelection(
+                    label = "Importance",
+                    options = listOf("optionnel", "important", "essentiel"),
+                    selected = importance,
+                    onSelect = { importance = it }
+                )
+
+                // Timestamp selection section
+                PeriodRangeSelector(
+                    startPeriodType = timestampSelection.minPeriodType,
+                    startPeriod = timestampSelection.minPeriod,
+                    startCustomDate = timestampSelection.minCustomDateTime,
+                    endPeriodType = timestampSelection.maxPeriodType,
+                    endPeriod = timestampSelection.maxPeriod,
+                    endCustomDate = timestampSelection.maxCustomDateTime,
+                    onStartTypeChange = { newType ->
+                        timestampSelection = timestampSelection.copy(minPeriodType = newType)
+                    },
+                    onStartPeriodChange = { newPeriod ->
+                        timestampSelection = timestampSelection.copy(minPeriod = newPeriod)
+                    },
+                    onStartCustomDateChange = { newDate ->
+                        timestampSelection = timestampSelection.copy(minCustomDateTime = newDate)
+                    },
+                    onEndTypeChange = { newType ->
+                        timestampSelection = timestampSelection.copy(maxPeriodType = newType)
+                    },
+                    onEndPeriodChange = { newPeriod ->
+                        timestampSelection = timestampSelection.copy(maxPeriod = newPeriod)
+                    },
+                    onEndCustomDateChange = { newDate ->
+                        timestampSelection = timestampSelection.copy(maxCustomDateTime = newDate)
+                    },
+                    useOnlyRelativeLabels = useRelativeLabels
+                )
+
+                // Description field
+                UI.FormField(
+                    label = "Description (optionnel)",
+                    value = description,
+                    onChange = { description = it },
+                    fieldType = FieldType.TEXT_MEDIUM
+                )
+
+                // Button to go back to selector
+                UI.ActionButton(
+                    action = ButtonAction.BACK,
+                    onClick = { showZoneScopeSelector = true }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Placeholder dialog for other enrichment types
+ */
+@Composable
+private fun PlaceholderEnrichmentDialog(
     type: EnrichmentType,
     existingConfig: String?,
     onDismiss: () -> Unit,
@@ -258,44 +519,121 @@ private fun EnrichmentConfigDialog(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Placeholder implementation - just show type name
     var config by remember { mutableStateOf(existingConfig ?: "{}") }
     var preview by remember { mutableStateOf("${getEnrichmentIcon(type)} Configuration") }
-    var showDialog by remember { mutableStateOf(true) }
 
-    if (showDialog) {
-        UI.Dialog(
-            type = DialogType.CONFIGURE,
-            onConfirm = {
-                onConfirm(config, preview)
-                showDialog = false
-            },
-            onCancel = {
-                onDismiss()
-                showDialog = false
-            }
+    UI.Dialog(
+        type = DialogType.CONFIGURE,
+        onConfirm = {
+            onConfirm(config, preview)
+        },
+        onCancel = onDismiss
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                UI.Text(
-                    text = s.shared("ai_enrichment_config"),
-                    type = TextType.TITLE
-                )
+            UI.Text(
+                text = s.shared("ai_enrichment_config"),
+                type = TextType.TITLE
+            )
 
-                UI.Text(
-                    text = "TODO: Implement ${type.name} configuration UI",
-                    type = TextType.BODY
-                )
+            UI.Text(
+                text = "TODO: Implement ${type.name} configuration UI",
+                type = TextType.BODY
+            )
 
-                UI.FormField(
-                    label = "Preview",
-                    value = preview,
-                    onChange = { preview = it },
-                    fieldType = FieldType.TEXT
-                )
-            }
+            UI.FormField(
+                label = "Preview",
+                value = preview,
+                onChange = { preview = it },
+                fieldType = FieldType.TEXT
+            )
         }
     }
+}
+
+/**
+ * Create JSON config from POINTER enrichment data
+ */
+private fun createPointerConfig(
+    selectionResult: SelectionResult,
+    importance: String,
+    timestampSelection: TimestampSelection,
+    description: String
+): String {
+    return JSONObject().apply {
+        put("selectedPath", selectionResult.selectedPath)
+        put("selectedValues", selectionResult.selectedValues)
+        put("selectionLevel", selectionResult.selectionLevel.name)
+        put("importance", importance)
+        if (timestampSelection.isComplete) {
+            put("timestampSelection", JSONObject().apply {
+                timestampSelection.minPeriodType?.let { put("minPeriodType", it.name) }
+                timestampSelection.minPeriod?.let { put("minTimestamp", it.timestamp) }
+                timestampSelection.minCustomDateTime?.let { put("minCustomDateTime", it) }
+                timestampSelection.maxPeriodType?.let { put("maxPeriodType", it.name) }
+                timestampSelection.maxPeriod?.let { put("maxTimestamp", it.timestamp) }
+                timestampSelection.maxCustomDateTime?.let { put("maxCustomDateTime", it) }
+            })
+        }
+        if (description.isNotBlank()) put("description", description)
+
+        // Add field-specific data if present
+        selectionResult.fieldSpecificData?.let { fieldData ->
+            put("fieldSpecificData", JSONObject().apply {
+                when (fieldData) {
+                    is FieldSpecificData.TimestampData -> {
+                        put("type", "timestamp")
+                        put("minTimestamp", fieldData.minTimestamp)
+                        put("maxTimestamp", fieldData.maxTimestamp)
+                        put("description", fieldData.description)
+                    }
+                    is FieldSpecificData.NameData -> {
+                        put("type", "name")
+                        put("selectedNames", fieldData.selectedNames)
+                        put("availableNames", fieldData.availableNames)
+                    }
+                    is FieldSpecificData.DataValues -> {
+                        put("type", "data")
+                        put("values", fieldData.values)
+                    }
+                }
+            })
+        }
+    }.toString()
+}
+
+/**
+ * Create human-readable preview from POINTER enrichment data
+ */
+private fun createPointerPreview(
+    selectionResult: SelectionResult,
+    timestampSelection: TimestampSelection,
+    importance: String
+): String {
+    val baseText = when (selectionResult.selectionLevel.name) {
+        "ZONE" -> "données zone"
+        "INSTANCE" -> "données outil"
+        "FIELD" -> "champ données"
+        else -> "données"
+    }
+
+    val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
+    val displayName = pathParts.lastOrNull() ?: "sélection"
+
+    val périodeText = if (timestampSelection.isComplete) {
+        " (période filtrée)"
+    } else {
+        ""
+    }
+
+    val importanceIcon = when (importance) {
+        "optionnel" -> "⚪"
+        "important" -> "🔵"
+        "essentiel" -> "🔴"
+        else -> ""
+    }
+
+    return "$importanceIcon $baseText $displayName$périodeText"
 }
