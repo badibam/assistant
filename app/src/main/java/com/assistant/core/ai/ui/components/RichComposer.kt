@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
+import com.assistant.core.ai.enrichments.EnrichmentSummarizer
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.ui.selectors.ZoneScopeSelector
@@ -18,6 +19,7 @@ import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.Period
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
@@ -112,7 +114,9 @@ fun UI.RichComposer(
             UI.ActionButton(
                 action = ButtonAction.CONFIRM, // Use CONFIRM for send action
                 onClick = {
-                    val richMessage = createRichMessage(segments)
+                    LogManager.coordination("RichComposer Send button clicked with ${segments.size} segments")
+                    val richMessage = createRichMessage(segments, sessionType)
+                    LogManager.coordination("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataQueries.size} queries")
                     onSend(richMessage)
                 }
             )
@@ -126,12 +130,28 @@ fun UI.RichComposer(
             existingConfig = null, // TODO: Handle editing existing blocks
             onDismiss = { showEnrichmentDialog = null },
             onConfirm = { config, preview ->
+                LogManager.enrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
+
+                // Use EnrichmentSummarizer to generate proper summary if preview is empty or generic
+                val enrichmentSummarizer = EnrichmentSummarizer()
+                val finalPreview = if (preview.isBlank() || preview == "${getEnrichmentIcon(type)} Configuration") {
+                    LogManager.coordination("Using EnrichmentSummarizer to generate preview for $type")
+                    enrichmentSummarizer.generateSummary(type, config)
+                } else {
+                    LogManager.coordination("Using provided preview for $type: '$preview'")
+                    preview
+                }
+
                 val newBlock = MessageSegment.EnrichmentBlock(
                     type = type,
                     config = config,
-                    preview = preview
+                    preview = finalPreview
                 )
+
+                LogManager.coordination("Created EnrichmentBlock: type=$type, preview='$finalPreview', config='$config'")
+
                 val newSegments = segments + newBlock
+                LogManager.coordination("Updated segments count: ${segments.size} -> ${newSegments.size}")
                 onSegmentsChange(newSegments)
                 showEnrichmentDialog = null
             },
@@ -191,8 +211,13 @@ private fun EnrichmentBlockPreview(
 
 /**
  * Create RichMessage from segments with computed linearText and dataQueries
+ * Uses EnrichmentSummarizer for proper query generation according to specs
  */
-private fun createRichMessage(segments: List<MessageSegment>): RichMessage {
+private fun createRichMessage(segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
+    LogManager.coordination("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
+
+    val enrichmentSummarizer = EnrichmentSummarizer()
+
     // Compute linearText by joining all content
     val linearText = segments.joinToString(" ") { segment ->
         when (segment) {
@@ -201,105 +226,49 @@ private fun createRichMessage(segments: List<MessageSegment>): RichMessage {
         }
     }.trim()
 
-    // Compute dataQueries from enrichment blocks
-    val dataQueries = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
-        .filter { it.type == EnrichmentType.POINTER } // Only POINTER blocks generate queries for now
-        .mapNotNull { block ->
-            // TODO: Parse block.config JSON and create DataQuery
-            try {
-                createDataQueryFromConfig(block.config)
-            } catch (e: Exception) {
-                null // Skip invalid configs
-            }
-        }
+    LogManager.coordination("Generated linearText: '$linearText'")
 
-    return RichMessage(
+    // Count enrichment blocks for logging
+    val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
+    LogManager.enrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
+
+    // Compute dataQueries from enrichment blocks using EnrichmentSummarizer
+    val dataQueries = enrichmentBlocks.mapIndexedNotNull { index, block ->
+        LogManager.enrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
+
+        try {
+            // Use EnrichmentSummarizer to check if block should generate query and create it
+            val isRelative = (sessionType == SessionType.AUTOMATION)
+            LogManager.coordination("Calling EnrichmentSummarizer for block $index with isRelative=$isRelative")
+
+            val query = enrichmentSummarizer.generateQuery(block.type, block.config, isRelative)
+            if (query != null) {
+                LogManager.coordination("Block $index generated query: ${query.id}")
+            } else {
+                LogManager.coordination("Block $index generated no query")
+            }
+            query
+        } catch (e: Exception) {
+            LogManager.enrichment("Failed to generate query for enrichment block $index: ${e.message}", "ERROR", e)
+            null // Skip invalid configs
+        }
+    }
+
+    LogManager.enrichment("Generated ${dataQueries.size} DataQueries from ${enrichmentBlocks.size} enrichment blocks")
+    dataQueries.forEachIndexed { index, query ->
+        LogManager.enrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
+    }
+
+    val richMessage = RichMessage(
         segments = segments,
         linearText = linearText,
         dataQueries = dataQueries
     )
+
+    LogManager.coordination("Created RichMessage with linearText='$linearText' and ${dataQueries.size} queries")
+    return richMessage
 }
 
-/**
- * Parse enrichment config JSON and create DataQuery
- */
-private fun createDataQueryFromConfig(config: String): DataQuery? {
-    return try {
-        val json = JSONObject(config)
-        val selectedPath = json.getString("selectedPath")
-        val selectionLevel = json.getString("selectionLevel")
-        val importance = json.optString("importance", "important")
-
-        // Skip if importance is "optionnel" - will be included only if AI specifically requests it
-        if (importance == "optionnel") {
-            return null
-        }
-
-        // Parse TimestampSelection if present
-        val timestampData = json.optJSONObject("timestampSelection")?.let { timestampJson ->
-            val minTimestamp = timestampJson.optLong("minTimestamp")
-            val maxTimestamp = timestampJson.optLong("maxTimestamp")
-            val minCustomDateTime = timestampJson.optLong("minCustomDateTime")
-            val maxCustomDateTime = timestampJson.optLong("maxCustomDateTime")
-
-            // Use custom datetime if available, otherwise use period timestamps
-            val effectiveMinTimestamp = if (minCustomDateTime > 0) minCustomDateTime else if (minTimestamp > 0) minTimestamp else null
-            val effectiveMaxTimestamp = if (maxCustomDateTime > 0) maxCustomDateTime else if (maxTimestamp > 0) maxTimestamp else null
-
-            mutableMapOf<String, Any>().apply {
-                effectiveMinTimestamp?.let { put("startTimestamp", it) }
-                effectiveMaxTimestamp?.let { put("endTimestamp", it) }
-            }
-        } ?: emptyMap()
-
-        // Create query ID from path + timestamps for uniqueness
-        val queryId = buildString {
-            append("pointer.")
-            append(selectedPath.replace("/", "_"))
-            if (timestampData.isNotEmpty()) {
-                val startTs = timestampData["startTimestamp"] ?: "none"
-                val endTs = timestampData["endTimestamp"] ?: "none"
-                append(".ts_${startTs}_${endTs}")
-            }
-            append(".generated_${System.currentTimeMillis()}")
-        }
-
-        // Build query params
-        val params = mutableMapOf<String, Any>().apply {
-            put("selectedPath", selectedPath)
-            put("selectionLevel", selectionLevel)
-            put("importance", importance)
-
-            // Add timestamp data if present
-            putAll(timestampData)
-
-            // Add selected values if present
-            json.optJSONArray("selectedValues")?.let { valuesArray ->
-                val values = mutableListOf<String>()
-                for (i in 0 until valuesArray.length()) {
-                    values.add(valuesArray.getString(i))
-                }
-                if (values.isNotEmpty()) {
-                    put("selectedValues", values)
-                }
-            }
-
-            // Add field-specific data if present
-            json.optJSONObject("fieldSpecificData")?.let { fieldData ->
-                put("fieldSpecificData", fieldData.toString())
-            }
-        }
-
-        DataQuery(
-            id = queryId,
-            type = "POINTER_DATA",
-            params = params
-        )
-
-    } catch (e: Exception) {
-        null // Skip invalid configs
-    }
-}
 
 
 /**

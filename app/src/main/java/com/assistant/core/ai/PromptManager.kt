@@ -28,7 +28,7 @@ class PromptManager(private val context: Context) {
         enrichments: List<Enrichment>,
         aiContext: AIContext
     ): String {
-        LogManager.coordination("Assembling prompt with ${enrichments.size} enrichments")
+        LogManager.enrichment("Assembling prompt with ${enrichments.size} enrichments")
 
         // 1. Base prompt + contexte (toujours inclus)
         val basePrompt = buildBasePrompt(aiContext)

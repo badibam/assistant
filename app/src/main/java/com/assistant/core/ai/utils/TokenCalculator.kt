@@ -27,7 +27,7 @@ object TokenCalculator {
      * @param context Context for config access
      * @return Estimated token count
      */
-    fun estimateTokens(text: String, providerId: String = "default", context: Context): Int {
+    suspend fun estimateTokens(text: String, providerId: String = "default", context: Context): Int {
         if (text.isEmpty()) return 0
 
         return try {
@@ -57,7 +57,7 @@ object TokenCalculator {
      * @param context Context for config access
      * @return Estimated token count
      */
-    fun estimateDataTokens(data: Any, providerId: String = "default", context: Context): Int {
+    suspend fun estimateDataTokens(data: Any, providerId: String = "default", context: Context): Int {
         val textRepresentation = when (data) {
             is String -> data
             is List<*> -> data.joinToString("\n") { it.toString() }
@@ -76,7 +76,7 @@ object TokenCalculator {
      * @param promptLevel Prompt level (1-4) or null for query limits
      * @return Token limit for the specified context
      */
-    fun getTokenLimit(context: Context, isQuery: Boolean = true, isTotal: Boolean = false): Int {
+    suspend fun getTokenLimit(context: Context, isQuery: Boolean = true, isTotal: Boolean = false): Int {
         return try {
             val config = getAILimitsConfig(context)
 
@@ -104,7 +104,7 @@ object TokenCalculator {
      * @param providerId Provider ID for estimation
      * @return TokenLimitResult with details
      */
-    fun checkTokenLimit(
+    suspend fun checkTokenLimit(
         content: String,
         context: Context,
         isQuery: Boolean = true,
@@ -125,15 +125,15 @@ object TokenCalculator {
     // Private utility methods
     // ========================================================================================
 
-    private fun getAILimitsConfig(context: Context): JSONObject {
+    private suspend fun getAILimitsConfig(context: Context): JSONObject {
         val appConfigService = AppConfigService(context)
-        val configString = appConfigService.getSettings(AppSettingCategories.AI_LIMITS)
+        val configJson = appConfigService.getCategorySettings(AppSettingCategories.AI_LIMITS)
 
-        if (configString.isEmpty()) {
+        if (configJson == null) {
             throw IllegalStateException("AI_LIMITS configuration not found - app configuration incomplete")
         }
 
-        return JSONObject(configString)
+        return configJson
     }
 
     private fun getCharsPerTokenRatio(config: JSONObject, providerId: String): Double {

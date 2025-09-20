@@ -28,6 +28,10 @@ object LogManager {
         safeLog("Service", message, level, throwable)
     }
 
+    fun enrichment(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("Enrichment", message, level, throwable)
+    }
+
     private fun safeLog(tag: String, message: String, level: String, throwable: Throwable?) {
         try {
             when (level.uppercase()) {

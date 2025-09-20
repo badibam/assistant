@@ -83,9 +83,21 @@ fun AIFloatingChat(
                             segments = segments,
                             onSegmentsChange = { segments = it },
                             onSend = { richMessage ->
-                                LogManager.service("RichMessage sent: ${richMessage.linearText}")
-                                LogManager.service("DataQueries: ${richMessage.dataQueries.size}")
-                                LogManager.service("Segments: ${richMessage.segments.size}")
+                                LogManager.enrichment("AIFloatingChat received RichMessage from RichComposer")
+                                LogManager.enrichment("RichMessage.linearText: '${richMessage.linearText}'")
+                                LogManager.enrichment("RichMessage.segments: ${richMessage.segments.size} segments")
+                                LogManager.enrichment("RichMessage.dataQueries: ${richMessage.dataQueries.size} queries")
+
+                                richMessage.dataQueries.forEachIndexed { index, query ->
+                                    LogManager.enrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}, params=${query.params}")
+                                }
+
+                                richMessage.segments.forEachIndexed { index, segment ->
+                                    when (segment) {
+                                        is MessageSegment.Text -> LogManager.enrichment("Segment $index: Text('${segment.content}')")
+                                        is MessageSegment.EnrichmentBlock -> LogManager.enrichment("Segment $index: EnrichmentBlock(type=${segment.type}, preview='${segment.preview}')")
+                                    }
+                                }
 
                                 // Add message to mock session
                                 val newMessage = SessionMessage(
