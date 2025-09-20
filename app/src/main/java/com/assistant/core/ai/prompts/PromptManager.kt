@@ -3,6 +3,7 @@ package com.assistant.core.ai.prompts
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.database.SessionQueryLists
+import com.assistant.core.ai.services.QueryExecutor
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -19,29 +20,19 @@ object PromptManager {
      * Build complete prompt for AI session
      */
     suspend fun buildPrompt(session: AISession, context: Context): PromptResult {
-        LogManager.service("Building 4-level prompt for session ${session.id}")
+        LogManager.aiPrompt("Building 4-level prompt for session ${session.id}")
+
+        val queryExecutor = QueryExecutor(context)
 
         val level1 = buildDocumentation()
-        val level2 = executeQueries(getLevel2Queries(session), context)
+        val level2 = queryExecutor.executeQueries(getLevel2Queries(session), "Level2")
         val level3 = buildAppState(context)
-        val level4 = executeQueries(getLevel4Queries(session), context)
+        val level4 = queryExecutor.executeQueries(getLevel4Queries(session), "Level4")
         val messages = buildMessageHistory(session)
 
         return assemblePrompt(level1, level2, level3, level4, messages, session.providerId)
     }
 
-    /**
-     * Add enrichments from RichMessage to session Level 4
-     */
-    suspend fun addEnrichmentsFromMessage(
-        sessionId: String,
-        richMessage: RichMessage,
-        context: Context
-    ) {
-        LogManager.service("Adding enrichments from message to session $sessionId Level 4")
-        // TODO: Load session, add queries to Level 4, save back
-        // Deduplication by DataQuery.id
-    }
 
     // === Level Builders ===
 
@@ -75,7 +66,7 @@ object PromptManager {
 
     private suspend fun buildAppState(context: Context): String {
         // TODO: Query current zones, tools, permissions via CommandDispatcher
-        LogManager.service("Building app state for Level 3")
+        LogManager.aiPrompt("Building app state for Level 3")
         return """
         # Current App State
 
@@ -94,34 +85,6 @@ object PromptManager {
         """.trimIndent()
     }
 
-    private suspend fun executeQueries(queryIds: List<String>, context: Context): String {
-        if (queryIds.isEmpty()) return ""
-
-        LogManager.service("Executing ${queryIds.size} queries")
-        val results = mutableListOf<String>()
-        val failedQueries = mutableListOf<String>()
-
-        queryIds.forEach { queryId ->
-            try {
-                // TODO: Execute query via DataNavigator
-                // Parse queryId to reconstruct DataQuery
-                // Execute and collect results
-                results.add("Query result for $queryId")
-                LogManager.service("Successfully executed query: $queryId")
-            } catch (e: Exception) {
-                LogManager.service("Failed to execute query: $queryId - ${e.message}", "ERROR")
-                failedQueries.add(queryId)
-            }
-        }
-
-        if (failedQueries.isNotEmpty()) {
-            LogManager.service("Removing ${failedQueries.size} failed queries from session", "WARN")
-            // TODO: Remove failed queries from session
-            // TODO: Notify user about removed data
-        }
-
-        return results.joinToString("\n\n")
-    }
 
     private fun buildMessageHistory(session: AISession): String {
         return when (session.type) {
@@ -131,7 +94,7 @@ object PromptManager {
     }
 
     private fun buildChatHistory(session: AISession): String {
-        LogManager.service("Building chat history for ${session.messages.size} messages")
+        LogManager.aiPrompt("Building chat history for ${session.messages.size} messages")
         return session.messages.mapNotNull { message ->
             when (message.sender) {
                 MessageSender.USER -> message.textContent ?: message.richContent?.linearText
@@ -142,7 +105,7 @@ object PromptManager {
     }
 
     private fun buildAutomationHistory(session: AISession): String {
-        LogManager.service("Building automation history")
+        LogManager.aiPrompt("Building automation history")
         // TODO: Implement according to "Send history to AI" setting
         // For now, return initial prompt + executions
         val initialPrompt = session.messages.firstOrNull { it.sender == MessageSender.USER }
@@ -190,19 +153,21 @@ object PromptManager {
             totalTokens = estimateTokens(fullPrompt)
         )
 
-        LogManager.service("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})")
+        LogManager.aiPrompt("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})")
         return result
     }
 
     // === Utilities ===
 
-    private fun getLevel2Queries(session: AISession): List<String> {
-        // TODO: Parse session.queryListsJson and extract level2Queries
+    private fun getLevel2Queries(session: AISession): List<DataQuery> {
+        // TODO: Parse session.queryListsJson and extract level2Queries as DataQuery objects
+        // For now, return empty list - Level 2 queries managed by AISessionManager
         return emptyList()
     }
 
-    private fun getLevel4Queries(session: AISession): List<String> {
-        // TODO: Parse session.queryListsJson and extract level4Queries
+    private fun getLevel4Queries(session: AISession): List<DataQuery> {
+        // TODO: Parse session.queryListsJson and extract level4Queries as DataQuery objects
+        // For now, return empty list - Level 4 queries managed by AISessionManager
         return emptyList()
     }
 
@@ -218,7 +183,7 @@ object PromptManager {
      * TODO Phase 2A+: Implement full logic for all relative period types
      */
     private fun resolveRelativeParams(params: Map<String, Any>): Map<String, Any> {
-        LogManager.service("resolveRelativeParams() - stub implementation")
+        LogManager.aiPrompt("resolveRelativeParams() - stub implementation")
         // TODO: Implement in Phase 2A+ when enrichments need it
         return params // For now, return as-is
     }

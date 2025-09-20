@@ -28,8 +28,26 @@ object LogManager {
         safeLog("Service", message, level, throwable)
     }
 
-    fun enrichment(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
-        safeLog("Enrichment", message, level, throwable)
+    fun aiSession(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("AISession", message, level, throwable)
+        safeLog("AI", message, level, throwable)
+    }
+
+    fun aiPrompt(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("AIPrompt", message, level, throwable)
+    }
+
+    fun aiUI(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("AIUI", message, level, throwable)
+    }
+
+    fun aiService(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("AIService", message, level, throwable)
+        safeLog("Service", message, level, throwable)
+    }
+
+    fun aiEnrichment(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
+        safeLog("AIEnrichment", message, level, throwable)
     }
 
     private fun safeLog(tag: String, message: String, level: String, throwable: Throwable?) {

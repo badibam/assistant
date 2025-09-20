@@ -14,10 +14,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
+import com.assistant.core.ai.services.AISessionManager
 import com.assistant.core.ai.ui.components.RichComposer
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.launch
 
 /**
  * Floating AI Chat interface - 100% screen overlay
@@ -33,9 +36,29 @@ fun AIFloatingChat(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Mock session for testing
-    var mockSession by remember { mutableStateOf(createMockSession()) }
+    // Session management
+    var activeSession by remember { mutableStateOf<AISession?>(null) }
     var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
+    val aiSessionManager = remember { AISessionManager(context) }
+
+    // Initialize session on first load
+    LaunchedEffect(Unit) {
+        try {
+            // TODO: Check for active session first, create one if none exists
+            val sessionId = aiSessionManager.createSession("New Chat", SessionType.CHAT)
+            aiSessionManager.setActiveSession(sessionId)
+            val session = aiSessionManager.loadSession(sessionId)
+            activeSession = session
+            LogManager.aiUI("AIFloatingChat initialized with session: $sessionId")
+        } catch (e: Exception) {
+            LogManager.aiUI("Failed to initialize AI session: ${e.message}", "ERROR")
+            errorMessage = "Failed to initialize chat session"
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -57,8 +80,9 @@ fun AIFloatingChat(
             ) {
                 // Header
                 ChatHeader(
-                    sessionName = mockSession.name,
-                    isActive = mockSession.isActive,
+                    sessionName = activeSession?.name ?: "Loading...",
+                    isActive = activeSession?.isActive ?: false,
+                    isLoading = isLoading,
                     onClose = onDismiss
                 )
 
@@ -69,7 +93,8 @@ fun AIFloatingChat(
                         .weight(1f)
                 ) {
                     ChatMessageList(
-                        messages = mockSession.messages,
+                        messages = activeSession?.messages ?: emptyList(),
+                        isLoading = isLoading,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -83,47 +108,56 @@ fun AIFloatingChat(
                             segments = segments,
                             onSegmentsChange = { segments = it },
                             onSend = { richMessage ->
-                                LogManager.enrichment("AIFloatingChat received RichMessage from RichComposer")
-                                LogManager.enrichment("RichMessage.linearText: '${richMessage.linearText}'")
-                                LogManager.enrichment("RichMessage.segments: ${richMessage.segments.size} segments")
-                                LogManager.enrichment("RichMessage.dataQueries: ${richMessage.dataQueries.size} queries")
+                                LogManager.aiUI("AIFloatingChat received RichMessage from RichComposer")
+                                LogManager.aiUI("RichMessage.linearText: '${richMessage.linearText}'")
+                                LogManager.aiUI("RichMessage.dataQueries: ${richMessage.dataQueries.size} queries")
 
-                                richMessage.dataQueries.forEachIndexed { index, query ->
-                                    LogManager.enrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}, params=${query.params}")
-                                }
+                                activeSession?.let { session ->
+                                    scope.launch {
+                                        isLoading = true
+                                        errorMessage = null
 
-                                richMessage.segments.forEachIndexed { index, segment ->
-                                    when (segment) {
-                                        is MessageSegment.Text -> LogManager.enrichment("Segment $index: Text('${segment.content}')")
-                                        is MessageSegment.EnrichmentBlock -> LogManager.enrichment("Segment $index: EnrichmentBlock(type=${segment.type}, preview='${segment.preview}')")
+                                        try {
+                                            // Send via AISessionManager (complete flow)
+                                            val result = aiSessionManager.sendMessage(richMessage, session.id)
+
+                                            if (result.isSuccess) {
+                                                // Reload session with new messages
+                                                val updatedSession = aiSessionManager.loadSession(session.id)
+                                                activeSession = updatedSession
+                                                segments = emptyList() // Clear composer
+                                                LogManager.aiUI("Message sent successfully, session updated")
+                                            } else {
+                                                errorMessage = result.errorMessage
+                                                LogManager.aiUI("Failed to send message: ${result.errorMessage}", "ERROR")
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Failed to send message: ${e.message}"
+                                            LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
+                                        } finally {
+                                            isLoading = false
+                                        }
                                     }
+                                } ?: run {
+                                    errorMessage = "No active session"
+                                    LogManager.aiUI("Cannot send message: no active session", "ERROR")
                                 }
-
-                                // Add message to mock session
-                                val newMessage = SessionMessage(
-                                    id = "msg_${System.currentTimeMillis()}",
-                                    timestamp = System.currentTimeMillis(),
-                                    sender = MessageSender.USER,
-                                    richContent = richMessage,
-                                    textContent = null,
-                                    aiMessage = null,
-                                    aiMessageJson = null,
-                                    systemMessage = null
-                                )
-                                mockSession = mockSession.copy(
-                                    messages = mockSession.messages + newMessage
-                                )
-
-                                // Clear composer
-                                segments = emptyList()
-
-                                // TODO: Send to AI service
                             },
                             placeholder = s.shared("ai_composer_placeholder")
                         )
                     }
                 }
             }
+        }
+    }
+
+    // Error message display
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            // TODO: Show proper error UI or toast
+            LogManager.aiUI("Error: $message", "ERROR")
+            // Clear error after showing
+            errorMessage = null
         }
     }
 }
@@ -135,6 +169,7 @@ fun AIFloatingChat(
 private fun ChatHeader(
     sessionName: String,
     isActive: Boolean,
+    isLoading: Boolean,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
@@ -142,7 +177,11 @@ private fun ChatHeader(
 
     UI.PageHeader(
         title = sessionName,
-        subtitle = if (isActive) "Active" else "Inactive",
+        subtitle = when {
+            isLoading -> "Processing..."
+            isActive -> "Ready"
+            else -> "Inactive"
+        },
         rightButton = ButtonAction.CANCEL, // Use cancel for close
         onRightClick = onClose
     )
@@ -154,6 +193,7 @@ private fun ChatHeader(
 @Composable
 private fun ChatMessageList(
     messages: List<SessionMessage>,
+    isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -185,6 +225,21 @@ private fun ChatMessageList(
         } else {
             items(messages) { message ->
                 ChatMessageBubble(message = message)
+            }
+
+            // Loading indicator
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.Text(
+                            text = "AI is thinking...",
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
             }
         }
     }
@@ -261,35 +316,3 @@ private fun ChatMessageBubble(
     }
 }
 
-/**
- * Create mock session for testing
- */
-private fun createMockSession(): AISession {
-    return AISession(
-        id = "mock_session",
-        name = "Test Chat",
-        type = SessionType.CHAT,
-        providerId = "mock",
-        providerSessionId = "mock_provider_session",
-        schedule = null,
-        createdAt = System.currentTimeMillis(),
-        lastActivity = System.currentTimeMillis(),
-        messages = listOf(
-            SessionMessage(
-                id = "welcome",
-                timestamp = System.currentTimeMillis(),
-                sender = MessageSender.SYSTEM,
-                richContent = null,
-                textContent = null,
-                aiMessage = null,
-                aiMessageJson = null,
-                systemMessage = SystemMessage(
-                    type = SystemMessageType.DATA_ADDED,
-                    commandResults = emptyList(),
-                    summary = "Welcome to AI Chat! Try adding enrichments to your messages."
-                )
-            )
-        ),
-        isActive = true
-    )
-}

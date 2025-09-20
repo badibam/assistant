@@ -23,7 +23,7 @@ class EnrichmentSummarizer {
      * Generate human-readable summary for enrichment display in messages
      */
     fun generateSummary(type: EnrichmentType, config: String): String {
-        LogManager.enrichment("EnrichmentSummarizer.generateSummary() called with type=$type, config length=${config.length}")
+        LogManager.aiEnrichment("EnrichmentSummarizer.generateSummary() called with type=$type, config length=${config.length}")
 
         return try {
             val configJson = JSONObject(config)
@@ -35,10 +35,10 @@ class EnrichmentSummarizer {
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigSummary(configJson)
             }
 
-            LogManager.coordination("Generated summary for $type: '$summary'")
+            LogManager.aiEnrichment("Generated summary for $type: '$summary'")
             summary
         } catch (e: Exception) {
-            LogManager.enrichment("Failed to generate enrichment summary: ${e.message}", "ERROR", e)
+            LogManager.aiEnrichment("Failed to generate enrichment summary: ${e.message}", "ERROR", e)
             "enrichissement invalide"
         }
     }
@@ -47,7 +47,7 @@ class EnrichmentSummarizer {
      * Check if enrichment should generate a DataQuery for Level 4 inclusion
      */
     fun shouldGenerateQuery(type: EnrichmentType, config: String): Boolean {
-        LogManager.enrichment("EnrichmentSummarizer.shouldGenerateQuery() called with type=$type")
+        LogManager.aiEnrichment("EnrichmentSummarizer.shouldGenerateQuery() called with type=$type")
 
         return try {
             val configJson = JSONObject(config)
@@ -56,23 +56,23 @@ class EnrichmentSummarizer {
                 EnrichmentType.POINTER -> {
                     val importance = configJson.optString("importance", "important")
                     val result = importance != "optionnelle"
-                    LogManager.enrichment("POINTER enrichment importance='$importance', shouldGenerate=$result")
+                    LogManager.aiEnrichment("POINTER enrichment importance='$importance', shouldGenerate=$result")
                     result
                 }
                 EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG -> {
-                    LogManager.enrichment("$type enrichment always generates query")
+                    LogManager.aiEnrichment("$type enrichment always generates query")
                     true
                 }
                 EnrichmentType.CREATE -> {
-                    LogManager.enrichment("CREATE enrichment never generates query")
+                    LogManager.aiEnrichment("CREATE enrichment never generates query")
                     false
                 }
             }
 
-            LogManager.coordination("shouldGenerateQuery($type) = $shouldGenerate")
+            LogManager.aiEnrichment("shouldGenerateQuery($type) = $shouldGenerate")
             shouldGenerate
         } catch (e: Exception) {
-            LogManager.coordination("Failed to check query generation: ${e.message}", "ERROR", e)
+            LogManager.aiEnrichment("Failed to check query generation: ${e.message}", "ERROR", e)
             false
         }
     }
@@ -81,10 +81,10 @@ class EnrichmentSummarizer {
      * Generate DataQuery for prompt Level 4 inclusion
      */
     fun generateQuery(type: EnrichmentType, config: String, isRelative: Boolean = false): DataQuery? {
-        LogManager.enrichment("EnrichmentSummarizer.generateQuery() called with type=$type, isRelative=$isRelative")
+        LogManager.aiEnrichment("EnrichmentSummarizer.generateQuery() called with type=$type, isRelative=$isRelative")
 
         if (!shouldGenerateQuery(type, config)) {
-            LogManager.coordination("Skipping query generation for $type (shouldGenerateQuery = false)")
+            LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)")
             return null
         }
 
@@ -96,20 +96,20 @@ class EnrichmentSummarizer {
                 EnrichmentType.USE -> generateUseQuery(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQuery(configJson, isRelative)
                 else -> {
-                    LogManager.coordination("No query generator for type $type")
+                    LogManager.aiEnrichment("No query generator for type $type")
                     null
                 }
             }
 
             if (query != null) {
-                LogManager.enrichment("Generated DataQuery: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}, params=${query.params}")
+                LogManager.aiEnrichment("Generated DataQuery: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}, params=${query.params}")
             } else {
-                LogManager.coordination("Query generation returned null for $type")
+                LogManager.aiEnrichment("Query generation returned null for $type")
             }
 
             query
         } catch (e: Exception) {
-            LogManager.enrichment("Failed to generate enrichment query: ${e.message}", "ERROR", e)
+            LogManager.aiEnrichment("Failed to generate enrichment query: ${e.message}", "ERROR", e)
             null
         }
     }
@@ -190,60 +190,60 @@ class EnrichmentSummarizer {
     // ========================================================================================
 
     private fun generatePointerQuery(config: JSONObject, isRelative: Boolean): DataQuery {
-        LogManager.coordination("generatePointerQuery() called with isRelative=$isRelative")
+        LogManager.aiEnrichment("generatePointerQuery() called with isRelative=$isRelative")
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
         val fieldSpecificData = config.optJSONObject("fieldSpecificData")
 
-        LogManager.enrichment("POINTER query config: path='$path', selectionLevel='$selectionLevel'")
+        LogManager.aiEnrichment("POINTER query config: path='$path', selectionLevel='$selectionLevel'")
 
         // Build query parameters based on selection level and data
         val params = mutableMapOf<String, Any>()
 
         // Extract zone and tool info from path
         val pathParts = path.split(".")
-        LogManager.coordination("Path parts: ${pathParts.joinToString(", ")}")
+        LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}")
 
         if (pathParts.size > 1) {
             params["zone"] = pathParts[1]
-            LogManager.coordination("Added zone parameter: ${pathParts[1]}")
+            LogManager.aiEnrichment("Added zone parameter: ${pathParts[1]}")
         }
         if (pathParts.size > 2) {
             params["toolInstanceId"] = pathParts[2]
-            LogManager.coordination("Added toolInstanceId parameter: ${pathParts[2]}")
+            LogManager.aiEnrichment("Added toolInstanceId parameter: ${pathParts[2]}")
         }
         if (pathParts.size > 3) {
             params["field"] = pathParts[3]
-            LogManager.coordination("Added field parameter: ${pathParts[3]}")
+            LogManager.aiEnrichment("Added field parameter: ${pathParts[3]}")
         }
 
         // Add temporal parameters if present
         fieldSpecificData?.optJSONObject("timestampData")?.let { timestampData ->
-            LogManager.coordination("Found timestamp data: $timestampData")
+            LogManager.aiEnrichment("Found timestamp data: $timestampData")
 
             if (isRelative) {
                 // TODO: Implement relative period encoding for automation
                 params["period"] = "current_selection"
-                LogManager.coordination("Added relative period parameter: current_selection")
+                LogManager.aiEnrichment("Added relative period parameter: current_selection")
             } else {
                 // Use absolute timestamps for chat consistency
                 val startTs = timestampData.optLong("startTimestamp", 0)
                 val endTs = timestampData.optLong("endTimestamp", 0)
                 if (startTs > 0) {
                     params["startTimestamp"] = startTs
-                    LogManager.coordination("Added startTimestamp parameter: $startTs")
+                    LogManager.aiEnrichment("Added startTimestamp parameter: $startTs")
                 }
                 if (endTs > 0) {
                     params["endTimestamp"] = endTs
-                    LogManager.coordination("Added endTimestamp parameter: $endTs")
+                    LogManager.aiEnrichment("Added endTimestamp parameter: $endTs")
                 }
             }
-        } ?: LogManager.coordination("No timestamp data found in fieldSpecificData")
+        } ?: LogManager.aiEnrichment("No timestamp data found in fieldSpecificData")
 
         // Generate unique query ID
         val queryId = buildQueryId("pointer_data", params)
-        LogManager.coordination("Generated query ID: $queryId")
+        LogManager.aiEnrichment("Generated query ID: $queryId")
 
         val query = DataQuery(
             id = queryId,
@@ -252,7 +252,7 @@ class EnrichmentSummarizer {
             isRelative = isRelative
         )
 
-        LogManager.coordination("Created POINTER DataQuery: $query")
+        LogManager.aiEnrichment("Created POINTER DataQuery: $query")
         return query
     }
 

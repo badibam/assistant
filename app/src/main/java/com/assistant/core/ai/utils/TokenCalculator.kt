@@ -37,13 +37,13 @@ object TokenCalculator {
             val charCount = text.length
             val estimatedTokens = (charCount.toDouble() / charsPerToken).toInt()
 
-            LogManager.coordination("Token estimation: $charCount chars → $estimatedTokens tokens (ratio: $charsPerToken)")
+            LogManager.aiPrompt("Token estimation: $charCount chars → $estimatedTokens tokens (ratio: $charsPerToken)")
 
             // Add small buffer for safety (5%)
             (estimatedTokens * 1.05).toInt()
 
         } catch (e: Exception) {
-            LogManager.coordination("Token estimation failed: ${e.message}", "ERROR", e)
+            LogManager.aiPrompt("Token estimation failed: ${e.message}", "ERROR", e)
             // Fallback: very conservative estimate (3 chars per token)
             (text.length / 3)
         }
@@ -90,7 +90,7 @@ object TokenCalculator {
                 else -> config.optInt("defaultPromptMaxTokens", 15000)
             }
         } catch (e: Exception) {
-            LogManager.coordination("Failed to get token limit: ${e.message}", "ERROR", e)
+            LogManager.aiPrompt("Failed to get token limit: ${e.message}", "ERROR", e)
             throw e // Don't provide fallbacks - let it fail explicitly
         }
     }
