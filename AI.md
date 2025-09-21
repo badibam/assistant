@@ -7,16 +7,81 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 
 ### Flow principal
 ```
-User message → AISessionManager → PromptManager → AIService → Response processing
+User message → AIOrchestrator → PromptManager → AIClient → Response processing
+              ↕                ↕
+          AISessionService   AIProviderConfigService
+          (via coordinator)  (via coordinator)
 ```
 
 ### Session types
 - **CHAT** : Conversation temps réel, queries absolues, modules communication
 - **AUTOMATION** : Prompt programmable, queries relatives, feedback exécutions
 
-## 2. Structures de données
+## 2. Architecture des services
 
-### Session
+### Séparation des responsabilités selon CORE.md
+
+**Services ExecutableService (accès DB via coordinator) :**
+- `AISessionService` : CRUD sessions et messages
+- `AIProviderConfigService` : CRUD configurations providers
+
+**Classes métier pures (logique sans DB) :**
+- `AIOrchestrator` : Orchestration complète du flow IA
+- `AIClient` : Interface vers providers AI externes
+- `PromptManager` : Génération prompts 4 niveaux
+- `QueryExecutor` : Résolution queries pour prompts
+
+### AIOrchestrator (orchestrateur central)
+```kotlin
+class AIOrchestrator(private val context: Context) {
+    suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult
+    suspend fun createSession(name: String, type: SessionType, providerId: String): String
+    suspend fun setActiveSession(sessionId: String): OperationResult
+    suspend fun loadSession(sessionId: String): AISession?
+}
+```
+
+**Flow complet orchestré :**
+1. Ajouter enrichments Level 4 (validation tokens)
+2. Stocker message utilisateur via `AISessionService`
+3. Builder prompt via `PromptManager`
+4. Envoyer à `AIClient`
+5. Traiter réponse et stocker via `AISessionService`
+
+### AISessionService (ExecutableService)
+```kotlin
+class AISessionService(context: Context) : ExecutableService {
+    // Operations: create_session, get_session, set_active_session, create_message, etc.
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult
+}
+```
+
+**Ressource coordinator :** `ai_sessions.operation`
+
+### AIProviderConfigService (ExecutableService)
+```kotlin
+class AIProviderConfigService(context: Context) : ExecutableService {
+    // Operations: get, set, list, delete, set_active, get_active
+    override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult
+}
+```
+
+**Ressource coordinator :** `ai_provider_config.operation`
+
+### AIClient (logique métier pure)
+```kotlin
+class AIClient(private val context: Context) {
+    suspend fun query(promptResult: PromptResult, providerId: String): OperationResult
+    suspend fun getAvailableProviders(): List<AIProviderInfo>
+    suspend fun getActiveProviderId(): String?
+}
+```
+
+Interface vers providers externes, utilise `AIProviderConfigService` via coordinator pour récupérer configurations.
+
+## 3. Structures de données
+
+### AISession (complète)
 ```kotlin
 data class AISession(
     val id: String,
@@ -24,8 +89,11 @@ data class AISession(
     val type: SessionType,
     val providerId: String,
     val providerSessionId: String,
-    val isActive: Boolean,
-    val messages: List<SessionMessage>
+    val schedule: ScheduleConfig?,        // Pour AUTOMATION seulement
+    val createdAt: Long,
+    val lastActivity: Long,
+    val messages: List<SessionMessage>,
+    val isActive: Boolean
 )
 ```
 
@@ -86,13 +154,25 @@ data class DataQuery(
 )
 ```
 
-## 3. Système de prompts
+## 4. Système de prompts
 
-### Architecture 4 niveaux
+### Architecture 4 niveaux (logique révisée)
 - **Level 1** : Documentation système (stable) - Rôle IA, commandes disponibles
-- **Level 2** : Contexte utilisateur (stable) - Outils avec `include_in_ai_context: true`
+- **Level 2** : Contexte utilisateur (généré dynamiquement) - Outils avec `include_in_ai_context: true`
 - **Level 3** : État app (moyennement stable) - Zones/outils actuels, permissions
-- **Level 4** : Données session (volatile) - Enrichissements + données correspondantes
+- **Level 4** : Données session (stockées) - Enrichissements + données correspondantes
+
+### Level 2 vs Level 4 - Différence cruciale
+
+**Level 2 queries :**
+- **Générées dynamiquement** à chaque prompt par `PromptManager.buildUserContext()`
+- Basées sur les outils actuels avec `include_in_ai_context: true`
+- **Jamais stockées** en session
+
+**Level 4 queries :**
+- **Stockées en session** dans `AISessionEntity.level4QueriesJson`
+- Enrichissements spécifiques ajoutés par l'utilisateur
+- Persistent durant toute la session
 
 ### Principe fondamental
 **Aucun cache interne** - Prompt rebuilé à chaque requête, cache géré par providers API.
@@ -116,7 +196,7 @@ Validation pré-envoi :
 - **CHAT** : Dialogue confirmation si dépassement
 - **AUTOMATION** : Refus automatique
 
-## 4. Enrichissements
+## 5. Enrichissements
 
 Référence complète : `SPECS_ENRICHMENTS.md`
 
@@ -136,7 +216,7 @@ class EnrichmentSummarizer {
 
 Transformation automatique : `EnrichmentBlock` → `DataQuery` selon importance et type.
 
-## 5. Providers et services
+## 6. Providers
 
 ### AIProvider interface
 ```kotlin
@@ -148,22 +228,10 @@ interface AIProvider {
 }
 ```
 
-### AISessionManager (orchestrateur central)
-```kotlin
-class AISessionManager(context: Context) : ExecutableService {
-    suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult
-    suspend fun addEnrichmentsToSession(sessionId: String, dataQueries: List<DataQuery>): OperationResult
-    suspend fun createSession(name: String, type: SessionType, providerId: String): String
-    suspend fun setActiveSession(sessionId: String): OperationResult
-}
-```
-
-**Flow complet** :
-1. Ajouter enrichments Level 4 (et validation tokens)
-2. Stocker message utilisateur
-3. Builder prompt via PromptManager
-4. Envoyer AIService
-5. Traiter réponse et stocker
+### Configuration et découverte
+- Configurations gérées par `AIProviderConfigService` via coordinator
+- Providers découverts via `AIProviderRegistry`
+- `AIClient` utilise coordinator pour récupérer configs (pas d'accès direct DB)
 
 ### Validation et permissions
 Système hiérarchique avec 4 niveaux :
@@ -172,7 +240,7 @@ Système hiérarchique avec 4 niveaux :
 - `forbidden` - Action interdite
 - `ask_first` - Permission avant proposition
 
-## 6. Components UI
+## 7. Components UI
 
 ### RichComposer
 ```kotlin
@@ -192,7 +260,7 @@ Fonctionnalités :
 - Integration `EnrichmentSummarizer`
 
 ### AIFloatingChat
-Interface 100% écran avec header + messages + composer. Orchestration complète via `AISessionManager`.
+Interface 100% écran avec header + messages + composer. Orchestration complète via `AIOrchestrator`.
 
 ### Communication Modules
 Générés par l'IA, remplis par le user
@@ -203,3 +271,24 @@ sealed class CommunicationModule {
     // TODO: Slider, DataSelector
 }
 ```
+
+## 8. Base de données
+
+### AISessionEntity (schéma final)
+```kotlin
+@Entity(tableName = "ai_sessions")
+data class AISessionEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val type: SessionType,
+    val providerId: String,
+    val providerSessionId: String,
+    val scheduleConfigJson: String?,     // Pour AUTOMATION seulement
+    val level4QueriesJson: String?,      // Enrichissements session uniquement
+    val createdAt: Long,
+    val lastActivity: Long,
+    val isActive: Boolean
+)
+```
+
+**Note importante :** Seules les Level 4 queries sont stockées. Les Level 2 queries sont générées dynamiquement.

@@ -30,7 +30,6 @@ object LogManager {
 
     fun aiSession(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
         safeLog("AISession", message, level, throwable)
-        safeLog("AI", message, level, throwable)
     }
 
     fun aiPrompt(message: String, level: String = "DEBUG", throwable: Throwable? = null) {

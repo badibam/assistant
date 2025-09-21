@@ -114,6 +114,35 @@ Smart cast automatique avec result.isSuccess.
 ### Pattern de commandes
 coordinator.processUserAction(), processAICommand(), processScheduledTask() avec resource.operation
 
+### Pattern d'utilisation du Coordinator - Référence
+```kotlin
+// Pattern basique avec gestion d'erreur
+val result = coordinator.processUserAction("resource.operation", mapOf(
+    "param1" to value1,
+    "param2" to value2
+))
+
+if (result.isSuccess) {
+    // Traitement succès
+    val data = result.data?.get("field") as? Type
+} else {
+    // Gestion erreur
+    LogManager.service("Operation failed: ${result.error}", "ERROR")
+    errorMessage = result.error ?: "Unknown error"
+}
+
+// Pattern UI avec loading/error states
+coordinator.executeWithLoading(
+    operation = "resource.operation",
+    params = mapOf("id" to itemId),
+    onLoading = { isLoading = it },
+    onError = { error -> errorMessage = error }
+)?.let { result ->
+    // Traitement résultat
+    data = result.mapSingleData<Type>("field")
+}
+```
+
 ## Validation des Données
 
 **Voir DATA.md** pour SchemaValidator V3, validation centralisée et patterns de données.
@@ -150,7 +179,7 @@ Architecture centralisée pour tous les logs du projet avec tags structurés et 
 ### LogManager Centralisé
 **Emplacement** : core/utils/LogManager.kt
 
-**Tags disponibles** : Schema, Coordination, Tracking, Database, UI, Service
+**Tags disponibles** : à vérifier dans LogManager
 
 ### API Standardisée
 LogManager.schema(), .coordination(), .tracking(), .database() etc. avec niveau DEBUG par défaut, niveaux INFO/WARN/ERROR et throwable optionnel.

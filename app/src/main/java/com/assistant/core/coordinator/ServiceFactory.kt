@@ -8,6 +8,8 @@ import com.assistant.core.services.ToolDataService
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
+import com.assistant.core.ai.services.AISessionService
+import com.assistant.core.ai.services.AIProviderConfigService
 import kotlin.reflect.KClass
 
 /**
@@ -27,6 +29,8 @@ object ServiceFactory {
             AppConfigService::class -> AppConfigService(context)
             IconPreloadService::class -> IconPreloadService(context)
             BackupService::class -> BackupService(context)
+            AISessionService::class -> AISessionService(context)
+            AIProviderConfigService::class -> AIProviderConfigService(context)
             else -> throw IllegalArgumentException("Unknown service class: ${serviceClass.simpleName}")
         }
     }

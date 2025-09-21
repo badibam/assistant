@@ -8,6 +8,8 @@ import com.assistant.core.services.ToolDataService
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
+import com.assistant.core.ai.services.AISessionService
+import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 import kotlin.reflect.KClass
@@ -25,7 +27,9 @@ class ServiceRegistry(private val context: Context) {
         "tool_data" to ToolDataService::class,
         "app_config" to AppConfigService::class,
         "icon_preload" to IconPreloadService::class,
-        "backup" to BackupService::class
+        "backup" to BackupService::class,
+        "ai_sessions" to AISessionService::class,
+        "ai_provider_config" to AIProviderConfigService::class
     )
     
     /**

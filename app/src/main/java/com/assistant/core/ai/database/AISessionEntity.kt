@@ -23,19 +23,16 @@ data class AISessionEntity(
     val providerId: String,        // Fixed for the session
     val providerSessionId: String, // Provider API session ID
     val scheduleConfigJson: String?, // JSON for ScheduleConfig (automation only)
-    val queryListsJson: String?,   // JSON for SessionQueryLists (Level 2 + Level 4)
+    val level4QueriesJson: String?, // JSON for Level 4 enrichment queries only
     val createdAt: Long,
     val lastActivity: Long,
     val isActive: Boolean
 )
 
 /**
- * Query lists for prompt generation levels
+ * Level 4 queries are session-specific enrichments that persist
+ * Level 2 queries are generated dynamically from current user context
  */
-data class SessionQueryLists(
-    val level2Queries: List<String>,  // Stable user context (JSON serialized DataQuery ids)
-    val level4Queries: List<String>   // Session data accumulated (JSON serialized DataQuery ids)
-)
 
 /**
  * Type converters for Room

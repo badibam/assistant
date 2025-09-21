@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
-import com.assistant.core.ai.services.AISessionManager
+import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.ui.components.RichComposer
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
@@ -43,15 +43,15 @@ fun AIFloatingChat(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    val aiSessionManager = remember { AISessionManager(context) }
+    val aiOrchestrator = remember { AIOrchestrator(context) }
 
     // Initialize session on first load
     LaunchedEffect(Unit) {
         try {
             // TODO: Check for active session first, create one if none exists
-            val sessionId = aiSessionManager.createSession("New Chat", SessionType.CHAT)
-            aiSessionManager.setActiveSession(sessionId)
-            val session = aiSessionManager.loadSession(sessionId)
+            val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
+            aiOrchestrator.setActiveSession(sessionId)
+            val session = aiOrchestrator.loadSession(sessionId)
             activeSession = session
             LogManager.aiUI("AIFloatingChat initialized with session: $sessionId")
         } catch (e: Exception) {
@@ -119,17 +119,17 @@ fun AIFloatingChat(
 
                                         try {
                                             // Send via AISessionManager (complete flow)
-                                            val result = aiSessionManager.sendMessage(richMessage, session.id)
+                                            val result = aiOrchestrator.sendMessage(richMessage, session.id)
 
-                                            if (result.isSuccess) {
+                                            if (result.success) {
                                                 // Reload session with new messages
-                                                val updatedSession = aiSessionManager.loadSession(session.id)
+                                                val updatedSession = aiOrchestrator.loadSession(session.id)
                                                 activeSession = updatedSession
                                                 segments = emptyList() // Clear composer
                                                 LogManager.aiUI("Message sent successfully, session updated")
                                             } else {
-                                                errorMessage = result.errorMessage
-                                                LogManager.aiUI("Failed to send message: ${result.errorMessage}", "ERROR")
+                                                errorMessage = result.error
+                                                LogManager.aiUI("Failed to send message: ${result.error}", "ERROR")
                                             }
                                         } catch (e: Exception) {
                                             errorMessage = "Failed to send message: ${e.message}"

@@ -1,36 +1,37 @@
-package com.assistant.core.ai.services
+package com.assistant.core.ai.providers
 
 import android.content.Context
-import com.assistant.core.ai.data.AIMessage
+import com.assistant.core.ai.data.*
 import com.assistant.core.ai.providers.AIProvider
 import com.assistant.core.ai.providers.AIProviderRegistry
 import com.assistant.core.ai.prompts.PromptResult
-import com.assistant.core.coordinator.OperationResult
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.services.OperationResult
 import com.assistant.core.utils.LogManager
-import com.assistant.core.validation.SchemaValidator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /**
- * Central AI service that interfaces with multiple AI providers
+ * AI Client - pure logic for interfacing with AI providers
  *
  * Responsibilities:
- * - Abstract provider management (Claude, OpenAI, etc.)
  * - Convert PromptResult to provider-specific format
  * - Parse provider responses to AIMessage
  * - Handle provider errors and fallbacks
- * - Manage provider-specific configurations
+ * - Uses AIProviderConfigService for configurations (no direct DB access)
  */
-class AIService(private val context: Context) {
+class AIClient(private val context: Context) {
 
+    private val coordinator = Coordinator(context)
     private val providerRegistry = AIProviderRegistry(context)
 
     /**
      * Send prompt to AI provider and return parsed response
      */
     suspend fun query(promptResult: PromptResult, providerId: String): OperationResult {
-        LogManager.aiService("AIService.query() called with provider: $providerId, tokens: ${promptResult.totalTokens}")
+        LogManager.aiService("AIClient.query() called with provider: $providerId, tokens: ${promptResult.totalTokens}")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -43,18 +44,22 @@ class AIService(private val context: Context) {
 
                 LogManager.aiService("Using provider: ${provider.getDisplayName()}")
 
-                // Get provider configuration
-                val providerConfig = providerRegistry.getProviderConfig(providerId)
-                if (providerConfig == null) {
+                // Get provider configuration via coordinator
+                val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
+                    "providerId" to providerId
+                ))
+
+                if (!configResult.isSuccess) {
                     LogManager.aiService("Provider configuration not found: $providerId", "ERROR")
                     return@withContext OperationResult.error("Provider configuration not found: $providerId")
                 }
 
-                // Validate provider configuration using SchemaValidator
-                val configValidation = SchemaValidator.validate(provider, providerConfig, context, schemaType = "config")
-                if (!configValidation.isValid) {
-                    LogManager.aiService("Provider configuration validation failed: ${configValidation.errorMessage}", "ERROR")
-                    return@withContext OperationResult.error("Provider configuration invalid: ${configValidation.errorMessage}")
+                val providerConfig = configResult.data?.get("config") as? String ?: "{}"
+                val isConfigured = configResult.data?.get("isConfigured") as? Boolean ?: false
+
+                if (!isConfigured) {
+                    LogManager.aiService("Provider not configured: $providerId", "ERROR")
+                    return@withContext OperationResult.error("Provider not configured: $providerId")
                 }
 
                 // Send query to provider
@@ -84,51 +89,45 @@ class AIService(private val context: Context) {
                 }
 
             } catch (e: Exception) {
-                LogManager.aiService("AIService query failed: ${e.message}", "ERROR", e)
+                LogManager.aiService("AIClient query failed: ${e.message}", "ERROR", e)
                 OperationResult.error("AI query failed: ${e.message}")
             }
         }
     }
 
     /**
-     * Get list of available providers
+     * Get list of available providers via coordinator
      */
-    fun getAvailableProviders(): List<AIProviderInfo> {
-        return providerRegistry.getAllProviders().map { provider ->
-            AIProviderInfo(
-                id = provider.getProviderId(),
-                displayName = provider.getDisplayName(),
-                isConfigured = providerRegistry.isProviderConfigured(provider.getProviderId()),
-                isActive = providerRegistry.isProviderActive(provider.getProviderId())
-            )
+    suspend fun getAvailableProviders(): List<AIProviderInfo> {
+        val result = coordinator.processUserAction("ai_provider_config.list")
+
+        return if (result.isSuccess) {
+            val providers = result.data?.get("providers") as? List<*> ?: emptyList<Any>()
+            providers.mapNotNull { item ->
+                val providerMap = item as? Map<*, *> ?: return@mapNotNull null
+                AIProviderInfo(
+                    id = providerMap["id"] as? String ?: return@mapNotNull null,
+                    displayName = providerMap["displayName"] as? String ?: "",
+                    isConfigured = providerMap["isConfigured"] as? Boolean ?: false,
+                    isActive = providerMap["isActive"] as? Boolean ?: false
+                )
+            }
+        } else {
+            LogManager.aiService("Failed to get providers: ${result.error}", "ERROR")
+            emptyList()
         }
     }
 
     /**
-     * Get active provider ID
+     * Get active provider ID via coordinator
      */
-    fun getActiveProviderId(): String? {
-        return providerRegistry.getActiveProviderId()
-    }
-
-    /**
-     * Set active provider
-     */
-    suspend fun setActiveProvider(providerId: String): OperationResult {
-        LogManager.aiService("Setting active provider: $providerId")
-
-        return try {
-            val success = providerRegistry.setActiveProvider(providerId)
-            if (success) {
-                LogManager.aiService("Successfully set active provider: $providerId")
-                OperationResult.success()
-            } else {
-                LogManager.aiService("Failed to set active provider: $providerId", "ERROR")
-                OperationResult.error("Failed to set active provider")
-            }
-        } catch (e: Exception) {
-            LogManager.aiService("Error setting active provider: ${e.message}", "ERROR", e)
-            OperationResult.error("Error setting active provider: ${e.message}")
+    suspend fun getActiveProviderId(): String? {
+        val result = coordinator.processUserAction("ai_provider_config.get_active")
+        return if (result.isSuccess) {
+            result.data?.get("activeProviderId") as? String
+        } else {
+            LogManager.aiService("Failed to get active provider: ${result.error}", "ERROR")
+            null
         }
     }
 
@@ -154,7 +153,7 @@ class AIService(private val context: Context) {
                     message = it.getString("message"),
                     status = it.optString("status", null)?.let { status ->
                         ValidationStatus.valueOf(status)
-                    }
+                    } ?: ValidationStatus.PENDING
                 )
             }
 
@@ -177,13 +176,13 @@ class AIService(private val context: Context) {
                         id = actionJson.getString("id"),
                         command = actionJson.getString("command"),
                         params = parseParams(actionJson.getJSONObject("params")),
-                        saveResultAs = actionJson.optString("saveResultAs", null),
-                        status = ActionStatus.PENDING
+                        saveResultAs = actionJson.optString("saveResultAs", null).takeIf { it.isNotEmpty() },
+                        status = AIActionStatus.PENDING
                     )
                 }
             }
 
-            val postText = json.optString("postText", null)
+            val postText = json.optString("postText", null).takeIf { it.isNotEmpty() }
 
             val communicationModule = json.optJSONObject("communicationModule")?.let {
                 // TODO: Parse communication module

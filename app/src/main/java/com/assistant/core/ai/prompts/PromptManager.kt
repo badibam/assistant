@@ -2,8 +2,7 @@ package com.assistant.core.ai.prompts
 
 import android.content.Context
 import com.assistant.core.ai.data.*
-import com.assistant.core.ai.database.SessionQueryLists
-import com.assistant.core.ai.services.QueryExecutor
+import com.assistant.core.ai.prompts.QueryExecutor
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -25,7 +24,7 @@ object PromptManager {
         val queryExecutor = QueryExecutor(context)
 
         val level1 = buildDocumentation()
-        val level2 = queryExecutor.executeQueries(getLevel2Queries(session), "Level2")
+        val level2 = buildUserContext(context) // Generated dynamically from current user state
         val level3 = buildAppState(context)
         val level4 = queryExecutor.executeQueries(getLevel4Queries(session), "Level4")
         val messages = buildMessageHistory(session)
@@ -61,6 +60,19 @@ object PromptManager {
         }
 
         IMPORTANT: Either dataRequests OR actions, never both simultaneously.
+        """.trimIndent()
+    }
+
+    private suspend fun buildUserContext(context: Context): String {
+        // Level 2: Generate queries dynamically from tools with include_in_ai_context=true
+        LogManager.aiPrompt("Building user context for Level 2")
+
+        // TODO: Query tools with include_in_ai_context=true via coordinator
+        // For now, return placeholder
+        return """
+        # User Context (Level 2)
+
+        [Tools marked for AI context will be queried dynamically here]
         """.trimIndent()
     }
 
@@ -159,15 +171,12 @@ object PromptManager {
 
     // === Utilities ===
 
-    private fun getLevel2Queries(session: AISession): List<DataQuery> {
-        // TODO: Parse session.queryListsJson and extract level2Queries as DataQuery objects
-        // For now, return empty list - Level 2 queries managed by AISessionManager
-        return emptyList()
-    }
+    // Level 2 queries are now generated dynamically in buildUserContext()
+    // No longer stored or retrieved from session
 
     private fun getLevel4Queries(session: AISession): List<DataQuery> {
-        // TODO: Parse session.queryListsJson and extract level4Queries as DataQuery objects
-        // For now, return empty list - Level 4 queries managed by AISessionManager
+        // TODO: Parse session.level4QueriesJson as List<DataQuery>
+        // For now, return empty list
         return emptyList()
     }
 

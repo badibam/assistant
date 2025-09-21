@@ -1,4 +1,4 @@
-package com.assistant.core.ai.services
+package com.assistant.core.ai.prompts
 
 import android.content.Context
 import com.assistant.core.ai.data.DataQuery
@@ -216,25 +216,4 @@ class QueryExecutor(private val context: Context) {
         return resolvedParams
     }
 
-    /**
-     * Estimate total token size for a list of queries (before execution)
-     * Used for preview/validation purposes
-     */
-    suspend fun estimateQueryListSize(queries: List<DataQuery>): Int {
-        LogManager.aiPrompt("Estimating token size for ${queries.size} queries")
-
-        // Very rough estimation based on query complexity
-        // TODO: More sophisticated estimation based on query types and params
-        val estimatedTokens = queries.sumOf { query ->
-            when (query.type) {
-                "TOOL_DATA" -> 500 // Average tool data query result
-                "TOOL_CONFIG" -> 200 // Tool config typically smaller
-                "ZONE_DATA" -> 1000 // Zone data can be larger
-                else -> 300 // Default estimation
-            }
-        }
-
-        LogManager.aiPrompt("Estimated total tokens for query list: $estimatedTokens")
-        return estimatedTokens
-    }
 }

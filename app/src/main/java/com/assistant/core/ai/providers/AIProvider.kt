@@ -1,7 +1,7 @@
 package com.assistant.core.ai.providers
 
 import androidx.compose.runtime.Composable
-import com.assistant.core.ai.services.AIResponse
+import com.assistant.core.ai.providers.AIResponse
 import com.assistant.core.validation.SchemaProvider
 
 /**

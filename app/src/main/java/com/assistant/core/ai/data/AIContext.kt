@@ -55,11 +55,3 @@ data class AIPermissions(
     val accessData: String = "autonomous"
 )
 
-/**
- * Résultat d'assemblage de prompt
- */
-data class PromptResult(
-    val prompt: String,
-    val tokensEstimate: Int = 0,
-    val schemasIncluded: List<String> = emptyList()
-)
