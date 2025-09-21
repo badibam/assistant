@@ -195,10 +195,32 @@ $fullPrompt
     // Level 2 queries are now generated dynamically in buildUserContext()
     // No longer stored or retrieved from session
 
+    /**
+     * Extract Level 4 queries from session message history
+     * Includes both USER enrichments and AI data requests, in chronological order
+     */
     private fun getLevel4Queries(session: AISession): List<DataQuery> {
-        // TODO: Parse session.level4QueriesJson as List<DataQuery>
-        // For now, return empty list
-        return emptyList()
+        LogManager.aiPrompt("getLevel4Queries() for session ${session.id}")
+
+        val allQueries = mutableListOf<DataQuery>()
+
+        // Parse all messages in chronological order (already sorted by timestamp)
+        session.messages.forEach { message ->
+            // Extract queries from USER messages (richContent.dataQueries)
+            message.richContent?.dataQueries?.let { userQueries ->
+                allQueries.addAll(userQueries)
+                LogManager.aiPrompt("Added ${userQueries.size} queries from USER message ${message.id}")
+            }
+
+            // Extract queries from AI messages (aiMessage.dataRequests)
+            message.aiMessage?.dataRequests?.let { aiQueries ->
+                allQueries.addAll(aiQueries)
+                LogManager.aiPrompt("Added ${aiQueries.size} queries from AI message ${message.id}")
+            }
+        }
+
+        LogManager.aiPrompt("Total Level 4 queries from session history: ${allQueries.size}")
+        return allQueries
     }
 
     private fun estimateTokens(text: String): Int {

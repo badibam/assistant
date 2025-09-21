@@ -44,13 +44,7 @@ class AIOrchestrator(private val context: Context) {
 
         return withContext(Dispatchers.IO) {
             try {
-                // 1. Add enrichment queries to Level 4 if any
-                if (richMessage.dataQueries.isNotEmpty()) {
-                    val enrichmentResult = addEnrichmentsToSession(sessionId, richMessage.dataQueries)
-                    if (!enrichmentResult.success) {
-                        return@withContext enrichmentResult
-                    }
-                }
+                // Level 4 enrichments are now extracted from message history during prompt generation
 
                 // 2. Store user message via coordinator
                 val userMessageResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
@@ -398,15 +392,5 @@ class AIOrchestrator(private val context: Context) {
         }
     }
 
-    /**
-     * Add enrichment queries to session Level 4 via coordinator
-     */
-    suspend fun addEnrichmentsToSession(sessionId: String, dataQueries: List<DataQuery>): OperationResult {
-        LogManager.aiSession("AIOrchestrator.addEnrichmentsToSession() called with ${dataQueries.size} queries")
-
-        // TODO: Implement enrichment addition via coordinator
-        // This should update the session's Level 4 queries
-        return OperationResult.success()
-    }
 }
 

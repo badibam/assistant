@@ -240,7 +240,7 @@ class EnrichmentSummarizer {
 - **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
 - **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
 
-Transformation automatique : `EnrichmentBlock` → `List<DataQuery>` selon niveau et importance.
+Transformation automatique : `EnrichmentBlock` → `List<DataQuery>` selon niveau et importance. Ces queries sont stockées dans le message utilisateur et réutilisées depuis l'historique pour les prompts suivants.
 
 ## 6. Providers
 
@@ -310,11 +310,10 @@ data class AISessionEntity(
     val providerId: String,
     val providerSessionId: String,
     val scheduleConfigJson: String?,     // Pour AUTOMATION seulement
-    val level4QueriesJson: String?,      // Enrichissements session uniquement
     val createdAt: Long,
     val lastActivity: Long,
     val isActive: Boolean
 )
 ```
 
-**Note importante :** Seules les Level 4 queries sont stockées. Les Level 2 queries sont générées dynamiquement.
+**Note importante :** Les Level 4 queries (enrichissements) sont extraites de l'historique des messages utilisateur lors de la génération des prompts.

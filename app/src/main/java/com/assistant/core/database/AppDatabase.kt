@@ -12,6 +12,11 @@ import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.entities.AppSettingsCategory
+import com.assistant.core.ai.database.AIDao
+import com.assistant.core.ai.database.AISessionEntity
+import com.assistant.core.ai.database.SessionMessageEntity
+import com.assistant.core.ai.database.AITypeConverters
+import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.LogManager
 
@@ -20,18 +25,25 @@ import com.assistant.core.utils.LogManager
         Zone::class,
         ToolInstance::class,
         ToolDataEntity::class,
-        AppSettingsCategory::class
+        AppSettingsCategory::class,
+        AISessionEntity::class,
+        SessionMessageEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
+)
+@androidx.room.TypeConverters(
+    AITypeConverters::class,
+    MessageTypeConverters::class
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun zoneDao(): ZoneDao
     abstract fun toolInstanceDao(): ToolInstanceDao
     abstract fun toolDataDao(): BaseToolDataDao
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
+    abstract fun aiDao(): AIDao
 
     companion object {
         @Volatile

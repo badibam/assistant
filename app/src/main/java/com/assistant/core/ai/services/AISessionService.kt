@@ -3,7 +3,7 @@ package com.assistant.core.ai.services
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.database.AIDao
-import com.assistant.core.ai.database.AIDatabase
+import com.assistant.core.database.AppDatabase
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
 import com.assistant.core.coordinator.CancellationToken
@@ -89,7 +89,6 @@ class AISessionService(private val context: Context) : ExecutableService {
             providerId = providerId,
             providerSessionId = "",
             scheduleConfigJson = null, // No schedule for regular sessions
-            level4QueriesJson = "[]", // Empty Level 4 queries initially
             createdAt = now,
             lastActivity = now,
             isActive = false // Will be activated separately
@@ -97,7 +96,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         // Insert into database
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             database.aiDao().insertSession(sessionEntity)
 
             LogManager.aiSession("Successfully created session: $sessionId")
@@ -124,7 +123,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         LogManager.aiSession("Getting AI session: $sessionId")
 
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             val sessionEntity = database.aiDao().getSession(sessionId)
 
             if (sessionEntity == null) {
@@ -189,7 +188,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         LogManager.aiSession("Setting active session: $sessionId")
 
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             val dao = database.aiDao()
 
             // Check if session exists
@@ -223,7 +222,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         LogManager.aiSession("Getting active session")
 
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             val activeSessionEntity = database.aiDao().getActiveSession()
 
             if (activeSessionEntity == null) {
@@ -274,7 +273,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         LogManager.aiSession("Stopping active session (deactivating all sessions)")
 
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             val dao = database.aiDao()
 
             // Deactivate all sessions
@@ -311,7 +310,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         LogManager.aiSession("Creating message: sessionId=$sessionId, sender=$sender, timestamp=$timestamp")
 
         try {
-            val database = AIDatabase.getDatabase(context)
+            val database = AppDatabase.getDatabase(context)
             val messageId = UUID.randomUUID().toString()
 
             // Extract content based on message type
@@ -389,6 +388,6 @@ class AISessionService(private val context: Context) : ExecutableService {
      * Get AI database DAO
      */
     private fun getAIDao(): AIDao {
-        return AIDatabase.getDatabase(context).aiDao()
+        return AppDatabase.getDatabase(context).aiDao()
     }
 }

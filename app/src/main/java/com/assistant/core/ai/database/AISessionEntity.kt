@@ -23,14 +23,13 @@ data class AISessionEntity(
     val providerId: String,        // Fixed for the session
     val providerSessionId: String, // Provider API session ID
     val scheduleConfigJson: String?, // JSON for ScheduleConfig (automation only)
-    val level4QueriesJson: String?, // JSON for Level 4 enrichment queries only
     val createdAt: Long,
     val lastActivity: Long,
     val isActive: Boolean
 )
 
 /**
- * Level 4 queries are session-specific enrichments that persist
+ * Level 4 queries (enrichments) are extracted from message history
  * Level 2 queries are generated dynamically from current user context
  */
 
