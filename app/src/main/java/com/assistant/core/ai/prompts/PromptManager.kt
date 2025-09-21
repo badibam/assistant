@@ -3,6 +3,7 @@ package com.assistant.core.ai.prompts
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.prompts.QueryExecutor
+import com.assistant.core.ai.prompts.QueryDeduplicator
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -16,85 +17,95 @@ import org.json.JSONObject
 object PromptManager {
 
     /**
-     * Build complete prompt for AI session
+     * Build complete prompt for AI session using unified QueryExecutor for all levels
      */
     suspend fun buildPrompt(session: AISession, context: Context): PromptResult {
         LogManager.aiPrompt("Building 4-level prompt for session ${session.id}")
 
         val queryExecutor = QueryExecutor(context)
 
-        val level1 = buildDocumentation()
-        val level2 = buildUserContext(context) // Generated dynamically from current user state
-        val level3 = buildAppState(context)
-        val level4 = queryExecutor.executeQueries(getLevel4Queries(session), "Level4")
+        // Generate queries for all levels
+        val level1Queries = buildLevel1Queries(context)
+        val level2Queries = buildLevel2Queries(context)
+        val level3Queries = buildLevel3Queries(context)
+        val level4Queries = getLevel4Queries(session)
+
+        LogManager.aiPrompt("Generated queries (L1:${level1Queries.size}, L2:${level2Queries.size}, L3:${level3Queries.size}, L4:${level4Queries.size})")
+
+        // Execute with incremental deduplication across levels
+        val level1Content = queryExecutor.executeQueries(level1Queries, "Level1")
+        val level2Content = queryExecutor.executeQueries(level2Queries, "Level2", previousQueries = level1Queries)
+        val level3Content = queryExecutor.executeQueries(level3Queries, "Level3", previousQueries = level1Queries + level2Queries)
+        val level4Content = queryExecutor.executeQueries(level4Queries, "Level4", previousQueries = level1Queries + level2Queries + level3Queries)
+
         val messages = buildMessageHistory(session)
 
-        return assemblePrompt(level1, level2, level3, level4, messages, session.providerId)
+        return assemblePrompt(level1Content, level2Content, level3Content, level4Content, messages, session.providerId)
     }
 
 
-    // === Level Builders ===
+    // === Level Query Builders ===
 
-    private fun buildDocumentation(): String {
-        return """
-        # AI Assistant Role and Response Format
+    /**
+     * Generate Level 1 queries: System documentation, schemas, and app config
+     */
+    private fun buildLevel1Queries(context: Context): List<DataQuery> {
+        LogManager.aiPrompt("Building Level 1 queries (System)")
 
-        You are an intelligent assistant for a personal productivity and health tracking app.
-        You help users manage their data, create insights, and automate workflows.
-
-        ## Available Commands
-        - zones.* : Zone management (create, list, update, delete)
-        - tools.* : Tool instance management
-        - tool_data.* : Tool data operations (create, update, delete, get)
-        - data_navigator.explore : Hierarchical data exploration
-
-        ## Response Format
-        Always respond with valid JSON matching AIMessage structure:
-        {
-          "preText": "Analysis or introduction (required)",
-          "validationRequest": {"message": "Confirmation needed?"},
-          "dataRequests": [{"id": "query_id", "type": "ZONE_DATA", "params": {...}}],
-          "actions": [{"id": "action_id", "command": "zones.create", "params": {...}}],
-          "postText": "Follow-up text (if actions present)",
-          "communicationModule": {"type": "MultipleChoice", "question": "...", "options": [...]}
-        }
-
-        IMPORTANT: Either dataRequests OR actions, never both simultaneously.
-        """.trimIndent()
+        return listOf(
+            DataQuery(
+                id = "system_doc",
+                type = "SYSTEM_DOC",
+                params = emptyMap(),
+                isRelative = false
+            ),
+            DataQuery(
+                id = "system_schemas",
+                type = "SYSTEM_SCHEMAS",
+                params = emptyMap(),
+                isRelative = false
+            ),
+            DataQuery(
+                id = "app_config",
+                type = "APP_CONFIG",
+                params = emptyMap(),
+                isRelative = false
+            )
+        )
     }
 
-    private suspend fun buildUserContext(context: Context): String {
-        // Level 2: Generate queries dynamically from tools with include_in_ai_context=true
-        LogManager.aiPrompt("Building user context for Level 2")
+    /**
+     * Generate Level 2 queries: User tools marked for AI context
+     */
+    private fun buildLevel2Queries(context: Context): List<DataQuery> {
+        LogManager.aiPrompt("Building Level 2 queries (User Context)")
 
-        // TODO: Query tools with include_in_ai_context=true via coordinator
-        // For now, return placeholder
-        return """
-        # User Context (Level 2)
-
-        [Tools marked for AI context will be queried dynamically here]
-        """.trimIndent()
+        // TODO: Query actual tools with include_in_ai_context=true
+        // For now, return single query that will get tools via coordinator
+        return listOf(
+            DataQuery(
+                id = "user_tools_context",
+                type = "USER_TOOLS_CONTEXT",
+                params = mapOf("include_in_ai_context" to true),
+                isRelative = false
+            )
+        )
     }
 
-    private suspend fun buildAppState(context: Context): String {
-        // TODO: Query current zones, tools, permissions via CommandDispatcher
-        LogManager.aiPrompt("Building app state for Level 3")
-        return """
-        # Current App State
+    /**
+     * Generate Level 3 queries: Current app state, zones, and tool instances
+     */
+    private fun buildLevel3Queries(context: Context): List<DataQuery> {
+        LogManager.aiPrompt("Building Level 3 queries (App State)")
 
-        ## Zones: 2 zones configured
-        - Health Zone: 3 tools active
-        - Productivity Zone: 1 tool active
-
-        ## Global AI Permissions
-        - Zone creation: autonomous
-        - Tool configuration: validation_required
-        - Data modification: autonomous
-
-        ## Available Tool Types
-        - tracking: Data tracking with various value types
-        - More tool types to be added...
-        """.trimIndent()
+        return listOf(
+            DataQuery(
+                id = "app_state",
+                type = "APP_STATE",
+                params = emptyMap(),
+                isRelative = false
+            )
+        )
     }
 
 
