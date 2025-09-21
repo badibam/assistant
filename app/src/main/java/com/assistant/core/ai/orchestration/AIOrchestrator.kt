@@ -347,6 +347,28 @@ class AIOrchestrator(private val context: Context) {
     }
 
     /**
+     * Get active session via coordinator
+     */
+    suspend fun getActiveSession(): AISession? {
+        LogManager.aiSession("AIOrchestrator.getActiveSession() called")
+
+        val result = coordinator.processUserAction("ai_sessions.get_active_session", emptyMap())
+
+        return if (result.isSuccess) {
+            val hasActiveSession = result.data?.get("hasActiveSession") as? Boolean ?: false
+            if (hasActiveSession) {
+                parseAISessionFromResult(result.data)
+            } else {
+                LogManager.aiSession("No active session found")
+                null
+            }
+        } else {
+            LogManager.aiSession("Failed to get active session: ${result.error}", "ERROR")
+            null
+        }
+    }
+
+    /**
      * Set active session via coordinator
      */
     suspend fun setActiveSession(sessionId: String): OperationResult {

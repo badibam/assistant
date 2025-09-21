@@ -43,6 +43,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 // Session operations
                 "create_session" -> createSession(params, token)
                 "get_session" -> getSession(params, token)
+                "get_active_session" -> getActiveSession(params, token)
                 "list_sessions" -> listSessions(params, token)
                 "update_session" -> updateSession(params, token)
                 "delete_session" -> deleteSession(params, token)
@@ -212,6 +213,57 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to set active session: ${e.message}", "ERROR", e)
             return OperationResult.error("Failed to set active session: ${e.message}")
+        }
+    }
+
+    private suspend fun getActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        LogManager.aiSession("Getting active session")
+
+        try {
+            val database = AIDatabase.getDatabase(context)
+            val activeSessionEntity = database.aiDao().getActiveSession()
+
+            if (activeSessionEntity == null) {
+                LogManager.aiSession("No active session found")
+                return OperationResult.success(mapOf(
+                    "hasActiveSession" to false
+                ))
+            }
+
+            // Get messages for the active session
+            val messageEntities = database.aiDao().getMessagesForSession(activeSessionEntity.id)
+
+            LogManager.aiSession("Found active session: ${activeSessionEntity.id} with ${messageEntities.size} messages")
+
+            return OperationResult.success(mapOf(
+                "hasActiveSession" to true,
+                "session" to mapOf(
+                    "id" to activeSessionEntity.id,
+                    "name" to activeSessionEntity.name,
+                    "type" to activeSessionEntity.type.name, // Convert enum to string
+                    "providerId" to activeSessionEntity.providerId,
+                    "providerSessionId" to activeSessionEntity.providerSessionId,
+                    "createdAt" to activeSessionEntity.createdAt,
+                    "lastActivity" to activeSessionEntity.lastActivity,
+                    "isActive" to activeSessionEntity.isActive
+                ),
+                "messages" to messageEntities.map { msg ->
+                    mapOf(
+                        "id" to msg.id,
+                        "timestamp" to msg.timestamp,
+                        "sender" to msg.sender.name, // Convert enum to string
+                        "richContentJson" to msg.richContentJson,
+                        "textContent" to msg.textContent,
+                        "aiMessageJson" to msg.aiMessageJson
+                    )
+                }
+            ))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to get active session: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to get active session: ${e.message}")
         }
     }
 

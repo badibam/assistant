@@ -48,12 +48,21 @@ fun AIFloatingChat(
     // Initialize session on first load
     LaunchedEffect(Unit) {
         try {
-            // TODO: Check for active session first, create one if none exists
-            val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
-            aiOrchestrator.setActiveSession(sessionId)
-            val session = aiOrchestrator.loadSession(sessionId)
-            activeSession = session
-            LogManager.aiUI("AIFloatingChat initialized with session: $sessionId")
+            // Check for active session first, create one if none exists
+            val existingSession = aiOrchestrator.getActiveSession()
+
+            if (existingSession != null) {
+                // Reuse existing active session
+                activeSession = existingSession
+                LogManager.aiUI("AIFloatingChat reusing active session: ${existingSession.id}")
+            } else {
+                // Create new session if none exists
+                val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
+                aiOrchestrator.setActiveSession(sessionId)
+                val session = aiOrchestrator.loadSession(sessionId)
+                activeSession = session
+                LogManager.aiUI("AIFloatingChat created new session: $sessionId")
+            }
         } catch (e: Exception) {
             LogManager.aiUI("Failed to initialize AI session: ${e.message}", "ERROR")
             errorMessage = "Failed to initialize chat session"
