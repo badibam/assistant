@@ -3,6 +3,8 @@
     <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
     <!-- notes -->
     <string name="notes_display_name">Notes</string>
+    <string name="notes_schema_config_display_name"></string>
+    <string name="notes_schema_data_display_name"></string>
     <string name="notes_schema_data_name">Nom de l\'entrée de note</string>
     <string name="notes_schema_data_timestamp">Horodatage de création de la note</string>
     <string name="notes_schema_data_data">Données de contenu de la note</string>
@@ -106,6 +108,13 @@
     <string name="tracking_error_entry_deletion">Erreur lors de la suppression</string>
     <string name="tracking_error_entry_saving">Erreur lors de la sauvegarde</string>
     <string name="tracking_error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
+    <string name="tracking_schema_config_numeric_display_name"></string>
+    <string name="tracking_schema_config_timer_display_name"></string>
+    <string name="tracking_schema_config_choice_display_name"></string>
+    <string name="tracking_schema_config_scale_display_name"></string>
+    <string name="tracking_schema_config_counter_display_name"></string>
+    <string name="tracking_schema_config_boolean_display_name"></string>
+    <string name="tracking_schema_config_text_display_name"></string>
     <string name="tracking_schema_config_type"></string>
     <string name="tracking_schema_config_numeric_items"></string>
     <string name="tracking_schema_config_numeric_item_name"></string>
@@ -129,6 +138,12 @@
     <string name="tracking_schema_config_boolean_item_false_label"></string>
     <string name="tracking_schema_config_text_items"></string>
     <string name="tracking_schema_config_text_item_name"></string>
+    <string name="tracking_schema_data_numeric_display_name"></string>
+    <string name="tracking_schema_data_scale_display_name"></string>
+    <string name="tracking_schema_data_boolean_display_name"></string>
+    <string name="tracking_schema_data_choice_display_name"></string>
+    <string name="tracking_schema_data_counter_display_name"></string>
+    <string name="tracking_schema_data_timer_display_name"></string>
     <string name="tracking_schema_data_name"></string>
     <string name="tracking_schema_data_timestamp"></string>
     <string name="tracking_schema_data_data"></string>
@@ -348,8 +363,12 @@
     <string name="shared_tools_base_schema_data_timestamp"></string>
     <string name="shared_tools_base_schema_data_created_at"></string>
     <string name="shared_tools_base_schema_data_updated_at"></string>
+    <string name="shared_zone_config_schema_display_name"></string>
+    <string name="shared_app_config_format_schema_display_name"></string>
+    <string name="shared_main_screen_config_schema_display_name"></string>
     <string name="shared_app_config_schema_format_week_start_day"></string>
     <string name="shared_app_config_schema_format_day_start_hour"></string>
+    <string name="shared_app_config_schema_format_locale_override"></string>
     <string name="shared_app_config_schema_format_relative_label_limits"></string>
     <string name="shared_app_config_schema_format_hour_limit"></string>
     <string name="shared_app_config_schema_format_day_limit"></string>

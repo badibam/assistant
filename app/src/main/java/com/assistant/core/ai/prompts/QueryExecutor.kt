@@ -4,6 +4,8 @@ import android.content.Context
 import com.assistant.core.ai.data.DataQuery
 import com.assistant.core.ai.utils.TokenCalculator
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.schemas.ZoneSchemaProvider
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -210,13 +212,40 @@ class QueryExecutor(private val context: Context) {
     private suspend fun executeAppConfigQuery(params: Map<String, Any>): String? {
         LogManager.aiPrompt("Executing APP_CONFIG query with params: $params")
 
-        // TODO: Call coordinator with app_config.get
-        return """
-            # App Configuration (Level 1)
-            Global app settings for AI context.
+        return try {
+            // Get format configuration (contains temporal and display settings)
+            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
 
-            TODO: Call coordinator.processUserAction("app_config.get", {})
-        """.trimIndent()
+            if (configResult.isSuccess) {
+                val configData = configResult.data
+                LogManager.aiPrompt("APP_CONFIG query successful, data keys: ${configData?.keys}")
+
+                // Format configuration for AI context
+                val formattedConfig = StringBuilder()
+                formattedConfig.appendLine("## Configuration Application")
+                formattedConfig.appendLine("Paramètres globaux de l'application.")
+                formattedConfig.appendLine()
+
+                configData?.forEach { (key, value) ->
+                    formattedConfig.appendLine("- **$key**: $value")
+                }
+
+                formattedConfig.toString().trim()
+            } else {
+                LogManager.aiPrompt("APP_CONFIG query failed: ${configResult.error}", "WARN")
+                """
+                    ## Configuration Application
+                    Erreur lors du chargement : ${configResult.error}
+                """.trimIndent()
+            }
+
+        } catch (e: Exception) {
+            LogManager.aiPrompt("APP_CONFIG query exception: ${e.message}", "ERROR", e)
+            """
+                ## Configuration Application
+                Exception lors du chargement : ${e.message}
+            """.trimIndent()
+        }
     }
 
     // ===================================
@@ -229,14 +258,119 @@ class QueryExecutor(private val context: Context) {
     private suspend fun executeUserToolsContextQuery(params: Map<String, Any>): String? {
         LogManager.aiPrompt("Executing USER_TOOLS_CONTEXT query with params: $params")
 
-        // TODO: Query tools with include_in_ai_context=true via coordinator
-        // Generate samples according to importance and AI_LIMITS
-        return """
-            # User Tools Context (Level 2)
-            Tools marked for AI context inclusion.
+        return try {
+            val result = StringBuilder()
+            result.appendLine("## Données utilisateur à prendre en compte dans toutes les réponses")
+            result.appendLine()
 
-            TODO: Query via coordinator + filter by include_in_ai_context + generate samples
-        """.trimIndent()
+            // Get all zones
+            val zonesResult = coordinator.processUserAction("zones.list", emptyMap())
+            if (!zonesResult.isSuccess) {
+                LogManager.aiPrompt("Failed to get zones: ${zonesResult.error}", "WARN")
+                return "## Données utilisateur à prendre en compte dans toutes les réponses\nErreur lors du chargement des zones: ${zonesResult.error}"
+            }
+
+            val zones = zonesResult.data?.get("zones") as? List<Map<String, Any>> ?: emptyList()
+            LogManager.aiPrompt("Found ${zones.size} zones")
+
+            var totalToolsFound = 0
+            var totalToolsIncluded = 0
+
+            // For each zone, get tools and filter by include_in_ai_context=true
+            zones.forEach { zone ->
+                val zoneId = zone["id"] as? String ?: return@forEach
+                val zoneName = zone["name"] as? String ?: "Zone sans nom"
+
+                LogManager.aiPrompt("Processing zone: $zoneName ($zoneId)")
+
+                // Get tools for this zone
+                val toolsResult = coordinator.processUserAction("tools.list", mapOf("zone_id" to zoneId))
+                if (!toolsResult.isSuccess) {
+                    LogManager.aiPrompt("Failed to get tools for zone $zoneId: ${toolsResult.error}", "WARN")
+                    return@forEach
+                }
+
+                val tools = toolsResult.data?.get("tool_instances") as? List<Map<String, Any>> ?: emptyList()
+                totalToolsFound += tools.size
+                LogManager.aiPrompt("Found ${tools.size} tools in zone $zoneName")
+
+                // Filter tools with include_in_ai_context=true and get their data
+                tools.forEach { tool ->
+                    val toolInstanceId = tool["id"] as? String ?: return@forEach
+                    val toolType = tool["tooltype"] as? String ?: return@forEach
+                    val toolName = tool["name"] as? String ?: "Outil sans nom"
+                    val configJson = tool["config"] as? String ?: return@forEach
+
+                    // Parse config to check include_in_ai_context
+                    val config = try {
+                        if (configJson.isNotEmpty()) {
+                            org.json.JSONObject(configJson).let { json ->
+                                json.keys().asSequence().associateWith { json.get(it) }
+                            }
+                        } else emptyMap()
+                    } catch (e: Exception) {
+                        LogManager.aiPrompt("Failed to parse config for tool $toolInstanceId: ${e.message}", "WARN")
+                        emptyMap()
+                    }
+
+                    val includeInAiContext = config["include_in_ai_context"] as? Boolean ?: false
+                    LogManager.aiPrompt("Tool $toolName ($toolType): include_in_ai_context = $includeInAiContext")
+
+                    if (includeInAiContext) {
+                        totalToolsIncluded++
+                        result.appendLine("### Données de [$toolType](tooltype) : [\"$toolName\"](titre de l'instance)")
+                        result.appendLine()
+
+                        // Get all data for this tool instance, ordered by timestamp
+                        val dataResult = coordinator.processUserAction("tool_data.get", mapOf(
+                            "toolInstanceId" to toolInstanceId,
+                            "orderBy" to "timestamp",
+                            "orderDirection" to "ASC"
+                        ))
+
+                        if (dataResult.isSuccess) {
+                            val dataEntries = dataResult.data?.get("entries") as? List<Map<String, Any>> ?: emptyList()
+                            LogManager.aiPrompt("Found ${dataEntries.size} data entries for tool $toolName")
+
+                            dataEntries.forEach { entry ->
+                                val entryName = entry["name"] as? String ?: "Entrée sans nom"
+                                val timestamp = entry["timestamp"] as? Long ?: 0L
+                                val dataField = entry["data"] as? String ?: "{}"
+
+                                // Format timestamp to readable date
+                                val date = if (timestamp > 0) {
+                                    java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+                                        .format(java.util.Date(timestamp))
+                                } else "Date inconnue"
+
+                                result.appendLine("#### $entryName ($date)")
+                                result.appendLine(dataField)
+                                result.appendLine()
+                            }
+                        } else {
+                            LogManager.aiPrompt("Failed to get data for tool $toolInstanceId: ${dataResult.error}", "WARN")
+                            result.appendLine("Erreur lors du chargement des données: ${dataResult.error}")
+                            result.appendLine()
+                        }
+                    }
+                }
+            }
+
+            LogManager.aiPrompt("USER_TOOLS_CONTEXT completed: $totalToolsIncluded/$totalToolsFound tools included")
+
+            if (totalToolsIncluded == 0) {
+                result.appendLine("Aucun outil configuré pour inclusion dans l'IA.")
+            }
+
+            result.toString().trim()
+
+        } catch (e: Exception) {
+            LogManager.aiPrompt("USER_TOOLS_CONTEXT query exception: ${e.message}", "ERROR", e)
+            """
+                ## Données utilisateur à prendre en compte dans toutes les réponses
+                Exception lors du chargement : ${e.message}
+            """.trimIndent()
+        }
     }
 
     // ===============================
@@ -268,14 +402,90 @@ class QueryExecutor(private val context: Context) {
     private suspend fun executeZoneConfigQuery(params: Map<String, Any>): String? {
         LogManager.aiPrompt("Executing ZONE_CONFIG query with params: $params")
 
-        // TODO: Query zone config + all tool instances with full configs
-        // Include resolved schemas for each instance
-        return """
-            # Zone Configuration (Level 4)
-            Zone config and all tool instances with complete configurations.
+        val zoneId = params["zone_id"] as? String
+        if (zoneId == null) {
+            LogManager.aiPrompt("ZONE_CONFIG query missing zone_id parameter", "WARN")
+            return "## Configuration Zone\nErreur: zone_id manquant"
+        }
 
-            TODO: zones.get + tools.list + full configs + resolved schemas
-        """.trimIndent()
+        return try {
+            val result = StringBuilder()
+
+            // Get zone configuration
+            val zoneResult = coordinator.processUserAction("zones.get", mapOf("id" to zoneId))
+            if (!zoneResult.isSuccess) {
+                LogManager.aiPrompt("Failed to get zone $zoneId: ${zoneResult.error}", "WARN")
+                return "## Configuration Zone\nErreur lors du chargement de la zone: ${zoneResult.error}"
+            }
+
+            val zoneData = zoneResult.data?.get("zone") as? Map<String, Any>
+            val zoneName = zoneData?.get("name") as? String ?: "Zone sans nom"
+            val zoneConfig = zoneData?.get("config") as? String ?: "{}"
+
+            result.appendLine("## Configuration Zone : $zoneName")
+            result.appendLine()
+
+            // Add zone schema
+            val zoneSchemaProvider = ZoneSchemaProvider.create(context)
+            val zoneSchema = zoneSchemaProvider.getSchema("config", context)
+            if (zoneSchema == null) {
+                LogManager.aiPrompt("Failed to get zone config schema", "ERROR")
+                return "## Configuration Zone : $zoneName\nErreur: impossible de récupérer le schéma de configuration"
+            }
+
+            result.appendLine("### Schéma de configuration")
+            result.appendLine("```json")
+            result.appendLine(zoneSchema as CharSequence)
+            result.appendLine("```")
+            result.appendLine()
+
+            // Add current zone configuration
+            result.appendLine("### Configuration actuelle")
+            result.appendLine("```json")
+            result.appendLine(zoneConfig)
+            result.appendLine("```")
+            result.appendLine()
+
+            // Get tools in this zone
+            val toolsResult = coordinator.processUserAction("tools.list", mapOf("zone_id" to zoneId))
+            if (!toolsResult.isSuccess) {
+                LogManager.aiPrompt("Failed to get tools for zone $zoneId: ${toolsResult.error}", "WARN")
+                result.appendLine("Erreur lors du chargement des outils: ${toolsResult.error}")
+                return result.toString().trim()
+            }
+
+            val tools = toolsResult.data?.get("tool_instances") as? List<Map<String, Any>> ?: emptyList()
+            LogManager.aiPrompt("Found ${tools.size} tools in zone $zoneName")
+
+            result.appendLine("### Outils configurés")
+            result.appendLine()
+
+            if (tools.isEmpty()) {
+                result.appendLine("Aucun outil configuré dans cette zone.")
+            } else {
+                tools.forEach { tool ->
+                    val toolType = tool["tooltype"] as? String ?: "unknown"
+                    val toolName = tool["name"] as? String ?: "Outil sans nom"
+                    val toolConfig = tool["config"] as? String ?: "{}"
+
+                    result.appendLine("#### [$toolType] $toolName")
+                    result.appendLine("```json")
+                    result.appendLine(toolConfig)
+                    result.appendLine("```")
+                    result.appendLine()
+                }
+            }
+
+            LogManager.aiPrompt("ZONE_CONFIG completed for zone $zoneName with ${tools.size} tools")
+            result.toString().trim()
+
+        } catch (e: Exception) {
+            LogManager.aiPrompt("ZONE_CONFIG query exception: ${e.message}", "ERROR", e)
+            """
+                ## Configuration Zone
+                Exception lors du chargement : ${e.message}
+            """.trimIndent()
+        }
     }
 
     /**

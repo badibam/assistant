@@ -177,6 +177,16 @@ object PromptManager {
         )
 
         LogManager.aiPrompt("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})")
+
+        // Log complete final prompt with line breaks
+        LogManager.aiPrompt("""
+=== FINAL COMPLETE PROMPT ===
+
+$fullPrompt
+
+=== END FINAL PROMPT ===
+        """.trimIndent())
+
         return result
     }
 

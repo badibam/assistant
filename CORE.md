@@ -116,6 +116,8 @@ coordinator.processUserAction(), processAICommand(), processScheduledTask() avec
 
 ### Pattern d'utilisation du Coordinator - Référence
 ```kotlin
+import com.assistant.core.coordinator.isSuccess
+
 // Pattern basique avec gestion d'erreur
 val result = coordinator.processUserAction("resource.operation", mapOf(
     "param1" to value1,
