@@ -31,6 +31,9 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET isActive = 1 WHERE id = :sessionId")
     suspend fun activateSession(sessionId: String)
 
+    @Query("UPDATE ai_sessions SET lastActivity = :timestamp WHERE id = :sessionId")
+    suspend fun updateSessionActivity(sessionId: String, timestamp: Long)
+
     @Delete
     suspend fun deleteSession(session: AISessionEntity)
 

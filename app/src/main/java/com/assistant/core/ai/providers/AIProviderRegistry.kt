@@ -11,7 +11,7 @@ class AIProviderRegistry(private val context: Context) {
 
     // TODO: Load providers dynamically via discovery pattern
     private val providers = listOf<AIProvider>(
-        // ClaudeProvider(),
+        ClaudeProvider(), // Stub implementation for testing
         // OpenAIProvider(),
         // DeepSeekProvider()
     )
@@ -44,7 +44,8 @@ class AIProviderRegistry(private val context: Context) {
      */
     fun isProviderConfigured(providerId: String): Boolean {
         // TODO: Check if provider has valid configuration
-        return false // For now, no providers are configured
+        // Stub: Claude is always configured for testing
+        return providerId == "claude"
     }
 
     /**
@@ -60,7 +61,7 @@ class AIProviderRegistry(private val context: Context) {
     fun getActiveProviderId(): String? {
         // TODO: Load from app config
         LogManager.aiService("Getting active provider ID")
-        return null // For now, no active provider
+        return "claude" // Stub: Claude is default active provider for testing
     }
 
     /**

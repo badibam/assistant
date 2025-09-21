@@ -82,7 +82,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         return OperationResult.success(mapOf(
             "providerId" to providerId,
             "config" to mockConfig,
-            "isConfigured" to false, // Mock: no real config
+            "isConfigured" to (providerId == "claude"), // TODO: Check real config validation - stub for testing
             "isActive" to (providerId == "claude") // Mock: claude active by default
         ))
     }

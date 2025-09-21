@@ -5,6 +5,7 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultFormatSettings
+import com.assistant.core.database.entities.DefaultAILimitsSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
@@ -109,16 +110,56 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * AI Limits settings management with automatic defaults creation
+     */
+    private suspend fun getAILimitsSettings(): JSONObject {
+        LogManager.service("Getting AI limits settings from database")
+        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.AI_LIMITS)
+        return if (settingsJson != null) {
+            try {
+                LogManager.service("Found existing AI limits settings: $settingsJson")
+                JSONObject(settingsJson)
+            } catch (e: Exception) {
+                LogManager.service("Error parsing AI limits settings JSON: ${e.message}", "ERROR", e)
+                createDefaultAILimitsSettings()
+            }
+        } else {
+            LogManager.service("No AI limits settings found, creating defaults")
+            createDefaultAILimitsSettings()
+        }
+    }
+
+    private suspend fun createDefaultAILimitsSettings(): JSONObject {
+        LogManager.service("Creating default AI limits settings")
+        val defaultSettings = JSONObject(DefaultAILimitsSettings.JSON.trimIndent())
+        settingsDao.insertOrUpdateSettings(
+            AppSettingsCategory(
+                category = AppSettingCategories.AI_LIMITS,
+                settings = defaultSettings.toString()
+            )
+        )
+        LogManager.service("Default AI limits settings inserted: $defaultSettings")
+        return defaultSettings
+    }
+
+    /**
      * Generic utilities
      */
     suspend fun getCategorySettings(category: String): JSONObject? {
-        val settingsJson = settingsDao.getSettingsJsonForCategory(category)
-        return settingsJson?.let { 
-            try { 
-                JSONObject(it) 
-            } catch (e: Exception) { 
-                null 
-            } 
+        return when (category) {
+            AppSettingCategories.FORMAT -> getFormatSettings()
+            AppSettingCategories.AI_LIMITS -> getAILimitsSettings()
+            else -> {
+                // Generic fallback for unknown categories - no auto-creation
+                val settingsJson = settingsDao.getSettingsJsonForCategory(category)
+                settingsJson?.let {
+                    try {
+                        JSONObject(it)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
         }
     }
 
@@ -126,6 +167,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
         when (category) {
             AppSettingCategories.FORMAT -> {
                 settingsDao.updateSettings(category, DefaultFormatSettings.JSON.trimIndent())
+            }
+            AppSettingCategories.AI_LIMITS -> {
+                settingsDao.updateSettings(category, DefaultAILimitsSettings.JSON.trimIndent())
             }
             // Future categories handled here
         }
@@ -141,6 +185,11 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     AppSettingCategories.FORMAT -> {
                         val settings = getFormatSettings()
                         LogManager.service("Format settings retrieved: $settings")
+                        OperationResult.success(mapOf("settings" to settings.toMap()))
+                    }
+                    AppSettingCategories.AI_LIMITS -> {
+                        val settings = getAILimitsSettings()
+                        LogManager.service("AI limits settings retrieved: $settings")
                         OperationResult.success(mapOf("settings" to settings.toMap()))
                     }
                     else -> {

@@ -139,7 +139,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "session" to mapOf(
                     "id" to sessionEntity.id,
                     "name" to sessionEntity.name,
-                    "type" to sessionEntity.type,
+                    "type" to sessionEntity.type.name, // Convert enum to string
                     "providerId" to sessionEntity.providerId,
                     "providerSessionId" to sessionEntity.providerSessionId,
                     "createdAt" to sessionEntity.createdAt,
@@ -150,7 +150,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                     mapOf(
                         "id" to msg.id,
                         "timestamp" to msg.timestamp,
-                        "sender" to msg.sender,
+                        "sender" to msg.sender.name, // Convert enum to string
                         "richContentJson" to msg.richContentJson,
                         "textContent" to msg.textContent,
                         "aiMessageJson" to msg.aiMessageJson
@@ -217,7 +217,76 @@ class AISessionService(private val context: Context) : ExecutableService {
 
     private suspend fun createMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+
+        // Extract required parameters
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error("sessionId parameter required")
+        val senderString = params.optString("sender").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error("sender parameter required")
+        val timestamp = params.optLong("timestamp", System.currentTimeMillis())
+
+        // Parse sender enum
+        val sender = try {
+            MessageSender.valueOf(senderString)
+        } catch (e: Exception) {
+            return OperationResult.error("Invalid sender: $senderString")
+        }
+
+        LogManager.aiSession("Creating message: sessionId=$sessionId, sender=$sender, timestamp=$timestamp")
+
+        try {
+            val database = AIDatabase.getDatabase(context)
+            val messageId = UUID.randomUUID().toString()
+
+            // Extract content based on message type
+            val richContentJson = params.optString("richContent")?.takeIf { it.isNotEmpty() }
+            val textContent = params.optString("textContent")?.takeIf { it.isNotEmpty() }
+            val aiMessageJson = params.optString("aiMessageJson")?.takeIf { it.isNotEmpty() }
+
+            // TODO: For now, store richContent as simple text in richContentJson
+            // Later this should be proper RichMessage JSON serialization
+            val finalRichContentJson = when {
+                richContentJson != null -> {
+                    // TODO: Convert simple text to proper RichMessage JSON structure
+                    LogManager.aiSession("TODO: Convert richContent text to RichMessage JSON structure")
+                    """{"linearText":"$richContentJson","segments":[],"dataQueries":[]}"""
+                }
+                else -> null
+            }
+
+            // Create message entity
+            val messageEntity = SessionMessageEntity(
+                id = messageId,
+                sessionId = sessionId,
+                timestamp = timestamp,
+                sender = sender,
+                richContentJson = finalRichContentJson,
+                textContent = textContent,
+                aiMessageJson = aiMessageJson,
+                aiMessageParsedJson = null, // TODO: Parse AIMessage when implementing
+                systemMessageJson = null, // TODO: Implement system messages
+                executionMetadataJson = null // TODO: Implement automation metadata
+            )
+
+            // Insert message
+            database.aiDao().insertMessage(messageEntity)
+
+            // Update session last activity
+            database.aiDao().updateSessionActivity(sessionId, timestamp)
+
+            LogManager.aiSession("Successfully created message: $messageId for session $sessionId")
+
+            return OperationResult.success(mapOf(
+                "messageId" to messageId,
+                "sessionId" to sessionId,
+                "timestamp" to timestamp,
+                "sender" to sender.name
+            ))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to create message: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to create message: ${e.message}")
+        }
     }
 
     private suspend fun getMessage(params: JSONObject, token: CancellationToken): OperationResult {
