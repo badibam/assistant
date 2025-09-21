@@ -78,39 +78,39 @@ class EnrichmentSummarizer {
     }
 
     /**
-     * Generate DataQuery for prompt Level 4 inclusion
+     * Generate DataQueries for prompt Level 4 inclusion
+     * Returns multiple queries as enrichments can require both config and data
      */
-    fun generateQuery(type: EnrichmentType, config: String, isRelative: Boolean = false): DataQuery? {
-        LogManager.aiEnrichment("EnrichmentSummarizer.generateQuery() called with type=$type, isRelative=$isRelative")
+    fun generateQueries(type: EnrichmentType, config: String, isRelative: Boolean = false): List<DataQuery> {
+        LogManager.aiEnrichment("EnrichmentSummarizer.generateQueries() called with type=$type, isRelative=$isRelative")
 
         if (!shouldGenerateQuery(type, config)) {
             LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)")
-            return null
+            return emptyList()
         }
 
         return try {
             val configJson = JSONObject(config)
 
-            val query = when (type) {
-                EnrichmentType.POINTER -> generatePointerQuery(configJson, isRelative)
-                EnrichmentType.USE -> generateUseQuery(configJson, isRelative)
-                EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQuery(configJson, isRelative)
+            val queries = when (type) {
+                EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative)
+                EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
+                EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 else -> {
                     LogManager.aiEnrichment("No query generator for type $type")
-                    null
+                    emptyList()
                 }
             }
 
-            if (query != null) {
-                LogManager.aiEnrichment("Generated DataQuery: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}, params=${query.params}")
-            } else {
-                LogManager.aiEnrichment("Query generation returned null for $type")
+            LogManager.aiEnrichment("Generated ${queries.size} DataQueries for $type:")
+            queries.forEach { query ->
+                LogManager.aiEnrichment("  - id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
             }
 
-            query
+            queries
         } catch (e: Exception) {
-            LogManager.aiEnrichment("Failed to generate enrichment query: ${e.message}", "ERROR", e)
-            null
+            LogManager.aiEnrichment("Failed to generate enrichment queries: ${e.message}", "ERROR", e)
+            emptyList()
         }
     }
 
@@ -189,36 +189,119 @@ class EnrichmentSummarizer {
     // Query Generation
     // ========================================================================================
 
-    private fun generatePointerQuery(config: JSONObject, isRelative: Boolean): DataQuery {
-        LogManager.aiEnrichment("generatePointerQuery() called with isRelative=$isRelative")
+    private fun generatePointerQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+        LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative")
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
         val fieldSpecificData = config.optJSONObject("fieldSpecificData")
 
-        LogManager.aiEnrichment("POINTER query config: path='$path', selectionLevel='$selectionLevel'")
-
-        // Build query parameters based on selection level and data
-        val params = mutableMapOf<String, Any>()
+        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel'")
 
         // Extract zone and tool info from path
         val pathParts = path.split(".")
         LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}")
 
-        if (pathParts.size > 1) {
-            params["zone"] = pathParts[1]
-            LogManager.aiEnrichment("Added zone parameter: ${pathParts[1]}")
-        }
-        if (pathParts.size > 2) {
-            params["toolInstanceId"] = pathParts[2]
-            LogManager.aiEnrichment("Added toolInstanceId parameter: ${pathParts[2]}")
-        }
-        if (pathParts.size > 3) {
-            params["field"] = pathParts[3]
-            LogManager.aiEnrichment("Added field parameter: ${pathParts[3]}")
+        val queries = mutableListOf<DataQuery>()
+
+        when (selectionLevel) {
+            "ZONE" -> {
+                // Zone selected: config + stats
+                val zoneId = if (pathParts.size > 1) pathParts[1] else ""
+                if (zoneId.isNotEmpty()) {
+                    queries.add(DataQuery(
+                        id = buildQueryId("zone_config", mapOf("zoneId" to zoneId)),
+                        type = "ZONE_CONFIG",
+                        params = mapOf("zoneId" to zoneId),
+                        isRelative = isRelative
+                    ))
+                    queries.add(DataQuery(
+                        id = buildQueryId("zone_stats", mapOf("zoneId" to zoneId)),
+                        type = "ZONE_STATS",
+                        params = mapOf("zoneId" to zoneId),
+                        isRelative = isRelative
+                    ))
+                }
+            }
+            "INSTANCE" -> {
+                // Tool instance selected: config + data sample
+                val toolInstanceId = if (pathParts.size > 2) pathParts[2] else ""
+                if (toolInstanceId.isNotEmpty()) {
+                    val baseParams = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
+
+                    // Add temporal parameters if present
+                    addTemporalParams(baseParams, fieldSpecificData, isRelative)
+
+                    queries.add(DataQuery(
+                        id = buildQueryId("tool_config", baseParams),
+                        type = "TOOL_CONFIG",
+                        params = baseParams.toMap(),
+                        isRelative = isRelative
+                    ))
+                    queries.add(DataQuery(
+                        id = buildQueryId("tool_data_sample", baseParams),
+                        type = "TOOL_DATA_SAMPLE",
+                        params = baseParams.toMap(),
+                        isRelative = isRelative
+                    ))
+                }
+            }
+            "FIELD" -> {
+                // Field selected: specific field data
+                val toolInstanceId = if (pathParts.size > 2) pathParts[2] else ""
+                val field = if (pathParts.size > 3) pathParts[3] else ""
+                if (toolInstanceId.isNotEmpty() && field.isNotEmpty()) {
+                    val baseParams = mutableMapOf<String, Any>(
+                        "toolInstanceId" to toolInstanceId,
+                        "field" to field,
+                        "mode" to "sample_entries"
+                    )
+
+                    // Add temporal parameters if present
+                    addTemporalParams(baseParams, fieldSpecificData, isRelative)
+
+                    queries.add(DataQuery(
+                        id = buildQueryId("tool_data_field", baseParams),
+                        type = "TOOL_DATA_FIELD",
+                        params = baseParams.toMap(),
+                        isRelative = isRelative
+                    ))
+                }
+            }
         }
 
-        // Add temporal parameters if present
+        LogManager.aiEnrichment("Generated ${queries.size} POINTER queries for selectionLevel=$selectionLevel")
+        return queries
+    }
+
+    private fun generateUseQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+        LogManager.aiEnrichment("generateUseQueries() - STUB implementation")
+
+        // TODO: Implement USE enrichment multi-query generation
+        // Should return: [TOOL_CONFIG, TOOL_DATA_SAMPLE] for the tool instance
+        return emptyList()
+    }
+
+    private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+        LogManager.aiEnrichment("generateModifyConfigQueries() - STUB implementation")
+
+        // TODO: Implement MODIFY_CONFIG enrichment multi-query generation
+        // Should return: [TOOL_CONFIG] for the tool instance
+        return emptyList()
+    }
+
+    // ========================================================================================
+    // Utility Methods
+    // ========================================================================================
+
+    /**
+     * Add temporal parameters to query params if fieldSpecificData contains timestamps
+     */
+    private fun addTemporalParams(
+        params: MutableMap<String, Any>,
+        fieldSpecificData: JSONObject?,
+        isRelative: Boolean
+    ) {
         fieldSpecificData?.optJSONObject("timestampData")?.let { timestampData ->
             LogManager.aiEnrichment("Found timestamp data: $timestampData")
 
@@ -240,61 +323,7 @@ class EnrichmentSummarizer {
                 }
             }
         } ?: LogManager.aiEnrichment("No timestamp data found in fieldSpecificData")
-
-        // Generate unique query ID
-        val queryId = buildQueryId("pointer_data", params)
-        LogManager.aiEnrichment("Generated query ID: $queryId")
-
-        val query = DataQuery(
-            id = queryId,
-            type = "TOOL_DATA",
-            params = params,
-            isRelative = isRelative
-        )
-
-        LogManager.aiEnrichment("Created POINTER DataQuery: $query")
-        return query
     }
-
-    private fun generateUseQuery(config: JSONObject, isRelative: Boolean): DataQuery {
-        val toolInstanceId = config.optString("toolInstanceId", "")
-
-        val params = mapOf(
-            "toolInstanceId" to toolInstanceId,
-            "includeConfig" to true
-        )
-
-        val queryId = buildQueryId("use_tool", params)
-
-        return DataQuery(
-            id = queryId,
-            type = "TOOL_CONFIG",
-            params = params,
-            isRelative = isRelative
-        )
-    }
-
-    private fun generateModifyConfigQuery(config: JSONObject, isRelative: Boolean): DataQuery {
-        val toolInstanceId = config.optString("toolInstanceId", "")
-
-        val params = mapOf(
-            "toolInstanceId" to toolInstanceId,
-            "includeSchema" to true
-        )
-
-        val queryId = buildQueryId("modify_config", params)
-
-        return DataQuery(
-            id = queryId,
-            type = "TOOL_CONFIG",
-            params = params,
-            isRelative = isRelative
-        )
-    }
-
-    // ========================================================================================
-    // Utility Methods
-    // ========================================================================================
 
     private fun formatPeriodDescription(timestampData: JSONObject): String {
         val startTs = timestampData.optLong("startTimestamp", 0)

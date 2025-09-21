@@ -233,24 +233,23 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
     LogManager.aiEnrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
 
     // Compute dataQueries from enrichment blocks using EnrichmentSummarizer
-    val dataQueries = enrichmentBlocks.mapIndexedNotNull { index, block ->
+    val dataQueries = enrichmentBlocks.flatMapIndexed { index, block ->
         LogManager.aiEnrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
 
         try {
-            // Use EnrichmentSummarizer to check if block should generate query and create it
+            // Use EnrichmentSummarizer to check if block should generate queries and create them
             val isRelative = (sessionType == SessionType.AUTOMATION)
             LogManager.aiEnrichment("Calling EnrichmentSummarizer for block $index with isRelative=$isRelative")
 
-            val query = enrichmentSummarizer.generateQuery(block.type, block.config, isRelative)
-            if (query != null) {
-                LogManager.aiEnrichment("Block $index generated query: ${query.id}")
-            } else {
-                LogManager.aiEnrichment("Block $index generated no query")
+            val queries = enrichmentSummarizer.generateQueries(block.type, block.config, isRelative)
+            LogManager.aiEnrichment("Block $index generated ${queries.size} queries")
+            queries.forEach { query ->
+                LogManager.aiEnrichment("  - Query: ${query.id} (type: ${query.type})")
             }
-            query
+            queries
         } catch (e: Exception) {
-            LogManager.aiEnrichment("Failed to generate query for enrichment block $index: ${e.message}", "ERROR", e)
-            null // Skip invalid configs
+            LogManager.aiEnrichment("Failed to generate queries for enrichment block $index: ${e.message}", "ERROR", e)
+            emptyList() // Skip invalid configs
         }
     }
 
