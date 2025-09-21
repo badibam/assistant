@@ -16,6 +16,8 @@ object MainScreenSchemas {
         val s = Strings.`for`(context = context)
         return """
         {
+            "x-schema-id": "main_screen_config",
+            "x-schema-display-name": "${s.shared("main_screen_config_schema_display_name")}",
             "type": "object",
             "properties": {
                 "zone_display_mode": {

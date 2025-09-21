@@ -5,6 +5,10 @@
     <!-- Métadonnées -->
     <string name="display_name">Notes</string>
 
+    <!-- SCHEMAS - Display names for schema identification -->
+    <string name="schema_config_display_name"></string>
+    <string name="schema_data_display_name"></string>
+
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
     <string name="schema_data_name">Nom de l\'entrée de note</string>
     <string name="schema_data_timestamp">Horodatage de création de la note</string>

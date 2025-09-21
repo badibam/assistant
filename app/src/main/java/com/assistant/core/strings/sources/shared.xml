@@ -215,9 +215,15 @@
     <string name="tools_base_schema_data_created_at"></string>
     <string name="tools_base_schema_data_updated_at"></string>
 
+    <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
+    <string name="zone_config_schema_display_name"></string>
+    <string name="app_config_format_schema_display_name"></string>
+    <string name="main_screen_config_schema_display_name"></string>
+
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
     <string name="app_config_schema_format_week_start_day"></string>
     <string name="app_config_schema_format_day_start_hour"></string>
+    <string name="app_config_schema_format_locale_override"></string>
     <string name="app_config_schema_format_relative_label_limits"></string>
     <string name="app_config_schema_format_hour_limit"></string>
     <string name="app_config_schema_format_day_limit"></string>

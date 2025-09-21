@@ -17,6 +17,8 @@ object AppConfigSchemas {
         val s = Strings.`for`(context = context)
         return """
         {
+            "x-schema-id": "app_config_format",
+            "x-schema-display-name": "${s.shared("app_config_format_schema_display_name")}",
             "type": "object",
             "properties": {
                 "week_start_day": {

@@ -116,6 +116,15 @@
     <string name="error_entry_saving">Erreur lors de la sauvegarde</string>
     <string name="error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
     
+    <!-- SCHEMAS CONFIG - Display names for schema identification -->
+    <string name="schema_config_numeric_display_name"></string>
+    <string name="schema_config_timer_display_name"></string>
+    <string name="schema_config_choice_display_name"></string>
+    <string name="schema_config_scale_display_name"></string>
+    <string name="schema_config_counter_display_name"></string>
+    <string name="schema_config_boolean_display_name"></string>
+    <string name="schema_config_text_display_name"></string>
+
     <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
     <string name="schema_config_type"></string>
     <string name="schema_config_numeric_items"></string>
@@ -141,6 +150,14 @@
     <string name="schema_config_text_items"></string>
     <string name="schema_config_text_item_name"></string>
     
+    <!-- SCHEMAS DATA - Display names for schema identification -->
+    <string name="schema_data_numeric_display_name"></string>
+    <string name="schema_data_scale_display_name"></string>
+    <string name="schema_data_boolean_display_name"></string>
+    <string name="schema_data_choice_display_name"></string>
+    <string name="schema_data_counter_display_name"></string>
+    <string name="schema_data_timer_display_name"></string>
+
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
     <string name="schema_data_name"></string>
     <string name="schema_data_timestamp"></string>

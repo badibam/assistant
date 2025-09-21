@@ -16,6 +16,8 @@ object ZoneSchemas {
         val s = Strings.`for`(context = context)
         return """
         {
+            "x-schema-id": "zone_config",
+            "x-schema-display-name": "${s.shared("zone_config_schema_display_name")}",
             "type": "object",
             "properties": {
                 "name": {
