@@ -15,7 +15,10 @@ object NotesSchemas {
      * Notes uses only the base configuration (no tool-specific config parameters)
      */
     private val CONFIG_SCHEMA_TEMPLATE = """
-        {}
+        {
+            "x-schema-id": "notes_config",
+            "x-schema-display-name": "{{NOTES_CONFIG_SCHEMA_DISPLAY_NAME}}"
+        }
     """.trimIndent()
 
     /**
@@ -23,6 +26,8 @@ object NotesSchemas {
      */
     private val DATA_SCHEMA_TEMPLATE = """
         {
+            "x-schema-id": "notes_data",
+            "x-schema-display-name": "{{NOTES_DATA_SCHEMA_DISPLAY_NAME}}",
             "properties": {
                 "name": {
                     "type": "string",
@@ -63,7 +68,9 @@ object NotesSchemas {
      * Returns empty object as Notes has no tool-specific configuration
      */
     fun getConfigSchema(context: Context): String {
+        val s = Strings.`for`(tool = "notes", context = context)
         return CONFIG_SCHEMA_TEMPLATE
+            .replace("{{NOTES_CONFIG_SCHEMA_DISPLAY_NAME}}", s.tool("schema_config_display_name"))
     }
 
     /**
@@ -72,6 +79,7 @@ object NotesSchemas {
     fun getDataSchema(context: Context): String {
         val s = Strings.`for`(tool = "notes", context = context)
         return DATA_SCHEMA_TEMPLATE
+            .replace("{{NOTES_DATA_SCHEMA_DISPLAY_NAME}}", s.tool("schema_data_display_name"))
             .replace("{{DATA_NAME_DESC}}", s.tool("schema_data_name"))
             .replace("{{DATA_TIMESTAMP_DESC}}", s.tool("schema_data_timestamp"))
             .replace("{{DATA_DATA_DESC}}", s.tool("schema_data_data"))

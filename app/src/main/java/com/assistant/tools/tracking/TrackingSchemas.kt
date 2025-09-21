@@ -30,6 +30,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "numeric" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_numeric",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_NUMERIC_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -52,6 +54,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "timer" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_timer",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_TIMER_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -72,6 +76,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "choice" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_choice",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_CHOICE_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "options": {
                                 "type": "array",
@@ -91,6 +97,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "scale" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_scale",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_SCALE_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -115,6 +123,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "counter" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_counter",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_COUNTER_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -140,6 +150,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "boolean" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_boolean",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_BOOLEAN_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -162,6 +174,8 @@ object TrackingSchemas {
                         "properties": { "type": { "const": "text" } }
                     },
                     "then": {
+                        "x-schema-id": "tracking_config_text",
+                        "x-schema-display-name": "{{TRACKING_CONFIG_TEXT_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "items": {
                                 "type": "array",
@@ -212,6 +226,8 @@ object TrackingSchemas {
                         }
                     },
                     "then": {
+                        "x-schema-id": "tracking_data_numeric",
+                        "x-schema-display-name": "{{TRACKING_DATA_NUMERIC_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "data": {
                                 "properties": {
@@ -235,6 +251,8 @@ object TrackingSchemas {
                         }
                     },
                     "then": {
+                        "x-schema-id": "tracking_data_scale",
+                        "x-schema-display-name": "{{TRACKING_DATA_SCALE_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "data": {
                                 "properties": {
@@ -261,6 +279,8 @@ object TrackingSchemas {
                         }
                     },
                     "then": {
+                        "x-schema-id": "tracking_data_boolean",
+                        "x-schema-display-name": "{{TRACKING_DATA_BOOLEAN_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "data": {
                                 "properties": {
@@ -286,6 +306,8 @@ object TrackingSchemas {
                     },
                     "then": {
                         "properties": {
+                        "x-schema-id": "tracking_data_choice",
+                        "x-schema-display-name": "{{TRACKING_DATA_CHOICE_SCHEMA_DISPLAY_NAME}}",
                             "data": {
                                 "properties": {
                                     "type": { "const": "choice" },
@@ -312,6 +334,8 @@ object TrackingSchemas {
                         }
                     },
                     "then": {
+                        "x-schema-id": "tracking_data_counter",
+                        "x-schema-display-name": "{{TRACKING_DATA_COUNTER_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "data": {
                                 "properties": {
@@ -334,6 +358,8 @@ object TrackingSchemas {
                         }
                     },
                     "then": {
+                        "x-schema-id": "tracking_data_timer",
+                        "x-schema-display-name": "{{TRACKING_DATA_TIMER_SCHEMA_DISPLAY_NAME}}",
                         "properties": {
                             "data": {
                                 "properties": {

@@ -7,10 +7,10 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 
 ### Flow principal
 ```
-User message → AIOrchestrator → PromptManager → AIClient → Response processing
-              ↕                ↕
-          AISessionService   AIProviderConfigService
-          (via coordinator)  (via coordinator)
+User message → AIOrchestrator → PromptManager → QueryExecutor → AIClient
+              ↕                ↕             ↕
+          AISessionService   QueryDeduplicator  AIProviderConfigService
+          (via coordinator)                     (via coordinator)
 ```
 
 ### Session types
@@ -28,8 +28,9 @@ User message → AIOrchestrator → PromptManager → AIClient → Response proc
 **Classes métier pures (logique sans DB) :**
 - `AIOrchestrator` : Orchestration complète du flow IA
 - `AIClient` : Interface vers providers AI externes
-- `PromptManager` : Génération prompts 4 niveaux
-- `QueryExecutor` : Résolution queries pour prompts
+- `PromptManager` : Génération prompts 4 niveaux avec queries unifiées
+- `QueryExecutor` : Exécution queries tous niveaux avec déduplication cross-niveaux
+- `QueryDeduplicator` : Déduplication queries par hash et inclusion métier
 
 ### AIOrchestrator (orchestrateur central)
 ```kotlin
@@ -147,35 +148,56 @@ data class AIMessage(
 ### DataQuery (dual mode)
 ```kotlin
 data class DataQuery(
-    val id: String,              // "type.param1_value1.param2_value2"
-    val type: String,            // Query type (ZONE_DATA, TOOL_ENTRIES, etc.)
+    val id: String,              // Hash déterministe de (type + params + isRelative)
+    val type: String,            // Query type standardisé (voir types disponibles)
     val params: Map<String, Any>, // Paramètres absolus ou relatifs
     val isRelative: Boolean = false // true pour automation, false pour chat
 )
 ```
 
-## 4. Système de prompts
+**Types de queries unifiés :**
+- **SYSTEM_SCHEMAS**, **SYSTEM_DOC**, **APP_CONFIG** (Level 1)
+- **USER_TOOLS_CONTEXT** (Level 2)
+- **APP_STATE** (Level 3)
+- **ZONE_CONFIG**, **ZONE_STATS** (Level 4)
+- **TOOL_CONFIG**, **TOOL_DATA_FULL**, **TOOL_DATA_SAMPLE**, **TOOL_DATA_FIELD**, **TOOL_STATS** (Level 4)
 
-### Architecture 4 niveaux (logique révisée)
-- **Level 1** : Documentation système (stable) - Rôle IA, commandes disponibles
-- **Level 2** : Contexte utilisateur (généré dynamiquement) - Outils avec `include_in_ai_context: true`
-- **Level 3** : État app (moyennement stable) - Zones/outils actuels, permissions
-- **Level 4** : Données session (stockées) - Enrichissements + données correspondantes
+## 4. Système de prompts unifié
 
-### Level 2 vs Level 4 - Différence cruciale
+### Architecture 4 niveaux avec QueryExecutor
+- **Level 1** : Documentation + schémas système (SYSTEM_SCHEMAS, SYSTEM_DOC, APP_CONFIG)
+- **Level 2** : Contexte utilisateur dynamique (USER_TOOLS_CONTEXT)
+- **Level 3** : État app complet (APP_STATE)
+- **Level 4** : Enrichissements session (ZONE_CONFIG, TOOL_DATA_SAMPLE, etc.)
 
-**Level 2 queries :**
-- **Générées dynamiquement** à chaque prompt par `PromptManager.buildUserContext()`
-- Basées sur les outils actuels avec `include_in_ai_context: true`
-- **Jamais stockées** en session
+### Déduplication cross-niveaux
+**Principe** : QueryExecutor déduplique incrémentalement niveau par niveau
+```kotlin
+// Déduplication incrémentale préservant l'ordre
+level1Content = queryExecutor.executeQueries(level1Queries, "Level1")
+level2Content = queryExecutor.executeQueries(level2Queries, "Level2", previousQueries = level1Queries)
+level3Content = queryExecutor.executeQueries(level3Queries, "Level3", previousQueries = level1Queries + level2Queries)
+level4Content = queryExecutor.executeQueries(level4Queries, "Level4", previousQueries = level1Queries + level2Queries + level3Queries)
+```
 
-**Level 4 queries :**
-- **Stockées en session** dans `AISessionEntity.level4QueriesJson`
-- Enrichissements spécifiques ajoutés par l'utilisateur
-- Persistent durant toute la session
+**Mécanismes de déduplication :**
+1. **Hash identité** : Queries identiques supprimées (premier occurrence gardée)
+2. **Inclusion métier** : Queries plus générales incluent spécifiques (stub)
+3. **Schémas identiques** : Post-résolution par `x-schema-id`
 
-### Principe fondamental
-**Aucun cache interne** - Prompt rebuilé à chaque requête, cache géré par providers API.
+### Système de schémas avec déduplication
+**Config vs Data schemas :**
+- **CONFIG** : Schémas conditionnels simples avec `x-schema-id` par type
+- **DATA** : Schémas conditionnels complexes avec `x-schema-id` par résolution
+
+**Format uniforme :**
+```json
+{
+  "x-schema-id": "tracking_data_numeric",
+  "x-schema-display-name": "{{TRACKING_DATA_NUMERIC_SCHEMA_DISPLAY_NAME}}",
+  "properties": { ... }
+}
+```
 
 ### Dual mode résolution
 **CHAT** (`isRelative = false`) :
@@ -196,25 +218,29 @@ Validation pré-envoi :
 - **CHAT** : Dialogue confirmation si dépassement
 - **AUTOMATION** : Refus automatique
 
-## 5. Enrichissements
-
-Référence complète : `SPECS_ENRICHMENTS.md`
+## 5. Enrichissements multi-queries
 
 ### Types et génération queries
-- **🔍 POINTER** - Référencer données → Génère query si importance != 'optionnelle'
-- **📝 USE** - Modifier données outils → Génère query (config instance)
+- **🔍 POINTER** - Référencer données → Multi-queries selon niveau sélection
+- **📝 USE** - Modifier données outils → Multi-queries (stub)
 - **✨ CREATE** - Créer éléments → Pas de query (orientation seulement)
-- **🔧 MODIFY_CONFIG** - Config outils → Génère query (config instance)
+- **🔧 MODIFY_CONFIG** - Config outils → Multi-queries (stub)
 
 ### EnrichmentSummarizer
 ```kotlin
 class EnrichmentSummarizer {
     fun generateSummary(type: EnrichmentType, config: String): String
-    fun generateQuery(type: EnrichmentType, config: String, isRelative: Boolean): DataQuery?
+    fun generateQueries(type: EnrichmentType, config: String, isRelative: Boolean): List<DataQuery>
 }
 ```
 
-Transformation automatique : `EnrichmentBlock` → `DataQuery` selon importance et type.
+### Logique POINTER multi-queries
+**Selon niveau de sélection ZoneScopeSelector :**
+- **ZONE** → `[ZONE_CONFIG, ZONE_STATS]`
+- **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
+- **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
+
+Transformation automatique : `EnrichmentBlock` → `List<DataQuery>` selon niveau et importance.
 
 ## 6. Providers
 
@@ -256,8 +282,8 @@ fun UI.RichComposer(
 Fonctionnalités :
 - Textarea + enrichment blocks
 - Configuration via dialogs overlay
-- Génération automatique `linearText` et `dataQueries`
-- Integration `EnrichmentSummarizer`
+- Génération automatique `linearText` et `dataQueries` multi-queries
+- Integration `EnrichmentSummarizer.generateQueries()`
 
 ### AIFloatingChat
 Interface 100% écran avec header + messages + composer. Orchestration complète via `AIOrchestrator`.
