@@ -114,9 +114,9 @@ fun UI.RichComposer(
             UI.ActionButton(
                 action = ButtonAction.CONFIRM, // Use CONFIRM for send action
                 onClick = {
-                    LogManager.coordination("RichComposer Send button clicked with ${segments.size} segments")
+                    LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
                     val richMessage = createRichMessage(segments, sessionType)
-                    LogManager.coordination("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataQueries.size} queries")
+                    LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataQueries.size} queries")
                     onSend(richMessage)
                 }
             )
@@ -130,15 +130,15 @@ fun UI.RichComposer(
             existingConfig = null, // TODO: Handle editing existing blocks
             onDismiss = { showEnrichmentDialog = null },
             onConfirm = { config, preview ->
-                LogManager.enrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
+                LogManager.aiEnrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
 
                 // Use EnrichmentSummarizer to generate proper summary if preview is empty or generic
                 val enrichmentSummarizer = EnrichmentSummarizer()
                 val finalPreview = if (preview.isBlank() || preview == "${getEnrichmentIcon(type)} Configuration") {
-                    LogManager.coordination("Using EnrichmentSummarizer to generate preview for $type")
+                    LogManager.aiEnrichment("Using EnrichmentSummarizer to generate preview for $type")
                     enrichmentSummarizer.generateSummary(type, config)
                 } else {
-                    LogManager.coordination("Using provided preview for $type: '$preview'")
+                    LogManager.aiEnrichment("Using provided preview for $type: '$preview'")
                     preview
                 }
 
@@ -148,10 +148,10 @@ fun UI.RichComposer(
                     preview = finalPreview
                 )
 
-                LogManager.coordination("Created EnrichmentBlock: type=$type, preview='$finalPreview', config='$config'")
+                LogManager.aiEnrichment("Created EnrichmentBlock: type=$type, preview='$finalPreview', config='$config'")
 
                 val newSegments = segments + newBlock
-                LogManager.coordination("Updated segments count: ${segments.size} -> ${newSegments.size}")
+                LogManager.aiEnrichment("Updated segments count: ${segments.size} -> ${newSegments.size}")
                 onSegmentsChange(newSegments)
                 showEnrichmentDialog = null
             },
@@ -214,7 +214,7 @@ private fun EnrichmentBlockPreview(
  * Uses EnrichmentSummarizer for proper query generation according to specs
  */
 private fun createRichMessage(segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
-    LogManager.coordination("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
+    LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
 
     val enrichmentSummarizer = EnrichmentSummarizer()
 
@@ -226,37 +226,37 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
         }
     }.trim()
 
-    LogManager.coordination("Generated linearText: '$linearText'")
+    LogManager.aiEnrichment("Generated linearText: '$linearText'")
 
     // Count enrichment blocks for logging
     val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
-    LogManager.enrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
+    LogManager.aiEnrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
 
     // Compute dataQueries from enrichment blocks using EnrichmentSummarizer
     val dataQueries = enrichmentBlocks.mapIndexedNotNull { index, block ->
-        LogManager.enrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
+        LogManager.aiEnrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
 
         try {
             // Use EnrichmentSummarizer to check if block should generate query and create it
             val isRelative = (sessionType == SessionType.AUTOMATION)
-            LogManager.coordination("Calling EnrichmentSummarizer for block $index with isRelative=$isRelative")
+            LogManager.aiEnrichment("Calling EnrichmentSummarizer for block $index with isRelative=$isRelative")
 
             val query = enrichmentSummarizer.generateQuery(block.type, block.config, isRelative)
             if (query != null) {
-                LogManager.coordination("Block $index generated query: ${query.id}")
+                LogManager.aiEnrichment("Block $index generated query: ${query.id}")
             } else {
-                LogManager.coordination("Block $index generated no query")
+                LogManager.aiEnrichment("Block $index generated no query")
             }
             query
         } catch (e: Exception) {
-            LogManager.enrichment("Failed to generate query for enrichment block $index: ${e.message}", "ERROR", e)
+            LogManager.aiEnrichment("Failed to generate query for enrichment block $index: ${e.message}", "ERROR", e)
             null // Skip invalid configs
         }
     }
 
-    LogManager.enrichment("Generated ${dataQueries.size} DataQueries from ${enrichmentBlocks.size} enrichment blocks")
+    LogManager.aiEnrichment("Generated ${dataQueries.size} DataQueries from ${enrichmentBlocks.size} enrichment blocks")
     dataQueries.forEachIndexed { index, query ->
-        LogManager.enrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
+        LogManager.aiEnrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
     }
 
     val richMessage = RichMessage(
@@ -265,7 +265,7 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
         dataQueries = dataQueries
     )
 
-    LogManager.coordination("Created RichMessage with linearText='$linearText' and ${dataQueries.size} queries")
+    LogManager.aiEnrichment("Created RichMessage with linearText='$linearText' and ${dataQueries.size} queries")
     return richMessage
 }
 

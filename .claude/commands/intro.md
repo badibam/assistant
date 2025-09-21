@@ -15,11 +15,12 @@ allowed-tools: Read
 - @TOOLS.md
 - @UI.md
 - @DATA.md
+- @AI.md
 
 # Tu vas aussi lire les fichiers suivants :
 $ARGUMENTS
 
-# Tu vas également regarder les commits récents pour comprendre où en est le développement.
+# Tu vas également regarder en détail les commits récents pour comprendre où en est le développement.
 
 # Règles d'or:
 - Ne fais jamais d'hypothèses sur ce que je pense ou ressens. Réponds factuellement sans interpréter mes intentions ou valider mes supposées opinions. Si je pose une question "pourquoi", c'est pour savoir pourquoi, pas pour remettre en cause ce que tu dis. Affirme-toi et assume tes choix s'il te plaît. N'hésite pas à me contredire. Vraiment.

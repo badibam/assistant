@@ -52,59 +52,14 @@ cd assistant
 ./gradlew assembleDebug
 ```
 
-## Structure du Code
-
-```
-app/src/main/java/com/assistant/
-├── core/                           # Architecture centrale
-│   ├── ai/                         # Système IA (future intégration)
-│   │   └── prompts/                # Templates de prompts
-│   ├── commands/                   # Système de commandes
-│   ├── coordinator/                # CommandDispatcher et orchestration
-│   ├── database/                   # Event sourcing et entités
-│   │   ├── dao/                    # Data Access Objects  
-│   │   └── entities/               # Entités core (zones, tools, etc.)
-│   ├── schemas/                    # Schémas JSON pour validation
-│   ├── services/                   # Services core (Zone, Tool, AppConfig, etc.)
-│   ├── strings/                    # Système d'internationalisation
-│   │   └── sources/                # Sources XML des strings
-│   ├── themes/                     # Système de thèmes core
-│   ├── tools/                      # Discovery et métadonnées d'outils
-│   │   └── ui/                     # Composants UI génériques pour outils
-│   ├── ui/                         # Interface utilisateur centrale
-│   │   ├── components/             # Composants UI réutilisables
-│   │   ├── schemas/                # Schémas UI pour formulaires
-│   │   └── Screens/                # Écrans principaux (Main, Zone, Create)
-│   ├── update/                     # Système de mise à jour
-│   ├── utils/                      # Utilitaires (formatting, locale)
-│   ├── validation/                 # SchemaValidator V3
-│   └── versioning/                 # Migrations et gestion versions
-├── tools/                          # Outils spécialisés
-│   └── tracking/                   # Tool type Suivi
-│       ├── handlers/               # Types de données (numeric, text, etc.)
-│       ├── timer/                  # Système timer intégré
-│       └── ui/                     # Interface tracking spécifique
-│           └── components/         # Composants tracking dédiés
-└── themes/                         # Thèmes visuels
-    ├── default/                    # Thème par défaut
-    │   └── icons/                  # Icônes vectorielles thème
-    └── dflt/                       # Thème alternatif
-        └── icons/                  # Icônes vectorielles alternatives
-
-app/src/main/res/                   # Ressources Android
-├── drawable/                       # Ressources graphiques
-├── mipmap-*/                       # Icônes app (densités)
-├── values/                         # Strings, couleurs, dimensions
-└── xml/                           # Configurations XML
-```
-
-
 ## Documentation Technique
 
 - **CORE.md** : Architecture système, coordination, services
 - **DATA.md** : Navigation hiérarchique, validation, patterns de données
 - **UI.md** : Composants interface, formulaires, thèmes
 - **TOOLS.md** : Architecture des outils
+- **AI.md** : Architecture du système IA
+
 
 
 ## État du développement

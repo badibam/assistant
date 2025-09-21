@@ -2,521 +2,177 @@
 
 Guide des patterns et composants UI pour maintenir cohérence et simplicité.
 
-## ═══════════════════════════════════
 ## Architecture Hybride
 
 **Layouts** : Compose natif (Row, Column, Box, Spacer)
-**Visuels** : Composants UI.* (Button, Text, Card, FormField)  
+**Visuels** : Composants UI.* (Button, Text, Card, FormField)
 **Métier** : Composants spécialisés (ZoneCard, ToolCard)
 
 ### Layout Standard
-
-```kotlin
-Column(
-    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
-) {
-    // Contenu avec espacement automatique 16dp
-}
-```
+Column avec fillMaxWidth, padding vertical 16dp et espacement automatique entre éléments.
 
 ### Headers de Page
+UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies.
 
-```kotlin
-UI.PageHeader(
-    title = "Configuration",
-    subtitle = "Paramètres du suivi", // optionnel
-    icon = "activity",                 // optionnel
-    leftButton = ButtonAction.BACK,
-    rightButton = ButtonAction.ADD,
-    onLeftClick = onBack,
-    onRightClick = onAdd
-)
-```
-
-## ═══════════════════════════════════
 ## Système de Texte Simplifié
 
 ### UI.Text - 4 paramètres maximum
-
-```kotlin
-UI.Text(
-    text: String,
-    type: TextType,                // TITLE, SUBTITLE, BODY, LABEL, SMALL
-    fillMaxWidth: Boolean = false, // Largeur complète
-    textAlign: TextAlign? = null   // Alignement optionnel
-)
-```
+Accepte text, type (TITLE, SUBTITLE, BODY, LABEL, SMALL), fillMaxWidth et textAlign optionnel.
 
 ### Séparation Layout/Contenu
-
-```kotlin
-// Pattern weight avec Box wrapper
-Row {
-    UI.Text("Label", TextType.BODY)
-    Box(modifier = Modifier.weight(1f)) {
-        UI.Text("Contenu", TextType.BODY, fillMaxWidth = true, textAlign = TextAlign.Center)
-    }
-}
-
-// Pattern padding avec Box
-Box(modifier = Modifier.padding(8.dp)) {
-    UI.Text("Texte", TextType.BODY)
-}
-
-// Pattern clickable avec Box
-Box(modifier = Modifier.clickable { navigate() }) {
-    UI.Text("Menu", TextType.BODY)  
-}
-```
-
 **Principe** : UI.Text pour le rendu, Box+Modifier pour layout et interactions.
+- Pattern weight avec Box wrapper pour répartition d'espace
+- Pattern padding avec Box pour espacement
+- Pattern clickable avec Box pour interactions
 
 ### Pattern Row Standardisé
+Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
+- Colonnes avec weight + Box pour alignement précis
+- **Usage** : Tableaux, listes avec actions, formulaires multi-colonnes
 
-```kotlin
-// Pattern espacement uniforme
-Row(
-    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-    verticalAlignment = Alignment.CenterVertically
-) {
-    // Colonnes avec weight + Box pour alignement précis
-    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { 
-        UI.ActionButton(action = ButtonAction.UP, display = ButtonDisplay.ICON, size = Size.S)
-    }
-    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { 
-        UI.ActionButton(action = ButtonAction.DOWN, display = ButtonDisplay.ICON, size = Size.S)
-    }
-    Box(modifier = Modifier.weight(4f)) { 
-        UI.CenteredText("Contenu principal", TextType.BODY)
-    }
-}
-```
-
-**Usage** : Tableaux, listes avec actions, formulaires multi-colonnes  
-**Espacement** : `spacedBy(8.dp)` standard entre colonnes  
-**Padding** : `vertical = 4.dp` pour les rows de tableaux
-
-## ═══════════════════════════════════
 ## Boutons et Actions
 
 ### Deux Types de Boutons
 
-**UI.Button** - Générique et flexible :
-```kotlin
-UI.Button(
-    type = ButtonType.PRIMARY,     // PRIMARY, SECONDARY, DEFAULT
-    size = Size.M,                 // XS, S, M, L, XL, XXL
-    state = ComponentState.NORMAL, // NORMAL, ERROR, DISABLED
-    onClick = { },
-    content = { UI.Text("Custom", TextType.LABEL) }
-)
-```
+**UI.Button** - Générique et flexible avec type (PRIMARY/SECONDARY/DEFAULT), size (XS à XXL), state et content personnalisé.
 
-**UI.ActionButton** - Actions standardisées :
-```kotlin
-UI.ActionButton(
-    action = ButtonAction.SAVE,     // Actions prédéfinies
-    display = ButtonDisplay.LABEL,  // ICON ou LABEL
-    size = Size.M,
-    requireConfirmation = false,    // Dialogue automatique
-    onClick = handleSave
-)
-```
+**UI.ActionButton** - Actions standardisées avec action prédéfinie, display (ICON/LABEL), size et confirmation optionnelle.
 
 ### Actions Disponibles
-
-**Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM
-**Navigation** : BACK, UP, DOWN
-**Utilitaires** : ADD, EDIT, CONFIGURE, REFRESH, SELECT
+- **Principales** : SAVE, CREATE, UPDATE, DELETE, CANCEL, CONFIRM
+- **Navigation** : BACK, UP, DOWN
+- **Utilitaires** : ADD, EDIT, CONFIGURE, REFRESH, SELECT
 
 ### Hiérarchie Visuelle
-
-**PRIMARY** : Actions critiques/importantes (vert terminal)
-- SAVE, CREATE, CONFIRM, ADD, CONFIGURE, SELECT, EDIT, UPDATE
-- Usage : Actions qui créent, modifient ou valident du contenu
-
-**DEFAULT** : Actions neutres/navigation (gris moyen distinct)  
-- CANCEL, BACK, REFRESH, UP, DOWN
-- Usage : Navigation et actions sans impact sur les données
-
-**SECONDARY** : Actions destructives (rouge sombre)
-- DELETE uniquement
-- Usage : Actions irréversibles nécessitant attention
+- **PRIMARY** (vert) : Actions critiques - SAVE, CREATE, CONFIRM, ADD, CONFIGURE, SELECT, EDIT, UPDATE
+- **DEFAULT** (gris) : Navigation neutre - CANCEL, BACK, REFRESH, UP, DOWN
+- **SECONDARY** (rouge) : Actions destructives - DELETE uniquement
 
 ### Confirmation Automatique
+UI.ActionButton supporte requireConfirmation avec message personnalisable.
 
-```kotlin
-UI.ActionButton(
-    action = ButtonAction.DELETE,
-    requireConfirmation = true,
-    confirmMessage = "Supprimer \"${item}\" ?", // optionnel
-    onClick = handleDelete // appelé APRÈS confirmation
-)
-```
-
-## ═══════════════════════════════════
 ## Champs de Texte et Saisie
 
 ### Extensions FieldType
-
-```kotlin
-// Limites automatiques selon le contexte
-UI.FormField(
-    fieldType = FieldType.TEXT,           // 60 chars - noms, identifiants, labels
-    fieldType = FieldType.TEXT_MEDIUM,    // 250 chars - descriptions, valeurs tracking texte  
-    fieldType = FieldType.TEXT_LONG,      // 1500 chars - contenu libre long
-    fieldType = FieldType.TEXT_UNLIMITED, // Aucune limite - documentation, exports
-    fieldType = FieldType.NUMERIC,        // Clavier numérique
-    fieldType = FieldType.EMAIL,          // Clavier email, pas d'autocorrect
-    fieldType = FieldType.PASSWORD,       // Masqué, pas d'autocorrect
-    fieldType = FieldType.SEARCH          // Autocorrect + action search
-)
-```
+- **TEXT** (60 chars) : Noms, identifiants, labels
+- **TEXT_MEDIUM** (250 chars) : Descriptions, valeurs tracking texte
+- **TEXT_LONG** (1500 chars) : Contenu libre long
+- **TEXT_UNLIMITED** : Documentation, exports
+- **NUMERIC** : Clavier numérique
+- **EMAIL** : Clavier email, pas d'autocorrect
+- **PASSWORD** : Masqué, pas d'autocorrect
+- **SEARCH** : Autocorrect + action loupe
 
 ### Autocorrection Intelligente
+- **TEXT** : Words + autocorrect
+- **TEXT_MEDIUM/LONG** : Sentences + autocorrect
+- **EMAIL/PASSWORD** : Pas d'autocorrect (sécurité)
+- **NUMERIC** : Clavier numérique uniquement
+- **SEARCH** : Words + action loupe
 
-**TEXT** : Words + autocorrect (noms, identifiants)  
-**TEXT_MEDIUM/LONG** : Sentences + autocorrect (contenu utilisateur)  
-**EMAIL/PASSWORD** : Pas d'autocorrect (sécurité/précision)  
-**NUMERIC** : Clavier numérique uniquement  
-**SEARCH** : Words + action loupe
-
-### Mapping Contexte → FieldType
-
-**Identifiants** : `FieldType.TEXT` (60) - Noms zones, outils, items  
-**Descriptions** : `FieldType.TEXT_MEDIUM` (250) - Descriptions outils  
-**Valeurs tracking texte** : `FieldType.TEXT_MEDIUM` (250) - Observations utilisateur  
-**Documentation** : `FieldType.TEXT_LONG` (1500) - Aide, notes longues
-
-## ═══════════════════════════════════
 ## Formulaires et Validation
 
 ### Toast d'Erreurs Automatique
-
-```kotlin
-errorMessage?.let { message ->
-    LaunchedEffect(message) {
-        UI.Toast(context, message, Duration.LONG)
-        errorMessage = null
-    }
-}
-```
+Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'erreur.
 
 ### Validation Pré-Envoi (Dialogs)
-
-**Pattern** : Validation avant envoi au service via SchemaValidator
-
-```kotlin
-// State validation
-var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
-
-// Fonction validation
-fun validateForm() {
-    val toolType = ToolTypeManager.getToolType("tooltype")
-    if (toolType != null) {
-        val entryData = mapOf(/* données comme service attend */)
-        validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
-    }
-}
-
-// Usage dans onConfirm
-onConfirm = {
-    validateForm()
-    if (validationResult.isValid) {
-        // Envoyer au service
-    } else {
-        errorMessage = validationResult.errorMessage
-    }
-}
-```
+**Pattern** : Validation avant envoi au service via SchemaValidator. State validationResult, fonction validateForm(), usage dans onConfirm avec vérification isValid.
 
 ### Composants Formulaire
 
-**UI.FormField** - Champ standard :
-```kotlin
-UI.FormField(
-    label = "Nom de la zone",
-    value = name,
-    onChange = { name = it },
-    fieldType = FieldType.TEXT,        // TEXT, NUMERIC, EMAIL, PASSWORD, SEARCH
-    required = true,                   // "(optionnel)" si false
-    state = ComponentState.NORMAL,     // Gestion erreur automatique
-    readonly = false,
-    onClick = null                     // Pour champs cliquables
-)
-```
+**UI.FormField** - Champ standard avec label, value, onChange, fieldType, required, state, readonly et onClick optionnel.
 
-**UI.FormSelection** - Sélections :
-```kotlin
-UI.FormSelection(
-    label = "Mode d'affichage",
-    options = listOf("Minimal", "Étendu", "Carré"),
-    selected = displayMode,
-    onSelect = { displayMode = it },
-    required = true
-)
-```
+**UI.FormSelection** - Sélections avec label, options, selected, onSelect et required.
 
-**UI.FormActions** - Boutons standardisés :
-```kotlin
-UI.FormActions {
-    UI.ActionButton(action = ButtonAction.SAVE, onClick = handleSave)
-    UI.ActionButton(action = ButtonAction.CANCEL, onClick = onCancel)
-    
-    if (isEditing) {
-        UI.ActionButton(
-            action = ButtonAction.DELETE,
-            requireConfirmation = true,
-            onClick = handleDelete
-        )
-    }
-}
-```
+**UI.FormActions** - Container standardisé pour boutons de formulaire avec ActionButton (SAVE, CANCEL, DELETE conditionnel).
 
-## ═══════════════════════════════════
 ## Cards et Conteneurs
 
 ### Cards Pleine Largeur
-
-```kotlin
-UI.Card(type = CardType.DEFAULT) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        // Contenu avec padding interne 16dp
-    }
-}
-```
+UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne 16dp.
 
 ### Titres et Sections
+- **Titre principal** : UI.Text avec TextType.TITLE, fillMaxWidth et textAlign Center
+- **Titre section** : UI.Text avec TextType.SUBTITLE dans Box avec padding horizontal
 
-```kotlin
-// Titre principal écran (centré)
-UI.Text("Titre", TextType.TITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
-
-// Titre section hors card (padding horizontal)
-Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-    UI.Text("Section", TextType.SUBTITLE)
-}
-```
-
-## ═══════════════════════════════════
 ## Changements d'Orientation
 
-### Pour conserver états lors de rotation écran
-
-```kotlin
-// ❌ État perdu  
-var showDialog by remember { mutableStateOf(false) }
-
-// ✅ État conservé
-var showDialog by rememberSaveable { mutableStateOf(false) }
-```
+### Conservation d'État
+- **rememberSaveable** : Pour navigation, sélections, formulaires (survit rotation)
+- **remember** : Pour loading, données auto-rechargées
 
 ### Pattern ID pour objets complexes
+Sauvegarder l'ID plutôt que l'objet complet, puis retrouver l'objet via find().
 
-```kotlin
-// Sauvegarder l'ID, pas l'objet
-var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
-val selectedZone = zones.find { it.id == selectedZoneId }
-
-// Usage
-onClick = { selectedZoneId = zone.id }
-```
-
-**rememberSaveable pour** : navigation, sélections, formulaires
-**remember pour** : loading, données auto-rechargées
-
-## ═══════════════════════════════════
 ## Tableaux et Listes
 
 ### Pattern Weight pour Tableaux
-
-```kotlin
-Row(modifier = Modifier.fillMaxWidth()) {
-    // Colonnes fixes
-    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-        UI.ActionButton(
-            action = ButtonAction.UP, 
-            display = ButtonDisplay.ICON, 
-            size = Size.XS
-        )
-    }
-    
-    // Colonnes flexibles  
-    Box(modifier = Modifier.weight(4f).padding(8.dp)) {
-        UI.Text("Nom de l'item", TextType.BODY)
-    }
-}
-```
+Row avec fillMaxWidth, colonnes en Box avec weight pour répartition (ex: 1f pour actions, 4f pour contenu), contentAlignment Center pour boutons.
 
 ### Composants Métier Spécialisés
 
-```kotlin
-// Zone card avec logique métier intégrée
-UI.ZoneCard(
-    zone = zone,
-    onClick = { navigateToZone(zone.id) },
-    contentDescription = "Zone ${zone.name}"
-)
+**UI.ZoneCard** - Zone avec logique métier intégrée, onClick et contentDescription.
 
-// Tool instance avec modes d'affichage
-UI.ToolCard(
-    tool = toolInstance,
-    displayMode = DisplayMode.EXTENDED, // ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE, FULL
-    onClick = { openTool(tool.id) },
-    onLongClick = { showToolMenu(tool.id) }
-)
-```
+**UI.ToolCard** - Tool instance avec displayMode (ICON, MINIMAL, LINE, CONDENSED, EXTENDED, SQUARE, FULL), onClick et onLongClick.
 
-## ═══════════════════════════════════
 ## Navigation et États
 
 ### Navigation Conditionnelle
-
-```kotlin
-var showCreateZone by remember { mutableStateOf(false) }
-
-if (showCreateZone) {
-    CreateZoneScreen(onCancel = { showCreateZone = false })
-} else {
-    // Écran principal
-}
-```
-
-**Avantage** : Simple, pas de NavController pour cas basiques.
+Pattern if/else avec state boolean pour navigation simple sans NavController.
 
 ### Feedback Utilisateur
+UI.Toast avec context, message et Duration (SHORT/LONG) pour messages temporaires.
 
-```kotlin
-// Messages temporaires
-UI.Toast(context, "Configuration sauvegardée", Duration.SHORT)
-UI.Toast(context, "Erreur réseau", Duration.LONG)
-// Note: Snackbar avec actions à implémenter plus tard si nécessaire
-```
-
-## ═══════════════════════════════════
 ## Thèmes et Personnalisation
 
 ### Palette Personnalisée
-
-Le système de thème utilise une palette de couleurs personnalisée branchée sur Material Design.
-
-**Formes** : Définies au niveau thème pour boutons et cards
-**Couleurs** : Palette Material adaptée aux couleurs personnalisées
-**Typography** : Cohérente via TextType enum
+Système de thème avec palette personnalisée branchée sur Material Design.
+- **Formes** : Définies au niveau thème pour boutons et cards
+- **Couleurs** : Palette Material adaptée
+- **Typography** : Cohérente via TextType enum
 
 ### Espacement Standard
+- **Entre sections** : spacedBy(16.dp)
+- **Vertical screens** : padding(vertical = 16.dp)
+- **Cards internes** : padding(16.dp)
+- **Sections hors cards** : padding(horizontal = 16.dp)
 
-- **Entre sections** : `spacedBy(16.dp)`
-- **Vertical screens** : `padding(vertical = 16.dp)`  
-- **Cards internes** : `padding(16.dp)`
-- **Sections hors cards** : `padding(horizontal = 16.dp)`
-
-## ═══════════════════════════════════
 ## Pattern Loading/Error Standard
 
 ### États Obligatoires
-```kotlin
-var data by remember { mutableStateOf<DataType?>(null) }
-var isLoading by remember { mutableStateOf(true) }
-var errorMessage by remember { mutableStateOf<String?>(null) }
-```
+States data, isLoading et errorMessage obligatoires pour tous composants async.
 
 ### Affichage Conditionnel
-```kotlin
-// Early return pour loading
-if (isLoading) {
-    UI.Text(s.shared("tools_loading"), TextType.BODY)
-    return
-}
-
-// Toast automatique pour erreurs
-errorMessage?.let { message ->
-    LaunchedEffect(message) {
-        UI.Toast(context, message, Duration.LONG)
-        errorMessage = null
-    }
-}
-```
+- Early return si isLoading avec UI.Text loading
+- Toast automatique pour erreurs avec LaunchedEffect et reset
 
 ### INTERDIT : Valeurs par défaut silencieuses
-```kotlin
-// ❌ MAUVAIS - masque les erreurs
-Period.now(PeriodType.DAY, 0, "monday")
+Toujours vérifier config != null avant utilisation, pas de valeurs par défaut qui masquent les erreurs.
 
-// ✅ BON - erreur explicite
-if (config == null) return
-Period.now(PeriodType.DAY, config.dayStartHour, config.weekStartDay)
-```
-
-## ═══════════════════════════════════
 ## Sélection Temporelle
 
 ### Composants de Période
 
-**SinglePeriodSelector** - Navigation périodique avec flèches :
-```kotlin
-UI.SinglePeriodSelector(
-    period = currentPeriod,
-    onPeriodChange = { newPeriod -> currentPeriod = newPeriod },
-    showDatePicker = false,           // true = label cliquable pour datepicker
-    useOnlyRelativeLabels = false     // true = force labels relatifs
-)
-```
+**SinglePeriodSelector** - Navigation périodique avec flèches, period, onPeriodChange, showDatePicker et useOnlyRelativeLabels.
 
-**PeriodRangeSelector** - Sélection de plages temporelles :
-```kotlin
-UI.PeriodRangeSelector(
-    startPeriodType = PeriodType.DAY,
-    startPeriod = startPeriod,
-    startCustomDate = null,
-    endPeriodType = PeriodType.DAY,
-    endPeriod = endPeriod,
-    endCustomDate = null,
-    onStartTypeChange = { type -> /* ... */ },
-    onStartPeriodChange = { period -> /* ... */ },
-    useOnlyRelativeLabels = false     // Contexte chat/automation
-)
-```
+**PeriodRangeSelector** - Sélection de plages temporelles avec start/end PeriodType, periods, customDates, callbacks et useOnlyRelativeLabels.
 
 ### Logique Labels Relatifs vs Absolus
+**useOnlyRelativeLabels** :
+- `false` (défaut) : "Semaine du 15 mars" (navigation claire)
+- `true` : "il y a 125 semaines" (automation)
 
-**Paramètre `useOnlyRelativeLabels`** :
-- `false` (défaut) : "Semaine du 15 mars" pour navigation claire
-- `true` : "il y a 125 semaines" pour cohérence automation
-
-**Contextes d'usage** :
-- **Chat IA** : `useOnlyRelativeLabels = false` → Timestamps absolus
-- **Automation IA** : `useOnlyRelativeLabels = true` → Périodes relatives
+**Contextes** : Chat IA (false), Automation IA (true)
 
 ### Gestion Configuration App
-
-Les composants chargent automatiquement :
-- `dayStartHour` : Heure de début de journée
-- `weekStartDay` : Jour de début de semaine
-
-**Période de fin** : Extension `Period.getEndTimestamp(dayStartHour, weekStartDay)` calcule la fin exacte d'une période.
+Chargement automatique dayStartHour et weekStartDay. Extension getEndTimestamp() pour fin de période.
 
 ### Utilitaires Période
+Functions normalizeTimestampWithConfig(), getEndTimestamp(), getNextPeriod(), getPreviousPeriod().
 
-```kotlin
-// Normalisation début de période
-val startTimestamp = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, weekStartDay)
-
-// Fin de période (dernière milliseconde)
-val endTimestamp = period.getEndTimestamp(dayStartHour, weekStartDay)
-
-// Navigation périodes
-val nextPeriod = getNextPeriod(currentPeriod, dayStartHour, weekStartDay)
-val prevPeriod = getPreviousPeriod(currentPeriod, dayStartHour, weekStartDay)
-```
-
-## ═══════════════════════════════════
 ## Règles d'Usage
 
 ### À Faire
-
 - **ActionButton** pour actions standard (SAVE, DELETE, BACK)
 - **UI.Button** pour textes dynamiques et contenu complexe
 - **FormActions** pour tous boutons de formulaire
@@ -526,9 +182,8 @@ val prevPeriod = getPreviousPeriod(currentPeriod, dayStartHour, weekStartDay)
 - **rememberSaveable** pour navigation (rotation safe)
 
 ### À Éviter
-
 - Mélanger ActionButton et UI.Button dans même écran
-- Boutons Row/Column manuels au lieu de FormActions  
+- Boutons Row/Column manuels au lieu de FormActions
 - Layout modifiers directement sur UI.Text
 - Valeurs par défaut qui masquent erreurs de config
 - Strings hardcodées (toujours s.shared/s.tool)
