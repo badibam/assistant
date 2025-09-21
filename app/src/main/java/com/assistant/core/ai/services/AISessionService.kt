@@ -44,6 +44,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "create_session" -> createSession(params, token)
                 "get_session" -> getSession(params, token)
                 "get_active_session" -> getActiveSession(params, token)
+                "stop_active_session" -> stopActiveSession(params, token)
                 "list_sessions" -> listSessions(params, token)
                 "update_session" -> updateSession(params, token)
                 "delete_session" -> deleteSession(params, token)
@@ -264,6 +265,29 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to get active session: ${e.message}", "ERROR", e)
             return OperationResult.error("Failed to get active session: ${e.message}")
+        }
+    }
+
+    private suspend fun stopActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        LogManager.aiSession("Stopping active session (deactivating all sessions)")
+
+        try {
+            val database = AIDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Deactivate all sessions
+            dao.deactivateAllSessions()
+
+            LogManager.aiSession("Successfully stopped active session")
+            return OperationResult.success(mapOf(
+                "sessionsDeactivated" to true
+            ))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to stop active session: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to stop active session: ${e.message}")
         }
     }
 

@@ -369,6 +369,20 @@ class AIOrchestrator(private val context: Context) {
     }
 
     /**
+     * Stop current active session (deactivate all sessions)
+     */
+    suspend fun stopActiveSession(): OperationResult {
+        LogManager.aiSession("AIOrchestrator.stopActiveSession() called")
+
+        val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
+        return if (result.isSuccess) {
+            OperationResult.success()
+        } else {
+            OperationResult.error(result.error ?: "Failed to stop active session")
+        }
+    }
+
+    /**
      * Set active session via coordinator
      */
     suspend fun setActiveSession(sessionId: String): OperationResult {

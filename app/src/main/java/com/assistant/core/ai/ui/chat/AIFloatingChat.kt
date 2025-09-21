@@ -48,7 +48,7 @@ fun AIFloatingChat(
     // Initialize session on first load
     LaunchedEffect(Unit) {
         try {
-            // Check for active session first, create one if none exists
+            // Check for existing active session only, don't create one yet
             val existingSession = aiOrchestrator.getActiveSession()
 
             if (existingSession != null) {
@@ -56,16 +56,13 @@ fun AIFloatingChat(
                 activeSession = existingSession
                 LogManager.aiUI("AIFloatingChat reusing active session: ${existingSession.id}")
             } else {
-                // Create new session if none exists
-                val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
-                aiOrchestrator.setActiveSession(sessionId)
-                val session = aiOrchestrator.loadSession(sessionId)
-                activeSession = session
-                LogManager.aiUI("AIFloatingChat created new session: $sessionId")
+                // No active session - will be created on first message send
+                activeSession = null
+                LogManager.aiUI("AIFloatingChat opened without active session - will create on first message")
             }
         } catch (e: Exception) {
-            LogManager.aiUI("Failed to initialize AI session: ${e.message}", "ERROR")
-            errorMessage = "Failed to initialize chat session"
+            LogManager.aiUI("Failed to check for active session: ${e.message}", "ERROR")
+            errorMessage = "Failed to check chat session"
         }
     }
 
@@ -89,10 +86,27 @@ fun AIFloatingChat(
             ) {
                 // Header
                 ChatHeader(
-                    sessionName = activeSession?.name ?: "Loading...",
+                    sessionName = activeSession?.name ?: "New Chat",
                     isActive = activeSession?.isActive ?: false,
                     isLoading = isLoading,
-                    onClose = onDismiss
+                    onClose = onDismiss,
+                    onStopSession = {
+                        scope.launch {
+                            try {
+                                val result = aiOrchestrator.stopActiveSession()
+                                if (result.success) {
+                                    activeSession = null
+                                    LogManager.aiUI("Session stopped successfully")
+                                } else {
+                                    LogManager.aiUI("Failed to stop session: ${result.error}", "ERROR")
+                                    errorMessage = result.error
+                                }
+                            } catch (e: Exception) {
+                                LogManager.aiUI("Error stopping session: ${e.message}", "ERROR")
+                                errorMessage = "Failed to stop session"
+                            }
+                        }
+                    }
                 )
 
                 // Messages area (scrollable)
@@ -121,13 +135,24 @@ fun AIFloatingChat(
                                 LogManager.aiUI("RichMessage.linearText: '${richMessage.linearText}'")
                                 LogManager.aiUI("RichMessage.dataQueries: ${richMessage.dataQueries.size} queries")
 
-                                activeSession?.let { session ->
-                                    scope.launch {
-                                        isLoading = true
-                                        errorMessage = null
+                                scope.launch {
+                                    isLoading = true
+                                    errorMessage = null
 
-                                        try {
-                                            // Send via AISessionManager (complete flow)
+                                    try {
+                                        // Get or create session
+                                        val sessionToUse = activeSession ?: run {
+                                            // Create new session on first message
+                                            LogManager.aiUI("Creating new session for first message")
+                                            val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
+                                            aiOrchestrator.setActiveSession(sessionId)
+                                            val newSession = aiOrchestrator.loadSession(sessionId)
+                                            activeSession = newSession
+                                            newSession
+                                        }
+
+                                        sessionToUse?.let { session ->
+                                            // Send via AIOrchestrator (complete flow)
                                             val result = aiOrchestrator.sendMessage(richMessage, session.id)
 
                                             if (result.success) {
@@ -140,16 +165,16 @@ fun AIFloatingChat(
                                                 errorMessage = result.error
                                                 LogManager.aiUI("Failed to send message: ${result.error}", "ERROR")
                                             }
-                                        } catch (e: Exception) {
-                                            errorMessage = "Failed to send message: ${e.message}"
-                                            LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
-                                        } finally {
-                                            isLoading = false
+                                        } ?: run {
+                                            errorMessage = "Failed to create session"
+                                            LogManager.aiUI("Failed to create or get session", "ERROR")
                                         }
+                                    } catch (e: Exception) {
+                                        errorMessage = "Failed to send message: ${e.message}"
+                                        LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
+                                    } finally {
+                                        isLoading = false
                                     }
-                                } ?: run {
-                                    errorMessage = "No active session"
-                                    LogManager.aiUI("Cannot send message: no active session", "ERROR")
                                 }
                             },
                             placeholder = s.shared("ai_composer_placeholder")
@@ -179,7 +204,8 @@ private fun ChatHeader(
     sessionName: String,
     isActive: Boolean,
     isLoading: Boolean,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onStopSession: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -189,9 +215,12 @@ private fun ChatHeader(
         subtitle = when {
             isLoading -> "Processing..."
             isActive -> "Ready"
+            sessionName == "New Chat" -> "Send a message to start"
             else -> "Inactive"
         },
-        rightButton = ButtonAction.CANCEL, // Use cancel for close
+        leftButton = if (isActive) ButtonAction.DELETE else null, // Stop session button (only if active)
+        rightButton = ButtonAction.CANCEL, // Close chat button
+        onLeftClick = if (isActive) onStopSession else null,
         onRightClick = onClose
     )
 }
