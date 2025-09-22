@@ -43,11 +43,10 @@ class AIOrchestrator(private val context: Context) {
 ```
 
 **Flow complet orchestré :**
-1. Ajouter enrichments Level 4 (validation tokens)
-2. Stocker message utilisateur via `AISessionService`
-3. Builder prompt via `PromptManager`
-4. Envoyer à `AIClient`
-5. Traiter réponse et stocker via `AISessionService`
+1. Stocker message utilisateur via `AISessionService`
+2. Builder prompt via `PromptManager` (extraction Level 4 depuis historique)
+3. Envoyer à `AIClient`
+4. Traiter réponse et stocker via `AISessionService`
 
 ### AISessionService (ExecutableService)
 ```kotlin
@@ -168,7 +167,7 @@ data class DataQuery(
 - **Level 1** : Documentation + schémas système (SYSTEM_SCHEMAS, SYSTEM_DOC, APP_CONFIG)
 - **Level 2** : Contexte utilisateur dynamique (USER_TOOLS_CONTEXT)
 - **Level 3** : État app complet (APP_STATE)
-- **Level 4** : Enrichissements session (ZONE_CONFIG, TOOL_DATA_SAMPLE, etc.)
+- **Level 4** : Enrichissements session (extraits de l'historique des messages)
 
 ### Déduplication cross-niveaux
 **Principe** : QueryExecutor déduplique incrémentalement niveau par niveau
@@ -218,7 +217,7 @@ Validation pré-envoi :
 - **CHAT** : Dialogue confirmation si dépassement
 - **AUTOMATION** : Refus automatique
 
-## 5. Enrichissements multi-queries
+## 5. Enrichissements et Event Sourcing Level 4
 
 ### Types et génération queries
 - **🔍 POINTER** - Référencer données → Multi-queries selon niveau sélection
@@ -240,7 +239,7 @@ class EnrichmentSummarizer {
 - **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
 - **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
 
-Transformation automatique : `EnrichmentBlock` → `List<DataQuery>` selon niveau et importance. Ces queries sont stockées dans le message utilisateur et réutilisées depuis l'historique pour les prompts suivants.
+**Event sourcing Level 4** : `EnrichmentBlock` → `List<DataQuery>` stockées dans richContent.dataQueries des messages USER. PromptManager.getLevel4Queries() extrait chronologiquement depuis l'historique des messages (USER richContent.dataQueries + AI aiMessage.dataRequests).
 
 ## 6. Providers
 
@@ -300,7 +299,13 @@ sealed class CommunicationModule {
 
 ## 8. Base de données
 
-### AISessionEntity (schéma final)
+### Migration vers AppDatabase
+Les entités AI sont intégrées dans AppDatabase principale (plus de AIDatabase standalone) :
+- AISessionEntity dans AppDatabase avec AITypeConverters
+- SessionMessageEntity dans AppDatabase
+- Cohérence avec l'architecture Room unifiée
+
+### AISessionEntity (schéma simplifié)
 ```kotlin
 @Entity(tableName = "ai_sessions")
 data class AISessionEntity(
@@ -316,4 +321,4 @@ data class AISessionEntity(
 )
 ```
 
-**Note importante :** Les Level 4 queries (enrichissements) sont extraites de l'historique des messages utilisateur lors de la génération des prompts.
+**Event sourcing Level 4** : Plus de stockage level4QueriesJson. Les enrichissements sont extraits de l'historique des messages par PromptManager.getLevel4Queries() en préservant l'ordre chronologique.
