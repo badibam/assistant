@@ -24,15 +24,13 @@ import androidx.room.Index
         Index(value = ["tool_instance_id"]),
         Index(value = ["timestamp"]),
         Index(value = ["tooltype"]),
-        Index(value = ["tool_instance_id", "timestamp"]),
-        Index(value = ["tooltype", "data_version"])
+        Index(value = ["tool_instance_id", "timestamp"])
     ]
 )
 data class ToolDataEntity(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "tool_instance_id") val toolInstanceId: String,
     @ColumnInfo(name = "tooltype") val tooltype: String,
-    @ColumnInfo(name = "data_version") val dataVersion: Int = 1,
     @ColumnInfo(name = "timestamp") val timestamp: Long?,
     @ColumnInfo(name = "name") val name: String?,
     @ColumnInfo(name = "data") val data: String,

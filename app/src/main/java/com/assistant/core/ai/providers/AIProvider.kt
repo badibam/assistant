@@ -9,7 +9,7 @@ import com.assistant.core.validation.SchemaProvider
  * Extends SchemaProvider for unified validation with existing architecture
  *
  * Each provider implements this interface to provide AI query capabilities
- * Configuration validation handled via SchemaValidator.validate(provider, config, context, "config")
+ * Configuration validation handled via SchemaValidator.validate(schema, configData, context)
  */
 interface AIProvider : SchemaProvider {
 
@@ -25,7 +25,6 @@ interface AIProvider : SchemaProvider {
 
     /**
      * Configuration UI for this provider
-     * Uses SchemaProvider.getConfigSchema() for validation
      */
     @Composable
     fun getConfigScreen(config: String, onSave: (String) -> Unit)
@@ -34,11 +33,4 @@ interface AIProvider : SchemaProvider {
      * Send query to AI provider
      */
     suspend fun query(prompt: String, config: String): AIResponse
-
-    // SchemaProvider provides:
-    // - getConfigSchema(): String (JSON Schema for provider config)
-    // - getDataSchema(): String? (null for providers - no data schema needed)
-    // - getFormFieldName(String): String (field name translations)
-
-    // Validation handled via: SchemaValidator.validate(provider, configData, context, "config")
 }

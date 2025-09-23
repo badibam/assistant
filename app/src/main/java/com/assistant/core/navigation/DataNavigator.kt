@@ -101,17 +101,23 @@ class DataNavigator(private val context: Context) {
                 return emptyList()
             }
 
-            // Résolution du schéma data selon config actuelle
-            val dataSchema = toolType.getSchema("data", context)
-            if (dataSchema == null) {
-                LogManager.coordination("No data schema found for toolType: ${toolInstance.toolType}", "WARN")
+            // Récupérer le data_schema_id directement depuis la config
+            val configMap = parseJsonToMap(toolInstance.config)
+            val dataSchemaId = configMap["data_schema_id"]?.toString()
+
+            if (dataSchemaId.isNullOrEmpty()) {
+                LogManager.coordination("No data_schema_id found in config for tool $toolInstanceId", "WARN")
                 return emptyList()
             }
-            val configMap = parseJsonToMap(toolInstance.config)
-            val resolvedSchema = SchemaResolver.resolve(dataSchema, configMap)
+
+            val dataSchema = toolType.getSchema(dataSchemaId, context)
+            if (dataSchema == null) {
+                LogManager.coordination("No data schema found for schemaId: $dataSchemaId", "WARN")
+                return emptyList()
+            }
 
             LogManager.coordination("Resolved data schema for tool $toolInstanceId")
-            return parseSchemaToFieldNodes(resolvedSchema, "tools.$toolInstanceId")
+            return parseSchemaToFieldNodes(dataSchema.content, "tools.$toolInstanceId")
 
         } catch (e: Exception) {
             LogManager.coordination("Error getting field children for $toolInstanceId: ${e.message}", "ERROR", e)

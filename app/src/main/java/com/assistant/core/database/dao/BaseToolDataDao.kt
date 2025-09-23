@@ -6,13 +6,6 @@ import androidx.room.Query
 import androidx.room.Update
 import com.assistant.core.database.entities.ToolDataEntity
 
-/**
- * Data class for getTooltypeMinVersions query result
- */
-data class TooltypeVersion(
-    val tooltype: String,
-    val min_version: Int
-)
 
 /**
  * Base DAO for common operations on tool_data
@@ -93,10 +86,4 @@ abstract class BaseToolDataDao {
     @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
     abstract suspend fun getByToolInstancePaginated(toolInstanceId: String, limit: Int, offset: Int): List<ToolDataEntity>
 
-    /**
-     * Retrieves minimum data versions by tooltype
-     * Used to determine which tooltypes need migration
-     */
-    @Query("SELECT tooltype, MIN(data_version) as min_version FROM tool_data GROUP BY tooltype")
-    abstract suspend fun getTooltypeMinVersions(): List<TooltypeVersion>
 }

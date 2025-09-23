@@ -17,14 +17,6 @@ import com.assistant.core.commands.CommandStatus
  * Extensions pour l'intégration du DataNavigator avec l'architecture existante
  */
 
-/**
- * Extension pour ToolTypeContract : récupération du schéma data résolu
- * ARCHITECTURE CORRECTE: Le ToolType gère sa propre logique de résolution
- */
-fun ToolTypeContract.getDataSchemaResolved(configJson: String, context: Context): String? {
-    // Use the new getResolvedDataSchema method - only ToolType knows its resolution logic
-    return getResolvedDataSchema(configJson, context)
-}
 
 /**
  * Helper pour parser JSON vers Map
@@ -245,8 +237,12 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
 
         LogManager.schema("✅ DATA_FIELDS: Found ToolType: ${toolType::class.simpleName}")
 
-        // Use resolved schema with real config_json
-        val schemaString = toolType.getResolvedDataSchema(toolInstanceInfo.configJson, context)
+        // Use data schema from config
+        val configMap = parseJsonToMap(toolInstanceInfo.configJson)
+        val dataSchemaId = configMap["data_schema_id"]?.toString()
+        val schemaString = if (dataSchemaId != null) {
+            toolType.getSchema(dataSchemaId, context)?.content
+        } else null
         LogManager.schema("🔍 DATA_FIELDS: Schema string length: ${schemaString?.length ?: 0}")
         if (schemaString.isNullOrBlank()) {
             LogManager.schema("❌ DATA_FIELDS: No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
@@ -341,8 +337,12 @@ suspend fun DataNavigator.getFieldChildrenFromCommonStructure(toolPath: String, 
             return@withContext emptyList()
         }
 
-        // Use resolved schema with real config_json
-        val schemaString = toolType.getResolvedDataSchema(toolInstanceInfo.configJson, context)
+        // Use data schema from config
+        val configMap = parseJsonToMap(toolInstanceInfo.configJson)
+        val dataSchemaId = configMap["data_schema_id"]?.toString()
+        val schemaString = if (dataSchemaId != null) {
+            toolType.getSchema(dataSchemaId, context)?.content
+        } else null
         if (schemaString.isNullOrBlank()) {
             LogManager.schema("No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
             return@withContext emptyList()

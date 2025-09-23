@@ -284,8 +284,15 @@ fun TrackingEntryDialog(
         
         val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
         if (toolType != null) {
-            LogManager.tracking("DataSchema being used: ${toolType.getDataSchema(context)?.take(200)}...")
-            validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
+            val schemaId = "tracking_data_$trackingType"
+            val schema = toolType.getSchema(schemaId, context)
+            if (schema != null) {
+                LogManager.tracking("DataSchema being used: ${schema.content.take(200)}...")
+                validationResult = SchemaValidator.validate(schema, entryData, context)
+            } else {
+                LogManager.tracking("ERROR: Schema not found for type: $trackingType", "ERROR")
+                validationResult = ValidationResult.error("Schema not found for type: $trackingType")
+            }
         } else {
             validationResult = ValidationResult.error("Tool type 'tracking' not found")
         }

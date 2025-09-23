@@ -8,6 +8,9 @@ import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.strings.Strings
+import com.assistant.core.validation.Schema
+import com.assistant.core.validation.SchemaCategory
+import com.assistant.core.validation.FieldLimits
 import com.assistant.tools.notes.ui.NotesConfigScreen
 import com.assistant.tools.notes.ui.NotesScreen
 import org.json.JSONObject
@@ -36,25 +39,102 @@ object NotesToolType : ToolTypeContract {
         }
         """.trimIndent()
 
-        return BaseSchemas.mergeDefaultConfigs(
-            BaseSchemas.getBaseDefaultConfig(),
-            notesSpecificConfig
-        )
+        return notesSpecificConfig
     }
 
-    override fun getConfigSchema(context: Context): String {
-        // Combine base schema with notes-specific schema from external object
-        return BaseSchemas.createExtendedSchema(
+    override fun getSchema(schemaId: String, context: Context): Schema? {
+        return when (schemaId) {
+            "notes_config" -> createNotesConfigSchema(context)
+            "notes_data" -> createNotesDataSchema(context)
+            else -> null
+        }
+    }
+
+    override fun getAllSchemaIds(): List<String> {
+        return listOf("notes_config", "notes_data")
+    }
+
+    override fun getFormFieldName(fieldName: String, context: Context): String {
+        val s = Strings.`for`(tool = "notes", context = context)
+        return when (fieldName) {
+            "content" -> s.tool("field_content")
+            "position" -> s.tool("field_position")
+            else -> BaseSchemas.getCommonFieldName(fieldName, context) ?: fieldName
+        }
+    }
+
+    private fun createNotesConfigSchema(context: Context): Schema {
+        val s = Strings.`for`(tool = "notes", context = context)
+
+        val content = BaseSchemas.createExtendedSchema(
             BaseSchemas.getBaseConfigSchema(context),
-            NotesSchemas.getConfigSchema(context)
+            """
+            {
+                "properties": {},
+                "required": []
+            }
+            """.trimIndent()
+        )
+
+        return Schema(
+            id = "notes_config",
+            displayName = s.tool("schema_config_display_name"),
+            description = s.tool("schema_config_description"),
+            category = SchemaCategory.TOOL_CONFIG,
+            content = content
         )
     }
 
-    override fun getDataSchema(context: Context): String? {
-        // Combine base schema with notes-specific schema from external object
-        return BaseSchemas.createExtendedSchema(
+    private fun createNotesDataSchema(context: Context): Schema {
+        val s = Strings.`for`(tool = "notes", context = context)
+
+        val specificSchema = """
+        {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "const": "Note",
+                    "description": "${s.tool("schema_data_name")}"
+                },
+                "timestamp": {
+                    "type": "number",
+                    "description": "${s.tool("schema_data_timestamp")}"
+                },
+                "data": {
+                    "type": "object",
+                    "description": "${s.tool("schema_data_data")}",
+                    "properties": {
+                        "content": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": ${FieldLimits.LONG_LENGTH},
+                            "description": "${s.tool("schema_data_content")}"
+                        },
+                        "position": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "${s.tool("schema_data_position")}"
+                        }
+                    },
+                    "required": ["content"],
+                    "additionalProperties": false
+                }
+            },
+            "required": ["name", "timestamp", "data"]
+        }
+        """.trimIndent()
+
+        val content = BaseSchemas.createExtendedSchema(
             BaseSchemas.getBaseDataSchema(context),
-            NotesSchemas.getDataSchema(context)
+            specificSchema
+        )
+
+        return Schema(
+            id = "notes_data",
+            displayName = s.tool("schema_data_display_name"),
+            description = s.tool("schema_data_description"),
+            category = SchemaCategory.TOOL_DATA,
+            content = content
         )
     }
 
@@ -124,51 +204,4 @@ object NotesToolType : ToolTypeContract {
         )
     }
 
-    override fun getDatabaseMigrations(): List<Migration> {
-        return emptyList() // Migrations handled by core
-    }
-
-    override fun migrateConfig(fromVersion: Int, configJson: String): String {
-        return when (fromVersion) {
-            1 -> {
-                // Example: Config migration v1 → v2 (if needed in future)
-                configJson // No migration needed for now
-            }
-            else -> configJson // No known migration
-        }
-    }
-
-    // ═══ Data Migration Capabilities ═══
-    override fun getCurrentDataVersion(): Int = 1
-
-    override fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String {
-        return when (fromVersion) {
-            // No upgrades needed for v1
-            else -> rawData // No migration needed
-        }
-    }
-
-    /**
-     * Get user-friendly field name for display
-     * @param fieldName The technical field name (e.g., "content")
-     * @param context Android context for string resource access
-     * @return User-friendly field name for display (e.g., "Contenu")
-     */
-    override fun getFormFieldName(fieldName: String, context: Context?): String {
-        // Context should always be provided by ValidationErrorProcessor
-        if (context == null) throw IllegalArgumentException("Context required for internationalized field names")
-
-        val s = Strings.`for`(tool = "notes", context = context)
-
-        // Try common fields for all tooltypes first
-        val commonFieldName = BaseSchemas.getCommonFieldName(fieldName, context)
-        if (commonFieldName != null) return commonFieldName
-
-        // Then notes-specific fields
-        return when(fieldName) {
-            "content" -> s.tool("field_content")
-            "position" -> s.tool("field_position")
-            else -> s.tool("field_unknown")
-        }
-    }
 }

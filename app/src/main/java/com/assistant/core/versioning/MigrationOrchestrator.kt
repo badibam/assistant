@@ -25,21 +25,7 @@ class MigrationOrchestrator(private val context: Context) {
         // Core migrations first
         migrations.addAll(getCoreMigrations())
         
-        // Tool migrations discovered in alphabetical order for consistency
-        try {
-            val allToolTypes = ToolTypeManager.getAllToolTypes().values
-            allToolTypes.sortedBy { it.getDisplayName(context) }.forEach { toolType ->
-                try {
-                    val toolMigrations = toolType.getDatabaseMigrations()
-                    migrations.addAll(toolMigrations)
-                } catch (e: Exception) {
-                    // Log the error but continue with other tools
-                    LogManager.database("Error retrieving migrations for ${toolType.getDisplayName(context)}: ${e.message}", "ERROR", e)
-                }
-            }
-        } catch (e: Exception) {
-            LogManager.database("Error during tool migration discovery: ${e.message}", "ERROR", e)
-        }
+        // Tool migrations no longer supported - all migrations are core migrations only
         
         // Final sort by start version to ensure order
         return migrations
@@ -70,7 +56,6 @@ class MigrationOrchestrator(private val context: Context) {
                         id TEXT PRIMARY KEY NOT NULL,
                         tool_instance_id TEXT NOT NULL,
                         tooltype TEXT NOT NULL,
-                        data_version INTEGER NOT NULL DEFAULT 1,
                         timestamp INTEGER,
                         name TEXT,
                         data TEXT NOT NULL,
@@ -79,13 +64,12 @@ class MigrationOrchestrator(private val context: Context) {
                         FOREIGN KEY (tool_instance_id) REFERENCES tool_instances(id) ON DELETE CASCADE
                     )
                 """.trimIndent())
-                
+
                 // Index pour performances
                 database.execSQL("CREATE INDEX idx_tool_data_instance ON tool_data(tool_instance_id)")
                 database.execSQL("CREATE INDEX idx_tool_data_timestamp ON tool_data(timestamp)")
                 database.execSQL("CREATE INDEX idx_tool_data_tooltype ON tool_data(tooltype)")
                 database.execSQL("CREATE INDEX idx_tool_data_instance_timestamp ON tool_data(tool_instance_id, timestamp)")
-                database.execSQL("CREATE INDEX idx_tool_data_tooltype_version ON tool_data(tooltype, data_version)")
                 
                 // Migration removed - complete wipe for unified architecture
                 // Previous data will be lost (can be recovered by external script if needed)
@@ -200,95 +184,6 @@ class MigrationOrchestrator(private val context: Context) {
         return report.toString(2)
     }
 
-    /**
-     * Performs data migrations at application startup
-     * Called after tooltype discovery to migrate obsolete data
-     */
-    suspend fun performStartupMigrations(context: Context): DataMigrationResult {
-        val errors = mutableListOf<MigrationError>()
-        val migratedTooltypes = mutableListOf<String>()
-        
-        try {
-            // 1. Pure tooltype discovery
-            val allToolTypes = ToolTypeManager.getAllToolTypes()
-            
-            // 2. Database access
-            val database = AppDatabase.getDatabase(context)
-            val dao = database.toolDataDao()
-            
-            // 3. Scan data versions in DB
-            val dataVersions = dao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
-            
-            // 4. Autonomous migration per tooltype
-            for ((tooltype: String, minVersion: Int) in dataVersions) {
-                val toolTypeContract = allToolTypes[tooltype]
-                
-                if (toolTypeContract is ToolTypeContract) {
-                    val currentVersion = toolTypeContract.getCurrentDataVersion()
-                    
-                    if (minVersion < currentVersion) {
-                        try {
-                            migrateTooltypeData(tooltype, toolTypeContract, dao, context)
-                            migratedTooltypes.add("$tooltype: v$minVersion → v$currentVersion")
-                        } catch (e: Exception) {
-                            errors.add(MigrationError(
-                                toolType = tooltype,
-                                operation = "Data migration v$minVersion → v$currentVersion",
-                                error = e.message ?: "Unknown error",
-                                suggestedAction = "Check data integrity or contact support"
-                            ))
-                        }
-                    }
-                } else {
-                    // ToolType doesn't support data migrations
-                    // This is OK, no error
-                }
-            }
-            
-        } catch (e: Exception) {
-            errors.add(MigrationError(
-                toolType = "system",
-                operation = "Startup data migration",
-                error = e.message ?: "Unknown error",
-                suggestedAction = "Restart application or contact support"
-            ))
-        }
-        
-        return DataMigrationResult(
-            success = errors.isEmpty(),
-            errors = errors,
-            migratedTooltypes = migratedTooltypes
-        )
-    }
-    
-    /**
-     * Migrates data for a specific tooltype
-     */
-    private suspend fun migrateTooltypeData(
-        tooltype: String,
-        toolTypeContract: ToolTypeContract,
-        dao: com.assistant.core.database.dao.BaseToolDataDao,
-        context: Context
-    ) {
-        val entries = dao.getByTooltype(tooltype)
-        val currentVersion = toolTypeContract.getCurrentDataVersion()
-        
-        entries.forEach { entry ->
-            if (entry.dataVersion < currentVersion) {
-                // Data upgrade
-                val upgradedData = toolTypeContract.upgradeDataIfNeeded(entry.data, entry.dataVersion)
-                
-                // Database update
-                val updatedEntity = entry.copy(
-                    data = upgradedData,
-                    dataVersion = currentVersion,
-                    updatedAt = System.currentTimeMillis()
-                )
-                
-                dao.update(updatedEntity)
-            }
-        }
-    }
 }
 
 /**
@@ -302,14 +197,6 @@ data class MigrationResult(
     val newVersion: Int
 )
 
-/**
- * Startup data migration result
- */
-data class DataMigrationResult(
-    val success: Boolean,
-    val errors: List<MigrationError>,
-    val migratedTooltypes: List<String>
-)
 
 /**
  * Migration error with debugging information

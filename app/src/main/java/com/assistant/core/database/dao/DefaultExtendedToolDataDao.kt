@@ -35,11 +35,8 @@ class DefaultExtendedToolDataDao(
     override suspend fun getRecent(toolInstanceId: String, limit: Int): List<ToolDataEntity> = 
         baseDao.getRecent(toolInstanceId, limit)
     
-    override suspend fun getByTooltype(tooltype: String): List<ToolDataEntity> = 
+    override suspend fun getByTooltype(tooltype: String): List<ToolDataEntity> =
         baseDao.getByTooltype(tooltype)
-    
-    override suspend fun getTooltypeMinVersions(): Map<String, Int> = 
-        baseDao.getTooltypeMinVersions().associate { it.tooltype to it.min_version }
     
     // === Generic convenience methods ===
     

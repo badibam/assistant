@@ -75,7 +75,20 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 put("data", dataContent)
             }
             
-            val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
+            // Use schema_id from data for validation
+            val dataContent = JSONObject(dataJson)
+            val schemaId = dataContent.optString("schema_id")
+
+            val validation = if (schemaId.isNotEmpty()) {
+                val schema = toolType.getSchema(schemaId, context)
+                if (schema != null) {
+                    SchemaValidator.validate(schema, fullDataMap, context)
+                } else {
+                    com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
+                }
+            } else {
+                com.assistant.core.validation.ValidationResult.error("Missing schema_id in data")
+            }
             if (!validation.isValid) {
                 return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
             }
@@ -88,12 +101,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         val now = System.currentTimeMillis()
-        val dataVersion = toolType?.getCurrentDataVersion() ?: 1
         val entity = ToolDataEntity(
             id = UUID.randomUUID().toString(),
             toolInstanceId = toolInstanceId,
             tooltype = tooltype,
-            dataVersion = dataVersion,
             timestamp = timestamp,
             name = name,
             data = finalDataJson,
@@ -185,7 +196,20 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     put("data", dataContent)
                 }
                 
-                val validation = SchemaValidator.validate(toolType, fullDataMap, context, schemaType = "data")
+                // Use schema_id from data for validation
+            val dataContent = JSONObject(dataJson)
+            val schemaId = dataContent.optString("schema_id")
+
+            val validation = if (schemaId.isNotEmpty()) {
+                val schema = toolType.getSchema(schemaId, context)
+                if (schema != null) {
+                    SchemaValidator.validate(schema, fullDataMap, context)
+                } else {
+                    com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
+                }
+            } else {
+                com.assistant.core.validation.ValidationResult.error("Missing schema_id in data")
+            }
                 if (!validation.isValid) {
                     return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
                 }
@@ -268,7 +292,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         "id" to entity.id,
                         "toolInstanceId" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
-                        "dataVersion" to entity.dataVersion,
                         "timestamp" to entity.timestamp,
                         "name" to entity.name,
                         "data" to entity.data,
@@ -304,7 +327,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "id" to entity.id,
                     "toolInstanceId" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
-                    "dataVersion" to entity.dataVersion,
                     "timestamp" to entity.timestamp,
                     "name" to entity.name,
                     "data" to entity.data,

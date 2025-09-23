@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
 import com.assistant.core.validation.ValidationException
+import com.assistant.core.validation.FieldLimits
 
 /**
  * Base JSON Schemas for all ToolTypes
@@ -25,12 +26,12 @@ object BaseSchemas {
                 "name": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 60,
+                    "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.shared("tools_base_schema_config_name")}"
                 },
                 "description": {
                     "type": "string",
-                    "maxLength": 250,
+                    "maxLength": ${FieldLimits.MEDIUM_LENGTH},
                     "description": "${s.shared("tools_base_schema_config_description")}"
                 },
                 "management": {
@@ -45,7 +46,7 @@ object BaseSchemas {
                 },
                 "icon_name": {
                     "type": "string",
-                    "maxLength": 60,
+                    "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "default": "activity",
                     "description": "${s.shared("tools_base_schema_config_icon_name")}"
                 },
@@ -91,7 +92,7 @@ object BaseSchemas {
                 "name": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 60,
+                    "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.shared("tools_base_schema_data_name")}"
                 },
                 "timestamp": {
@@ -116,72 +117,35 @@ object BaseSchemas {
     }
     
     /**
-     * Utility function to merge base schema with specific schema
-     * Flattens schemas to avoid nested allOf structures and simplify validation
-     * Handles properties, required, allOf, and metadata fields (x-*, $schema, etc.)
+     * Simple utility function to merge base schema with specific schema
+     * Merges properties and required fields only
      */
     fun createExtendedSchema(baseSchema: String, specificSchema: String): String {
         return try {
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val baseNode = objectMapper.readTree(baseSchema)
             val specificNode = objectMapper.readTree(specificSchema)
-            
+
             val result = objectMapper.createObjectNode()
-            
-            // 1. Merge all metadata fields (type, $schema, title, description, x-*, etc.)
-            mergeMetadataFields(result, baseNode, specificNode)
-            
-            // 2. Merge properties (specific overrides base)
+
+            // Set basic schema structure
+            result.put("type", "object")
+            result.put("additionalProperties", false)
+
+            // Merge properties (specific overrides base)
             mergeProperties(result, baseNode, specificNode, objectMapper)
-            
-            // 3. Merge required arrays (union of both)
+
+            // Merge required arrays (union of both)
             mergeRequired(result, baseNode, specificNode, objectMapper)
-            
-            // 4. Extract and flatten allOf conditions to root level
-            mergeAllOfConditions(result, baseNode, specificNode, objectMapper)
-            
-            // 5. Set additionalProperties (specific overrides base, default false)
-            setAdditionalProperties(result, baseNode, specificNode)
-            
+
             objectMapper.writeValueAsString(result)
-            
+
         } catch (e: Exception) {
             LogManager.schema("Schema merge failed in createExtendedSchema: ${e.message}", "ERROR", e)
             throw ValidationException("Failed to create extended schema", e)
         }
     }
     
-    /**
-     * Merges metadata fields (type, $schema, title, description, x-*, etc.)
-     * Specific schema overrides base schema for conflicting fields
-     */
-    private fun mergeMetadataFields(
-        result: com.fasterxml.jackson.databind.node.ObjectNode,
-        baseNode: com.fasterxml.jackson.databind.JsonNode,
-        specificNode: com.fasterxml.jackson.databind.JsonNode
-    ) {
-        val metadataFields = setOf("type", "\$schema", "title", "description")
-        val skipFields = setOf("properties", "required", "allOf", "additionalProperties")
-        
-        // Add base metadata
-        baseNode.fields().forEach { (key, value) ->
-            if (key !in skipFields && (key in metadataFields || key.startsWith("x-"))) {
-                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
-            }
-        }
-        
-        // Add specific metadata (overrides base)
-        specificNode.fields().forEach { (key, value) ->
-            if (key !in skipFields && (key in metadataFields || key.startsWith("x-"))) {
-                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
-            }
-        }
-        
-        // Ensure we have a type if neither schema specified it
-        if (!result.has("type")) {
-            result.put("type", "object")
-        }
-    }
     
     /**
      * Merges properties from both schemas (specific overrides base)
@@ -237,101 +201,7 @@ object BaseSchemas {
         }
     }
     
-    /**
-     * Extracts and flattens allOf conditions from both schemas to root level
-     */
-    private fun mergeAllOfConditions(
-        result: com.fasterxml.jackson.databind.node.ObjectNode,
-        baseNode: com.fasterxml.jackson.databind.JsonNode,
-        specificNode: com.fasterxml.jackson.databind.JsonNode,
-        objectMapper: com.fasterxml.jackson.databind.ObjectMapper
-    ) {
-        val allConditions = mutableListOf<com.fasterxml.jackson.databind.JsonNode>()
-        
-        // Extract from base schema
-        baseNode.get("allOf")?.forEach { condition ->
-            allConditions.add(condition)
-        }
-        
-        // Extract from specific schema
-        specificNode.get("allOf")?.forEach { condition ->
-            allConditions.add(condition)
-        }
-        
-        if (allConditions.isNotEmpty()) {
-            val allOfArray = objectMapper.createArrayNode()
-            allConditions.forEach { allOfArray.add(it) }
-            result.set<com.fasterxml.jackson.databind.JsonNode>("allOf", allOfArray)
-        }
-    }
     
-    /**
-     * Sets additionalProperties (specific overrides base, default false)
-     */
-    private fun setAdditionalProperties(
-        result: com.fasterxml.jackson.databind.node.ObjectNode,
-        baseNode: com.fasterxml.jackson.databind.JsonNode,
-        specificNode: com.fasterxml.jackson.databind.JsonNode
-    ) {
-        when {
-            specificNode.has("additionalProperties") -> 
-                result.set<com.fasterxml.jackson.databind.JsonNode>("additionalProperties", 
-                    specificNode.get("additionalProperties"))
-            baseNode.has("additionalProperties") -> 
-                result.set<com.fasterxml.jackson.databind.JsonNode>("additionalProperties", 
-                    baseNode.get("additionalProperties"))
-            else -> 
-                result.put("additionalProperties", false)
-        }
-    }
-    
-    /**
-     * Get base default configuration JSON for all ToolTypes
-     * Contains common fields with sensible defaults
-     * @return JSON string with base configuration
-     */
-    fun getBaseDefaultConfig(): String {
-        return """
-        {
-            "management": "manual",
-            "config_validation": "disabled",
-            "data_validation": "disabled", 
-            "display_mode": "LINE"
-        }
-        """.trimIndent()
-    }
-    
-    /**
-     * Merge base default config with specific ToolType config
-     * @param baseDefaults Base configuration JSON
-     * @param specificDefaults ToolType-specific configuration JSON  
-     * @return Merged configuration JSON
-     */
-    fun mergeDefaultConfigs(baseDefaults: String, specificDefaults: String): String {
-        return try {
-            val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
-            val baseNode = objectMapper.readTree(baseDefaults)
-            val specificNode = objectMapper.readTree(specificDefaults)
-            
-            val result = objectMapper.createObjectNode()
-            
-            // Add base fields
-            baseNode.fields().forEach { (key, value) ->
-                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
-            }
-            
-            // Override with specific fields
-            specificNode.fields().forEach { (key, value) ->
-                result.set<com.fasterxml.jackson.databind.JsonNode>(key, value)
-            }
-            
-            objectMapper.writeValueAsString(result)
-            
-        } catch (e: Exception) {
-            LogManager.schema("Config merge failed in mergeDefaultConfigs: ${e.message}", "ERROR", e)
-            throw ValidationException("Failed to merge default configs", e)
-        }
-    }
     
     /**
      * Get human-readable name for common ToolType fields
@@ -354,14 +224,4 @@ object BaseSchemas {
         }
     }
     
-    /**
-     * Generic length constants for text fields across all tool types
-     * Maps directly to FieldType text variants
-     */
-    object FieldLimits {
-        const val SHORT_LENGTH = 60        // FieldType.TEXT - identifiers, names, labels
-        const val MEDIUM_LENGTH = 250      // FieldType.TEXT_MEDIUM - descriptions, text values
-        const val LONG_LENGTH = 1500       // FieldType.TEXT_LONG - long content
-        const val UNLIMITED_LENGTH = Int.MAX_VALUE  // FieldType.TEXT_UNLIMITED - no limits
-    }
 }

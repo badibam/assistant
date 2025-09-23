@@ -3,10 +3,13 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.utils.LogManager
+import com.assistant.core.validation.Schema
+import com.assistant.core.validation.SchemaCategory
+import com.assistant.core.validation.FieldLimits
+import com.assistant.core.strings.Strings
 
 /**
  * Claude AI Provider - Stub implementation for testing complete flow
- * TODO: Implement real Claude API integration
  */
 class ClaudeProvider : AIProvider {
 
@@ -14,59 +17,66 @@ class ClaudeProvider : AIProvider {
 
     override fun getDisplayName(): String = "Claude (Anthropic)"
 
-    /**
-     * Schema provider implementation for SchemaValidator integration
-     */
-    override fun getSchema(schemaType: String, context: Context): String? {
-        return when (schemaType) {
-            "config" -> getClaudeConfigSchema()
-            else -> null // No data schema for providers
+    override fun getSchema(schemaId: String, context: Context): Schema? {
+        return when (schemaId) {
+            "ai_provider_claude_config" -> createClaudeConfigSchema(context)
+            else -> null
         }
     }
 
-    /**
-     * Configuration schema for Claude API
-     * TODO: Add real fields like api_key, model, etc.
-     */
-    private fun getClaudeConfigSchema(): String {
-        return """
+    override fun getAllSchemaIds(): List<String> {
+        return listOf("ai_provider_claude_config")
+    }
+
+    override fun getFormFieldName(fieldName: String, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return when (fieldName) {
+            "api_key" -> s.shared("ai_provider_claude_api_key")
+            "model" -> s.shared("ai_provider_claude_model")
+            "max_tokens" -> s.shared("ai_provider_claude_max_tokens")
+            else -> fieldName
+        }
+    }
+
+    private fun createClaudeConfigSchema(context: Context): Schema {
+        val s = Strings.`for`(context = context)
+
+        val content = """
         {
             "type": "object",
             "properties": {
                 "api_key": {
                     "type": "string",
-                    "description": "Claude API key"
+                    "minLength": 1,
+                    "maxLength": ${FieldLimits.MEDIUM_LENGTH},
+                    "description": "${s.shared("ai_provider_claude_schema_api_key")}"
                 },
                 "model": {
                     "type": "string",
                     "enum": ["claude-3-sonnet", "claude-3-haiku"],
                     "default": "claude-3-sonnet",
-                    "description": "Claude model to use"
+                    "description": "${s.shared("ai_provider_claude_schema_model")}"
                 },
                 "max_tokens": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 4096,
                     "default": 2000,
-                    "description": "Maximum tokens in response"
+                    "description": "${s.shared("ai_provider_claude_schema_max_tokens")}"
                 }
             },
             "required": ["api_key"],
             "additionalProperties": false
         }
         """.trimIndent()
-    }
 
-    /**
-     * Field name translations for form validation
-     */
-    override fun getFormFieldName(fieldName: String, context: Context?): String {
-        return when (fieldName) {
-            "api_key" -> "Clé API Claude"
-            "model" -> "Modèle Claude"
-            "max_tokens" -> "Tokens maximum"
-            else -> fieldName
-        }
+        return Schema(
+            id = "ai_provider_claude_config",
+            displayName = s.shared("ai_provider_claude_config_display_name"),
+            description = s.shared("ai_provider_claude_config_description"),
+            category = SchemaCategory.AI_PROVIDER,
+            content = content
+        )
     }
 
     /**

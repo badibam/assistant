@@ -1,6 +1,7 @@
 package com.assistant.themes.default
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import com.assistant.core.validation.FieldLimits
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
@@ -470,11 +471,11 @@ object DefaultTheme : ThemeContract {
         
         // Character limit based on field type
         val maxLength = when (fieldType) {
-            FieldType.TEXT -> BaseSchemas.FieldLimits.SHORT_LENGTH
-            FieldType.TEXT_MEDIUM -> BaseSchemas.FieldLimits.MEDIUM_LENGTH
-            FieldType.TEXT_LONG -> BaseSchemas.FieldLimits.LONG_LENGTH
-            FieldType.TEXT_UNLIMITED -> BaseSchemas.FieldLimits.UNLIMITED_LENGTH
-            FieldType.NUMERIC, FieldType.EMAIL, FieldType.PASSWORD, FieldType.SEARCH -> BaseSchemas.FieldLimits.UNLIMITED_LENGTH
+            FieldType.TEXT -> FieldLimits.SHORT_LENGTH
+            FieldType.TEXT_MEDIUM -> FieldLimits.MEDIUM_LENGTH
+            FieldType.TEXT_LONG -> FieldLimits.LONG_LENGTH
+            FieldType.TEXT_UNLIMITED -> FieldLimits.UNLIMITED_LENGTH
+            FieldType.NUMERIC, FieldType.EMAIL, FieldType.PASSWORD, FieldType.SEARCH -> FieldLimits.UNLIMITED_LENGTH
         }
         
         // Filter input if there's a character limit

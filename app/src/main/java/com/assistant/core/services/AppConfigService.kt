@@ -99,8 +99,12 @@ class AppConfigService(private val context: Context) : ExecutableService {
         settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }?.let { 
             dataMap["locale_override"] = it 
         }
-        val schemaProvider = AppConfigSchemaProvider.create(context)
-        val validation = SchemaValidator.validate(schemaProvider, dataMap, context, schemaType = "format")
+        val schema = AppConfigSchemaProvider.getSchema("app_config_format", context)
+        val validation = if (schema != null) {
+            SchemaValidator.validate(schema, dataMap, context)
+        } else {
+            com.assistant.core.validation.ValidationResult.error("App config format schema not found")
+        }
         
         if (!validation.isValid) {
             throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")

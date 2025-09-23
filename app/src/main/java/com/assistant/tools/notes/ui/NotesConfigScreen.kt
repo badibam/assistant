@@ -167,7 +167,12 @@ fun NotesConfigScreen(
                     // Validate at save time like Tracking does
                     val toolType = ToolTypeManager.getToolType("notes")
                     if (toolType != null) {
-                        val validation = SchemaValidator.validate(toolType, configData, context, "config")
+                        val schema = toolType.getSchema("notes_config", context)
+                        val validation = if (schema != null) {
+                            SchemaValidator.validate(schema, configData, context)
+                        } else {
+                            com.assistant.core.validation.ValidationResult.error("Notes config schema not found")
+                        }
 
                         if (validation.isValid) {
                             val configJson = JSONObject().apply {

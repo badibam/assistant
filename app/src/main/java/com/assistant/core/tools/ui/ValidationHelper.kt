@@ -15,11 +15,11 @@ object ValidationHelper {
 
     /**
      * Validates data and automatically displays toast on error.
-     * 
+     *
      * @param toolTypeName Tooltype name (e.g., "tracking", "notes")
      * @param configData Data to validate as Map
      * @param context Android context for toast
-     * @param schemaType Schema type to use ("config" or "data")
+     * @param schemaId Full schema ID to use (e.g., "tracking_config_numeric", "notes_data")
      * @param onSuccess Callback called if validation succeeds with JSON string
      * @param onError Optional callback called on error (in addition to toast)
      * @return true if validation succeeded, false otherwise
@@ -28,12 +28,12 @@ object ValidationHelper {
         toolTypeName: String,
         configData: Map<String, Any>,
         context: Context,
-        schemaType: String = "config",
+        schemaId: String,
         onSuccess: (String) -> Unit,
         onError: ((String) -> Unit)? = null
     ): Boolean {
         val toolType = ToolTypeManager.getToolType(toolTypeName)
-        
+
         if (toolType == null) {
             val s = com.assistant.core.strings.Strings.`for`(context = context)
             val errorMsg = s.shared("error_tooltype_not_found").format(toolTypeName)
@@ -42,8 +42,13 @@ object ValidationHelper {
             onError?.invoke(errorMsg)
             return false
         }
-        
-        val validation = SchemaValidator.validate(toolType, configData, context, schemaType = schemaType)
+
+        val schema = toolType.getSchema(schemaId, context)
+        val validation = if (schema != null) {
+            SchemaValidator.validate(schema, configData, context)
+        } else {
+            com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
+        }
         
         if (validation.isValid) {
             // Map to JSON string conversion for compatibility
@@ -53,7 +58,7 @@ object ValidationHelper {
         } else {
             val s = com.assistant.core.strings.Strings.`for`(context = context)
             val errorMsg = validation.errorMessage ?: s.shared("message_validation_error_simple")
-            LogManager.service("Validation failed for $toolTypeName ($schemaType): $errorMsg", "ERROR")
+            LogManager.service("Validation failed for $toolTypeName ($schemaId): $errorMsg", "ERROR")
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
             return false

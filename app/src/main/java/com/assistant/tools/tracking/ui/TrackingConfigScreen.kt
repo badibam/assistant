@@ -18,6 +18,7 @@ import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapSingleData
+import com.assistant.core.validation.ValidationResult
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.tools.ToolTypeManager
@@ -404,7 +405,19 @@ fun TrackingConfigScreen(
                 
                 val toolType = ToolTypeManager.getToolType("tracking")
                 if (toolType != null) {
-                    val validation = SchemaValidator.validate(toolType, configMap, context, schemaType = "config")
+                    val type = cleanConfig.optString("type")
+                    if (type.isNullOrEmpty()) {
+                        // Erreur : type manquant
+                        return@launch
+                    }
+
+                    val schemaId = "tracking_config_$type"
+                    val schema = toolType.getSchema(schemaId, context)
+                    val validation = if (schema != null) {
+                        SchemaValidator.validate(schema, configMap, context)
+                    } else {
+                        ValidationResult.error("Schema not found for type: $type")
+                    }
                     
                     if (validation.isValid) {
                         onSave(cleanConfig.toString())

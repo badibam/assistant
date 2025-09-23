@@ -27,47 +27,8 @@ interface ToolTypeContract : SchemaProvider {
     fun getDefaultConfig(): String
     
     // ═══ Schema Provider Implementation ═══
-
-    /**
-     * Override getSchema to delegate to specific methods for ToolTypes
-     */
-    override fun getSchema(schemaType: String, context: Context): String? = when(schemaType) {
-        "config" -> getConfigSchema(context)
-        "data" -> getDataSchema(context)
-        else -> null
-    }
+    // SchemaProvider methods are inherited from SchemaProvider interface
     
-    /**
-     * Configuration schema for this tool type (REQUIRED)
-     * @param context Android context for string resource access
-     * @return JSON Schema string for configuration validation
-     */
-    fun getConfigSchema(context: Context): String
-    
-    /**
-     * Data schema for this tool type (OPTIONAL)
-     * @param context Android context for string resource access
-     * @return JSON Schema string for data validation, or null if no data schema
-     */
-    fun getDataSchema(context: Context): String? = null
-
-    /**
-     * Get resolved data schema for a specific tool instance configuration
-     * This method should create a data skeleton based on the config and resolve conditional schemas
-     * Only the ToolType knows its own resolution logic
-     *
-     * @param configJson Configuration JSON of the tool instance
-     * @param context Android context for resource access
-     * @return Resolved JSON Schema string adapted to the config, or null if no data schema
-     */
-    fun getResolvedDataSchema(configJson: String, context: Context): String? {
-        // TODO: Implement tool-specific schema resolution
-        // 1. Parse configJson to extract configuration parameters
-        // 2. Create data skeleton adapted to this config
-        // 3. Use SchemaResolver.resolve(baseSchema, dataSkeleton) to get resolved schema
-        // 4. Return resolved schema
-        return getDataSchema(context) // Default fallback - return base schema
-    }
     
     
     /**
@@ -139,39 +100,4 @@ interface ToolTypeContract : SchemaProvider {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
-    
-    /**
-     * Get database migrations for this tool type
-     * Returns empty list if no migrations are needed
-     * Migrations should be ordered by version (startVersion ascending)
-     * @return List of Room Migration objects for this tool type
-     */
-    fun getDatabaseMigrations(): List<Migration>
-    
-    /**
-     * Migrate configuration JSON from old version to new version
-     * Used when tool type configuration schema changes
-     * @param fromVersion Version of the configuration to migrate from
-     * @param configJson Current configuration JSON string
-     * @return Migrated configuration JSON string, or original if no migration needed
-     */
-    fun migrateConfig(fromVersion: Int, configJson: String): String
-    
-    // ═══ Data Migration Capabilities (from ToolTypeDataContract) ═══
-    
-    /**
-     * Current data version for this tooltype
-     * @return Numeric version (e.g., 1, 2, 3...)
-     */
-    fun getCurrentDataVersion(): Int = 1
-    
-    /**
-     * Upgrades data if necessary
-     * Called at startup for each obsolete data entry
-     * 
-     * @param rawData Existing JSON data 
-     * @param fromVersion Current data version
-     * @return JSON data upgraded to getCurrentDataVersion()
-     */
-    fun upgradeDataIfNeeded(rawData: String, fromVersion: Int): String = rawData
 }

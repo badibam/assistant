@@ -125,6 +125,15 @@
     <string name="schema_config_boolean_display_name"></string>
     <string name="schema_config_text_display_name"></string>
 
+    <!-- SCHEMAS CONFIG - Descriptions for schema identification -->
+    <string name="schema_config_numeric_description"></string>
+    <string name="schema_config_timer_description"></string>
+    <string name="schema_config_choice_description"></string>
+    <string name="schema_config_scale_description"></string>
+    <string name="schema_config_counter_description"></string>
+    <string name="schema_config_boolean_description"></string>
+    <string name="schema_config_text_description"></string>
+
     <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
     <string name="schema_config_type"></string>
     <string name="schema_config_numeric_items"></string>
@@ -157,6 +166,16 @@
     <string name="schema_data_choice_display_name"></string>
     <string name="schema_data_counter_display_name"></string>
     <string name="schema_data_timer_display_name"></string>
+    <string name="schema_data_text_display_name"></string>
+
+    <!-- SCHEMAS DATA - Descriptions for schema identification -->
+    <string name="schema_data_numeric_description"></string>
+    <string name="schema_data_scale_description"></string>
+    <string name="schema_data_boolean_description"></string>
+    <string name="schema_data_choice_description"></string>
+    <string name="schema_data_counter_description"></string>
+    <string name="schema_data_timer_description"></string>
+    <string name="schema_data_text_description"></string>
 
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
     <string name="schema_data_name"></string>
@@ -178,6 +197,7 @@
     <string name="schema_data_choice_available_options"></string>
     <string name="schema_data_counter_increment"></string>
     <string name="schema_data_timer_duration_seconds"></string>
+    <string name="schema_data_text_content"></string>
     
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_default_quantity">Qté par défaut</string>

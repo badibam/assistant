@@ -426,8 +426,7 @@ class QueryExecutor(private val context: Context) {
             result.appendLine()
 
             // Add zone schema
-            val zoneSchemaProvider = ZoneSchemaProvider.create(context)
-            val zoneSchema = zoneSchemaProvider.getSchema("config", context)
+            val zoneSchema = ZoneSchemaProvider.getSchema("zone_config", context)
             if (zoneSchema == null) {
                 LogManager.aiPrompt("Failed to get zone config schema", "ERROR")
                 return "## Configuration Zone : $zoneName\nErreur: impossible de récupérer le schéma de configuration"
@@ -435,7 +434,7 @@ class QueryExecutor(private val context: Context) {
 
             result.appendLine("### Schéma de configuration")
             result.appendLine("```json")
-            result.appendLine(zoneSchema as CharSequence)
+            result.appendLine(zoneSchema.content)
             result.appendLine("```")
             result.appendLine()
 

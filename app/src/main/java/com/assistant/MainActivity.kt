@@ -36,29 +36,7 @@ class MainActivity : ComponentActivity() {
         
         // Initialize migration orchestrator
         migrationOrchestrator = MigrationOrchestrator(this)
-        
-        // Perform startup data migrations
-        CoroutineScope(Dispatchers.IO).launch {
-            LogManager.database("Starting data migrations...")
-            val result = migrationOrchestrator.performStartupMigrations(this@MainActivity)
-            
-            if (result.success) {
-                if (result.migratedTooltypes.isNotEmpty()) {
-                    LogManager.database("Data migrations completed successfully:")
-                    result.migratedTooltypes.forEach { migration ->
-                        LogManager.database("  - $migration")
-                    }
-                } else {
-                    LogManager.database("No data migrations needed")
-                }
-            } else {
-                LogManager.database("Data migration errors:", "ERROR")
-                result.errors.forEach { error ->
-                    LogManager.database("  - ${error.toUserFriendlyMessage()}", "ERROR")
-                }
-            }
-        }
-        
+
         // Check for updates at startup
         updateManager.scheduleUpdateCheck { updateInfo ->
             LogManager.service("Update available: ${updateInfo.version}")

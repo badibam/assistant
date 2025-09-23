@@ -18,7 +18,6 @@ interface ExtendedToolDataDao {
     suspend fun countByToolInstance(toolInstanceId: String): Int
     suspend fun getRecent(toolInstanceId: String, limit: Int): List<ToolDataEntity>
     suspend fun getByTooltype(tooltype: String): List<ToolDataEntity>
-    suspend fun getTooltypeMinVersions(): Map<String, Int>
     
     // Generic convenience methods
     suspend fun getLatest(toolInstanceId: String): ToolDataEntity?

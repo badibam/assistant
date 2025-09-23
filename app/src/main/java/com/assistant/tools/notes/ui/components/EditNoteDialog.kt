@@ -77,7 +77,12 @@ fun EditNoteDialog(
                 )
             )
 
-            validationResult = SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
+            val schema = toolType.getSchema("notes_data", context)
+            validationResult = if (schema != null) {
+                SchemaValidator.validate(schema, entryData, context)
+            } else {
+                ValidationResult.error("Notes data schema not found")
+            }
             LogManager.ui("Notes validation result: isValid=${validationResult.isValid}")
             if (!validationResult.isValid) {
                 LogManager.ui("Notes validation error: ${validationResult.errorMessage}")

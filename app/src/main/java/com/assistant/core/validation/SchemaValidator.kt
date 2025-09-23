@@ -22,62 +22,41 @@ object SchemaValidator {
     private val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)
     
     /**
-     * Main validation function - handles all validation scenarios
-     * Uses NetworkNT with Jackson for comprehensive validation of nested structures
-     * @param schemaProvider Provider that supplies schema and field translations
+     * Main validation function using direct schema objects
+     * @param schema Complete Schema object with content and metadata
      * @param data Data to validate as key-value map
      * @param context Android context for string resource access
-     * @param schemaType Schema type to use ("config", "data", "temporal", etc.)
      * @return ValidationResult with success/error status and user-friendly messages
      */
-    fun validate(schemaProvider: SchemaProvider, data: Map<String, Any>, context: Context, schemaType: String = "config"): ValidationResult {
-        val schema = schemaProvider.getSchema(schemaType, context) 
-            ?: throw IllegalArgumentException("SchemaProvider has no '$schemaType' schema")
-        LogManager.schema("Schema validation start")
-        
+    fun validate(schema: Schema, data: Map<String, Any>, context: Context): ValidationResult {
+        LogManager.schema("Schema validation start for schema: ${schema.id}")
+
         return try {
-            // Convert any JSONObject to Map for Jackson compatibility and filter empty values
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
-            
-            // DEBUG: Log schema being used
+
             LogManager.schema("=== Schema being validated ===")
-            LogManager.schema("$schema")
+            LogManager.schema("Schema ID: ${schema.id}")
+            LogManager.schema("Schema content: ${schema.content}")
             LogManager.schema("=== End schema ===")
-            
-            // Schema is flattened by createExtendedSchema, but still need SchemaResolver 
-            // to resolve if/then conditions before passing to NetworkNT
-            val resolvedSchema = SchemaResolver.resolve(schema, cleanData)
-            
-            // Let NetworkNT validate against resolved schema
-            val jsonSchema = getOrCompileSchema(resolvedSchema)
+
+            val jsonSchema = getOrCompileSchema(schema.content)
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val dataNode = objectMapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(cleanData)
-            
+
             LogManager.schema("Data map: $cleanData")
             LogManager.schema("NetworkNT datanode: $dataNode")
-            
-            // DEBUG: Check conditional validation
-            if (schema.contains("\"if\"") && schema.contains("\"then\"")) {
-                LogManager.schema("Conditional schema detected")
-                val dataObject = cleanData["data"] as? Map<*, *>
-                if (dataObject != null) {
-                    val dataType = dataObject["type"]
-                    LogManager.schema("Data type in data: '$dataType'")
-                }
-            }
-            
-            // NetworkNT validates against the full schema including allOf/if/then conditions
+
             val errors = jsonSchema.validate(dataNode)
             LogManager.schema("NetworkNT errors count: ${errors.size}")
             errors.forEach { error ->
                 LogManager.schema("Error Path='${error.path}' Message='${error.message}' SchemaPath='${error.schemaPath}'")
             }
-            
+
             val result = if (errors.isEmpty()) {
                 LogManager.schema("Validation success")
                 ValidationResult.success()
             } else {
-                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema, context, schemaProvider)
+                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema.content, context)
                 if (errorMessage.isEmpty()) {
                     LogManager.schema("Validation success (errors filtered out)")
                     ValidationResult.success()
@@ -86,9 +65,9 @@ object SchemaValidator {
                     ValidationResult.error(errorMessage)
                 }
             }
-            
+
             result
-            
+
         } catch (e: Exception) {
             LogManager.schema("Exception during validation: ${e.message}", "ERROR", e)
             ValidationResult.error("Erreur de validation: ${e.message}")

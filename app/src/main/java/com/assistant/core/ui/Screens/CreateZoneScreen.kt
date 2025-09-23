@@ -49,13 +49,12 @@ fun CreateZoneScreen(
         )
         
         try {
-            val zoneProvider = com.assistant.core.schemas.ZoneSchemaProvider.create(context)
-            val validation = com.assistant.core.validation.SchemaValidator.validate(
-                zoneProvider,
-                zoneData,
-                context,
-                schemaType = "config"
-            )
+            val schema = com.assistant.core.schemas.ZoneSchemaProvider.getSchema("zone_config", context)
+            val validation = if (schema != null) {
+                com.assistant.core.validation.SchemaValidator.validate(schema, zoneData, context)
+            } else {
+                com.assistant.core.validation.ValidationResult.error("Zone config schema not found")
+            }
             
             if (validation.isValid) {
                 // Validation successful, proceed to save
