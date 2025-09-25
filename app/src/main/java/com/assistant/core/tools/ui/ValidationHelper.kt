@@ -43,11 +43,22 @@ object ValidationHelper {
             return false
         }
 
-        val schema = toolType.getSchema(schemaId, context)
+        // Extract schema_id from the data
+        val extractedSchemaId = configData["schema_id"] as? String
+        if (extractedSchemaId.isNullOrEmpty()) {
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val errorMsg = s.shared("error_missing_schema_id")
+            LogManager.service("Missing schema_id in data for $toolTypeName", "ERROR")
+            showErrorToast(context, errorMsg)
+            onError?.invoke(errorMsg)
+            return false
+        }
+
+        val schema = toolType.getSchema(extractedSchemaId, context)
         val validation = if (schema != null) {
             SchemaValidator.validate(schema, configData, context)
         } else {
-            com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
+            com.assistant.core.validation.ValidationResult.error("Schema not found: $extractedSchemaId")
         }
         
         if (validation.isValid) {

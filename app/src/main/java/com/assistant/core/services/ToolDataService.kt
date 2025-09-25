@@ -74,10 +74,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 }
                 put("data", dataContent)
             }
-            
-            // Use schema_id from data for validation
-            val dataContent = JSONObject(dataJson)
-            val schemaId = dataContent.optString("schema_id")
+
+            // Use schema_id from params for validation
+            val schemaId = params.optString("schema_id")
+            if (schemaId.isNotEmpty()) {
+                fullDataMap["schema_id"] = schemaId  // Add schema_id to root level for validation
+            }
 
             val validation = if (schemaId.isNotEmpty()) {
                 val schema = toolType.getSchema(schemaId, context)

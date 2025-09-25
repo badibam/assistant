@@ -1253,7 +1253,17 @@ private fun TypeSpecificParameters(
  */
 private fun cleanConfiguration(config: JSONObject): JSONObject {
     val cleanConfig = JSONObject(config.toString()) // Copie profonde
-    
+
+    // Add schema_id and data_schema_id based on type for validation and runtime usage
+    val type = cleanConfig.optString("type", "")
+    if (type.isNotEmpty()) {
+        val configSchemaId = "tracking_config_$type"
+        val dataSchemaId = "tracking_data_$type"
+        cleanConfig.put("schema_id", configSchemaId)
+        cleanConfig.put("data_schema_id", dataSchemaId)
+        LogManager.tracking("Added schema_id: $configSchemaId and data_schema_id: $dataSchemaId")
+    }
+
     // Nettoyer les options vides pour les types CHOICE
     if (cleanConfig.optString("type") == "choice") {
         LogManager.tracking("Cleaning CHOICE config")

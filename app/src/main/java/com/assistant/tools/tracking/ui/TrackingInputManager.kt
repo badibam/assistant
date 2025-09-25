@@ -53,9 +53,10 @@ fun TrackingInputManager(
                 // Build params pour nouvelle structure tool_data
                 val params = mutableMapOf<String, Any>(
                     "toolInstanceId" to toolInstanceId,
-                    "tooltype" to "tracking", 
+                    "tooltype" to "tracking",
                     "timestamp" to timestamp,
                     "name" to itemName,
+                    "schema_id" to "tracking_data_$trackingType", // Add schema_id for validation
                     "data" to JSONObject(dataJson)
                 )
                 LogManager.tracking("Final params being sent: $params")

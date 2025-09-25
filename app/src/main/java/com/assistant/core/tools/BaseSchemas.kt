@@ -56,9 +56,17 @@ object BaseSchemas {
                     "description": "${s.shared("tools_base_schema_config_config_validation")}"
                 },
                 "data_validation": {
-                    "type": "string", 
+                    "type": "string",
                     "enum": ["enabled", "disabled"],
                     "description": "${s.shared("tools_base_schema_config_data_validation")}"
+                },
+                "schema_id": {
+                    "type": "string",
+                    "description": "${s.shared("tools_base_schema_config_schema_id")}"
+                },
+                "data_schema_id": {
+                    "type": "string",
+                    "description": "${s.shared("tools_base_schema_config_data_schema_id")}"
                 }
             },
             "required": ["name", "management", "display_mode", "config_validation", "data_validation"],
@@ -109,6 +117,10 @@ object BaseSchemas {
                     "type": "integer",
                     "minimum": 0,
                     "description": "${s.shared("tools_base_schema_data_updated_at")}"
+                },
+                "schema_id": {
+                    "type": "string",
+                    "description": "${s.shared("tools_base_schema_data_schema_id")}"
                 }
             },
             "required": ["tool_instance_id", "tooltype", "name", "timestamp"]
@@ -220,6 +232,8 @@ object BaseSchemas {
             "icon_name" -> s.shared("tools_config_label_icon")
             "config_validation" -> s.shared("tools_config_label_config_validation")
             "data_validation" -> s.shared("tools_config_label_data_validation")
+            "schema_id" -> s.shared("tools_config_label_schema_id")
+            "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
             else -> null
         }
     }

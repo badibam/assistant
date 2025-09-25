@@ -155,6 +155,8 @@ fun NotesConfigScreen(
                 isSaving = true
                 try {
                     val configData = mapOf(
+                        "schema_id" to "notes_config",  // Add schema_id for validation
+                        "data_schema_id" to "notes_data", // Add data_schema_id for runtime
                         "name" to name,
                         "description" to description,
                         "icon_name" to iconName,
@@ -164,36 +166,21 @@ fun NotesConfigScreen(
                         "data_validation" to dataValidation
                     )
 
-                    // Validate at save time like Tracking does
-                    val toolType = ToolTypeManager.getToolType("notes")
-                    if (toolType != null) {
-                        val schema = toolType.getSchema("notes_config", context)
-                        val validation = if (schema != null) {
-                            SchemaValidator.validate(schema, configData, context)
-                        } else {
-                            com.assistant.core.validation.ValidationResult.error("Notes config schema not found")
+                    // Use unified ValidationHelper like Tracking does
+                    UI.ValidationHelper.validateAndSave(
+                        toolTypeName = "notes",
+                        configData = configData,
+                        context = context,
+                        schemaType = "config",
+                        onSuccess = { configJson ->
+                            LogManager.ui("Notes config validation success")
+                            onSave(configJson)
+                        },
+                        onError = { error ->
+                            LogManager.ui("Notes config validation failed: $error", "ERROR")
+                            errorMessage = error
                         }
-
-                        if (validation.isValid) {
-                            val configJson = JSONObject().apply {
-                                put("name", name)
-                                put("description", description)
-                                put("icon_name", iconName)
-                                put("display_mode", displayMode)
-                                put("management", management)
-                                put("config_validation", configValidation)
-                                put("data_validation", dataValidation)
-                            }
-                            LogManager.ui("Saving Notes config: $configJson")
-                            onSave(configJson.toString())
-                        } else {
-                            LogManager.ui("Validation failed: ${validation.errorMessage}", "ERROR")
-                            errorMessage = validation.errorMessage ?: s.tool("error_validation")
-                        }
-                    } else {
-                        LogManager.ui("ToolType notes not found", "ERROR")
-                        errorMessage = s.shared("error_tooltype_not_found").format("notes")
-                    }
+                    )
                 } catch (e: Exception) {
                     LogManager.ui("Error during save: ${e.message}", "ERROR")
                     errorMessage = s.tool("error_save")

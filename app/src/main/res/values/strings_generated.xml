@@ -339,6 +339,8 @@
     <string name="shared_tools_config_label_management">Gestion</string>
     <string name="shared_tools_config_label_config_validation">Validation config par IA</string>
     <string name="shared_tools_config_label_data_validation">Validation données par IA</string>
+    <string name="shared_tools_config_label_schema_id">Identifiant de schéma</string>
+    <string name="shared_tools_config_label_data_schema_id">Identifiant de schéma de données</string>
     <string name="shared_tools_config_option_manual">Manuel</string>
     <string name="shared_tools_config_option_ai">IA</string>
     <string name="shared_tools_config_option_enabled">Activée</string>
@@ -372,6 +374,8 @@
     <string name="shared_tools_base_schema_config_icon_name"></string>
     <string name="shared_tools_base_schema_config_config_validation"></string>
     <string name="shared_tools_base_schema_config_data_validation"></string>
+    <string name="shared_tools_base_schema_config_schema_id"></string>
+    <string name="shared_tools_base_schema_config_data_schema_id"></string>
     <string name="shared_tools_base_schema_data_id"></string>
     <string name="shared_tools_base_schema_data_tool_instance_id"></string>
     <string name="shared_tools_base_schema_data_tooltype"></string>
@@ -437,6 +441,7 @@
     <string name="shared_service_error_entry_not_found">Entrée introuvable: %1$s</string>
     <string name="shared_service_error_missing_tool_instance_id">Paramètre obligatoire manquant: toolInstanceId</string>
     <string name="shared_service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
+    <string name="shared_error_missing_schema_id">Schema_id manquant dans les données de configuration</string>
     <string name="shared_service_error_zone_name_required">Nom de zone obligatoire</string>
     <string name="shared_service_error_zone_id_required">ID de zone obligatoire</string>
     <string name="shared_service_error_zone_not_found">Zone introuvable</string>
