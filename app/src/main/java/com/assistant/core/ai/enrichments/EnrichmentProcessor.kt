@@ -6,7 +6,9 @@ import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
- * Service responsible for generating summaries and conditional DataQueries from enrichment configurations
+ * Processor responsible for handling enrichment blocks in two forms:
+ * 1. Preview text generation for user interface display
+ * 2. DataQuery generation for AI prompt Level 4 inclusion
  *
  * Core logic:
  * - All enrichments generate textual summaries for AI orientation
@@ -17,13 +19,13 @@ import org.json.JSONObject
  *   * ✨ CREATE: No query (just orientation)
  *   * 📁 ORGANIZE: No query (just orientation)
  */
-class EnrichmentSummarizer {
+class EnrichmentProcessor {
 
     /**
      * Generate human-readable summary for enrichment display in messages
      */
     fun generateSummary(type: EnrichmentType, config: String): String {
-        LogManager.aiEnrichment("EnrichmentSummarizer.generateSummary() called with type=$type, config length=${config.length}")
+        LogManager.aiEnrichment("EnrichmentProcessor.generateSummary() called with type=$type, config length=${config.length}")
 
         return try {
             val configJson = JSONObject(config)
@@ -47,7 +49,7 @@ class EnrichmentSummarizer {
      * Check if enrichment should generate a DataQuery for Level 4 inclusion
      */
     fun shouldGenerateQuery(type: EnrichmentType, config: String): Boolean {
-        LogManager.aiEnrichment("EnrichmentSummarizer.shouldGenerateQuery() called with type=$type")
+        LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type")
 
         return try {
             val configJson = JSONObject(config)
@@ -82,7 +84,7 @@ class EnrichmentSummarizer {
      * Returns multiple queries as enrichments can require both config and data
      */
     fun generateQueries(type: EnrichmentType, config: String, isRelative: Boolean = false): List<DataQuery> {
-        LogManager.aiEnrichment("EnrichmentSummarizer.generateQueries() called with type=$type, isRelative=$isRelative")
+        LogManager.aiEnrichment("EnrichmentProcessor.generateQueries() called with type=$type, isRelative=$isRelative")
 
         if (!shouldGenerateQuery(type, config)) {
             LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)")

@@ -7,17 +7,17 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 
 ### Flow principal
 ```
-User message → AIOrchestrator → PromptManager → QueryExecutor → AIClient
+User message → AIOrchestrator → PromptManager → CommandExecutor → AIClient
               ↕                ↕             ↕
           AISessionService   QueryDeduplicator  AIProviderConfigService
-          (via coordinator)                     (via coordinator)
+          (via coordinator)  (prompt dedup)    (via coordinator)
 ```
 
 ### Session types
 - **CHAT** : Conversation temps réel, queries absolues, modules communication
 - **AUTOMATION** : Prompt programmable, queries relatives, feedback exécutions
 
-## 2. Architecture des services
+## 2. Services et responsabilités
 
 ### Séparation des responsabilités selon CORE.md
 
@@ -28,9 +28,12 @@ User message → AIOrchestrator → PromptManager → QueryExecutor → AIClient
 **Classes métier pures (logique sans DB) :**
 - `AIOrchestrator` : Orchestration complète du flow IA
 - `AIClient` : Interface vers providers AI externes
-- `PromptManager` : Génération prompts 4 niveaux avec queries unifiées
-- `QueryExecutor` : Exécution queries tous niveaux avec déduplication cross-niveaux
-- `QueryDeduplicator` : Déduplication queries par hash et inclusion métier
+- `PromptManager` : Génération prompts 4 niveaux avec commands unifiées
+- `EnrichmentProcessor` : Génération commands depuis enrichments UI bruts
+- `UserCommandProcessor` : Transformation commands user (résolution relatives)
+- `AICommandProcessor` : Transformation commands AI (validation sécurité)
+- `CommandExecutor` : Exécution commands vers coordinator avec échec cascade
+- `QueryDeduplicator` : Déduplication cross-niveaux pour prompts
 
 ### AIOrchestrator (orchestrateur central)
 ```kotlin
@@ -44,9 +47,23 @@ class AIOrchestrator(private val context: Context) {
 
 **Flow complet orchestré :**
 1. Stocker message utilisateur via `AISessionService`
-2. Builder prompt via `PromptManager` (extraction Level 4 depuis historique)
+2. Builder prompt via `PromptManager` (pipeline command processing complet)
 3. Envoyer à `AIClient`
 4. Traiter réponse et stocker via `AISessionService`
+
+### Command Processing Pipeline
+```
+EnrichmentBlock (stocké) → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
+                                            ↓
+                                 List<DataCommand> → List<ExecutableCommand> → coordinator calls
+```
+
+**Responsabilités séparées :**
+- `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands (cascade)
+- `UserCommandProcessor` : Résolution périodes relatives, UI abstractions
+- `AICommandProcessor` : Validation sécurité, limites données, token management
+- `CommandExecutor` : ExecutableCommand → resource.operation + coordinator
+- `QueryDeduplicator` : Déduplication cross-niveaux pour assemblage prompt final
 
 ### AISessionService (ExecutableService)
 ```kotlin
@@ -79,7 +96,7 @@ class AIClient(private val context: Context) {
 
 Interface vers providers externes, utilise `AIProviderConfigService` via coordinator pour récupérer configurations.
 
-## 3. Structures de données
+## 3. Structures de données unifiées
 
 ### AISession (complète)
 ```kotlin
@@ -117,7 +134,7 @@ data class SessionMessage(
 data class RichMessage(
     val segments: List<MessageSegment>,
     val linearText: String,           // Calculé : version textuelle pour IA
-    val dataQueries: List<DataQuery>  // Calculé : queries pour prompts
+    val dataCommands: List<DataCommand>  // Calculé : commands pour prompts
 )
 
 sealed class MessageSegment {
@@ -135,113 +152,188 @@ sealed class MessageSegment {
 data class AIMessage(
     val preText: String,                              // Obligatoire
     val validationRequest: ValidationRequest?,        // Validation avant actions
-    val dataRequests: List<DataQuery>?,               // OU actions (exclusif)
-    val actions: List<AIAction>?,                     // OU dataRequests
+    val dataCommands: List<DataCommand>?,             // OU actions (exclusif)
+    val actionCommands: List<DataCommand>?,           // OU dataCommands
     val postText: String?,                            // Seulement si actions
     val communicationModule: CommunicationModule?     // Toujours en dernier
 )
 ```
 
-**Contrainte importante** : `dataRequests` et `actions` mutuellement exclusifs.
+**Contrainte importante** : `dataCommands` et `actionCommands` mutuellement exclusifs.
 
-### DataQuery (dual mode)
+### DataCommand (unifié)
 ```kotlin
-data class DataQuery(
+data class DataCommand(
     val id: String,              // Hash déterministe de (type + params + isRelative)
-    val type: String,            // Query type standardisé (voir types disponibles)
+    val type: String,            // Command type standardisé (voir types disponibles)
     val params: Map<String, Any>, // Paramètres absolus ou relatifs
     val isRelative: Boolean = false // true pour automation, false pour chat
 )
 ```
 
-**Types de queries unifiés :**
+### ExecutableCommand
+```kotlin
+data class ExecutableCommand(
+    val resource: String,         // "zones", "tool_data"
+    val operation: String,        // "get", "create", "update"
+    val params: Map<String, Any>  // Paramètres résolus pour coordinator
+)
+```
+
+**Types de commands unifiés :**
 - **SYSTEM_SCHEMAS**, **SYSTEM_DOC**, **APP_CONFIG** (Level 1)
 - **USER_TOOLS_CONTEXT** (Level 2)
 - **APP_STATE** (Level 3)
 - **ZONE_CONFIG**, **ZONE_STATS** (Level 4)
 - **TOOL_CONFIG**, **TOOL_DATA_FULL**, **TOOL_DATA_SAMPLE**, **TOOL_DATA_FIELD**, **TOOL_STATS** (Level 4)
 
-## 4. Système de prompts unifié
+## 4. Communication bidirectionnelle
 
-### Architecture 4 niveaux avec QueryExecutor
+### Messages riches (texte + informations de données / instructions)
+Les `RichMessage` combinent texte libre et blocs d'enrichissement pour créer des interactions contextuelles :
+
+```kotlin
+data class RichMessage(
+    val segments: List<MessageSegment>,    // Texte + EnrichmentBlock
+    val linearText: String,                // Version textuelle pour IA
+    val dataCommands: List<DataCommand>    // Commands générées automatiquement
+)
+```
+
+### Communication Modules
+Modules de communication générés par l'IA pour obtenir des réponses structurées de l'utilisateur :
+
+```kotlin
+sealed class CommunicationModule {
+    data class MultipleChoice(val question: String, val options: List<String>)
+    data class Validation(val message: String)
+    // TODO: Slider, DataSelector
+}
+```
+
+### Validation et permissions
+Système hiérarchique contrôlant les actions IA :
+- `autonomous` - IA agit directement
+- `validation_required` - Confirmation utilisateur obligatoire
+- `forbidden` - Action interdite
+- `ask_first` - Permission avant proposition
+
+### Flow de réponse utilisateur
+1. IA génère `AIMessage` avec `CommunicationModule`
+2. UI affiche le module approprié (choix multiple, validation, etc.)
+3. Réponse utilisateur stockée dans `SessionMessage.textContent`
+4. IA traite la réponse pour actions suivantes
+
+## 5. Enrichissements et composition des messages
+
+### Types d'enrichissements
+- **🔍 POINTER** - Référencer données → Multi-queries selon niveau sélection
+- **📝 USE** - Modifier données outils → Multi-queries selon données ciblées
+- **✨ CREATE** - Créer éléments → Pas de query (orientation seulement)
+- **🔧 MODIFY_CONFIG** - Config outils → Multi-queries selon outils ciblés
+
+### EnrichmentProcessor
+```kotlin
+class EnrichmentProcessor {
+    fun generateSummary(type: EnrichmentType, config: String): String
+    fun generateCommands(type: EnrichmentType, config: String, isRelative: Boolean): List<DataCommand>
+}
+```
+
+### UserCommandProcessor
+```kotlin
+class UserCommandProcessor {
+    fun processCommands(commands: List<DataCommand>): List<ExecutableCommand>
+    // Résolution périodes relatives → timestamps absolus
+    // UI abstractions → paramètres coordinator concrets
+}
+```
+
+### AICommandProcessor
+```kotlin
+class AICommandProcessor {
+    fun processDataCommands(commands: List<DataCommand>): List<ExecutableCommand>
+    fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand>
+    // Validation sécurité, limites données, token management
+}
+```
+
+**Logique POINTER multi-queries selon niveau ZoneScopeSelector :**
+- **ZONE** → `[ZONE_CONFIG, ZONE_STATS]`
+- **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
+- **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
+
+### Composition via RichComposer
+Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, générant automatiquement `linearText` et `dataCommands` via `EnrichmentProcessor.generateCommands()`.
+
+### Différences User vs AI Commands
+
+**User Commands** :
+- Source : EnrichmentBlocks dans RichMessage
+- Types : POINTER, USE, CREATE, MODIFY_CONFIG uniquement
+- But : Fournir données contextuelles à l'IA
+- **Jamais d'actions directes**
+
+**AI Commands** :
+- Source : AIMessage.dataCommands + AIMessage.actionCommands
+- Types : Data queries + actions réelles (create, update, delete)
+- But : Demander données + exécuter actions
+
+## 6. Système de queries et prompts
+
 - **Level 1** : Documentation + schémas système (SYSTEM_SCHEMAS, SYSTEM_DOC, APP_CONFIG)
 - **Level 2** : Contexte utilisateur dynamique (USER_TOOLS_CONTEXT)
 - **Level 3** : État app complet (APP_STATE)
 - **Level 4** : Enrichissements session (extraits de l'historique des messages)
 
-### Déduplication cross-niveaux
-**Principe** : QueryExecutor déduplique incrémentalement niveau par niveau
+### Types de commands par niveau (dont Extraction Level 4 depuis historique)
+**Event sourcing Level 4 :** `EnrichmentBlock` (stocké) → `List<DataCommand>` (généré) dans pipeline. `PromptManager.getLevel4Commands()` extrait EnrichmentBlocks depuis historique messages et génère commands à la volée.
+
+### CommandExecutor et pipeline processing
+**Pipeline stateless pur** : Régénération complète à chaque message
 ```kotlin
-// Déduplication incrémentale préservant l'ordre
-level1Content = queryExecutor.executeQueries(level1Queries, "Level1")
-level2Content = queryExecutor.executeQueries(level2Queries, "Level2", previousQueries = level1Queries)
-level3Content = queryExecutor.executeQueries(level3Queries, "Level3", previousQueries = level1Queries + level2Queries)
-level4Content = queryExecutor.executeQueries(level4Queries, "Level4", previousQueries = level1Queries + level2Queries + level3Queries)
+// À chaque message : extraction EnrichmentBlocks → pipeline complet → prompt fresh
+EnrichmentBlocks → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
+```
+
+**Échec cascade :** Échec commande N → arrêt exécution N+1, N+2...
+
+### QueryDeduplicator (conservé)
+**Principe** : Déduplication incrémentale cross-niveaux pour assemblage prompt final
+```kotlin
+level1Content = commandExecutor.executeCommands(level1Commands, "Level1")
+level2Content = commandExecutor.executeCommands(level2Commands, "Level2", previousCommands = level1Commands)
+// Déduplication via QueryDeduplicator lors assemblage prompt
 ```
 
 **Mécanismes de déduplication :**
-1. **Hash identité** : Queries identiques supprimées (premier occurrence gardée)
-2. **Inclusion métier** : Queries plus générales incluent spécifiques (stub)
-3. **Schémas identiques** : Post-résolution par `x-schema-id`
+1. **Hash identité** : Commands identiques supprimées (première occurrence gardée)
+2. **Inclusion métier** : Commands plus générales incluent spécifiques selon règles business
 
-### Système de schémas avec déduplication
-**Config vs Data schemas :**
-- **CONFIG** : Schémas conditionnels simples avec `x-schema-id` par type
-- **DATA** : Schémas conditionnels complexes avec `x-schema-id` par résolution
+### Storage Policy
 
-**Format uniforme :**
-```json
-{
-  "x-schema-id": "tracking_data_numeric",
-  "x-schema-display-name": "{{TRACKING_DATA_NUMERIC_SCHEMA_DISPLAY_NAME}}",
-  "properties": { ... }
-}
-```
+**Ce qui EST stocké :**
+- `AISession.messages: List<SessionMessage>`
+- `SessionMessage` avec données brutes : EnrichmentBlocks dans RichMessage, aiMessageJson
 
-### Dual mode résolution
-**CHAT** (`isRelative = false`) :
-- "cette semaine" → timestamps figés absolus (`1705276800000, 1705881599999`)
-- Cohérence conversationnelle reproductible
+**Ce qui N'EST JAMAIS stocké :**
+- DataCommand (temporaire pipeline)
+- ExecutableCommand (temporaire pipeline)
+- Résultats commands dans prompt
+- Prompt final assemblé
 
-**AUTOMATION** (`isRelative = true`) :
-- "cette semaine" → paramètre relatif (`"period": "current_week"`)
-- Résolu au moment exécution via `resolveRelativeParams()`
+**Régénération complète :** Pipeline stateless à chaque message pour données toujours fraîches
 
-### TokenCalculator
-```kotlin
-TokenCalculator.estimateTokens(text: String, providerId: String, context: Context): Int
-TokenCalculator.checkTokenLimit(content: String, context: Context, isQuery: Boolean): TokenLimitResult
-```
+**Stratégie Cache :** Envoi complet du prompt à chaque message. L'API (Claude, OpenAI, etc.) gère le cache automatiquement via préfixes identiques. **Décision architecturale** : Cohérence données > optimisation tokens.
 
-Validation pré-envoi :
-- **CHAT** : Dialogue confirmation si dépassement
-- **AUTOMATION** : Refus automatique
+### Dual mode résolution (CHAT absolu vs AUTOMATION relatif)
+**CHAT** (`isRelative = false`) : "cette semaine" → timestamps figés absolus pour cohérence conversationnelle
 
-## 5. Enrichissements et Event Sourcing Level 4
+**AUTOMATION** (`isRelative = true`) : "cette semaine" → paramètre relatif résolu au moment exécution via `resolveRelativeParams()`
 
-### Types et génération queries
-- **🔍 POINTER** - Référencer données → Multi-queries selon niveau sélection
-- **📝 USE** - Modifier données outils → Multi-queries (stub)
-- **✨ CREATE** - Créer éléments → Pas de query (orientation seulement)
-- **🔧 MODIFY_CONFIG** - Config outils → Multi-queries (stub)
+**Token Management :** Validation individuelle des queries et validation globale du prompt. Gestion différenciée CHAT (dialogue confirmation) vs AUTOMATION (refus automatique) si dépassement.
 
-### EnrichmentSummarizer
-```kotlin
-class EnrichmentSummarizer {
-    fun generateSummary(type: EnrichmentType, config: String): String
-    fun generateQueries(type: EnrichmentType, config: String, isRelative: Boolean): List<DataQuery>
-}
-```
-
-### Logique POINTER multi-queries
-**Selon niveau de sélection ZoneScopeSelector :**
-- **ZONE** → `[ZONE_CONFIG, ZONE_STATS]`
-- **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
-- **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
-
-**Event sourcing Level 4** : `EnrichmentBlock` → `List<DataQuery>` stockées dans richContent.dataQueries des messages USER. PromptManager.getLevel4Queries() extrait chronologiquement depuis l'historique des messages (USER richContent.dataQueries + AI aiMessage.dataRequests).
-
-## 6. Providers
+## 7. Providers
 
 ### AIProvider interface
 ```kotlin
@@ -257,68 +349,3 @@ interface AIProvider {
 - Configurations gérées par `AIProviderConfigService` via coordinator
 - Providers découverts via `AIProviderRegistry`
 - `AIClient` utilise coordinator pour récupérer configs (pas d'accès direct DB)
-
-### Validation et permissions
-Système hiérarchique avec 4 niveaux :
-- `autonomous` - IA agit directement
-- `validation_required` - Confirmation utilisateur
-- `forbidden` - Action interdite
-- `ask_first` - Permission avant proposition
-
-## 7. Components UI
-
-### RichComposer
-```kotlin
-@Composable
-fun UI.RichComposer(
-    segments: List<MessageSegment>,
-    onSegmentsChange: (List<MessageSegment>) -> Unit,
-    onSend: (RichMessage) -> Unit,
-    sessionType: SessionType = SessionType.CHAT
-)
-```
-
-Fonctionnalités :
-- Textarea + enrichment blocks
-- Configuration via dialogs overlay
-- Génération automatique `linearText` et `dataQueries` multi-queries
-- Integration `EnrichmentSummarizer.generateQueries()`
-
-### AIFloatingChat
-Interface 100% écran avec header + messages + composer. Orchestration complète via `AIOrchestrator`.
-
-### Communication Modules
-Générés par l'IA, remplis par le user
-```kotlin
-sealed class CommunicationModule {
-    data class MultipleChoice(val question: String, val options: List<String>)
-    data class Validation(val message: String)
-    // TODO: Slider, DataSelector
-}
-```
-
-## 8. Base de données
-
-### Migration vers AppDatabase
-Les entités AI sont intégrées dans AppDatabase principale (plus de AIDatabase standalone) :
-- AISessionEntity dans AppDatabase avec AITypeConverters
-- SessionMessageEntity dans AppDatabase
-- Cohérence avec l'architecture Room unifiée
-
-### AISessionEntity (schéma simplifié)
-```kotlin
-@Entity(tableName = "ai_sessions")
-data class AISessionEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val type: SessionType,
-    val providerId: String,
-    val providerSessionId: String,
-    val scheduleConfigJson: String?,     // Pour AUTOMATION seulement
-    val createdAt: Long,
-    val lastActivity: Long,
-    val isActive: Boolean
-)
-```
-
-**Event sourcing Level 4** : Plus de stockage level4QueriesJson. Les enrichissements sont extraits de l'historique des messages par PromptManager.getLevel4Queries() en préservant l'ordre chronologique.

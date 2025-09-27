@@ -25,48 +25,49 @@ class QueryExecutor(private val context: Context) {
     private val coordinator = Coordinator(context)
 
     /**
-     * Execute a list of DataQueries and return formatted content
-     * Validates token sizes and logs warnings for oversized results
+     * Execute a list of DataQueries with cross-level deduplication and return formatted content
+     * Validates token sizes and provides warnings for oversized results
      *
-     * @param queries The queries to execute
-     * @param level The level name for logging
-     * @param previousQueries Queries from previous levels for cross-level deduplication
+     * @param queries The queries to execute for this level
+     * @param level The level name for logging purposes
+     * @param previousQueries Queries already executed in previous levels for deduplication
      */
     suspend fun executeQueries(
         queries: List<DataQuery>,
         level: String = "unknown",
         previousQueries: List<DataQuery> = emptyList()
     ): String {
-        LogManager.aiPrompt("QueryExecutor executing ${queries.size} queries for $level (${previousQueries.size} previous queries)")
+        LogManager.aiPrompt("QueryExecutor executing ${queries.size} queries for $level (${previousQueries.size} previous queries for deduplication)")
 
         if (queries.isEmpty()) {
             LogManager.aiPrompt("No queries to execute, returning empty content")
             return ""
         }
 
-        // Deduplicate current queries against previous queries
+        // Perform cross-level deduplication by combining with previous queries
         val allQueries = previousQueries + queries
         val deduplicatedQueries = QueryDeduplicator.deduplicateQueries(allQueries)
 
-        // Extract only the queries that weren't in previous levels
+        // Extract only the new queries that weren't filtered out by deduplication
         val queriesToExecute = deduplicatedQueries.filter { it in queries }
 
-        LogManager.aiPrompt("After deduplication: ${queriesToExecute.size}/${queries.size} queries to execute")
+        LogManager.aiPrompt("After cross-level deduplication: ${queriesToExecute.size}/${queries.size} queries to execute")
 
-        val results = mutableListOf<String>()
+        val contentBlocks = mutableListOf<String>()
         val failedQueries = mutableListOf<DataQuery>()
         val oversizedQueries = mutableListOf<Pair<DataQuery, Int>>()
 
+        // Execute each deduplicated query and collect formatted content
         queriesToExecute.forEach { query ->
             try {
                 LogManager.aiPrompt("Executing query: ${query.id} (type: ${query.type})")
 
-                // Execute the query via coordinator
-                val queryResult = executeQuery(query)
+                // Execute single query and get formatted content
+                val queryContent = executeQuery(query)
 
-                if (queryResult != null) {
-                    // Validate token size
-                    val tokens = TokenCalculator.estimateTokens(queryResult, "default", context)
+                if (queryContent != null) {
+                    // Validate content size against token limits
+                    val tokens = TokenCalculator.estimateTokens(queryContent, "default", context)
                     val limit = TokenCalculator.getTokenLimit(context, isQuery = true, isTotal = false)
 
                     if (tokens > limit) {
@@ -75,11 +76,10 @@ class QueryExecutor(private val context: Context) {
 
                         // TODO: Implement proper oversized query handling based on context
                         // For now, LOG WARNING but include the result anyway
-                        LogManager.aiPrompt("Including oversized query result anyway (TODO: implement proper handling)")
-                        results.add("# Query: ${query.id} (⚠️ ${tokens} tokens, limit: ${limit})\n$queryResult")
+                        contentBlocks.add("# Query: ${query.id} (⚠️ ${tokens} tokens, limit: ${limit})\n$queryContent")
                     } else {
                         LogManager.aiPrompt("Query ${query.id} executed successfully: $tokens tokens")
-                        results.add("# Query: ${query.id}\n$queryResult")
+                        contentBlocks.add("# Query: ${query.id}\n$queryContent")
                     }
                 } else {
                     LogManager.aiPrompt("Query ${query.id} returned null result", "WARN")
@@ -92,7 +92,7 @@ class QueryExecutor(private val context: Context) {
             }
         }
 
-        // Summary logging
+        // Log execution summary
         if (failedQueries.isNotEmpty()) {
             LogManager.aiPrompt("${failedQueries.size} queries failed execution", "WARN")
             // TODO: Implement failed query cleanup strategy
@@ -109,23 +109,25 @@ class QueryExecutor(private val context: Context) {
             // - Different strategies for Level 2 vs Level 4
         }
 
-        val finalContent = results.joinToString("\n\n")
+        // Combine all content blocks into final prompt section
+        val finalContent = contentBlocks.joinToString("\n\n")
         val totalTokens = TokenCalculator.estimateTokens(finalContent, "default", context)
 
-        LogManager.aiPrompt("Query execution completed: ${results.size}/${queries.size} successful, total: $totalTokens tokens")
+        LogManager.aiPrompt("Query execution completed: ${contentBlocks.size}/${queries.size} successful, total: $totalTokens tokens")
 
         return finalContent
     }
 
     /**
-     * Execute a single DataQuery and return raw result
+     * Execute a single DataQuery and return formatted content for prompt inclusion
+     * Resolves relative parameters for automation mode and routes to appropriate execution method
      */
     private suspend fun executeQuery(query: DataQuery): String? {
         LogManager.aiPrompt("Executing DataQuery: id=${query.id}, type=${query.type}, isRelative=${query.isRelative}")
 
         return withContext(Dispatchers.IO) {
             try {
-                // Resolve relative parameters if needed
+                // Resolve relative parameters for automation queries
                 val resolvedParams = if (query.isRelative) {
                     resolveRelativeParams(query.params)
                 } else {
@@ -134,7 +136,7 @@ class QueryExecutor(private val context: Context) {
 
                 LogManager.aiPrompt("Resolved params for ${query.id}: $resolvedParams")
 
-                // Execute query based on type
+                // Route to appropriate query execution method based on type
                 when (query.type) {
                     // === SYSTEM LEVEL (Level 1) ===
                     "SYSTEM_SCHEMAS" -> executeSystemSchemasQuery(resolvedParams)

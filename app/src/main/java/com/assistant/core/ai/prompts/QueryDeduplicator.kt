@@ -7,10 +7,9 @@ import java.security.MessageDigest
 /**
  * Handles query deduplication across all 4 prompt levels
  *
- * Three phases of deduplication:
+ * Two phases of deduplication:
  * 1. Remove identical queries (same hash)
  * 2. Remove included queries (business logic inclusion)
- * 3. Merge identical schemas (post-execution by schema_id)
  *
  * Preserves order for cache efficiency - first query in list has priority
  */
@@ -18,7 +17,7 @@ object QueryDeduplicator {
 
     /**
      * Complete deduplication pipeline for pre-execution queries
-     * Combines phases 1 and 2 while preserving order
+     * Combines identical removal and business logic inclusion while preserving order
      */
     fun deduplicateQueries(orderedQueries: List<DataQuery>): List<DataQuery> {
         LogManager.aiPrompt("QueryDeduplicator processing ${orderedQueries.size} queries")
@@ -99,100 +98,65 @@ object QueryDeduplicator {
     }
 
     /**
-     * Check if query1 includes/supersedes query2
-     * Business logic for inclusion relationships
+     * Check if query1 includes/supersedes query2 based on business logic
+     * Implements smart inclusion rules to avoid redundant queries
      */
     private fun queryIncludes(query1: DataQuery, query2: DataQuery): Boolean {
-        // TODO: Implement business logic inclusion rules
-        // For now, stub implementation with basic type matching
-
         // Identical queries are included (already handled in phase 1)
         if (query1.type == query2.type && query1.params == query2.params) {
             return true
         }
 
-        // Different types might have inclusion relationships
-        // TODO: Implement specific rules:
-        // - ZONE_CONFIG includes TOOL_CONFIG (tools from that zone)
-        // - TOOL_DATA_FULL includes TOOL_DATA_SAMPLE (same instance)
-        // - TOOL_DATA_SAMPLE includes TOOL_DATA_FIELD (same instance, larger scope)
-        // - Larger periods include smaller periods
-        // - More fields include fewer fields
+        // Business logic inclusion rules for different query types
+        return when {
+            // Zone config queries include tool config queries for same zone
+            query1.type == "ZONE_CONFIG" && query2.type == "TOOL_CONFIG" -> {
+                val zoneId1 = query1.params["zoneId"] as? String
+                val toolZoneId = getZoneIdForTool(query2.params["toolInstanceId"] as? String)
+                zoneId1 == toolZoneId
+            }
 
-        LogManager.aiPrompt("TODO: Implement inclusion logic for ${query1.type} vs ${query2.type}")
-        return false
+            // Full tool data includes sample data for same instance
+            query1.type == "TOOL_DATA_FULL" && query2.type == "TOOL_DATA_SAMPLE" -> {
+                query1.params["toolInstanceId"] == query2.params["toolInstanceId"]
+            }
+
+            // Sample data includes field data for same instance and broader scope
+            query1.type == "TOOL_DATA_SAMPLE" && query2.type == "TOOL_DATA_FIELD" -> {
+                query1.params["toolInstanceId"] == query2.params["toolInstanceId"]
+            }
+
+            // Larger time periods include smaller periods for same tool instance
+            sameToolInstanceWithLargerPeriod(query1, query2) -> true
+
+            else -> {
+                LogManager.aiPrompt("No inclusion rule found for ${query1.type} vs ${query2.type}")
+                false
+            }
+        }
     }
 
     /**
-     * Phase 3: Merge query results with identical schema_id
-     * Called after query execution when schema information is available
-     *
-     * @param results List of query execution results with schema information
-     * @return Merged results with schema deduplication
+     * Helper to determine if query1 covers a larger time period than query2 for same tool
      */
-    fun mergeIdenticalSchemas(results: List<QueryResult>): List<QueryResult> {
-        LogManager.aiPrompt("QueryDeduplicator merging schemas for ${results.size} results")
+    private fun sameToolInstanceWithLargerPeriod(query1: DataQuery, query2: DataQuery): Boolean {
+        if (query1.params["toolInstanceId"] != query2.params["toolInstanceId"]) return false
 
-        val schemaGroups = mutableMapOf<String, MutableList<QueryResult>>()
-        val noSchemaResults = mutableListOf<QueryResult>()
+        val start1 = query1.params["startTimestamp"] as? Long ?: return false
+        val end1 = query1.params["endTimestamp"] as? Long ?: return false
+        val start2 = query2.params["startTimestamp"] as? Long ?: return false
+        val end2 = query2.params["endTimestamp"] as? Long ?: return false
 
-        // Group results by schema_id
-        results.forEach { result ->
-            val schemaId = result.schemaId
-            if (schemaId != null) {
-                schemaGroups.getOrPut(schemaId) { mutableListOf() }.add(result)
-            } else {
-                noSchemaResults.add(result)
-            }
-        }
-
-        // Merge groups with multiple results
-        val mergedResults = mutableListOf<QueryResult>()
-
-        schemaGroups.forEach { (schemaId, groupResults) ->
-            if (groupResults.size > 1) {
-                val merged = mergeSchemaGroup(schemaId, groupResults)
-                mergedResults.add(merged)
-                LogManager.aiPrompt("Merged ${groupResults.size} results for schema: $schemaId")
-            } else {
-                mergedResults.add(groupResults.first())
-            }
-        }
-
-        // Add results without schemas
-        mergedResults.addAll(noSchemaResults)
-
-        LogManager.aiPrompt("Schema merging completed: ${results.size} → ${mergedResults.size}")
-        return mergedResults
+        return start1 <= start2 && end1 >= end2
     }
 
     /**
-     * Merge multiple query results that share the same schema_id
+     * Helper to get zone ID for a tool instance
+     * Currently returns null to disable zone-based inclusion optimization
      */
-    private fun mergeSchemaGroup(schemaId: String, results: List<QueryResult>): QueryResult {
-        // TODO: Implement smart merging logic
-        // - Combine instance lists
-        // - Merge display names
-        // - Preserve first result as base
-
-        val baseResult = results.first()
-        val instanceNames = results.flatMap { it.instanceNames ?: emptyList() }.distinct()
-
-        return QueryResult(
-            content = "## ${baseResult.schemaDisplayName} (instances: ${instanceNames.joinToString(", ")})\n${baseResult.content}",
-            schemaId = schemaId,
-            schemaDisplayName = baseResult.schemaDisplayName,
-            instanceNames = instanceNames
-        )
+    private fun getZoneIdForTool(@Suppress("UNUSED_PARAMETER") toolInstanceId: String?): String? {
+        // This would need to be implemented to query the tool instance's zone
+        // For now, return null to disable this optimization
+        return null
     }
 }
-
-/**
- * Result of query execution with schema information for deduplication
- */
-data class QueryResult(
-    val content: String,
-    val schemaId: String? = null,
-    val schemaDisplayName: String? = null,
-    val instanceNames: List<String>? = null
-)

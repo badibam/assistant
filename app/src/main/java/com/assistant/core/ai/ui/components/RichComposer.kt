@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
-import com.assistant.core.ai.enrichments.EnrichmentSummarizer
+import com.assistant.core.ai.enrichments.EnrichmentProcessor
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.ui.selectors.ZoneScopeSelector
@@ -132,11 +132,11 @@ fun UI.RichComposer(
             onConfirm = { config, preview ->
                 LogManager.aiEnrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
 
-                // Use EnrichmentSummarizer to generate proper summary if preview is empty or generic
-                val enrichmentSummarizer = EnrichmentSummarizer()
+                // Use EnrichmentProcessor to generate proper summary if preview is empty or generic
+                val enrichmentProcessor = EnrichmentProcessor()
                 val finalPreview = if (preview.isBlank() || preview == "${getEnrichmentIcon(type)} Configuration") {
-                    LogManager.aiEnrichment("Using EnrichmentSummarizer to generate preview for $type")
-                    enrichmentSummarizer.generateSummary(type, config)
+                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for $type")
+                    enrichmentProcessor.generateSummary(type, config)
                 } else {
                     LogManager.aiEnrichment("Using provided preview for $type: '$preview'")
                     preview
@@ -211,12 +211,12 @@ private fun EnrichmentBlockPreview(
 
 /**
  * Create RichMessage from segments with computed linearText and dataQueries
- * Uses EnrichmentSummarizer for proper query generation according to specs
+ * Uses EnrichmentProcessor for proper query generation according to specs
  */
 private fun createRichMessage(segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
     LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
 
-    val enrichmentSummarizer = EnrichmentSummarizer()
+    val enrichmentProcessor = EnrichmentProcessor()
 
     // Compute linearText by joining all content
     val linearText = segments.joinToString(" ") { segment ->
@@ -232,16 +232,16 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
     val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
     LogManager.aiEnrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
 
-    // Compute dataQueries from enrichment blocks using EnrichmentSummarizer
+    // Compute dataQueries from enrichment blocks using EnrichmentProcessor
     val dataQueries = enrichmentBlocks.flatMapIndexed { index, block ->
         LogManager.aiEnrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
 
         try {
-            // Use EnrichmentSummarizer to check if block should generate queries and create them
+            // Use EnrichmentProcessor to check if block should generate queries and create them
             val isRelative = (sessionType == SessionType.AUTOMATION)
-            LogManager.aiEnrichment("Calling EnrichmentSummarizer for block $index with isRelative=$isRelative")
+            LogManager.aiEnrichment("Calling EnrichmentProcessor for block $index with isRelative=$isRelative")
 
-            val queries = enrichmentSummarizer.generateQueries(block.type, block.config, isRelative)
+            val queries = enrichmentProcessor.generateQueries(block.type, block.config, isRelative)
             LogManager.aiEnrichment("Block $index generated ${queries.size} queries")
             queries.forEach { query ->
                 LogManager.aiEnrichment("  - Query: ${query.id} (type: ${query.type})")

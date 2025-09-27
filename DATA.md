@@ -121,52 +121,94 @@ data class SelectionResult(
 - DataValues : Valeurs de champs data génériques
 
 ## ═══════════════════════════════════
-## Validation Centralisée
+## Validation par Schema ID
 
-### SchemaValidator V3
+### Architecture Schema
 
-Architecture centralisée de validation basée sur JSON Schema avec traduction automatique.
+Système de validation basé sur identifiants de schémas explicites avec objets Schema autonomes.
 
 ```kotlin
-// API Unifiée
-val toolType = ToolTypeManager.getToolType("tracking")
-val result = SchemaValidator.validate(toolType, data, context, schemaType = "data")
+data class Schema(
+    val id: String,         // "tracking_config_numeric"
+    val content: String     // JSON Schema complet
+)
+```
 
-if (result.isValid) {
-    // Validation réussie
-} else {
-    // Erreur traduite en français : result.errorMessage
+### Patterns de Validation
+
+#### Configuration d'outils
+
+Le `schema_id` est intégré dans les données de configuration au même niveau que les champs métier :
+
+```kotlin
+val configData = mapOf(
+    "schema_id" to "tracking_config_numeric",      // Pour validation
+    "data_schema_id" to "tracking_data_numeric",   // Pour usage runtime
+    "name" to "Mon suivi",
+    "type" to "numeric"
+)
+
+// Validation via helper unifié
+UI.ValidationHelper.validateAndSave(
+    toolTypeName = "tracking",
+    configData = configData,
+    context = context,
+    schemaType = "config",
+    onSuccess = { configJson -> /* sauvegarde */ }
+)
+```
+
+#### Données d'entrée
+
+Le `schema_id` est passé au niveau des paramètres de service, séparé du JSON des données :
+
+```kotlin
+val params = mapOf(
+    "toolInstanceId" to toolInstanceId,
+    "tooltype" to "tracking",
+    "schema_id" to "tracking_data_numeric",   // Pour validation service
+    "data" to JSONObject(dataJson)            // JSON propre sans schema_id
+)
+
+coordinator.processUserAction("tool_data.create", params)
+```
+
+### Validation Service
+
+ToolDataService récupère le `schema_id` depuis les paramètres et l'ajoute à la structure de validation :
+
+```kotlin
+val schemaId = params.optString("schema_id")
+if (schemaId.isNotEmpty()) {
+    fullDataMap["schema_id"] = schemaId  // Ajout au niveau racine
+}
+val schema = toolType.getSchema(schemaId, context)
+SchemaValidator.validate(schema, fullDataMap, context)
+```
+
+### Schémas de Base
+
+BaseSchemas définit les champs communs incluant les identifiants de schémas :
+
+**Configuration** : `schema_id`, `data_schema_id`, `name`, `description`, `management`, `display_mode`, etc.
+
+**Données** : `schema_id`, `tool_instance_id`, `tooltype`, `name`, `timestamp`, `created_at`, etc.
+
+### ValidationHelper
+
+API centralisée pour validation de configuration avec extraction automatique du schema_id :
+
+```kotlin
+object ValidationHelper {
+    fun validateAndSave(
+        toolTypeName: String,
+        configData: Map<String, Any>,
+        context: Context,
+        schemaType: String,
+        onSuccess: (String) -> Unit
+    ): Boolean
 }
 ```
-
-#### Interface SchemaProvider
-
-Tous les ToolTypes implémentent SchemaProvider :
-
-```kotlin
-interface SchemaProvider {
-    fun getConfigSchema(): String        // Schéma configuration outil
-    fun getDataSchema(): String?         // Schéma données métier
-    fun getFormFieldName(String): String // Traductions champs
-}
-```
-
-#### Types de Validation
-
-```kotlin
-// Validation configuration outil (création/modification)
-SchemaValidator.validate(toolType, configData, context, schemaType = "config")
-
-// Validation données métier (entries)
-SchemaValidator.validate(toolType, entryData, context, schemaType = "data")
-```
-
-#### Fonctionnalités Automatiques
-
-- **Filtrage valeurs vides** : Supprime `""` et `null` avant validation
-- **Traduction erreurs** : Messages français avec noms traduits
-- **Schémas conditionnels** : Support `allOf/if/then` natif
-- **Cache performance** : Schémas mis en cache automatiquement
 
 ## ═══════════════════════════════════
 ## Event Sourcing
@@ -179,12 +221,12 @@ Toutes les modifications passent par des événements pour garantir cohérence e
 - Cohérence sans synchronisation manuelle
 - Historique pour IA et audit
 
-### Schémas JSON Auto-descriptifs
+### Schémas Auto-descriptifs
 
 ```kotlin
-// Validation et navigation IA sans accès aux données
-val schema = toolType.getConfigSchema()
-val validation = toolType.validateData(data, operation)
+// Récupération et validation via schema ID
+val schema = toolType.getSchema(schemaId, context)
+val validation = SchemaValidator.validate(schema, data, context)
 ```
 
 ### Databases Standalone
@@ -211,24 +253,30 @@ Système de templates pour actions, états et résultats :
 ## ═══════════════════════════════════
 ## Règles de Développement
 
-### Service Implementation
+### Patterns d'Implémentation
 
+#### Service Implementation
 - Hériter `ExecutableService`
-- Validation via `SchemaValidator.validate(toolType, data, context, useDataSchema)`
-- Logs d'erreur explicites
-- Gestion token cancellation
+- **Configs** : utiliser `UI.ValidationHelper.validateAndSave()` avec schema_id dans les données
+- **Données** : ajouter `schema_id` aux paramètres service, récupérer via `params.optString("schema_id")`
+- Validation directe via `SchemaValidator.validate(schema, data, context)`
+- Logs d'erreur explicites et gestion token cancellation
 
-### Discovery Pattern
+#### Schema ID Management
+- **Configuration** : `schema_id` et `data_schema_id` ajoutés automatiquement lors du nettoyage des données
+- **Données d'entrée** : `schema_id` calculé selon pattern `${tooltype}_data_${type}` dans InputManager
+- **Service validation** : schema_id ajouté à `fullDataMap` au niveau racine pour validation
 
+#### Discovery Pattern
 - Jamais d'imports hardcodés dans Core
 - Services découverts via ToolTypeManager
 - Extension automatique par ajout au Scanner
+- ToolTypes implémentent `getSchema(schemaId, context): Schema?`
 
-### Data Consistency
-
+#### Data Consistency
 - Event sourcing obligatoire pour modifications
-- **Validation centralisée** : SchemaValidator pour config/data
-- Schémas JSON pour validation automatique
+- Validation centralisée via objets Schema explicites
+- Schémas autonomes avec ID déterministes
 - Standalone databases pour discovery
 
 ---
