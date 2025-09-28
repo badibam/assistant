@@ -1,14 +1,14 @@
 package com.assistant.core.ai.data
 
 /**
- * AI message structure with validation, data requests and actions
- * Important constraint: Either dataRequests OR actions, never both simultaneously
+ * AI message structure with validation, data commands and action commands
+ * Important constraint: Either dataCommands OR actionCommands, never both simultaneously
  */
 data class AIMessage(
     val preText: String,                              // Required introduction/analysis
     val validationRequest: ValidationRequest?,        // Optional - before actions
-    val dataRequests: List<DataQuery>?,               // Optional - AI data queries
-    val actions: List<AIAction>?,                     // Optional - actions to execute
+    val dataCommands: List<DataCommand>?,             // Optional - AI data queries
+    val actionCommands: List<DataCommand>?,           // Optional - actions to execute
     val postText: String?,                            // Optional, only if actions
     val communicationModule: CommunicationModule?     // Optional, always last
 )
@@ -21,25 +21,6 @@ data class ValidationRequest(
     val status: ValidationStatus? = null // PENDING, CONFIRMED, REFUSED
 )
 
-/**
- * AI action to be executed through CommandDispatcher
- * TODO: Define structure when implementing CommandProcessor
- */
-data class AIAction(
-    val id: String,
-    val command: String,                    // resource.operation format
-    val params: Map<String, Any>,
-    val saveResultAs: String? = null,       // For variable substitution in clusters
-    val status: AIActionStatus? = null      // Execution status
-)
-
-enum class AIActionStatus {
-    PENDING,
-    SUCCESS,
-    FAILED,
-    CANCELLED,
-    REFUSED
-}
 
 /**
  * Communication modules for user interaction

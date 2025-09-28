@@ -157,27 +157,26 @@ class AIClient(private val context: Context) {
                 )
             }
 
-            val dataRequests = json.optJSONArray("dataRequests")?.let { array ->
+            val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
                 (0 until array.length()).map { index ->
-                    val requestJson = array.getJSONObject(index)
-                    DataQuery(
-                        id = requestJson.getString("id"),
-                        type = requestJson.getString("type"),
-                        params = parseParams(requestJson.getJSONObject("params")),
-                        isRelative = requestJson.optBoolean("isRelative", false)
+                    val commandJson = array.getJSONObject(index)
+                    DataCommand(
+                        id = commandJson.getString("id"),
+                        type = commandJson.getString("type"),
+                        params = parseParams(commandJson.getJSONObject("params")),
+                        isRelative = commandJson.optBoolean("isRelative", false)
                     )
                 }
             }
 
-            val actions = json.optJSONArray("actions")?.let { array ->
+            val actionCommands = json.optJSONArray("actionCommands")?.let { array ->
                 (0 until array.length()).map { index ->
-                    val actionJson = array.getJSONObject(index)
-                    AIAction(
-                        id = actionJson.getString("id"),
-                        command = actionJson.getString("command"),
-                        params = parseParams(actionJson.getJSONObject("params")),
-                        saveResultAs = actionJson.optString("saveResultAs", null).takeIf { it.isNotEmpty() },
-                        status = AIActionStatus.PENDING
+                    val commandJson = array.getJSONObject(index)
+                    DataCommand(
+                        id = commandJson.getString("id"),
+                        type = commandJson.getString("type"),
+                        params = parseParams(commandJson.getJSONObject("params")),
+                        isRelative = commandJson.optBoolean("isRelative", false)
                     )
                 }
             }
@@ -193,13 +192,13 @@ class AIClient(private val context: Context) {
             val aiMessage = AIMessage(
                 preText = preText,
                 validationRequest = validationRequest,
-                dataRequests = dataRequests,
-                actions = actions,
+                dataCommands = dataCommands,
+                actionCommands = actionCommands,
                 postText = postText,
                 communicationModule = communicationModule
             )
 
-            LogManager.aiService("Successfully parsed AIMessage: preText present, ${actions?.size ?: 0} actions, ${dataRequests?.size ?: 0} dataRequests")
+            LogManager.aiService("Successfully parsed AIMessage: preText present, ${actionCommands?.size ?: 0} actionCommands, ${dataCommands?.size ?: 0} dataCommands")
 
             aiMessage
 

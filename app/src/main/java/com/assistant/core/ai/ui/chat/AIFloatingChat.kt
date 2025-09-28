@@ -133,7 +133,7 @@ fun AIFloatingChat(
                             onSend = { richMessage ->
                                 LogManager.aiUI("AIFloatingChat received RichMessage from RichComposer")
                                 LogManager.aiUI("RichMessage.linearText: '${richMessage.linearText}'")
-                                LogManager.aiUI("RichMessage.dataQueries: ${richMessage.dataQueries.size} queries")
+                                LogManager.aiUI("RichMessage.dataCommands: ${richMessage.dataCommands.size} commands")
 
                                 scope.launch {
                                     isLoading = true

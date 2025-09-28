@@ -1,54 +1,54 @@
 package com.assistant.core.ai.prompts
 
-import com.assistant.core.ai.data.DataQuery
+import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.utils.LogManager
 import java.security.MessageDigest
 
 /**
- * Handles query deduplication across all 4 prompt levels
+ * Handles command deduplication across all 4 prompt levels
  *
  * Two phases of deduplication:
- * 1. Remove identical queries (same hash)
- * 2. Remove included queries (business logic inclusion)
+ * 1. Remove identical commands (same hash)
+ * 2. Remove included commands (business logic inclusion)
  *
- * Preserves order for cache efficiency - first query in list has priority
+ * Preserves order for cache efficiency - first command in list has priority
  */
 object QueryDeduplicator {
 
     /**
-     * Complete deduplication pipeline for pre-execution queries
+     * Complete deduplication pipeline for pre-execution commands
      * Combines identical removal and business logic inclusion while preserving order
      */
-    fun deduplicateQueries(orderedQueries: List<DataQuery>): List<DataQuery> {
-        LogManager.aiPrompt("QueryDeduplicator processing ${orderedQueries.size} queries")
+    fun deduplicateCommands(orderedCommands: List<DataCommand>): List<DataCommand> {
+        LogManager.aiPrompt("QueryDeduplicator processing ${orderedCommands.size} commands")
 
-        // Phase 1: Remove identical queries (same hash ID)
-        val withoutDuplicates = removeIdenticalQueries(orderedQueries)
-        LogManager.aiPrompt("After removing identical: ${withoutDuplicates.size} queries")
+        // Phase 1: Remove identical commands (same hash ID)
+        val withoutDuplicates = removeIdenticalCommands(orderedCommands)
+        LogManager.aiPrompt("After removing identical: ${withoutDuplicates.size} commands")
 
-        // Phase 2: Remove included queries (business logic)
-        val withoutInclusions = removeIncludedQueries(withoutDuplicates)
-        LogManager.aiPrompt("After removing included: ${withoutInclusions.size} queries")
+        // Phase 2: Remove included commands (business logic)
+        val withoutInclusions = removeIncludedCommands(withoutDuplicates)
+        LogManager.aiPrompt("After removing included: ${withoutInclusions.size} commands")
 
-        LogManager.aiPrompt("Query deduplication completed: ${orderedQueries.size} → ${withoutInclusions.size}")
+        LogManager.aiPrompt("Command deduplication completed: ${orderedCommands.size} → ${withoutInclusions.size}")
         return withoutInclusions
     }
 
     /**
-     * Phase 1: Remove queries with identical content (same hash)
+     * Phase 1: Remove commands with identical content (same hash)
      * First occurrence in list is kept (order preservation)
      */
-    fun removeIdenticalQueries(queries: List<DataQuery>): List<DataQuery> {
+    fun removeIdenticalCommands(commands: List<DataCommand>): List<DataCommand> {
         val seenHashes = mutableSetOf<String>()
-        val result = mutableListOf<DataQuery>()
+        val result = mutableListOf<DataCommand>()
 
-        queries.forEach { query ->
-            val hash = generateQueryHash(query)
+        commands.forEach { command ->
+            val hash = generateCommandHash(command)
             if (hash !in seenHashes) {
                 seenHashes.add(hash)
-                result.add(query)
+                result.add(command)
             } else {
-                LogManager.aiPrompt("Removed identical query: ${query.type} (hash: ${hash.take(8)}...)")
+                LogManager.aiPrompt("Removed identical command: ${command.type} (hash: ${hash.take(8)}...)")
             }
         }
 
@@ -56,22 +56,22 @@ object QueryDeduplicator {
     }
 
     /**
-     * Phase 2: Remove queries that are included by other queries
-     * Business logic inclusion - more general queries include specific ones
+     * Phase 2: Remove commands that are included by other commands
+     * Business logic inclusion - more general commands include specific ones
      */
-    fun removeIncludedQueries(queries: List<DataQuery>): List<DataQuery> {
-        val result = mutableListOf<DataQuery>()
+    fun removeIncludedCommands(commands: List<DataCommand>): List<DataCommand> {
+        val result = mutableListOf<DataCommand>()
 
-        queries.forEach { candidate ->
+        commands.forEach { candidate ->
             val isIncluded = result.any { existing ->
-                queryIncludes(existing, candidate)
+                commandIncludes(existing, candidate)
             }
 
             if (!isIncluded) {
                 result.add(candidate)
-                LogManager.aiPrompt("Kept query: ${candidate.type}")
+                LogManager.aiPrompt("Kept command: ${candidate.type}")
             } else {
-                LogManager.aiPrompt("Removed included query: ${candidate.type}")
+                LogManager.aiPrompt("Removed included command: ${candidate.type}")
             }
         }
 
@@ -79,13 +79,13 @@ object QueryDeduplicator {
     }
 
     /**
-     * Generate deterministic hash for query identity
+     * Generate deterministic hash for command identity
      * Hash includes: type + sorted params + isRelative
      */
-    private fun generateQueryHash(query: DataQuery): String {
+    private fun generateCommandHash(command: DataCommand): String {
         // Sort parameters for deterministic hash
-        val sortedParams = query.params.toSortedMap().toString()
-        val content = "${query.type}|$sortedParams|${query.isRelative}"
+        val sortedParams = command.params.toSortedMap().toString()
+        val content = "${command.type}|$sortedParams|${command.isRelative}"
 
         return try {
             val digest = MessageDigest.getInstance("SHA-256")
@@ -98,65 +98,22 @@ object QueryDeduplicator {
     }
 
     /**
-     * Check if query1 includes/supersedes query2 based on business logic
-     * Implements smart inclusion rules to avoid redundant queries
+     * Check if command1 includes/supersedes command2 based on business logic
+     * Implements smart inclusion rules to avoid redundant commands
      */
-    private fun queryIncludes(query1: DataQuery, query2: DataQuery): Boolean {
-        // Identical queries are included (already handled in phase 1)
-        if (query1.type == query2.type && query1.params == query2.params) {
-            return true
-        }
+    private fun commandIncludes(command1: DataCommand, command2: DataCommand): Boolean {
+        // TODO: Implement business logic inclusion rules for DataCommand
+        // - Zone config commands include tool config commands for same zone
+        // - Full tool data includes sample data for same instance
+        // - Sample data includes field data for same instance
+        // - Larger time periods include smaller periods for same tool instance
 
-        // Business logic inclusion rules for different query types
-        return when {
-            // Zone config queries include tool config queries for same zone
-            query1.type == "ZONE_CONFIG" && query2.type == "TOOL_CONFIG" -> {
-                val zoneId1 = query1.params["zoneId"] as? String
-                val toolZoneId = getZoneIdForTool(query2.params["toolInstanceId"] as? String)
-                zoneId1 == toolZoneId
-            }
-
-            // Full tool data includes sample data for same instance
-            query1.type == "TOOL_DATA_FULL" && query2.type == "TOOL_DATA_SAMPLE" -> {
-                query1.params["toolInstanceId"] == query2.params["toolInstanceId"]
-            }
-
-            // Sample data includes field data for same instance and broader scope
-            query1.type == "TOOL_DATA_SAMPLE" && query2.type == "TOOL_DATA_FIELD" -> {
-                query1.params["toolInstanceId"] == query2.params["toolInstanceId"]
-            }
-
-            // Larger time periods include smaller periods for same tool instance
-            sameToolInstanceWithLargerPeriod(query1, query2) -> true
-
-            else -> {
-                LogManager.aiPrompt("No inclusion rule found for ${query1.type} vs ${query2.type}")
-                false
-            }
-        }
+        LogManager.aiPrompt("TODO: commandIncludes() business logic - returning false for now")
+        return false
     }
 
-    /**
-     * Helper to determine if query1 covers a larger time period than query2 for same tool
-     */
-    private fun sameToolInstanceWithLargerPeriod(query1: DataQuery, query2: DataQuery): Boolean {
-        if (query1.params["toolInstanceId"] != query2.params["toolInstanceId"]) return false
-
-        val start1 = query1.params["startTimestamp"] as? Long ?: return false
-        val end1 = query1.params["endTimestamp"] as? Long ?: return false
-        val start2 = query2.params["startTimestamp"] as? Long ?: return false
-        val end2 = query2.params["endTimestamp"] as? Long ?: return false
-
-        return start1 <= start2 && end1 >= end2
-    }
-
-    /**
-     * Helper to get zone ID for a tool instance
-     * Currently returns null to disable zone-based inclusion optimization
-     */
-    private fun getZoneIdForTool(@Suppress("UNUSED_PARAMETER") toolInstanceId: String?): String? {
-        // This would need to be implemented to query the tool instance's zone
-        // For now, return null to disable this optimization
-        return null
-    }
+    // TODO: Implement helper methods for command inclusion logic when needed
+    // - sameToolInstanceWithLargerPeriod()
+    // - getZoneIdForTool()
+    // - other business logic helpers
 }

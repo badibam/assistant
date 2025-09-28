@@ -2,8 +2,10 @@ package com.assistant.core.ai.prompts
 
 import android.content.Context
 import com.assistant.core.ai.data.*
-import com.assistant.core.ai.prompts.QueryExecutor
+import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.QueryDeduplicator
+import com.assistant.core.ai.processing.UserCommandProcessor
+import com.assistant.core.ai.enrichments.EnrichmentProcessor
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -17,95 +19,61 @@ import org.json.JSONObject
 object PromptManager {
 
     /**
-     * Build complete prompt for AI session using unified QueryExecutor for all levels
+     * Build complete prompt for AI session using new command pipeline
      */
     suspend fun buildPrompt(session: AISession, context: Context): PromptResult {
         LogManager.aiPrompt("Building 4-level prompt for session ${session.id}")
 
-        val queryExecutor = QueryExecutor(context)
+        // TODO: Implement new command pipeline integration
+        // 1. Generate DataCommands for all levels (replace DataQuery)
+        // 2. Use UserCommandProcessor for Level 4 enrichment processing
+        // 3. Use CommandExecutor instead of QueryExecutor
+        // 4. Integrate QueryDeduplicator.deduplicateCommands()
+        // 5. Extract EnrichmentBlocks from session history and process via pipeline
 
-        // Generate queries for all levels
-        val level1Queries = buildLevel1Queries(context)
-        val level2Queries = buildLevel2Queries(context)
-        val level3Queries = buildLevel3Queries(context)
-        val level4Queries = getLevel4Queries(session)
+        LogManager.aiPrompt("TODO: PromptManager.buildPrompt() - new pipeline integration needed")
 
-        LogManager.aiPrompt("Generated queries (L1:${level1Queries.size}, L2:${level2Queries.size}, L3:${level3Queries.size}, L4:${level4Queries.size})")
-
-        // Execute with incremental deduplication across levels
-        val level1Content = queryExecutor.executeQueries(level1Queries, "Level1")
-        val level2Content = queryExecutor.executeQueries(level2Queries, "Level2", previousQueries = level1Queries)
-        val level3Content = queryExecutor.executeQueries(level3Queries, "Level3", previousQueries = level1Queries + level2Queries)
-        val level4Content = queryExecutor.executeQueries(level4Queries, "Level4", previousQueries = level1Queries + level2Queries + level3Queries)
-
+        // Temporary fallback to avoid compilation errors
         val messages = buildMessageHistory(session)
-
-        return assemblePrompt(level1Content, level2Content, level3Content, level4Content, messages, session.providerId)
-    }
-
-
-    // === Level Query Builders ===
-
-    /**
-     * Generate Level 1 queries: System documentation, schemas, and app config
-     */
-    private fun buildLevel1Queries(context: Context): List<DataQuery> {
-        LogManager.aiPrompt("Building Level 1 queries (System)")
-
-        return listOf(
-            DataQuery(
-                id = "system_doc",
-                type = "SYSTEM_DOC",
-                params = emptyMap(),
-                isRelative = false
-            ),
-            DataQuery(
-                id = "system_schemas",
-                type = "SYSTEM_SCHEMAS",
-                params = emptyMap(),
-                isRelative = false
-            ),
-            DataQuery(
-                id = "app_config",
-                type = "APP_CONFIG",
-                params = emptyMap(),
-                isRelative = false
-            )
+        return PromptResult(
+            prompt = "TODO: Implement new command pipeline\n\n$messages",
+            level1Tokens = 0,
+            level2Tokens = 0,
+            level3Tokens = 0,
+            level4Tokens = 0,
+            totalTokens = 0
         )
     }
 
-    /**
-     * Generate Level 2 queries: User tools marked for AI context
-     */
-    private fun buildLevel2Queries(context: Context): List<DataQuery> {
-        LogManager.aiPrompt("Building Level 2 queries (User Context)")
 
-        // TODO: Query actual tools with include_in_ai_context=true
-        // For now, return single query that will get tools via coordinator
-        return listOf(
-            DataQuery(
-                id = "user_tools_context",
-                type = "USER_TOOLS_CONTEXT",
-                params = mapOf("include_in_ai_context" to true),
-                isRelative = false
-            )
-        )
+    // === Level Command Builders ===
+    // TODO: Replace DataQuery builders with DataCommand builders
+
+    /**
+     * Generate Level 1 commands: System documentation, schemas, and app config
+     */
+    private fun buildLevel1Commands(context: Context): List<DataCommand> {
+        // TODO: Implement Level 1 command generation
+        LogManager.aiPrompt("TODO: buildLevel1Commands() - stub implementation")
+        return emptyList()
     }
 
-    /**
-     * Generate Level 3 queries: Current app state, zones, and tool instances
-     */
-    private fun buildLevel3Queries(context: Context): List<DataQuery> {
-        LogManager.aiPrompt("Building Level 3 queries (App State)")
+    // TODO: Implement Level 2 and Level 3 command builders as stubs
 
-        return listOf(
-            DataQuery(
-                id = "app_state",
-                type = "APP_STATE",
-                params = emptyMap(),
-                isRelative = false
-            )
-        )
+    /**
+     * Extract Level 4 commands from session message history using new pipeline
+     */
+    private fun getLevel4Commands(session: AISession): List<DataCommand> {
+        LogManager.aiPrompt("getLevel4Commands() for session ${session.id}")
+
+        // TODO: Implement new Level 4 pipeline
+        // 1. Extract EnrichmentBlocks from session.messages
+        // 2. Use EnrichmentProcessor.generateCommands() for each block
+        // 3. Process through UserCommandProcessor.processCommands()
+        // 4. Return final DataCommands for execution
+
+        LogManager.aiPrompt("TODO: getLevel4Commands() - new pipeline needed")
+        return emptyList()
     }
 
 
@@ -195,33 +163,6 @@ $fullPrompt
     // Level 2 queries are now generated dynamically in buildUserContext()
     // No longer stored or retrieved from session
 
-    /**
-     * Extract Level 4 queries from session message history
-     * Includes both USER enrichments and AI data requests, in chronological order
-     */
-    private fun getLevel4Queries(session: AISession): List<DataQuery> {
-        LogManager.aiPrompt("getLevel4Queries() for session ${session.id}")
-
-        val allQueries = mutableListOf<DataQuery>()
-
-        // Parse all messages in chronological order (already sorted by timestamp)
-        session.messages.forEach { message ->
-            // Extract queries from USER messages (richContent.dataQueries)
-            message.richContent?.dataQueries?.let { userQueries ->
-                allQueries.addAll(userQueries)
-                LogManager.aiPrompt("Added ${userQueries.size} queries from USER message ${message.id}")
-            }
-
-            // Extract queries from AI messages (aiMessage.dataRequests)
-            message.aiMessage?.dataRequests?.let { aiQueries ->
-                allQueries.addAll(aiQueries)
-                LogManager.aiPrompt("Added ${aiQueries.size} queries from AI message ${message.id}")
-            }
-        }
-
-        LogManager.aiPrompt("Total Level 4 queries from session history: ${allQueries.size}")
-        return allQueries
-    }
 
     private fun estimateTokens(text: String): Int {
         // Rough estimation: 1 token ≈ 4 characters for most languages

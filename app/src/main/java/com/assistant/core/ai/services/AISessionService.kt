@@ -324,7 +324,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 richContentJson != null -> {
                     // TODO: Convert simple text to proper RichMessage JSON structure
                     LogManager.aiSession("TODO: Convert richContent text to RichMessage JSON structure")
-                    """{"linearText":"$richContentJson","segments":[],"dataQueries":[]}"""
+                    """{"linearText":"$richContentJson","segments":[],"dataCommands":[]}"""
                 }
                 else -> null
             }

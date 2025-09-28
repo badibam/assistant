@@ -299,14 +299,14 @@ class AIOrchestrator(private val context: Context) {
     private fun parseRichMessageFromJson(jsonString: String): RichMessage? {
         return try {
             // TODO: Implement proper JSON parsing for RichMessage
-            // Should parse segments, linearText, and dataQueries from JSON
+            // Should parse segments, linearText, and dataCommands from JSON
             LogManager.aiSession("TODO: Implement RichMessage JSON parsing for: ${jsonString.take(50)}...")
 
             // Stub implementation for now
             RichMessage(
                 segments = emptyList(), // TODO: Parse MessageSegment list from JSON
                 linearText = "Restored message content", // TODO: Extract from JSON
-                dataQueries = emptyList() // TODO: Parse DataQuery list from JSON
+                dataCommands = emptyList() // TODO: Parse DataCommand list from JSON
             )
         } catch (e: Exception) {
             LogManager.aiSession("Failed to parse RichMessage JSON: ${e.message}", "WARN", e)
@@ -322,15 +322,15 @@ class AIOrchestrator(private val context: Context) {
     private fun parseAIMessageFromJson(jsonString: String): AIMessage? {
         return try {
             // TODO: Implement proper JSON parsing for AIMessage
-            // Should parse preText, validationRequest, dataRequests, actions, postText, communicationModule
+            // Should parse preText, validationRequest, dataCommands, actionCommands, postText, communicationModule
             LogManager.aiSession("TODO: Implement AIMessage JSON parsing for: ${jsonString.take(50)}...")
 
             // Stub implementation for now
             AIMessage(
                 preText = "AI response content", // TODO: Extract from JSON
                 validationRequest = null, // TODO: Parse ValidationRequest from JSON
-                dataRequests = null, // TODO: Parse DataQuery list from JSON
-                actions = null, // TODO: Parse AIAction list from JSON
+                dataCommands = null, // TODO: Parse DataCommand list from JSON
+                actionCommands = null, // TODO: Parse DataCommand list from JSON
                 postText = null, // TODO: Extract from JSON
                 communicationModule = null // TODO: Parse CommunicationModule from JSON
             )

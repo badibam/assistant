@@ -1,6 +1,6 @@
 package com.assistant.core.ai.enrichments
 
-import com.assistant.core.ai.data.DataQuery
+import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
@@ -8,11 +8,11 @@ import org.json.JSONObject
 /**
  * Processor responsible for handling enrichment blocks in two forms:
  * 1. Preview text generation for user interface display
- * 2. DataQuery generation for AI prompt Level 4 inclusion
+ * 2. DataCommand generation for AI prompt Level 4 inclusion
  *
  * Core logic:
  * - All enrichments generate textual summaries for AI orientation
- * - Only specific types generate DataQueries for Level 4 prompt inclusion:
+ * - Only specific types generate DataCommands for Level 4 prompt inclusion:
  *   * 🔍 POINTER: Query if importance != 'optionnelle'
  *   * 📝 USE: Query for tool instance config
  *   * 🔧 MODIFY_CONFIG: Query for tool instance config
@@ -46,7 +46,7 @@ class EnrichmentProcessor {
     }
 
     /**
-     * Check if enrichment should generate a DataQuery for Level 4 inclusion
+     * Check if enrichment should generate a DataCommand for Level 4 inclusion
      */
     fun shouldGenerateQuery(type: EnrichmentType, config: String): Boolean {
         LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type")
@@ -80,11 +80,11 @@ class EnrichmentProcessor {
     }
 
     /**
-     * Generate DataQueries for prompt Level 4 inclusion
-     * Returns multiple queries as enrichments can require both config and data
+     * Generate DataCommands for prompt Level 4 inclusion
+     * Returns multiple commands as enrichments can require both config and data
      */
-    fun generateQueries(type: EnrichmentType, config: String, isRelative: Boolean = false): List<DataQuery> {
-        LogManager.aiEnrichment("EnrichmentProcessor.generateQueries() called with type=$type, isRelative=$isRelative")
+    fun generateCommands(type: EnrichmentType, config: String, isRelative: Boolean = false): List<DataCommand> {
+        LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative")
 
         if (!shouldGenerateQuery(type, config)) {
             LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)")
@@ -104,7 +104,7 @@ class EnrichmentProcessor {
                 }
             }
 
-            LogManager.aiEnrichment("Generated ${queries.size} DataQueries for $type:")
+            LogManager.aiEnrichment("Generated ${queries.size} DataCommands for $type:")
             queries.forEach { query ->
                 LogManager.aiEnrichment("  - id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
             }
@@ -191,7 +191,7 @@ class EnrichmentProcessor {
     // Query Generation
     // ========================================================================================
 
-    private fun generatePointerQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+    private fun generatePointerQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
         LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative")
 
         val path = config.optString("selectedPath", "")
@@ -204,20 +204,20 @@ class EnrichmentProcessor {
         val pathParts = path.split(".")
         LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}")
 
-        val queries = mutableListOf<DataQuery>()
+        val queries = mutableListOf<DataCommand>()
 
         when (selectionLevel) {
             "ZONE" -> {
                 // Zone selected: config + stats
                 val zoneId = if (pathParts.size > 1) pathParts[1] else ""
                 if (zoneId.isNotEmpty()) {
-                    queries.add(DataQuery(
+                    queries.add(DataCommand(
                         id = buildQueryId("zone_config", mapOf("zoneId" to zoneId)),
                         type = "ZONE_CONFIG",
                         params = mapOf("zoneId" to zoneId),
                         isRelative = isRelative
                     ))
-                    queries.add(DataQuery(
+                    queries.add(DataCommand(
                         id = buildQueryId("zone_stats", mapOf("zoneId" to zoneId)),
                         type = "ZONE_STATS",
                         params = mapOf("zoneId" to zoneId),
@@ -234,13 +234,13 @@ class EnrichmentProcessor {
                     // Add temporal parameters if present
                     addTemporalParams(baseParams, fieldSpecificData, isRelative)
 
-                    queries.add(DataQuery(
+                    queries.add(DataCommand(
                         id = buildQueryId("tool_config", baseParams),
                         type = "TOOL_CONFIG",
                         params = baseParams.toMap(),
                         isRelative = isRelative
                     ))
-                    queries.add(DataQuery(
+                    queries.add(DataCommand(
                         id = buildQueryId("tool_data_sample", baseParams),
                         type = "TOOL_DATA_SAMPLE",
                         params = baseParams.toMap(),
@@ -262,7 +262,7 @@ class EnrichmentProcessor {
                     // Add temporal parameters if present
                     addTemporalParams(baseParams, fieldSpecificData, isRelative)
 
-                    queries.add(DataQuery(
+                    queries.add(DataCommand(
                         id = buildQueryId("tool_data_field", baseParams),
                         type = "TOOL_DATA_FIELD",
                         params = baseParams.toMap(),
@@ -276,7 +276,7 @@ class EnrichmentProcessor {
         return queries
     }
 
-    private fun generateUseQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+    private fun generateUseQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
         LogManager.aiEnrichment("generateUseQueries() - STUB implementation")
 
         // TODO: Implement USE enrichment multi-query generation
@@ -284,7 +284,7 @@ class EnrichmentProcessor {
         return emptyList()
     }
 
-    private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataQuery> {
+    private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
         LogManager.aiEnrichment("generateModifyConfigQueries() - STUB implementation")
 
         // TODO: Implement MODIFY_CONFIG enrichment multi-query generation

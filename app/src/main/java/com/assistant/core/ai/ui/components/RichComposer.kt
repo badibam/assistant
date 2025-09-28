@@ -116,7 +116,7 @@ fun UI.RichComposer(
                 onClick = {
                     LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
                     val richMessage = createRichMessage(segments, sessionType)
-                    LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataQueries.size} queries")
+                    LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
                     onSend(richMessage)
                 }
             )
@@ -210,8 +210,8 @@ private fun EnrichmentBlockPreview(
 }
 
 /**
- * Create RichMessage from segments with computed linearText and dataQueries
- * Uses EnrichmentProcessor for proper query generation according to specs
+ * Create RichMessage from segments with computed linearText and dataCommands
+ * Uses EnrichmentProcessor for proper command generation according to specs
  */
 private fun createRichMessage(segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
     LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
@@ -232,39 +232,39 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
     val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
     LogManager.aiEnrichment("Found ${enrichmentBlocks.size} enrichment blocks to process")
 
-    // Compute dataQueries from enrichment blocks using EnrichmentProcessor
-    val dataQueries = enrichmentBlocks.flatMapIndexed { index, block ->
+    // Compute dataCommands from enrichment blocks using EnrichmentProcessor
+    val dataCommands = enrichmentBlocks.flatMapIndexed { index, block ->
         LogManager.aiEnrichment("Processing enrichment block $index: type=${block.type}, preview='${block.preview}'")
 
         try {
-            // Use EnrichmentProcessor to check if block should generate queries and create them
+            // Use EnrichmentProcessor to check if block should generate commands and create them
             val isRelative = (sessionType == SessionType.AUTOMATION)
             LogManager.aiEnrichment("Calling EnrichmentProcessor for block $index with isRelative=$isRelative")
 
-            val queries = enrichmentProcessor.generateQueries(block.type, block.config, isRelative)
-            LogManager.aiEnrichment("Block $index generated ${queries.size} queries")
-            queries.forEach { query ->
-                LogManager.aiEnrichment("  - Query: ${query.id} (type: ${query.type})")
+            val commands = enrichmentProcessor.generateCommands(block.type, block.config, isRelative)
+            LogManager.aiEnrichment("Block $index generated ${commands.size} commands")
+            commands.forEach { command ->
+                LogManager.aiEnrichment("  - Command: ${command.id} (type: ${command.type})")
             }
-            queries
+            commands
         } catch (e: Exception) {
-            LogManager.aiEnrichment("Failed to generate queries for enrichment block $index: ${e.message}", "ERROR", e)
+            LogManager.aiEnrichment("Failed to generate commands for enrichment block $index: ${e.message}", "ERROR", e)
             emptyList() // Skip invalid configs
         }
     }
 
-    LogManager.aiEnrichment("Generated ${dataQueries.size} DataQueries from ${enrichmentBlocks.size} enrichment blocks")
-    dataQueries.forEachIndexed { index, query ->
-        LogManager.aiEnrichment("DataQuery $index: id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
+    LogManager.aiEnrichment("Generated ${dataCommands.size} DataCommands from ${enrichmentBlocks.size} enrichment blocks")
+    dataCommands.forEachIndexed { index, command ->
+        LogManager.aiEnrichment("DataCommand $index: id='${command.id}', type='${command.type}', isRelative=${command.isRelative}")
     }
 
     val richMessage = RichMessage(
         segments = segments,
         linearText = linearText,
-        dataQueries = dataQueries
+        dataCommands = dataCommands
     )
 
-    LogManager.aiEnrichment("Created RichMessage with linearText='$linearText' and ${dataQueries.size} queries")
+    LogManager.aiEnrichment("Created RichMessage with linearText='$linearText' and ${dataCommands.size} commands")
     return richMessage
 }
 
