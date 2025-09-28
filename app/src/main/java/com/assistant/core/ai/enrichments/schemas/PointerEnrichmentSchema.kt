@@ -31,14 +31,21 @@ object PointerEnrichmentSchema {
             "selectionLevel": {
                 "type": "string",
                 "description": "Niveau de sélection dans la hiérarchie",
-                "enum": ["ZONE", "INSTANCE", "FIELD"],
-                "required": true
+                "enum": ["ZONE", "INSTANCE"],
+                "required": true,
+                "note": "FIELD level removed - selection limited to ZONE and INSTANCE only"
             },
             "importance": {
                 "type": "string",
                 "description": "Importance des données pour le contexte IA",
                 "enum": ["optionnel", "important", "essentiel"],
                 "default": "important"
+            },
+            "includeData": {
+                "type": "boolean",
+                "description": "Inclure les données réelles en plus de l'échantillon (pour niveau INSTANCE)",
+                "default": false,
+                "note": "Si true, ajoute TOOL_DATA aux commands en plus de TOOL_DATA_SAMPLE + TOOL_STATS"
             },
             "période": {
                 "type": "string",

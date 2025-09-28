@@ -32,7 +32,7 @@ User message → AIOrchestrator → PromptManager → CommandExecutor → AIClie
 - `EnrichmentProcessor` : Génération commands depuis enrichments UI bruts
 - `UserCommandProcessor` : Transformation commands user (résolution relatives)
 - `AICommandProcessor` : Transformation commands AI (validation sécurité)
-- `CommandExecutor` : Exécution commands vers coordinator avec échec cascade
+- `CommandExecutor` : Exécution commands vers coordinator
 - `QueryDeduplicator` : Déduplication cross-niveaux pour prompts
 
 ### AIOrchestrator (orchestrateur central)
@@ -59,7 +59,7 @@ EnrichmentBlock (stocké) → EnrichmentProcessor → UserCommandProcessor → C
 ```
 
 **Responsabilités séparées :**
-- `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands (cascade)
+- `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands
 - `UserCommandProcessor` : Résolution périodes relatives, UI abstractions
 - `AICommandProcessor` : Validation sécurité, limites données, token management
 - `CommandExecutor` : ExecutableCommand → resource.operation + coordinator
@@ -180,12 +180,15 @@ data class ExecutableCommand(
 )
 ```
 
-**Types de commands unifiés :**
-- **SYSTEM_SCHEMAS**, **SYSTEM_DOC**, **APP_CONFIG** (Level 1)
-- **USER_TOOLS_CONTEXT** (Level 2)
-- **APP_STATE** (Level 3)
-- **ZONE_CONFIG**, **ZONE_STATS** (Level 4)
-- **TOOL_CONFIG**, **TOOL_DATA_FULL**, **TOOL_DATA_SAMPLE**, **TOOL_DATA_FIELD**, **TOOL_STATS** (Level 4)
+**Types de commands par ressource :**
+- **SCHEMA** → id
+- **TOOL_CONFIG** → id
+- **TOOL_DATA** → id + sélecteurs (filtres + agrégation)
+- **TOOL_STATS** → id + sélecteurs
+- **TOOL_DATA_SAMPLE** → id + sélecteurs
+- **ZONE_CONFIG** → id
+- **ZONES** → aucun paramètre
+- **TOOL_INSTANCES** → zone_id optionnel
 
 ## 4. Communication bidirectionnelle
 
@@ -227,10 +230,10 @@ Système hiérarchique contrôlant les actions IA :
 ## 5. Enrichissements et composition des messages
 
 ### Types d'enrichissements
-- **🔍 POINTER** - Référencer données → Multi-queries selon niveau sélection
-- **📝 USE** - Modifier données outils → Multi-queries selon données ciblées
-- **✨ CREATE** - Créer éléments → Pas de query (orientation seulement)
-- **🔧 MODIFY_CONFIG** - Config outils → Multi-queries selon outils ciblés
+- **🔍 POINTER** - Référencer données (zones ou instances)
+- **📝 USE** - Utiliser données d'outils (config + schemas + data sample + stats)
+- **✨ CREATE** - Créer éléments (schemas pour type d'outil)
+- **🔧 MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 
 ### EnrichmentProcessor
 ```kotlin
@@ -258,10 +261,17 @@ class AICommandProcessor {
 }
 ```
 
-**Logique POINTER multi-queries selon niveau ZoneScopeSelector :**
-- **ZONE** → `[ZONE_CONFIG, ZONE_STATS]`
-- **INSTANCE** → `[TOOL_CONFIG, TOOL_DATA_SAMPLE]` + gestion temporelle
-- **FIELD** → `[TOOL_DATA_FIELD]` + mode sample_entries + gestion temporelle
+**Logique enrichissement par type :**
+
+**POINTER** :
+- Zone → `ZONE_CONFIG` + `TOOL_INSTANCES`
+- Instance → `SCHEMA(config)` + `SCHEMA(data)` + `TOOL_CONFIG` + `TOOL_DATA_SAMPLE` + optionnellement `TOOL_DATA` réelles (toggle "inclure données")
+
+**CREATE** : `SCHEMA(config_schema_id)` + `SCHEMA(data_schema_id)` pour type d'outil
+
+**MODIFY_CONFIG** : `SCHEMA(config_schema_id)` + `TOOL_CONFIG(tool_instance_id)`
+
+**USE** : `TOOL_CONFIG` + `SCHEMA(config)` + `SCHEMA(data)` + `TOOL_DATA_SAMPLE` + `TOOL_STATS`
 
 ### Composition via RichComposer
 Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, générant automatiquement `linearText` et `dataCommands` via `EnrichmentProcessor.generateCommands()`.
@@ -279,24 +289,43 @@ Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, 
 - Types : Data queries + actions réelles (create, update, delete)
 - But : Demander données + exécuter actions
 
-## 6. Système de queries et prompts
+## 6. Architecture des niveaux de prompts
 
-- **Level 1** : Documentation + schémas système (SYSTEM_SCHEMAS, SYSTEM_DOC, APP_CONFIG)
-- **Level 2** : Contexte utilisateur dynamique (USER_TOOLS_CONTEXT)
-- **Level 3** : État app complet (APP_STATE)
-- **Level 4** : Enrichissements session (extraits de l'historique des messages)
+**Level 1: DOC** - Documentation système statique
+- Rôle IA + intro application
+- Documentation API (format réponse, commandes, schema_ids)
+- Schéma zone complet + liste tous schema_ids
+- Tooltypes (nom + description) + leurs schema_ids
 
-### Types de commands par niveau (dont Extraction Level 4 depuis historique)
-**Event sourcing Level 4 :** `EnrichmentBlock` (stocké) → `List<DataCommand>` (généré) dans pipeline. `PromptManager.getLevel4Commands()` extrait EnrichmentBlocks depuis historique messages et génère commands à la volée.
+**Level 2: USER DATA** - Données utilisateur systématiques
+- Config IA utilisateur (non implémenté)
+- Données complètes des tool instances avec `always_send: true`
 
-### CommandExecutor et pipeline processing
-**Pipeline stateless pur** : Régénération complète à chaque message
+**Level 3: APP STATE** - État application complet
+- Toutes les zones avec configs + tool instances avec configs
+
+**Level 4: SPECIFIC DATA** - Données ciblées
+- Résultats enrichissements utilisateur
+- Résultats commandes IA précédentes
+
+### Pipeline de génération
+**Tous niveaux regénérés à chaque prompt** pour données fraîches
+
+**Level 4 extraction :** `EnrichmentBlock` (stocké) → `List<DataCommand>` (généré) dans pipeline. `PromptManager.getLevel4Commands()` extrait EnrichmentBlocks depuis historique messages et génère commands à la volée.
+
+### Pipeline de traitement commands
+**Pipeline stateless :** Régénération complète à chaque message
 ```kotlin
-// À chaque message : extraction EnrichmentBlocks → pipeline complet → prompt fresh
+// Flow paramètres : UI → EnrichmentProcessor → UserCommandProcessor → Services
 EnrichmentBlocks → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
 ```
 
-**Échec cascade :** Échec commande N → arrêt exécution N+1, N+2...
+**Échec cascade :** Géré par AICommandProcessor pour les actions (arrêt sur échec action pour cohérence état app)
+
+**Flow paramètres :**
+1. **UI** : Paramètres bruts (périodes relatives, sélections UI)
+2. **EnrichmentProcessor** : Traduction relatif/absolu selon session type
+3. **UserCommandProcessor** : Transformation en paramètres service (QUERY_PARAMETERS_SPEC)
 
 ### QueryDeduplicator (conservé)
 **Principe** : Déduplication incrémentale cross-niveaux pour assemblage prompt final

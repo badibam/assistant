@@ -27,10 +27,10 @@ class CommandExecutor(private val context: Context) {
     private val coordinator = Coordinator(context)
 
     /**
-     * Execute a list of ExecutableCommands with cascade failure support
+     * Execute a list of ExecutableCommands and collect results
      *
-     * NEW: Implements cascade failure - if any command fails, stops execution
-     * of remaining commands to prevent incomplete data sets.
+     * Executes all commands regardless of individual failures (no cascade failure for data queries).
+     * Cascade failure is handled separately in AICommandProcessor for action commands.
      *
      * @param commands The commands to execute for this level
      * @param level The level name for logging purposes
@@ -48,15 +48,31 @@ class CommandExecutor(private val context: Context) {
             return ""
         }
 
-        // TODO: Implement full command execution with cascade failure
-        // 1. Process commands sequentially
-        // 2. On first failure, stop execution (cascade failure)
-        // 3. Validate token sizes for successful results
-        // 4. Format results for prompt inclusion
-        // 5. Handle cross-level deduplication if needed
+        val results = mutableListOf<String>()
+        var successCount = 0
 
-        LogManager.aiPrompt("TODO: CommandExecutor.executeCommands() - cascade failure logic needed")
-        return ""
+        for ((index, command) in commands.withIndex()) {
+            LogManager.aiPrompt("Executing command ${index + 1}/${commands.size}: ${command.resource}.${command.operation}")
+
+            val result = executeCommand(command)
+
+            if (result != null) {
+                results.add(result)
+                successCount++
+                LogManager.aiPrompt("Command ${index + 1} succeeded")
+            } else {
+                LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands")
+            }
+        }
+
+        // TODO: Validate token sizes for results
+        // TODO: Handle cross-level deduplication with previousCommands
+        // TODO: Format results properly for prompt inclusion
+
+        val combinedResult = results.joinToString("\n\n")
+        LogManager.aiPrompt("CommandExecutor completed for $level: $successCount/${commands.size} commands successful, ${combinedResult.length} chars total")
+
+        return combinedResult
     }
 
     /**
@@ -70,19 +86,58 @@ class CommandExecutor(private val context: Context) {
 
         return withContext(Dispatchers.IO) {
             try {
-                // TODO: Implement single command execution
-                // 1. Call coordinator.processUserAction("${command.resource}.${command.operation}", command.params)
-                // 2. Check result.isSuccess
-                // 3. Format result data for prompt inclusion
-                // 4. Return formatted content or null on failure
+                val commandString = "${command.resource}.${command.operation}"
+                val paramsMap = command.params
+                val paramsJson = org.json.JSONObject()
+                paramsMap.forEach { (key, value) -> paramsJson.put(key, value) }
 
-                LogManager.aiPrompt("TODO: ExecutableCommand execution through coordinator")
-                null
+                LogManager.aiPrompt("Calling coordinator: $commandString with params: $paramsJson")
+
+                val result = coordinator.processUserAction(commandString, paramsMap)
+
+                if (result.isSuccess) {
+                    // TODO: Format result data properly for prompt inclusion
+                    // For now, return basic JSON representation
+                    val data = result.data
+                    if (data != null && data.isNotEmpty()) {
+                        val formattedResult = formatResultForPrompt(command, data)
+                        LogManager.aiPrompt("Command succeeded, formatted result: ${formattedResult.length} chars")
+                        return@withContext formattedResult
+                    } else {
+                        LogManager.aiPrompt("Command succeeded but returned empty data")
+                        return@withContext ""
+                    }
+                } else {
+                    LogManager.aiPrompt("Command failed: ${result.error}", "WARN")
+                    return@withContext null
+                }
 
             } catch (e: Exception) {
                 LogManager.aiPrompt("Command execution failed: ${e.message}", "ERROR", e)
-                null
+                return@withContext null
             }
+        }
+    }
+
+    /**
+     * Format command result for prompt inclusion
+     * TODO: Implement proper formatting based on command type and data structure
+     */
+    private fun formatResultForPrompt(command: ExecutableCommand, data: Map<String, Any>): String {
+        // TODO: Implement command-specific formatting
+        // - SCHEMA results: format as readable schema definition
+        // - TOOL_DATA results: format as structured data with metadata
+        // - CONFIG results: format as key-value pairs
+        // - LIST results: format as bulleted lists
+
+        LogManager.aiPrompt("formatResultForPrompt() - STUB implementation for ${command.resource}.${command.operation}")
+
+        // Basic JSON formatting for now
+        return try {
+            org.json.JSONObject(data).toString(2)
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Failed to format result: ${e.message}", "WARN")
+            data.toString()
         }
     }
 }

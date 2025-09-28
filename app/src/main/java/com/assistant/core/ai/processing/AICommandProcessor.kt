@@ -14,6 +14,7 @@ import com.assistant.core.utils.LogManager
  * - Process both dataCommands (queries) and actionCommands (actions)
  * - Apply automation-specific resolution for relative parameters
  * - Manage execution permissions and safety checks
+ * - Implement cascade failure logic for action commands (stop on first action failure)
  */
 class AICommandProcessor(private val context: Context) {
 
@@ -40,6 +41,10 @@ class AICommandProcessor(private val context: Context) {
     /**
      * Process AI action commands with strict security validation
      *
+     * IMPORTANT: Actions use cascade failure logic - if any action fails during execution,
+     * all subsequent actions are cancelled to prevent inconsistent application state.
+     * This is different from data commands which continue on individual failures.
+     *
      * @param commands List of DataCommands from AI for action execution
      * @return List of ExecutableCommands ready for coordinator dispatch
      */
@@ -52,6 +57,7 @@ class AICommandProcessor(private val context: Context) {
         // 3. Action scope validation and safety checks
         // 4. Parameter sanitization and validation
         // 5. Rate limiting and resource protection
+        // 6. CASCADE FAILURE: Design execution logic to stop on first action failure
 
         LogManager.aiPrompt("TODO: AICommandProcessor.processActionCommands() - returning empty list for now")
         return emptyList()

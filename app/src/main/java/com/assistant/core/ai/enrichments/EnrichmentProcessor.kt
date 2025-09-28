@@ -97,6 +97,7 @@ class EnrichmentProcessor {
             val queries = when (type) {
                 EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative)
                 EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
+                EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 else -> {
                     LogManager.aiEnrichment("No query generator for type $type")
@@ -197,8 +198,9 @@ class EnrichmentProcessor {
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
         val fieldSpecificData = config.optJSONObject("fieldSpecificData")
+        val includeData = config.optBoolean("includeData", false) // Toggle for real data
 
-        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel'")
+        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel', includeData=$includeData")
 
         // Extract zone and tool info from path
         val pathParts = path.split(".")
@@ -208,31 +210,42 @@ class EnrichmentProcessor {
 
         when (selectionLevel) {
             "ZONE" -> {
-                // Zone selected: config + stats
+                // Zone selected: ZONE_CONFIG + TOOL_INSTANCES
                 val zoneId = if (pathParts.size > 1) pathParts[1] else ""
                 if (zoneId.isNotEmpty()) {
                     queries.add(DataCommand(
-                        id = buildQueryId("zone_config", mapOf("zoneId" to zoneId)),
+                        id = buildQueryId("zone_config", mapOf("id" to zoneId)),
                         type = "ZONE_CONFIG",
-                        params = mapOf("zoneId" to zoneId),
+                        params = mapOf("id" to zoneId),
                         isRelative = isRelative
                     ))
                     queries.add(DataCommand(
-                        id = buildQueryId("zone_stats", mapOf("zoneId" to zoneId)),
-                        type = "ZONE_STATS",
-                        params = mapOf("zoneId" to zoneId),
+                        id = buildQueryId("tool_instances", mapOf("zone_id" to zoneId)),
+                        type = "TOOL_INSTANCES",
+                        params = mapOf("zone_id" to zoneId),
                         isRelative = isRelative
                     ))
                 }
             }
             "INSTANCE" -> {
-                // Tool instance selected: config + data sample
+                // Instance selected: SCHEMA(config) + SCHEMA(data) + TOOL_CONFIG + TOOL_DATA_SAMPLE + TOOL_STATS + optionally TOOL_DATA
                 val toolInstanceId = if (pathParts.size > 2) pathParts[2] else ""
                 if (toolInstanceId.isNotEmpty()) {
-                    val baseParams = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
+                    val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
 
-                    // Add temporal parameters if present
-                    addTemporalParams(baseParams, fieldSpecificData, isRelative)
+                    // TODO: Get schema IDs from tool instance config - for now using placeholders
+                    queries.add(DataCommand(
+                        id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
+                        type = "SCHEMA",
+                        params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
+                        isRelative = isRelative
+                    ))
+                    queries.add(DataCommand(
+                        id = buildQueryId("schema_data", mapOf("id" to "data_schema_id")),
+                        type = "SCHEMA",
+                        params = mapOf("id" to "data_schema_id"), // TODO: resolve from tool instance
+                        isRelative = isRelative
+                    ))
 
                     queries.add(DataCommand(
                         id = buildQueryId("tool_config", baseParams),
@@ -240,34 +253,33 @@ class EnrichmentProcessor {
                         params = baseParams.toMap(),
                         isRelative = isRelative
                     ))
+
+                    // Add temporal parameters for data queries
+                    val dataParams = baseParams.toMutableMap()
+                    addTemporalParams(dataParams, fieldSpecificData, isRelative)
+
                     queries.add(DataCommand(
-                        id = buildQueryId("tool_data_sample", baseParams),
+                        id = buildQueryId("tool_data_sample", dataParams),
                         type = "TOOL_DATA_SAMPLE",
-                        params = baseParams.toMap(),
+                        params = dataParams.toMap(),
                         isRelative = isRelative
                     ))
-                }
-            }
-            "FIELD" -> {
-                // Field selected: specific field data
-                val toolInstanceId = if (pathParts.size > 2) pathParts[2] else ""
-                val field = if (pathParts.size > 3) pathParts[3] else ""
-                if (toolInstanceId.isNotEmpty() && field.isNotEmpty()) {
-                    val baseParams = mutableMapOf<String, Any>(
-                        "toolInstanceId" to toolInstanceId,
-                        "field" to field,
-                        "mode" to "sample_entries"
-                    )
-
-                    // Add temporal parameters if present
-                    addTemporalParams(baseParams, fieldSpecificData, isRelative)
-
                     queries.add(DataCommand(
-                        id = buildQueryId("tool_data_field", baseParams),
-                        type = "TOOL_DATA_FIELD",
-                        params = baseParams.toMap(),
+                        id = buildQueryId("tool_stats", dataParams),
+                        type = "TOOL_STATS",
+                        params = dataParams.toMap(),
                         isRelative = isRelative
                     ))
+
+                    // Optional real data if toggle enabled
+                    if (includeData) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("tool_data", dataParams),
+                            type = "TOOL_DATA",
+                            params = dataParams.toMap(),
+                            isRelative = isRelative
+                        ))
+                    }
                 }
             }
         }
@@ -277,19 +289,92 @@ class EnrichmentProcessor {
     }
 
     private fun generateUseQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateUseQueries() - STUB implementation")
+        LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative")
 
-        // TODO: Implement USE enrichment multi-query generation
-        // Should return: [TOOL_CONFIG, TOOL_DATA_SAMPLE] for the tool instance
+        val toolInstanceId = config.optString("toolInstanceId", "")
+        if (toolInstanceId.isEmpty()) return emptyList()
+
+        val queries = mutableListOf<DataCommand>()
+        val baseParams = mapOf("id" to toolInstanceId)
+
+        // USE enrichment: TOOL_CONFIG + SCHEMA(config) + SCHEMA(data) + TOOL_DATA_SAMPLE + TOOL_STATS
+        queries.add(DataCommand(
+            id = buildQueryId("tool_config", baseParams),
+            type = "TOOL_CONFIG",
+            params = baseParams,
+            isRelative = isRelative
+        ))
+
+        // TODO: Get schema IDs from tool instance config - for now using placeholders
+        queries.add(DataCommand(
+            id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
+            type = "SCHEMA",
+            params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
+            isRelative = isRelative
+        ))
+        queries.add(DataCommand(
+            id = buildQueryId("schema_data", mapOf("id" to "data_schema_id")),
+            type = "SCHEMA",
+            params = mapOf("id" to "data_schema_id"), // TODO: resolve from tool instance
+            isRelative = isRelative
+        ))
+
+        queries.add(DataCommand(
+            id = buildQueryId("tool_data_sample", baseParams),
+            type = "TOOL_DATA_SAMPLE",
+            params = baseParams,
+            isRelative = isRelative
+        ))
+        queries.add(DataCommand(
+            id = buildQueryId("tool_stats", baseParams),
+            type = "TOOL_STATS",
+            params = baseParams,
+            isRelative = isRelative
+        ))
+
+        LogManager.aiEnrichment("Generated ${queries.size} USE queries for toolInstanceId=$toolInstanceId")
+        return queries
+    }
+
+    private fun generateCreateQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
+        LogManager.aiEnrichment("generateCreateQueries() called with isRelative=$isRelative")
+
+        // TODO: Implement CREATE enrichment with schema-driven tooltype selection
+        // - UI provides config_schema_id from tooltype selection dialog
+        // - Load config schema to extract data_schema_id
+        // - Generate SCHEMA(config_schema_id) + SCHEMA(data_schema_id)
+
+        LogManager.aiEnrichment("CREATE enrichment - STUB implementation")
         return emptyList()
     }
 
     private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateModifyConfigQueries() - STUB implementation")
+        LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative")
 
-        // TODO: Implement MODIFY_CONFIG enrichment multi-query generation
-        // Should return: [TOOL_CONFIG] for the tool instance
-        return emptyList()
+        val toolInstanceId = config.optString("toolInstanceId", "")
+        if (toolInstanceId.isEmpty()) return emptyList()
+
+        val queries = mutableListOf<DataCommand>()
+        val baseParams = mapOf("id" to toolInstanceId)
+
+        // MODIFY_CONFIG enrichment: SCHEMA(config) + TOOL_CONFIG
+        // TODO: Get schema ID from tool instance config - for now using placeholder
+        queries.add(DataCommand(
+            id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
+            type = "SCHEMA",
+            params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
+            isRelative = isRelative
+        ))
+
+        queries.add(DataCommand(
+            id = buildQueryId("tool_config", baseParams),
+            type = "TOOL_CONFIG",
+            params = baseParams,
+            isRelative = isRelative
+        ))
+
+        LogManager.aiEnrichment("Generated ${queries.size} MODIFY_CONFIG queries for toolInstanceId=$toolInstanceId")
+        return queries
     }
 
     // ========================================================================================

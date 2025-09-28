@@ -344,8 +344,9 @@ private fun PointerEnrichmentDialog(
 
     // Additional fields
     var importance by remember { mutableStateOf("important") }
-        var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
+    var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
     var description by remember { mutableStateOf("") }
+    var includeData by remember { mutableStateOf(false) }  // Toggle for real data inclusion
 
     // App configuration for timestamp handling
     var dayStartHour by remember { mutableStateOf(0) }
@@ -373,7 +374,7 @@ private fun PointerEnrichmentDialog(
             config = NavigationConfig(
                 allowZoneSelection = true,
                 allowInstanceSelection = true,
-                allowFieldSelection = true,
+                allowFieldSelection = false,  // Limited to instance level only
                 allowValueSelection = false,
                 title = s.shared("pointer_enrichment_selector_title")
             ),
@@ -391,7 +392,7 @@ private fun PointerEnrichmentDialog(
             type = DialogType.CONFIGURE,
             onConfirm = {
                 selectionResult?.let { result ->
-                    val config = createPointerConfig(result, importance, timestampSelection, description)
+                    val config = createPointerConfig(result, importance, timestampSelection, description, includeData)
                     val preview = createPointerPreview(result, timestampSelection, importance)
                     onConfirm(config, preview)
                 }
@@ -427,6 +428,22 @@ private fun PointerEnrichmentDialog(
                     onSelect = { importance = it }
                 )
 
+                // Include data toggle (only visible for instance selections)
+                selectionResult?.let { result ->
+                    if (result.selectionLevel.name == "INSTANCE") {
+                        UI.ToggleField(
+                            label = "Inclure données réelles (en plus de l'échantillon)",
+                            checked = includeData,
+                            onCheckedChange = { checked ->
+                                includeData = checked
+                                // TODO: Recalculate token count when filters change (if toggle enabled)
+                                // Should trigger token estimation based on current timestamp filters
+                                // and show warning/confirmation if exceeding limits
+                            }
+                        )
+                    }
+                }
+
                 // Timestamp selection section
                 PeriodRangeSelector(
                     startPeriodType = timestampSelection.minPeriodType,
@@ -437,21 +454,27 @@ private fun PointerEnrichmentDialog(
                     endCustomDate = timestampSelection.maxCustomDateTime,
                     onStartTypeChange = { newType ->
                         timestampSelection = timestampSelection.copy(minPeriodType = newType)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onStartPeriodChange = { newPeriod ->
                         timestampSelection = timestampSelection.copy(minPeriod = newPeriod)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onStartCustomDateChange = { newDate ->
                         timestampSelection = timestampSelection.copy(minCustomDateTime = newDate)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndTypeChange = { newType ->
                         timestampSelection = timestampSelection.copy(maxPeriodType = newType)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndPeriodChange = { newPeriod ->
                         timestampSelection = timestampSelection.copy(maxPeriod = newPeriod)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndCustomDateChange = { newDate ->
                         timestampSelection = timestampSelection.copy(maxCustomDateTime = newDate)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     useOnlyRelativeLabels = useRelativeLabels
                 )
@@ -528,13 +551,15 @@ private fun createPointerConfig(
     selectionResult: SelectionResult,
     importance: String,
     timestampSelection: TimestampSelection,
-    description: String
+    description: String,
+    includeData: Boolean = false
 ): String {
     return JSONObject().apply {
         put("selectedPath", selectionResult.selectedPath)
         put("selectedValues", selectionResult.selectedValues)
         put("selectionLevel", selectionResult.selectionLevel.name)
         put("importance", importance)
+        put("includeData", includeData)  // Toggle for real data inclusion
         if (timestampSelection.isComplete) {
             put("timestampSelection", JSONObject().apply {
                 timestampSelection.minPeriodType?.let { put("minPeriodType", it.name) }

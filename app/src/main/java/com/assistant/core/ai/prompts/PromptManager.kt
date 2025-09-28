@@ -160,12 +160,9 @@ $fullPrompt
 
     // === Utilities ===
 
-    // Level 2 queries are now generated dynamically in buildUserContext()
-    // No longer stored or retrieved from session
-
-
     private fun estimateTokens(text: String): Int {
         // Rough estimation: 1 token ≈ 4 characters for most languages
+        // TODO: better estimation
         return text.length / 4
     }
 
