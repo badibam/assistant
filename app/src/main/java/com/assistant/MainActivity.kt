@@ -14,26 +14,30 @@ import com.assistant.core.ui.*
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.update.UpdateManager
 import com.assistant.core.versioning.MigrationOrchestrator
+import com.assistant.core.utils.AppConfigManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.LogManager
 
 class MainActivity : ComponentActivity() {
-    
+
     private lateinit var coordinator: Coordinator
     private lateinit var updateManager: UpdateManager
     private lateinit var migrationOrchestrator: MigrationOrchestrator
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        // Initialize app config cache
+        AppConfigManager.initialize(this)
+
         // Initialize coordinator
         coordinator = Coordinator(this)
-        
+
         // Initialize update manager
         updateManager = UpdateManager(this)
-        
+
         // Initialize migration orchestrator
         migrationOrchestrator = MigrationOrchestrator(this)
 

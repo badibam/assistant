@@ -21,8 +21,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      * Execute tool instance operation with cancellation support
      */
     override suspend fun execute(
-        operation: String, 
-        params: JSONObject, 
+        operation: String,
+        params: JSONObject,
         token: CancellationToken
     ): OperationResult {
         return try {
@@ -31,6 +31,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
                 "list" -> handleGetByZone(params, token)  // zones/{id}/tools pattern
+                "list_all" -> handleListAll(params, token) // All tool instances across zones
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
@@ -139,15 +140,15 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      */
     private suspend fun handleGetByZone(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
-        
+
         val toolInstances = toolInstanceDao.getToolInstancesByZone(zoneId)
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val toolInstanceData = toolInstances.map { tool ->
             // Extract name from config JSON
             val name = try {
@@ -168,13 +169,49 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "updated_at" to tool.updated_at
             )
         }
-        
+
         return OperationResult.success(mapOf(
             "tool_instances" to toolInstanceData,
             "count" to toolInstanceData.size
         ))
     }
-    
+
+    /**
+     * List all tool instances across all zones
+     */
+    private suspend fun handleListAll(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val toolInstances = toolInstanceDao.getAllToolInstances()
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val toolInstanceData = toolInstances.map { tool ->
+            // Extract name from config JSON
+            val name = try {
+                JSONObject(tool.config_json).optString("name", "")
+            } catch (e: Exception) {
+                ""
+            }
+
+            mapOf(
+                "id" to tool.id,
+                "zone_id" to tool.zone_id,
+                "name" to name,
+                "tool_type" to tool.tool_type,
+                "config_json" to tool.config_json,
+                "config_metadata_json" to tool.config_metadata_json,
+                "order_index" to tool.order_index,
+                "created_at" to tool.created_at,
+                "updated_at" to tool.updated_at
+            )
+        }
+
+        return OperationResult.success(mapOf(
+            "tool_instances" to toolInstanceData,
+            "count" to toolInstanceData.size
+        ))
+    }
+
     /**
      * Get tool instance by ID
      */

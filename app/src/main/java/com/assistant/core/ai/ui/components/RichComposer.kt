@@ -1,5 +1,6 @@
 package com.assistant.core.ai.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -115,7 +116,7 @@ fun UI.RichComposer(
                 action = ButtonAction.CONFIRM, // Use CONFIRM for send action
                 onClick = {
                     LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
-                    val richMessage = createRichMessage(segments, sessionType)
+                    val richMessage = createRichMessage(context, segments, sessionType)
                     LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
                     onSend(richMessage)
                 }
@@ -213,7 +214,7 @@ private fun EnrichmentBlockPreview(
  * Create RichMessage from segments with computed linearText and dataCommands
  * Uses EnrichmentProcessor for proper command generation according to specs
  */
-private fun createRichMessage(segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
+private fun createRichMessage(context: Context, segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
     LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
 
     val enrichmentProcessor = EnrichmentProcessor()
@@ -241,7 +242,17 @@ private fun createRichMessage(segments: List<MessageSegment>, sessionType: Sessi
             val isRelative = (sessionType == SessionType.AUTOMATION)
             LogManager.aiEnrichment("Calling EnrichmentProcessor for block $index with isRelative=$isRelative")
 
-            val commands = enrichmentProcessor.generateCommands(block.type, block.config, isRelative)
+            // Get app config for period calculations
+            val dayStartHour = com.assistant.core.utils.AppConfigManager.getDayStartHour(context)
+            val weekStartDay = com.assistant.core.utils.AppConfigManager.getWeekStartDay(context)
+
+            val commands = enrichmentProcessor.generateCommands(
+                type = block.type,
+                config = block.config,
+                isRelative = isRelative,
+                dayStartHour = dayStartHour,
+                weekStartDay = weekStartDay
+            )
             LogManager.aiEnrichment("Block $index generated ${commands.size} commands")
             commands.forEach { command ->
                 LogManager.aiEnrichment("  - Command: ${command.id} (type: ${command.type})")
@@ -453,11 +464,16 @@ private fun PointerEnrichmentDialog(
                     endPeriod = timestampSelection.maxPeriod,
                     endCustomDate = timestampSelection.maxCustomDateTime,
                     onStartTypeChange = { newType ->
-                        timestampSelection = timestampSelection.copy(minPeriodType = newType)
+                        // Clear custom date when switching to period type, clear period/relativePeriod when switching to custom
+                        timestampSelection = if (newType != null) {
+                            timestampSelection.copy(minPeriodType = newType, minCustomDateTime = null)
+                        } else {
+                            timestampSelection.copy(minPeriodType = null, minPeriod = null, minRelativePeriod = null)
+                        }
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onStartPeriodChange = { newPeriod ->
-                        timestampSelection = timestampSelection.copy(minPeriod = newPeriod)
+                        timestampSelection = timestampSelection.copy(minPeriod = newPeriod, minRelativePeriod = null)
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onStartCustomDateChange = { newDate ->
@@ -465,18 +481,34 @@ private fun PointerEnrichmentDialog(
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndTypeChange = { newType ->
-                        timestampSelection = timestampSelection.copy(maxPeriodType = newType)
+                        // Clear custom date when switching to period type, clear period/relativePeriod when switching to custom
+                        timestampSelection = if (newType != null) {
+                            timestampSelection.copy(maxPeriodType = newType, maxCustomDateTime = null)
+                        } else {
+                            timestampSelection.copy(maxPeriodType = null, maxPeriod = null, maxRelativePeriod = null)
+                        }
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndPeriodChange = { newPeriod ->
-                        timestampSelection = timestampSelection.copy(maxPeriod = newPeriod)
+                        timestampSelection = timestampSelection.copy(maxPeriod = newPeriod, maxRelativePeriod = null)
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
                     onEndCustomDateChange = { newDate ->
                         timestampSelection = timestampSelection.copy(maxCustomDateTime = newDate)
                         // TODO: Recalculate token count when filters change (if includeData toggle enabled)
                     },
-                    useOnlyRelativeLabels = useRelativeLabels
+                    useOnlyRelativeLabels = useRelativeLabels,
+                    returnRelative = (sessionType == SessionType.AUTOMATION),
+                    startRelativePeriod = timestampSelection.minRelativePeriod,
+                    endRelativePeriod = timestampSelection.maxRelativePeriod,
+                    onStartRelativePeriodChange = { newRelativePeriod ->
+                        timestampSelection = timestampSelection.copy(minRelativePeriod = newRelativePeriod, minPeriod = null)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
+                    },
+                    onEndRelativePeriodChange = { newRelativePeriod ->
+                        timestampSelection = timestampSelection.copy(maxRelativePeriod = newRelativePeriod, maxPeriod = null)
+                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
+                    }
                 )
 
                 // Description field
@@ -562,11 +594,44 @@ private fun createPointerConfig(
         put("includeData", includeData)  // Toggle for real data inclusion
         if (timestampSelection.isComplete) {
             put("timestampSelection", JSONObject().apply {
+                // Store min period (start of range)
                 timestampSelection.minPeriodType?.let { put("minPeriodType", it.name) }
-                timestampSelection.minPeriod?.let { put("minTimestamp", it.timestamp) }
+
+                // Absolute period (CHAT)
+                timestampSelection.minPeriod?.let { period ->
+                    put("minPeriod", JSONObject().apply {
+                        put("timestamp", period.timestamp)
+                        put("type", period.type.name)
+                    })
+                }
+                // Relative period (AUTOMATION)
+                timestampSelection.minRelativePeriod?.let { relativePeriod ->
+                    put("minRelativePeriod", JSONObject().apply {
+                        put("offset", relativePeriod.offset)
+                        put("type", relativePeriod.type.name)
+                    })
+                }
+                // Custom date (always absolute)
                 timestampSelection.minCustomDateTime?.let { put("minCustomDateTime", it) }
+
+                // Store max period (end of range)
                 timestampSelection.maxPeriodType?.let { put("maxPeriodType", it.name) }
-                timestampSelection.maxPeriod?.let { put("maxTimestamp", it.timestamp) }
+
+                // Absolute period (CHAT)
+                timestampSelection.maxPeriod?.let { period ->
+                    put("maxPeriod", JSONObject().apply {
+                        put("timestamp", period.timestamp)
+                        put("type", period.type.name)
+                    })
+                }
+                // Relative period (AUTOMATION)
+                timestampSelection.maxRelativePeriod?.let { relativePeriod ->
+                    put("maxRelativePeriod", JSONObject().apply {
+                        put("offset", relativePeriod.offset)
+                        put("type", relativePeriod.type.name)
+                    })
+                }
+                // Custom date (always absolute)
                 timestampSelection.maxCustomDateTime?.let { put("maxCustomDateTime", it) }
             })
         }

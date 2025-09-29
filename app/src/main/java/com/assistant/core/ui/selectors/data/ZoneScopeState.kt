@@ -4,6 +4,7 @@ import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.DataResultStatus
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.Period
+import com.assistant.core.ui.components.RelativePeriod
 
 /**
  * State for zone scope navigation and selection
@@ -54,21 +55,27 @@ enum class FieldSelectionType {
 
 /**
  * Sélection pour champ timestamp (plage temporelle)
+ * Supports both absolute periods (CHAT) and relative periods (AUTOMATION)
  */
 data class TimestampSelection(
-    // Date minimum
+    // Date minimum - absolute mode (CHAT)
     val minPeriodType: PeriodType? = null,          // jour, semaine, mois, année, personnalisée
-    val minPeriod: Period? = null,                  // période sélectionnée pour min
-    val minCustomDateTime: Long? = null,            // date/heure personnalisée pour min
+    val minPeriod: Period? = null,                  // période absolue sélectionnée pour min
+    val minCustomDateTime: Long? = null,            // date/heure personnalisée pour min (always absolute)
 
-    // Date maximum
+    // Date maximum - absolute mode (CHAT)
     val maxPeriodType: PeriodType? = null,          // jour, semaine, mois, année, personnalisée
-    val maxPeriod: Period? = null,                  // période sélectionnée pour max
-    val maxCustomDateTime: Long? = null             // date/heure personnalisée pour max
+    val maxPeriod: Period? = null,                  // période absolue sélectionnée pour max
+    val maxCustomDateTime: Long? = null,            // date/heure personnalisée pour max (always absolute)
+
+    // Relative mode (AUTOMATION) - mutually exclusive with Period fields
+    val minRelativePeriod: RelativePeriod? = null,  // période relative pour min
+    val maxRelativePeriod: RelativePeriod? = null   // période relative pour max
 ) {
     val isComplete: Boolean
         get() = (minPeriodType != null || maxPeriodType != null) &&
-                (minPeriod != null || minCustomDateTime != null || maxPeriod != null || maxCustomDateTime != null)
+                (minPeriod != null || minCustomDateTime != null || maxPeriod != null || maxCustomDateTime != null ||
+                 minRelativePeriod != null || maxRelativePeriod != null)
 }
 
 /**

@@ -36,22 +36,98 @@ enum class PeriodType {
 }
 
 /**
- * Data class representing a period
+ * Data class representing an absolute period with a specific timestamp
  */
 data class Period(
-    val timestamp: Long,
+    val timestamp: Long,  // Absolute timestamp marking the start of the period
     val type: PeriodType
 ) {
     companion object {
         fun now(
-            type: PeriodType, 
-            dayStartHour: Int, 
+            type: PeriodType,
+            dayStartHour: Int,
             weekStartDay: String
         ): Period = Period(
-            normalizeTimestampWithConfig(System.currentTimeMillis(), type, dayStartHour, weekStartDay), 
+            normalizeTimestampWithConfig(System.currentTimeMillis(), type, dayStartHour, weekStartDay),
             type
         )
     }
+}
+
+/**
+ * Data class representing a relative period (for automation contexts)
+ * Offset is relative to "now": -1 = previous, 0 = current, 1 = next
+ */
+data class RelativePeriod(
+    val offset: Int,      // Relative offset from current period
+    val type: PeriodType  // Type of period (DAY, WEEK, MONTH, YEAR)
+) {
+    companion object {
+        fun now(type: PeriodType): RelativePeriod = RelativePeriod(0, type)
+    }
+}
+
+/**
+ * Calculate offset between a timestamp and "now" for a given period type
+ * Returns number of periods difference (negative = past, positive = future, 0 = current)
+ */
+fun calculatePeriodOffset(
+    timestamp: Long,
+    type: PeriodType,
+    dayStartHour: Int,
+    weekStartDay: String
+): Int {
+    val now = System.currentTimeMillis()
+    val normalizedNow = normalizeTimestampWithConfig(now, type, dayStartHour, weekStartDay)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, type, dayStartHour, weekStartDay)
+
+    return when (type) {
+        PeriodType.HOUR -> {
+            -((normalizedNow - normalizedTimestamp) / (60 * 60 * 1000)).toInt()
+        }
+        PeriodType.DAY -> {
+            -((normalizedNow - normalizedTimestamp) / (24 * 60 * 60 * 1000)).toInt()
+        }
+        PeriodType.WEEK -> {
+            -((normalizedNow - normalizedTimestamp) / (7 * 24 * 60 * 60 * 1000)).toInt()
+        }
+        PeriodType.MONTH -> {
+            val nowCal = Calendar.getInstance().apply { timeInMillis = normalizedNow }
+            val tsCal = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }
+            -((nowCal.get(Calendar.YEAR) - tsCal.get(Calendar.YEAR)) * 12 +
+                (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH)))
+        }
+        PeriodType.YEAR -> {
+            val nowYear = Calendar.getInstance().apply { timeInMillis = normalizedNow }.get(Calendar.YEAR)
+            val tsYear = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }.get(Calendar.YEAR)
+            -(nowYear - tsYear)
+        }
+    }
+}
+
+/**
+ * Resolve relative period to absolute Period
+ * Applies offset from current period
+ */
+fun resolveRelativePeriod(
+    relativePeriod: RelativePeriod,
+    dayStartHour: Int,
+    weekStartDay: String
+): Period {
+    val now = System.currentTimeMillis()
+    val currentNormalized = normalizeTimestampWithConfig(now, relativePeriod.type, dayStartHour, weekStartDay)
+    var targetPeriod = Period(currentNormalized, relativePeriod.type)
+
+    // Apply offset by navigating periods
+    repeat(kotlin.math.abs(relativePeriod.offset)) {
+        targetPeriod = if (relativePeriod.offset < 0) {
+            getPreviousPeriod(targetPeriod, dayStartHour, weekStartDay)
+        } else {
+            getNextPeriod(targetPeriod, dayStartHour, weekStartDay)
+        }
+    }
+
+    return targetPeriod
 }
 
 /**
@@ -766,7 +842,12 @@ fun PeriodRangeSelector(
     onEndPeriodChange: (Period?) -> Unit,
     onEndCustomDateChange: (Long?) -> Unit,
     modifier: Modifier = Modifier,
-    useOnlyRelativeLabels: Boolean = false
+    useOnlyRelativeLabels: Boolean = false,
+    returnRelative: Boolean = false,
+    startRelativePeriod: RelativePeriod? = null,
+    endRelativePeriod: RelativePeriod? = null,
+    onStartRelativePeriodChange: ((RelativePeriod?) -> Unit)? = null,
+    onEndRelativePeriodChange: ((RelativePeriod?) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -849,12 +930,23 @@ fun PeriodRangeSelector(
 
                     // Create default period when type changes (like TrackingHistory does)
                     if (newType != null && !isConfigLoading) {
-                        val now = System.currentTimeMillis()
-                        val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
-                        val newPeriod = Period(normalizedTimestamp, newType)
-                        onStartPeriodChange(newPeriod)
+                        if (returnRelative) {
+                            // Create relative period (offset 0 = current period)
+                            val newRelativePeriod = RelativePeriod.now(newType)
+                            onStartRelativePeriodChange?.invoke(newRelativePeriod)
+                        } else {
+                            // Create absolute period
+                            val now = System.currentTimeMillis()
+                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                            val newPeriod = Period(normalizedTimestamp, newType)
+                            onStartPeriodChange(newPeriod)
+                        }
                     } else {
-                        onStartPeriodChange(null)
+                        if (returnRelative) {
+                            onStartRelativePeriodChange?.invoke(null)
+                        } else {
+                            onStartPeriodChange(null)
+                        }
                     }
                 }
             )
@@ -863,7 +955,16 @@ fun PeriodRangeSelector(
             if (startPeriodType != null && startPeriod != null) {
                 SinglePeriodSelector(
                     period = startPeriod,
-                    onPeriodChange = { period -> onStartPeriodChange(period) },
+                    onPeriodChange = { period ->
+                        if (returnRelative) {
+                            // Convert Period to RelativePeriod when user navigates
+                            val offset = calculatePeriodOffset(period.timestamp, period.type, dayStartHour, weekStartDay)
+                            val relativePeriod = RelativePeriod(offset, period.type)
+                            onStartRelativePeriodChange?.invoke(relativePeriod)
+                        } else {
+                            onStartPeriodChange(period)
+                        }
+                    },
                     showDatePicker = true,
                     useOnlyRelativeLabels = useOnlyRelativeLabels
                 )
@@ -936,12 +1037,23 @@ fun PeriodRangeSelector(
 
                     // Create default period when type changes (like TrackingHistory does)
                     if (newType != null && !isConfigLoading) {
-                        val now = System.currentTimeMillis()
-                        val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
-                        val newPeriod = Period(normalizedTimestamp, newType)
-                        onEndPeriodChange(newPeriod)
+                        if (returnRelative) {
+                            // Create relative period (offset 0 = current period)
+                            val newRelativePeriod = RelativePeriod.now(newType)
+                            onEndRelativePeriodChange?.invoke(newRelativePeriod)
+                        } else {
+                            // Create absolute period
+                            val now = System.currentTimeMillis()
+                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                            val newPeriod = Period(normalizedTimestamp, newType)
+                            onEndPeriodChange(newPeriod)
+                        }
                     } else {
-                        onEndPeriodChange(null)
+                        if (returnRelative) {
+                            onEndRelativePeriodChange?.invoke(null)
+                        } else {
+                            onEndPeriodChange(null)
+                        }
                     }
                 }
             )
@@ -950,7 +1062,16 @@ fun PeriodRangeSelector(
             if (endPeriodType != null && endPeriod != null) {
                 SinglePeriodSelector(
                     period = endPeriod,
-                    onPeriodChange = { period -> onEndPeriodChange(period) },
+                    onPeriodChange = { period ->
+                        if (returnRelative) {
+                            // Convert Period to RelativePeriod when user navigates
+                            val offset = calculatePeriodOffset(period.timestamp, period.type, dayStartHour, weekStartDay)
+                            val relativePeriod = RelativePeriod(offset, period.type)
+                            onEndRelativePeriodChange?.invoke(relativePeriod)
+                        } else {
+                            onEndPeriodChange(period)
+                        }
+                    },
                     showDatePicker = true,
                     useOnlyRelativeLabels = useOnlyRelativeLabels
                 )

@@ -80,25 +80,61 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolConfigCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolConfigCommand() - STUB implementation")
+        LogManager.aiPrompt("processToolConfigCommand() - routing to tools.get")
 
-        // TODO: Transform TOOL_CONFIG command to tools.get call
-        // - Extract tool_instance_id from params.id
-        // - Handle parameter naming: id → tool_instance_id for ToolInstanceService
+        // Route TOOL_CONFIG command to ToolInstanceService
+        val toolInstanceId = command.params["id"] as? String
+        if (toolInstanceId.isNullOrEmpty()) {
+            LogManager.aiPrompt("TOOL_CONFIG command missing id parameter", "WARN")
+            return null
+        }
 
-        return null
+        return ExecutableCommand(
+            resource = "tools",
+            operation = "get",
+            params = mapOf("tool_instance_id" to toolInstanceId)
+        )
     }
 
     private fun processToolDataCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolDataCommand() - STUB implementation")
+        LogManager.aiPrompt("processToolDataCommand() - routing to tool_data.get")
 
-        // TODO: Transform TOOL_DATA command to tool_data.get call
-        // - Extract toolInstanceId from params.id
-        // - Resolve relative periods to absolute timestamps (chat stability)
-        // - Transform UI selectors to QUERY_PARAMETERS_SPEC format
-        // - Handle where, limit, orderBy, select, aggregate parameters
+        // Extract toolInstanceId from params
+        val toolInstanceId = command.params["id"] as? String
+        if (toolInstanceId.isNullOrEmpty()) {
+            LogManager.aiPrompt("TOOL_DATA command missing id parameter", "WARN")
+            return null
+        }
 
-        return null
+        // Build params for ToolDataService
+        val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
+
+        // Handle temporal parameters
+        if (command.isRelative) {
+            // Resolve relative periods to absolute timestamps
+            val periodStart = command.params["period_start"] as? String
+            val periodEnd = command.params["period_end"] as? String
+
+            if (periodStart != null && periodEnd != null) {
+                val (startTime, endTime) = resolveRelativePeriods(periodStart, periodEnd)
+                if (startTime != null) params["startTime"] = startTime
+                if (endTime != null) params["endTime"] = endTime
+            }
+        } else {
+            // Use absolute timestamps directly
+            command.params["startTime"]?.let { params["startTime"] = it }
+            command.params["endTime"]?.let { params["endTime"] = it }
+        }
+
+        // Add pagination if specified
+        command.params["limit"]?.let { params["limit"] = it }
+        command.params["page"]?.let { params["page"] = it }
+
+        return ExecutableCommand(
+            resource = "tool_data",
+            operation = "get",
+            params = params
+        )
     }
 
     private fun processToolStatsCommand(command: DataCommand): ExecutableCommand? {
@@ -122,31 +158,102 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processZoneConfigCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processZoneConfigCommand() - STUB implementation")
+        LogManager.aiPrompt("processZoneConfigCommand() - routing to zones.get")
 
-        // TODO: Transform ZONE_CONFIG command to zones.get call
-        // - Extract zone_id from params.id
+        // Route ZONE_CONFIG command to ZoneService
+        val zoneId = command.params["id"] as? String
+        if (zoneId.isNullOrEmpty()) {
+            LogManager.aiPrompt("ZONE_CONFIG command missing id parameter", "WARN")
+            return null
+        }
 
-        return null
+        return ExecutableCommand(
+            resource = "zones",
+            operation = "get",
+            params = mapOf("zone_id" to zoneId)
+        )
     }
 
     private fun processZonesCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processZonesCommand() - STUB implementation")
+        LogManager.aiPrompt("processZonesCommand() - routing to zones.list")
 
-        // TODO: Transform ZONES command to zones.list call
-        // - No parameters needed, returns all zones
+        // Route ZONES command to ZoneService.list
+        // No parameters needed, returns all zones
+        return ExecutableCommand(
+            resource = "zones",
+            operation = "list",
+            params = emptyMap()
+        )
+    }
 
-        return null
+    /**
+     * Resolve relative periods to absolute timestamps
+     * Format: "offset_PeriodType" (e.g., "-1_WEEK", "0_DAY")
+     * Returns (startTimestamp, endTimestamp)
+     */
+    private fun resolveRelativePeriods(periodStart: String, periodEnd: String): Pair<Long?, Long?> {
+        try {
+            val (startOffset, startType) = periodStart.split("_")
+            val (endOffset, endType) = periodEnd.split("_")
+
+            val startRelativePeriod = com.assistant.core.ui.components.RelativePeriod(
+                offset = startOffset.toInt(),
+                type = com.assistant.core.ui.components.PeriodType.valueOf(startType)
+            )
+            val endRelativePeriod = com.assistant.core.ui.components.RelativePeriod(
+                offset = endOffset.toInt(),
+                type = com.assistant.core.ui.components.PeriodType.valueOf(endType)
+            )
+
+            // Get app config
+            val dayStartHour = com.assistant.core.utils.AppConfigManager.getDayStartHour(context)
+            val weekStartDay = com.assistant.core.utils.AppConfigManager.getWeekStartDay(context)
+
+            // Resolve to absolute periods
+            val startPeriod = com.assistant.core.ui.components.resolveRelativePeriod(
+                startRelativePeriod, dayStartHour, weekStartDay
+            )
+            val endPeriod = com.assistant.core.ui.components.resolveRelativePeriod(
+                endRelativePeriod, dayStartHour, weekStartDay
+            )
+
+            // Start timestamp = beginning of start period
+            val startTimestamp = startPeriod.timestamp
+
+            // End timestamp = end of end period
+            val endTimestamp = com.assistant.core.ui.components.getPeriodEndTimestamp(
+                endPeriod, dayStartHour, weekStartDay
+            )
+
+            LogManager.aiPrompt("Resolved relative periods: $periodStart -> $startTimestamp, $periodEnd -> $endTimestamp")
+            return Pair(startTimestamp, endTimestamp)
+
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Failed to resolve relative periods: ${e.message}", "ERROR", e)
+            return Pair(null, null)
+        }
     }
 
     private fun processToolInstancesCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolInstancesCommand() - STUB implementation")
+        LogManager.aiPrompt("processToolInstancesCommand() - routing to tools service")
 
-        // TODO: Transform TOOL_INSTANCES command to tools.list call
-        // - Extract optional zone_id from params
-        // - If zone_id present: filter by zone
-        // - If no zone_id: return all tool instances
+        // Route TOOL_INSTANCES command to ToolInstanceService
+        // If zone_id present: filter by zone (tools.list)
+        // If no zone_id: return all tool instances (tools.list_all)
+        val zoneId = command.params["zone_id"] as? String
 
-        return null
+        return if (!zoneId.isNullOrEmpty()) {
+            ExecutableCommand(
+                resource = "tools",
+                operation = "list",
+                params = mapOf("zone_id" to zoneId)
+            )
+        } else {
+            ExecutableCommand(
+                resource = "tools",
+                operation = "list_all",
+                params = emptyMap()
+            )
+        }
     }
 }

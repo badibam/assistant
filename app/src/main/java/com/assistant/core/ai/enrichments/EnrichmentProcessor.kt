@@ -82,8 +82,17 @@ class EnrichmentProcessor {
     /**
      * Generate DataCommands for prompt Level 4 inclusion
      * Returns multiple commands as enrichments can require both config and data
+     *
+     * @param dayStartHour Hour when the day starts (for period normalization)
+     * @param weekStartDay Day when the week starts (for period normalization)
      */
-    fun generateCommands(type: EnrichmentType, config: String, isRelative: Boolean = false): List<DataCommand> {
+    fun generateCommands(
+        type: EnrichmentType,
+        config: String,
+        isRelative: Boolean = false,
+        dayStartHour: Int = 0,
+        weekStartDay: String = "monday"
+    ): List<DataCommand> {
         LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative")
 
         if (!shouldGenerateQuery(type, config)) {
@@ -95,8 +104,8 @@ class EnrichmentProcessor {
             val configJson = JSONObject(config)
 
             val queries = when (type) {
-                EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative)
-                EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
+                EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative, dayStartHour, weekStartDay)
+                EnrichmentType.USE -> generateUseQueries(configJson, isRelative, dayStartHour, weekStartDay)
                 EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 else -> {
@@ -192,12 +201,16 @@ class EnrichmentProcessor {
     // Query Generation
     // ========================================================================================
 
-    private fun generatePointerQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
+    private fun generatePointerQueries(
+        config: JSONObject,
+        isRelative: Boolean,
+        dayStartHour: Int,
+        weekStartDay: String
+    ): List<DataCommand> {
         LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative")
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
-        val fieldSpecificData = config.optJSONObject("fieldSpecificData")
         val includeData = config.optBoolean("includeData", false) // Toggle for real data
 
         LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel', includeData=$includeData")
@@ -256,7 +269,7 @@ class EnrichmentProcessor {
 
                     // Add temporal parameters for data queries
                     val dataParams = baseParams.toMutableMap()
-                    addTemporalParams(dataParams, fieldSpecificData, isRelative)
+                    addTemporalParams(dataParams, config, isRelative, dayStartHour, weekStartDay)
 
                     queries.add(DataCommand(
                         id = buildQueryId("tool_data_sample", dataParams),
@@ -288,7 +301,12 @@ class EnrichmentProcessor {
         return queries
     }
 
-    private fun generateUseQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
+    private fun generateUseQueries(
+        config: JSONObject,
+        isRelative: Boolean,
+        dayStartHour: Int,
+        weekStartDay: String
+    ): List<DataCommand> {
         LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative")
 
         val toolInstanceId = config.optString("toolInstanceId", "")
@@ -382,34 +400,80 @@ class EnrichmentProcessor {
     // ========================================================================================
 
     /**
-     * Add temporal parameters to query params if fieldSpecificData contains timestamps
+     * Add temporal parameters to query params from timestampSelection in config
+     * Handles both absolute periods (CHAT) and relative periods (AUTOMATION)
      */
     private fun addTemporalParams(
         params: MutableMap<String, Any>,
-        fieldSpecificData: JSONObject?,
-        isRelative: Boolean
+        configJson: JSONObject?,
+        isRelative: Boolean,
+        dayStartHour: Int,
+        weekStartDay: String
     ) {
-        fieldSpecificData?.optJSONObject("timestampData")?.let { timestampData ->
-            LogManager.aiEnrichment("Found timestamp data: $timestampData")
+        val timestampSelection = configJson?.optJSONObject("timestampSelection")
+        if (timestampSelection == null) {
+            LogManager.aiEnrichment("No timestampSelection found in config")
+            return
+        }
 
-            if (isRelative) {
-                // TODO: Implement relative period encoding for automation
-                params["period"] = "current_selection"
-                LogManager.aiEnrichment("Added relative period parameter: current_selection")
-            } else {
-                // Use absolute timestamps for chat consistency
-                val startTs = timestampData.optLong("startTimestamp", 0)
-                val endTs = timestampData.optLong("endTimestamp", 0)
-                if (startTs > 0) {
-                    params["startTimestamp"] = startTs
-                    LogManager.aiEnrichment("Added startTimestamp parameter: $startTs")
-                }
-                if (endTs > 0) {
-                    params["endTimestamp"] = endTs
-                    LogManager.aiEnrichment("Added endTimestamp parameter: $endTs")
-                }
+        LogManager.aiEnrichment("Found timestampSelection: $timestampSelection")
+
+        if (isRelative) {
+            // AUTOMATION mode: use relative periods
+            val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
+            val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
+
+            if (minRelativePeriod != null || maxRelativePeriod != null) {
+                // Encode relative periods for UserCommandProcessor to resolve later
+                val periodStart = minRelativePeriod?.let {
+                    "${it.getInt("offset")}_${it.getString("type")}"
+                } ?: "0_DAY"
+
+                val periodEnd = maxRelativePeriod?.let {
+                    "${it.getInt("offset")}_${it.getString("type")}"
+                } ?: "0_DAY"
+
+                params["period_start"] = periodStart
+                params["period_end"] = periodEnd
+                LogManager.aiEnrichment("Added relative period parameters: start=$periodStart, end=$periodEnd")
             }
-        } ?: LogManager.aiEnrichment("No timestamp data found in fieldSpecificData")
+        } else {
+            // CHAT mode: calculate absolute timestamps
+            // Min timestamp (start of range)
+            val startTs = when {
+                timestampSelection.has("minCustomDateTime") ->
+                    timestampSelection.getLong("minCustomDateTime")
+                timestampSelection.has("minPeriod") -> {
+                    val period = timestampSelection.getJSONObject("minPeriod")
+                    period.getLong("timestamp")  // Start of min period
+                }
+                else -> null
+            }
+
+            // Max timestamp (end of range - must calculate end of max period)
+            val endTs = when {
+                timestampSelection.has("maxCustomDateTime") ->
+                    timestampSelection.getLong("maxCustomDateTime")
+                timestampSelection.has("maxPeriod") -> {
+                    val period = timestampSelection.getJSONObject("maxPeriod")
+                    val periodTimestamp = period.getLong("timestamp")
+                    val periodType = com.assistant.core.ui.components.PeriodType.valueOf(period.getString("type"))
+                    val periodObj = com.assistant.core.ui.components.Period(periodTimestamp, periodType)
+                    // Calculate end of period
+                    com.assistant.core.ui.components.getPeriodEndTimestamp(periodObj, dayStartHour, weekStartDay)
+                }
+                else -> null
+            }
+
+            if (startTs != null) {
+                params["startTime"] = startTs
+                LogManager.aiEnrichment("Added startTime parameter: $startTs")
+            }
+            if (endTs != null) {
+                params["endTime"] = endTs
+                LogManager.aiEnrichment("Added endTime parameter: $endTs")
+            }
+        }
     }
 
     private fun formatPeriodDescription(timestampData: JSONObject): String {
