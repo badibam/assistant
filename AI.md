@@ -32,8 +32,9 @@ User message → AIOrchestrator → PromptManager → CommandExecutor → AIClie
 - `EnrichmentProcessor` : Génération commands depuis enrichments UI bruts
 - `UserCommandProcessor` : Transformation commands user (résolution relatives)
 - `AICommandProcessor` : Transformation commands AI (validation sécurité)
-- `CommandExecutor` : Exécution commands vers coordinator
+- `CommandExecutor` : Exécution commands vers coordinator, formatage résultats
 - `QueryDeduplicator` : Déduplication cross-niveaux pour prompts
+- `AppConfigManager` : Cache singleton pour config app (dayStartHour, weekStartDay)
 
 ### AIOrchestrator (orchestrateur central)
 ```kotlin
@@ -180,15 +181,19 @@ data class ExecutableCommand(
 )
 ```
 
-**Types de commands par ressource :**
+**Types de commands utilisateur (enrichments) :**
 - **SCHEMA** → id
 - **TOOL_CONFIG** → id
-- **TOOL_DATA** → id + sélecteurs (filtres + agrégation)
-- **TOOL_STATS** → id + sélecteurs
-- **TOOL_DATA_SAMPLE** → id + sélecteurs
+- **TOOL_DATA** → id + périodes + filtres
+- **TOOL_STATS** → id + périodes + agrégation
+- **TOOL_DATA_SAMPLE** → id + limit
 - **ZONE_CONFIG** → id
 - **ZONES** → aucun paramètre
 - **TOOL_INSTANCES** → zone_id optionnel
+
+**Operations batch IA :**
+- `batch_create` : Création multiple tool_data
+- `batch_update` : Mise à jour multiple tool_data
 
 ## 4. Communication bidirectionnelle
 
@@ -239,27 +244,51 @@ Système hiérarchique contrôlant les actions IA :
 ```kotlin
 class EnrichmentProcessor {
     fun generateSummary(type: EnrichmentType, config: String): String
-    fun generateCommands(type: EnrichmentType, config: String, isRelative: Boolean): List<DataCommand>
+    fun generateCommands(
+        type: EnrichmentType,
+        config: String,
+        isRelative: Boolean,
+        dayStartHour: Int,
+        weekStartDay: String
+    ): List<DataCommand>
 }
 ```
 
+**Responsabilités périodes :**
+- **CHAT** (`isRelative=false`) : Calcule timestamps absolus (début + fin période) via Period objects
+- **AUTOMATION** (`isRelative=true`) : Encode périodes relatives format "offset_TYPE" (ex: "-1_WEEK")
+
 ### UserCommandProcessor
 ```kotlin
-class UserCommandProcessor {
+class UserCommandProcessor(private val context: Context) {
     fun processCommands(commands: List<DataCommand>): List<ExecutableCommand>
-    // Résolution périodes relatives → timestamps absolus
-    // UI abstractions → paramètres coordinator concrets
 }
 ```
+
+**Transformations par type :**
+- `TOOL_CONFIG` → `tools.get` (id → tool_instance_id)
+- `TOOL_DATA` → `tool_data.get` (résolution périodes relatives si `isRelative=true`)
+- `TOOL_STATS` → `tool_data.stats` (agrégation données)
+- `TOOL_DATA_SAMPLE` → `tool_data.get` (limit + orderBy recent)
+- `ZONE_CONFIG` → `zones.get` (id → zone_id)
+- `ZONES` → `zones.list`
+- `TOOL_INSTANCES` → `tools.list` (avec zone_id) ou `tools.list_all` (sans zone_id)
+
+**Résolution périodes relatives :** Parse "offset_TYPE" → timestamps absolus via `resolveRelativePeriod()` + `AppConfigManager`
 
 ### AICommandProcessor
 ```kotlin
 class AICommandProcessor {
     fun processDataCommands(commands: List<DataCommand>): List<ExecutableCommand>
     fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand>
-    // Validation sécurité, limites données, token management
 }
 ```
+
+**Responsabilités :**
+- Validation sécurité et permissions
+- Vérification limites données
+- Token management
+- Cascade failure pour actions (arrêt sur première erreur)
 
 **Logique enrichissement par type :**
 
@@ -327,17 +356,34 @@ EnrichmentBlocks → EnrichmentProcessor → UserCommandProcessor → CommandExe
 2. **EnrichmentProcessor** : Traduction relatif/absolu selon session type
 3. **UserCommandProcessor** : Transformation en paramètres service (QUERY_PARAMETERS_SPEC)
 
-### QueryDeduplicator (conservé)
-**Principe** : Déduplication incrémentale cross-niveaux pour assemblage prompt final
+### CommandExecutor
 ```kotlin
-level1Content = commandExecutor.executeCommands(level1Commands, "Level1")
-level2Content = commandExecutor.executeCommands(level2Commands, "Level2", previousCommands = level1Commands)
-// Déduplication via QueryDeduplicator lors assemblage prompt
+class CommandExecutor(private val context: Context) {
+    suspend fun executeCommands(commands: List<ExecutableCommand>, level: String): List<CommandResult>
+}
+
+data class CommandResult(
+    val dataTitle: String,       // Titre section données prompt (ex: "Data from tool 'X', period: ...")
+    val formattedData: String,   // JSON avec métadonnées en premier (vide pour actions)
+    val systemMessage: String    // Résumé pour historique conversation
+)
 ```
 
-**Mécanismes de déduplication :**
+**Formatage par opération :**
+- **Queries** (get, list) : dataTitle + formattedData (JSON métadonnées avant bulk data) + systemMessage
+- **Actions** (create, update, delete, batch_create, batch_update) : systemMessage uniquement
+
+**System messages exemples :**
+- Query : "150 data points from tool 'Sleep Tracker' added"
+- Action : "Created tool instance 'Morning Routine'"
+- Batch : "Created 50 data points in tool 'Sleep Tracker'"
+
+### QueryDeduplicator
+**Principe** : Déduplication cross-niveaux dans PromptManager avant exécution
+
+**Mécanismes :**
 1. **Hash identité** : Commands identiques supprimées (première occurrence gardée)
-2. **Inclusion métier** : Commands plus générales incluent spécifiques selon règles business
+2. **Inclusion métier** : Commands générales incluent spécifiques selon règles business
 
 ### Storage Policy
 
@@ -356,11 +402,26 @@ level2Content = commandExecutor.executeCommands(level2Commands, "Level2", previo
 **Stratégie Cache :** Envoi complet du prompt à chaque message. L'API (Claude, OpenAI, etc.) gère le cache automatiquement via préfixes identiques. **Décision architecturale** : Cohérence données > optimisation tokens.
 
 ### Dual mode résolution (CHAT absolu vs AUTOMATION relatif)
-**CHAT** (`isRelative = false`) : "cette semaine" → timestamps figés absolus pour cohérence conversationnelle
 
-**AUTOMATION** (`isRelative = true`) : "cette semaine" → paramètre relatif résolu au moment exécution via `resolveRelativeParams()`
+**Types de périodes :**
+```kotlin
+data class Period(val timestamp: Long, val type: PeriodType)  // Période absolue (point dans le temps)
+data class RelativePeriod(val offset: Int, val type: PeriodType)  // Offset depuis maintenant
+```
 
-**Token Management :** Validation individuelle des queries et validation globale du prompt. Gestion différenciée CHAT (dialogue confirmation) vs AUTOMATION (refus automatique) si dépassement.
+**CHAT** (`isRelative=false`) :
+- "cette semaine" → `Period` avec timestamps absolus (début + fin calculés via `getPeriodEndTimestamp()`)
+- Stocké dans `timestampSelection.minPeriod` / `maxPeriod`
+- Garantit cohérence conversation sur plusieurs jours
+
+**AUTOMATION** (`isRelative=true`) :
+- "cette semaine" → `RelativePeriod(offset=0, type=WEEK)` → encodé "0_WEEK"
+- Stocké dans `timestampSelection.minRelativePeriod` / `maxRelativePeriod`
+- Résolu à l'exécution via `resolveRelativePeriod()` + `AppConfigManager`
+
+**AppConfigManager :** Singleton cache pour `dayStartHour` et `weekStartDay` (initialisé au démarrage app)
+
+**Token Management :** Validation globale prompt par PromptManager. Gestion différenciée CHAT (dialogue confirmation) vs AUTOMATION (refus automatique) si dépassement.
 
 ## 7. Providers
 

@@ -16,7 +16,7 @@
 - Line 97: implement OrganizeEnrichmentSchema
 - Line 109: implement DocumentEnrichmentSchema
 
-## enrichments/EnrichmentProcessor.kt (18)
+## enrichments/EnrichmentProcessor.kt (16) ✅ 2/18 DONE
 - Line 155: resolve tool instance name from ID for better readability
 - Line 173: resolve tool instance name from ID for better readability
 - Line 177: Implement ORGANIZE enrichment type (📁) - lower priority
@@ -30,8 +30,9 @@
 - Line 342: Implement CREATE enrichment with schema-driven tooltype selection
 - Line 361: Get schema ID from tool instance config - for now using placeholder
 - Line 365: resolve from tool instance (config_schema_id)
-- Line 396: Implement relative period encoding for automation
+- ✅ Line 396: Implement relative period encoding for automation (DONE)
 - Line 421: Implement proper period formatting based on timestamps
+- ✅ ADDED: Implement absolute period timestamp calculation for CHAT mode (DONE)
 
 ## orchestration/AIOrchestrator.kt (18)
 - Line 61: Load actual session
@@ -59,21 +60,21 @@
 - Line 30-36: Implement AI data command processing with validation, security, token management
 - Line 54-61: Implement AI action command processing with validation, security, cascade failure
 
-## processing/UserCommandProcessor.kt (7)
-- Line 85: Transform TOOL_CONFIG command to tools.get call
-- Line 95: Transform TOOL_DATA command to tool_data.get call
-- Line 107: Transform TOOL_STATS command to tool_data.stats call
-- Line 117: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
-- Line 127: Transform ZONE_CONFIG command to zones.get call
-- Line 136: Transform ZONES command to zones.list call
-- Line 145: Transform TOOL_INSTANCES command to tools.list call
+## processing/UserCommandProcessor.kt (2) ✅ 5/7 DONE
+- ✅ Line 85: Transform TOOL_CONFIG command to tools.get call
+- ✅ Line 95: Transform TOOL_DATA command to tool_data.get call
+- Line 107: Transform TOOL_STATS command to tool_data.stats call (LOW PRIORITY - stub)
+- Line 117: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling (LOW PRIORITY - stub)
+- ✅ Line 127: Transform ZONE_CONFIG command to zones.get call
+- ✅ Line 136: Transform ZONES command to zones.list call
+- ✅ Line 145: Transform TOOL_INSTANCES command to tools.list call
 
-## prompts/CommandExecutor.kt (5)
-- Line 68: Validate token sizes for results
-- Line 69: Handle cross-level deduplication with previousCommands
-- Line 70: Format results properly for prompt inclusion
-- Line 99: Format result data properly for prompt inclusion
-- Line 124-127: Implement proper formatting based on command type and data structure
+## prompts/CommandExecutor.kt (0) ✅ DONE
+- ✅ CommandResult structure with dataTitle, formattedData, systemMessage
+- ✅ Format results properly for prompt inclusion (JSON metadata first)
+- ✅ Generate system messages for queries and actions
+- ✅ Support batch operations (batch_create, batch_update)
+- ✅ Deduplication handled by PromptManager (previousCommands removed)
 
 ## prompts/PromptManager.kt (9)
 - Line 27: Implement new command pipeline integration
@@ -148,9 +149,9 @@
 
 ### 🔴 CRITIQUE - Pipeline de base
 - **PromptManager.kt**: Intégration complète pipeline commandes (lines 27-75)
-- **UserCommandProcessor.kt**: Transformations commandes utilisateur (7 commandes)
+- ✅ **UserCommandProcessor.kt**: Transformations commandes utilisateur (5/7 done, 2 stubs low priority)
 - **AICommandProcessor.kt**: Validation commandes IA (2 processeurs)
-- **CommandExecutor.kt**: Formatage et déduplication résultats (5 items)
+- ✅ **CommandExecutor.kt**: Formatage résultats + system messages (DONE)
 
 ### 🟠 IMPORTANT - Données réelles
 - **AIProviderConfigService.kt**: Persistance DB configurations (5 opérations)
