@@ -34,7 +34,6 @@ User message → AIOrchestrator → PromptManager → CommandExecutor → AIClie
 - `AICommandProcessor` : Transformation commands AI (validation sécurité)
 - `CommandExecutor` : Exécution commands vers coordinator, formatage résultats
 - `QueryDeduplicator` : Déduplication cross-niveaux pour prompts
-- `AppConfigManager` : Cache singleton pour config app (dayStartHour, weekStartDay)
 
 ### AIOrchestrator (orchestrateur central)
 ```kotlin

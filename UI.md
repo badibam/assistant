@@ -151,24 +151,30 @@ Toujours vérifier config != null avant utilisation, pas de valeurs par défaut 
 
 ## Sélection Temporelle
 
+### Types de Période
+
+```kotlin
+data class Period(val timestamp: Long, val type: PeriodType)  // Période absolue
+data class RelativePeriod(val offset: Int, val type: PeriodType)  // Période relative (offset depuis maintenant)
+```
+
 ### Composants de Période
 
-**SinglePeriodSelector** - Navigation périodique avec flèches, period, onPeriodChange, showDatePicker et useOnlyRelativeLabels.
+**SinglePeriodSelector** - Navigation avec flèches, period, onPeriodChange, showDatePicker, useOnlyRelativeLabels.
 
-**PeriodRangeSelector** - Sélection de plages temporelles avec start/end PeriodType, periods, customDates, callbacks et useOnlyRelativeLabels.
+**PeriodRangeSelector** - Sélection plages avec start/end PeriodType, periods, customDates, callbacks, useOnlyRelativeLabels et mode returnRelative (retourne RelativePeriod au lieu de Period).
 
-### Logique Labels Relatifs vs Absolus
+### Logique Labels
 **useOnlyRelativeLabels** :
-- `false` (défaut) : "Semaine du 15 mars" (navigation claire)
-- `true` : "il y a 125 semaines" (automation)
+- `false` : "Semaine du 15 mars"
+- `true` : "il y a 125 semaines"
 
-**Contextes** : Chat IA (false), Automation IA (true)
-
-### Gestion Configuration App
-Chargement automatique dayStartHour et weekStartDay. Extension getEndTimestamp() pour fin de période.
-
-### Utilitaires Période
-Functions normalizeTimestampWithConfig(), getEndTimestamp(), getNextPeriod(), getPreviousPeriod().
+### Utilitaires
+- `normalizeTimestampWithConfig()` : Normalise timestamp à début de période
+- `getPeriodEndTimestamp()` : Calcule fin de période
+- `getNextPeriod()` / `getPreviousPeriod()` : Navigation périodes
+- `resolveRelativePeriod()` : Résout RelativePeriod → Period absolu
+- `calculatePeriodOffset()` : Calcule offset entre timestamp et maintenant
 
 ## Règles d'Usage
 

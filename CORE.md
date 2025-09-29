@@ -174,6 +174,19 @@ Script Gradle gère apostrophes, guillemets et conversion placeholders (%s → %
 
 ### Strings Android
 **Format requis** : Placeholders numérotés %1$s, %2$s et pas %s
+## AppConfigManager
+
+Singleton cache pour config app (dayStartHour, weekStartDay). Initialisé au démarrage (MainActivity), accès synchrone depuis n'importe quel contexte.
+
+```kotlin
+AppConfigManager.initialize(context)  // Au démarrage
+val dayStartHour = AppConfigManager.getDayStartHour(context)
+val weekStartDay = AppConfigManager.getWeekStartDay(context)
+AppConfigManager.refresh(context)  // Après modif config
+```
+
+Utilisé par système périodes (PeriodSelector, EnrichmentProcessor, UserCommandProcessor).
+
 ## Système de Logs Unifié
 
 Architecture centralisée pour tous les logs du projet avec tags structurés et gestion d'erreurs robuste.
