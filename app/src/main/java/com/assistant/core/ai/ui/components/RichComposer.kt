@@ -2,6 +2,8 @@ package com.assistant.core.ai.ui.components
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -399,6 +401,8 @@ private fun PointerEnrichmentDialog(
     } else {
         // Additional configuration fields after selection
         val useRelativeLabels = (sessionType == SessionType.AUTOMATION)
+        val scrollState = rememberScrollState()
+
         UI.Dialog(
             type = DialogType.CONFIGURE,
             onConfirm = {
@@ -411,7 +415,9 @@ private fun PointerEnrichmentDialog(
             onCancel = onDismiss
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 UI.Text(
@@ -419,16 +425,31 @@ private fun PointerEnrichmentDialog(
                     type = TextType.TITLE
                 )
 
-                // Show selected path with human-readable labels
+                // Show selected path with human-readable labels and change button
                 selectionResult?.let { result ->
-                    UI.Text(
-                        text = if (result.displayChain.isNotEmpty()) {
-                            "Sélection: ${result.displayChain.joinToString(" → ")}"
-                        } else {
-                            "Sélection: ${result.selectedPath}"
-                        },
-                        type = TextType.BODY
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UI.Text(
+                                text = if (result.displayChain.isNotEmpty()) {
+                                    "Sélection: ${result.displayChain.joinToString(" → ")}"
+                                } else {
+                                    "Sélection: ${result.selectedPath}"
+                                },
+                                type = TextType.BODY
+                            )
+                        }
+                        UI.ActionButton(
+                            action = ButtonAction.EDIT,
+                            display = ActionButtonDisplay.ICON,
+                            onClick = {
+                                showZoneScopeSelector = true
+                            }
+                        )
+                    }
                 }
 
                 // Importance selector
