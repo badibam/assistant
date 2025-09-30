@@ -30,11 +30,12 @@ Dossier tools/[type]/ contient :
 - ui/ (ConfigScreen et DisplayComponent)
 
 ### Interface ToolTypeContract
-Interface principale avec méthodes pour :
-- Métadonnées (displayName, defaultConfig, configSchema, availableOperations)
-- Interface utilisateur (getConfigScreen Composable)
-- Discovery pattern (getService, getDao, getDatabaseEntities, getDatabaseMigrations)
-- Validation (validateData)
+Interface principale implémentant SchemaProvider avec méthodes pour :
+- **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultConfig(), getAvailableOperations()
+- **Schémas** : getAllSchemaIds(), getSchema(schemaId, context) via SchemaProvider
+- **Interface utilisateur** : getConfigScreen() @Composable
+- **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations()
+- **Validation** : validateData() (délègue à SchemaValidator)
 
 ## Méthodologie d'Implémentation
 
@@ -70,7 +71,8 @@ Class implémentant ExecutableService avec :
 
 ### ToolType Implementation
 Class implémentant ToolTypeContract avec :
-- getDisplayName(), getDefaultConfig(), getConfigSchema()
+- getDisplayName(), getDescription(), getDefaultConfig()
+- getAllSchemaIds(), getSchema(schemaId, context)
 - getConfigScreen() @Composable
 - getService(), getDao(), getDatabaseEntities()
 
@@ -157,6 +159,45 @@ Service execute() valide automatiquement via ToolType puis retourne OperationRes
 - Validation temps réel optionnelle avec remember(dépendances)
 - Toast automatique pour erreurs via LaunchedEffect
 - FormActions avec bouton SAVE enabled selon validation
+
+## Schema Provider Pattern
+
+### Relation ToolType ↔ SchemaProvider ↔ Schema IDs
+ToolTypeContract étend SchemaProvider pour accès aux schémas via IDs.
+
+**ToolTypeManager.getSchemaIdsForTooltype()**
+```kotlin
+// Récupère tous les schema IDs d'un tooltype via SchemaProvider
+val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
+// Retourne: ["tracking_config_numeric", "tracking_data_numeric", ...]
+```
+
+**Règle importante** : Pas de présomption de patterns de noms. Utiliser SchemaProvider.getAllSchemaIds() pour découverte.
+
+## BaseSchemas et Configuration
+
+### Champs Obligatoires Configuration
+- **schema_id** : ID du schéma de validation config
+- **data_schema_id** : ID du schéma de validation data
+- **name** : Nom de l'instance
+- **description** : Description
+- **management** : Mode de gestion (AI/USER/HYBRID)
+- **display_mode** : Mode d'affichage (ICON/MINIMAL/LINE/etc.)
+- **config_validation** : Validation stricte/flexible
+- **data_validation** : Validation stricte/flexible
+
+### Champ always_send (Level 2 AI)
+```kotlin
+"always_send": {
+    "type": "boolean",
+    "default": false,
+    "description": "Toujours envoyer les données à l'IA (Level 2)"
+}
+```
+
+**Usage** : Si `always_send = true`, les données de cette tool instance sont incluses systématiquement en Level 2 des prompts IA pour contexte permanent.
+
+**Interface UI** : Toggle dans ToolGeneralConfigSection (8 champs obligatoires total).
 
 ## Patterns de Parsing Robuste
 

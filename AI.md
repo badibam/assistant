@@ -30,10 +30,27 @@ User message → AIOrchestrator → PromptManager → CommandExecutor → AIClie
 - `AIClient` : Interface vers providers AI externes
 - `PromptManager` : Génération prompts 4 niveaux avec commands unifiées
 - `EnrichmentProcessor` : Génération commands depuis enrichments UI bruts
-- `UserCommandProcessor` : Transformation commands user (résolution relatives)
-- `AICommandProcessor` : Transformation commands AI (validation sécurité)
-- `CommandExecutor` : Exécution commands vers coordinator, formatage résultats
-- `QueryDeduplicator` : Déduplication cross-niveaux pour prompts
+- `UserCommandProcessor` : Transformation commands user (DataCommand → ExecutableCommand)
+- `AICommandProcessor` (object) : Transformation commands AI (AICommand → ExecutableCommand)
+- `CommandExecutor` : **Point unique d'exécution** vers coordinator + génération SystemMessage
+- `QueryDeduplicator` (object) : Déduplication cross-niveaux pour prompts
+
+### SystemMessage Generation
+
+**Point unique** : `CommandExecutor` est le SEUL responsable de la génération de SystemMessage pour TOUTES les sources (User, AI).
+
+**Granularité** : 1 SystemMessage par série de commandes (pas par commande individuelle).
+
+**Types de messages** :
+- `DATA_ADDED` : Pour queries (get, list, stats) - résultats intégrés en Level 4
+- `ACTIONS_EXECUTED` : Pour mutations (create, update, delete, batch_*) - visible dans historique conversation
+
+**Flow unifié** :
+```
+User enrichments → UserCommandProcessor → CommandExecutor → SystemMessage
+AI dataCommands → AICommandProcessor → CommandExecutor → SystemMessage
+AI actionCommands → AICommandProcessor → CommandExecutor → SystemMessage
+```
 
 ### AIOrchestrator (orchestrateur central)
 ```kotlin
@@ -54,15 +71,19 @@ class AIOrchestrator(private val context: Context) {
 ### Command Processing Pipeline
 ```
 EnrichmentBlock (stocké) → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
-                                            ↓
-                                 List<DataCommand> → List<ExecutableCommand> → coordinator calls
+                                            ↓                               ↓
+                                 List<DataCommand> → List<ExecutableCommand> → coordinator calls + SystemMessage
+
+AIMessage.dataCommands → AICommandProcessor → CommandExecutor
+                              ↓                   ↓
+                   List<ExecutableCommand> → coordinator calls + SystemMessage
 ```
 
 **Responsabilités séparées :**
 - `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands
-- `UserCommandProcessor` : Résolution périodes relatives, UI abstractions
-- `AICommandProcessor` : Validation sécurité, limites données, token management
-- `CommandExecutor` : ExecutableCommand → resource.operation + coordinator
+- `UserCommandProcessor` : Transformation DataCommand → ExecutableCommand (résolution périodes relatives)
+- `AICommandProcessor` : Transformation AICommand → ExecutableCommand (types abstraits → resource.operation)
+- `CommandExecutor` : **Point unique d'exécution** → coordinator calls + génère SystemMessage unique par série
 - `QueryDeduplicator` : Déduplication cross-niveaux pour assemblage prompt final
 
 ### AISessionService (ExecutableService)
@@ -95,6 +116,76 @@ class AIClient(private val context: Context) {
 ```
 
 Interface vers providers externes, utilise `AIProviderConfigService` via coordinator pour récupérer configurations.
+
+## 3. Types et Structures
+
+### Types de Résultats (voir CORE.md)
+- **OperationResult** : Services avec `.success: Boolean`
+- **CommandResult** : Coordinator avec `.status: CommandStatus`
+
+### Structures de Commands
+
+**DataCommand** (User enrichments)
+```kotlin
+data class DataCommand(
+    val id: String,              // Hash déterministe (type + params + isRelative)
+    val type: String,            // TOOL_DATA, TOOL_CONFIG, ZONE_CONFIG, etc.
+    val params: Map<String, Any>, // Paramètres absolus ou relatifs
+    val isRelative: Boolean = false
+)
+```
+
+**AICommand** (IA queries et actions)
+```kotlin
+data class AICommand(
+    val id: String,
+    val type: String,            // Types abstraits (voir section suivante)
+    val params: JSONObject       // Doit être converti en Map pour ExecutableCommand
+)
+```
+
+**ExecutableCommand** (Format unifié pour exécution)
+```kotlin
+data class ExecutableCommand(
+    val resource: String,        // "zones", "tool_data", "tools"
+    val operation: String,       // "get", "create", "batch_create"
+    val params: Map<String, Any> // Paramètres résolus pour coordinator
+)
+```
+
+**Conversion JSONObject ↔ Map** : Nécessaire lors de la transformation AICommand → ExecutableCommand.
+
+### Types de Commands IA (Abstraits)
+
+**Queries** (retournent données pour Level 4) :
+- `TOOL_DATA` : Récupérer données d'outil
+- `TOOL_CONFIG` : Configuration d'outil
+- `TOOL_INSTANCES` : Liste outils d'une zone
+- `ZONE_CONFIG` : Configuration zone
+- `ZONES` : Liste zones
+- `SCHEMA` : Schéma validation
+
+**Actions** (génèrent SystemMessage visible) :
+- `CREATE_DATA` : Créer données (batch par défaut)
+- `UPDATE_DATA` : Modifier données (batch par défaut)
+- `DELETE_DATA` : Supprimer données (batch par défaut)
+- `CREATE_TOOL` : Créer outil
+- `UPDATE_TOOL` : Modifier outil
+- `DELETE_TOOL` : Supprimer outil
+- `CREATE_ZONE` : Créer zone
+- `UPDATE_ZONE` : Modifier zone
+- `DELETE_ZONE` : Supprimer zone
+
+**Note importante** : Toutes les opérations sur données sont batch par défaut (batch_create, batch_update, batch_delete).
+
+### Singletons et Classes
+
+| Type | Pattern | Usage |
+|------|---------|-------|
+| QueryDeduplicator | object | `QueryDeduplicator.deduplicateCommands()` |
+| AICommandProcessor | object | `AICommandProcessor.processCommands()` |
+| UserCommandProcessor | class | `UserCommandProcessor(context).processCommands()` |
+| CommandExecutor | class | `CommandExecutor(context).executeCommands()` |
 
 ## 3. Structures de données unifiées
 
@@ -173,14 +264,9 @@ data class DataCommand(
 
 ### ExecutableCommand
 ```kotlin
-data class ExecutableCommand(
-    val resource: String,         // "zones", "tool_data"
-    val operation: String,        // "get", "create", "update"
-    val params: Map<String, Any>  // Paramètres résolus pour coordinator
-)
 ```
 
-**Types de commands utilisateur (enrichments) :**
+**Types de commands utilisateur (enrichments) - voir section 3 Types et Structures**
 - **SCHEMA** → id
 - **TOOL_CONFIG** → id
 - **TOOL_DATA** → id + périodes + filtres
@@ -189,10 +275,6 @@ data class ExecutableCommand(
 - **ZONE_CONFIG** → id
 - **ZONES** → aucun paramètre
 - **TOOL_INSTANCES** → zone_id optionnel
-
-**Operations batch IA :**
-- `batch_create` : Création multiple tool_data
-- `batch_update` : Mise à jour multiple tool_data
 
 ## 4. Communication bidirectionnelle
 
@@ -275,19 +357,22 @@ class UserCommandProcessor(private val context: Context) {
 
 **Résolution périodes relatives :** Parse "offset_TYPE" → timestamps absolus via `resolveRelativePeriod()` + `AppConfigManager`
 
-### AICommandProcessor
+### AICommandProcessor (object)
 ```kotlin
-class AICommandProcessor {
-    fun processDataCommands(commands: List<DataCommand>): List<ExecutableCommand>
-    fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand>
+object AICommandProcessor {
+    suspend fun processCommands(
+        commands: List<AICommand>,
+        context: Context
+    ): List<ExecutableCommand>
 }
 ```
 
 **Responsabilités :**
-- Validation sécurité et permissions
-- Vérification limites données
-- Token management
-- Cascade failure pour actions (arrêt sur première erreur)
+- Transformation types abstraits (TOOL_DATA, CREATE_DATA) → resource.operation format
+- Conversion JSONObject params → Map<String, Any>
+- Mapping vers opérations batch par défaut pour données (batch_create, batch_update, batch_delete)
+
+**Note** : Pas d'exécution, seulement transformation. L'exécution et la génération de SystemMessage sont gérées par CommandExecutor.
 
 **Logique enrichissement par type :**
 
@@ -327,7 +412,8 @@ Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, 
 
 **Level 2: USER DATA** - Données utilisateur systématiques
 - Config IA utilisateur (non implémenté)
-- Données complètes des tool instances avec `always_send: true`
+- Données complètes des tool instances avec `always_send: true` (champ BaseSchemas)
+- Si outil a `always_send=true` → données incluses automatiquement en contexte permanent
 
 **Level 3: APP STATE** - État application complet
 - Toutes les zones avec configs + tool instances avec configs
@@ -358,31 +444,66 @@ EnrichmentBlocks → EnrichmentProcessor → UserCommandProcessor → CommandExe
 ### CommandExecutor
 ```kotlin
 class CommandExecutor(private val context: Context) {
-    suspend fun executeCommands(commands: List<ExecutableCommand>, level: String): List<CommandResult>
+    suspend fun executeCommands(
+        commands: List<ExecutableCommand>,
+        messageType: SystemMessageType,
+        level: String
+    ): CommandExecutionResult
 }
 
-data class CommandResult(
-    val dataTitle: String,       // Titre section données prompt (ex: "Data from tool 'X', period: ...")
-    val formattedData: String,   // JSON avec métadonnées en premier (vide pour actions)
-    val systemMessage: String    // Résumé pour historique conversation
+data class PromptCommandResult(
+    val dataTitle: String,       // Titre section données prompt
+    val formattedData: String    // JSON avec métadonnées en premier
+)
+
+data class CommandExecutionResult(
+    val promptResults: List<PromptCommandResult>,  // Pour intégration prompt
+    val systemMessage: SystemMessage               // UN message pour toute la série
 )
 ```
 
+**Responsabilités** :
+- **Point unique d'exécution** : Toutes les commands (User/AI) passent par CommandExecutor
+- **Exécution** : Appels coordinator pour chaque ExecutableCommand
+- **Formatage** : Création PromptCommandResult pour queries (dataTitle + formattedData)
+- **SystemMessage** : Génération d'UN seul message pour la série complète
+- **Tracking** : Compte success/failure pour chaque command
+
 **Formatage par opération :**
-- **Queries** (get, list) : dataTitle + formattedData (JSON métadonnées avant bulk data) + systemMessage
-- **Actions** (create, update, delete, batch_create, batch_update) : systemMessage uniquement
+- **Queries** (get, list, stats) : PromptCommandResult avec données formatées JSON + SystemMessage type DATA_ADDED
+- **Actions** (create, update, delete, batch_*) : SystemMessage type ACTIONS_EXECUTED uniquement (pas de PromptCommandResult)
 
-**System messages exemples :**
-- Query : "150 data points from tool 'Sleep Tracker' added"
-- Action : "Created tool instance 'Morning Routine'"
-- Batch : "Created 50 data points in tool 'Sleep Tracker'"
+**SystemMessage granularité** : 1 message agrégé pour toute la série (ex: "3 queries executed, 150 data points added" ou "Created 50 data points in 2 tools")
 
-### QueryDeduplicator
-**Principe** : Déduplication cross-niveaux dans PromptManager avant exécution
+### QueryDeduplicator (object)
+**Principe** : Déduplication progressive pour maintenir les breakpoints de cache API
+
+**Architecture critique** : La séparation en 4 niveaux de prompt est essentielle pour le cache API Claude. Chaque niveau doit contenir uniquement les commands qui lui sont propres (pas déjà dans les niveaux précédents).
+
+**Déduplication progressive** :
+```kotlin
+// Level 1
+val l1Deduplicated = QueryDeduplicator.deduplicateCommands(level1Commands)
+val l1Executable = userCommandProcessor.processCommands(l1Deduplicated)
+val l1Result = commandExecutor.executeCommands(l1Executable, DATA_ADDED, "level1")
+
+// Level 2: Seulement commands NON présentes en L1
+val l2OnlyCommands = l2Deduplicated.filter { cmd ->
+    !l1Deduplicated.any { it.id == cmd.id }
+}
+val l2Executable = userCommandProcessor.processCommands(l2OnlyCommands)
+val l2Result = commandExecutor.executeCommands(l2Executable, DATA_ADDED, "level2")
+
+// Level 3: Seulement commands NON présentes en L1+L2
+// Level 4: Seulement commands NON présentes en L1+L2+L3
+```
+
+**Importance** : Cette séparation stricte permet à l'API Claude de cacher chaque niveau indépendamment. Casser cette séparation invalide le cache et augmente les coûts de tokens.
 
 **Mécanismes :**
 1. **Hash identité** : Commands identiques supprimées (première occurrence gardée)
 2. **Inclusion métier** : Commands générales incluent spécifiques selon règles business
+3. **Filtrage progressif** : Chaque niveau exclut les commands des niveaux précédents
 
 ### Storage Policy
 

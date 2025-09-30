@@ -14,6 +14,14 @@ Column avec fillMaxWidth, padding vertical 16dp et espacement automatique entre 
 ### Headers de Page
 UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies.
 
+## Conventions Générales
+
+### Langue par Défaut
+**Tous les strings sont en français par défaut**, sauf :
+- Commentaires et debug : anglais
+- Noms de variables/fonctions : anglais
+- Messages utilisateur : français via système de strings (s.shared/s.tool)
+
 ## Système de Texte Simplifié
 
 ### UI.Text - 4 paramètres maximum

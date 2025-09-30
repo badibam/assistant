@@ -29,7 +29,9 @@ Guide technique de l'architecture système centrale.
 - **tool_data.*** (ToolDataService) : toolInstanceId (camelCase)
 
 ### Opérations CRUD Complètes ToolDataService
-**Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all
+**Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete
+
+**Opérations batch** : Toutes les opérations de données IA utilisent par défaut les opérations batch pour efficacité. Les batch réutilisent la logique des opérations unitaires pour cohérence.
 
 ### Gestion des Tokens
 Chaque opération reçoit automatiquement un CancellationToken unique avec création par CommandDispatcher, stockage en ConcurrentHashMap et nettoyage automatique.
@@ -116,15 +118,13 @@ coordinator.processUserAction(), processAICommand(), processScheduledTask() avec
 
 ### Pattern d'utilisation du Coordinator - Référence
 ```kotlin
-import com.assistant.core.coordinator.isSuccess
-
-// Pattern basique avec gestion d'erreur
+// Pattern basique avec gestion d'erreur (CommandResult)
 val result = coordinator.processUserAction("resource.operation", mapOf(
     "param1" to value1,
     "param2" to value2
 ))
 
-if (result.isSuccess) {
+if (result.status == CommandStatus.SUCCESS) {
     // Traitement succès
     val data = result.data?.get("field") as? Type
 } else {
@@ -187,6 +187,26 @@ AppConfigManager.refresh(context)  // Après modif config
 
 Utilisé par système périodes (PeriodSelector, EnrichmentProcessor, UserCommandProcessor).
 
+## Types de Résultats
+
+### OperationResult vs CommandResult
+
+| Type | Package | Champs clés | Usage |
+|------|---------|-------------|-------|
+| OperationResult | services | `.success: Boolean`<br>`.data: Map?`<br>`.error: String?` | Services ExecutableService |
+| CommandResult | commands | `.status: CommandStatus`<br>`.data: Map?`<br>`.error: String?` | Coordinator.processUserAction() |
+
+**Pattern correct** :
+```kotlin
+// Services (OperationResult)
+val result = service.execute(...)
+if (result.success) { ... }
+
+// Coordinator (CommandResult)
+val result = coordinator.processUserAction(...)
+if (result.status == CommandStatus.SUCCESS) { ... }
+```
+
 ## Système de Logs Unifié
 
 Architecture centralisée pour tous les logs du projet avec tags structurés et gestion d'erreurs robuste.
@@ -194,7 +214,7 @@ Architecture centralisée pour tous les logs du projet avec tags structurés et 
 ### LogManager Centralisé
 **Emplacement** : core/utils/LogManager.kt
 
-**Tags disponibles** : à vérifier dans LogManager
+**Méthodes disponibles** : aiSession, aiPrompt, aiUI, aiService, aiEnrichment, schema, coordination, tracking, database, service, ui
 
 ### API Standardisée
 LogManager.schema(), .coordination(), .tracking(), .database() etc. avec niveau DEBUG par défaut, niveaux INFO/WARN/ERROR et throwable optionnel.
