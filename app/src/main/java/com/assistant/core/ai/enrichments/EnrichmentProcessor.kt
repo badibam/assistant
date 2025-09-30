@@ -3,6 +3,7 @@ package com.assistant.core.ai.enrichments
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.EnrichmentType
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.AppConfigManager
 import org.json.JSONObject
 
 /**
@@ -82,16 +83,11 @@ class EnrichmentProcessor {
     /**
      * Generate DataCommands for prompt Level 4 inclusion
      * Returns multiple commands as enrichments can require both config and data
-     *
-     * @param dayStartHour Hour when the day starts (for period normalization)
-     * @param weekStartDay Day when the week starts (for period normalization)
      */
     fun generateCommands(
         type: EnrichmentType,
         config: String,
-        isRelative: Boolean = false,
-        dayStartHour: Int = 0,
-        weekStartDay: String = "monday"
+        isRelative: Boolean = false
     ): List<DataCommand> {
         LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative")
 
@@ -104,8 +100,8 @@ class EnrichmentProcessor {
             val configJson = JSONObject(config)
 
             val queries = when (type) {
-                EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative, dayStartHour, weekStartDay)
-                EnrichmentType.USE -> generateUseQueries(configJson, isRelative, dayStartHour, weekStartDay)
+                EnrichmentType.POINTER -> generatePointerQueries(configJson, isRelative)
+                EnrichmentType.USE -> generateUseQueries(configJson, isRelative)
                 EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 else -> {
@@ -203,9 +199,7 @@ class EnrichmentProcessor {
 
     private fun generatePointerQueries(
         config: JSONObject,
-        isRelative: Boolean,
-        dayStartHour: Int,
-        weekStartDay: String
+        isRelative: Boolean
     ): List<DataCommand> {
         LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative")
 
@@ -269,7 +263,7 @@ class EnrichmentProcessor {
 
                     // Add temporal parameters for data queries
                     val dataParams = baseParams.toMutableMap()
-                    addTemporalParams(dataParams, config, isRelative, dayStartHour, weekStartDay)
+                    addTemporalParams(dataParams, config, isRelative)
 
                     queries.add(DataCommand(
                         id = buildQueryId("tool_data_sample", dataParams),
@@ -303,9 +297,7 @@ class EnrichmentProcessor {
 
     private fun generateUseQueries(
         config: JSONObject,
-        isRelative: Boolean,
-        dayStartHour: Int,
-        weekStartDay: String
+        isRelative: Boolean
     ): List<DataCommand> {
         LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative")
 
@@ -406,9 +398,7 @@ class EnrichmentProcessor {
     private fun addTemporalParams(
         params: MutableMap<String, Any>,
         configJson: JSONObject?,
-        isRelative: Boolean,
-        dayStartHour: Int,
-        weekStartDay: String
+        isRelative: Boolean
     ) {
         val timestampSelection = configJson?.optJSONObject("timestampSelection")
         if (timestampSelection == null) {
@@ -460,7 +450,7 @@ class EnrichmentProcessor {
                     val periodType = com.assistant.core.ui.components.PeriodType.valueOf(period.getString("type"))
                     val periodObj = com.assistant.core.ui.components.Period(periodTimestamp, periodType)
                     // Calculate end of period
-                    com.assistant.core.ui.components.getPeriodEndTimestamp(periodObj, dayStartHour, weekStartDay)
+                    com.assistant.core.ui.components.getPeriodEndTimestamp(periodObj)
                 }
                 else -> null
             }

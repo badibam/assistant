@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -244,16 +245,10 @@ private fun createRichMessage(context: Context, segments: List<MessageSegment>, 
             val isRelative = (sessionType == SessionType.AUTOMATION)
             LogManager.aiEnrichment("Calling EnrichmentProcessor for block $index with isRelative=$isRelative")
 
-            // Get app config for period calculations
-            val dayStartHour = com.assistant.core.utils.AppConfigManager.getDayStartHour(context)
-            val weekStartDay = com.assistant.core.utils.AppConfigManager.getWeekStartDay(context)
-
             val commands = enrichmentProcessor.generateCommands(
                 type = block.type,
                 config = block.config,
-                isRelative = isRelative,
-                dayStartHour = dayStartHour,
-                weekStartDay = weekStartDay
+                isRelative = isRelative
             )
             LogManager.aiEnrichment("Block $index generated ${commands.size} commands")
             commands.forEach { command ->
@@ -444,7 +439,7 @@ private fun PointerEnrichmentDialog(
                         }
                         UI.ActionButton(
                             action = ButtonAction.EDIT,
-                            display = ActionButtonDisplay.ICON,
+                            display = ButtonDisplay.ICON,
                             onClick = {
                                 showZoneScopeSelector = true
                             }

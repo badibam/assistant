@@ -33,9 +33,9 @@ import java.util.*
 /**
  * Creates current period with normalization according to configuration
  */
-private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDay: String): Period {
+private fun createCurrentPeriod(type: PeriodType): Period {
     val now = System.currentTimeMillis()
-    val normalizedTimestamp = normalizeTimestampWithConfig(now, type, dayStartHour, weekStartDay)
+    val normalizedTimestamp = normalizeTimestampWithConfig(now, type)
     return Period(normalizedTimestamp, type)
 }
 
@@ -281,9 +281,9 @@ fun TrackingHistory(
         }
     }
     
-    // Initialize currentPeriod when config is loaded
-    if (dayStartHour != null && weekStartDay != null && currentPeriod == null) {
-        currentPeriod = Period.now(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
+    // Initialize currentPeriod when first loaded
+    if (currentPeriod == null) {
+        currentPeriod = Period.now(PeriodType.DAY)
     }
     
     // Show loading state while config is being loaded
@@ -343,12 +343,12 @@ fun TrackingHistory(
                         }
                         // Update current period when filter changes
                         currentPeriod = when(periodFilter) {
-                            PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!) // Default for ALL
-                            PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR, dayStartHour!!, weekStartDay!!)
-                            PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY, dayStartHour!!, weekStartDay!!)
-                            PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK, dayStartHour!!, weekStartDay!!)
-                            PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH, dayStartHour!!, weekStartDay!!)
-                            PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR, dayStartHour!!, weekStartDay!!)
+                            PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY) // Default for ALL
+                            PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR)
+                            PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY)
+                            PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK)
+                            PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH)
+                            PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR)
                         }
                     }
                 )

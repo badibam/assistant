@@ -91,9 +91,9 @@ private fun getFieldSpecificData(state: ZoneScopeState): FieldSpecificData? {
 /**
  * Creates current period with normalization according to configuration
  */
-private fun createCurrentPeriod(type: PeriodType, dayStartHour: Int, weekStartDay: String): Period {
+private fun createCurrentPeriod(type: PeriodType): Period {
     val now = System.currentTimeMillis()
-    val normalizedTimestamp = normalizeTimestampWithConfig(now, type, dayStartHour, weekStartDay)
+    val normalizedTimestamp = normalizeTimestampWithConfig(now, type)
     return Period(normalizedTimestamp, type)
 }
 

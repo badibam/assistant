@@ -9,6 +9,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.coordinator.Coordinator
@@ -43,12 +44,8 @@ data class Period(
     val type: PeriodType
 ) {
     companion object {
-        fun now(
-            type: PeriodType,
-            dayStartHour: Int,
-            weekStartDay: String
-        ): Period = Period(
-            normalizeTimestampWithConfig(System.currentTimeMillis(), type, dayStartHour, weekStartDay),
+        fun now(type: PeriodType): Period = Period(
+            normalizeTimestampWithConfig(System.currentTimeMillis(), type),
             type
         )
     }
@@ -73,13 +70,11 @@ data class RelativePeriod(
  */
 fun calculatePeriodOffset(
     timestamp: Long,
-    type: PeriodType,
-    dayStartHour: Int,
-    weekStartDay: String
+    type: PeriodType
 ): Int {
     val now = System.currentTimeMillis()
-    val normalizedNow = normalizeTimestampWithConfig(now, type, dayStartHour, weekStartDay)
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, type, dayStartHour, weekStartDay)
+    val normalizedNow = normalizeTimestampWithConfig(now, type)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, type)
 
     return when (type) {
         PeriodType.HOUR -> {
@@ -109,21 +104,20 @@ fun calculatePeriodOffset(
  * Resolve relative period to absolute Period
  * Applies offset from current period
  */
-fun resolveRelativePeriod(
-    relativePeriod: RelativePeriod,
-    dayStartHour: Int,
-    weekStartDay: String
-): Period {
+fun resolveRelativePeriod(relativePeriod: RelativePeriod): Period {
+    val dayStartHour = AppConfigManager.getDayStartHour()
+    val weekStartDay = AppConfigManager.getWeekStartDay()
+
     val now = System.currentTimeMillis()
-    val currentNormalized = normalizeTimestampWithConfig(now, relativePeriod.type, dayStartHour, weekStartDay)
+    val currentNormalized = normalizeTimestampWithConfig(now, relativePeriod.type)
     var targetPeriod = Period(currentNormalized, relativePeriod.type)
 
     // Apply offset by navigating periods
     repeat(kotlin.math.abs(relativePeriod.offset)) {
         targetPeriod = if (relativePeriod.offset < 0) {
-            getPreviousPeriod(targetPeriod, dayStartHour, weekStartDay)
+            getPreviousPeriod(targetPeriod)
         } else {
-            getNextPeriod(targetPeriod, dayStartHour, weekStartDay)
+            getNextPeriod(targetPeriod)
         }
     }
 
@@ -133,25 +127,28 @@ fun resolveRelativePeriod(
 /**
  * Get the end timestamp of a period (last millisecond of the period)
  */
-fun getPeriodEndTimestamp(period: Period, dayStartHour: Int, weekStartDay: String): Long {
+fun getPeriodEndTimestamp(period: Period): Long {
     // Get the start of the next period
-    val nextPeriodStart = getNextPeriod(period, dayStartHour, weekStartDay).timestamp
+    val nextPeriodStart = getNextPeriod(period).timestamp
     // End of current period is 1ms before start of next period
     return nextPeriodStart - 1
 }
 
 /**
  * Extension function to get the end timestamp of a period
- * Simplifies usage: period.getEndTimestamp(dayStartHour, weekStartDay)
+ * Simplifies usage: period.getEndTimestamp()
  */
-fun Period.getEndTimestamp(dayStartHour: Int, weekStartDay: String): Long {
-    return getPeriodEndTimestamp(this, dayStartHour, weekStartDay)
+fun Period.getEndTimestamp(): Long {
+    return getPeriodEndTimestamp(this)
 }
 
 /**
  * Normalizes a timestamp according to period type with configuration parameters
  */
-fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType, dayStartHour: Int, weekStartDay: String): Long {
+fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType): Long {
+    val dayStartHour = AppConfigManager.getDayStartHour()
+    val weekStartDay = AppConfigManager.getWeekStartDay()
+
     val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
     
     return when (type) {
@@ -312,7 +309,7 @@ fun SinglePeriodSelector(
             display = ButtonDisplay.ICON,
             size = Size.M,
             onClick = {
-                val previousPeriod = getPreviousPeriod(period, dayStartHour, weekStartDay)
+                val previousPeriod = getPreviousPeriod(period)
                 onPeriodChange(previousPeriod)
             }
         )
@@ -348,7 +345,7 @@ fun SinglePeriodSelector(
             display = ButtonDisplay.ICON,
             size = Size.M,
             onClick = {
-                val nextPeriod = getNextPeriod(period, dayStartHour, weekStartDay)
+                val nextPeriod = getNextPeriod(period)
                 onPeriodChange(nextPeriod)
             }
         )
@@ -380,7 +377,7 @@ fun SinglePeriodSelector(
                         }.timeInMillis
                         
                         // Normalize for HOUR (start of hour)
-                        val normalizedTimestamp = normalizeTimestampWithConfig(combinedTimestamp, period.type, dayStartHour, weekStartDay)
+                        val normalizedTimestamp = normalizeTimestampWithConfig(combinedTimestamp, period.type)
                         onPeriodChange(Period(normalizedTimestamp, period.type))
                     },
                     onDismiss = { showPicker = false }
@@ -391,7 +388,7 @@ fun SinglePeriodSelector(
                 UI.DatePicker(
                     selectedDate = DateUtils.formatDateForDisplay(period.timestamp),
                     onDateSelected = { selectedDate ->
-                        val newTimestamp = normalizeTimestampWithConfig(DateUtils.parseDateForFilter(selectedDate), period.type, dayStartHour, weekStartDay)
+                        val newTimestamp = normalizeTimestampWithConfig(DateUtils.parseDateForFilter(selectedDate), period.type)
                         onPeriodChange(Period(newTimestamp, period.type))
                     },
                     onDismiss = { showPicker = false }
@@ -429,8 +426,8 @@ private fun generatePeriodLabel(
  */
 private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean): String {
     // Normalize both timestamps to compare hours correctly
-    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.HOUR, 0, "monday")
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.HOUR, 0, "monday")
+    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.HOUR)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.HOUR)
 
     val diffHours = ((normalizedNow - normalizedTimestamp) / (60 * 60 * 1000)).toInt()
 
@@ -477,8 +474,8 @@ private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext, use
  */
 private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: StringsContext, useOnlyRelativeLabels: Boolean): String {
     // Normalize timestamps to compare them according to dayStartHour
-    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.DAY, dayStartHour, "monday")
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.DAY, dayStartHour, "monday")
+    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.DAY)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.DAY)
 
     val diffDays = ((normalizedNow - normalizedTimestamp) / (24 * 60 * 60 * 1000)).toInt()
 
@@ -518,8 +515,8 @@ private fun generateDayLabel(timestamp: Long, now: Long, dayStartHour: Int, s: S
  */
 private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare weeks correctly
-    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.WEEK, 4, weekStartDay)
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.WEEK, 4, weekStartDay)
+    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.WEEK)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.WEEK)
 
     val diffWeeks = ((normalizedNow - normalizedTimestamp) / (7 * 24 * 60 * 60 * 1000)).toInt()
 
@@ -565,8 +562,8 @@ private fun generateWeekLabel(timestamp: Long, now: Long, weekStartDay: String, 
  */
 private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare months correctly
-    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH, 4, "monday")
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH, 4, "monday")
+    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH)
 
     val nowCal = Calendar.getInstance().apply { timeInMillis = normalizedNow }
     val tsCal = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }
@@ -623,8 +620,8 @@ private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext, us
  */
 private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, useOnlyRelativeLabels: Boolean = false): String {
     // Normalize timestamps to compare years correctly
-    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR, 4, "monday")
-    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR, 4, "monday")
+    val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR)
+    val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR)
 
     val nowYear = Calendar.getInstance().apply { timeInMillis = normalizedNow }.get(Calendar.YEAR)
     val tsYear = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }.get(Calendar.YEAR)
@@ -667,9 +664,9 @@ private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, use
 /**
  * Calculates previous period with normalization
  */
-private fun getPreviousPeriod(period: Period, dayStartHour: Int, weekStartDay: String): Period {
+private fun getPreviousPeriod(period: Period): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
-    
+
     when (period.type) {
         PeriodType.HOUR -> cal.add(Calendar.HOUR_OF_DAY, -1)
         PeriodType.DAY -> cal.add(Calendar.DAY_OF_MONTH, -1)
@@ -677,17 +674,17 @@ private fun getPreviousPeriod(period: Period, dayStartHour: Int, weekStartDay: S
         PeriodType.MONTH -> cal.add(Calendar.MONTH, -1)
         PeriodType.YEAR -> cal.add(Calendar.YEAR, -1)
     }
-    
+
     // Normalize timestamp after calculation with configuration parameters
-    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay), period.type)
+    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type), period.type)
 }
 
 /**
  * Calculates next period with normalization
  */
-private fun getNextPeriod(period: Period, dayStartHour: Int, weekStartDay: String): Period {
+private fun getNextPeriod(period: Period): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
-    
+
     when (period.type) {
         PeriodType.HOUR -> cal.add(Calendar.HOUR_OF_DAY, 1)
         PeriodType.DAY -> cal.add(Calendar.DAY_OF_MONTH, 1)
@@ -695,9 +692,9 @@ private fun getNextPeriod(period: Period, dayStartHour: Int, weekStartDay: Strin
         PeriodType.MONTH -> cal.add(Calendar.MONTH, 1)
         PeriodType.YEAR -> cal.add(Calendar.YEAR, 1)
     }
-    
+
     // Normalize timestamp after calculation with configuration parameters
-    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay), period.type)
+    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type), period.type)
 }
 
 /**
@@ -937,7 +934,7 @@ fun PeriodRangeSelector(
                         } else {
                             // Create absolute period
                             val now = System.currentTimeMillis()
-                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
                             val newPeriod = Period(normalizedTimestamp, newType)
                             onStartPeriodChange(newPeriod)
                         }
@@ -958,7 +955,7 @@ fun PeriodRangeSelector(
                     onPeriodChange = { period ->
                         if (returnRelative) {
                             // Convert Period to RelativePeriod when user navigates
-                            val offset = calculatePeriodOffset(period.timestamp, period.type, dayStartHour, weekStartDay)
+                            val offset = calculatePeriodOffset(period.timestamp, period.type)
                             val relativePeriod = RelativePeriod(offset, period.type)
                             onStartRelativePeriodChange?.invoke(relativePeriod)
                         } else {
@@ -1044,7 +1041,7 @@ fun PeriodRangeSelector(
                         } else {
                             // Create absolute period
                             val now = System.currentTimeMillis()
-                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType, dayStartHour, weekStartDay)
+                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
                             val newPeriod = Period(normalizedTimestamp, newType)
                             onEndPeriodChange(newPeriod)
                         }
@@ -1065,7 +1062,7 @@ fun PeriodRangeSelector(
                     onPeriodChange = { period ->
                         if (returnRelative) {
                             // Convert Period to RelativePeriod when user navigates
-                            val offset = calculatePeriodOffset(period.timestamp, period.type, dayStartHour, weekStartDay)
+                            val offset = calculatePeriodOffset(period.timestamp, period.type)
                             val relativePeriod = RelativePeriod(offset, period.type)
                             onEndRelativePeriodChange?.invoke(relativePeriod)
                         } else {

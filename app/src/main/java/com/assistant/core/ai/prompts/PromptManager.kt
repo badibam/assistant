@@ -313,10 +313,6 @@ object PromptManager {
         val commands = mutableListOf<DataCommand>()
         val enrichmentProcessor = EnrichmentProcessor()
 
-        // Get app config for period resolution
-        val dayStartHour = com.assistant.core.utils.AppConfigManager.getDayStartHour(context)
-        val weekStartDay = com.assistant.core.utils.AppConfigManager.getWeekStartDay(context)
-
         // Determine if we should use relative periods based on session type
         val isRelative = session.type == SessionType.AUTOMATION
 
@@ -333,9 +329,7 @@ object PromptManager {
                         val enrichmentCommands = enrichmentProcessor.generateCommands(
                             type = segment.type,
                             config = segment.config,
-                            isRelative = isRelative,
-                            dayStartHour = dayStartHour,
-                            weekStartDay = weekStartDay
+                            isRelative = isRelative
                         )
 
                         commands.addAll(enrichmentCommands)

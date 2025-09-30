@@ -45,20 +45,20 @@ object AppConfigManager {
 
     /**
      * Get day start hour (cached)
-     * Returns default if not initialized
+     * Throws IllegalStateException if not initialized
      */
-    fun getDayStartHour(context: Context): Int {
-        if (!isInitialized) initialize(context)
-        return cachedDayStartHour ?: 4
+    fun getDayStartHour(): Int {
+        check(isInitialized) { "AppConfigManager not initialized. Call initialize(context) at app startup." }
+        return cachedDayStartHour!!
     }
 
     /**
      * Get week start day (cached)
-     * Returns default if not initialized
+     * Throws IllegalStateException if not initialized
      */
-    fun getWeekStartDay(context: Context): String {
-        if (!isInitialized) initialize(context)
-        return cachedWeekStartDay ?: "monday"
+    fun getWeekStartDay(): String {
+        check(isInitialized) { "AppConfigManager not initialized. Call initialize(context) at app startup." }
+        return cachedWeekStartDay!!
     }
 
     /**

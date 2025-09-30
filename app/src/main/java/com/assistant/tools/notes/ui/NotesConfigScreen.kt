@@ -88,7 +88,7 @@ fun NotesConfigScreen(
         }
     }
 
-    // Note: No validation here - validation happens at save time like Tracking does
+    // Note: No validation here - validation happens at save time
 
     // Error message display
     errorMessage?.let { message ->
@@ -149,7 +149,7 @@ fun NotesConfigScreen(
             toolTypeName = "notes"
         )
 
-        // Form actions - using standard ToolConfigActions like Tracking
+        // Form actions - using standard ToolConfigActions
         val handleSave = {
             coroutineScope.launch {
                 isSaving = true
@@ -166,7 +166,7 @@ fun NotesConfigScreen(
                         "data_validation" to dataValidation
                     )
 
-                    // Use unified ValidationHelper like Tracking does
+                    // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(
                         toolTypeName = "notes",
                         configData = configData,

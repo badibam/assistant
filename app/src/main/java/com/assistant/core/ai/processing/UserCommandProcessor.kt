@@ -205,25 +205,15 @@ class UserCommandProcessor(private val context: Context) {
                 type = com.assistant.core.ui.components.PeriodType.valueOf(endType)
             )
 
-            // Get app config
-            val dayStartHour = com.assistant.core.utils.AppConfigManager.getDayStartHour(context)
-            val weekStartDay = com.assistant.core.utils.AppConfigManager.getWeekStartDay(context)
-
             // Resolve to absolute periods
-            val startPeriod = com.assistant.core.ui.components.resolveRelativePeriod(
-                startRelativePeriod, dayStartHour, weekStartDay
-            )
-            val endPeriod = com.assistant.core.ui.components.resolveRelativePeriod(
-                endRelativePeriod, dayStartHour, weekStartDay
-            )
+            val startPeriod = com.assistant.core.ui.components.resolveRelativePeriod(startRelativePeriod)
+            val endPeriod = com.assistant.core.ui.components.resolveRelativePeriod(endRelativePeriod)
 
             // Start timestamp = beginning of start period
             val startTimestamp = startPeriod.timestamp
 
             // End timestamp = end of end period
-            val endTimestamp = com.assistant.core.ui.components.getPeriodEndTimestamp(
-                endPeriod, dayStartHour, weekStartDay
-            )
+            val endTimestamp = com.assistant.core.ui.components.getPeriodEndTimestamp(endPeriod)
 
             LogManager.aiPrompt("Resolved relative periods: $periodStart -> $startTimestamp, $periodEnd -> $endTimestamp")
             return Pair(startTimestamp, endTimestamp)

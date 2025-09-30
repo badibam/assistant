@@ -174,18 +174,25 @@ Script Gradle gère apostrophes, guillemets et conversion placeholders (%s → %
 
 ### Strings Android
 **Format requis** : Placeholders numérotés %1$s, %2$s et pas %s
-## AppConfigManager
+## AppConfigManager - Configuration Globale Cachée
 
-Singleton cache pour config app (dayStartHour, weekStartDay). Initialisé au démarrage (MainActivity), accès synchrone depuis n'importe quel contexte.
+Singleton cache pour paramètres applicatifs globaux utilisés fréquemment.
 
+**Paramètres** : `dayStartHour`, `weekStartDay`
+
+**API** :
 ```kotlin
-AppConfigManager.initialize(context)  // Au démarrage
-val dayStartHour = AppConfigManager.getDayStartHour(context)
-val weekStartDay = AppConfigManager.getWeekStartDay(context)
+AppConfigManager.initialize(context)  // MainActivity.onCreate
+val dayStartHour = AppConfigManager.getDayStartHour()
+val weekStartDay = AppConfigManager.getWeekStartDay()
 AppConfigManager.refresh(context)  // Après modif config
 ```
 
-Utilisé par système périodes (PeriodSelector, EnrichmentProcessor, UserCommandProcessor).
+**Règles** :
+- Initialize obligatoire au démarrage
+- Getters throws `IllegalStateException` si non initialisé
+- Pas de fallback en dur (échec explicite)
+- Extension : getter dans AppConfigService + cache volatile + initialize + getter public
 
 ## Types de Résultats
 
