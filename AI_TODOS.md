@@ -56,9 +56,11 @@
 - Line 334: Extract postText from JSON
 - Line 335: Parse CommunicationModule from JSON
 
-## processing/AICommandProcessor.kt (4)
-- Line 30-36: Implement AI data command processing with validation, security, token management
-- Line 54-61: Implement AI action command processing with validation, security, cascade failure
+## processing/AICommandProcessor.kt (0) ✅ DONE
+- ✅ Line 30-36: AI command transformation to ExecutableCommand (DONE - object singleton)
+- ✅ Transformation types abstraits (TOOL_DATA, CREATE_DATA) → resource.operation
+- ✅ Conversion JSONObject params → Map<String, Any>
+- ✅ Mapping batch operations par défaut pour données
 
 ## processing/UserCommandProcessor.kt (2) ✅ 5/7 DONE
 - ✅ Line 85: Transform TOOL_CONFIG command to tools.get call
@@ -70,21 +72,21 @@
 - ✅ Line 145: Transform TOOL_INSTANCES command to tools.list call
 
 ## prompts/CommandExecutor.kt (0) ✅ DONE
-- ✅ CommandResult structure with dataTitle, formattedData, systemMessage
+- ✅ CommandExecutionResult structure with promptResults + systemMessage
 - ✅ Format results properly for prompt inclusion (JSON metadata first)
-- ✅ Generate system messages for queries and actions
-- ✅ Support batch operations (batch_create, batch_update)
-- ✅ Deduplication handled by PromptManager (previousCommands removed)
+- ✅ Generate single SystemMessage per command series
+- ✅ Support batch operations (batch_create, batch_update, batch_delete)
+- ✅ Single execution point for User and AI commands
 
-## prompts/PromptManager.kt (9)
-- Line 27: Implement new command pipeline integration
-- Line 34: PromptManager.buildPrompt() - new pipeline integration needed
-- Line 39: Implement new command pipeline
-- Line 50: Replace DataQuery builders with DataCommand builders
-- Line 56-57: Implement Level 1 command generation
-- Line 61: Implement Level 2 and Level 3 command builders as stubs
-- Line 69: Implement new Level 4 pipeline
-- Line 75: getLevel4Commands() - new pipeline needed
+## prompts/PromptManager.kt (3) ✅ 8/11 DONE
+- ✅ Line 27: Implement new command pipeline integration (DONE)
+- ✅ Line 34: PromptManager.buildPrompt() - new pipeline integration (DONE)
+- ✅ Line 39: Implement new command pipeline (DONE)
+- ✅ Line 50: Replace DataQuery builders with DataCommand builders (DONE)
+- ✅ Line 56-57: Implement Level 1 command generation (DONE)
+- ✅ Line 61: Implement Level 2 and Level 3 command builders (DONE with always_send)
+- ✅ Line 69: Implement new Level 4 pipeline (DONE)
+- ✅ Line 75: getLevel4Commands() - new pipeline (DONE)
 - Line 100: Implement according to "Send history to AI" setting
 - Line 165: better estimation
 - Line 177: Implement in Phase 2A+ when enrichments need it
@@ -147,11 +149,14 @@
 
 ## Regroupement par priorité/thématique
 
-### 🔴 CRITIQUE - Pipeline de base
-- **PromptManager.kt**: Intégration complète pipeline commandes (lines 27-75)
+### 🔴 CRITIQUE - Pipeline de base ✅ TERMINÉ
+- ✅ **PromptManager.kt**: Intégration complète pipeline commandes (8/11 done, 3 minor remaining)
 - ✅ **UserCommandProcessor.kt**: Transformations commandes utilisateur (5/7 done, 2 stubs low priority)
-- **AICommandProcessor.kt**: Validation commandes IA (2 processeurs)
-- ✅ **CommandExecutor.kt**: Formatage résultats + system messages (DONE)
+- ✅ **AICommandProcessor.kt**: Transformation commandes IA (DONE)
+- ✅ **CommandExecutor.kt**: Point unique exécution + SystemMessage generation (DONE)
+- ✅ **QueryDeduplicator.kt**: Déduplication progressive pour cache API (DONE)
+- ✅ **ToolDataService.kt**: Opérations batch (batch_create, batch_update, batch_delete) (DONE)
+- ✅ **BaseSchemas.kt**: Champ always_send pour Level 2 AI (DONE)
 
 ### 🟠 IMPORTANT - Données réelles
 - **AIProviderConfigService.kt**: Persistance DB configurations (5 opérations)
