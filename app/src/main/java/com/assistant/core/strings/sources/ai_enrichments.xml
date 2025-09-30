@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AI Enrichments Schema Strings -->
+
+    <!-- Pointer Enrichment Schema -->
+    <string name="pointer_schema_title">Enrichissement Pointer</string>
+    <string name="pointer_schema_description">Permet à l\'IA d\'accéder aux données existantes avec sélection granulaire</string>
+
+    <string name="pointer_schema_selected_path">Chemin complet sélectionné via ZoneScopeSelector</string>
+    <string name="pointer_schema_selected_values">Valeurs spécifiques sélectionnées (optionnel)</string>
+    <string name="pointer_schema_selection_level">Niveau de sélection dans la hiérarchie</string>
+    <string name="pointer_schema_selection_level_note">FIELD level removed - selection limited to ZONE and INSTANCE only</string>
+    <string name="pointer_schema_importance">Importance des données pour le contexte IA</string>
+    <string name="pointer_schema_include_data">Inclure les données réelles en plus de l\'échantillon (pour niveau INSTANCE)</string>
+    <string name="pointer_schema_include_data_note">Si true, ajoute TOOL_DATA aux commands en plus de TOOL_DATA_SAMPLE + TOOL_STATS</string>
+    <string name="pointer_schema_periode">Filtre temporel optionnel pour limiter les données</string>
+    <string name="pointer_schema_description_field">Description optionnelle expliquant pourquoi ces données sont référencées</string>
+
+    <!-- Usage -->
+    <string name="pointer_schema_usage_description">L\'IA peut utiliser cet enrichissement pour:</string>
+    <string name="pointer_schema_usage_capability_1">Accéder aux données avec granularité spécifique (zone/outil/champ)</string>
+    <string name="pointer_schema_usage_capability_2">Filtrer temporellement les données selon la période</string>
+    <string name="pointer_schema_usage_capability_3">Adapter l\'inclusion contextuelle selon l\'importance</string>
+    <string name="pointer_schema_usage_capability_4">Comprendre l\'intention via la description utilisateur</string>
+
+    <!-- Importance Levels -->
+    <string name="pointer_schema_importance_optional">Données suggérées - IA peut les requêter si nécessaire</string>
+    <string name="pointer_schema_importance_important">Données incluses automatiquement dans le contexte</string>
+    <string name="pointer_schema_importance_essential">Données critiques avec priorité haute</string>
+
+    <!-- Commands -->
+    <string name="pointer_schema_commands_description">Commandes disponibles suite à cet enrichissement:</string>
+    <string name="pointer_schema_command_tool_data">tool_data.get - Récupérer données d\'un outil spécifique</string>
+    <string name="pointer_schema_command_zones_get">zones.get - Informations sur la zone</string>
+    <string name="pointer_schema_command_tools_list">tools.list - Lister outils de la zone</string>
+    <string name="pointer_schema_command_data_navigator">data_navigator.explore - Navigation dans les données</string>
+
+    <!-- Examples -->
+    <string name="pointer_schema_example_zone_level">Toutes les données de la zone santé cette semaine</string>
+    <string name="pointer_schema_example_tool_level">Données du suivi poids avec période filtrée</string>
+    <string name="pointer_schema_example_field_level">Uniquement les valeurs de poids (économie tokens)</string>
+    <string name="pointer_schema_example_with_values">Entrées spécifiques sélectionnées par timestamp</string>
+</resources>

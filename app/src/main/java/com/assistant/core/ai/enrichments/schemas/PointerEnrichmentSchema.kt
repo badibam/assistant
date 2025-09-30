@@ -1,20 +1,26 @@
 package com.assistant.core.ai.enrichments.schemas
 
+import android.content.Context
+import com.assistant.core.strings.Strings
+
 /**
  * Schema pour l'enrichissement Pointer (🔍)
  * Définit la structure et documentation pour référencer des données existantes
  */
 object PointerEnrichmentSchema {
 
-    const val SCHEMA = """
+    fun getSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+
+        return """
     {
         "type": "object",
-        "title": "Enrichissement Pointer",
-        "description": "Permet à l'IA d'accéder aux données existantes avec sélection granulaire",
+        "title": "${s.shared("pointer_schema_title")}",
+        "description": "${s.shared("pointer_schema_description")}",
         "properties": {
             "selectedPath": {
                 "type": "string",
-                "description": "Chemin complet sélectionné via ZoneScopeSelector",
+                "description": "${s.shared("pointer_schema_selected_path")}",
                 "required": true,
                 "examples": [
                     "zones/health",
@@ -25,70 +31,71 @@ object PointerEnrichmentSchema {
             "selectedValues": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "Valeurs spécifiques sélectionnées (optionnel)",
+                "description": "${s.shared("pointer_schema_selected_values")}",
                 "required": false
             },
             "selectionLevel": {
                 "type": "string",
-                "description": "Niveau de sélection dans la hiérarchie",
+                "description": "${s.shared("pointer_schema_selection_level")}",
                 "enum": ["ZONE", "INSTANCE"],
                 "required": true,
-                "note": "FIELD level removed - selection limited to ZONE and INSTANCE only"
+                "note": "${s.shared("pointer_schema_selection_level_note")}"
             },
             "importance": {
                 "type": "string",
-                "description": "Importance des données pour le contexte IA",
+                "description": "${s.shared("pointer_schema_importance")}",
                 "enum": ["optionnel", "important", "essentiel"],
                 "default": "important"
             },
             "includeData": {
                 "type": "boolean",
-                "description": "Inclure les données réelles en plus de l'échantillon (pour niveau INSTANCE)",
+                "description": "${s.shared("pointer_schema_include_data")}",
                 "default": false,
-                "note": "Si true, ajoute TOOL_DATA aux commands en plus de TOOL_DATA_SAMPLE + TOOL_STATS"
+                "note": "${s.shared("pointer_schema_include_data_note")}"
             },
             "période": {
                 "type": "string",
-                "description": "Filtre temporel optionnel pour limiter les données",
+                "description": "${s.shared("pointer_schema_periode")}",
                 "required": false,
                 "examples": ["last_week", "this_month", "today", "custom_range"]
             },
             "description": {
                 "type": "string",
-                "description": "Description optionnelle expliquant pourquoi ces données sont référencées",
+                "description": "${s.shared("pointer_schema_description_field")}",
                 "required": false,
                 "maxLength": 255
             }
         },
         "usage": {
-            "description": "L'IA peut utiliser cet enrichissement pour:",
+            "description": "${s.shared("pointer_schema_usage_description")}",
             "capabilities": [
-                "Accéder aux données avec granularité spécifique (zone/outil/champ)",
-                "Filtrer temporellement les données selon la période",
-                "Adapter l'inclusion contextuelle selon l'importance",
-                "Comprendre l'intention via la description utilisateur"
+                "${s.shared("pointer_schema_usage_capability_1")}",
+                "${s.shared("pointer_schema_usage_capability_2")}",
+                "${s.shared("pointer_schema_usage_capability_3")}",
+                "${s.shared("pointer_schema_usage_capability_4")}"
             ]
         },
         "importance_levels": {
-            "optionnel": "Données suggérées - IA peut les requêter si nécessaire",
-            "important": "Données incluses automatiquement dans le contexte",
-            "essentiel": "Données critiques avec priorité haute"
+            "optionnel": "${s.shared("pointer_schema_importance_optional")}",
+            "important": "${s.shared("pointer_schema_importance_important")}",
+            "essentiel": "${s.shared("pointer_schema_importance_essential")}"
         },
         "commands": {
-            "description": "Commandes disponibles suite à cet enrichissement:",
+            "description": "${s.shared("pointer_schema_commands_description")}",
             "available": [
-                "tool_data.get - Récupérer données d'un outil spécifique",
-                "zones.get - Informations sur la zone",
-                "tools.list - Lister outils de la zone",
-                "data_navigator.explore - Navigation dans les données"
+                "${s.shared("pointer_schema_command_tool_data")}",
+                "${s.shared("pointer_schema_command_zones_get")}",
+                "${s.shared("pointer_schema_command_tools_list")}",
+                "${s.shared("pointer_schema_command_data_navigator")}"
             ]
         },
         "examples": {
-            "zone_level": "Toutes les données de la zone santé cette semaine",
-            "tool_level": "Données du suivi poids avec période filtrée",
-            "field_level": "Uniquement les valeurs de poids (économie tokens)",
-            "with_values": "Entrées spécifiques sélectionnées par timestamp"
+            "zone_level": "${s.shared("pointer_schema_example_zone_level")}",
+            "tool_level": "${s.shared("pointer_schema_example_tool_level")}",
+            "field_level": "${s.shared("pointer_schema_example_field_level")}",
+            "with_values": "${s.shared("pointer_schema_example_with_values")}"
         }
     }
     """
+    }
 }

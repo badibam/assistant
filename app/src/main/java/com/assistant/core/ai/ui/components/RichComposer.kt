@@ -137,7 +137,7 @@ fun UI.RichComposer(
                 LogManager.aiEnrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
 
                 // Use EnrichmentProcessor to generate proper summary if preview is empty or generic
-                val enrichmentProcessor = EnrichmentProcessor()
+                val enrichmentProcessor = EnrichmentProcessor(context)
                 val finalPreview = if (preview.isBlank() || preview == "${getEnrichmentIcon(type)} Configuration") {
                     LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for $type")
                     enrichmentProcessor.generateSummary(type, config)
@@ -220,7 +220,7 @@ private fun EnrichmentBlockPreview(
 private fun createRichMessage(context: Context, segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
     LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
 
-    val enrichmentProcessor = EnrichmentProcessor()
+    val enrichmentProcessor = EnrichmentProcessor(context)
 
     // Compute linearText by joining all content
     val linearText = segments.joinToString(" ") { segment ->
@@ -403,7 +403,7 @@ private fun PointerEnrichmentDialog(
             onConfirm = {
                 selectionResult?.let { result ->
                     val config = createPointerConfig(result, importance, timestampSelection, description, includeData)
-                    val preview = createPointerPreview(result, timestampSelection, importance)
+                    val preview = createPointerPreview(context, result, timestampSelection, importance)
                     onConfirm(config, preview)
                 }
             },
@@ -430,9 +430,9 @@ private fun PointerEnrichmentDialog(
                         Box(modifier = Modifier.weight(1f)) {
                             UI.Text(
                                 text = if (result.displayChain.isNotEmpty()) {
-                                    "Sélection: ${result.displayChain.joinToString(" → ")}"
+                                    "${s.shared("ai_enrichment_selection_label")} ${result.displayChain.joinToString(" → ")}"
                                 } else {
-                                    "Sélection: ${result.selectedPath}"
+                                    "${s.shared("ai_enrichment_selection_label")} ${result.selectedPath}"
                                 },
                                 type = TextType.BODY
                             )
@@ -448,18 +448,27 @@ private fun PointerEnrichmentDialog(
                 }
 
                 // Importance selector
+                val importanceOptions = listOf("optional", "important", "essential")
+                val importanceLabels = listOf(
+                    s.shared("ai_importance_optional"),
+                    s.shared("ai_importance_important"),
+                    s.shared("ai_importance_essential")
+                )
+
                 UI.FormSelection(
-                    label = "Importance",
-                    options = listOf("optionnel", "important", "essentiel"),
-                    selected = importance,
-                    onSelect = { importance = it }
+                    label = s.shared("ai_enrichment_importance"),
+                    options = importanceLabels,
+                    selected = importanceLabels[importanceOptions.indexOf(importance)],
+                    onSelect = { selectedLabel ->
+                        importance = importanceOptions[importanceLabels.indexOf(selectedLabel)]
+                    }
                 )
 
                 // Include data toggle (only visible for instance selections)
                 selectionResult?.let { result ->
                     if (result.selectionLevel.name == "INSTANCE") {
                         UI.ToggleField(
-                            label = "Inclure données réelles (en plus de l'échantillon)",
+                            label = s.shared("ai_enrichment_include_real_data"),
                             checked = includeData,
                             onCheckedChange = { checked ->
                                 includeData = checked
@@ -529,7 +538,7 @@ private fun PointerEnrichmentDialog(
 
                 // Description field
                 UI.FormField(
-                    label = "Description (optionnel)",
+                    label = s.shared("ai_enrichment_description_optional"),
                     value = description,
                     onChange = { description = it },
                     fieldType = FieldType.TEXT_MEDIUM
@@ -578,12 +587,12 @@ private fun PlaceholderEnrichmentDialog(
             )
 
             UI.Text(
-                text = "TODO: Implement ${type.name} configuration UI",
+                text = s.shared("ai_enrichment_todo_implement").format(type.name),
                 type = TextType.BODY
             )
 
             UI.FormField(
-                label = "Preview",
+                label = s.shared("label_preview"),
                 value = preview,
                 onChange = { preview = it },
                 fieldType = FieldType.TEXT
@@ -682,30 +691,34 @@ private fun createPointerConfig(
  * Create human-readable preview from POINTER enrichment data
  */
 private fun createPointerPreview(
+    context: Context,
     selectionResult: SelectionResult,
     timestampSelection: TimestampSelection,
     importance: String
 ): String {
+    val s = Strings.`for`(context = context)
+
     val baseText = when (selectionResult.selectionLevel.name) {
-        "ZONE" -> "données zone"
-        "INSTANCE" -> "données outil"
-        "FIELD" -> "champ données"
-        else -> "données"
+        "ZONE" -> s.shared("ai_data_zone")
+        "INSTANCE" -> s.shared("ai_data_tool")
+        "FIELD" -> s.shared("ai_data_field")
+        else -> s.shared("ai_data_generic")
     }
 
     val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
     val displayName = pathParts.lastOrNull() ?: "sélection"
 
     val périodeText = if (timestampSelection.isComplete) {
-        " (période filtrée)"
+        " (${s.shared("ai_period_filtered")})"
     } else {
         ""
     }
 
+    // Match importance parameter (not localized - internal value)
     val importanceIcon = when (importance) {
-        "optionnel" -> "⚪"
+        "optional" -> "⚪"
+        "essential" -> "🔴"
         "important" -> "🔵"
-        "essentiel" -> "🔴"
         else -> ""
     }
 

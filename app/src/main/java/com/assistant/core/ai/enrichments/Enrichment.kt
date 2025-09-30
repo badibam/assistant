@@ -1,5 +1,6 @@
 package com.assistant.core.ai.enrichments
 
+import android.content.Context
 import com.assistant.core.ai.enrichments.schemas.*
 
 /**
@@ -13,7 +14,7 @@ import com.assistant.core.ai.enrichments.schemas.*
 sealed class Enrichment {
 
     abstract fun getDisplayLabel(): String
-    abstract fun getSchema(): String
+    abstract fun getSchema(context: Context): String
 
     /**
      * 🔍 Pointer - Référencer des données existantes
@@ -42,7 +43,7 @@ sealed class Enrichment {
             }
         }
 
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context)
     }
 
     /**
@@ -58,7 +59,7 @@ sealed class Enrichment {
             return "utiliser $toolInstanceId"
         }
 
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement UseEnrichmentSchema
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context) // TODO: implement UseEnrichmentSchema
     }
 
     /**
@@ -70,7 +71,7 @@ sealed class Enrichment {
         val suggestedName: String? = null
     ) : Enrichment() {
         override fun getDisplayLabel(): String = "créer $toolType"
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement CreateEnrichmentSchema
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context) // TODO: implement CreateEnrichmentSchema
     }
 
     /**
@@ -82,7 +83,7 @@ sealed class Enrichment {
         val description: String? = null
     ) : Enrichment() {
         override fun getDisplayLabel(): String = "modifier $toolInstanceId"
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement ModifyEnrichmentSchema
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context) // TODO: implement ModifyEnrichmentSchema
     }
 
     /**
@@ -94,7 +95,7 @@ sealed class Enrichment {
         val targetId: String? = null
     ) : Enrichment() {
         override fun getDisplayLabel(): String = "organiser $action"
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement OrganizeEnrichmentSchema
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context) // TODO: implement OrganizeEnrichmentSchema
     }
 
     /**
@@ -106,6 +107,6 @@ sealed class Enrichment {
         val docType: String = "description"
     ) : Enrichment() {
         override fun getDisplayLabel(): String = "documenter $elementType"
-        override fun getSchema(): String = PointerEnrichmentSchema.SCHEMA // TODO: implement DocumentEnrichmentSchema
+        override fun getSchema(context: Context): String = PointerEnrichmentSchema.getSchema(context) // TODO: implement DocumentEnrichmentSchema
     }
 }

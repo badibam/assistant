@@ -12,4 +12,5 @@ Pour mettre à jour les strings tu vas :
 
 Instructions :
 - Les strings sont par défaut en français
+- Les descriptions etc dans les schémas sont localisées aussi.
 - $ARGUMENTS

@@ -8,6 +8,7 @@ import com.assistant.core.ai.providers.AIClient
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.OperationResult
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,6 +27,7 @@ class AIOrchestrator(private val context: Context) {
 
     private val coordinator = Coordinator(context)
     private val aiClient = AIClient(context)
+    private val s = Strings.`for`(context = context)
 
     // ========================================================================================
     // Main Public API - Pure orchestration, no direct DB access
@@ -55,7 +57,7 @@ class AIOrchestrator(private val context: Context) {
                 ))
 
                 if (!userMessageResult.isSuccess) {
-                    return@withContext OperationResult.error("Failed to store user message: ${userMessageResult.error}")
+                    return@withContext OperationResult.error(s.shared("ai_error_store_user_message").format(userMessageResult.error ?: ""))
                 }
 
                 // 3. Build prompt via PromptManager - TODO: Load actual session
@@ -78,7 +80,7 @@ class AIOrchestrator(private val context: Context) {
                 val tokenLimit = TokenCalculator.getTokenLimit(context)
                 if (promptResult.totalTokens > tokenLimit) {
                     LogManager.aiSession("Token limit exceeded: ${promptResult.totalTokens} > $tokenLimit", "WARN")
-                    return@withContext OperationResult.error("Token limit exceeded: ${promptResult.totalTokens} tokens")
+                    return@withContext OperationResult.error(s.shared("ai_error_token_limit_exceeded").format(promptResult.totalTokens))
                 }
 
                 // 5. Send to AI client directly (no coordinator needed for non-DB operations)
@@ -99,15 +101,15 @@ class AIOrchestrator(private val context: Context) {
                     if (aiMessageResult.isSuccess) {
                         OperationResult.success(mapOf("aiMessage" to aiMessageJson as Any))
                     } else {
-                        OperationResult.error("Failed to store AI response: ${aiMessageResult.error}")
+                        OperationResult.error(s.shared("ai_error_store_ai_response").format(aiMessageResult.error ?: ""))
                     }
                 } else {
-                    OperationResult.error("AI query failed: ${aiResponse.error}")
+                    OperationResult.error(s.shared("ai_error_ai_query_failed").format(aiResponse.error ?: ""))
                 }
 
             } catch (e: Exception) {
                 LogManager.aiSession("AIOrchestrator.sendMessage - Error: ${e.message}", "ERROR")
-                OperationResult.error("Orchestration error: ${e.message}")
+                OperationResult.error(s.shared("ai_error_orchestration").format(e.message ?: ""))
             }
         }
     }
@@ -149,7 +151,7 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             parseAISessionFromResult(result.data)
         } else {
-            LogManager.aiSession("Failed to load session: ${result.error}", "ERROR")
+            LogManager.aiSession(s.shared("ai_error_load_session").format(result.error ?: ""), "ERROR")
             null
         }
     }
@@ -357,7 +359,7 @@ class AIOrchestrator(private val context: Context) {
                 null
             }
         } else {
-            LogManager.aiSession("Failed to get active session: ${result.error}", "ERROR")
+            LogManager.aiSession(s.shared("ai_error_get_active_session").format(result.error ?: ""), "ERROR")
             null
         }
     }
@@ -372,7 +374,7 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             OperationResult.success()
         } else {
-            OperationResult.error(result.error ?: "Failed to stop active session")
+            OperationResult.error(result.error ?: s.shared("ai_error_stop_session"))
         }
     }
 
@@ -388,7 +390,7 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             OperationResult.success()
         } else {
-            OperationResult.error(result.error ?: "Failed to set active session")
+            OperationResult.error(result.error ?: s.shared("ai_error_set_active_session").format(""))
         }
     }
 

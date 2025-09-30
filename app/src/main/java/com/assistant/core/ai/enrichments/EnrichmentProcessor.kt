@@ -1,7 +1,9 @@
 package com.assistant.core.ai.enrichments
 
+import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.EnrichmentType
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.AppConfigManager
 import org.json.JSONObject
@@ -20,7 +22,9 @@ import org.json.JSONObject
  *   * ✨ CREATE: No query (just orientation)
  *   * 📁 ORGANIZE: No query (just orientation)
  */
-class EnrichmentProcessor {
+class EnrichmentProcessor(private val context: Context) {
+
+    private val s = Strings.`for`(context = context)
 
     /**
      * Generate human-readable summary for enrichment display in messages
@@ -42,7 +46,7 @@ class EnrichmentProcessor {
             summary
         } catch (e: Exception) {
             LogManager.aiEnrichment("Failed to generate enrichment summary: ${e.message}", "ERROR", e)
-            "enrichissement invalide"
+            s.shared("ai_enrichment_invalid")
         }
     }
 
@@ -138,10 +142,10 @@ class EnrichmentProcessor {
 
         // Build base description
         val baseDescription = when (selectionLevel) {
-            "ZONE" -> "données zone $zoneContext"
-            "INSTANCE" -> "données $toolContext zone $zoneContext"
-            "FIELD" -> "champ $toolContext zone $zoneContext"
-            else -> "données"
+            "ZONE" -> "${s.shared("ai_data_zone")} $zoneContext"
+            "INSTANCE" -> "${s.shared("ai_data_tool")} $toolContext zone $zoneContext"
+            "FIELD" -> "${s.shared("ai_data_field")} $toolContext zone $zoneContext"
+            else -> s.shared("ai_data_generic")
         }
 
         // Add temporal context if available
@@ -475,9 +479,9 @@ class EnrichmentProcessor {
         // TODO: Implement proper period formatting based on timestamps
         // For now, return basic description
         return if (startTs == endTs) {
-            "période spécifique"
+            s.shared("ai_period_specific")
         } else {
-            "période étendue"
+            s.shared("ai_period_extended")
         }
     }
 

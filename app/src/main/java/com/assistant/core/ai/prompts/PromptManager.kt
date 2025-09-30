@@ -311,7 +311,7 @@ object PromptManager {
         LogManager.aiPrompt("getLevel4Commands() for session ${session.id}")
 
         val commands = mutableListOf<DataCommand>()
-        val enrichmentProcessor = EnrichmentProcessor()
+        val enrichmentProcessor = EnrichmentProcessor(context)
 
         // Determine if we should use relative periods based on session type
         val isRelative = session.type == SessionType.AUTOMATION

@@ -70,11 +70,11 @@ class AISessionService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val name = params.optString("name").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("name parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_name_required"))
         val type = params.optString("type").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("type parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_type_required"))
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("providerId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiSession("Creating AI session: name=$name, type=$type, providerId=$providerId")
 
@@ -110,7 +110,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to create session: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to create session: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_create_session").format(e.message ?: ""))
         }
     }
 
@@ -118,7 +118,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("sessionId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Getting AI session: $sessionId")
 
@@ -128,7 +128,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             if (sessionEntity == null) {
                 LogManager.aiSession("Session not found: $sessionId", "WARN")
-                return OperationResult.error("Session not found: $sessionId")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
             }
 
             // Get messages for this session
@@ -160,30 +160,30 @@ class AISessionService(private val context: Context) : ExecutableService {
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to get session: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to get session: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_load_session").format(e.message ?: ""))
         }
     }
 
     private suspend fun listSessions(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun updateSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun deleteSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun setActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("sessionId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Setting active session: $sessionId")
 
@@ -195,7 +195,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             val session = dao.getSession(sessionId)
             if (session == null) {
                 LogManager.aiSession("Session not found: $sessionId", "WARN")
-                return OperationResult.error("Session not found: $sessionId")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
             }
 
             // Deactivate all sessions first
@@ -212,7 +212,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to set active session: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to set active session: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_set_active_session").format(e.message ?: ""))
         }
     }
 
@@ -263,7 +263,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         } catch (e: Exception) {
             LogManager.aiSession("Failed to get active session: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to get active session: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_get_active_session").format(e.message ?: ""))
         }
     }
 
@@ -286,7 +286,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         } catch (e: Exception) {
             LogManager.aiSession("Failed to stop active session: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to stop active session: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_stop_session"))
         }
     }
 
@@ -295,16 +295,16 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         // Extract required parameters
         val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("sessionId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
         val senderString = params.optString("sender").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("sender parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_sender_required"))
         val timestamp = params.optLong("timestamp", System.currentTimeMillis())
 
         // Parse sender enum
         val sender = try {
             MessageSender.valueOf(senderString)
         } catch (e: Exception) {
-            return OperationResult.error("Invalid sender: $senderString")
+            return OperationResult.error(s.shared("ai_error_invalid_sender").format(senderString))
         }
 
         LogManager.aiSession("Creating message: sessionId=$sessionId, sender=$sender, timestamp=$timestamp")
@@ -360,28 +360,28 @@ class AISessionService(private val context: Context) : ExecutableService {
 
         } catch (e: Exception) {
             LogManager.aiSession("Failed to create message: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to create message: ${e.message}")
+            return OperationResult.error(s.shared("ai_error_create_message").format(e.message ?: ""))
         }
     }
 
     private suspend fun getMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun listMessages(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun updateMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     private suspend fun deleteMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error("Not implemented yet")
+        return OperationResult.error(s.shared("error_not_implemented"))
     }
 
     /**

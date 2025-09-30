@@ -53,7 +53,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
                 }
             } catch (e: Exception) {
                 LogManager.aiService("AIProviderConfigService error: ${e.message}", "ERROR", e)
-                OperationResult.error("Provider config operation failed: ${e.message}")
+                OperationResult.error(s.shared("ai_error_provider_config").format(e.message ?: ""))
             }
         }
     }
@@ -67,7 +67,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         token: CancellationToken
     ): OperationResult {
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("providerId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Getting config for provider: $providerId")
 
@@ -76,7 +76,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         val mockConfig = when (providerId) {
             "claude" -> """{"apiKey": "", "model": "claude-3-sonnet", "maxTokens": 4096}"""
             "openai" -> """{"apiKey": "", "model": "gpt-4", "maxTokens": 4096}"""
-            else -> return OperationResult.error("Unknown provider: $providerId")
+            else -> return OperationResult.error(s.shared("ai_error_unknown_provider").format(providerId))
         }
 
         return OperationResult.success(mapOf(
@@ -92,9 +92,9 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         token: CancellationToken
     ): OperationResult {
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("providerId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
         val config = params.optString("config").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("config parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
 
         LogManager.aiService("Setting config for provider: $providerId")
 
@@ -139,7 +139,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         token: CancellationToken
     ): OperationResult {
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("providerId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Deleting config for provider: $providerId")
 
@@ -155,7 +155,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         token: CancellationToken
     ): OperationResult {
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error("providerId parameter required")
+            ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Setting active provider: $providerId")
 

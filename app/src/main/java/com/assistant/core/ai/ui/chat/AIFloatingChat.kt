@@ -62,7 +62,7 @@ fun AIFloatingChat(
             }
         } catch (e: Exception) {
             LogManager.aiUI("Failed to check for active session: ${e.message}", "ERROR")
-            errorMessage = "Failed to check chat session"
+            errorMessage = s.shared("ai_error_check_session")
         }
     }
 
@@ -86,7 +86,7 @@ fun AIFloatingChat(
             ) {
                 // Header
                 ChatHeader(
-                    sessionName = activeSession?.name ?: "New Chat",
+                    sessionName = activeSession?.name ?: s.shared("ai_chat_new"),
                     isActive = activeSession?.isActive ?: false,
                     isLoading = isLoading,
                     onClose = onDismiss,
@@ -103,7 +103,7 @@ fun AIFloatingChat(
                                 }
                             } catch (e: Exception) {
                                 LogManager.aiUI("Error stopping session: ${e.message}", "ERROR")
-                                errorMessage = "Failed to stop session"
+                                errorMessage = s.shared("ai_error_stop_session")
                             }
                         }
                     }
@@ -166,11 +166,11 @@ fun AIFloatingChat(
                                                 LogManager.aiUI("Failed to send message: ${result.error}", "ERROR")
                                             }
                                         } ?: run {
-                                            errorMessage = "Failed to create session"
+                                            errorMessage = s.shared("ai_error_create_session").format("")
                                             LogManager.aiUI("Failed to create or get session", "ERROR")
                                         }
                                     } catch (e: Exception) {
-                                        errorMessage = "Failed to send message: ${e.message}"
+                                        errorMessage = s.shared("ai_error_send_message").format(e.message ?: "")
                                         LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
                                     } finally {
                                         isLoading = false
@@ -226,11 +226,11 @@ private fun ChatHeader(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 UI.Text(
-                    text = "Arrêter la session",
+                    text = s.shared("ai_session_stop_title"),
                     type = TextType.TITLE
                 )
                 UI.Text(
-                    text = "Voulez-vous arrêter cette session ? La session pourra être récupérée et reprise via l'historique des sessions.",
+                    text = s.shared("ai_session_stop_message"),
                     type = TextType.BODY
                 )
             }
@@ -240,10 +240,10 @@ private fun ChatHeader(
     UI.PageHeader(
         title = sessionName,
         subtitle = when {
-            isLoading -> "Processing..."
-            isActive -> "Ready"
-            sessionName == "New Chat" -> "Send a message to start"
-            else -> "Inactive"
+            isLoading -> s.shared("ai_status_processing")
+            isActive -> s.shared("ai_status_ready")
+            sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
+            else -> s.shared("ai_status_inactive")
         },
         leftButton = if (isActive) ButtonAction.DELETE else null, // Stop session button (only if active)
         rightButton = ButtonAction.CANCEL, // Close chat button
@@ -261,6 +261,8 @@ private fun ChatMessageList(
     isLoading: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
     val listState = rememberLazyListState()
 
     // Auto-scroll to bottom when new messages arrive
@@ -282,7 +284,7 @@ private fun ChatMessageList(
                     contentAlignment = Alignment.Center
                 ) {
                     UI.Text(
-                        text = "Start a conversation...",
+                        text = s.shared("ai_chat_start_conversation"),
                         type = TextType.BODY
                     )
                 }
@@ -300,7 +302,7 @@ private fun ChatMessageList(
                         contentAlignment = Alignment.Center
                     ) {
                         UI.Text(
-                            text = "AI is thinking...",
+                            text = s.shared("ai_status_thinking"),
                             type = TextType.CAPTION
                         )
                     }
@@ -317,6 +319,9 @@ private fun ChatMessageList(
 private fun ChatMessageBubble(
     message: SessionMessage
 ) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
     val alignment = when (message.sender) {
         MessageSender.USER -> Alignment.CenterEnd
         MessageSender.AI -> Alignment.CenterStart
@@ -335,9 +340,9 @@ private fun ChatMessageBubble(
                 // Sender indicator
                 UI.Text(
                     text = when (message.sender) {
-                        MessageSender.USER -> "You"
-                        MessageSender.AI -> "AI"
-                        MessageSender.SYSTEM -> "System"
+                        MessageSender.USER -> s.shared("ai_sender_user")
+                        MessageSender.AI -> s.shared("ai_sender_ai")
+                        MessageSender.SYSTEM -> s.shared("ai_sender_system")
                     },
                     type = TextType.LABEL
                 )
@@ -347,12 +352,14 @@ private fun ChatMessageBubble(
                     message.richContent != null -> {
                         // Rich message with segments
                         UI.Text(
-                            text = "Rich: ${message.richContent.linearText}",
+                            text = "${s.shared("ai_message_rich_prefix")} ${message.richContent.linearText}",
                             type = TextType.BODY
                         )
                         if (message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().isNotEmpty()) {
                             UI.Text(
-                                text = "Enrichments: ${message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().size}",
+                                text = s.shared("ai_message_enrichments_count").format(
+                                    message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().size
+                                ),
                                 type = TextType.CAPTION
                             )
                         }
