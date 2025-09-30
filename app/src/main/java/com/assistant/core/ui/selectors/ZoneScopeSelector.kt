@@ -209,14 +209,24 @@ fun ZoneScopeSelector(
                                 )
                                 val newChain = state.selectionChain.take(selectedLevel) + newStep
 
-                                // Load next level options if node has children
+                                // Load next level options if node has children AND navigation config allows it
                                 val nextOptions = if (selectedNode.hasChildren) {
                                     when (selectedNode.type) {
-                                        NodeType.ZONE -> navigator.getChildren(selectedNode.path)
+                                        NodeType.ZONE -> {
+                                            // Only load instances if instance or field selection is allowed
+                                            // (need to navigate through instances to reach fields)
+                                            if (!config.allowInstanceSelection && !config.allowFieldSelection) {
+                                                emptyList() // Stop navigation at zone level
+                                            } else {
+                                                navigator.getChildren(selectedNode.path)
+                                            }
+                                        }
                                         NodeType.TOOL -> {
-                                            // Skip loading fields for "all tools" selection
-                                            if (selectedNode.path == "tools.all") {
-                                                emptyList()
+                                            // Only load fields if field selection is allowed
+                                            if (!config.allowFieldSelection) {
+                                                emptyList() // Stop navigation at instance level
+                                            } else if (selectedNode.path == "tools.all") {
+                                                emptyList() // Skip loading fields for "all tools" selection
                                             } else {
                                                 // Use the new common structure approach
                                                 try {
@@ -365,18 +375,6 @@ fun ZoneScopeSelector(
                             )
                         }
                     }
-                }
-
-                // Section 3: Query Preview (always show if we have a selection)
-                if (state.selectionChain.isNotEmpty()) {
-                    QueryPreviewSection(
-                        selectionChain = state.selectionChain,
-                        selectedValues = state.selectedValues,
-                        fieldSpecificType = state.fieldSpecificType,
-                        timestampSelection = state.timestampSelection,
-                        nameSelection = state.nameSelection,
-                        s = s
-                    )
                 }
 
                 // Actions
@@ -557,45 +555,6 @@ private fun ValueSelectorSection(
             }
             else -> {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun QueryPreviewSection(
-    selectionChain: List<SelectionStep>,
-    selectedValues: List<String>,
-    fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
-    timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection(),
-    s: com.assistant.core.strings.StringsContext
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        UI.Text(
-            text = s.shared("scope_preview"),
-            type = TextType.SUBTITLE
-        )
-
-        // Description
-        val description = buildQueryDescription(selectionChain, selectedValues, fieldSpecificType, timestampSelection, nameSelection)
-        UI.Text(
-            text = if (description.length > 200) "${description.take(197)}..." else description,
-            type = TextType.BODY
-        )
-
-        // SQL Query Preview
-        val sqlQuery = buildSqlQuery(selectionChain, selectedValues, fieldSpecificType, timestampSelection, nameSelection)
-        Card {
-            Column(modifier = Modifier.padding(12.dp)) {
-                UI.Text(
-                    text = s.shared("scope_sql_query"),
-                    type = TextType.LABEL
-                )
-                UI.Text(
-                    text = if (sqlQuery.length > 300) "${sqlQuery.take(297)}..." else sqlQuery,
-                    type = TextType.CAPTION
-                )
             }
         }
     }
