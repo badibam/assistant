@@ -209,6 +209,33 @@ private fun ChatHeader(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    var showStopConfirmation by remember { mutableStateOf(false) }
+
+    // Stop session confirmation dialog
+    if (showStopConfirmation) {
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = {
+                showStopConfirmation = false
+                onStopSession()
+            },
+            onCancel = { showStopConfirmation = false }
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                UI.Text(
+                    text = "Arrêter la session",
+                    type = TextType.TITLE
+                )
+                UI.Text(
+                    text = "Voulez-vous arrêter cette session ? La session pourra être récupérée et reprise via l'historique des sessions.",
+                    type = TextType.BODY
+                )
+            }
+        }
+    }
 
     UI.PageHeader(
         title = sessionName,
@@ -220,7 +247,7 @@ private fun ChatHeader(
         },
         leftButton = if (isActive) ButtonAction.DELETE else null, // Stop session button (only if active)
         rightButton = ButtonAction.CANCEL, // Close chat button
-        onLeftClick = if (isActive) onStopSession else null,
+        onLeftClick = if (isActive) { { showStopConfirmation = true } } else null,
         onRightClick = onClose
     )
 }
