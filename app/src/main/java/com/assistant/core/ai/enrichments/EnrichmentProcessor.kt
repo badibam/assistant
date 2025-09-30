@@ -222,7 +222,8 @@ class EnrichmentProcessor(private val context: Context) {
         when (selectionLevel) {
             "ZONE" -> {
                 // Zone selected: ZONE_CONFIG + TOOL_INSTANCES
-                val zoneId = if (pathParts.size > 1) pathParts[1] else ""
+                // Path format: "zones.{zoneId}"
+                val zoneId = if (pathParts.size > 1 && pathParts[0] == "zones") pathParts[1] else ""
                 if (zoneId.isNotEmpty()) {
                     queries.add(DataCommand(
                         id = buildQueryId("zone_config", mapOf("id" to zoneId)),
@@ -240,7 +241,8 @@ class EnrichmentProcessor(private val context: Context) {
             }
             "INSTANCE" -> {
                 // Instance selected: SCHEMA(config) + SCHEMA(data) + TOOL_CONFIG + TOOL_DATA_SAMPLE + TOOL_STATS + optionally TOOL_DATA
-                val toolInstanceId = if (pathParts.size > 2) pathParts[2] else ""
+                // Path format: "tools.{toolInstanceId}"
+                val toolInstanceId = if (pathParts.size > 1 && pathParts[0] == "tools") pathParts[1] else ""
                 if (toolInstanceId.isNotEmpty()) {
                     val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
 

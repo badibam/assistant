@@ -221,7 +221,7 @@ class CommandExecutor(private val context: Context) {
      * Creates descriptive title with context (tool name, filters, period, etc.)
      * Returns empty string for action commands
      */
-    private fun generateDataTitle(command: ExecutableCommand, data: Map<String, Any>): String {
+    private suspend fun generateDataTitle(command: ExecutableCommand, data: Map<String, Any>): String {
         // No title needed for action commands
         if (command.operation in listOf("create", "update", "delete", "batch_create", "batch_update", "batch_delete")) {
             return ""
@@ -230,8 +230,28 @@ class CommandExecutor(private val context: Context) {
         return try {
             when (command.resource) {
                 "tool_data" -> {
-                    val toolName = data["toolInstanceName"] as? String ?: "unknown tool"
-                    val count = data["count"] as? Int ?: 0
+                    // Resolve tool instance name from ID in command params
+                    // Note: UserCommandProcessor transforms "id" → "toolInstanceId"
+                    LogManager.aiPrompt("tool_data command params keys: ${command.params.keys}")
+                    LogManager.aiPrompt("toolInstanceId=${command.params["toolInstanceId"]}, id=${command.params["id"]}")
+
+                    val toolInstanceId = command.params["toolInstanceId"] as? String
+                        ?: command.params["id"] as? String
+
+                    LogManager.aiPrompt("Resolved toolInstanceId: $toolInstanceId")
+
+                    val toolName = if (toolInstanceId != null) {
+                        val name = resolveToolInstanceName(toolInstanceId)
+                        LogManager.aiPrompt("Resolved tool name: $name")
+                        name
+                    } else {
+                        LogManager.aiPrompt("No toolInstanceId found in params!", "WARN")
+                        "unknown tool"
+                    }
+
+                    val count = data["count"] as? Int
+                        ?: (data["entries"] as? List<*>)?.size
+                        ?: 0
                     val parts = mutableListOf("Data from tool '$toolName'")
 
                     // Add period info if present
@@ -267,7 +287,8 @@ class CommandExecutor(private val context: Context) {
                         "list" -> {
                             val zoneId = command.params["zone_id"] as? String
                             if (zoneId != null) {
-                                "Tool instances in zone"
+                                val zoneName = resolveZoneName(zoneId)
+                                "Tool instances in zone '$zoneName'"
                             } else {
                                 "All tool instances"
                             }
@@ -293,6 +314,49 @@ class CommandExecutor(private val context: Context) {
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to generate data title: ${e.message}", "WARN")
             ""
+        }
+    }
+
+    /**
+     * Resolve tool instance name from ID via coordinator
+     */
+    private suspend fun resolveToolInstanceName(toolInstanceId: String): String {
+        return try {
+            val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
+
+            if (result.isSuccess) {
+                // tools.get returns { "tool_instance": { "name": "...", ... } }
+                val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+                val name = toolInstance?.get("name") as? String
+                name ?: "unknown tool"
+            } else {
+                LogManager.aiPrompt("Failed to resolve tool instance name for $toolInstanceId: ${result.error}", "WARN")
+                "unknown tool"
+            }
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Error resolving tool instance name: ${e.message}", "WARN", e)
+            "unknown tool"
+        }
+    }
+
+    /**
+     * Resolve zone name from ID via coordinator
+     */
+    private suspend fun resolveZoneName(zoneId: String): String {
+        return try {
+            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            if (result.isSuccess) {
+                // zones.get returns { "zone": { "name": "...", ... } }
+                val zone = result.data?.get("zone") as? Map<*, *>
+                val name = zone?.get("name") as? String
+                name ?: "unknown zone"
+            } else {
+                LogManager.aiPrompt("Failed to resolve zone name for $zoneId: ${result.error}", "WARN")
+                "unknown zone"
+            }
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Error resolving zone name: ${e.message}", "WARN")
+            "unknown zone"
         }
     }
 

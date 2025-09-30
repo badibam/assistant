@@ -280,12 +280,11 @@ tasks.register("generateStringResources") {
             }
         }
         
-        // Process shared strings (manual)
+        // Process all shared strings files (all XML files in sources directory)
         if (sharedStringsDir.exists()) {
-            val sharedStringsFile = File(sharedStringsDir, "shared.xml")
-            if (sharedStringsFile.exists()) {
-                println("📁 Processing shared strings")
-                processStrings(sharedStringsFile, "shared", aggregatedStrings)
+            sharedStringsDir.listFiles()?.filter { it.extension == "xml" }?.forEach { xmlFile ->
+                println("📁 Processing shared strings: ${xmlFile.name}")
+                processStrings(xmlFile, "shared", aggregatedStrings)
             }
         }
         

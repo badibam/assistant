@@ -9,6 +9,9 @@
     <!-- Command System -->
     <string name="ai_doc_command_title">Système de Commandes</string>
     <string name="ai_doc_command_intro">Tu peux exécuter des commandes en utilisant des types de commandes abstraits. Chaque commande comprend un type et des paramètres.</string>
+    <string name="ai_doc_command_format">Format des commandes : { \"type\": \"COMMAND_TYPE\", \"params\": { ... } }</string>
+    <string name="ai_doc_command_format_example">Exemple : { \"type\": \"TOOL_DATA\", \"params\": { \"id\": \"tool_instance_id\" } }</string>
+    <string name="ai_doc_command_resources">Ressources disponibles : zones, tools, tool_data, schemas</string>
 
     <!-- Query Commands -->
     <string name="ai_doc_query_commands_title">Commandes de Requête</string>

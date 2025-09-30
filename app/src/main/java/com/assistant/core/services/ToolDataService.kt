@@ -268,7 +268,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         // Filtering and pagination parameters
-        val limit = params.optInt("limit", 100)
+        val limit = if (params.has("limit")) params.optInt("limit") else Int.MAX_VALUE
         val page = params.optInt("page", 1)
         val offset = (page - 1) * limit
         val startTime = if (params.has("startTime")) params.optLong("startTime") else null

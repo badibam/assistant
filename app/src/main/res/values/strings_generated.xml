@@ -211,6 +211,74 @@
     <string name="tracking_scale_range_separator">à</string>
 
     <!-- shared -->
+    <string name="shared_ai_doc_title">Système Assistant IA</string>
+    <string name="shared_ai_doc_role">Tu es un assistant IA intégré dans une application de gestion de vie personnelle. Ton rôle est d\'aider l\'utilisateur à organiser, suivre et améliorer différents aspects de sa vie.</string>
+    <string name="shared_ai_doc_command_title">Système de Commandes</string>
+    <string name="shared_ai_doc_command_intro">Tu peux exécuter des commandes en utilisant des types de commandes abstraits. Chaque commande comprend un type et des paramètres.</string>
+    <string name="shared_ai_doc_command_format">Format des commandes : { \"type\": \"COMMAND_TYPE\", \"params\": { ... } }</string>
+    <string name="shared_ai_doc_command_format_example">Exemple : { \"type\": \"TOOL_DATA\", \"params\": { \"id\": \"tool_instance_id\" } }</string>
+    <string name="shared_ai_doc_command_resources">Ressources disponibles : zones, tools, tool_data, schemas</string>
+    <string name="shared_ai_doc_query_commands_title">Commandes de Requête</string>
+    <string name="shared_ai_doc_query_tool_data">TOOL_DATA : Récupérer les données d\'un outil (tool_instance_id, period optionnel)</string>
+    <string name="shared_ai_doc_query_tool_config">TOOL_CONFIG : Récupérer la configuration d\'un outil (tool_instance_id)</string>
+    <string name="shared_ai_doc_query_tool_instances">TOOL_INSTANCES : Liste des instances d\'outils (zone_id optionnel, tool_type optionnel)</string>
+    <string name="shared_ai_doc_query_zone_config">ZONE_CONFIG : Configuration d\'une zone (zone_id)</string>
+    <string name="shared_ai_doc_query_zones">ZONES : Liste de toutes les zones</string>
+    <string name="shared_ai_doc_query_schema">SCHEMA : Récupérer un schéma JSON (schema_id)</string>
+    <string name="shared_ai_doc_action_commands_title">Commandes d\'Action</string>
+    <string name="shared_ai_doc_action_create_data">CREATE_DATA : Créer des données (batch) - tool_instance_id, tooltype, entries[]</string>
+    <string name="shared_ai_doc_action_update_data">UPDATE_DATA : Mettre à jour des données (batch) - entries[] avec id</string>
+    <string name="shared_ai_doc_action_delete_data">DELETE_DATA : Supprimer des données (batch) - ids[]</string>
+    <string name="shared_ai_doc_action_create_tool">CREATE_TOOL : Créer une instance d\'outil - zone_id, tool_type, config</string>
+    <string name="shared_ai_doc_action_update_tool">UPDATE_TOOL : Mettre à jour un outil - tool_instance_id, config</string>
+    <string name="shared_ai_doc_action_delete_tool">DELETE_TOOL : Supprimer un outil - tool_instance_id</string>
+    <string name="shared_ai_doc_action_create_zone">CREATE_ZONE : Créer une zone - name, description, icon_name</string>
+    <string name="shared_ai_doc_action_update_zone">UPDATE_ZONE : Mettre à jour une zone - zone_id, champs optionnels</string>
+    <string name="shared_ai_doc_action_delete_zone">DELETE_ZONE : Supprimer une zone - zone_id</string>
+    <string name="shared_ai_doc_data_batch_note">Note : Toutes les opérations sur les données (CREATE_DATA, UPDATE_DATA, DELETE_DATA) sont par défaut en mode batch (traitement multiple).</string>
+    <string name="shared_ai_doc_response_title">Format de Réponse</string>
+    <string name="shared_ai_doc_response_structure">Tu dois répondre avec une structure JSON contenant :</string>
+    <string name="shared_ai_doc_response_pretext">preText : Explication obligatoire avant toute action</string>
+    <string name="shared_ai_doc_response_validation">validationRequest : Demande de confirmation utilisateur optionnelle</string>
+    <string name="shared_ai_doc_response_datacommands">dataCommands : Requêtes de données (mutuellement exclusif avec actionCommands)</string>
+    <string name="shared_ai_doc_response_actioncommands">actionCommands : Actions à effectuer (mutuellement exclusif avec dataCommands)</string>
+    <string name="shared_ai_doc_response_posttext">postText : Texte optionnel après les actions</string>
+    <string name="shared_ai_doc_response_module">communicationModule : Module d\'interaction utilisateur optionnel</string>
+    <string name="shared_ai_doc_tooltypes_title">Types d\'Outils Disponibles</string>
+    <string name="shared_ai_doc_tooltype_description">Description</string>
+    <string name="shared_ai_doc_tooltype_schemas">IDs de Schémas</string>
+
+    <!-- shared -->
+    <string name="shared_pointer_schema_title">Enrichissement Pointer</string>
+    <string name="shared_pointer_schema_description">Permet à l\'IA d\'accéder aux données existantes avec sélection granulaire</string>
+    <string name="shared_pointer_schema_selected_path">Chemin complet sélectionné via ZoneScopeSelector</string>
+    <string name="shared_pointer_schema_selected_values">Valeurs spécifiques sélectionnées (optionnel)</string>
+    <string name="shared_pointer_schema_selection_level">Niveau de sélection dans la hiérarchie</string>
+    <string name="shared_pointer_schema_selection_level_note">FIELD level removed - selection limited to ZONE and INSTANCE only</string>
+    <string name="shared_pointer_schema_importance">Importance des données pour le contexte IA</string>
+    <string name="shared_pointer_schema_include_data">Inclure les données réelles en plus de l\'échantillon (pour niveau INSTANCE)</string>
+    <string name="shared_pointer_schema_include_data_note">Si true, ajoute TOOL_DATA aux commands en plus de TOOL_DATA_SAMPLE + TOOL_STATS</string>
+    <string name="shared_pointer_schema_periode">Filtre temporel optionnel pour limiter les données</string>
+    <string name="shared_pointer_schema_description_field">Description optionnelle expliquant pourquoi ces données sont référencées</string>
+    <string name="shared_pointer_schema_usage_description">L\'IA peut utiliser cet enrichissement pour:</string>
+    <string name="shared_pointer_schema_usage_capability_1">Accéder aux données avec granularité spécifique (zone/outil/champ)</string>
+    <string name="shared_pointer_schema_usage_capability_2">Filtrer temporellement les données selon la période</string>
+    <string name="shared_pointer_schema_usage_capability_3">Adapter l\'inclusion contextuelle selon l\'importance</string>
+    <string name="shared_pointer_schema_usage_capability_4">Comprendre l\'intention via la description utilisateur</string>
+    <string name="shared_pointer_schema_importance_optional">Données suggérées - IA peut les requêter si nécessaire</string>
+    <string name="shared_pointer_schema_importance_important">Données incluses automatiquement dans le contexte</string>
+    <string name="shared_pointer_schema_importance_essential">Données critiques avec priorité haute</string>
+    <string name="shared_pointer_schema_commands_description">Commandes disponibles suite à cet enrichissement:</string>
+    <string name="shared_pointer_schema_command_tool_data">tool_data.get - Récupérer données d\'un outil spécifique</string>
+    <string name="shared_pointer_schema_command_zones_get">zones.get - Informations sur la zone</string>
+    <string name="shared_pointer_schema_command_tools_list">tools.list - Lister outils de la zone</string>
+    <string name="shared_pointer_schema_command_data_navigator">data_navigator.explore - Navigation dans les données</string>
+    <string name="shared_pointer_schema_example_zone_level">Toutes les données de la zone santé cette semaine</string>
+    <string name="shared_pointer_schema_example_tool_level">Données du suivi poids avec période filtrée</string>
+    <string name="shared_pointer_schema_example_field_level">Uniquement les valeurs de poids (économie tokens)</string>
+    <string name="shared_pointer_schema_example_with_values">Entrées spécifiques sélectionnées par timestamp</string>
+
+    <!-- shared -->
     <string name="shared_app_name">Assistant</string>
     <string name="shared_app_config_temporal_week_start_day">Premier jour de la semaine</string>
     <string name="shared_app_config_temporal_day_start_hour">Heure de début de journée</string>
