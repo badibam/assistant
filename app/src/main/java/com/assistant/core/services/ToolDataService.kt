@@ -32,6 +32,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "get_single" -> getSingleEntry(params, token)  // GET single entry by ID
                 "stats" -> getStats(params, token)       // GET /tool_data/stats
                 "delete_all" -> deleteAllEntries(params, token)  // POST /tool_data/delete_all
+                "batch_create" -> batchCreateEntries(params, token)  // Batch create multiple entries
+                "batch_update" -> batchUpdateEntries(params, token)  // Batch update multiple entries
+                "batch_delete" -> batchDeleteEntries(params, token)  // Batch delete multiple entries
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -370,6 +373,175 @@ class ToolDataService(private val context: Context) : ExecutableService {
         dao.deleteByToolInstance(toolInstanceId)
 
         return OperationResult.success()
+    }
+
+    /**
+     * Batch create multiple tool data entries
+     * Params: toolInstanceId, tooltype, entries (array of objects with data, timestamp?, name?)
+     */
+    private suspend fun batchCreateEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val toolInstanceId = params.optString("toolInstanceId")
+        val tooltype = params.optString("tooltype")
+        val entriesArray = params.optJSONArray("entries")
+
+        if (toolInstanceId.isEmpty() || tooltype.isEmpty() || entriesArray == null) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype, entries"))
+        }
+
+        val dao = getToolDataDao()
+        val createdIds = mutableListOf<String>()
+        var successCount = 0
+        var failureCount = 0
+
+        // Process each entry
+        for (i in 0 until entriesArray.length()) {
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            try {
+                val entryJson = entriesArray.getJSONObject(i)
+
+                // Build params for single create
+                val singleParams = JSONObject().apply {
+                    put("toolInstanceId", toolInstanceId)
+                    put("tooltype", tooltype)
+                    put("data", entryJson.optJSONObject("data") ?: JSONObject())
+                    if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
+                    if (entryJson.has("name")) put("name", entryJson.getString("name"))
+                    if (entryJson.has("schema_id")) put("schema_id", entryJson.getString("schema_id"))
+                }
+
+                // Use existing createEntry logic
+                val result = createEntry(singleParams, token)
+
+                if (result.success) {
+                    result.data?.get("id")?.let { createdIds.add(it.toString()) }
+                    successCount++
+                } else {
+                    failureCount++
+                }
+            } catch (e: Exception) {
+                failureCount++
+            }
+        }
+
+        return OperationResult.success(mapOf(
+            "created_count" to successCount,
+            "failed_count" to failureCount,
+            "ids" to createdIds,
+            "toolInstanceName" to toolInstanceId // For CommandExecutor system messages
+        ))
+    }
+
+    /**
+     * Batch update multiple tool data entries
+     * Params: entries (array of objects with id, data?, timestamp?, name?)
+     */
+    private suspend fun batchUpdateEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val entriesArray = params.optJSONArray("entries")
+
+        if (entriesArray == null) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("entries"))
+        }
+
+        val dao = getToolDataDao()
+        var successCount = 0
+        var failureCount = 0
+
+        // Process each entry
+        for (i in 0 until entriesArray.length()) {
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            try {
+                val entryJson = entriesArray.getJSONObject(i)
+                val entryId = entryJson.optString("id")
+
+                if (entryId.isEmpty()) {
+                    failureCount++
+                    continue
+                }
+
+                // Build params for single update
+                val singleParams = JSONObject().apply {
+                    put("id", entryId)
+                    if (entryJson.has("data")) put("data", entryJson.getJSONObject("data"))
+                    if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
+                    if (entryJson.has("name")) put("name", entryJson.getString("name"))
+                }
+
+                // Use existing updateEntry logic
+                val result = updateEntry(singleParams, token)
+
+                if (result.success) {
+                    successCount++
+                } else {
+                    failureCount++
+                }
+            } catch (e: Exception) {
+                failureCount++
+            }
+        }
+
+        return OperationResult.success(mapOf(
+            "updated_count" to successCount,
+            "failed_count" to failureCount
+        ))
+    }
+
+    /**
+     * Batch delete multiple tool data entries
+     * Params: ids (array of entry IDs to delete)
+     */
+    private suspend fun batchDeleteEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val idsArray = params.optJSONArray("ids")
+
+        if (idsArray == null) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("ids"))
+        }
+
+        val dao = getToolDataDao()
+        var successCount = 0
+        var failureCount = 0
+
+        // Process each ID
+        for (i in 0 until idsArray.length()) {
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            try {
+                val entryId = idsArray.getString(i)
+
+                if (entryId.isEmpty()) {
+                    failureCount++
+                    continue
+                }
+
+                // Build params for single delete
+                val singleParams = JSONObject().apply {
+                    put("id", entryId)
+                }
+
+                // Use existing deleteEntry logic
+                val result = deleteEntry(singleParams, token)
+
+                if (result.success) {
+                    successCount++
+                } else {
+                    failureCount++
+                }
+            } catch (e: Exception) {
+                failureCount++
+            }
+        }
+
+        return OperationResult.success(mapOf(
+            "deleted_count" to successCount,
+            "failed_count" to failureCount
+        ))
     }
 
     /**

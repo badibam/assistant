@@ -45,23 +45,21 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      */
     private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val zoneId = params.optString("zone_id")
         val toolType = params.optString("tool_type")
         val configJson = params.optString("config_json", "{}")
-        val configMetadataJson = params.optString("config_metadata_json", "{}")
 
         if (zoneId.isBlank() || toolType.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
         }
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
             tool_type = toolType,
-            config_json = configJson,
-            config_metadata_json = configMetadataJson
+            config_json = configJson
         )
         
         if (token.isCancelled) return OperationResult.cancelled()
@@ -80,23 +78,21 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      */
     private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val toolInstanceId = params.optString("tool_instance_id")
         val configJson = params.optString("config_json")
-        val configMetadataJson = params.optString("config_metadata_json")
-        
+
         if (toolInstanceId.isBlank()) {
             return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
         }
-        
+
         val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val updatedTool = existingTool.copy(
             config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
-            config_metadata_json = configMetadataJson.takeIf { it.isNotBlank() } ?: existingTool.config_metadata_json,
             updated_at = System.currentTimeMillis()
         )
         
@@ -163,7 +159,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "tool_type" to tool.tool_type,
                 "config_json" to tool.config_json,
-                "config_metadata_json" to tool.config_metadata_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at
@@ -199,7 +194,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "tool_type" to tool.tool_type,
                 "config_json" to tool.config_json,
-                "config_metadata_json" to tool.config_metadata_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at
@@ -240,7 +234,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "tool_type" to toolInstance.tool_type,
                 "config_json" to toolInstance.config_json,
-                "config_metadata_json" to toolInstance.config_metadata_json,
                 "order_index" to toolInstance.order_index,
                 "created_at" to toolInstance.created_at,
                 "updated_at" to toolInstance.updated_at

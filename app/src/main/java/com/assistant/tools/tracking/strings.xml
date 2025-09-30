@@ -4,6 +4,7 @@
     
     <!-- Métadonnées -->
     <string name="display_name">Suivi</string>
+    <string name="description">Capture et analyse de données quantitatives et qualitatives au fil du temps</string>
 
     <!-- CONFIG - Labels de paramètres spécifiques -->
     <string name="config_label_tracking_type">Type de tracking</string>

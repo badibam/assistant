@@ -1,7 +1,7 @@
 package com.assistant.core.ai.prompts
 
 import android.content.Context
-import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.ai.data.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
@@ -9,25 +9,33 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Result of executing a single command
+ * Result of executing a single command for prompt formatting
  */
-data class CommandResult(
+data class PromptCommandResult(
     val dataTitle: String,         // Title/header for data section in prompt
-    val formattedData: String,     // JSON formatted data for prompt
-    val systemMessage: String       // Summary message for conversation history
+    val formattedData: String      // JSON formatted data for prompt
 )
 
 /**
- * Executes ExecutableCommands and formats results for prompt inclusion
+ * Complete execution result including prompt data and system message
+ */
+data class CommandExecutionResult(
+    val promptResults: List<PromptCommandResult>,  // For prompt inclusion
+    val systemMessage: SystemMessage                // For conversation history
+)
+
+/**
+ * Executes ExecutableCommands and formats results for prompt inclusion and conversation history
  *
- * Replaces QueryExecutor as part of the command system restructure.
- * Used by both PromptManager (for Level 2/4) and AI command processing.
+ * Unified command executor used by:
+ * - PromptManager (user enrichments Level 2/4)
+ * - AICommandProcessor (AI data/action commands)
  *
  * Core responsibilities:
- * - Execute ExecutableCommand configurations to get actual data results
+ * - Execute ExecutableCommand configurations via coordinator
  * - Format results as JSON with metadata first for prompt inclusion
- * - Generate system messages summarizing query results
- * - Return CommandResult list for flexible handling by caller
+ * - Generate SystemMessage with aggregate results for conversation history
+ * - Track success/failure status for each command
  *
  * Note: Token validation and deduplication handled by PromptManager
  */
@@ -36,27 +44,36 @@ class CommandExecutor(private val context: Context) {
     private val coordinator = Coordinator(context)
 
     /**
-     * Execute a list of ExecutableCommands and collect results
-     *
-     * Executes all commands regardless of individual failures.
-     * Returns list of CommandResult with formatted data and system messages.
+     * Execute commands and return complete result with prompt data + SystemMessage
      *
      * @param commands The commands to execute
+     * @param messageType Type of SystemMessage (DATA_ADDED or ACTIONS_EXECUTED)
      * @param level The level name for logging purposes
-     * @return List of CommandResult (one per successful command)
+     * @return CommandExecutionResult with prompt data and system message
      */
     suspend fun executeCommands(
         commands: List<ExecutableCommand>,
+        messageType: SystemMessageType,
         level: String = "unknown"
-    ): List<CommandResult> {
+    ): CommandExecutionResult {
         LogManager.aiPrompt("CommandExecutor executing ${commands.size} commands for $level")
 
         if (commands.isEmpty()) {
-            LogManager.aiPrompt("No commands to execute, returning empty list")
-            return emptyList()
+            LogManager.aiPrompt("No commands to execute, returning empty result")
+            return CommandExecutionResult(
+                promptResults = emptyList(),
+                systemMessage = SystemMessage(
+                    type = messageType,
+                    commandResults = emptyList(),
+                    summary = "Aucune commande à exécuter"
+                )
+            )
         }
 
-        val results = mutableListOf<CommandResult>()
+        val promptResults = mutableListOf<PromptCommandResult>()
+        val commandResults = mutableListOf<com.assistant.core.ai.data.CommandResult>()
+        var successCount = 0
+        var failedCount = 0
 
         for ((index, command) in commands.withIndex()) {
             LogManager.aiPrompt("Executing command ${index + 1}/${commands.size}: ${command.resource}.${command.operation}")
@@ -64,25 +81,57 @@ class CommandExecutor(private val context: Context) {
             val result = executeCommand(command)
 
             if (result != null) {
-                results.add(result)
-                LogManager.aiPrompt("Command ${index + 1} succeeded: ${result.systemMessage}")
+                promptResults.add(result.promptResult)
+                commandResults.add(result.commandResult)
+                if (result.commandResult.status == CommandStatus.SUCCESS) {
+                    successCount++
+                } else {
+                    failedCount++
+                }
+                LogManager.aiPrompt("Command ${index + 1} succeeded")
             } else {
+                failedCount++
+                commandResults.add(
+                    com.assistant.core.ai.data.CommandResult(
+                        command = "${command.resource}.${command.operation}",
+                        status = CommandStatus.FAILED,
+                        details = "Execution failed"
+                    )
+                )
                 LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands")
             }
         }
 
-        LogManager.aiPrompt("CommandExecutor completed for $level: ${results.size}/${commands.size} commands successful")
+        // Generate summary based on message type
+        val summary = generateSummary(messageType, successCount, failedCount)
 
-        return results
+        LogManager.aiPrompt("CommandExecutor completed for $level: $successCount succeeded, $failedCount failed")
+
+        return CommandExecutionResult(
+            promptResults = promptResults,
+            systemMessage = SystemMessage(
+                type = messageType,
+                commandResults = commandResults,
+                summary = summary
+            )
+        )
     }
+
+    /**
+     * Internal result combining prompt data and command status
+     */
+    private data class InternalCommandResult(
+        val promptResult: PromptCommandResult,
+        val commandResult: com.assistant.core.ai.data.CommandResult
+    )
 
     /**
      * Execute a single ExecutableCommand through coordinator
      *
      * Routes to coordinator using resource.operation pattern and returns
-     * CommandResult with formatted data and system message.
+     * InternalCommandResult with prompt data and command status.
      */
-    private suspend fun executeCommand(command: ExecutableCommand): CommandResult? {
+    private suspend fun executeCommand(command: ExecutableCommand): InternalCommandResult? {
         LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}")
 
         return withContext(Dispatchers.IO) {
@@ -98,24 +147,44 @@ class CommandExecutor(private val context: Context) {
 
                 if (result.isSuccess) {
                     val data = result.data ?: emptyMap()
-                    val isActionCommand = command.operation in listOf("create", "update", "delete", "batch_create", "batch_update")
+                    val isActionCommand = command.operation in listOf("create", "update", "delete", "batch_create", "batch_update", "batch_delete")
 
                     // For actions, data may be empty or minimal (just success/ID)
                     // For queries, empty data is unusual
                     if (data.isEmpty() && !isActionCommand) {
                         LogManager.aiPrompt("Query succeeded but returned empty data")
-                        return@withContext CommandResult("", "", "Query executed but returned no data")
+                        return@withContext InternalCommandResult(
+                            promptResult = PromptCommandResult("", ""),
+                            commandResult = com.assistant.core.ai.data.CommandResult(
+                                command = commandString,
+                                status = CommandStatus.SUCCESS,
+                                details = "No data returned"
+                            )
+                        )
                     }
 
                     val dataTitle = generateDataTitle(command, data)
                     val formattedData = if (isActionCommand) "" else formatResultData(command, data)
-                    val systemMessage = generateSystemMessage(command, data)
 
-                    LogManager.aiPrompt("Command succeeded: $systemMessage")
-                    return@withContext CommandResult(dataTitle, formattedData, systemMessage)
+                    LogManager.aiPrompt("Command succeeded")
+                    return@withContext InternalCommandResult(
+                        promptResult = PromptCommandResult(dataTitle, formattedData),
+                        commandResult = com.assistant.core.ai.data.CommandResult(
+                            command = commandString,
+                            status = CommandStatus.SUCCESS,
+                            details = null
+                        )
+                    )
                 } else {
                     LogManager.aiPrompt("Command failed: ${result.error}", "WARN")
-                    return@withContext null
+                    return@withContext InternalCommandResult(
+                        promptResult = PromptCommandResult("", ""),
+                        commandResult = com.assistant.core.ai.data.CommandResult(
+                            command = commandString,
+                            status = CommandStatus.FAILED,
+                            details = result.error
+                        )
+                    )
                 }
 
             } catch (e: Exception) {
@@ -126,13 +195,35 @@ class CommandExecutor(private val context: Context) {
     }
 
     /**
+     * Generate human-readable summary for SystemMessage
+     */
+    private fun generateSummary(type: SystemMessageType, successCount: Int, failedCount: Int): String {
+        return when (type) {
+            SystemMessageType.DATA_ADDED -> {
+                when {
+                    failedCount == 0 -> "$successCount requête(s) de données ajoutée(s) au contexte"
+                    successCount == 0 -> "Échec de toutes les requêtes ($failedCount)"
+                    else -> "$successCount requête(s) réussie(s), $failedCount échouée(s)"
+                }
+            }
+            SystemMessageType.ACTIONS_EXECUTED -> {
+                when {
+                    failedCount == 0 -> "$successCount action(s) exécutée(s) avec succès"
+                    successCount == 0 -> "Échec de toutes les actions ($failedCount)"
+                    else -> "$successCount action(s) réussie(s), $failedCount échouée(s)"
+                }
+            }
+        }
+    }
+
+    /**
      * Generate title/header for data section in prompt
      * Creates descriptive title with context (tool name, filters, period, etc.)
-     * Returns empty string for action commands (create, update, delete, batch_create, batch_update)
+     * Returns empty string for action commands
      */
     private fun generateDataTitle(command: ExecutableCommand, data: Map<String, Any>): String {
         // No title needed for action commands
-        if (command.operation in listOf("create", "update", "delete", "batch_create", "batch_update")) {
+        if (command.operation in listOf("create", "update", "delete", "batch_create", "batch_update", "batch_delete")) {
             return ""
         }
 
@@ -263,108 +354,6 @@ class CommandExecutor(private val context: Context) {
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
             org.json.JSONObject(data).toString(2)
-        }
-    }
-
-    /**
-     * Generate system message summarizing query result or action
-     * Creates human-readable summary for conversation history
-     */
-    private fun generateSystemMessage(command: ExecutableCommand, data: Map<String, Any>): String {
-        return try {
-            // Handle action commands (create, update, delete, batch operations)
-            when (command.operation) {
-                "create" -> {
-                    val name = data["name"] as? String ?: data["id"] as? String
-                    return when (command.resource) {
-                        "tools" -> "Created tool instance${if (name != null) " '$name'" else ""}"
-                        "zones" -> "Created zone${if (name != null) " '$name'" else ""}"
-                        "tool_data" -> "Created data point${if (name != null) " '$name'" else ""}"
-                        else -> "Created ${command.resource}${if (name != null) " '$name'" else ""}"
-                    }
-                }
-                "update" -> {
-                    val name = data["name"] as? String ?: data["id"] as? String
-                    return when (command.resource) {
-                        "tools" -> "Updated tool instance${if (name != null) " '$name'" else ""}"
-                        "zones" -> "Updated zone${if (name != null) " '$name'" else ""}"
-                        "tool_data" -> "Updated data point${if (name != null) " '$name'" else ""}"
-                        else -> "Updated ${command.resource}${if (name != null) " '$name'" else ""}"
-                    }
-                }
-                "delete" -> {
-                    val name = data["name"] as? String ?: data["id"] as? String
-                    return when (command.resource) {
-                        "tools" -> "Deleted tool instance${if (name != null) " '$name'" else ""}"
-                        "zones" -> "Deleted zone${if (name != null) " '$name'" else ""}"
-                        "tool_data" -> "Deleted data point${if (name != null) " '$name'" else ""}"
-                        else -> "Deleted ${command.resource}${if (name != null) " '$name'" else ""}"
-                    }
-                }
-                "batch_create" -> {
-                    val count = data["count"] as? Int ?: data["created_count"] as? Int ?: 0
-                    val toolName = data["toolInstanceName"] as? String
-                    return when (command.resource) {
-                        "tool_data" -> "Created $count data points${if (toolName != null) " in tool '$toolName'" else ""}"
-                        else -> "Batch created $count ${command.resource}"
-                    }
-                }
-                "batch_update" -> {
-                    val count = data["count"] as? Int ?: data["updated_count"] as? Int ?: 0
-                    val toolName = data["toolInstanceName"] as? String
-                    return when (command.resource) {
-                        "tool_data" -> "Updated $count data points${if (toolName != null) " in tool '$toolName'" else ""}"
-                        else -> "Batch updated $count ${command.resource}"
-                    }
-                }
-            }
-
-            // Handle query commands (get, list, etc.)
-            when (command.resource) {
-                "tool_data" -> {
-                    val toolName = data["toolInstanceName"] as? String ?: "unknown tool"
-                    val count = data["count"] as? Int ?: 0
-                    "$count data points from tool '$toolName' added"
-                }
-                "schemas" -> {
-                    val schemaName = data["name"] as? String ?: data["id"] as? String ?: "unknown schema"
-                    "Schema '$schemaName' integrated"
-                }
-                "tools" -> {
-                    when (command.operation) {
-                        "get" -> {
-                            val toolName = data["name"] as? String ?: "unknown tool"
-                            "Configuration for tool '$toolName' integrated"
-                        }
-                        "list", "list_all" -> {
-                            val tools = data["tools"] as? List<*>
-                            val count = tools?.size ?: 0
-                            "$count tool instances added"
-                        }
-                        else -> "Tool data integrated"
-                    }
-                }
-                "zones" -> {
-                    when (command.operation) {
-                        "get" -> {
-                            val zoneName = data["name"] as? String ?: "unknown zone"
-                            "Zone '$zoneName' configuration integrated"
-                        }
-                        "list" -> {
-                            val zones = data["zones"] as? List<*>
-                            val count = zones?.size ?: 0
-                            "$count zones added"
-                        }
-                        else -> "Zone data integrated"
-                    }
-                }
-                else -> {
-                    "Data from ${command.resource}.${command.operation} integrated"
-                }
-            }
-        } catch (e: Exception) {
-            LogManager.aiPrompt("Failed to generate system message: ${e.message}", "WARN")
-            "Command executed"
         }
     }
 }

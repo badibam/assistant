@@ -160,6 +160,7 @@
     <string name="tools_config_label_data_validation">Validation données par IA</string>
     <string name="tools_config_label_schema_id">Identifiant de schéma</string>
     <string name="tools_config_label_data_schema_id">Identifiant de schéma de données</string>
+    <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
 
     <string name="tools_config_option_manual">Manuel</string>
     <string name="tools_config_option_ai">IA</string>
@@ -209,6 +210,7 @@
     <string name="tools_base_schema_config_data_validation"></string>
     <string name="tools_base_schema_config_schema_id"></string>
     <string name="tools_base_schema_config_data_schema_id"></string>
+    <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
 
     <!-- Tools BASE SCHEMA DATA - Descriptions communes pour validation des données -->
     <string name="tools_base_schema_data_id"></string>

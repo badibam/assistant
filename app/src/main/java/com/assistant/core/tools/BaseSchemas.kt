@@ -67,6 +67,11 @@ object BaseSchemas {
                 "data_schema_id": {
                     "type": "string",
                     "description": "${s.shared("tools_base_schema_config_data_schema_id")}"
+                },
+                "always_send": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "${s.shared("tools_base_schema_config_always_send")}"
                 }
             },
             "required": ["name", "management", "display_mode", "config_validation", "data_validation"],

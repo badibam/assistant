@@ -57,4 +57,26 @@ object ToolTypeManager {
     fun getAllDatabaseEntities(): List<Class<*>> {
         return toolTypes.values.flatMap { it.getDatabaseEntities() }
     }
+
+    /**
+     * Get all schema IDs for a specific tooltype
+     * Uses SchemaProvider.getAllSchemaIds() to get the complete list
+     * @param tooltypeName Tool type identifier (e.g., "tracking")
+     * @return List of schema IDs for this tooltype (e.g., ["tracking_config_numeric", "tracking_data_numeric", ...])
+     */
+    fun getSchemaIdsForTooltype(tooltypeName: String): List<String> {
+        LogManager.service("Getting schema IDs for tooltype: $tooltypeName")
+
+        val toolType = getToolType(tooltypeName)
+        if (toolType == null) {
+            LogManager.service("Tooltype not found: $tooltypeName", "WARN")
+            return emptyList()
+        }
+
+        // ToolTypeContract extends SchemaProvider, so we can use getAllSchemaIds()
+        val schemaIds = toolType.getAllSchemaIds()
+
+        LogManager.service("Found ${schemaIds.size} schemas for tooltype $tooltypeName: $schemaIds")
+        return schemaIds
+    }
 }

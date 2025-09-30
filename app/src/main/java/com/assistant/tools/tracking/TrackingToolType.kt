@@ -31,7 +31,12 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         val s = Strings.`for`(tool = "tracking", context = context)
         return s.tool("display_name")
     }
-    
+
+    override fun getDescription(context: Context): String {
+        val s = Strings.`for`(tool = "tracking", context = context)
+        return s.tool("description")
+    }
+
     override fun getDefaultConfig(): String {
         return """
         {

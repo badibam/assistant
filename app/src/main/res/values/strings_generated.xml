@@ -3,6 +3,7 @@
     <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
     <!-- notes -->
     <string name="notes_display_name">Notes</string>
+    <string name="notes_description">Prise de notes simple et rapide avec organisation flexible</string>
     <string name="notes_schema_config_display_name"></string>
     <string name="notes_schema_data_display_name"></string>
     <string name="notes_schema_data_name">Nom de l\'entrée de note</string>
@@ -30,6 +31,7 @@
 
     <!-- tracking -->
     <string name="tracking_display_name">Suivi</string>
+    <string name="tracking_description">Capture et analyse de données quantitatives et qualitatives au fil du temps</string>
     <string name="tracking_config_label_tracking_type">Type de tracking</string>
     <string name="tracking_config_label_default_quantity">Quantité par défaut</string>
     <string name="tracking_config_label_unit">Unité</string>
@@ -341,6 +343,7 @@
     <string name="shared_tools_config_label_data_validation">Validation données par IA</string>
     <string name="shared_tools_config_label_schema_id">Identifiant de schéma</string>
     <string name="shared_tools_config_label_data_schema_id">Identifiant de schéma de données</string>
+    <string name="shared_tools_config_label_always_send">Toujours envoyer à l\'IA</string>
     <string name="shared_tools_config_option_manual">Manuel</string>
     <string name="shared_tools_config_option_ai">IA</string>
     <string name="shared_tools_config_option_enabled">Activée</string>
@@ -376,6 +379,7 @@
     <string name="shared_tools_base_schema_config_data_validation"></string>
     <string name="shared_tools_base_schema_config_schema_id"></string>
     <string name="shared_tools_base_schema_config_data_schema_id"></string>
+    <string name="shared_tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="shared_tools_base_schema_data_id"></string>
     <string name="shared_tools_base_schema_data_tool_instance_id"></string>
     <string name="shared_tools_base_schema_data_tooltype"></string>

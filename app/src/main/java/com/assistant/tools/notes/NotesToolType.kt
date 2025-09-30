@@ -26,6 +26,11 @@ object NotesToolType : ToolTypeContract {
         return s.tool("display_name")
     }
 
+    override fun getDescription(context: Context): String {
+        val s = Strings.`for`(tool = "notes", context = context)
+        return s.tool("description")
+    }
+
     override fun getDefaultConfig(): String {
         val notesSpecificConfig = """
         {

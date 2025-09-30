@@ -41,6 +41,7 @@ fun ToolGeneralConfigSection(
     val management = config.optString("management", "")
     val configValidation = config.optString("config_validation", "")
     val dataValidation = config.optString("data_validation", "")
+    val alwaysSend = config.optBoolean("always_send", false)
 
     UI.Card(type = CardType.DEFAULT) {
         Column(
@@ -164,6 +165,17 @@ fun ToolGeneralConfigSection(
                     })
                 },
                 required = true
+            )
+
+            // 8. Always send to AI (optional - Level 2)
+            UI.FormSelection(
+                label = s.shared("tools_config_label_always_send"),
+                options = listOf(s.shared("tools_config_option_yes"), s.shared("tools_config_option_no")),
+                selected = if (alwaysSend) s.shared("tools_config_option_yes") else s.shared("tools_config_option_no"),
+                onSelect = { selectedLabel ->
+                    updateConfig("always_send", selectedLabel == s.shared("tools_config_option_yes"))
+                },
+                required = false
             )
         }
     }

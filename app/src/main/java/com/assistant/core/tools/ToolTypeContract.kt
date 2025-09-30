@@ -20,7 +20,13 @@ interface ToolTypeContract : SchemaProvider {
      * @param context Android context for string resource access
      */
     fun getDisplayName(context: Context): String
-    
+
+    /**
+     * Description of this tool type explaining its purpose and usage
+     * @param context Android context for string resource access
+     */
+    fun getDescription(context: Context): String
+
     /**
      * Default configuration JSON for new instances of this tool type
      */

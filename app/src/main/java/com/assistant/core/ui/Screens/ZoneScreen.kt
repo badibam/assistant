@@ -66,7 +66,6 @@ fun ZoneScreen(
                     zone_id = map["zone_id"] as String,
                     tool_type = map["tool_type"] as String,
                     config_json = map["config_json"] as String,
-                    config_metadata_json = map["config_metadata_json"] as String,
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
                     updated_at = (map["updated_at"] as Number).toLong()
@@ -90,7 +89,6 @@ fun ZoneScreen(
                         zone_id = map["zone_id"] as String,
                         tool_type = map["tool_type"] as String,
                         config_json = map["config_json"] as String,
-                        config_metadata_json = map["config_metadata_json"] as String,
                         order_index = (map["order_index"] as Number).toInt(),
                         created_at = (map["created_at"] as Number).toLong(),
                         updated_at = (map["updated_at"] as Number).toLong()

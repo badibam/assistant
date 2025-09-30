@@ -4,6 +4,7 @@
 
     <!-- Métadonnées -->
     <string name="display_name">Notes</string>
+    <string name="description">Prise de notes simple et rapide avec organisation flexible</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name"></string>
