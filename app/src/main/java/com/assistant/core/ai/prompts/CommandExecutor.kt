@@ -56,10 +56,10 @@ class CommandExecutor(private val context: Context) {
         messageType: SystemMessageType,
         level: String = "unknown"
     ): CommandExecutionResult {
-        LogManager.aiPrompt("CommandExecutor executing ${commands.size} commands for $level")
+        LogManager.aiPrompt("CommandExecutor executing ${commands.size} commands for $level", "DEBUG")
 
         if (commands.isEmpty()) {
-            LogManager.aiPrompt("No commands to execute, returning empty result")
+            LogManager.aiPrompt("No commands to execute, returning empty result", "DEBUG")
             return CommandExecutionResult(
                 promptResults = emptyList(),
                 systemMessage = SystemMessage(
@@ -76,7 +76,7 @@ class CommandExecutor(private val context: Context) {
         var failedCount = 0
 
         for ((index, command) in commands.withIndex()) {
-            LogManager.aiPrompt("Executing command ${index + 1}/${commands.size}: ${command.resource}.${command.operation}")
+            LogManager.aiPrompt("Executing command ${index + 1}/${commands.size}: ${command.resource}.${command.operation}", "DEBUG")
 
             val result = executeCommand(command)
 
@@ -88,7 +88,7 @@ class CommandExecutor(private val context: Context) {
                 } else {
                     failedCount++
                 }
-                LogManager.aiPrompt("Command ${index + 1} succeeded")
+                LogManager.aiPrompt("Command ${index + 1} succeeded", "DEBUG")
             } else {
                 failedCount++
                 commandResults.add(
@@ -98,14 +98,14 @@ class CommandExecutor(private val context: Context) {
                         details = "Execution failed"
                     )
                 )
-                LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands")
+                LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands", "WARN")
             }
         }
 
         // Generate summary based on message type
         val summary = generateSummary(messageType, successCount, failedCount)
 
-        LogManager.aiPrompt("CommandExecutor completed for $level: $successCount succeeded, $failedCount failed")
+        LogManager.aiPrompt("CommandExecutor completed for $level: $successCount succeeded, $failedCount failed", "INFO")
 
         return CommandExecutionResult(
             promptResults = promptResults,
@@ -132,7 +132,7 @@ class CommandExecutor(private val context: Context) {
      * InternalCommandResult with prompt data and command status.
      */
     private suspend fun executeCommand(command: ExecutableCommand): InternalCommandResult? {
-        LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}")
+        LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}", "VERBOSE")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -141,7 +141,7 @@ class CommandExecutor(private val context: Context) {
                 val paramsJson = org.json.JSONObject()
                 paramsMap.forEach { (key, value) -> paramsJson.put(key, value) }
 
-                LogManager.aiPrompt("Calling coordinator: $commandString with params: $paramsJson")
+                LogManager.aiPrompt("Calling coordinator: $commandString with params: $paramsJson", "VERBOSE")
 
                 val result = coordinator.processUserAction(commandString, paramsMap)
 
@@ -152,7 +152,7 @@ class CommandExecutor(private val context: Context) {
                     // For actions, data may be empty or minimal (just success/ID)
                     // For queries, empty data is unusual
                     if (data.isEmpty() && !isActionCommand) {
-                        LogManager.aiPrompt("Query succeeded but returned empty data")
+                        LogManager.aiPrompt("Query succeeded but returned empty data", "WARN")
                         return@withContext InternalCommandResult(
                             promptResult = PromptCommandResult("", ""),
                             commandResult = com.assistant.core.ai.data.CommandResult(
@@ -166,7 +166,7 @@ class CommandExecutor(private val context: Context) {
                     val dataTitle = generateDataTitle(command, data)
                     val formattedData = if (isActionCommand) "" else formatResultData(command, data)
 
-                    LogManager.aiPrompt("Command succeeded")
+                    LogManager.aiPrompt("Command succeeded", "DEBUG")
                     return@withContext InternalCommandResult(
                         promptResult = PromptCommandResult(dataTitle, formattedData),
                         commandResult = com.assistant.core.ai.data.CommandResult(
@@ -232,17 +232,17 @@ class CommandExecutor(private val context: Context) {
                 "tool_data" -> {
                     // Resolve tool instance name from ID in command params
                     // Note: UserCommandProcessor transforms "id" → "toolInstanceId"
-                    LogManager.aiPrompt("tool_data command params keys: ${command.params.keys}")
-                    LogManager.aiPrompt("toolInstanceId=${command.params["toolInstanceId"]}, id=${command.params["id"]}")
+                    LogManager.aiPrompt("tool_data command params keys: ${command.params.keys}", "VERBOSE")
+                    LogManager.aiPrompt("toolInstanceId=${command.params["toolInstanceId"]}, id=${command.params["id"]}", "VERBOSE")
 
                     val toolInstanceId = command.params["toolInstanceId"] as? String
                         ?: command.params["id"] as? String
 
-                    LogManager.aiPrompt("Resolved toolInstanceId: $toolInstanceId")
+                    LogManager.aiPrompt("Resolved toolInstanceId: $toolInstanceId", "VERBOSE")
 
                     val toolName = if (toolInstanceId != null) {
                         val name = resolveToolInstanceName(toolInstanceId)
-                        LogManager.aiPrompt("Resolved tool name: $name")
+                        LogManager.aiPrompt("Resolved tool name: $name", "VERBOSE")
                         name
                     } else {
                         LogManager.aiPrompt("No toolInstanceId found in params!", "WARN")

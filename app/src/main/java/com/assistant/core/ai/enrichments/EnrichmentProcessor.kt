@@ -30,7 +30,7 @@ class EnrichmentProcessor(private val context: Context) {
      * Generate human-readable summary for enrichment display in messages
      */
     fun generateSummary(type: EnrichmentType, config: String): String {
-        LogManager.aiEnrichment("EnrichmentProcessor.generateSummary() called with type=$type, config length=${config.length}")
+        LogManager.aiEnrichment("EnrichmentProcessor.generateSummary() called with type=$type, config length=${config.length}", "DEBUG")
 
         return try {
             val configJson = JSONObject(config)
@@ -42,7 +42,7 @@ class EnrichmentProcessor(private val context: Context) {
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigSummary(configJson)
             }
 
-            LogManager.aiEnrichment("Generated summary for $type: '$summary'")
+            LogManager.aiEnrichment("Generated summary for $type: '$summary'", "DEBUG")
             summary
         } catch (e: Exception) {
             LogManager.aiEnrichment("Failed to generate enrichment summary: ${e.message}", "ERROR", e)
@@ -54,7 +54,7 @@ class EnrichmentProcessor(private val context: Context) {
      * Check if enrichment should generate a DataCommand for Level 4 inclusion
      */
     fun shouldGenerateQuery(type: EnrichmentType, config: String): Boolean {
-        LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type")
+        LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type", "DEBUG")
 
         return try {
             val configJson = JSONObject(config)
@@ -63,20 +63,20 @@ class EnrichmentProcessor(private val context: Context) {
                 EnrichmentType.POINTER -> {
                     val importance = configJson.optString("importance", "important")
                     val result = importance != "optionnelle"
-                    LogManager.aiEnrichment("POINTER enrichment importance='$importance', shouldGenerate=$result")
+                    LogManager.aiEnrichment("POINTER enrichment importance='$importance', shouldGenerate=$result", "DEBUG")
                     result
                 }
                 EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG -> {
-                    LogManager.aiEnrichment("$type enrichment always generates query")
+                    LogManager.aiEnrichment("$type enrichment always generates query", "DEBUG")
                     true
                 }
                 EnrichmentType.CREATE -> {
-                    LogManager.aiEnrichment("CREATE enrichment never generates query")
+                    LogManager.aiEnrichment("CREATE enrichment never generates query", "DEBUG")
                     false
                 }
             }
 
-            LogManager.aiEnrichment("shouldGenerateQuery($type) = $shouldGenerate")
+            LogManager.aiEnrichment("shouldGenerateQuery($type) = $shouldGenerate", "DEBUG")
             shouldGenerate
         } catch (e: Exception) {
             LogManager.aiEnrichment("Failed to check query generation: ${e.message}", "ERROR", e)
@@ -93,10 +93,10 @@ class EnrichmentProcessor(private val context: Context) {
         config: String,
         isRelative: Boolean = false
     ): List<DataCommand> {
-        LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative")
+        LogManager.aiEnrichment("EnrichmentProcessor.generateCommands() called with type=$type, isRelative=$isRelative", "DEBUG")
 
         if (!shouldGenerateQuery(type, config)) {
-            LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)")
+            LogManager.aiEnrichment("Skipping query generation for $type (shouldGenerateQuery = false)", "DEBUG")
             return emptyList()
         }
 
@@ -109,14 +109,14 @@ class EnrichmentProcessor(private val context: Context) {
                 EnrichmentType.CREATE -> generateCreateQueries(configJson, isRelative)
                 EnrichmentType.MODIFY_CONFIG -> generateModifyConfigQueries(configJson, isRelative)
                 else -> {
-                    LogManager.aiEnrichment("No query generator for type $type")
+                    LogManager.aiEnrichment("No query generator for type $type", "WARN")
                     emptyList()
                 }
             }
 
-            LogManager.aiEnrichment("Generated ${queries.size} DataCommands for $type:")
+            LogManager.aiEnrichment("Generated ${queries.size} DataCommands for $type", "DEBUG")
             queries.forEach { query ->
-                LogManager.aiEnrichment("  - id='${query.id}', type='${query.type}', isRelative=${query.isRelative}")
+                LogManager.aiEnrichment("  - id='${query.id}', type='${query.type}', isRelative=${query.isRelative}", "VERBOSE")
             }
 
             queries
@@ -205,17 +205,17 @@ class EnrichmentProcessor(private val context: Context) {
         config: JSONObject,
         isRelative: Boolean
     ): List<DataCommand> {
-        LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative")
+        LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative", "DEBUG")
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
         val includeData = config.optBoolean("includeData", false) // Toggle for real data
 
-        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel', includeData=$includeData")
+        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel', includeData=$includeData", "VERBOSE")
 
         // Extract zone and tool info from path
         val pathParts = path.split(".")
-        LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}")
+        LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}", "VERBOSE")
 
         val queries = mutableListOf<DataCommand>()
 
@@ -297,7 +297,7 @@ class EnrichmentProcessor(private val context: Context) {
             }
         }
 
-        LogManager.aiEnrichment("Generated ${queries.size} POINTER queries for selectionLevel=$selectionLevel")
+        LogManager.aiEnrichment("Generated ${queries.size} POINTER queries for selectionLevel=$selectionLevel", "DEBUG")
         return queries
     }
 
@@ -305,7 +305,7 @@ class EnrichmentProcessor(private val context: Context) {
         config: JSONObject,
         isRelative: Boolean
     ): List<DataCommand> {
-        LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative")
+        LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative", "DEBUG")
 
         val toolInstanceId = config.optString("toolInstanceId", "")
         if (toolInstanceId.isEmpty()) return emptyList()
@@ -348,24 +348,24 @@ class EnrichmentProcessor(private val context: Context) {
             isRelative = isRelative
         ))
 
-        LogManager.aiEnrichment("Generated ${queries.size} USE queries for toolInstanceId=$toolInstanceId")
+        LogManager.aiEnrichment("Generated ${queries.size} USE queries for toolInstanceId=$toolInstanceId", "DEBUG")
         return queries
     }
 
     private fun generateCreateQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateCreateQueries() called with isRelative=$isRelative")
+        LogManager.aiEnrichment("generateCreateQueries() called with isRelative=$isRelative", "DEBUG")
 
         // TODO: Implement CREATE enrichment with schema-driven tooltype selection
         // - UI provides config_schema_id from tooltype selection dialog
         // - Load config schema to extract data_schema_id
         // - Generate SCHEMA(config_schema_id) + SCHEMA(data_schema_id)
 
-        LogManager.aiEnrichment("CREATE enrichment - STUB implementation")
+        LogManager.aiEnrichment("CREATE enrichment - STUB implementation", "DEBUG")
         return emptyList()
     }
 
     private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
-        LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative")
+        LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative", "DEBUG")
 
         val toolInstanceId = config.optString("toolInstanceId", "")
         if (toolInstanceId.isEmpty()) return emptyList()
@@ -389,7 +389,7 @@ class EnrichmentProcessor(private val context: Context) {
             isRelative = isRelative
         ))
 
-        LogManager.aiEnrichment("Generated ${queries.size} MODIFY_CONFIG queries for toolInstanceId=$toolInstanceId")
+        LogManager.aiEnrichment("Generated ${queries.size} MODIFY_CONFIG queries for toolInstanceId=$toolInstanceId", "DEBUG")
         return queries
     }
 
@@ -408,11 +408,11 @@ class EnrichmentProcessor(private val context: Context) {
     ) {
         val timestampSelection = configJson?.optJSONObject("timestampSelection")
         if (timestampSelection == null) {
-            LogManager.aiEnrichment("No timestampSelection found in config")
+            LogManager.aiEnrichment("No timestampSelection found in config", "DEBUG")
             return
         }
 
-        LogManager.aiEnrichment("Found timestampSelection: $timestampSelection")
+        LogManager.aiEnrichment("Found timestampSelection: $timestampSelection", "VERBOSE")
 
         if (isRelative) {
             // AUTOMATION mode: use relative periods
@@ -431,7 +431,7 @@ class EnrichmentProcessor(private val context: Context) {
 
                 params["period_start"] = periodStart
                 params["period_end"] = periodEnd
-                LogManager.aiEnrichment("Added relative period parameters: start=$periodStart, end=$periodEnd")
+                LogManager.aiEnrichment("Added relative period parameters: start=$periodStart, end=$periodEnd", "DEBUG")
             }
         } else {
             // CHAT mode: calculate absolute timestamps
@@ -463,11 +463,11 @@ class EnrichmentProcessor(private val context: Context) {
 
             if (startTs != null) {
                 params["startTime"] = startTs
-                LogManager.aiEnrichment("Added startTime parameter: $startTs")
+                LogManager.aiEnrichment("Added startTime parameter: $startTs", "DEBUG")
             }
             if (endTs != null) {
                 params["endTime"] = endTs
-                LogManager.aiEnrichment("Added endTime parameter: $endTs")
+                LogManager.aiEnrichment("Added endTime parameter: $endTs", "DEBUG")
             }
         }
     }

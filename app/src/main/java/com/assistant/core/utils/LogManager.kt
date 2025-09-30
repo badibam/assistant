@@ -52,6 +52,7 @@ object LogManager {
     private fun safeLog(tag: String, message: String, level: String, throwable: Throwable?) {
         try {
             when (level.uppercase()) {
+                "VERBOSE" -> Log.v(tag, message, throwable)
                 "DEBUG" -> Log.d(tag, message, throwable)
                 "INFO" -> Log.i(tag, message, throwable)
                 "WARN" -> Log.w(tag, message, throwable)

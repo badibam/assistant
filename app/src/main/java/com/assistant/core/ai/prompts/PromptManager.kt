@@ -33,7 +33,7 @@ object PromptManager {
      * Progressive deduplication to maintain level structure for API caching
      */
     suspend fun buildPrompt(session: AISession, context: Context): PromptResult {
-        LogManager.aiPrompt("Building 4-level prompt for session ${session.id}")
+        LogManager.aiPrompt("Building 4-level prompt for session ${session.id}", "INFO")
 
         val userCommandProcessor = UserCommandProcessor(context)
         val commandExecutor = CommandExecutor(context)
@@ -44,14 +44,13 @@ object PromptManager {
         val level3Commands = buildLevel3Commands(context)
         val level4Commands = getLevel4Commands(session, context)
 
-        LogManager.aiPrompt("Commands generated - L1:${level1Commands.size}, L2:${level2Commands.size}, L3:${level3Commands.size}, L4:${level4Commands.size}")
+        LogManager.aiPrompt("Commands generated - L1:${level1Commands.size}, L2:${level2Commands.size}, L3:${level3Commands.size}, L4:${level4Commands.size}", "INFO")
 
         // 2. Progressive deduplication to maintain level boundaries for caching
         // Level 1: Execute all L1 commands
         val l1Deduplicated = QueryDeduplicator.deduplicateCommands(level1Commands)
         val l1Executable = userCommandProcessor.processCommands(l1Deduplicated)
         val l1ExecutionResult = commandExecutor.executeCommands(l1Executable, SystemMessageType.DATA_ADDED, "level1")
-        LogManager.aiPrompt("Level 1: ${l1ExecutionResult.promptResults.size} results")
 
         // Level 2: Deduplicate L1+L2, execute only new commands
         val l2WithL1 = level1Commands + level2Commands
@@ -59,7 +58,6 @@ object PromptManager {
         val l2OnlyCommands = l2Deduplicated.filter { cmd -> !l1Deduplicated.any { it.id == cmd.id } }
         val l2Executable = userCommandProcessor.processCommands(l2OnlyCommands)
         val l2ExecutionResult = commandExecutor.executeCommands(l2Executable, SystemMessageType.DATA_ADDED, "level2")
-        LogManager.aiPrompt("Level 2: ${l2ExecutionResult.promptResults.size} results (${l2OnlyCommands.size} new commands)")
 
         // Level 3: Deduplicate L1+L2+L3, execute only new commands
         val l3WithL1L2 = level1Commands + level2Commands + level3Commands
@@ -69,7 +67,6 @@ object PromptManager {
         }
         val l3Executable = userCommandProcessor.processCommands(l3OnlyCommands)
         val l3ExecutionResult = commandExecutor.executeCommands(l3Executable, SystemMessageType.DATA_ADDED, "level3")
-        LogManager.aiPrompt("Level 3: ${l3ExecutionResult.promptResults.size} results (${l3OnlyCommands.size} new commands)")
 
         // Level 4: Deduplicate all, execute only new commands
         val allCommands = level1Commands + level2Commands + level3Commands + level4Commands
@@ -81,7 +78,14 @@ object PromptManager {
         }
         val l4Executable = userCommandProcessor.processCommands(l4OnlyCommands)
         val l4ExecutionResult = commandExecutor.executeCommands(l4Executable, SystemMessageType.DATA_ADDED, "level4")
-        LogManager.aiPrompt("Level 4: ${l4ExecutionResult.promptResults.size} results (${l4OnlyCommands.size} new commands)")
+
+        // Log consolidated summary for all 4 levels
+        logConsolidatedPromptSummary(
+            level1Commands, l1Deduplicated, l1ExecutionResult,
+            level2Commands, l2OnlyCommands, l2ExecutionResult,
+            level3Commands, l3OnlyCommands, l3ExecutionResult,
+            level4Commands, l4OnlyCommands, l4ExecutionResult
+        )
 
         // 3. Build Level 1 static doc
         val level1StaticDoc = buildLevel1StaticDoc(context)
@@ -143,7 +147,7 @@ object PromptManager {
      * Build Level 1 static documentation (role, API, tooltypes list)
      */
     private fun buildLevel1StaticDoc(context: Context): String {
-        LogManager.aiPrompt("Building Level 1 static documentation")
+        LogManager.aiPrompt("Building Level 1 static documentation", "DEBUG")
 
         val s = com.assistant.core.strings.Strings.`for`(context = context)
         val sb = StringBuilder()
@@ -194,7 +198,7 @@ object PromptManager {
      * Returns only DataCommand for zone schema (schema_id "zone_config")
      */
     private fun buildLevel1Commands(context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 1 commands (DOC)")
+        LogManager.aiPrompt("Building Level 1 commands (DOC)", "DEBUG")
 
         val commands = mutableListOf<DataCommand>()
 
@@ -208,7 +212,7 @@ object PromptManager {
             )
         )
 
-        LogManager.aiPrompt("Level 1: Generated ${commands.size} commands")
+        LogManager.aiPrompt("Level 1: Generated ${commands.size} commands", "DEBUG")
         return commands
     }
 
@@ -217,7 +221,7 @@ object PromptManager {
      * Queries all tool instances with always_send=true and generates TOOL_DATA commands
      */
     private suspend fun buildLevel2Commands(context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 2 commands (USER DATA)")
+        LogManager.aiPrompt("Building Level 2 commands (USER DATA)", "DEBUG")
 
         val commands = mutableListOf<DataCommand>()
         val coordinator = com.assistant.core.coordinator.Coordinator(context)
@@ -232,7 +236,7 @@ object PromptManager {
 
         val toolInstancesData = result.data?.get("tool_instances") as? List<*>
         if (toolInstancesData == null) {
-            LogManager.aiPrompt("No tool instances found for Level 2")
+            LogManager.aiPrompt("No tool instances found for Level 2", "DEBUG")
             return emptyList()
         }
 
@@ -257,14 +261,14 @@ object PromptManager {
                             isRelative = false
                         )
                     )
-                    LogManager.aiPrompt("Added always_send tool instance to Level 2: $toolInstanceId")
+                    LogManager.aiPrompt("Added always_send tool instance to Level 2: $toolInstanceId", "DEBUG")
                 }
             } catch (e: Exception) {
                 LogManager.aiPrompt("Failed to parse config for tool instance $toolInstanceId: ${e.message}", "WARN")
             }
         }
 
-        LogManager.aiPrompt("Level 2: Generated ${commands.size} commands for always_send tool instances")
+        LogManager.aiPrompt("Level 2: Generated ${commands.size} commands for always_send tool instances", "DEBUG")
         return commands
     }
 
@@ -273,7 +277,7 @@ object PromptManager {
      * Returns commands to list all zones and their tool instances with configs
      */
     private suspend fun buildLevel3Commands(context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 3 commands (APP STATE)")
+        LogManager.aiPrompt("Building Level 3 commands (APP STATE)", "DEBUG")
 
         val commands = mutableListOf<DataCommand>()
 
@@ -299,7 +303,7 @@ object PromptManager {
             )
         )
 
-        LogManager.aiPrompt("Level 3: Generated ${commands.size} commands")
+        LogManager.aiPrompt("Level 3: Generated ${commands.size} commands", "DEBUG")
         return commands
     }
 
@@ -308,7 +312,7 @@ object PromptManager {
      * Extracts EnrichmentBlocks from user messages and generates DataCommands
      */
     private fun getLevel4Commands(session: AISession, context: Context): List<DataCommand> {
-        LogManager.aiPrompt("getLevel4Commands() for session ${session.id}")
+        LogManager.aiPrompt("getLevel4Commands() for session ${session.id}", "DEBUG")
 
         val commands = mutableListOf<DataCommand>()
         val enrichmentProcessor = EnrichmentProcessor(context)
@@ -333,7 +337,7 @@ object PromptManager {
                         )
 
                         commands.addAll(enrichmentCommands)
-                        LogManager.aiPrompt("Generated ${enrichmentCommands.size} commands from ${segment.type} enrichment")
+                        LogManager.aiPrompt("Generated ${enrichmentCommands.size} commands from ${segment.type} enrichment", "DEBUG")
 
                     } catch (e: Exception) {
                         LogManager.aiPrompt("Failed to generate commands from enrichment: ${e.message}", "ERROR", e)
@@ -342,7 +346,7 @@ object PromptManager {
             }
         }
 
-        LogManager.aiPrompt("Level 4: Generated ${commands.size} total commands from enrichments")
+        LogManager.aiPrompt("Level 4: Generated ${commands.size} total commands from enrichments", "DEBUG")
         return commands
     }
 
@@ -355,7 +359,7 @@ object PromptManager {
     }
 
     private fun buildChatHistory(session: AISession): String {
-        LogManager.aiPrompt("Building chat history for ${session.messages.size} messages")
+        LogManager.aiPrompt("Building chat history for ${session.messages.size} messages", "DEBUG")
         return session.messages.mapNotNull { message ->
             when (message.sender) {
                 MessageSender.USER -> message.textContent ?: message.richContent?.linearText
@@ -366,7 +370,7 @@ object PromptManager {
     }
 
     private fun buildAutomationHistory(session: AISession): String {
-        LogManager.aiPrompt("Building automation history")
+        LogManager.aiPrompt("Building automation history", "DEBUG")
         // TODO: Implement according to "Send history to AI" setting
         // For now, return initial prompt + executions
         val initialPrompt = session.messages.firstOrNull { it.sender == MessageSender.USER }
@@ -414,7 +418,7 @@ object PromptManager {
             totalTokens = estimateTokens(fullPrompt)
         )
 
-        LogManager.aiPrompt("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})")
+        LogManager.aiPrompt("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})", "INFO")
 
         // Log complete final prompt with line breaks
         LogManager.aiPrompt("""
@@ -423,7 +427,7 @@ object PromptManager {
 $fullPrompt
 
 === END FINAL PROMPT ===
-        """.trimIndent())
+        """.trimIndent(), "VERBOSE")
 
         return result
     }
@@ -443,9 +447,93 @@ $fullPrompt
      * TODO Phase 2A+: Implement full logic for all relative period types
      */
     private fun resolveRelativeParams(params: Map<String, Any>): Map<String, Any> {
-        LogManager.aiPrompt("resolveRelativeParams() - stub implementation")
+        LogManager.aiPrompt("resolveRelativeParams() - stub implementation", "DEBUG")
         // TODO: Implement in Phase 2A+ when enrichments need it
         return params // For now, return as-is
+    }
+
+    /**
+     * Log consolidated summary for all 4 prompt levels in a single INFO log
+     * Shows commands count, deduplication, and status for each command across all levels
+     */
+    private fun logConsolidatedPromptSummary(
+        l1Original: List<DataCommand>, l1Executed: List<DataCommand>, l1Result: CommandExecutionResult,
+        l2Original: List<DataCommand>, l2Executed: List<DataCommand>, l2Result: CommandExecutionResult,
+        l3Original: List<DataCommand>, l3Executed: List<DataCommand>, l3Result: CommandExecutionResult,
+        l4Original: List<DataCommand>, l4Executed: List<DataCommand>, l4Result: CommandExecutionResult
+    ) {
+        val sb = StringBuilder()
+        sb.appendLine("=== PROMPT GENERATION SUMMARY ===")
+        sb.appendLine()
+
+        // Level 1
+        appendLevelSummary(sb, "Level 1: System Documentation", l1Original, l1Executed, l1Result)
+        // Level 2
+        appendLevelSummary(sb, "Level 2: User Data", l2Original, l2Executed, l2Result)
+        // Level 3
+        appendLevelSummary(sb, "Level 3: Application State", l3Original, l3Executed, l3Result)
+        // Level 4
+        appendLevelSummary(sb, "Level 4: Session Data", l4Original, l4Executed, l4Result)
+
+        sb.appendLine("=== END PROMPT SUMMARY ===")
+        LogManager.aiPrompt(sb.toString(), "INFO")
+    }
+
+    /**
+     * Helper to append a single level summary to the StringBuilder
+     */
+    private fun appendLevelSummary(
+        sb: StringBuilder,
+        levelName: String,
+        originalCommands: List<DataCommand>,
+        executedCommands: List<DataCommand>,
+        executionResult: CommandExecutionResult
+    ) {
+        sb.appendLine("## $levelName")
+
+        if (originalCommands.isEmpty()) {
+            sb.appendLine("  (no commands)")
+            sb.appendLine()
+            return
+        }
+
+        // Build set of executed command IDs for quick lookup
+        val executedIds = executedCommands.map { it.id }.toSet()
+        val executionResults = executionResult.systemMessage.commandResults
+
+        // Log each original command with its status
+        var executedIndex = 0
+        for (command in originalCommands) {
+            val wasExecuted = executedIds.contains(command.id)
+            val status = when {
+                !wasExecuted -> "Ignorée (duplication)"
+                executedIndex < executionResults.size -> {
+                    val result = executionResults[executedIndex]
+                    executedIndex++
+                    when (result.status) {
+                        CommandStatus.SUCCESS -> "Succès"
+                        CommandStatus.FAILED -> "Échec"
+                        else -> "Inconnu"
+                    }
+                }
+                else -> "Inconnu"
+            }
+
+            // Format command description
+            val commandDesc = when (command.type) {
+                "SCHEMA" -> "SCHEMA[${command.params["id"]}]"
+                "TOOL_CONFIG" -> "TOOL_CONFIG[${command.params["id"]}]"
+                "TOOL_DATA" -> "TOOL_DATA[${command.params["id"]}]"
+                "ZONE_CONFIG" -> "ZONE_CONFIG[${command.params["id"]}]"
+                "ZONES" -> "ZONES"
+                "TOOL_INSTANCES" -> "TOOL_INSTANCES[${command.params["zone_id"] ?: "all"}]"
+                else -> "${command.type}[${command.params["id"] ?: "no-id"}]"
+            }
+
+            sb.appendLine("  - $commandDesc: $status")
+        }
+
+        sb.appendLine()
     }
 
 

@@ -26,7 +26,7 @@ class UserCommandProcessor(private val context: Context) {
      * @return List of ExecutableCommands ready for coordinator dispatch
      */
     fun processCommands(commands: List<DataCommand>): List<ExecutableCommand> {
-        LogManager.aiPrompt("UserCommandProcessor processing ${commands.size} user commands")
+        LogManager.aiPrompt("UserCommandProcessor processing ${commands.size} user commands", "DEBUG")
 
         val executableCommands = mutableListOf<ExecutableCommand>()
 
@@ -54,7 +54,7 @@ class UserCommandProcessor(private val context: Context) {
             }
         }
 
-        LogManager.aiPrompt("UserCommandProcessor generated ${executableCommands.size} executable commands")
+        LogManager.aiPrompt("UserCommandProcessor generated ${executableCommands.size} executable commands", "DEBUG")
         return executableCommands
     }
 
@@ -63,7 +63,7 @@ class UserCommandProcessor(private val context: Context) {
     // ========================================================================================
 
     private fun processSchemaCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processSchemaCommand() - routing to schemas.get")
+        LogManager.aiPrompt("processSchemaCommand() - routing to schemas.get", "VERBOSE")
 
         // Route SCHEMA command to SchemaService
         val schemaId = command.params["id"] as? String
@@ -80,7 +80,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolConfigCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolConfigCommand() - routing to tools.get")
+        LogManager.aiPrompt("processToolConfigCommand() - routing to tools.get", "VERBOSE")
 
         // Route TOOL_CONFIG command to ToolInstanceService
         val toolInstanceId = command.params["id"] as? String
@@ -97,7 +97,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolDataCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolDataCommand() - routing to tool_data.get")
+        LogManager.aiPrompt("processToolDataCommand() - routing to tool_data.get", "VERBOSE")
 
         // Extract toolInstanceId from params
         val toolInstanceId = command.params["id"] as? String
@@ -138,7 +138,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolStatsCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolStatsCommand() - STUB implementation")
+        LogManager.aiPrompt("processToolStatsCommand() - STUB implementation", "DEBUG")
 
         // TODO: Transform TOOL_STATS command to tool_data.stats call
         // - Similar to TOOL_DATA but with aggregate functions
@@ -148,7 +148,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolDataSampleCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolDataSampleCommand() - STUB implementation")
+        LogManager.aiPrompt("processToolDataSampleCommand() - STUB implementation", "DEBUG")
 
         // TODO: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
         // - Add default limit for sampling (e.g., limit: 10)
@@ -158,7 +158,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processZoneConfigCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processZoneConfigCommand() - routing to zones.get")
+        LogManager.aiPrompt("processZoneConfigCommand() - routing to zones.get", "VERBOSE")
 
         // Route ZONE_CONFIG command to ZoneService
         val zoneId = command.params["id"] as? String
@@ -175,7 +175,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processZonesCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processZonesCommand() - routing to zones.list")
+        LogManager.aiPrompt("processZonesCommand() - routing to zones.list", "VERBOSE")
 
         // Route ZONES command to ZoneService.list
         // No parameters needed, returns all zones
@@ -215,7 +215,7 @@ class UserCommandProcessor(private val context: Context) {
             // End timestamp = end of end period
             val endTimestamp = com.assistant.core.ui.components.getPeriodEndTimestamp(endPeriod)
 
-            LogManager.aiPrompt("Resolved relative periods: $periodStart -> $startTimestamp, $periodEnd -> $endTimestamp")
+            LogManager.aiPrompt("Resolved relative periods: $periodStart -> $startTimestamp, $periodEnd -> $endTimestamp", "DEBUG")
             return Pair(startTimestamp, endTimestamp)
 
         } catch (e: Exception) {
@@ -225,7 +225,7 @@ class UserCommandProcessor(private val context: Context) {
     }
 
     private fun processToolInstancesCommand(command: DataCommand): ExecutableCommand? {
-        LogManager.aiPrompt("processToolInstancesCommand() - routing to tools service")
+        LogManager.aiPrompt("processToolInstancesCommand() - routing to tools service", "VERBOSE")
 
         // Route TOOL_INSTANCES command to ToolInstanceService
         // If zone_id present: filter by zone (tools.list)

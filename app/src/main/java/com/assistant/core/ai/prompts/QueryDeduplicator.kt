@@ -20,17 +20,17 @@ object QueryDeduplicator {
      * Combines identical removal and business logic inclusion while preserving order
      */
     fun deduplicateCommands(orderedCommands: List<DataCommand>): List<DataCommand> {
-        LogManager.aiPrompt("QueryDeduplicator processing ${orderedCommands.size} commands")
+        LogManager.aiPrompt("QueryDeduplicator processing ${orderedCommands.size} commands", "DEBUG")
 
         // Phase 1: Remove identical commands (same hash ID)
         val withoutDuplicates = removeIdenticalCommands(orderedCommands)
-        LogManager.aiPrompt("After removing identical: ${withoutDuplicates.size} commands")
+        LogManager.aiPrompt("After removing identical: ${withoutDuplicates.size} commands", "DEBUG")
 
         // Phase 2: Remove included commands (business logic)
         val withoutInclusions = removeIncludedCommands(withoutDuplicates)
-        LogManager.aiPrompt("After removing included: ${withoutInclusions.size} commands")
+        LogManager.aiPrompt("After removing included: ${withoutInclusions.size} commands", "DEBUG")
 
-        LogManager.aiPrompt("Command deduplication completed: ${orderedCommands.size} → ${withoutInclusions.size}")
+        LogManager.aiPrompt("Command deduplication completed: ${orderedCommands.size} → ${withoutInclusions.size}", "INFO")
         return withoutInclusions
     }
 
@@ -48,7 +48,7 @@ object QueryDeduplicator {
                 seenHashes.add(hash)
                 result.add(command)
             } else {
-                LogManager.aiPrompt("Removed identical command: ${command.type} (hash: ${hash.take(8)}...)")
+                LogManager.aiPrompt("Removed identical command: ${command.type} (hash: ${hash.take(8)}...)", "VERBOSE")
             }
         }
 
@@ -69,9 +69,9 @@ object QueryDeduplicator {
 
             if (!isIncluded) {
                 result.add(candidate)
-                LogManager.aiPrompt("Kept command: ${candidate.type}")
+                LogManager.aiPrompt("Kept command: ${candidate.type}", "VERBOSE")
             } else {
-                LogManager.aiPrompt("Removed included command: ${candidate.type}")
+                LogManager.aiPrompt("Removed included command: ${candidate.type}", "VERBOSE")
             }
         }
 
@@ -108,7 +108,7 @@ object QueryDeduplicator {
         // - Sample data includes field data for same instance
         // - Larger time periods include smaller periods for same tool instance
 
-        LogManager.aiPrompt("TODO: commandIncludes() business logic - returning false for now")
+        LogManager.aiPrompt("TODO: commandIncludes() business logic - returning false for now", "VERBOSE")
         return false
     }
 

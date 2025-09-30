@@ -36,7 +36,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        LogManager.aiSession("AISessionService.execute - operation: $operation, params: $params")
+        LogManager.aiSession("AISessionService.execute - operation: $operation", "DEBUG")
 
         return try {
             when (operation) {
@@ -60,7 +60,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
-            LogManager.aiSession("AISessionService.execute - Error: ${e.message}", "ERROR")
+            LogManager.aiSession("AISessionService.execute - Error: ${e.message}", "ERROR", e)
             OperationResult.error(s.shared("service_error_ai_session").format(e.message ?: ""))
         }
     }
@@ -76,7 +76,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
-        LogManager.aiSession("Creating AI session: name=$name, type=$type, providerId=$providerId")
+        LogManager.aiSession("Creating AI session: name=$name, type=$type, providerId=$providerId", "DEBUG")
 
         // Create new session entity
         val sessionId = UUID.randomUUID().toString()
@@ -99,7 +99,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             val database = AppDatabase.getDatabase(context)
             database.aiDao().insertSession(sessionEntity)
 
-            LogManager.aiSession("Successfully created session: $sessionId")
+            LogManager.aiSession("Successfully created session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
                 "sessionId" to sessionId,
@@ -120,7 +120,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
-        LogManager.aiSession("Getting AI session: $sessionId")
+        LogManager.aiSession("Getting AI session: $sessionId", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
@@ -134,7 +134,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Get messages for this session
             val messageEntities = database.aiDao().getMessagesForSession(sessionId)
 
-            LogManager.aiSession("Found session $sessionId with ${messageEntities.size} messages")
+            LogManager.aiSession("Found session $sessionId with ${messageEntities.size} messages", "DEBUG")
 
             return OperationResult.success(mapOf(
                 "session" to mapOf(
@@ -185,7 +185,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
-        LogManager.aiSession("Setting active session: $sessionId")
+        LogManager.aiSession("Setting active session: $sessionId", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
@@ -204,7 +204,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Activate the target session
             dao.activateSession(sessionId)
 
-            LogManager.aiSession("Successfully set active session: $sessionId")
+            LogManager.aiSession("Successfully set active session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
                 "sessionId" to sessionId,
@@ -219,14 +219,14 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun getActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        LogManager.aiSession("Getting active session")
+        LogManager.aiSession("Getting active session", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
             val activeSessionEntity = database.aiDao().getActiveSession()
 
             if (activeSessionEntity == null) {
-                LogManager.aiSession("No active session found")
+                LogManager.aiSession("No active session found", "DEBUG")
                 return OperationResult.success(mapOf(
                     "hasActiveSession" to false
                 ))
@@ -235,7 +235,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Get messages for the active session
             val messageEntities = database.aiDao().getMessagesForSession(activeSessionEntity.id)
 
-            LogManager.aiSession("Found active session: ${activeSessionEntity.id} with ${messageEntities.size} messages")
+            LogManager.aiSession("Found active session: ${activeSessionEntity.id} with ${messageEntities.size} messages", "DEBUG")
 
             return OperationResult.success(mapOf(
                 "hasActiveSession" to true,
@@ -270,7 +270,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun stopActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        LogManager.aiSession("Stopping active session (deactivating all sessions)")
+        LogManager.aiSession("Stopping active session (deactivating all sessions)", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
@@ -279,7 +279,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Deactivate all sessions
             dao.deactivateAllSessions()
 
-            LogManager.aiSession("Successfully stopped active session")
+            LogManager.aiSession("Successfully stopped active session", "INFO")
             return OperationResult.success(mapOf(
                 "sessionsDeactivated" to true
             ))
@@ -307,7 +307,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("ai_error_invalid_sender").format(senderString))
         }
 
-        LogManager.aiSession("Creating message: sessionId=$sessionId, sender=$sender, timestamp=$timestamp")
+        LogManager.aiSession("Creating message: sessionId=$sessionId, sender=$sender, timestamp=$timestamp", "DEBUG")
 
         try {
             val database = AppDatabase.getDatabase(context)
@@ -323,7 +323,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             val finalRichContentJson = when {
                 richContentJson != null -> {
                     // TODO: Convert simple text to proper RichMessage JSON structure
-                    LogManager.aiSession("TODO: Convert richContent text to RichMessage JSON structure")
+                    LogManager.aiSession("TODO: Convert richContent text to RichMessage JSON structure", "DEBUG")
                     """{"linearText":"$richContentJson","segments":[],"dataCommands":[]}"""
                 }
                 else -> null
@@ -349,7 +349,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Update session last activity
             database.aiDao().updateSessionActivity(sessionId, timestamp)
 
-            LogManager.aiSession("Successfully created message: $messageId for session $sessionId")
+            LogManager.aiSession("Successfully created message: $messageId for session $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
                 "messageId" to messageId,

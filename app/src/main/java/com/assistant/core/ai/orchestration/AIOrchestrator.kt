@@ -42,7 +42,7 @@ class AIOrchestrator(private val context: Context) {
      * 5. Process response and store AI message via coordinator
      */
     suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult {
-        LogManager.aiSession("AIOrchestrator.sendMessage() called for session $sessionId")
+        LogManager.aiSession("AIOrchestrator.sendMessage() called for session $sessionId", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -99,6 +99,7 @@ class AIOrchestrator(private val context: Context) {
                     ))
 
                     if (aiMessageResult.isSuccess) {
+                        LogManager.aiSession("Message sent and AI response stored successfully", "INFO")
                         OperationResult.success(mapOf("aiMessage" to aiMessageJson as Any))
                     } else {
                         OperationResult.error(s.shared("ai_error_store_ai_response").format(aiMessageResult.error ?: ""))
@@ -108,7 +109,7 @@ class AIOrchestrator(private val context: Context) {
                 }
 
             } catch (e: Exception) {
-                LogManager.aiSession("AIOrchestrator.sendMessage - Error: ${e.message}", "ERROR")
+                LogManager.aiSession("AIOrchestrator.sendMessage - Error: ${e.message}", "ERROR", e)
                 OperationResult.error(s.shared("ai_error_orchestration").format(e.message ?: ""))
             }
         }
@@ -122,7 +123,7 @@ class AIOrchestrator(private val context: Context) {
         type: SessionType = SessionType.CHAT,
         providerId: String = "claude"
     ): String {
-        LogManager.aiSession("AIOrchestrator.createSession() called: name=$name, type=$type")
+        LogManager.aiSession("AIOrchestrator.createSession() called: name=$name, type=$type", "DEBUG")
 
         val result = coordinator.processUserAction("ai_sessions.create_session", mapOf(
             "name" to name,
@@ -131,7 +132,9 @@ class AIOrchestrator(private val context: Context) {
         ))
 
         return if (result.isSuccess) {
-            result.data?.get("sessionId") as? String ?: ""
+            val sessionId = result.data?.get("sessionId") as? String ?: ""
+            LogManager.aiSession("Session created successfully: $sessionId", "INFO")
+            sessionId
         } else {
             LogManager.aiSession("Failed to create session: ${result.error}", "ERROR")
             ""
@@ -142,7 +145,7 @@ class AIOrchestrator(private val context: Context) {
      * Load AI session via coordinator
      */
     suspend fun loadSession(sessionId: String): AISession? {
-        LogManager.aiSession("AIOrchestrator.loadSession() called for $sessionId")
+        LogManager.aiSession("AIOrchestrator.loadSession() called for $sessionId", "DEBUG")
 
         val result = coordinator.processUserAction("ai_sessions.get_session", mapOf(
             "sessionId" to sessionId
@@ -208,6 +211,8 @@ class AIOrchestrator(private val context: Context) {
 
             // TODO: Parse schedule config for AUTOMATION sessions (currently null)
             val scheduleConfig: ScheduleConfig? = null
+
+            LogManager.aiSession("Successfully parsed AISession: $sessionId with ${messages.size} messages", "DEBUG")
 
             AISession(
                 id = sessionId,
@@ -302,7 +307,7 @@ class AIOrchestrator(private val context: Context) {
         return try {
             // TODO: Implement proper JSON parsing for RichMessage
             // Should parse segments, linearText, and dataCommands from JSON
-            LogManager.aiSession("TODO: Implement RichMessage JSON parsing for: ${jsonString.take(50)}...")
+            LogManager.aiSession("TODO: Implement RichMessage JSON parsing for: ${jsonString.take(50)}...", "DEBUG")
 
             // Stub implementation for now
             RichMessage(
@@ -325,7 +330,7 @@ class AIOrchestrator(private val context: Context) {
         return try {
             // TODO: Implement proper JSON parsing for AIMessage
             // Should parse preText, validationRequest, dataCommands, actionCommands, postText, communicationModule
-            LogManager.aiSession("TODO: Implement AIMessage JSON parsing for: ${jsonString.take(50)}...")
+            LogManager.aiSession("TODO: Implement AIMessage JSON parsing for: ${jsonString.take(50)}...", "DEBUG")
 
             // Stub implementation for now
             AIMessage(
@@ -346,7 +351,7 @@ class AIOrchestrator(private val context: Context) {
      * Get active session via coordinator
      */
     suspend fun getActiveSession(): AISession? {
-        LogManager.aiSession("AIOrchestrator.getActiveSession() called")
+        LogManager.aiSession("AIOrchestrator.getActiveSession() called", "DEBUG")
 
         val result = coordinator.processUserAction("ai_sessions.get_active_session", emptyMap())
 
@@ -355,7 +360,7 @@ class AIOrchestrator(private val context: Context) {
             if (hasActiveSession) {
                 parseAISessionFromResult(result.data)
             } else {
-                LogManager.aiSession("No active session found")
+                LogManager.aiSession("No active session found", "DEBUG")
                 null
             }
         } else {
@@ -368,10 +373,11 @@ class AIOrchestrator(private val context: Context) {
      * Stop current active session (deactivate all sessions)
      */
     suspend fun stopActiveSession(): OperationResult {
-        LogManager.aiSession("AIOrchestrator.stopActiveSession() called")
+        LogManager.aiSession("AIOrchestrator.stopActiveSession() called", "DEBUG")
 
         val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
         return if (result.isSuccess) {
+            LogManager.aiSession("Active session stopped successfully", "INFO")
             OperationResult.success()
         } else {
             OperationResult.error(result.error ?: s.shared("ai_error_stop_session"))
@@ -382,12 +388,13 @@ class AIOrchestrator(private val context: Context) {
      * Set active session via coordinator
      */
     suspend fun setActiveSession(sessionId: String): OperationResult {
-        LogManager.aiSession("AIOrchestrator.setActiveSession() called for $sessionId")
+        LogManager.aiSession("AIOrchestrator.setActiveSession() called for $sessionId", "DEBUG")
 
         val result = coordinator.processUserAction("ai_sessions.set_active_session", mapOf(
             "sessionId" to sessionId
         ))
         return if (result.isSuccess) {
+            LogManager.aiSession("Session $sessionId set as active", "INFO")
             OperationResult.success()
         } else {
             OperationResult.error(result.error ?: s.shared("ai_error_set_active_session").format(""))
