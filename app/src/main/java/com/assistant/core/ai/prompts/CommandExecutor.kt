@@ -283,7 +283,9 @@ class CommandExecutor(private val context: Context) {
                 "tools" -> {
                     when (command.operation) {
                         "get" -> {
-                            val toolName = data["name"] as? String ?: "unknown"
+                            // ToolInstanceService.handleGetById returns data["tool_instance"]["name"]
+                            val toolInstance = data["tool_instance"] as? Map<*, *>
+                            val toolName = toolInstance?.get("name") as? String ?: "unknown"
                             "Configuration for tool '$toolName'"
                         }
                         "list" -> {
@@ -302,7 +304,9 @@ class CommandExecutor(private val context: Context) {
                 "zones" -> {
                     when (command.operation) {
                         "get" -> {
-                            val zoneName = data["name"] as? String ?: "unknown"
+                            // ZoneService.handleGet returns data["zone"]["name"]
+                            val zone = data["zone"] as? Map<*, *>
+                            val zoneName = zone?.get("name") as? String ?: "unknown"
                             "Configuration for zone '$zoneName'"
                         }
                         "list" -> "All zones"

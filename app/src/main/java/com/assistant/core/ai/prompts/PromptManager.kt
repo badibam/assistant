@@ -424,26 +424,47 @@ object PromptManager {
             val sender = msg["sender"] as? String
             when (sender) {
                 "USER" -> {
-                    // Try richContent linearText first, fallback to textContent
-                    val richContent = msg["richContent"] as? Map<*, *>
-                    val linearText = richContent?.get("linearText") as? String
-                    linearText ?: msg["textContent"] as? String
+                    // Parse richContentJson to get linearText, fallback to textContent
+                    val richContentJson = msg["richContentJson"] as? String
+                    val linearText = if (richContentJson != null && richContentJson.isNotEmpty()) {
+                        try {
+                            JSONObject(richContentJson).optString("linearText", null)
+                        } catch (e: Exception) {
+                            LogManager.aiPrompt("Failed to parse richContentJson: ${e.message}", "WARN")
+                            null
+                        }
+                    } else null
+
+                    val content = linearText ?: msg["textContent"] as? String
+                    content?.let { "[USER] $it" }
                 }
                 "AI" -> {
-                    // Use original JSON for consistency
-                    msg["aiMessageJson"] as? String
+                    // Use original JSON for consistency, prefixed with [AI]
+                    val aiJson = msg["aiMessageJson"] as? String
+                    aiJson?.let { "[AI] $it" }
                 }
                 "SYSTEM" -> {
-                    // Format system message for history
-                    val systemMsg = msg["systemMessage"] as? Map<*, *>
-                    val summary = systemMsg?.get("summary") as? String
-                    val commandResults = systemMsg?.get("commandResults") as? List<*>
+                    // Parse systemMessageJson to get summary and commandResults
+                    val systemMessageJson = msg["systemMessageJson"] as? String
+                    if (systemMessageJson != null && systemMessageJson.isNotEmpty()) {
+                        try {
+                            val systemMsgObj = JSONObject(systemMessageJson)
+                            val summary = systemMsgObj.optString("summary", null)
+                            val commandResultsArray = systemMsgObj.optJSONArray("commandResults")
 
-                    if (summary != null && commandResults != null && commandResults.isNotEmpty()) {
-                        formatSystemMessageForHistory(summary, commandResults)
-                    } else {
-                        null
-                    }
+                            if (summary != null && commandResultsArray != null && commandResultsArray.length() > 0) {
+                                val commandResults = (0 until commandResultsArray.length()).map { i ->
+                                    commandResultsArray.getJSONObject(i).toMap()
+                                }
+                                formatSystemMessageForHistory(summary, commandResults)
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiPrompt("Failed to parse systemMessageJson: ${e.message}", "WARN")
+                            null
+                        }
+                    } else null
                 }
                 else -> null
             }
@@ -791,3 +812,18 @@ data class PromptResult(
     val level4Tokens: Int,
     val totalTokens: Int
 )
+
+/**
+ * Extension function to convert JSONObject to Map
+ */
+private fun JSONObject.toMap(): Map<String, Any> {
+    val map = mutableMapOf<String, Any>()
+    keys().forEach { key ->
+        val value = get(key)
+        map[key] = when (value) {
+            JSONObject.NULL -> null
+            else -> value
+        } ?: ""
+    }
+    return map
+}
