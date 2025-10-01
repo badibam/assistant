@@ -32,18 +32,18 @@
 - Line 365: resolve from tool instance (config_schema_id)
 - Line 421: Implement proper period formatting based on timestamps
 
-## orchestration/AIOrchestrator.kt (18)
-- Line 61: Load actual session
-- Line 85: Get providerId from session
+## orchestration/AIOrchestrator.kt (11)
+- ✅ Line 61: Load actual session
+- ✅ Line 85: Get providerId from session (using session.providerId)
 - Line 207: Parse schedule config for AUTOMATION sessions (currently null)
 - Line 270: Parse system messages when implemented
 - Line 273: Parse execution metadata for automation messages
-- Line 296: Implement complete JSON deserialization with segment parsing
-- Line 301: Implement proper JSON parsing for RichMessage
-- Line 303: Implement RichMessage JSON parsing
-- Line 307: Parse MessageSegment list from JSON
-- Line 308: Extract linearText from JSON
-- Line 309: Parse DataCommand list from JSON
+- ✅ Line 296: Implement complete JSON deserialization with segment parsing
+- ✅ Line 301: Implement proper JSON parsing for RichMessage
+- ✅ Line 303: Implement RichMessage JSON parsing
+- ✅ Line 307: Parse MessageSegment list from JSON
+- ✅ Line 308: Extract linearText from JSON
+- ✅ Line 309: Parse DataCommand list from JSON
 - Line 319: Implement complete JSON deserialization with all AIMessage fields
 - Line 324: Implement proper JSON parsing for AIMessage
 - Line 326: Implement AIMessage JSON parsing
@@ -92,9 +92,9 @@
 - Line 162: Implement actual database update
 - Line 174: Implement actual database retrieval
 
-## services/AISessionService.kt (6)
+## services/AISessionService.kt (4)
 - Line 68: Implement all CRUD operations
-- Line 321-326: Store richContent as proper RichMessage JSON structure
+- ✅ Line 321-326: Store richContent as proper RichMessage JSON structure
 - Line 341: Parse AIMessage when implementing
 - Line 342: Implement system messages
 - Line 343: Implement automation metadata
