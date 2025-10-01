@@ -107,9 +107,27 @@ object PromptManager {
             systemMessagesStartup.add(l3ExecutionResult.systemMessage)
         }
 
-        // L4 SystemMessages go after user message
-        if (l4ExecutionResult.systemMessage.commandResults.isNotEmpty()) {
-            systemMessagesLevel4.add(l4ExecutionResult.systemMessage)
+        // L4 SystemMessage: Build specific message for last user message enrichments
+        // Reuse results from L1-L4 executions (commands may have been deduplicated)
+        val newLevel4Commands = getNewLevel4Commands(session, context)
+        if (newLevel4Commands.isNotEmpty()) {
+            val newL4Deduplicated = QueryDeduplicator.deduplicateCommands(newLevel4Commands)
+            val systemMessageForNewMessage = buildSystemMessageForCommands(
+                commands = newL4Deduplicated,
+                allExecutedCommands = mapOf(
+                    "Level 1" to l1Deduplicated,
+                    "Level 2" to l2Deduplicated,
+                    "Level 3" to l3Deduplicated,
+                    "Level 4" to allDeduplicated
+                ),
+                executionResults = listOf(l4ExecutionResult, l3ExecutionResult, l2ExecutionResult, l1ExecutionResult),
+                messageType = SystemMessageType.DATA_ADDED,
+                s = s
+            )
+
+            if (systemMessageForNewMessage.commandResults.isNotEmpty()) {
+                systemMessagesLevel4.add(systemMessageForNewMessage)
+            }
         }
 
         // 4. Build Level 1 static doc
@@ -337,42 +355,74 @@ object PromptManager {
      * Extract Level 4 commands from session message history using new pipeline
      * Extracts EnrichmentBlocks from user messages and generates DataCommands
      */
-    private fun getLevel4Commands(session: AISession, context: Context): List<DataCommand> {
-        LogManager.aiPrompt("getLevel4Commands() for session ${session.id}", "DEBUG")
-
+    /**
+     * Extract enrichment commands from a single message
+     * Used to get new commands for SystemMessage storage
+     */
+    private fun getEnrichmentCommandsFromMessage(message: SessionMessage, isRelative: Boolean, context: Context): List<DataCommand> {
         val commands = mutableListOf<DataCommand>()
         val enrichmentProcessor = EnrichmentProcessor(context)
 
-        // Determine if we should use relative periods based on session type
-        val isRelative = session.type == SessionType.AUTOMATION
+        if (message.sender != MessageSender.USER || message.richContent == null) {
+            return emptyList()
+        }
 
-        // Extract EnrichmentBlocks from all user messages
-        for (message in session.messages) {
-            if (message.sender != MessageSender.USER) continue
-            if (message.richContent == null) continue
-
-            // Iterate through message segments to find EnrichmentBlocks
-            for (segment in message.richContent.segments) {
-                if (segment is com.assistant.core.ai.data.MessageSegment.EnrichmentBlock) {
-                    try {
-                        // Generate commands from enrichment block
-                        val enrichmentCommands = enrichmentProcessor.generateCommands(
-                            type = segment.type,
-                            config = segment.config,
-                            isRelative = isRelative
-                        )
-
-                        commands.addAll(enrichmentCommands)
-                        LogManager.aiPrompt("Generated ${enrichmentCommands.size} commands from ${segment.type} enrichment", "DEBUG")
-
-                    } catch (e: Exception) {
-                        LogManager.aiPrompt("Failed to generate commands from enrichment: ${e.message}", "ERROR", e)
-                    }
+        // Iterate through message segments to find EnrichmentBlocks
+        for (segment in message.richContent.segments) {
+            if (segment is com.assistant.core.ai.data.MessageSegment.EnrichmentBlock) {
+                try {
+                    val enrichmentCommands = enrichmentProcessor.generateCommands(
+                        type = segment.type,
+                        config = segment.config,
+                        isRelative = isRelative
+                    )
+                    commands.addAll(enrichmentCommands)
+                } catch (e: Exception) {
+                    LogManager.aiPrompt("Failed to generate commands from enrichment: ${e.message}", "ERROR", e)
                 }
             }
         }
 
-        LogManager.aiPrompt("Level 4: Generated ${commands.size} total commands from enrichments", "DEBUG")
+        return commands
+    }
+
+    /**
+     * Get Level 4 commands from all user messages (for prompt content)
+     * Returns all enrichment commands across all messages for complete context
+     */
+    private fun getLevel4Commands(session: AISession, context: Context): List<DataCommand> {
+        LogManager.aiPrompt("getLevel4Commands() for session ${session.id}", "DEBUG")
+
+        val commands = mutableListOf<DataCommand>()
+        val isRelative = session.type == SessionType.AUTOMATION
+
+        // Extract EnrichmentBlocks from all user messages
+        for (message in session.messages) {
+            commands.addAll(getEnrichmentCommandsFromMessage(message, isRelative, context))
+        }
+
+        LogManager.aiPrompt("Level 4: Generated ${commands.size} total commands from all enrichments", "DEBUG")
+        return commands
+    }
+
+    /**
+     * Get Level 4 commands from ONLY the last user message (for SystemMessage)
+     * Returns only new enrichment commands from the current message
+     */
+    private fun getNewLevel4Commands(session: AISession, context: Context): List<DataCommand> {
+        LogManager.aiPrompt("getNewLevel4Commands() for last user message", "DEBUG")
+
+        val isRelative = session.type == SessionType.AUTOMATION
+
+        // Find the last USER message
+        val lastUserMessage = session.messages.lastOrNull { it.sender == MessageSender.USER }
+        if (lastUserMessage == null) {
+            LogManager.aiPrompt("No user messages found in session", "DEBUG")
+            return emptyList()
+        }
+
+        val commands = getEnrichmentCommandsFromMessage(lastUserMessage, isRelative, context)
+        LogManager.aiPrompt("Level 4: Generated ${commands.size} new commands from last user message", "DEBUG")
         return commands
     }
 
@@ -589,14 +639,56 @@ object PromptManager {
                     "[USER] $preview$enrichmentSummary"
                 }
                 "AI" -> {
-                    // Extract AI message preview and command counts
-                    val aiMessageJson = msg["aiMessageJson"] as? String ?: ""
-                    val preview = aiMessageJson.take(50) + if (aiMessageJson.length > 50) "..." else ""
+                    // Parse AI message to extract structured summary
+                    val aiMessageJson = msg["aiMessageJson"] as? String
 
-                    // TODO: Parse aiMessageJson to count dataCommands/actionCommands
-                    val commandsSummary = "" // Will be implemented when AI commands are executed
+                    if (aiMessageJson != null && aiMessageJson.isNotEmpty()) {
+                        try {
+                            val aiMsg = JSONObject(aiMessageJson)
+                            val parts = mutableListOf<String>()
 
-                    "[AI] $preview$commandsSummary"
+                            // Extract preText
+                            val preText = aiMsg.optString("preText", null)
+                            if (preText != null && preText.isNotEmpty()) {
+                                val preview = preText.take(50) + if (preText.length > 50) "..." else ""
+                                parts.add("preText: $preview")
+                            }
+
+                            // Count dataCommands
+                            val dataCommandsArray = aiMsg.optJSONArray("dataCommands")
+                            if (dataCommandsArray != null && dataCommandsArray.length() > 0) {
+                                parts.add("${dataCommandsArray.length()} commandes data")
+                            }
+
+                            // Count actionCommands
+                            val actionCommandsArray = aiMsg.optJSONArray("actionCommands")
+                            if (actionCommandsArray != null && actionCommandsArray.length() > 0) {
+                                parts.add("${actionCommandsArray.length()} commandes action")
+                            }
+
+                            // Extract postText
+                            val postText = aiMsg.optString("postText", null)
+                            if (postText != null && postText.isNotEmpty()) {
+                                val preview = postText.take(50) + if (postText.length > 50) "..." else ""
+                                parts.add("postText: $preview")
+                            }
+
+                            // Extract communicationModule type
+                            val commModule = aiMsg.optJSONObject("communicationModule")
+                            if (commModule != null) {
+                                val moduleType = commModule.optString("type", "Unknown")
+                                parts.add("Module: $moduleType")
+                            }
+
+                            "[AI] ${parts.joinToString(" / ")}"
+                        } catch (e: Exception) {
+                            LogManager.aiPrompt("Failed to parse aiMessageJson for summary: ${e.message}", "WARN")
+                            val preview = aiMessageJson.take(50) + if (aiMessageJson.length > 50) "..." else ""
+                            "[AI] $preview"
+                        }
+                    } else {
+                        "[AI] (empty message)"
+                    }
                 }
                 "SYSTEM" -> {
                     // Parse systemMessageJson to extract summary
@@ -812,6 +904,131 @@ data class PromptResult(
     val level4Tokens: Int,
     val totalTokens: Int
 )
+
+/**
+ * Build SystemMessage for specific commands by reusing results from previous executions
+ * Handles command inclusion logic (e.g., specific query included in broader query)
+ *
+ * @param commands Commands from the current message (deduplicated)
+ * @param allExecutedCommands Map of level name to executed commands (for ID matching)
+ * @param executionResults Execution results from L4, L3, L2, L1 (in that order)
+ * @param messageType Type of system message to generate
+ * @param s Strings context for localization
+ */
+private fun buildSystemMessageForCommands(
+    commands: List<DataCommand>,
+    allExecutedCommands: Map<String, List<DataCommand>>,
+    executionResults: List<CommandExecutionResult>,
+    messageType: SystemMessageType,
+    s: StringsContext
+): SystemMessage {
+    val commandResults = mutableListOf<com.assistant.core.ai.data.CommandResult>()
+    var successCount = 0
+    var failedCount = 0
+
+    for (cmd in commands) {
+        var found = false
+
+        // Step 1: Try to find exact match by ID using executed commands from each level
+        for ((levelName, executedCommands) in allExecutedCommands) {
+            val matchingCommand = executedCommands.find { it.id == cmd.id }
+
+            if (matchingCommand != null) {
+                // Found exact match - find corresponding execution result
+                val levelIndex = when (levelName) {
+                    "Level 4" -> 0
+                    "Level 3" -> 1
+                    "Level 2" -> 2
+                    "Level 1" -> 3
+                    else -> -1
+                }
+
+                if (levelIndex >= 0 && levelIndex < executionResults.size) {
+                    val execResult = executionResults[levelIndex]
+
+                    // Find the corresponding result (by command type)
+                    val matchingResult = execResult.systemMessage.commandResults.find { result ->
+                        result.command.contains(cmd.type, ignoreCase = true)
+                    }
+
+                    if (matchingResult != null) {
+                        // Exact match found - reuse result as-is
+                        commandResults.add(matchingResult)
+                        if (matchingResult.status == CommandStatus.SUCCESS) successCount++
+                        else if (matchingResult.status == CommandStatus.FAILED) failedCount++
+                        found = true
+                        break
+                    }
+                }
+            }
+        }
+
+        if (!found) {
+            // Step 2: Try to find including command using QueryDeduplicator logic
+            for ((levelName, executedCommands) in allExecutedCommands) {
+                for (execCmd in executedCommands) {
+                    // Use QueryDeduplicator to check if execCmd includes cmd
+                    // Note: This currently returns false (not implemented), but when implemented
+                    // it will properly detect command inclusion
+                    val isIncluded = QueryDeduplicator.commandIncludes(execCmd, cmd)
+
+                    if (isIncluded) {
+                        // Command is included in broader command - reference it
+                        commandResults.add(
+                            com.assistant.core.ai.data.CommandResult(
+                                command = cmd.type,
+                                status = CommandStatus.CACHED,
+                                details = "Résultats inclus dans commande précédente ($levelName): ${execCmd.type}"
+                            )
+                        )
+                        found = true
+                        break
+                    }
+                }
+
+                if (found) break
+            }
+        }
+
+        if (!found) {
+            // No match found at all - should not happen in normal flow
+            commandResults.add(
+                com.assistant.core.ai.data.CommandResult(
+                    command = cmd.type,
+                    status = CommandStatus.FAILED,
+                    details = "Command result not found in execution history"
+                )
+            )
+            failedCount++
+        }
+    }
+
+    // Generate summary using same logic as CommandExecutor
+    val summary = when (messageType) {
+        SystemMessageType.DATA_ADDED -> {
+            when {
+                commandResults.isEmpty() -> s.shared("ai_system_no_commands")
+                failedCount == 0 -> s.shared("ai_system_queries_success").format(successCount)
+                successCount == 0 -> s.shared("ai_system_queries_all_failed").format(failedCount)
+                else -> s.shared("ai_system_queries_partial").format(successCount, failedCount)
+            }
+        }
+        SystemMessageType.ACTIONS_EXECUTED -> {
+            when {
+                commandResults.isEmpty() -> s.shared("ai_system_no_actions")
+                failedCount == 0 -> s.shared("ai_system_actions_success").format(successCount)
+                successCount == 0 -> s.shared("ai_system_actions_all_failed").format(failedCount)
+                else -> s.shared("ai_system_actions_partial").format(successCount, failedCount)
+            }
+        }
+    }
+
+    return SystemMessage(
+        type = messageType,
+        commandResults = commandResults,
+        summary = summary
+    )
+}
 
 /**
  * Extension function to convert JSONObject to Map

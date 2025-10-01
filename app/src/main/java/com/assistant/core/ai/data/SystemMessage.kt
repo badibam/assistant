@@ -86,5 +86,6 @@ data class CommandResult(
 enum class CommandStatus {
     SUCCESS,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    CACHED  // Command was deduplicated, data already available from previous execution
 }

@@ -100,8 +100,10 @@ object QueryDeduplicator {
     /**
      * Check if command1 includes/supersedes command2 based on business logic
      * Implements smart inclusion rules to avoid redundant commands
+     *
+     * Made internal to allow PromptManager to use it for SystemMessage construction
      */
-    private fun commandIncludes(command1: DataCommand, command2: DataCommand): Boolean {
+    internal fun commandIncludes(command1: DataCommand, command2: DataCommand): Boolean {
         // TODO: Implement business logic inclusion rules for DataCommand
         // - Zone config commands include tool config commands for same zone
         // - Full tool data includes sample data for same instance
