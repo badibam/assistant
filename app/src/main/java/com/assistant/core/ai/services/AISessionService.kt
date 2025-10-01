@@ -314,20 +314,10 @@ class AISessionService(private val context: Context) : ExecutableService {
             val messageId = UUID.randomUUID().toString()
 
             // Extract content based on message type
+            // richContent is already serialized JSON from RichMessage.toJson()
             val richContentJson = params.optString("richContent")?.takeIf { it.isNotEmpty() }
             val textContent = params.optString("textContent")?.takeIf { it.isNotEmpty() }
             val aiMessageJson = params.optString("aiMessageJson")?.takeIf { it.isNotEmpty() }
-
-            // TODO: For now, store richContent as simple text in richContentJson
-            // Later this should be proper RichMessage JSON serialization
-            val finalRichContentJson = when {
-                richContentJson != null -> {
-                    // TODO: Convert simple text to proper RichMessage JSON structure
-                    LogManager.aiSession("TODO: Convert richContent text to RichMessage JSON structure", "DEBUG")
-                    """{"linearText":"$richContentJson","segments":[],"dataCommands":[]}"""
-                }
-                else -> null
-            }
 
             // Create message entity
             val messageEntity = SessionMessageEntity(
@@ -335,7 +325,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 sessionId = sessionId,
                 timestamp = timestamp,
                 sender = sender,
-                richContentJson = finalRichContentJson,
+                richContentJson = richContentJson, // Store RichMessage JSON as-is (already serialized)
                 textContent = textContent,
                 aiMessageJson = aiMessageJson,
                 aiMessageParsedJson = null, // TODO: Parse AIMessage when implementing

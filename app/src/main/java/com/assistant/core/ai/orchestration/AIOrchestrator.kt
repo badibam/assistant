@@ -48,11 +48,11 @@ class AIOrchestrator(private val context: Context) {
             try {
                 // Level 4 enrichments are now extracted from message history during prompt generation
 
-                // 2. Store user message via coordinator
+                // 2. Store user message via coordinator with full RichMessage serialization
                 val userMessageResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
                     "sessionId" to sessionId,
                     "sender" to MessageSender.USER.name,
-                    "richContent" to richMessage.linearText, // Simplified for now
+                    "richContent" to richMessage.toJson(), // Store complete RichMessage as JSON
                     "timestamp" to System.currentTimeMillis()
                 ))
 
@@ -60,21 +60,13 @@ class AIOrchestrator(private val context: Context) {
                     return@withContext OperationResult.error(s.shared("ai_error_store_user_message").format(userMessageResult.error ?: ""))
                 }
 
-                // 3. Build prompt via PromptManager - TODO: Load actual session
-                // For now, create a mock session for compilation
-                val mockSession = AISession(
-                    id = sessionId,
-                    name = s.shared("ai_session_default_name"),
-                    type = SessionType.CHAT,
-                    providerId = "claude",
-                    providerSessionId = "",
-                    schedule = null, // No schedule for CHAT sessions
-                    createdAt = System.currentTimeMillis(),
-                    lastActivity = System.currentTimeMillis(),
-                    messages = emptyList(),
-                    isActive = true
-                )
-                val promptResult = PromptManager.buildPrompt(mockSession, context)
+                // 3. Load actual session with messages to build prompt
+                val session = loadSession(sessionId)
+                if (session == null) {
+                    return@withContext OperationResult.error(s.shared("ai_error_load_session").format("Session not found"))
+                }
+
+                val promptResult = PromptManager.buildPrompt(session, context)
 
                 // 4. Token validation
                 val tokenLimit = TokenCalculator.getTokenLimit(context)
@@ -300,21 +292,15 @@ class AIOrchestrator(private val context: Context) {
 
     /**
      * Parse RichMessage from JSON string
-     * TODO: Implement complete JSON deserialization with segment parsing
-     * Currently returns stub implementation for compilation
+     * Uses RichMessage.fromJson() for complete deserialization
      */
     private fun parseRichMessageFromJson(jsonString: String): RichMessage? {
         return try {
-            // TODO: Implement proper JSON parsing for RichMessage
-            // Should parse segments, linearText, and dataCommands from JSON
-            LogManager.aiSession("TODO: Implement RichMessage JSON parsing for: ${jsonString.take(50)}...", "DEBUG")
-
-            // Stub implementation for now
-            RichMessage(
-                segments = emptyList(), // TODO: Parse MessageSegment list from JSON
-                linearText = "Restored message content", // TODO: Extract from JSON
-                dataCommands = emptyList() // TODO: Parse DataCommand list from JSON
-            )
+            val richMessage = RichMessage.fromJson(jsonString)
+            if (richMessage == null) {
+                LogManager.aiSession("Failed to deserialize RichMessage from JSON: ${jsonString.take(50)}...", "WARN")
+            }
+            richMessage
         } catch (e: Exception) {
             LogManager.aiSession("Failed to parse RichMessage JSON: ${e.message}", "WARN", e)
             null
