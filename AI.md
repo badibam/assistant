@@ -108,7 +108,7 @@ Interface vers providers externes, reçoit prompt complet assemblé.
 
 ### Types de Résultats (voir CORE.md)
 - **OperationResult** : Services avec `.success: Boolean`
-- **CommandResult** : Coordinator avec `.status: CommandStatus`
+- **CommandResult** : Coordinator avec `.status: CommandStatus` (SUCCESS, FAILED, CANCELLED, CACHED)
 
 ### Structures de Commands
 
@@ -431,7 +431,9 @@ data class SystemMessage(
 **SystemMessages Level4** :
 - Générés après chaque message user avec enrichissements
 - Stockés après le message user
-- Documentent les données chargées pour ce message spécifique
+- Documentent UNIQUEMENT enrichissements du dernier message (réutilisation résultats L1-L4)
+- Match exact (ID) → réutilise résultat tel quel
+- Inclusion (QueryDeduplicator.commandIncludes()) → status CACHED avec référence commande englobante
 
 **SystemMessages AI** :
 - Générés par AIOrchestrator.processAICommands() après exécution des commandes IA
