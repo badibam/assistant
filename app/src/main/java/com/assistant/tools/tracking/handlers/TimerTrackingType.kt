@@ -23,7 +23,7 @@ class TimerTrackingType : TrackingTypeHandler {
             put("activity", activity.trim())
             put("duration_seconds", durationSeconds)
             put("type", "timer")
-            put("raw", formatDuration(activity.trim(), durationSeconds))
+            put("raw", formatDuration(activity.trim(), durationSeconds, context))
         }.toString()
     }
     
@@ -54,17 +54,18 @@ class TimerTrackingType : TrackingTypeHandler {
     /**
      * Format duration for display
      */
-    private fun formatDuration(activity: String, seconds: Int): String {
+    private fun formatDuration(activity: String, seconds: Int, context: Context): String {
         val h = seconds / 3600
         val m = (seconds % 3600) / 60
-        val s = seconds % 60
-        
+        val sec = seconds % 60
+
         val duration = buildString {
             if (h > 0) append("${h}h ")
             if (m > 0) append("${m}m ")
-            if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+            if (sec > 0 || (h == 0 && m == 0)) append("${sec}s")
         }.trim()
-        
-        return "$activity: $duration"
+
+        val strings = Strings.`for`(context = context)
+        return strings.tool("display_timer_format").format(activity, duration)
     }
 }

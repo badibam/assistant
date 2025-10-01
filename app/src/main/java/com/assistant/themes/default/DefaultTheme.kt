@@ -1054,8 +1054,10 @@ object DefaultTheme : ThemeContract {
         onIncrement: (Int) -> Unit,
         required: Boolean
     ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
         val displayLabel = if (required) label else "$label (optionnel)"
-        
+
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -1065,7 +1067,7 @@ object DefaultTheme : ThemeContract {
             // Increment buttons  
             if (incrementButtons.isNotEmpty()) {
                 androidx.compose.material3.Text(
-                    text = "Ajouter :",
+                    text = s.shared("ui_form_list_add_label"),
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                     color = CurrentTheme.getCurrentColorScheme().onSurface
                 )
@@ -1095,7 +1097,7 @@ object DefaultTheme : ThemeContract {
             // Decrement buttons
             if (decrementButtons.isNotEmpty()) {
                 androidx.compose.material3.Text(
-                    text = "Retirer :",
+                    text = s.shared("ui_form_list_remove_label"),
                     style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
                     color = CurrentTheme.getCurrentColorScheme().onSurface
                 )

@@ -144,7 +144,7 @@ fun AIFloatingChat(
                                         val sessionToUse = activeSession ?: run {
                                             // Create new session on first message
                                             LogManager.aiUI("Creating new session for first message")
-                                            val sessionId = aiOrchestrator.createSession("New Chat", SessionType.CHAT)
+                                            val sessionId = aiOrchestrator.createSession(s.shared("ai_session_default_name"), SessionType.CHAT)
                                             aiOrchestrator.setActiveSession(sessionId)
                                             val newSession = aiOrchestrator.loadSession(sessionId)
                                             activeSession = newSession

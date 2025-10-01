@@ -12,6 +12,7 @@ import org.json.JSONObject
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandResult
 import com.assistant.core.commands.CommandStatus
+import com.assistant.core.strings.Strings
 
 /**
  * Extensions pour l'intégration du DataNavigator avec l'architecture existante
@@ -184,9 +185,10 @@ suspend fun DataNavigator.getAvailableFields(toolPath: String, context: Context)
         val fields = mutableListOf<SchemaNode>()
 
         // 1. Add common fields (from ToolDataEntity structure)
+        val s = Strings.`for`(context = context)
         fields.add(SchemaNode(
             path = "$toolPath.name",
-            displayName = "Nom de l'entrée",
+            displayName = s.shared("data_navigator_entry_name_field"),
             type = NodeType.FIELD,
             hasChildren = false,
             fieldType = "string"

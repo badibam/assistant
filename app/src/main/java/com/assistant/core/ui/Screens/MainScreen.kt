@@ -214,7 +214,7 @@ fun MainScreen() {
                 allowInstanceSelection = false,
                 allowFieldSelection = true,
                 allowValueSelection = false,
-                title = "Explorateur de données",
+                title = s.shared("data_navigator_title"),
                 showQueryPreview = true
             ),
             onDismiss = { showZoneScopeSelector = false },

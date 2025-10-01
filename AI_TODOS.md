@@ -1,4 +1,4 @@
-# TODOs Système IA - 114 items
+# TODOs Système IA
 
 ## data/AIContext.kt (1)
 - Line 20: Implémenter avec vrais services
@@ -16,7 +16,7 @@
 - Line 97: implement OrganizeEnrichmentSchema
 - Line 109: implement DocumentEnrichmentSchema
 
-## enrichments/EnrichmentProcessor.kt (16) ✅ 2/18 DONE
+## enrichments/EnrichmentProcessor.kt (14)
 - Line 155: resolve tool instance name from ID for better readability
 - Line 173: resolve tool instance name from ID for better readability
 - Line 177: Implement ORGANIZE enrichment type (📁) - lower priority
@@ -30,9 +30,7 @@
 - Line 342: Implement CREATE enrichment with schema-driven tooltype selection
 - Line 361: Get schema ID from tool instance config - for now using placeholder
 - Line 365: resolve from tool instance (config_schema_id)
-- ✅ Line 396: Implement relative period encoding for automation (DONE)
 - Line 421: Implement proper period formatting based on timestamps
-- ✅ ADDED: Implement absolute period timestamp calculation for CHAT mode (DONE)
 
 ## orchestration/AIOrchestrator.kt (18)
 - Line 61: Load actual session
@@ -56,37 +54,11 @@
 - Line 334: Extract postText from JSON
 - Line 335: Parse CommunicationModule from JSON
 
-## processing/AICommandProcessor.kt (0) ✅ DONE
-- ✅ Line 30-36: AI command transformation to ExecutableCommand (DONE - object singleton)
-- ✅ Transformation types abstraits (TOOL_DATA, CREATE_DATA) → resource.operation
-- ✅ Conversion JSONObject params → Map<String, Any>
-- ✅ Mapping batch operations par défaut pour données
-
-## processing/UserCommandProcessor.kt (2) ✅ 5/7 DONE
-- ✅ Line 85: Transform TOOL_CONFIG command to tools.get call
-- ✅ Line 95: Transform TOOL_DATA command to tool_data.get call
+## processing/UserCommandProcessor.kt (2)
 - Line 107: Transform TOOL_STATS command to tool_data.stats call (LOW PRIORITY - stub)
 - Line 117: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling (LOW PRIORITY - stub)
-- ✅ Line 127: Transform ZONE_CONFIG command to zones.get call
-- ✅ Line 136: Transform ZONES command to zones.list call
-- ✅ Line 145: Transform TOOL_INSTANCES command to tools.list call
 
-## prompts/CommandExecutor.kt (0) ✅ DONE
-- ✅ CommandExecutionResult structure with promptResults + systemMessage
-- ✅ Format results properly for prompt inclusion (JSON metadata first)
-- ✅ Generate single SystemMessage per command series
-- ✅ Support batch operations (batch_create, batch_update, batch_delete)
-- ✅ Single execution point for User and AI commands
-
-## prompts/PromptManager.kt (3) ✅ 8/11 DONE
-- ✅ Line 27: Implement new command pipeline integration (DONE)
-- ✅ Line 34: PromptManager.buildPrompt() - new pipeline integration (DONE)
-- ✅ Line 39: Implement new command pipeline (DONE)
-- ✅ Line 50: Replace DataQuery builders with DataCommand builders (DONE)
-- ✅ Line 56-57: Implement Level 1 command generation (DONE)
-- ✅ Line 61: Implement Level 2 and Level 3 command builders (DONE with always_send)
-- ✅ Line 69: Implement new Level 4 pipeline (DONE)
-- ✅ Line 75: getLevel4Commands() - new pipeline (DONE)
+## prompts/PromptManager.kt (3)
 - Line 100: Implement according to "Send history to AI" setting
 - Line 165: better estimation
 - Line 177: Implement in Phase 2A+ when enrichments need it
@@ -144,35 +116,3 @@
 ## utils/TokenCalculator.kt (2)
 - Line 83: Get provider-specific limits from active provider configuration
 - Line 140: Get provider-specific overrides from provider configuration
-
----
-
-## Regroupement par priorité/thématique
-
-### 🔴 CRITIQUE - Pipeline de base ✅ TERMINÉ
-- ✅ **PromptManager.kt**: Intégration complète pipeline commandes (8/11 done, 3 minor remaining)
-- ✅ **UserCommandProcessor.kt**: Transformations commandes utilisateur (5/7 done, 2 stubs low priority)
-- ✅ **AICommandProcessor.kt**: Transformation commandes IA (DONE)
-- ✅ **CommandExecutor.kt**: Point unique exécution + SystemMessage generation (DONE)
-- ✅ **QueryDeduplicator.kt**: Déduplication progressive pour cache API (DONE)
-- ✅ **ToolDataService.kt**: Opérations batch (batch_create, batch_update, batch_delete) (DONE)
-- ✅ **BaseSchemas.kt**: Champ always_send pour Level 2 AI (DONE)
-
-### 🟠 IMPORTANT - Données réelles
-- **AIProviderConfigService.kt**: Persistance DB configurations (5 opérations)
-- **AISessionService.kt**: Sérialisation RichMessage/AIMessage (6 items)
-- **orchestration/AIOrchestrator.kt**: Parsing JSON messages (18 items)
-- **EnrichmentProcessor.kt**: Résolution schema IDs et tool instance names (10 items)
-
-### 🟡 MOYEN - Provider IA réel
-- **ClaudeProvider.kt**: API calls réelles (4 items)
-- **AIProviderRegistry.kt**: Discovery pattern et config (4 items)
-- **AIClient.kt**: Parsing communication modules (1 item)
-
-### 🟢 FAIBLE PRIORITÉ - Features avancées
-- **Enrichment.kt**: Schémas enrichissements (5 types)
-- **RichComposer.kt**: Edition blocs + recalcul tokens (9 items)
-- **SessionMessage.kt**: Support automation (1 item)
-- **EnrichmentProcessor.kt**: ORGANIZE et DOCUMENT types (2 items)
-- **TokenCalculator.kt**: Overrides provider-specific (2 items)
-- **AIFloatingChat.kt**: Error UI (1 item)

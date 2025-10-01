@@ -234,5 +234,7 @@
     <string name="scale_max_default">Élevé</string>
     <string name="scale_range_separator"> à </string>
 
-    
+    <!-- DISPLAY FORMAT - Affichage formaté des données -->
+    <string name="display_timer_format">%1$s: %2$s</string>
+
 </resources>

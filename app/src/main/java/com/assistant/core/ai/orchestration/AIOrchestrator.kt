@@ -64,7 +64,7 @@ class AIOrchestrator(private val context: Context) {
                 // For now, create a mock session for compilation
                 val mockSession = AISession(
                     id = sessionId,
-                    name = "Chat Session",
+                    name = s.shared("ai_session_default_name"),
                     type = SessionType.CHAT,
                     providerId = "claude",
                     providerSessionId = "",

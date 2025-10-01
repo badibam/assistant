@@ -7,6 +7,7 @@ import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.NodeType
 import com.assistant.core.navigation.data.ContextualDataResult
 import com.assistant.core.navigation.data.DataResultStatus
+import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaResolver
 import com.assistant.core.utils.LogManager
@@ -24,6 +25,7 @@ import kotlinx.coroutines.withContext
 class DataNavigator(private val context: Context) {
 
     private val coordinator = Coordinator(context)
+    private val s = Strings.`for`(context = context)
 
     /**
      * Récupère les nœuds racine (zones)
@@ -39,7 +41,7 @@ class DataNavigator(private val context: Context) {
                 val zones = result.data?.get("zones") as? List<Map<String, Any>> ?: emptyList()
                 zones.map { zone ->
                     val zoneId = zone["id"] as? String ?: ""
-                    val zoneName = zone["name"] as? String ?: "Zone sans nom"
+                    val zoneName = zone["name"] as? String ?: s.shared("data_navigator_unnamed_zone")
 
                     SchemaNode(
                         path = "zones.$zoneId",

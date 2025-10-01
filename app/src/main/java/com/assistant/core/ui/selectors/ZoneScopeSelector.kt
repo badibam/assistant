@@ -30,6 +30,7 @@ import com.assistant.core.navigation.data.NodeType
 import com.assistant.core.navigation.data.ContextualDataResult
 import com.assistant.core.navigation.data.DataResultStatus
 import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.TextType
@@ -593,9 +594,10 @@ private fun buildQueryDescription(
     selectedValues: List<String>,
     fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
     timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection()
+    nameSelection: NameSelection = NameSelection(),
+    s: StringsContext
 ): String {
-    if (selectionChain.isEmpty()) return "Aucune sélection"
+    if (selectionChain.isEmpty()) return s.shared("scope_no_selection_simple")
 
     // Use zone name and tool instance name instead of generic path
     val zoneName = selectionChain.find { it.selectedNode.type == NodeType.ZONE }?.selectedValue
@@ -639,14 +641,14 @@ private fun buildQueryDescription(
                 FieldSelectionType.TIMESTAMP -> {
                     when {
                         timestampSelection.isComplete -> {
-                            val minDesc = formatTimestampForDescription(timestampSelection.minPeriodType, timestampSelection.minPeriod, timestampSelection.minCustomDateTime)
-                            val maxDesc = formatTimestampForDescription(timestampSelection.maxPeriodType, timestampSelection.maxPeriod, timestampSelection.maxCustomDateTime)
+                            val minDesc = formatTimestampForDescription(timestampSelection.minPeriodType, timestampSelection.minPeriod, timestampSelection.minCustomDateTime, s)
+                            val maxDesc = formatTimestampForDescription(timestampSelection.maxPeriodType, timestampSelection.maxPeriod, timestampSelection.maxCustomDateTime, s)
                             "période du $minDesc au $maxDesc"
                         }
                         timestampSelection.minPeriodType != null || timestampSelection.maxPeriodType != null -> {
-                            "sélection temporelle partielle"
+                            s.shared("scope_temporal_partial")
                         }
-                        else -> "toutes les données temporelles"
+                        else -> s.shared("scope_temporal_all")
                     }
                 }
                 FieldSelectionType.NAME -> {
@@ -658,27 +660,27 @@ private fun buildQueryDescription(
                                 }
                                 "noms: ${truncatedNames.joinToString(", ")}"
                             } else {
-                                "${nameSelection.selectedNames.size} noms sélectionnés"
+                                s.shared("scope_names_selected").format(nameSelection.selectedNames.size)
                             }
                         }
-                        nameSelection.availableNames.isNotEmpty() -> "tous les noms disponibles"
-                        else -> "tous les noms"
+                        nameSelection.availableNames.isNotEmpty() -> s.shared("scope_names_all_available")
+                        else -> s.shared("scope_names_all")
                     }
                 }
                 FieldSelectionType.NONE -> {
                     when {
-                        selectedValues.isEmpty() -> "toutes les valeurs"
+                        selectedValues.isEmpty() -> s.shared("scope_values_all")
                         selectedValues.size == 1 -> {
                             val value = selectedValues.first()
-                            "valeur: ${if (value.length > 30) "${value.take(27)}..." else value}"
+                            s.shared("scope_value_single").format(if (value.length > 30) "${value.take(27)}..." else value)
                         }
                         selectedValues.size <= 3 -> {
                             val truncatedValues = selectedValues.map { value ->
                                 if (value.length > 20) "${value.take(17)}..." else value
                             }
-                            "valeurs: ${truncatedValues.joinToString(", ")}"
+                            s.shared("scope_values_truncated").format(truncatedValues.joinToString(", "))
                         }
-                        else -> "${selectedValues.size} valeurs sélectionnées"
+                        else -> s.shared("scope_values_count").format(selectedValues.size)
                     }
                 }
             }
@@ -693,7 +695,7 @@ private fun buildQueryDescription(
     }
 }
 
-private fun formatTimestampForDescription(periodType: PeriodType?, period: Period?, customDateTime: Long?): String {
+private fun formatTimestampForDescription(periodType: PeriodType?, period: Period?, customDateTime: Long?, s: StringsContext): String {
     return when {
         period != null -> {
             // Use existing period system to format
@@ -710,14 +712,14 @@ private fun formatTimestampForDescription(periodType: PeriodType?, period: Perio
         }
         periodType != null -> {
             when (periodType) {
-                PeriodType.DAY -> "jour sélectionné"
-                PeriodType.WEEK -> "semaine sélectionnée"
-                PeriodType.MONTH -> "mois sélectionné"
-                PeriodType.YEAR -> "année sélectionnée"
-                else -> "période sélectionnée"
+                PeriodType.DAY -> s.shared("scope_period_day_selected")
+                PeriodType.WEEK -> s.shared("scope_period_week_selected")
+                PeriodType.MONTH -> s.shared("scope_period_month_selected")
+                PeriodType.YEAR -> s.shared("scope_period_year_selected")
+                else -> s.shared("scope_period_generic_selected")
             }
         }
-        else -> "non défini"
+        else -> s.shared("scope_undefined")
     }
 }
 
@@ -726,14 +728,15 @@ private fun buildSqlQuery(
     selectedValues: List<String>,
     fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
     timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection()
+    nameSelection: NameSelection = NameSelection(),
+    s: StringsContext
 ): String {
-    if (selectionChain.isEmpty()) return "-- Aucune sélection"
+    if (selectionChain.isEmpty()) return s.shared("scope_no_selection_prefix")
 
     val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
     val fieldStep = selectionChain.lastOrNull { it.selectedNode.type == NodeType.FIELD } // Last field in chain
 
-    if (toolStep == null) return "-- Outil non sélectionné"
+    if (toolStep == null) return s.shared("scope_tool_not_selected")
 
     // Use unified table structure
     val tableName = "tool_data"

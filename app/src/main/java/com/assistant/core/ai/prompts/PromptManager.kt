@@ -6,6 +6,8 @@ import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.QueryDeduplicator
 import com.assistant.core.ai.processing.UserCommandProcessor
 import com.assistant.core.ai.enrichments.EnrichmentProcessor
+import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
@@ -35,6 +37,7 @@ object PromptManager {
     suspend fun buildPrompt(session: AISession, context: Context): PromptResult {
         LogManager.aiPrompt("Building 4-level prompt for session ${session.id}", "INFO")
 
+        val s = Strings.`for`(context = context)
         val userCommandProcessor = UserCommandProcessor(context)
         val commandExecutor = CommandExecutor(context)
 
@@ -84,7 +87,8 @@ object PromptManager {
             level1Commands, l1Deduplicated, l1ExecutionResult,
             level2Commands, l2OnlyCommands, l2ExecutionResult,
             level3Commands, l3OnlyCommands, l3ExecutionResult,
-            level4Commands, l4OnlyCommands, l4ExecutionResult
+            level4Commands, l4OnlyCommands, l4ExecutionResult,
+            context
         )
 
         // 3. Build Level 1 static doc
@@ -460,20 +464,22 @@ $fullPrompt
         l1Original: List<DataCommand>, l1Executed: List<DataCommand>, l1Result: CommandExecutionResult,
         l2Original: List<DataCommand>, l2Executed: List<DataCommand>, l2Result: CommandExecutionResult,
         l3Original: List<DataCommand>, l3Executed: List<DataCommand>, l3Result: CommandExecutionResult,
-        l4Original: List<DataCommand>, l4Executed: List<DataCommand>, l4Result: CommandExecutionResult
+        l4Original: List<DataCommand>, l4Executed: List<DataCommand>, l4Result: CommandExecutionResult,
+        context: Context
     ) {
+        val s = Strings.`for`(context = context)
         val sb = StringBuilder()
         sb.appendLine("=== PROMPT GENERATION SUMMARY ===")
         sb.appendLine()
 
         // Level 1
-        appendLevelSummary(sb, "Level 1: System Documentation", l1Original, l1Executed, l1Result)
+        appendLevelSummary(sb, "Level 1: System Documentation", l1Original, l1Executed, l1Result, s)
         // Level 2
-        appendLevelSummary(sb, "Level 2: User Data", l2Original, l2Executed, l2Result)
+        appendLevelSummary(sb, "Level 2: User Data", l2Original, l2Executed, l2Result, s)
         // Level 3
-        appendLevelSummary(sb, "Level 3: Application State", l3Original, l3Executed, l3Result)
+        appendLevelSummary(sb, "Level 3: Application State", l3Original, l3Executed, l3Result, s)
         // Level 4
-        appendLevelSummary(sb, "Level 4: Session Data", l4Original, l4Executed, l4Result)
+        appendLevelSummary(sb, "Level 4: Session Data", l4Original, l4Executed, l4Result, s)
 
         sb.appendLine("=== END PROMPT SUMMARY ===")
         LogManager.aiPrompt(sb.toString(), "INFO")
@@ -487,7 +493,8 @@ $fullPrompt
         levelName: String,
         originalCommands: List<DataCommand>,
         executedCommands: List<DataCommand>,
-        executionResult: CommandExecutionResult
+        executionResult: CommandExecutionResult,
+        s: StringsContext
     ) {
         sb.appendLine("## $levelName")
 
@@ -506,7 +513,7 @@ $fullPrompt
         for (command in originalCommands) {
             val wasExecuted = executedIds.contains(command.id)
             val status = when {
-                !wasExecuted -> "Ignorée (duplication)"
+                !wasExecuted -> s.shared("ai_prompt_duplicate_ignored")
                 executedIndex < executionResults.size -> {
                     val result = executionResults[executedIndex]
                     executedIndex++

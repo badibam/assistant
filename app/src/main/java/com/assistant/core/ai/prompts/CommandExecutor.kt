@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,6 +43,7 @@ data class CommandExecutionResult(
 class CommandExecutor(private val context: Context) {
 
     private val coordinator = Coordinator(context)
+    private val s = Strings.`for`(context = context)
 
     /**
      * Execute commands and return complete result with prompt data + SystemMessage
@@ -65,7 +67,7 @@ class CommandExecutor(private val context: Context) {
                 systemMessage = SystemMessage(
                     type = messageType,
                     commandResults = emptyList(),
-                    summary = "Aucune commande à exécuter"
+                    summary = s.shared("ai_system_no_commands")
                 )
             )
         }
@@ -201,16 +203,16 @@ class CommandExecutor(private val context: Context) {
         return when (type) {
             SystemMessageType.DATA_ADDED -> {
                 when {
-                    failedCount == 0 -> "$successCount requête(s) de données ajoutée(s) au contexte"
-                    successCount == 0 -> "Échec de toutes les requêtes ($failedCount)"
-                    else -> "$successCount requête(s) réussie(s), $failedCount échouée(s)"
+                    failedCount == 0 -> s.shared("ai_system_queries_success").format(successCount)
+                    successCount == 0 -> s.shared("ai_system_queries_all_failed").format(failedCount)
+                    else -> s.shared("ai_system_queries_partial").format(successCount, failedCount)
                 }
             }
             SystemMessageType.ACTIONS_EXECUTED -> {
                 when {
-                    failedCount == 0 -> "$successCount action(s) exécutée(s) avec succès"
-                    successCount == 0 -> "Échec de toutes les actions ($failedCount)"
-                    else -> "$successCount action(s) réussie(s), $failedCount échouée(s)"
+                    failedCount == 0 -> s.shared("ai_system_actions_success").format(successCount)
+                    successCount == 0 -> s.shared("ai_system_actions_all_failed").format(failedCount)
+                    else -> s.shared("ai_system_actions_partial").format(successCount, failedCount)
                 }
             }
         }

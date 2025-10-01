@@ -4,6 +4,7 @@ import android.content.Context
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultAILimitsSettings
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -117,7 +118,8 @@ object TokenCalculator {
             estimatedTokens = estimatedTokens,
             limit = limit,
             exceeds = estimatedTokens > limit,
-            ratio = estimatedTokens.toDouble() / limit
+            ratio = estimatedTokens.toDouble() / limit,
+            context = context
         )
     }
 
@@ -152,17 +154,19 @@ data class TokenLimitResult(
     val estimatedTokens: Int,
     val limit: Int,
     val exceeds: Boolean,
-    val ratio: Double
+    val ratio: Double,
+    val context: Context
 ) {
     /**
      * Get human-readable description of the limit status
      */
     fun getDescription(): String {
-        val percentage = (ratio * 100).toInt()
+        val s = Strings.`for`(context = context)
+        val percentage = (ratio * 100).toInt().toString()
         return when {
-            exceeds -> "Dépassement: $estimatedTokens tokens (limite: $limit) - ${percentage}%"
-            ratio > 0.8 -> "Proche limite: $estimatedTokens tokens (limite: $limit) - ${percentage}%"
-            else -> "Dans limite: $estimatedTokens tokens (limite: $limit) - ${percentage}%"
+            exceeds -> s.shared("ai_token_exceeded").format(estimatedTokens, limit, percentage)
+            ratio > 0.8 -> s.shared("ai_token_near_limit").format(estimatedTokens, limit, percentage)
+            else -> s.shared("ai_token_within_limit").format(estimatedTokens, limit, percentage)
         }
     }
 }

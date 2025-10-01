@@ -209,6 +209,7 @@
     <string name="tracking_scale_min_default">Faible</string>
     <string name="tracking_scale_max_default">Élevé</string>
     <string name="tracking_scale_range_separator">à</string>
+    <string name="tracking_display_timer_format">%1$s: %2$s</string>
 
     <!-- shared -->
     <string name="shared_ai_doc_title">Système Assistant IA</string>
@@ -322,6 +323,7 @@
     <string name="shared_ai_session_stop_message">Voulez-vous arrêter cette session ? La session pourra être récupérée et reprise via l\'historique des sessions.</string>
     <string name="shared_ai_chat_new">Nouveau chat</string>
     <string name="shared_ai_chat_start_conversation">Commencer une conversation...</string>
+    <string name="shared_ai_session_default_name">Chat Session</string>
     <string name="shared_ai_status_processing">Traitement en cours...</string>
     <string name="shared_ai_status_ready">Prêt</string>
     <string name="shared_ai_status_send_to_start">Envoyer un message pour commencer</string>
@@ -339,6 +341,12 @@
     <string name="shared_ai_period_filtered">période filtrée</string>
     <string name="shared_ai_period_specific">période spécifique</string>
     <string name="shared_ai_period_extended">période étendue</string>
+    <string name="shared_ai_enrichment_use">utiliser %1$s</string>
+    <string name="shared_ai_enrichment_create">créer %1$s</string>
+    <string name="shared_ai_enrichment_modify">modifier %1$s</string>
+    <string name="shared_ai_enrichment_organize">organiser %1$s</string>
+    <string name="shared_ai_enrichment_document">documenter %1$s</string>
+    <string name="shared_ai_enrichment_zone_prefix">zone</string>
     <string name="shared_ai_error_store_user_message">Échec de la sauvegarde du message utilisateur: %1$s</string>
     <string name="shared_ai_error_token_limit_exceeded">Limite de tokens dépassée: %1$d tokens</string>
     <string name="shared_ai_error_ai_query_failed">Échec de la requête IA: %1$s</string>
@@ -559,6 +567,7 @@
     <string name="shared_scope_level_subfield">Sous-champ %1$d</string>
     <string name="shared_scope_level_generic">Niveau %1$d</string>
     <string name="shared_scope_available_entry_names">Noms d\'entrées disponibles</string>
+    <string name="shared_scope_value_prefix">valeur</string>
     <string name="shared_service_error_unknown_operation">Opération inconnue: %1$s</string>
     <string name="shared_service_error_tool_data_service">Erreur ToolDataService: %1$s</string>
     <string name="shared_service_error_zone_service">Erreur ZoneService: %1$s</string>
@@ -580,5 +589,39 @@
     <string name="shared_service_error_no_results_found">Aucun résultat trouvé pour l\'opération %1$s</string>
     <string name="shared_service_error_invalid_phase">Phase invalide: %1$s</string>
     <string name="shared_service_error_unknown_category">Catégorie inconnue: %1$s</string>
+    <string name="shared_ai_system_no_commands">Aucune commande à exécuter</string>
+    <string name="shared_ai_system_queries_success">%1$d requête(s) de données ajoutée(s) au contexte</string>
+    <string name="shared_ai_system_queries_all_failed">Échec de toutes les requêtes (%1$d)</string>
+    <string name="shared_ai_system_queries_partial">%1$d requête(s) réussie(s), %2$d échouée(s)</string>
+    <string name="shared_ai_system_actions_success">%1$d action(s) exécutée(s) avec succès</string>
+    <string name="shared_ai_system_actions_all_failed">Échec de toutes les actions (%1$d)</string>
+    <string name="shared_ai_system_actions_partial">%1$d action(s) réussie(s), %2$d échouée(s)</string>
+    <string name="shared_ai_prompt_duplicate_ignored">Ignorée (duplication)</string>
+    <string name="shared_ai_token_exceeded">Dépassement: %1$d tokens (limite: %2$d) - %3$s%%</string>
+    <string name="shared_ai_token_near_limit">Proche limite: %1$d tokens (limite: %2$d) - %3$s%%</string>
+    <string name="shared_ai_token_within_limit">Dans limite: %1$d tokens (limite: %2$d) - %3$s%%</string>
+    <string name="shared_data_navigator_entry_name_field">Nom de l\'entrée</string>
+    <string name="shared_data_navigator_unnamed_zone">Zone sans nom</string>
+    <string name="shared_data_navigator_title">Explorateur de données</string>
+    <string name="shared_scope_no_selection_simple">Aucune sélection</string>
+    <string name="shared_scope_no_selection_prefix">-- Aucune sélection</string>
+    <string name="shared_scope_tool_not_selected">-- Outil non sélectionné</string>
+    <string name="shared_scope_temporal_partial">sélection temporelle partielle</string>
+    <string name="shared_scope_temporal_all">toutes les données temporelles</string>
+    <string name="shared_scope_names_selected">%1$d noms sélectionnés</string>
+    <string name="shared_scope_names_all_available">tous les noms disponibles</string>
+    <string name="shared_scope_names_all">tous les noms</string>
+    <string name="shared_scope_values_all">toutes les valeurs</string>
+    <string name="shared_scope_value_single">valeur: %1$s</string>
+    <string name="shared_scope_values_truncated">valeurs: %1$s</string>
+    <string name="shared_scope_values_count">%1$d valeurs sélectionnées</string>
+    <string name="shared_scope_period_day_selected">jour sélectionné</string>
+    <string name="shared_scope_period_week_selected">semaine sélectionnée</string>
+    <string name="shared_scope_period_month_selected">mois sélectionné</string>
+    <string name="shared_scope_period_year_selected">année sélectionnée</string>
+    <string name="shared_scope_period_generic_selected">période sélectionnée</string>
+    <string name="shared_scope_undefined">non défini</string>
+    <string name="shared_ui_form_list_add_label">Ajouter :</string>
+    <string name="shared_ui_form_list_remove_label">Retirer :</string>
 
 </resources>

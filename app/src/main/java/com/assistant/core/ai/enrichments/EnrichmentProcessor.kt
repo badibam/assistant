@@ -171,7 +171,7 @@ class EnrichmentProcessor(private val context: Context) {
         val suggestedName = config.optString("suggestedName", "")
 
         val name = if (suggestedName.isNotEmpty()) suggestedName else toolType
-        val zone = if (zoneName.isNotEmpty()) " zone $zoneName" else ""
+        val zone = if (zoneName.isNotEmpty()) " ${s.shared("ai_enrichment_zone_prefix")} $zoneName" else ""
 
         return "créer $name$zone"
     }
