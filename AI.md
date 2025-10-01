@@ -5,14 +5,6 @@
 ### Pattern unifié
 Toutes les interactions IA utilisent la même structure de données `SessionMessage` avec 5 variantes selon les champs remplis. Les sessions unifiées permettent réutilisation composants UI, logique persistance et transformation prompts.
 
-### Flow principal
-```
-User message → AIOrchestrator → PromptManager → CommandExecutor → AIClient
-              ↕                ↕             ↕
-          AISessionService   QueryDeduplicator  AIProviderConfigService
-          (via coordinator)  (prompt dedup)    (via coordinator)
-```
-
 ### Session types
 - **CHAT** : Conversation temps réel, queries absolues, modules communication
 - **AUTOMATION** : Prompt programmable, queries relatives, feedback exécutions
@@ -75,22 +67,11 @@ class AIOrchestrator(private val context: Context) {
 
 ### Command Processing Pipeline
 ```
-EnrichmentBlock (stocké) → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
-                                            ↓                               ↓
-                                 List<DataCommand> → List<ExecutableCommand> → coordinator calls + SystemMessage
-
-AIMessage.dataCommands → AICommandProcessor → CommandExecutor
-                              ↓                   ↓
-                   List<ExecutableCommand> → coordinator calls + SystemMessage
+User: EnrichmentBlock → EnrichmentProcessor → UserCommandProcessor → CommandTransformer → CommandExecutor
+AI:   AIMessage → AICommandProcessor → CommandTransformer/Actions → CommandExecutor
 ```
 
-**Responsabilités séparées :**
-- `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands
-- `CommandTransformer` : Transformation commune DataCommand → ExecutableCommand (logique partagée User/AI)
-- `UserCommandProcessor` : Délègue à CommandTransformer (logique user-specific si besoin)
-- `AICommandProcessor` : Validations AI + délègue queries à CommandTransformer + transforme actions spécifiques
-- `CommandExecutor` : **Point unique d'exécution** → coordinator calls + génère SystemMessage unique par série
-- `QueryDeduplicator` : Déduplication cross-niveaux pour assemblage prompt final
+**Responsabilités** : EnrichmentProcessor (UI→DataCommand), CommandTransformer (logique commune), User/AICommandProcessor (validations spécifiques), CommandExecutor (exécution + SystemMessage), QueryDeduplicator (déduplication prompts)
 
 ### AISessionService (ExecutableService)
 ```kotlin
@@ -152,26 +133,13 @@ data class ExecutableCommand(
 
 ### Types de Commands (User et IA)
 
-**Queries** (retournent données pour Level 4) :
-- `TOOL_DATA` : Récupérer données d'outil
-- `TOOL_CONFIG` : Configuration d'outil
-- `TOOL_INSTANCES` : Liste outils d'une zone
-- `ZONE_CONFIG` : Configuration zone
-- `ZONES` : Liste zones
-- `SCHEMA` : Schéma validation
-
-**Actions** (génèrent SystemMessage visible) :
-- `CREATE_DATA` : Créer données (batch par défaut)
-- `UPDATE_DATA` : Modifier données (batch par défaut)
-- `DELETE_DATA` : Supprimer données (batch par défaut)
-- `CREATE_TOOL` : Créer outil
-- `UPDATE_TOOL` : Modifier outil
-- `DELETE_TOOL` : Supprimer outil
-- `CREATE_ZONE` : Créer zone
-- `UPDATE_ZONE` : Modifier zone
-- `DELETE_ZONE` : Supprimer zone
-
-**Note importante** : Toutes les opérations sur données sont batch par défaut (batch_create, batch_update, batch_delete).
+| Type | Usage | Niveau |
+|------|-------|--------|
+| **Queries** (→ Level 4) |
+| SCHEMA, TOOL_CONFIG, TOOL_DATA, TOOL_INSTANCES, ZONE_CONFIG, ZONES | Récupération données | User + AI |
+| **Actions** (→ SystemMessage visible) |
+| CREATE/UPDATE/DELETE_DATA | Mutations données (batch par défaut) | AI only |
+| CREATE/UPDATE/DELETE_TOOL, CREATE/UPDATE/DELETE_ZONE | Mutations structure | AI only |
 
 ### Singletons et Classes
 
@@ -251,29 +219,6 @@ data class AIMessage(
 - **Queries** : preText + dataCommands
 - **Communication** : preText + communicationModule (dataCommands/actionCommands/postText NULL)
 
-### DataCommand (unifié)
-```kotlin
-data class DataCommand(
-    val id: String,              // Hash déterministe de (type + params + isRelative)
-    val type: String,            // Command type standardisé (voir types disponibles)
-    val params: Map<String, Any>, // Paramètres absolus ou relatifs
-    val isRelative: Boolean = false // true pour automation, false pour chat
-)
-```
-
-### ExecutableCommand
-```kotlin
-```
-
-**Types de commands utilisateur (enrichments) - voir section 3 Types et Structures**
-- **SCHEMA** → id
-- **TOOL_CONFIG** → id
-- **TOOL_DATA** → id + périodes + filtres
-- **TOOL_STATS** → id + périodes + agrégation
-- **TOOL_DATA_SAMPLE** → id + limit
-- **ZONE_CONFIG** → id
-- **ZONES** → aucun paramètre
-- **TOOL_INSTANCES** → zone_id optionnel
 
 ## 4. Communication bidirectionnelle
 
@@ -416,20 +361,7 @@ class AICommandProcessor(private val context: Context) {
 
 **Note** : Pas d'exécution (délégué à CommandExecutor)
 
-**Logique enrichissement par type :**
-
-**POINTER** :
-- Zone → `ZONE_CONFIG` + `TOOL_INSTANCES`
-- Instance → `SCHEMA(config)` + `SCHEMA(data)` + `TOOL_CONFIG` + `TOOL_DATA_SAMPLE` + optionnellement `TOOL_DATA` réelles (toggle "inclure données")
-
-**CREATE** : `SCHEMA(config_schema_id)` + `SCHEMA(data_schema_id)` pour type d'outil
-
-**MODIFY_CONFIG** : `SCHEMA(config_schema_id)` + `TOOL_CONFIG(tool_instance_id)`
-
-**USE** : `TOOL_CONFIG` + `SCHEMA(config)` + `SCHEMA(data)` + `TOOL_DATA_SAMPLE` + `TOOL_STATS`
-
-### Composition via RichComposer
-Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, générant automatiquement `linearText` et `dataCommands` via `EnrichmentProcessor.generateCommands()`.
+**Enrichissements** : POINTER (référencer zone/instance), USE (config+schemas+data+stats), CREATE (schemas pour nouveau type), MODIFY_CONFIG (schema+config actuelle). RichComposer génère automatiquement linearText et dataCommands.
 
 ### Différences User vs AI Commands
 
@@ -588,34 +520,11 @@ data class CommandExecutionResult(
 **SystemMessage granularité** : 1 message agrégé pour toute la série (ex: "3 queries executed, 150 data points added" ou "Created 50 data points in 2 tools")
 
 ### QueryDeduplicator (object)
-**Principe** : Déduplication progressive pour maintenir les breakpoints de cache API
+**Principe** : Déduplication progressive pour maintenir breakpoints cache API. Chaque niveau contient uniquement commands non présentes dans niveaux précédents.
 
-**Architecture critique** : La séparation en 4 niveaux de prompt est essentielle pour le cache API Claude. Chaque niveau doit contenir uniquement les commands qui lui sont propres (pas déjà dans les niveaux précédents).
+**Mécanismes** : Hash identité (commands identiques supprimées), inclusion métier (commands générales incluent spécifiques), filtrage progressif (L2 exclut L1, L3 exclut L1+L2, etc.)
 
-**Déduplication progressive** :
-```kotlin
-// Level 1
-val l1Deduplicated = QueryDeduplicator.deduplicateCommands(level1Commands)
-val l1Executable = userCommandProcessor.processCommands(l1Deduplicated)
-val l1Result = commandExecutor.executeCommands(l1Executable, DATA_ADDED, "level1")
-
-// Level 2: Seulement commands NON présentes en L1
-val l2OnlyCommands = l2Deduplicated.filter { cmd ->
-    !l1Deduplicated.any { it.id == cmd.id }
-}
-val l2Executable = userCommandProcessor.processCommands(l2OnlyCommands)
-val l2Result = commandExecutor.executeCommands(l2Executable, DATA_ADDED, "level2")
-
-// Level 3: Seulement commands NON présentes en L1+L2
-// Level 4: Seulement commands NON présentes en L1+L2+L3
-```
-
-**Importance** : Cette séparation stricte permet à l'API Claude de cacher chaque niveau indépendamment. Casser cette séparation invalide le cache et augmente les coûts de tokens.
-
-**Mécanismes :**
-1. **Hash identité** : Commands identiques supprimées (première occurrence gardée)
-2. **Inclusion métier** : Commands générales incluent spécifiques selon règles business
-3. **Filtrage progressif** : Chaque niveau exclut les commands des niveaux précédents
+**Importance** : Séparation stricte = cache API optimal. Violation = coûts tokens augmentés.
 
 ### Storage Policy
 
@@ -634,25 +543,10 @@ val l2Result = commandExecutor.executeCommands(l2Executable, DATA_ADDED, "level2
 
 ### Dual mode résolution (CHAT absolu vs AUTOMATION relatif)
 
-**Types de périodes :**
-```kotlin
-data class Period(val timestamp: Long, val type: PeriodType)  // Période absolue (point dans le temps)
-data class RelativePeriod(val offset: Int, val type: PeriodType)  // Offset depuis maintenant
-```
+**CHAT** (`isRelative=false`) : Périodes absolues (Period avec timestamps fixes) pour cohérence conversation multi-jours
+**AUTOMATION** (`isRelative=true`) : Périodes relatives (RelativePeriod encodé "offset_TYPE") résolues à l'exécution via AppConfigManager
 
-**CHAT** (`isRelative=false`) :
-- "cette semaine" → `Period` avec timestamps absolus (début + fin calculés via `getPeriodEndTimestamp()`)
-- Stocké dans `timestampSelection.minPeriod` / `maxPeriod`
-- Garantit cohérence conversation sur plusieurs jours
-
-**AUTOMATION** (`isRelative=true`) :
-- "cette semaine" → `RelativePeriod(offset=0, type=WEEK)` → encodé "0_WEEK"
-- Stocké dans `timestampSelection.minRelativePeriod` / `maxRelativePeriod`
-- Résolu à l'exécution via `resolveRelativePeriod()` + `AppConfigManager`
-
-**AppConfigManager :** Singleton cache pour `dayStartHour` et `weekStartDay` (initialisé au démarrage app)
-
-**Token Management :** Validation globale prompt par PromptManager. Gestion différenciée CHAT (dialogue confirmation) vs AUTOMATION (refus automatique) si dépassement.
+**Token Management** : Validation globale par PromptManager. CHAT → dialogue confirmation, AUTOMATION → refus automatique si dépassement.
 
 ## 7. Providers
 
