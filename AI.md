@@ -30,8 +30,9 @@ User message → AIOrchestrator → PromptManager → CommandExecutor → AIClie
 - `AIClient` : Interface vers providers AI externes
 - `PromptManager` : Génération prompts 4 niveaux avec commands unifiées
 - `EnrichmentProcessor` : Génération commands depuis enrichments UI bruts
-- `UserCommandProcessor` : Transformation commands user (DataCommand → ExecutableCommand)
-- `AICommandProcessor` (object) : Transformation commands AI (AICommand → ExecutableCommand)
+- `CommandTransformer` (object) : Transformation commune DataCommand → ExecutableCommand (logique partagée)
+- `UserCommandProcessor` : Délègue à CommandTransformer (logique user-specific si besoin)
+- `AICommandProcessor` : Transformation commands IA (queries et actions séparées, validations AI futures)
 - `CommandExecutor` : **Point unique d'exécution** vers coordinator + génération SystemMessage
 - `QueryDeduplicator` (object) : Déduplication cross-niveaux pour prompts
 
@@ -70,6 +71,7 @@ class AIOrchestrator(private val context: Context) {
 5. Assembler prompt final via `assembleFinalPrompt()`
 6. Envoyer à `AIClient`
 7. Stocker réponse AI
+8. Traiter commands IA via `processAICommands()` (si présentes)
 
 ### Command Processing Pipeline
 ```
@@ -84,8 +86,9 @@ AIMessage.dataCommands → AICommandProcessor → CommandExecutor
 
 **Responsabilités séparées :**
 - `EnrichmentProcessor` : EnrichmentBlock brut → N DataCommands
-- `UserCommandProcessor` : Transformation DataCommand → ExecutableCommand (résolution périodes relatives)
-- `AICommandProcessor` : Transformation AICommand → ExecutableCommand (types abstraits → resource.operation)
+- `CommandTransformer` : Transformation commune DataCommand → ExecutableCommand (logique partagée User/AI)
+- `UserCommandProcessor` : Délègue à CommandTransformer (logique user-specific si besoin)
+- `AICommandProcessor` : Validations AI + délègue queries à CommandTransformer + transforme actions spécifiques
 - `CommandExecutor` : **Point unique d'exécution** → coordinator calls + génère SystemMessage unique par série
 - `QueryDeduplicator` : Déduplication cross-niveaux pour assemblage prompt final
 
@@ -128,22 +131,13 @@ Interface vers providers externes, reçoit prompt complet assemblé.
 
 ### Structures de Commands
 
-**DataCommand** (User enrichments)
+**DataCommand** (User enrichments ET commandes IA)
 ```kotlin
 data class DataCommand(
     val id: String,              // Hash déterministe (type + params + isRelative)
-    val type: String,            // TOOL_DATA, TOOL_CONFIG, ZONE_CONFIG, etc.
+    val type: String,            // TOOL_DATA, TOOL_CONFIG, CREATE_DATA, etc.
     val params: Map<String, Any>, // Paramètres absolus ou relatifs
     val isRelative: Boolean = false
-)
-```
-
-**AICommand** (IA queries et actions)
-```kotlin
-data class AICommand(
-    val id: String,
-    val type: String,            // Types abstraits (voir section suivante)
-    val params: JSONObject       // Doit être converti en Map pour ExecutableCommand
 )
 ```
 
@@ -156,9 +150,7 @@ data class ExecutableCommand(
 )
 ```
 
-**Conversion JSONObject ↔ Map** : Nécessaire lors de la transformation AICommand → ExecutableCommand.
-
-### Types de Commands IA (Abstraits)
+### Types de Commands (User et IA)
 
 **Queries** (retournent données pour Level 4) :
 - `TOOL_DATA` : Récupérer données d'outil
@@ -186,8 +178,9 @@ data class ExecutableCommand(
 | Type | Pattern | Usage |
 |------|---------|-------|
 | QueryDeduplicator | object | `QueryDeduplicator.deduplicateCommands()` |
-| AICommandProcessor | object | `AICommandProcessor.processCommands()` |
+| CommandTransformer | object | `CommandTransformer.transformToExecutable()` |
 | UserCommandProcessor | class | `UserCommandProcessor(context).processCommands()` |
+| AICommandProcessor | class | `AICommandProcessor(context).processDataCommands()` / `.processActionCommands()` |
 | CommandExecutor | class | `CommandExecutor(context).executeCommands()` |
 
 ## 3. Structures de données unifiées
@@ -253,7 +246,10 @@ data class AIMessage(
 )
 ```
 
-**Contrainte importante** : `dataCommands` et `actionCommands` mutuellement exclusifs.
+**Patterns exclusifs AIMessage** :
+- **Actions** : preText + validationRequest? + actionCommands + postText?
+- **Queries** : preText + dataCommands
+- **Communication** : preText + communicationModule (dataCommands/actionCommands/postText NULL)
 
 ### DataCommand (unifié)
 ```kotlin
@@ -293,15 +289,30 @@ data class RichMessage(
 ```
 
 ### Communication Modules
-Modules de communication générés par l'IA pour obtenir des réponses structurées de l'utilisateur :
+Modules de communication générés par l'IA pour obtenir des réponses structurées de l'utilisateur.
 
+**Structure** (pattern analogue à tool_data) :
 ```kotlin
 sealed class CommunicationModule {
-    data class MultipleChoice(val question: String, val options: List<String>)
-    data class Validation(val message: String)
-    // TODO: Slider, DataSelector
+    abstract val type: String
+    abstract val data: Map<String, Any>
+
+    data class MultipleChoice(
+        override val type: String = "MultipleChoice",
+        override val data: Map<String, Any>  // question, options
+    ) : CommunicationModule()
+
+    data class Validation(
+        override val type: String = "Validation",
+        override val data: Map<String, Any>  // message
+    ) : CommunicationModule()
 }
 ```
+
+**Validation** : Via `CommunicationModuleSchemas` (object) avec schémas JSON pour chaque type
+- `getSchema(type, context)` retourne Schema validé
+- MultipleChoice : question (string), options (array min 2)
+- Validation : message (string)
 
 ### Validation et permissions
 Système hiérarchique contrôlant les actions IA :
@@ -342,6 +353,30 @@ class EnrichmentProcessor {
 - **CHAT** (`isRelative=false`) : Calcule timestamps absolus (début + fin période) via Period objects
 - **AUTOMATION** (`isRelative=true`) : Encode périodes relatives format "offset_TYPE" (ex: "-1_WEEK")
 
+### CommandTransformer (helper partagé)
+```kotlin
+object CommandTransformer {
+    fun transformToExecutable(
+        commands: List<DataCommand>,
+        context: Context
+    ): List<ExecutableCommand>
+}
+```
+
+**Responsabilités** :
+- Transformation pure type → resource.operation
+- Résolution périodes relatives (isRelative=true)
+- Mapping paramètres selon service (tool_instance_id vs toolInstanceId)
+- Utilisé par UserCommandProcessor ET AICommandProcessor
+
+**Transformations** :
+- SCHEMA → schemas.get
+- TOOL_CONFIG → tools.get (id → tool_instance_id)
+- TOOL_DATA → tool_data.get (id → toolInstanceId, résolution périodes)
+- ZONE_CONFIG → zones.get (id → zone_id)
+- ZONES → zones.list
+- TOOL_INSTANCES → tools.list (avec zone_id) ou tools.list_all (sans zone_id)
+
 ### UserCommandProcessor
 ```kotlin
 class UserCommandProcessor(private val context: Context) {
@@ -349,33 +384,37 @@ class UserCommandProcessor(private val context: Context) {
 }
 ```
 
-**Transformations par type :**
-- `TOOL_CONFIG` → `tools.get` (id → tool_instance_id)
-- `TOOL_DATA` → `tool_data.get` (résolution périodes relatives si `isRelative=true`)
-- `TOOL_STATS` → `tool_data.stats` (agrégation données)
-- `TOOL_DATA_SAMPLE` → `tool_data.get` (limit + orderBy recent)
-- `ZONE_CONFIG` → `zones.get` (id → zone_id)
-- `ZONES` → `zones.list`
-- `TOOL_INSTANCES` → `tools.list` (avec zone_id) ou `tools.list_all` (sans zone_id)
+**Responsabilités** :
+- Logging user-specific
+- Délègue transformation à CommandTransformer
+- Validation user-specific future si besoin
 
-**Résolution périodes relatives :** Parse "offset_TYPE" → timestamps absolus via `resolveRelativePeriod()` + `AppConfigManager`
-
-### AICommandProcessor (object)
+### AICommandProcessor
 ```kotlin
-object AICommandProcessor {
-    suspend fun processCommands(
-        commands: List<AICommand>,
-        context: Context
-    ): List<ExecutableCommand>
+class AICommandProcessor(private val context: Context) {
+    fun processDataCommands(commands: List<DataCommand>): List<ExecutableCommand>
+    fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand>
 }
 ```
 
-**Responsabilités :**
-- Transformation types abstraits (TOOL_DATA, CREATE_DATA) → resource.operation format
-- Conversion JSONObject params → Map<String, Any>
-- Mapping vers opérations batch par défaut pour données (batch_create, batch_update, batch_delete)
+**Responsabilités data queries** :
+- Validations AI futures (token limits, permissions, rate limiting)
+- Délègue transformation à CommandTransformer
 
-**Note** : Pas d'exécution, seulement transformation. L'exécution et la génération de SystemMessage sont gérées par CommandExecutor.
+**Responsabilités actions** :
+- Validations strictes futures (permissions, scope, sanitization)
+- Transformation action types → resource.operation :
+  - CREATE_DATA → tool_data.batch_create
+  - UPDATE_DATA → tool_data.batch_update
+  - DELETE_DATA → tool_data.batch_delete
+  - CREATE_TOOL → tools.create
+  - UPDATE_TOOL → tools.update
+  - DELETE_TOOL → tools.delete
+  - CREATE_ZONE → zones.create
+  - UPDATE_ZONE → zones.update
+  - DELETE_ZONE → zones.delete
+
+**Note** : Pas d'exécution (délégué à CommandExecutor)
 
 **Logique enrichissement par type :**
 
@@ -405,6 +444,36 @@ Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, 
 - Types : Data queries + actions réelles (create, update, delete)
 - But : Demander données + exécuter actions
 
+## 5bis. Traitement des réponses IA
+
+### AIOrchestrator.processAICommands()
+Appelé automatiquement après réception et stockage de l'AIMessage.
+
+**Flow** :
+1. Si `dataCommands` présent → AICommandProcessor.processDataCommands() → CommandExecutor → store SystemMessage
+2. Si `actionCommands` présent → vérifier validationRequest → exécuter ou attendre validation
+3. SystemMessages générés stockés automatiquement via storeSystemMessage()
+
+**Exécution data queries** :
+```
+AICommandProcessor.processDataCommands()
+  → CommandTransformer.transformToExecutable()
+  → CommandExecutor.executeCommands(messageType=DATA_ADDED)
+  → SystemMessage stocké
+```
+
+**Exécution actions** :
+```
+AICommandProcessor.processActionCommands()
+  → transformActionCommand() (mapping types actions)
+  → CommandExecutor.executeCommands(messageType=ACTIONS_EXECUTED)
+  → SystemMessage stocké
+```
+
+**Validation actions** :
+- Si `validationRequest` NULL → exécution autonome directe
+- Si `validationRequest` présent → attente confirmation user (TODO: flow validation interactif - store request, wait user input, execute on confirm)
+
 ## 6. SystemMessages
 
 ### Structure
@@ -432,9 +501,10 @@ data class SystemMessage(
 - Stockés après le message user
 - Documentent les données chargées pour ce message spécifique
 
-**SystemMessages AI** (non implémenté) :
-- Générés après exécution de `dataCommands`/`actionCommands`
-- Stockés après la réponse AI
+**SystemMessages AI** :
+- Générés par AIOrchestrator.processAICommands() après exécution des commandes IA
+- Stockés après la réponse AI via storeSystemMessage()
+- Type DATA_ADDED pour queries, ACTIONS_EXECUTED pour mutations
 
 ### Format dans les prompts
 ```

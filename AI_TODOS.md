@@ -32,18 +32,9 @@
 - Line 365: resolve from tool instance (config_schema_id)
 - Line 421: Implement proper period formatting based on timestamps
 
-## orchestration/AIOrchestrator.kt (11)
-- ✅ Line 61: Load actual session
-- ✅ Line 85: Get providerId from session (using session.providerId)
+## orchestration/AIOrchestrator.kt (10)
 - Line 207: Parse schedule config for AUTOMATION sessions (currently null)
-- Line 270: Parse system messages when implemented
 - Line 273: Parse execution metadata for automation messages
-- ✅ Line 296: Implement complete JSON deserialization with segment parsing
-- ✅ Line 301: Implement proper JSON parsing for RichMessage
-- ✅ Line 303: Implement RichMessage JSON parsing
-- ✅ Line 307: Parse MessageSegment list from JSON
-- ✅ Line 308: Extract linearText from JSON
-- ✅ Line 309: Parse DataCommand list from JSON
 - Line 319: Implement complete JSON deserialization with all AIMessage fields
 - Line 324: Implement proper JSON parsing for AIMessage
 - Line 326: Implement AIMessage JSON parsing
@@ -54,9 +45,13 @@
 - Line 334: Extract postText from JSON
 - Line 335: Parse CommunicationModule from JSON
 
-## processing/UserCommandProcessor.kt (2)
-- Line 107: Transform TOOL_STATS command to tool_data.stats call (LOW PRIORITY - stub)
-- Line 117: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling (LOW PRIORITY - stub)
+## processing/AICommandProcessor.kt (2)
+- Line 30-34: Add AI-specific validations for data commands (token limits, permissions, sanitization, rate limiting)
+- Line 56-62: Implement AI action command strict validations (permissions, scope, sanitization, rate limiting, batch limits)
+
+## processing/CommandTransformer.kt (2)
+- Line 142: Transform TOOL_STATS command to tool_data.stats call (LOW PRIORITY - stub)
+- Line 151: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling (LOW PRIORITY - stub)
 
 ## prompts/PromptManager.kt (3)
 - Line 100: Implement according to "Send history to AI" setting
@@ -68,8 +63,8 @@
 - Line 111: commandIncludes() business logic - returning false for now
 - Line 115: Implement helper methods for command inclusion logic when needed
 
-## providers/AIClient.kt (1)
-- Line 187: Parse communication module
+## orchestration/AIOrchestrator.kt (NEW - 1)
+- Line 506-512: Implement validation flow for action commands (store validation request, wait for user confirmation, execute on confirm, cascade failure on rejection)
 
 ## providers/AIProviderRegistry.kt (4)
 - Line 12: Load providers dynamically via discovery pattern
@@ -92,11 +87,9 @@
 - Line 162: Implement actual database update
 - Line 174: Implement actual database retrieval
 
-## services/AISessionService.kt (4)
+## services/AISessionService.kt (3)
 - Line 68: Implement all CRUD operations
-- ✅ Line 321-326: Store richContent as proper RichMessage JSON structure
 - Line 341: Parse AIMessage when implementing
-- Line 342: Implement system messages
 - Line 343: Implement automation metadata
 
 ## ui/chat/AIFloatingChat.kt (1)

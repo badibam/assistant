@@ -149,11 +149,20 @@ class AIClient(private val context: Context) {
 
             // Parse optional fields
             val validationRequest = json.optJSONObject("validationRequest")?.let {
+                val statusString = it.optString("status", "")
+                val status = if (statusString.isNotEmpty()) {
+                    try {
+                        ValidationStatus.valueOf(statusString)
+                    } catch (e: Exception) {
+                        ValidationStatus.PENDING
+                    }
+                } else {
+                    ValidationStatus.PENDING
+                }
+
                 ValidationRequest(
                     message = it.getString("message"),
-                    status = it.optString("status", null)?.let { status ->
-                        ValidationStatus.valueOf(status)
-                    } ?: ValidationStatus.PENDING
+                    status = status
                 )
             }
 
@@ -181,12 +190,40 @@ class AIClient(private val context: Context) {
                 }
             }
 
-            val postText = json.optString("postText", null).takeIf { it.isNotEmpty() }
+            val postText = json.optString("postText", "").takeIf { it.isNotEmpty() }
 
-            val communicationModule = json.optJSONObject("communicationModule")?.let {
-                // TODO: Parse communication module
-                // For now, return null
-                null
+            val communicationModule = json.optJSONObject("communicationModule")?.let { moduleJson ->
+                try {
+                    val type = moduleJson.getString("type")
+                    val dataJson = moduleJson.getJSONObject("data")
+                    val data = parseParams(dataJson)
+
+                    // Validate via CommunicationModuleSchemas
+                    val schema = CommunicationModuleSchemas.getSchema(type, context)
+                    if (schema == null) {
+                        LogManager.aiService("Unknown communication module type: $type", "WARN")
+                        return@let null
+                    }
+
+                    val validation = com.assistant.core.validation.SchemaValidator.validate(schema, data, context)
+                    if (!validation.isValid) {
+                        LogManager.aiService("Invalid communication module data for type $type: ${validation.errorMessage}", "WARN")
+                        return@let null
+                    }
+
+                    // Create appropriate module instance
+                    when (type) {
+                        "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
+                        "Validation" -> CommunicationModule.Validation(type, data)
+                        else -> {
+                            LogManager.aiService("Unsupported communication module type: $type", "WARN")
+                            null
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogManager.aiService("Failed to parse communication module: ${e.message}", "WARN", e)
+                    null
+                }
             }
 
             val aiMessage = AIMessage(

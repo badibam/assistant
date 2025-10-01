@@ -372,6 +372,10 @@
     <string name="shared_ai_error_param_config_required">Paramètre obligatoire: config</string>
     <string name="shared_service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="shared_error_not_implemented">Pas encore implémenté</string>
+    <string name="shared_ai_schema_communication_multiple_choice_name">Module de communication: Choix multiple</string>
+    <string name="shared_ai_schema_communication_multiple_choice_desc">Schéma pour l\'interaction utilisateur par choix multiple</string>
+    <string name="shared_ai_schema_communication_validation_name">Module de communication: Validation</string>
+    <string name="shared_ai_schema_communication_validation_desc">Schéma pour l\'interaction utilisateur de validation/confirmation</string>
     <string name="shared_label_zone_name">Nom de la zone</string>
     <string name="shared_label_description">Description</string>
     <string name="shared_label_icon">Icône</string>

@@ -25,33 +25,35 @@ data class ValidationRequest(
 /**
  * Communication modules for user interaction
  * Sealed class for controlled set of core modules
+ *
+ * Pattern analogous to tool_data: common type + variable data in Map
+ * Data validated via CommunicationModuleSchemas
+ *
+ * Exclusive with dataCommands/actionCommands/postText:
+ * - If communicationModule present → only preText + communicationModule (+ optional validationRequest if related)
+ * - User response stored as simple SessionMessage with textContent
  */
 sealed class CommunicationModule {
-    abstract val id: String
-    abstract val metadata: ModuleMetadata
+    abstract val type: String
+    abstract val data: Map<String, Any>
 
+    /**
+     * Multiple choice question
+     * Data: question (String), options (List<String>)
+     */
     data class MultipleChoice(
-        override val id: String,
-        override val metadata: ModuleMetadata,
-        val question: String,
-        val options: List<String>
+        override val type: String = "MultipleChoice",
+        override val data: Map<String, Any>
     ) : CommunicationModule()
 
+    /**
+     * Validation/confirmation request
+     * Data: message (String)
+     */
     data class Validation(
-        override val id: String,
-        override val metadata: ModuleMetadata,
-        val message: String
+        override val type: String = "Validation",
+        override val data: Map<String, Any>
     ) : CommunicationModule()
 
     // TODO: Add Slider, DataSelector modules when needed
 }
-
-/**
- * Metadata for communication modules
- */
-data class ModuleMetadata(
-    val displayName: String,
-    val description: String,
-    val paramsSchema: String,     // JSON Schema for params
-    val responseSchema: String    // JSON Schema for response
-)
