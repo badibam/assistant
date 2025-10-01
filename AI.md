@@ -64,9 +64,12 @@ class AIOrchestrator(private val context: Context) {
 
 **Flow complet orchestré :**
 1. Stocker message utilisateur via `AISessionService`
-2. Builder prompt via `PromptManager` (pipeline command processing complet)
-3. Envoyer à `AIClient`
-4. Traiter réponse et stocker via `AISessionService`
+2. Builder prompt via `PromptManager` (génère levels 1-4 + SystemMessages)
+3. Stocker SystemMessages Level4
+4. Builder historique avec tous les messages
+5. Assembler prompt final via `assembleFinalPrompt()`
+6. Envoyer à `AIClient`
+7. Stocker réponse AI
 
 ### Command Processing Pipeline
 ```
@@ -109,13 +112,13 @@ class AIProviderConfigService(context: Context) : ExecutableService {
 ### AIClient (logique métier pure)
 ```kotlin
 class AIClient(private val context: Context) {
-    suspend fun query(promptResult: PromptResult, providerId: String): OperationResult
+    suspend fun query(prompt: String, providerId: String): OperationResult
     suspend fun getAvailableProviders(): List<AIProviderInfo>
     suspend fun getActiveProviderId(): String?
 }
 ```
 
-Interface vers providers externes, utilise `AIProviderConfigService` via coordinator pour récupérer configurations.
+Interface vers providers externes, reçoit prompt complet assemblé.
 
 ## 3. Types et Structures
 
@@ -402,7 +405,45 @@ Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, 
 - Types : Data queries + actions réelles (create, update, delete)
 - But : Demander données + exécuter actions
 
-## 6. Architecture des niveaux de prompts
+## 6. SystemMessages
+
+### Structure
+```kotlin
+data class SystemMessage(
+    val type: SystemMessageType,           // DATA_ADDED ou ACTIONS_EXECUTED
+    val commandResults: List<CommandResult>,
+    val summary: String                    // Résumé pour affichage
+)
+```
+
+### Génération et stockage
+- **Générés par** : `CommandExecutor` après chaque série de commandes
+- **Stockés comme** : `SessionMessage` avec `sender=SYSTEM`
+- **Sérialisation** : `SystemMessage.toJson()` / `fromJson()`
+
+### Types et placement
+**SystemMessages Startup (L1-3)** :
+- Générés à la création de session via `createSession()`
+- Stockés en premier dans l'historique
+- Documentent le chargement initial (zones, schémas, configs)
+
+**SystemMessages Level4** :
+- Générés après chaque message user avec enrichissements
+- Stockés après le message user
+- Documentent les données chargées pour ce message spécifique
+
+**SystemMessages AI** (non implémenté) :
+- Générés après exécution de `dataCommands`/`actionCommands`
+- Stockés après la réponse AI
+
+### Format dans les prompts
+```
+[SYSTEM] summary
+  ✓ command: details
+  ✗ command: error
+```
+
+## 7. Architecture des niveaux de prompts
 
 **Level 1: DOC** - Documentation système statique
 - Rôle IA + intro application
@@ -422,24 +463,25 @@ Le `RichComposer` permet à l'utilisateur de combiner texte et enrichissements, 
 - Résultats enrichissements utilisateur
 - Résultats commandes IA précédentes
 
-### Pipeline de génération
-**Tous niveaux regénérés à chaque prompt** pour données fraîches
+### Pipeline de génération et assemblage
 
-**Level 4 extraction :** `EnrichmentBlock` (stocké) → `List<DataCommand>` (généré) dans pipeline. `PromptManager.getLevel4Commands()` extrait EnrichmentBlocks depuis historique messages et génère commands à la volée.
+**PromptManager.buildPrompt()** :
+1. Génère commands pour levels 1-4
+2. Exécute via CommandExecutor (génère SystemMessages)
+3. Retourne `PromptResult` avec levels + systemMessages (startup + level4)
 
-### Pipeline de traitement commands
-**Pipeline stateless :** Régénération complète à chaque message
-```kotlin
-// Flow paramètres : UI → EnrichmentProcessor → UserCommandProcessor → Services
-EnrichmentBlocks → EnrichmentProcessor → UserCommandProcessor → CommandExecutor
+**PromptManager.buildHistorySection()** :
+- Charge tous les messages de session (incluant SystemMessages stockés)
+- Formate pour inclusion dans prompt
+
+**PromptManager.assembleFinalPrompt()** :
+- Assemble levels 1-4 + historique
+- Insère cache breakpoints pour Claude
+
+**Flow complet** :
 ```
-
-**Échec cascade :** Géré par AICommandProcessor pour les actions (arrêt sur échec action pour cohérence état app)
-
-**Flow paramètres :**
-1. **UI** : Paramètres bruts (périodes relatives, sélections UI)
-2. **EnrichmentProcessor** : Traduction relatif/absolu selon session type
-3. **UserCommandProcessor** : Transformation en paramètres service (QUERY_PARAMETERS_SPEC)
+buildPrompt() → store SystemMessages → buildHistorySection() → assembleFinalPrompt()
+```
 
 ### CommandExecutor
 ```kotlin
@@ -507,19 +549,18 @@ val l2Result = commandExecutor.executeCommands(l2Executable, DATA_ADDED, "level2
 
 ### Storage Policy
 
-**Ce qui EST stocké :**
+**Stocké en DB :**
 - `AISession.messages: List<SessionMessage>`
-- `SessionMessage` avec données brutes : EnrichmentBlocks dans RichMessage, aiMessageJson
+- RichMessage (JSON complet avec segments)
+- SystemMessage (JSON avec commandResults)
+- aiMessageJson (réponses IA brutes)
 
-**Ce qui N'EST JAMAIS stocké :**
-- DataCommand (temporaire pipeline)
-- ExecutableCommand (temporaire pipeline)
-- Résultats commands dans prompt
+**Non stocké (régénéré) :**
+- DataCommand, ExecutableCommand (pipeline temporaire)
+- Résultats d'exécution des commands
 - Prompt final assemblé
 
-**Régénération complète :** Pipeline stateless à chaque message pour données toujours fraîches
-
-**Stratégie Cache :** Envoi complet du prompt à chaque message. L'API (Claude, OpenAI, etc.) gère le cache automatiquement via préfixes identiques. **Décision architecturale** : Cohérence données > optimisation tokens.
+**Régénération** : Pipeline stateless garantit données fraîches à chaque prompt
 
 ### Dual mode résolution (CHAT absolu vs AUTOMATION relatif)
 

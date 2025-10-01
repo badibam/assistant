@@ -6,6 +6,7 @@ import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.QueryDeduplicator
 import com.assistant.core.ai.processing.UserCommandProcessor
 import com.assistant.core.ai.enrichments.EnrichmentProcessor
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.tools.ToolTypeManager
@@ -91,29 +92,50 @@ object PromptManager {
             context
         )
 
-        // 3. Build Level 1 static doc
+        // 3. Collect SystemMessages from levels
+        val systemMessagesStartup = mutableListOf<SystemMessage>()
+        val systemMessagesLevel4 = mutableListOf<SystemMessage>()
+
+        // L1-3 SystemMessages go to startup (stored before first message)
+        if (l1ExecutionResult.systemMessage.commandResults.isNotEmpty()) {
+            systemMessagesStartup.add(l1ExecutionResult.systemMessage)
+        }
+        if (l2ExecutionResult.systemMessage.commandResults.isNotEmpty()) {
+            systemMessagesStartup.add(l2ExecutionResult.systemMessage)
+        }
+        if (l3ExecutionResult.systemMessage.commandResults.isNotEmpty()) {
+            systemMessagesStartup.add(l3ExecutionResult.systemMessage)
+        }
+
+        // L4 SystemMessages go after user message
+        if (l4ExecutionResult.systemMessage.commandResults.isNotEmpty()) {
+            systemMessagesLevel4.add(l4ExecutionResult.systemMessage)
+        }
+
+        // 4. Build Level 1 static doc
         val level1StaticDoc = buildLevel1StaticDoc(context)
 
-        // 4. Assemble results by level (maintaining structure for API caching)
+        // 5. Assemble results by level (maintaining structure for API caching)
         val level1Content = buildLevelContent("Level 1: System Documentation", level1StaticDoc, l1ExecutionResult.promptResults)
         val level2Content = buildLevelContent("Level 2: User Data", "", l2ExecutionResult.promptResults)
         val level3Content = buildLevelContent("Level 3: Application State", "", l3ExecutionResult.promptResults)
         val level4Content = buildLevelContent("Level 4: Session Data", "", l4ExecutionResult.promptResults)
 
-        // 5. Build message history
-        val messages = buildMessageHistory(session)
-
-        // 6. Assemble final prompt
-        val finalPrompt = assemblePrompt(
-            level1 = level1Content,
-            level2 = level2Content,
-            level3 = level3Content,
-            level4 = level4Content,
-            messages = messages,
-            providerId = session.providerId
+        // 6. Return result with level contents and system messages
+        // Note: History and final assembly will be done by AIOrchestrator after storing SystemMessages
+        return PromptResult(
+            level1Content = level1Content,
+            level2Content = level2Content,
+            level3Content = level3Content,
+            level4Content = level4Content,
+            systemMessagesStartup = systemMessagesStartup,
+            systemMessagesLevel4 = systemMessagesLevel4,
+            level1Tokens = estimateTokens(level1Content),
+            level2Tokens = estimateTokens(level2Content),
+            level3Tokens = estimateTokens(level3Content),
+            level4Tokens = estimateTokens(level4Content),
+            totalTokens = 0 // Will be calculated after adding history
         )
-
-        return finalPrompt
     }
 
     /**
@@ -355,74 +377,278 @@ object PromptManager {
     }
 
 
-    private fun buildMessageHistory(session: AISession): String {
-        return when (session.type) {
-            SessionType.CHAT -> buildChatHistory(session)
-            SessionType.AUTOMATION -> buildAutomationHistory(session)
+    /**
+     * Build history section from session messages (called by AIOrchestrator after storing SystemMessages)
+     *
+     * @param sessionId The session ID to load messages from
+     * @param context Android context
+     * @return Formatted history string for prompt
+     */
+    suspend fun buildHistorySection(sessionId: String, context: Context): String {
+        LogManager.aiPrompt("Building history section for session $sessionId", "DEBUG")
+
+        val coordinator = com.assistant.core.coordinator.Coordinator(context)
+        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+
+        if (!result.isSuccess) {
+            LogManager.aiPrompt("Failed to load session for history: ${result.error}", "ERROR")
+            return ""
+        }
+
+        // Parse session from result
+        val sessionData = result.data?.get("session") as? Map<*, *>
+        if (sessionData == null) {
+            LogManager.aiPrompt("No session data found", "ERROR")
+            return ""
+        }
+
+        val sessionType = sessionData["type"] as? String
+        val messagesData: List<*> = (result.data?.get("messages") as? List<*>) ?: emptyList<Any>()
+
+        // Log history summary
+        logHistorySummary(messagesData, context)
+
+        return when (sessionType) {
+            "CHAT" -> buildChatHistory(messagesData)
+            "AUTOMATION" -> buildAutomationHistory(messagesData)
+            else -> buildChatHistory(messagesData)
         }
     }
 
-    private fun buildChatHistory(session: AISession): String {
-        LogManager.aiPrompt("Building chat history for ${session.messages.size} messages", "DEBUG")
-        return session.messages.mapNotNull { message ->
-            when (message.sender) {
-                MessageSender.USER -> message.textContent ?: message.richContent?.linearText
-                MessageSender.AI -> message.aiMessageJson // Original JSON for consistency
-                MessageSender.SYSTEM -> message.systemMessage?.summary
+    private fun buildChatHistory(messages: List<*>): String {
+        LogManager.aiPrompt("Building chat history for ${messages.size} messages", "DEBUG")
+
+        val formattedMessages = messages.mapNotNull { msg ->
+            if (msg !is Map<*, *>) return@mapNotNull null
+
+            val sender = msg["sender"] as? String
+            when (sender) {
+                "USER" -> {
+                    // Try richContent linearText first, fallback to textContent
+                    val richContent = msg["richContent"] as? Map<*, *>
+                    val linearText = richContent?.get("linearText") as? String
+                    linearText ?: msg["textContent"] as? String
+                }
+                "AI" -> {
+                    // Use original JSON for consistency
+                    msg["aiMessageJson"] as? String
+                }
+                "SYSTEM" -> {
+                    // Format system message for history
+                    val systemMsg = msg["systemMessage"] as? Map<*, *>
+                    val summary = systemMsg?.get("summary") as? String
+                    val commandResults = systemMsg?.get("commandResults") as? List<*>
+
+                    if (summary != null && commandResults != null && commandResults.isNotEmpty()) {
+                        formatSystemMessageForHistory(summary, commandResults)
+                    } else {
+                        null
+                    }
+                }
+                else -> null
             }
-        }.joinToString("\n")
+        }
+
+        return formattedMessages.joinToString("\n\n")
     }
 
-    private fun buildAutomationHistory(session: AISession): String {
+    private fun buildAutomationHistory(messages: List<*>): String {
         LogManager.aiPrompt("Building automation history", "DEBUG")
         // TODO: Implement according to "Send history to AI" setting
         // For now, return initial prompt + executions
-        val initialPrompt = session.messages.firstOrNull { it.sender == MessageSender.USER }
-            ?.richContent?.linearText ?: ""
 
-        val executions = session.messages.filter {
-            it.sender == MessageSender.AI && it.executionMetadata != null
-        }.map { it.aiMessageJson ?: "" }
+        val initialPrompt = messages.firstOrNull { msg ->
+            (msg as? Map<*, *>)?.get("sender") == "USER"
+        }?.let { msg ->
+            val richContent = (msg as? Map<*, *>)?.get("richContent") as? Map<*, *>
+            richContent?.get("linearText") as? String
+        } ?: ""
 
-        return listOf(initialPrompt, *executions.toTypedArray()).joinToString("\n")
-    }
-
-    // === Assembly ===
-
-    private fun assemblePrompt(
-        level1: String,
-        level2: String,
-        level3: String,
-        level4: String,
-        messages: String,
-        providerId: String
-    ): PromptResult {
-        val fullPrompt = when (providerId) {
-            "claude" -> """
-                $level1
-                <cache:breakpoint>
-                $level2
-                <cache:breakpoint>
-                $level3
-                <cache:breakpoint>
-                $level4
-
-                ## Conversation History
-                $messages
-            """.trimIndent()
-            else -> "$level1\n\n$level2\n\n$level3\n\n$level4\n\n## Conversation History\n$messages"
+        val executions = messages.mapNotNull { msg ->
+            val msgMap = msg as? Map<*, *> ?: return@mapNotNull null
+            if (msgMap["sender"] == "AI" && msgMap["executionMetadata"] != null) {
+                msgMap["aiMessageJson"] as? String
+            } else {
+                null
+            }
         }
 
-        val result = PromptResult(
-            prompt = fullPrompt,
-            level1Tokens = estimateTokens(level1),
-            level2Tokens = estimateTokens(level2),
-            level3Tokens = estimateTokens(level3),
-            level4Tokens = estimateTokens(level4),
-            totalTokens = estimateTokens(fullPrompt)
-        )
+        return listOf(initialPrompt, *executions.toTypedArray()).joinToString("\n\n")
+    }
 
-        LogManager.aiPrompt("Assembled prompt: ${result.totalTokens} tokens (L1:${result.level1Tokens}, L2:${result.level2Tokens}, L3:${result.level3Tokens}, L4:${result.level4Tokens})", "INFO")
+    /**
+     * Format SystemMessage for history section with detailed command results
+     * Format: [SYSTEM] summary + detailed command list
+     */
+    private fun formatSystemMessageForHistory(summary: String, commandResults: List<*>): String {
+        val sb = StringBuilder()
+        sb.appendLine("[SYSTEM] $summary")
+
+        // Add detailed command results
+        for (cmdResult in commandResults) {
+            if (cmdResult !is Map<*, *>) continue
+
+            val command = cmdResult["command"] as? String ?: continue
+            val status = cmdResult["status"] as? String ?: "UNKNOWN"
+            val details = cmdResult["details"] as? String
+
+            val statusSymbol = when (status) {
+                "SUCCESS" -> "✓"
+                "FAILED" -> "✗"
+                else -> "?"
+            }
+
+            if (details != null) {
+                sb.appendLine("  $statusSymbol $command: $details")
+            } else {
+                sb.appendLine("  $statusSymbol $command")
+            }
+        }
+
+        return sb.toString().trimEnd()
+    }
+
+    /**
+     * Log summary of conversation history with 1 line per message
+     * Format examples:
+     * - [USER] Début du message... / 1 POINTER + 2 CREATE
+     * - [SYSTEM] 5 operations: 4 success, 1 failed
+     * - [AI] Début du message... / 1 ACTION
+     */
+    private fun logHistorySummary(messages: List<*>, context: Context) {
+        if (messages.isEmpty()) {
+            LogManager.aiPrompt("=== HISTORY SUMMARY ===\n(no messages)\n=== END HISTORY SUMMARY ===", "INFO")
+            return
+        }
+
+        val sb = StringBuilder()
+        sb.appendLine("=== HISTORY SUMMARY ===")
+        sb.appendLine()
+
+        for ((index, msg) in messages.withIndex()) {
+            if (msg !is Map<*, *>) continue
+
+            val sender = msg["sender"] as? String ?: "UNKNOWN"
+            val line = when (sender) {
+                "USER" -> {
+                    // Parse richContentJson to extract preview and enrichments
+                    val richContentJson = msg["richContentJson"] as? String
+
+                    var linearText = ""
+                    val enrichmentCounts = mutableMapOf<String, Int>()
+
+                    if (richContentJson != null && richContentJson.isNotEmpty()) {
+                        try {
+                            val richContent = org.json.JSONObject(richContentJson)
+                            linearText = richContent.optString("linearText", "")
+
+                            // Count enrichments by type
+                            val segmentsArray = richContent.optJSONArray("segments")
+                            if (segmentsArray != null) {
+                                for (i in 0 until segmentsArray.length()) {
+                                    val segment = segmentsArray.optJSONObject(i)
+                                    if (segment != null && segment.optString("type") == "enrichment") {
+                                        val enrichType = segment.optString("enrichmentType", "UNKNOWN")
+                                        enrichmentCounts[enrichType] = (enrichmentCounts[enrichType] ?: 0) + 1
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiPrompt("Failed to parse richContentJson: ${e.message}", "WARN")
+                        }
+                    }
+
+                    val preview = linearText.take(50) + if (linearText.length > 50) "..." else ""
+                    val enrichmentSummary = if (enrichmentCounts.isEmpty()) {
+                        ""
+                    } else {
+                        " / " + enrichmentCounts.entries.joinToString(" + ") { "${it.value} ${it.key}" }
+                    }
+
+                    "[USER] $preview$enrichmentSummary"
+                }
+                "AI" -> {
+                    // Extract AI message preview and command counts
+                    val aiMessageJson = msg["aiMessageJson"] as? String ?: ""
+                    val preview = aiMessageJson.take(50) + if (aiMessageJson.length > 50) "..." else ""
+
+                    // TODO: Parse aiMessageJson to count dataCommands/actionCommands
+                    val commandsSummary = "" // Will be implemented when AI commands are executed
+
+                    "[AI] $preview$commandsSummary"
+                }
+                "SYSTEM" -> {
+                    // Parse systemMessageJson to extract summary
+                    val systemMessageJson = msg["systemMessageJson"] as? String
+
+                    var successCount = 0
+                    var failedCount = 0
+                    var total = 0
+
+                    if (systemMessageJson != null && systemMessageJson.isNotEmpty()) {
+                        try {
+                            val systemMsg = org.json.JSONObject(systemMessageJson)
+                            val commandResultsArray = systemMsg.optJSONArray("commandResults")
+                            if (commandResultsArray != null) {
+                                total = commandResultsArray.length()
+                                for (i in 0 until commandResultsArray.length()) {
+                                    val result = commandResultsArray.optJSONObject(i)
+                                    when (result?.optString("status")) {
+                                        "SUCCESS" -> successCount++
+                                        "FAILED" -> failedCount++
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiPrompt("Failed to parse systemMessageJson: ${e.message}", "WARN")
+                        }
+                    }
+
+                    "[SYSTEM] $total operations: $successCount success, $failedCount failed"
+                }
+                else -> "[${sender}] Unknown message type"
+            }
+
+            sb.appendLine("  ${index + 1}. $line")
+        }
+
+        sb.appendLine()
+        sb.appendLine("=== END HISTORY SUMMARY ===")
+        LogManager.aiPrompt(sb.toString(), "INFO")
+    }
+
+    /**
+     * Assemble final prompt with history (called by AIOrchestrator after storing SystemMessages)
+     *
+     * @param promptResult The PromptResult from buildPrompt()
+     * @param history The formatted history section (includes startup messages from DB)
+     * @param providerId The provider ID for cache breakpoints
+     * @return Complete prompt string
+     */
+    fun assembleFinalPrompt(
+        promptResult: PromptResult,
+        history: String,
+        providerId: String
+    ): String {
+        val fullPrompt = when (providerId) {
+            "claude" -> """
+                ${promptResult.level1Content}
+                <cache:breakpoint>
+                ${promptResult.level2Content}
+                <cache:breakpoint>
+                ${promptResult.level3Content}
+                <cache:breakpoint>
+                ${promptResult.level4Content}
+
+                ## Conversation History
+                $history
+            """.trimIndent()
+            else -> "${promptResult.level1Content}\n\n${promptResult.level2Content}\n\n${promptResult.level3Content}\n\n${promptResult.level4Content}\n\n## Conversation History\n$history"
+        }
+
+        val totalTokens = estimateTokens(fullPrompt)
+
+        LogManager.aiPrompt("Assembled final prompt: $totalTokens tokens (L1:${promptResult.level1Tokens}, L2:${promptResult.level2Tokens}, L3:${promptResult.level3Tokens}, L4:${promptResult.level4Tokens}, history:${estimateTokens(history)})", "INFO")
 
         // Log complete final prompt with line breaks
         LogManager.aiPrompt("""
@@ -433,14 +659,17 @@ $fullPrompt
 === END FINAL PROMPT ===
         """.trimIndent(), "VERBOSE")
 
-        return result
+        return fullPrompt
     }
 
     // === Utilities ===
 
-    private fun estimateTokens(text: String): Int {
-        // Rough estimation: 1 token ≈ 4 characters for most languages
-        // TODO: better estimation
+    /**
+     * Estimate token count from text (public for AIOrchestrator)
+     * Rough estimation: 1 token ≈ 4 characters for most languages
+     * TODO: better estimation
+     */
+    fun estimateTokens(text: String): Int {
         return text.length / 4
     }
 
@@ -469,7 +698,7 @@ $fullPrompt
     ) {
         val s = Strings.`for`(context = context)
         val sb = StringBuilder()
-        sb.appendLine("=== PROMPT GENERATION SUMMARY ===")
+        sb.appendLine("=== PROMPT L1-L4 SUMMARY ===")
         sb.appendLine()
 
         // Level 1
@@ -481,7 +710,7 @@ $fullPrompt
         // Level 4
         appendLevelSummary(sb, "Level 4: Session Data", l4Original, l4Executed, l4Result, s)
 
-        sb.appendLine("=== END PROMPT SUMMARY ===")
+        sb.appendLine("=== END PROMPT L1-L4 SUMMARY ===")
         LogManager.aiPrompt(sb.toString(), "INFO")
     }
 
@@ -547,10 +776,15 @@ $fullPrompt
 }
 
 /**
- * Result of prompt building with token estimates
+ * Result of prompt building with token estimates and system messages
  */
 data class PromptResult(
-    val prompt: String,
+    val level1Content: String,
+    val level2Content: String,
+    val level3Content: String,
+    val level4Content: String,
+    val systemMessagesStartup: List<SystemMessage>,  // L1-3: stored at session start
+    val systemMessagesLevel4: List<SystemMessage>,   // L4: stored after user message
     val level1Tokens: Int,
     val level2Tokens: Int,
     val level3Tokens: Int,

@@ -35,24 +35,24 @@ class AIOrchestrator(private val context: Context) {
 
     /**
      * Send user message to AI - complete flow orchestration
-     * 1. Add enrichment queries to Level 4 (with validation)
-     * 2. Store user message in session via coordinator
-     * 3. Build prompt via PromptManager
-     * 4. Send to AI service via coordinator
-     * 5. Process response and store AI message via coordinator
+     * 1. Store user message in session via coordinator
+     * 2. Build prompt via PromptManager (generates L1-4 + SystemMessages)
+     * 3. Store SystemMessages startup (L1-3) if first message
+     * 4. Store SystemMessages Level4 after user message
+     * 5. Build history section with all messages including SystemMessages
+     * 6. Assemble final prompt
+     * 7. Send to AI and store response
      */
     suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult {
         LogManager.aiSession("AIOrchestrator.sendMessage() called for session $sessionId", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
-                // Level 4 enrichments are now extracted from message history during prompt generation
-
-                // 2. Store user message via coordinator with full RichMessage serialization
+                // 1. Store user message via coordinator with full RichMessage serialization
                 val userMessageResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
                     "sessionId" to sessionId,
                     "sender" to MessageSender.USER.name,
-                    "richContent" to richMessage.toJson(), // Store complete RichMessage as JSON
+                    "richContent" to richMessage.toJson(),
                     "timestamp" to System.currentTimeMillis()
                 ))
 
@@ -60,26 +60,59 @@ class AIOrchestrator(private val context: Context) {
                     return@withContext OperationResult.error(s.shared("ai_error_store_user_message").format(userMessageResult.error ?: ""))
                 }
 
-                // 3. Load actual session with messages to build prompt
+                // 2. Load session to build prompt
                 val session = loadSession(sessionId)
                 if (session == null) {
                     return@withContext OperationResult.error(s.shared("ai_error_load_session").format("Session not found"))
                 }
 
+                // 3. Build prompt (executes commands and generates SystemMessages)
                 val promptResult = PromptManager.buildPrompt(session, context)
 
-                // 4. Token validation
-                val tokenLimit = TokenCalculator.getTokenLimit(context)
-                if (promptResult.totalTokens > tokenLimit) {
-                    LogManager.aiSession("Token limit exceeded: ${promptResult.totalTokens} > $tokenLimit", "WARN")
-                    return@withContext OperationResult.error(s.shared("ai_error_token_limit_exceeded").format(promptResult.totalTokens))
+                // 4. Store SystemMessages Level4 (after user message)
+                if (promptResult.systemMessagesLevel4.isNotEmpty()) {
+                    LogManager.aiSession("Storing ${promptResult.systemMessagesLevel4.size} Level4 SystemMessages", "DEBUG")
+
+                    for (systemMessage in promptResult.systemMessagesLevel4) {
+                        val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                            "sessionId" to sessionId,
+                            "sender" to MessageSender.SYSTEM.name,
+                            "systemMessage" to systemMessage,
+                            "timestamp" to System.currentTimeMillis()
+                        ))
+
+                        if (!storeResult.isSuccess) {
+                            LogManager.aiSession("Failed to store Level4 SystemMessage: ${storeResult.error}", "WARN")
+                        }
+                    }
                 }
 
-                // 5. Send to AI client directly (no coordinator needed for non-DB operations)
-                val aiResponse = aiClient.query(promptResult, "claude") // TODO: Get providerId from session
+                // 6. Build history section with all messages including SystemMessages
+                val history = PromptManager.buildHistorySection(sessionId, context)
+
+                // 7. Assemble final prompt
+                val finalPrompt = PromptManager.assembleFinalPrompt(
+                    promptResult = promptResult,
+                    history = history,
+                    providerId = session.providerId
+                )
+
+                // 8. Token validation on final prompt
+                val tokenLimit = TokenCalculator.getTokenLimit(context)
+                val totalTokens = promptResult.level1Tokens + promptResult.level2Tokens +
+                                promptResult.level3Tokens + promptResult.level4Tokens +
+                                PromptManager.estimateTokens(history)
+
+                if (totalTokens > tokenLimit) {
+                    LogManager.aiSession("Token limit exceeded: $totalTokens > $tokenLimit", "WARN")
+                    return@withContext OperationResult.error(s.shared("ai_error_token_limit_exceeded").format(totalTokens))
+                }
+
+                // 9. Send to AI client
+                val aiResponse = aiClient.query(finalPrompt, session.providerId)
 
                 if (aiResponse.success) {
-                    // 6. Process successful AI response and store via coordinator
+                    // 10. Process and store AI response
                     val responseData = aiResponse.data as Map<String, Any>
                     val aiMessageJson = responseData["aiMessageJson"] as? String ?: ""
 
@@ -108,7 +141,7 @@ class AIOrchestrator(private val context: Context) {
     }
 
     /**
-     * Create new AI session via coordinator
+     * Create new AI session via coordinator and initialize with startup SystemMessages
      */
     suspend fun createSession(
         name: String,
@@ -126,6 +159,34 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             val sessionId = result.data?.get("sessionId") as? String ?: ""
             LogManager.aiSession("Session created successfully: $sessionId", "INFO")
+
+            // Generate and store startup SystemMessages (L1-3)
+            try {
+                val session = loadSession(sessionId)
+                if (session != null) {
+                    val promptResult = PromptManager.buildPrompt(session, context)
+
+                    if (promptResult.systemMessagesStartup.isNotEmpty()) {
+                        LogManager.aiSession("Storing ${promptResult.systemMessagesStartup.size} startup SystemMessages for new session", "DEBUG")
+
+                        for (systemMessage in promptResult.systemMessagesStartup) {
+                            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                                "sessionId" to sessionId,
+                                "sender" to MessageSender.SYSTEM.name,
+                                "systemMessage" to systemMessage,
+                                "timestamp" to System.currentTimeMillis()
+                            ))
+
+                            if (!storeResult.isSuccess) {
+                                LogManager.aiSession("Failed to store startup SystemMessage: ${storeResult.error}", "WARN")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession("Failed to generate startup messages: ${e.message}", "WARN", e)
+            }
+
             sessionId
         } else {
             LogManager.aiSession("Failed to create session: ${result.error}", "ERROR")
@@ -266,8 +327,12 @@ class AIOrchestrator(private val context: Context) {
             // Store original AI JSON for prompt history consistency
             val aiMessageJson = messageData["aiMessageJson"] as? String
 
-            // TODO: Parse system messages when implemented
-            val systemMessage: SystemMessage? = null
+            // Parse system message if present
+            val systemMessage = messageData["systemMessageJson"]?.let { jsonString ->
+                if (jsonString is String && jsonString.isNotEmpty()) {
+                    SystemMessage.fromJson(jsonString)
+                } else null
+            }
 
             // TODO: Parse execution metadata for automation messages
             val executionMetadata: ExecutionMetadata? = null

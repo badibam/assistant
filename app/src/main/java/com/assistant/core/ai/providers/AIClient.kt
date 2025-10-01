@@ -30,8 +30,8 @@ class AIClient(private val context: Context) {
     /**
      * Send prompt to AI provider and return parsed response
      */
-    suspend fun query(promptResult: PromptResult, providerId: String): OperationResult {
-        LogManager.aiService("AIClient.query() called with provider: $providerId, tokens: ${promptResult.totalTokens}")
+    suspend fun query(prompt: String, providerId: String): OperationResult {
+        LogManager.aiService("AIClient.query() called with provider: $providerId, prompt length: ${prompt.length}", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -42,7 +42,7 @@ class AIClient(private val context: Context) {
                     return@withContext OperationResult.error("Provider not found: $providerId")
                 }
 
-                LogManager.aiService("Using provider: ${provider.getDisplayName()}")
+                LogManager.aiService("Using provider: ${provider.getDisplayName()}", "DEBUG")
 
                 // Get provider configuration via coordinator
                 val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
@@ -63,16 +63,16 @@ class AIClient(private val context: Context) {
                 }
 
                 // Send query to provider
-                LogManager.aiService("Sending prompt to ${provider.getDisplayName()}: ${promptResult.prompt.length} characters")
-                val aiResponse = provider.query(promptResult.prompt, providerConfig)
+                LogManager.aiService("Sending prompt to ${provider.getDisplayName()}: ${prompt.length} characters", "DEBUG")
+                val aiResponse = provider.query(prompt, providerConfig)
 
-                LogManager.aiService("Received response from ${provider.getDisplayName()}: success=${aiResponse.success}")
+                LogManager.aiService("Received response from ${provider.getDisplayName()}: success=${aiResponse.success}", "DEBUG")
 
                 if (aiResponse.success) {
                     // Parse response to AIMessage
                     val aiMessage = parseAIResponse(aiResponse.content)
                     if (aiMessage != null) {
-                        LogManager.aiService("Successfully parsed AI response to AIMessage")
+                        LogManager.aiService("Successfully parsed AI response to AIMessage", "DEBUG")
                         OperationResult.success(mapOf(
                             "aiMessage" to aiMessage,
                             "aiMessageJson" to aiResponse.content,

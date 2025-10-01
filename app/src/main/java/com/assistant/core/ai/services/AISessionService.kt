@@ -154,7 +154,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "sender" to msg.sender.name, // Convert enum to string
                         "richContentJson" to msg.richContentJson,
                         "textContent" to msg.textContent,
-                        "aiMessageJson" to msg.aiMessageJson
+                        "aiMessageJson" to msg.aiMessageJson,
+                        "systemMessageJson" to msg.systemMessageJson
                     )
                 }
             ))
@@ -256,7 +257,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "sender" to msg.sender.name, // Convert enum to string
                         "richContentJson" to msg.richContentJson,
                         "textContent" to msg.textContent,
-                        "aiMessageJson" to msg.aiMessageJson
+                        "aiMessageJson" to msg.aiMessageJson,
+                        "systemMessageJson" to msg.systemMessageJson
                     )
                 }
             ))
@@ -319,6 +321,14 @@ class AISessionService(private val context: Context) : ExecutableService {
             val textContent = params.optString("textContent")?.takeIf { it.isNotEmpty() }
             val aiMessageJson = params.optString("aiMessageJson")?.takeIf { it.isNotEmpty() }
 
+            // Handle SystemMessage if provided
+            val systemMessageJson = if (params.has("systemMessage")) {
+                val systemMessage = params.get("systemMessage") as? SystemMessage
+                systemMessage?.toJson()
+            } else {
+                null
+            }
+
             // Create message entity
             val messageEntity = SessionMessageEntity(
                 id = messageId,
@@ -329,7 +339,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 textContent = textContent,
                 aiMessageJson = aiMessageJson,
                 aiMessageParsedJson = null, // TODO: Parse AIMessage when implementing
-                systemMessageJson = null, // TODO: Implement system messages
+                systemMessageJson = systemMessageJson,
                 executionMetadataJson = null // TODO: Implement automation metadata
             )
 
