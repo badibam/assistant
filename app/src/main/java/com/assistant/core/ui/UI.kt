@@ -444,9 +444,10 @@ object UI {
         onSave: () -> Unit,
         onCancel: () -> Unit,
         onDelete: (() -> Unit)? = null,
+        onReset: (() -> Unit)? = null,
         saveEnabled: Boolean = true
     ) = com.assistant.core.ui.components.ToolConfigActions(
-        isEditing, onSave, onCancel, onDelete, saveEnabled
+        isEditing, onSave, onCancel, onDelete, onReset, saveEnabled
     )
     
     // =====================================

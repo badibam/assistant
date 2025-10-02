@@ -318,8 +318,14 @@ object DefaultTheme : ThemeContract {
         
         // Dialogue de confirmation automatique
         if (showConfirmDialog && requireConfirmation) {
+            // Use DANGER dialog only for destructive actions (DELETE)
+            val dialogType = when (action) {
+                ButtonAction.DELETE -> DialogType.DANGER
+                else -> DialogType.CONFIRM
+            }
+
             Dialog(
-                type = DialogType.DANGER,
+                type = dialogType,
                 onConfirm = {
                     showConfirmDialog = false
                     onClick()  // Execute action after confirmation
@@ -341,12 +347,12 @@ object DefaultTheme : ThemeContract {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
             ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT -> ButtonType.PRIMARY
-            
+
             // SECONDARY: Actions destructives/dangereuses avec confirmation
             ButtonAction.DELETE -> ButtonType.SECONDARY
-            
+
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT -> ButtonType.DEFAULT
         }
     }
     
@@ -354,7 +360,7 @@ object DefaultTheme : ThemeContract {
     private fun getButtonText(action: ButtonAction): String {
         val context = androidx.compose.ui.platform.LocalContext.current
         val s = com.assistant.core.strings.Strings.`for`(context = context)
-        
+
         return when (action) {
             ButtonAction.SAVE -> s.shared("action_save")
             ButtonAction.CREATE -> s.shared("action_create")
@@ -368,6 +374,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.REFRESH -> s.shared("action_refresh")
             ButtonAction.SELECT -> s.shared("action_select")
             ButtonAction.CONFIRM -> s.shared("action_confirm")
+            ButtonAction.RESET -> s.shared("action_reset")
             ButtonAction.UP -> s.shared("action_up")
             ButtonAction.DOWN -> s.shared("action_down")
             ButtonAction.LEFT -> s.shared("action_left")
@@ -391,6 +398,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.REFRESH -> "↻"   // Circular arrow
             ButtonAction.SELECT -> "✓"    // Check mark
             ButtonAction.CONFIRM -> "✓"   // Check mark
+            ButtonAction.RESET -> "↺"     // Reset arrow
             ButtonAction.UP -> "▲"        // Triangle haut
             ButtonAction.DOWN -> "▼"      // Triangle bas
             ButtonAction.LEFT -> "◀"      // Triangle gauche
@@ -399,10 +407,15 @@ object DefaultTheme : ThemeContract {
         }
     }
     
+    @Composable
     private fun getDefaultConfirmMessage(action: ButtonAction): String {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
         return when (action) {
-            ButtonAction.DELETE -> "Are you sure you want to delete this item? This action is irreversible."
-            else -> "Confirm this action?"
+            ButtonAction.DELETE -> s.shared("confirm_delete")
+            ButtonAction.RESET -> s.shared("confirm_reset")
+            else -> s.shared("confirm_action")
         }
     }
     

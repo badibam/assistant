@@ -17,8 +17,8 @@ import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
-import com.assistant.core.ui.selectors.ZoneScopeSelector
-import com.assistant.core.ui.selectors.data.NavigationConfig
+import com.assistant.core.ui.dialogs.SettingsDialog
+import com.assistant.core.ai.ui.screens.AIProvidersScreen
 import com.assistant.core.ai.ui.chat.AIFloatingChat
 import kotlinx.coroutines.launch
 
@@ -42,7 +42,8 @@ fun MainScreen() {
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
-    var showZoneScopeSelector by rememberSaveable { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showAIProviders by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
@@ -91,6 +92,16 @@ fun MainScreen() {
         }
     }
     
+    // Show AI Providers screen when requested
+    if (showAIProviders) {
+        AIProvidersScreen(
+            onBack = {
+                showAIProviders = false
+            }
+        )
+        return // Exit MainScreen composition when showing AI Providers
+    }
+
     // Show CreateZoneScreen in edit mode when zone config is requested
     configZone?.let { zone ->
         CreateZoneScreen(
@@ -109,7 +120,7 @@ fun MainScreen() {
         )
         return // Exit MainScreen composition when showing zone config
     }
-    
+
     // Show ZoneScreen when a zone is selected
     selectedZone?.let { zone ->
         ZoneScreen(
@@ -159,7 +170,7 @@ fun MainScreen() {
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,
                 rightButton = ButtonAction.ADD,
-                onLeftClick = { showZoneScopeSelector = true },
+                onLeftClick = { showSettings = true },
                 onRightClick = { showCreateZone = true }
             )
             
@@ -206,24 +217,16 @@ fun MainScreen() {
         }
     }
     
-    // Show ZoneScopeSelector when requested
-    if (showZoneScopeSelector) {
-        ZoneScopeSelector(
-            config = NavigationConfig(
-                allowZoneSelection = true,
-                allowInstanceSelection = false,
-                allowFieldSelection = true,
-                allowValueSelection = false,
-                title = s.shared("data_navigator_title"),
-                showQueryPreview = true
-            ),
-            onDismiss = { showZoneScopeSelector = false },
-            onConfirm = { result ->
-                showZoneScopeSelector = false
-                // Log the result for testing
-                android.util.Log.d("ZoneScopeSelector", "Selected path: ${result.selectedPath}")
-                android.util.Log.d("ZoneScopeSelector", "Selection level: ${result.selectionLevel}")
-                android.util.Log.d("ZoneScopeSelector", "Selected values: ${result.selectedValues}")
+    // Show Settings dialog when requested
+    if (showSettings) {
+        SettingsDialog(
+            onDismiss = { showSettings = false },
+            onOptionSelected = { optionId ->
+                when (optionId) {
+                    "ai_providers" -> showAIProviders = true
+                    // Future settings options will be added here
+                }
+                showSettings = false
             }
         )
     }

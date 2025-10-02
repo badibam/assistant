@@ -25,9 +25,19 @@ interface AIProvider : SchemaProvider {
 
     /**
      * Configuration UI for this provider
+     *
+     * @param config Current configuration JSON
+     * @param onSave Callback to save configuration
+     * @param onCancel Callback to cancel without saving
+     * @param onReset Callback to reset/delete configuration (nullable)
      */
     @Composable
-    fun getConfigScreen(config: String, onSave: (String) -> Unit)
+    fun getConfigScreen(
+        config: String,
+        onSave: (String) -> Unit,
+        onCancel: () -> Unit,
+        onReset: (() -> Unit)?
+    )
 
     /**
      * Send query to AI provider

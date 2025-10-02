@@ -69,9 +69,7 @@
 ## providers/AIProviderRegistry.kt (1)
 - Line 12: Load providers dynamically via discovery pattern
 
-## providers/ClaudeProvider.kt (4)
-- Line 84: Implement real form with API key field
-- Line 88: Implement UI configuration form
+## providers/ClaudeProvider.kt (1)
 - Line 101-106: Implement real Claude API call with authentication, parsing, error handling
 
 ## services/AISessionService.kt (2)

@@ -221,10 +221,10 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
                 return OperationResult.error(s.shared("ai_error_provider_not_configured").format(providerId))
             }
 
-            // Don't allow deleting active provider
+            // If provider is active, deactivate it first
             if (config.isActive) {
-                LogManager.aiService("Cannot delete active provider: $providerId", "WARN")
-                return OperationResult.error(s.shared("ai_error_cannot_delete_active_provider"))
+                LogManager.aiService("Provider is active, deactivating before deletion: $providerId", "INFO")
+                database.aiDao().deactivateAllProviders()
             }
 
             database.aiDao().deleteProviderConfigById(providerId)
