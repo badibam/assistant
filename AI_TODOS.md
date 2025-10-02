@@ -66,29 +66,15 @@
 ## orchestration/AIOrchestrator.kt (NEW - 1)
 - Line 506-512: Implement validation flow for action commands (store validation request, wait for user confirmation, execute on confirm, cascade failure on rejection)
 
-## providers/AIProviderRegistry.kt (4)
+## providers/AIProviderRegistry.kt (1)
 - Line 12: Load providers dynamically via discovery pattern
-- Line 37: Load from app config or database
-- Line 46: Check if provider has valid configuration
-- Line 62: Load from app config
-- Line 84: Save to app config
 
 ## providers/ClaudeProvider.kt (4)
 - Line 84: Implement real form with API key field
 - Line 88: Implement UI configuration form
 - Line 101-106: Implement real Claude API call with authentication, parsing, error handling
 
-## services/AIProviderConfigService.kt (5)
-- Line 74: Implement actual database retrieval
-- Line 85: Check real config validation (stub for testing)
-- Line 101: Implement actual database storage with validation
-- Line 115: Implement actual database retrieval
-- Line 146: Implement actual database deletion
-- Line 162: Implement actual database update
-- Line 174: Implement actual database retrieval
-
-## services/AISessionService.kt (3)
-- Line 68: Implement all CRUD operations
+## services/AISessionService.kt (2)
 - Line 341: Parse AIMessage when implementing
 - Line 343: Implement automation metadata
 

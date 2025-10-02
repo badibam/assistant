@@ -15,6 +15,7 @@ import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
+import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.versioning.MigrationOrchestrator
@@ -27,11 +28,12 @@ import com.assistant.core.utils.LogManager
         ToolDataEntity::class,
         AppSettingsCategory::class,
         AISessionEntity::class,
-        SessionMessageEntity::class
+        SessionMessageEntity::class,
+        AIProviderConfigEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @androidx.room.TypeConverters(

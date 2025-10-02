@@ -167,17 +167,111 @@ class AISessionService(private val context: Context) : ExecutableService {
 
     private suspend fun listSessions(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        LogManager.aiSession("Listing all sessions", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val sessionEntities = database.aiDao().getAllSessions()
+
+            LogManager.aiSession("Found ${sessionEntities.size} sessions", "DEBUG")
+
+            val sessions = sessionEntities.map { session ->
+                mapOf(
+                    "id" to session.id,
+                    "name" to session.name,
+                    "type" to session.type.name,
+                    "providerId" to session.providerId,
+                    "createdAt" to session.createdAt,
+                    "lastActivity" to session.lastActivity,
+                    "isActive" to session.isActive
+                )
+            }
+
+            return OperationResult.success(mapOf(
+                "sessions" to sessions,
+                "count" to sessions.size
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to list sessions: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_list_sessions").format(e.message ?: ""))
+        }
     }
 
     private suspend fun updateSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+
+        LogManager.aiSession("Updating session: $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val sessionEntity = database.aiDao().getSession(sessionId)
+
+            if (sessionEntity == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Extract fields to update (name is the main updatable field)
+            val name = params.optString("name")
+            val now = System.currentTimeMillis()
+
+            val updatedEntity = sessionEntity.copy(
+                name = if (name.isNotEmpty()) name else sessionEntity.name,
+                lastActivity = now
+            )
+
+            database.aiDao().updateSession(updatedEntity)
+
+            LogManager.aiSession("Successfully updated session: $sessionId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "name" to updatedEntity.name,
+                "updatedAt" to now
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to update session: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_update_session").format(e.message ?: ""))
+        }
     }
 
     private suspend fun deleteSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+
+        LogManager.aiSession("Deleting session: $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val sessionEntity = database.aiDao().getSession(sessionId)
+
+            if (sessionEntity == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Delete all messages for this session first
+            database.aiDao().deleteMessagesForSession(sessionId)
+
+            // Delete the session
+            database.aiDao().deleteSession(sessionEntity)
+
+            LogManager.aiSession("Successfully deleted session: $sessionId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "deleted" to true
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to delete session: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_delete_session").format(e.message ?: ""))
+        }
     }
 
     private suspend fun setActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
@@ -366,22 +460,145 @@ class AISessionService(private val context: Context) : ExecutableService {
 
     private suspend fun getMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
+
+        LogManager.aiSession("Getting message: $messageId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val messageEntity = database.aiDao().getMessage(messageId)
+
+            if (messageEntity == null) {
+                LogManager.aiSession("Message not found: $messageId", "WARN")
+                return OperationResult.error(s.shared("ai_error_message_not_found").format(messageId))
+            }
+
+            return OperationResult.success(mapOf(
+                "message" to mapOf(
+                    "id" to messageEntity.id,
+                    "sessionId" to messageEntity.sessionId,
+                    "timestamp" to messageEntity.timestamp,
+                    "sender" to messageEntity.sender.name,
+                    "richContentJson" to messageEntity.richContentJson,
+                    "textContent" to messageEntity.textContent,
+                    "aiMessageJson" to messageEntity.aiMessageJson,
+                    "systemMessageJson" to messageEntity.systemMessageJson
+                )
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to get message: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_get_message").format(e.message ?: ""))
+        }
     }
 
     private suspend fun listMessages(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+
+        LogManager.aiSession("Listing messages for session: $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val messageEntities = database.aiDao().getMessagesForSession(sessionId)
+
+            LogManager.aiSession("Found ${messageEntities.size} messages for session $sessionId", "DEBUG")
+
+            val messages = messageEntities.map { msg ->
+                mapOf(
+                    "id" to msg.id,
+                    "timestamp" to msg.timestamp,
+                    "sender" to msg.sender.name,
+                    "richContentJson" to msg.richContentJson,
+                    "textContent" to msg.textContent,
+                    "aiMessageJson" to msg.aiMessageJson,
+                    "systemMessageJson" to msg.systemMessageJson
+                )
+            }
+
+            return OperationResult.success(mapOf(
+                "messages" to messages,
+                "count" to messages.size,
+                "sessionId" to sessionId
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to list messages: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_list_messages").format(e.message ?: ""))
+        }
     }
 
     private suspend fun updateMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
+
+        LogManager.aiSession("Updating message: $messageId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val messageEntity = database.aiDao().getMessage(messageId)
+
+            if (messageEntity == null) {
+                LogManager.aiSession("Message not found: $messageId", "WARN")
+                return OperationResult.error(s.shared("ai_error_message_not_found").format(messageId))
+            }
+
+            // Extract fields to update
+            val textContent = params.optString("textContent")
+            val aiMessageJson = params.optString("aiMessageJson")
+
+            val updatedEntity = messageEntity.copy(
+                textContent = if (textContent.isNotEmpty()) textContent else messageEntity.textContent,
+                aiMessageJson = if (aiMessageJson.isNotEmpty()) aiMessageJson else messageEntity.aiMessageJson
+            )
+
+            database.aiDao().updateMessage(updatedEntity)
+
+            LogManager.aiSession("Successfully updated message: $messageId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "messageId" to messageId,
+                "updated" to true
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to update message: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_update_message").format(e.message ?: ""))
+        }
     }
 
     private suspend fun deleteMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        return OperationResult.error(s.shared("error_not_implemented"))
+
+        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
+
+        LogManager.aiSession("Deleting message: $messageId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val messageEntity = database.aiDao().getMessage(messageId)
+
+            if (messageEntity == null) {
+                LogManager.aiSession("Message not found: $messageId", "WARN")
+                return OperationResult.error(s.shared("ai_error_message_not_found").format(messageId))
+            }
+
+            database.aiDao().deleteMessage(messageEntity)
+
+            LogManager.aiSession("Successfully deleted message: $messageId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "messageId" to messageId,
+                "deleted" to true
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to delete message: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_delete_message").format(e.message ?: ""))
+        }
     }
 
     /**

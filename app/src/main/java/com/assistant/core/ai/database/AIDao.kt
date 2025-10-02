@@ -64,4 +64,33 @@ interface AIDao {
 
     @Query("SELECT COUNT(*) FROM session_messages WHERE sessionId = :sessionId")
     suspend fun getMessageCountForSession(sessionId: String): Int
+
+    // === Provider Configurations ===
+
+    @Query("SELECT * FROM ai_provider_configs ORDER BY providerId ASC")
+    suspend fun getAllProviderConfigs(): List<AIProviderConfigEntity>
+
+    @Query("SELECT * FROM ai_provider_configs WHERE isActive = 1 LIMIT 1")
+    suspend fun getActiveProviderConfig(): AIProviderConfigEntity?
+
+    @Query("SELECT * FROM ai_provider_configs WHERE providerId = :providerId")
+    suspend fun getProviderConfig(providerId: String): AIProviderConfigEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProviderConfig(config: AIProviderConfigEntity)
+
+    @Update
+    suspend fun updateProviderConfig(config: AIProviderConfigEntity)
+
+    @Query("UPDATE ai_provider_configs SET isActive = 0")
+    suspend fun deactivateAllProviders()
+
+    @Query("UPDATE ai_provider_configs SET isActive = 1 WHERE providerId = :providerId")
+    suspend fun activateProvider(providerId: String)
+
+    @Delete
+    suspend fun deleteProviderConfig(config: AIProviderConfigEntity)
+
+    @Query("DELETE FROM ai_provider_configs WHERE providerId = :providerId")
+    suspend fun deleteProviderConfigById(providerId: String)
 }
