@@ -308,8 +308,7 @@ object AIOrchestrator {
     }
 
     /**
-     * Load session by ID
-     * TODO: Implement full session parsing when needed by UI
+     * Load session by ID with full message parsing
      */
     suspend fun loadSession(sessionId: String): AISession? {
         LogManager.aiSession("AIOrchestrator.loadSession() called for $sessionId", "DEBUG")
@@ -321,7 +320,11 @@ object AIOrchestrator {
             val messagesData = result.data?.get("messages") as? List<*>
 
             if (sessionData != null) {
-                // Stub implementation - return minimal AISession
+                // Parse messages
+                val messages = parseMessages(messagesData)
+
+                LogManager.aiSession("Loaded session $sessionId with ${messages.size} messages", "DEBUG")
+
                 AISession(
                     id = sessionData["id"] as? String ?: sessionId,
                     name = sessionData["name"] as? String ?: "",
@@ -332,17 +335,93 @@ object AIOrchestrator {
                     },
                     providerId = sessionData["providerId"] as? String ?: "claude",
                     providerSessionId = sessionData["providerSessionId"] as? String ?: "",
-                    schedule = null,
+                    schedule = null, // TODO: Parse schedule when needed
                     createdAt = (sessionData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                     lastActivity = (sessionData["lastActivity"] as? Number)?.toLong() ?: System.currentTimeMillis(),
-                    messages = emptyList(), // TODO: Parse messages when needed
+                    messages = messages,
                     isActive = sessionData["isActive"] as? Boolean ?: false
                 )
             } else {
                 null
             }
         } else {
+            LogManager.aiSession("Failed to load session $sessionId: ${result.error}", "ERROR")
             null
+        }
+    }
+
+    /**
+     * Parse messages list from service response
+     * Returns empty list if parsing fails completely
+     */
+    private fun parseMessages(messagesData: List<*>?): List<SessionMessage> {
+        if (messagesData == null) return emptyList()
+
+        return messagesData.mapNotNull { msgData ->
+            try {
+                val msgMap = msgData as? Map<*, *> ?: return@mapNotNull null
+
+                val id = msgMap["id"] as? String ?: return@mapNotNull null
+                val timestamp = (msgMap["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                val senderStr = msgMap["sender"] as? String ?: return@mapNotNull null
+                val sender = try {
+                    MessageSender.valueOf(senderStr)
+                } catch (e: Exception) {
+                    LogManager.aiSession("Invalid sender type: $senderStr", "WARN")
+                    return@mapNotNull null
+                }
+
+                // Parse richContent from JSON if present
+                val richContentJson = msgMap["richContentJson"] as? String
+                val richContent = if (!richContentJson.isNullOrEmpty()) {
+                    RichMessage.fromJson(richContentJson).also { parsed ->
+                        if (parsed == null) {
+                            LogManager.aiSession("Failed to parse richContentJson for message $id", "WARN")
+                        }
+                    }
+                } else null
+
+                // Get textContent as-is
+                val textContent = (msgMap["textContent"] as? String)?.takeIf { it.isNotEmpty() }
+
+                // Parse aiMessage from aiMessageJson if present
+                val aiMessageJsonStr = msgMap["aiMessageJson"] as? String
+                val aiMessage = if (!aiMessageJsonStr.isNullOrEmpty()) {
+                    AIMessage.fromJson(aiMessageJsonStr).also { parsed ->
+                        if (parsed == null) {
+                            LogManager.aiSession("Failed to parse aiMessageJson for message $id", "WARN")
+                        }
+                    }
+                } else null
+
+                // Parse systemMessage from JSON if present
+                val systemMessageJson = msgMap["systemMessageJson"] as? String
+                val systemMessage = if (!systemMessageJson.isNullOrEmpty()) {
+                    SystemMessage.fromJson(systemMessageJson).also { parsed ->
+                        if (parsed == null) {
+                            LogManager.aiSession("Failed to parse systemMessageJson for message $id", "WARN")
+                        }
+                    }
+                } else null
+
+                // executionMetadata = null (TODO: automation)
+
+                SessionMessage(
+                    id = id,
+                    timestamp = timestamp,
+                    sender = sender,
+                    richContent = richContent,
+                    textContent = textContent,
+                    aiMessage = aiMessage,
+                    aiMessageJson = aiMessageJsonStr?.takeIf { it.isNotEmpty() }, // Keep original JSON
+                    systemMessage = systemMessage,
+                    executionMetadata = null // TODO: Parse when automation implemented
+                )
+
+            } catch (e: Exception) {
+                LogManager.aiSession("Failed to parse message: ${e.message}", "WARN", e)
+                null // Skip this message
+            }
         }
     }
 
