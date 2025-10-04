@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -547,6 +548,9 @@ dependencies {
 
     // HTTP client for AI API calls
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // JSON serialization for AI provider communication
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

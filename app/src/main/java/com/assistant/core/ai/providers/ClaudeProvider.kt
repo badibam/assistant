@@ -10,11 +10,13 @@ import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
 import com.assistant.core.strings.Strings
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -229,115 +231,89 @@ class ClaudeProvider : AIProvider {
     /**
      * Send query to Claude API with PromptData
      *
-     * Provider responsibilities:
-     * - Transform PromptData to Claude API format (messages array)
-     * - Fuse SystemMessages with formattedData into conversation history
-     * - Add cache breakpoints for L1-L3 (Claude prompt caching)
-     * - Make API call
-     * - Return raw JSON response
-     *
-     * TODO: Implement real Claude API call with authentication and caching
+     * Implementation:
+     * - Transform PromptData to Claude Messages API format via toClaudeJson()
+     * - Apply cache_control breakpoints (L1, L2, L3, last message)
+     * - Make HTTP POST to /v1/messages
+     * - Parse response with cache metrics via toClaudeAIResponse()
      */
-    override suspend fun query(promptData: PromptData, config: String): AIResponse {
+    override suspend fun query(promptData: PromptData, config: String): AIResponse = withContext(Dispatchers.IO) {
         LogManager.aiService("ClaudeProvider.query() called with ${promptData.sessionMessages.size} messages")
-        LogManager.aiService("Claude config: $config")
 
         try {
-            // TODO: Parse config JSON to extract api_key, model, max_tokens
-            // val configJson = JSONObject(config)
-            // val apiKey = configJson.getString("api_key")
-            // val model = configJson.getString("model")
-            // val maxTokens = configJson.getInt("max_tokens")
+            // Parse config
+            val configJson = JSONObject(config)
+            val apiKey = configJson.getString("api_key")
 
-            // Build prompt from PromptData
-            // TODO: Transform to Claude Messages API format with cache breakpoints
-            val prompt = buildPromptFromData(promptData)
+            // Transform PromptData to Claude JSON via extension
+            val requestJson = promptData.toClaudeJson(configJson)
+            val requestBody = requestJson.toString()
 
-            LogManager.aiService("Built prompt: ${prompt.length} characters")
-            LogManager.aiService("TODO: Implement real Claude API call with prompt caching")
+            LogManager.aiService("Built Claude request: ${requestBody.length} characters")
+            LogManager.aiService("Request includes ${promptData.sessionMessages.size} messages")
 
-            // Stub implementation for flow testing
-            val stubResponse = """
-            {
-                "preText": "Je suis Claude, assistant IA créé par Anthropic. Voici ma réponse de test.",
-                "dataCommands": null,
-                "actionCommands": null,
-                "postText": null,
-                "communicationModule": null
+            // Build HTTP request
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val request = Request.Builder()
+                .url("$CLAUDE_API_BASE_URL/v1/messages")
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", ANTHROPIC_VERSION)
+                .header("content-type", "application/json")
+                .post(requestBody.toRequestBody(mediaType))
+                .build()
+
+            // Execute request
+            val response = httpClient.newCall(request).execute()
+            val responseBody = response.body?.string() ?: ""
+
+            if (!response.isSuccessful) {
+                LogManager.aiService("Claude API error: ${response.code} - $responseBody", "ERROR")
+
+                // Parse error message
+                val errorMessage = try {
+                    val errorJson = Json.parseToJsonElement(responseBody).jsonObject
+                    val errorObj = errorJson["error"]?.jsonObject
+                    errorObj?.get("message")?.jsonPrimitive?.content ?: "HTTP ${response.code}"
+                } catch (e: Exception) {
+                    "HTTP ${response.code}"
+                }
+
+                return@withContext AIResponse(
+                    success = false,
+                    content = "",
+                    errorMessage = errorMessage,
+                    tokensUsed = 0,
+                    cacheCreationTokens = 0,
+                    cacheReadTokens = 0,
+                    inputTokens = 0
+                )
             }
-            """.trimIndent()
 
-            return AIResponse(
-                success = true,
-                content = stubResponse,
-                errorMessage = null,
-                tokensUsed = 42, // Stub token count
-                cacheCreationTokens = 100,
-                cacheReadTokens = 500,
-                inputTokens = 50
+            // Parse successful response via extension
+            LogManager.aiService("Claude API success: ${responseBody.length} characters")
+            val jsonResponse = Json.parseToJsonElement(responseBody)
+            val aiResponse = jsonResponse.toClaudeAIResponse()
+
+            LogManager.aiService(
+                "Claude tokens - Input: ${aiResponse.inputTokens}, " +
+                "Cache creation: ${aiResponse.cacheCreationTokens}, " +
+                "Cache read: ${aiResponse.cacheReadTokens}, " +
+                "Output: ${aiResponse.tokensUsed}"
             )
+
+            return@withContext aiResponse
 
         } catch (e: Exception) {
             LogManager.aiService("Claude query failed: ${e.message}", "ERROR", e)
-            return AIResponse(
+            return@withContext AIResponse(
                 success = false,
                 content = "",
                 errorMessage = "Claude API error: ${e.message}",
-                tokensUsed = 0
+                tokensUsed = 0,
+                cacheCreationTokens = 0,
+                cacheReadTokens = 0,
+                inputTokens = 0
             )
         }
-    }
-
-    /**
-     * Build final prompt string from PromptData
-     * TODO: Transform to Claude Messages API format instead of string
-     *
-     * This is a TEMPORARY stub - real implementation should:
-     * 1. Build messages array with system/user/assistant roles
-     * 2. Fuse SystemMessages.formattedData into conversation
-     * 3. Add cache breakpoints after L1, L2, L3
-     */
-    private fun buildPromptFromData(promptData: PromptData): String {
-        val sb = StringBuilder()
-
-        // Add levels as system context
-        sb.appendLine(promptData.level1Content)
-        sb.appendLine()
-        sb.appendLine(promptData.level2Content)
-        sb.appendLine()
-        sb.appendLine(promptData.level3Content)
-        sb.appendLine()
-
-        // Add conversation history
-        sb.appendLine("## Conversation History")
-        sb.appendLine()
-
-        for (message in promptData.sessionMessages) {
-            when (message.sender) {
-                MessageSender.USER -> {
-                    sb.appendLine("[USER]")
-                    val text = message.richContent?.linearText ?: message.textContent ?: ""
-                    sb.appendLine(text)
-                    sb.appendLine()
-                }
-                MessageSender.AI -> {
-                    sb.appendLine("[ASSISTANT]")
-                    val text = message.aiMessageJson ?: message.textContent ?: ""
-                    sb.appendLine(text)
-                    sb.appendLine()
-                }
-                MessageSender.SYSTEM -> {
-                    sb.appendLine("[SYSTEM]")
-                    sb.appendLine(message.systemMessage?.summary ?: "")
-                    if (message.systemMessage?.formattedData != null) {
-                        sb.appendLine()
-                        sb.appendLine(message.systemMessage.formattedData)
-                    }
-                    sb.appendLine()
-                }
-            }
-        }
-
-        return sb.toString()
     }
 }
