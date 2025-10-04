@@ -43,7 +43,8 @@ fun AIFloatingChat(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    val aiOrchestrator = remember { AIOrchestrator(context) }
+    // AIOrchestrator is now a singleton, no need to remember/create
+    val aiOrchestrator = AIOrchestrator
 
     // Initialize session on first load
     LaunchedEffect(Unit) {

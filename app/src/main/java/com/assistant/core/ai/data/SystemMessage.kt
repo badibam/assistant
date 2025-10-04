@@ -9,8 +9,9 @@ import org.json.JSONObject
  */
 data class SystemMessage(
     val type: SystemMessageType,
-    val commandResults: List<CommandResult>,
-    val summary: String // Human-readable summary for UI display
+    val commandResults: List<CommandResult>,  // Metadata (success/failure per command)
+    val summary: String,                       // Human-readable summary for UI display
+    val formattedData: String? = null         // Complete JSON results for prompt inclusion
 ) {
     /**
      * Serialize SystemMessage to JSON string
@@ -19,6 +20,9 @@ data class SystemMessage(
         val json = JSONObject()
         json.put("type", type.name)
         json.put("summary", summary)
+        if (formattedData != null) {
+            json.put("formattedData", formattedData)
+        }
 
         val resultsArray = JSONArray()
         for (result in commandResults) {
@@ -43,6 +47,7 @@ data class SystemMessage(
 
                 val type = SystemMessageType.valueOf(json.getString("type"))
                 val summary = json.getString("summary")
+                val formattedData = json.optString("formattedData").takeIf { it.isNotEmpty() }
 
                 val commandResults = mutableListOf<CommandResult>()
                 val resultsArray = json.getJSONArray("commandResults")
@@ -60,7 +65,8 @@ data class SystemMessage(
                 SystemMessage(
                     type = type,
                     commandResults = commandResults,
-                    summary = summary
+                    summary = summary,
+                    formattedData = formattedData
                 )
             } catch (e: Exception) {
                 null
@@ -71,7 +77,8 @@ data class SystemMessage(
 
 enum class SystemMessageType {
     DATA_ADDED,      // Data requests completed and added to context
-    ACTIONS_EXECUTED // AI actions execution results
+    ACTIONS_EXECUTED, // AI actions execution results
+    LIMIT_REACHED    // Autonomous loop limit reached (stops execution, waits for next user message)
 }
 
 /**
@@ -84,8 +91,8 @@ data class CommandResult(
 )
 
 enum class CommandStatus {
-    SUCCESS,
-    FAILED,
-    CANCELLED,
-    CACHED  // Command was deduplicated, data already available from previous execution
+    SUCCESS,   // Command executed successfully
+    FAILED,    // Command failed due to technical error
+    CANCELLED, // Command cancelled (timeout, token limit, OR user refused validation)
+    CACHED     // Command was deduplicated, data already available from previous execution
 }

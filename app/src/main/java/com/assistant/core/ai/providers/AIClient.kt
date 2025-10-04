@@ -4,7 +4,6 @@ import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.providers.AIProvider
 import com.assistant.core.ai.providers.AIProviderRegistry
-import com.assistant.core.ai.prompts.PromptResult
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.OperationResult
@@ -28,18 +27,30 @@ class AIClient(private val context: Context) {
     private val providerRegistry = AIProviderRegistry(context)
 
     /**
-     * Send prompt to AI provider and return parsed response
+     * Send prompt data to AI provider and return raw response
+     * Provider transforms PromptData to its specific format and handles prompt construction
+     *
+     * @param promptData The raw prompt data (L1-L3 + messages)
+     * @return AIResponse with raw JSON string (not parsed)
      */
-    suspend fun query(prompt: String, providerId: String): OperationResult {
-        LogManager.aiService("AIClient.query() called with provider: $providerId, prompt length: ${prompt.length}", "DEBUG")
+    suspend fun query(promptData: PromptData): AIResponse {
+        LogManager.aiService("AIClient.query() called with PromptData: ${promptData.sessionMessages.size} messages", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
-                // Get active provider
+                // Get provider ID from session (embedded in messages)
+                // For now, use default "claude" - TODO: extract from session
+                val providerId = "claude"
+
+                // Get provider
                 val provider = providerRegistry.getProvider(providerId)
                 if (provider == null) {
                     LogManager.aiService("Provider not found: $providerId", "ERROR")
-                    return@withContext OperationResult.error("Provider not found: $providerId")
+                    return@withContext AIResponse(
+                        success = false,
+                        content = "",
+                        errorMessage = "Provider not found: $providerId"
+                    )
                 }
 
                 LogManager.aiService("Using provider: ${provider.getDisplayName()}", "DEBUG")
@@ -51,7 +62,11 @@ class AIClient(private val context: Context) {
 
                 if (!configResult.isSuccess) {
                     LogManager.aiService("Provider configuration not found: $providerId", "ERROR")
-                    return@withContext OperationResult.error("Provider configuration not found: $providerId")
+                    return@withContext AIResponse(
+                        success = false,
+                        content = "",
+                        errorMessage = "Provider configuration not found: $providerId"
+                    )
                 }
 
                 val providerConfig = configResult.data?.get("config") as? String ?: "{}"
@@ -59,38 +74,28 @@ class AIClient(private val context: Context) {
 
                 if (!isConfigured) {
                     LogManager.aiService("Provider not configured: $providerId", "ERROR")
-                    return@withContext OperationResult.error("Provider not configured: $providerId")
+                    return@withContext AIResponse(
+                        success = false,
+                        content = "",
+                        errorMessage = "Provider not configured: $providerId"
+                    )
                 }
 
-                // Send query to provider
-                LogManager.aiService("Sending prompt to ${provider.getDisplayName()}: ${prompt.length} characters", "DEBUG")
-                val aiResponse = provider.query(prompt, providerConfig)
+                // Send query to provider with PromptData
+                LogManager.aiService("Sending PromptData to ${provider.getDisplayName()}", "DEBUG")
+                val aiResponse = provider.query(promptData, providerConfig)
 
                 LogManager.aiService("Received response from ${provider.getDisplayName()}: success=${aiResponse.success}", "DEBUG")
 
-                if (aiResponse.success) {
-                    // Parse response to AIMessage
-                    val aiMessage = parseAIResponse(aiResponse.content)
-                    if (aiMessage != null) {
-                        LogManager.aiService("Successfully parsed AI response to AIMessage", "DEBUG")
-                        OperationResult.success(mapOf(
-                            "aiMessage" to aiMessage,
-                            "aiMessageJson" to aiResponse.content,
-                            "provider" to providerId,
-                            "tokensUsed" to aiResponse.tokensUsed
-                        ))
-                    } else {
-                        LogManager.aiService("Failed to parse AI response", "ERROR")
-                        OperationResult.error("Failed to parse AI response")
-                    }
-                } else {
-                    LogManager.aiService("AI provider returned error: ${aiResponse.errorMessage}", "ERROR")
-                    OperationResult.error("AI provider error: ${aiResponse.errorMessage}")
-                }
+                aiResponse
 
             } catch (e: Exception) {
                 LogManager.aiService("AIClient query failed: ${e.message}", "ERROR", e)
-                OperationResult.error("AI query failed: ${e.message}")
+                AIResponse(
+                    success = false,
+                    content = "",
+                    errorMessage = "AI query failed: ${e.message}"
+                )
             }
         }
     }
@@ -271,5 +276,9 @@ data class AIResponse(
     val success: Boolean,
     val content: String,
     val errorMessage: String? = null,
-    val tokensUsed: Int = 0
+    val tokensUsed: Int = 0,
+    // Cache metrics (provider-specific, 0 if not supported)
+    val cacheCreationTokens: Int = 0,
+    val cacheReadTokens: Int = 0,
+    val inputTokens: Int = 0
 )

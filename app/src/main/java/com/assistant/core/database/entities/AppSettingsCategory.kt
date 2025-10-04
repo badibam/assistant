@@ -61,7 +61,15 @@ object DefaultAILimitsSettings {
     {
         "defaultQueryMaxTokens": 2000,
         "defaultCharsPerToken": 4.5,
-        "defaultPromptMaxTokens": 15000
+        "defaultPromptMaxTokens": 15000,
+        "chatMaxDataQueryIterations": 3,
+        "chatMaxActionRetries": 3,
+        "chatMaxAutonomousRoundtrips": 10,
+        "chatMaxCommunicationModulesRoundtrips": 5,
+        "automationMaxDataQueryIterations": 5,
+        "automationMaxActionRetries": 5,
+        "automationMaxAutonomousRoundtrips": 20,
+        "automationMaxCommunicationModulesRoundtrips": 10
     }
     """
 }

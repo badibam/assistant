@@ -1,6 +1,8 @@
 package com.assistant.core.services
 
 import android.content.Context
+import com.assistant.core.config.TimeConfig
+import com.assistant.core.config.AILimitsConfig
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
@@ -111,6 +113,59 @@ class AppConfigService(private val context: Context) : ExecutableService {
         }
         
         settingsDao.updateSettings(AppSettingCategories.FORMAT, settings.toString())
+    }
+
+    /**
+     * Get structured time configuration
+     */
+    suspend fun getTimeConfig(): TimeConfig {
+        val settings = getFormatSettings()
+        return TimeConfig(
+            dayStartHour = settings.optInt("day_start_hour", 4),
+            weekStartDay = settings.optString("week_start_day", "MONDAY")
+        )
+    }
+
+    /**
+     * Get structured AI limits configuration
+     */
+    suspend fun getAILimits(): AILimitsConfig {
+        val settings = getAILimitsSettings()
+        return AILimitsConfig(
+            chatMaxDataQueryIterations = settings.optInt("chatMaxDataQueryIterations", 3),
+            chatMaxActionRetries = settings.optInt("chatMaxActionRetries", 3),
+            chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", 10),
+            chatMaxCommunicationModulesRoundtrips = settings.optInt("chatMaxCommunicationModulesRoundtrips", 5),
+            automationMaxDataQueryIterations = settings.optInt("automationMaxDataQueryIterations", 5),
+            automationMaxActionRetries = settings.optInt("automationMaxActionRetries", 5),
+            automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20),
+            automationMaxCommunicationModulesRoundtrips = settings.optInt("automationMaxCommunicationModulesRoundtrips", 10)
+        )
+    }
+
+    /**
+     * Set AI limits configuration
+     */
+    suspend fun setAILimits(limits: AILimitsConfig) {
+        val settings = JSONObject().apply {
+            // Keep existing token limits
+            val currentSettings = getAILimitsSettings()
+            put("defaultQueryMaxTokens", currentSettings.optInt("defaultQueryMaxTokens", 2000))
+            put("defaultCharsPerToken", currentSettings.optDouble("defaultCharsPerToken", 4.5))
+            put("defaultPromptMaxTokens", currentSettings.optInt("defaultPromptMaxTokens", 15000))
+
+            // Set new loop limits
+            put("chatMaxDataQueryIterations", limits.chatMaxDataQueryIterations)
+            put("chatMaxActionRetries", limits.chatMaxActionRetries)
+            put("chatMaxAutonomousRoundtrips", limits.chatMaxAutonomousRoundtrips)
+            put("chatMaxCommunicationModulesRoundtrips", limits.chatMaxCommunicationModulesRoundtrips)
+            put("automationMaxDataQueryIterations", limits.automationMaxDataQueryIterations)
+            put("automationMaxActionRetries", limits.automationMaxActionRetries)
+            put("automationMaxAutonomousRoundtrips", limits.automationMaxAutonomousRoundtrips)
+            put("automationMaxCommunicationModulesRoundtrips", limits.automationMaxCommunicationModulesRoundtrips)
+        }
+
+        settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())
     }
 
     /**

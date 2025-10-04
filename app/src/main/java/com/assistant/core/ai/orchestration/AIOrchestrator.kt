@@ -3,52 +3,133 @@ package com.assistant.core.ai.orchestration
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.prompts.PromptManager
-import com.assistant.core.ai.utils.TokenCalculator
+import com.assistant.core.ai.prompts.CommandExecutor
+import com.assistant.core.ai.processing.UserCommandProcessor
+import com.assistant.core.ai.processing.AICommandProcessor
 import com.assistant.core.ai.providers.AIClient
+import com.assistant.core.ai.providers.AIResponse
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
 
 /**
- * AI Orchestrator - coordinates the complete AI flow without being an ExecutableService
+ * AI Orchestrator singleton - coordinates the complete AI flow
  *
  * Primary responsibilities:
- * - Complete flow orchestration: user message → prompt building → AI call → response processing
- * - Enrichment queries integration to Level 4
- * - Token validation and limits checking
- * - Coordinates AISessionService (DB operations) and AIProviderService (AI calls)
- * - Used directly by UI components for complex AI interactions
+ * - Complete flow orchestration: user message → enrichments → prompt building → AI call → autonomous loops
+ * - Autonomous loops with limits (data queries, action retries, communication modules)
+ * - User interaction management via StateFlow (validation, communication modules)
+ * - Session management via coordinator
+ *
+ * Singleton pattern allows:
+ * - Session persistence across UI lifecycle (Dialog open/close)
+ * - State observation via StateFlow for UI reconnection
+ * - Global access without dependency injection
  */
-class AIOrchestrator(private val context: Context) {
+object AIOrchestrator {
 
-    private val coordinator = Coordinator(context)
-    private val aiClient = AIClient(context)
-    private val s = Strings.`for`(context = context)
+    private lateinit var context: Context
+    private lateinit var coordinator: Coordinator
+    private lateinit var aiClient: AIClient
+    private lateinit var s: com.assistant.core.strings.StringsContext
+
+    // State for user interaction (observable by UI)
+    private val _waitingState = MutableStateFlow<WaitingState>(WaitingState.None)
+    val waitingState: StateFlow<WaitingState> = _waitingState.asStateFlow()
+
+    // Continuations for user interaction suspension
+    private var validationContinuation: Continuation<Boolean>? = null
+    private var responseContinuation: Continuation<String>? = null
+
+    /**
+     * Initialize orchestrator with context
+     * Must be called at app startup before any usage
+     */
+    fun initialize(context: Context) {
+        this.context = context.applicationContext
+        this.coordinator = Coordinator(this.context)
+        this.aiClient = AIClient(this.context)
+        this.s = Strings.`for`(context = this.context)
+        LogManager.aiSession("AIOrchestrator initialized as singleton")
+    }
 
     // ========================================================================================
-    // Main Public API - Pure orchestration, no direct DB access
+    // User Interaction Resume Functions (called from UI)
     // ========================================================================================
 
     /**
-     * Send user message to AI - complete flow orchestration
-     * 1. Store user message in session via coordinator
-     * 2. Build prompt via PromptManager (generates L1-4 + SystemMessages)
-     * 3. Store SystemMessages startup (L1-3) if first message
-     * 4. Store SystemMessages Level4 after user message
-     * 5. Build history section with all messages including SystemMessages
-     * 6. Assemble final prompt
-     * 7. Send to AI and store response
+     * Resume execution after user validation
+     * Called from UI when user responds to validation request
+     */
+    fun resumeWithValidation(validated: Boolean) {
+        validationContinuation?.resume(validated)
+        validationContinuation = null
+        _waitingState.value = WaitingState.None
+    }
+
+    /**
+     * Resume execution after user response to communication module
+     * Called from UI when user provides response
+     */
+    fun resumeWithResponse(response: String) {
+        responseContinuation?.resume(response)
+        responseContinuation = null
+        _waitingState.value = WaitingState.None
+    }
+
+    // ========================================================================================
+    // Main Public API
+    // ========================================================================================
+
+    /**
+     * Send user message to AI with autonomous loops
+     *
+     * Flow:
+     * 1. Execute enrichments BEFORE storing message
+     * 2. Store user message
+     * 3. Store SystemMessage enrichments (if present)
+     * 4. Build prompt data (L1-L3 + messages)
+     * 5. Call AI with PromptData
+     * 6. Store AI response
+     * 7. AUTONOMOUS LOOPS (data queries, actions with retries, communication modules)
      */
     suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult {
         LogManager.aiSession("AIOrchestrator.sendMessage() called for session $sessionId", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
-                // 1. Store user message via coordinator with full RichMessage serialization
+                // Load session for type and limits
+                val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                if (!sessionResult.isSuccess) {
+                    return@withContext OperationResult.error("Failed to load session: ${sessionResult.error}")
+                }
+
+                val sessionData = sessionResult.data?.get("session") as? Map<*, *>
+                    ?: return@withContext OperationResult.error("No session data found")
+
+                val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
+                val sessionType = SessionType.valueOf(sessionTypeStr)
+
+                // Get limits for session type
+                val limits = getLimitsForSessionType(sessionType)
+
+                // 1. Execute enrichments BEFORE storing message user
+                val enrichmentSystemMessage = if (richMessage.dataCommands.isNotEmpty()) {
+                    executeEnrichments(richMessage.dataCommands)
+                } else null
+
+                // 2. Store user message
                 val userMessageResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
                     "sessionId" to sessionId,
                     "sender" to MessageSender.USER.name,
@@ -57,98 +138,151 @@ class AIOrchestrator(private val context: Context) {
                 ))
 
                 if (!userMessageResult.isSuccess) {
-                    return@withContext OperationResult.error(s.shared("ai_error_store_user_message").format(userMessageResult.error ?: ""))
+                    return@withContext OperationResult.error("Failed to store user message: ${userMessageResult.error}")
                 }
 
-                // 2. Load session to build prompt
-                val session = loadSession(sessionId)
-                if (session == null) {
-                    return@withContext OperationResult.error(s.shared("ai_error_load_session").format("Session not found"))
+                // 3. Store SystemMessage enrichments (if present)
+                if (enrichmentSystemMessage != null) {
+                    storeSystemMessage(enrichmentSystemMessage, sessionId)
                 }
 
-                // 3. Build prompt (executes commands and generates SystemMessages)
-                val promptResult = PromptManager.buildPrompt(session, context)
+                // 4. Build prompt data
+                val promptData = PromptManager.buildPromptData(sessionId, context)
 
-                // 4. Store SystemMessages Level4 (after user message)
-                if (promptResult.systemMessagesLevel4.isNotEmpty()) {
-                    LogManager.aiSession("Storing ${promptResult.systemMessagesLevel4.size} Level4 SystemMessages", "DEBUG")
+                // 5. Call AI with PromptData
+                var aiResponse = aiClient.query(promptData)
 
-                    for (systemMessage in promptResult.systemMessagesLevel4) {
-                        val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                // 6. Store AI response
+                storeAIMessage(aiResponse, sessionId)
+
+                // 7. AUTONOMOUS LOOPS
+                var totalRoundtrips = 0
+                var consecutiveDataQueries = 0
+                var consecutiveActionRetries = 0
+                var communicationRoundtrips = 0
+
+                while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
+
+                    // Parse AI message for commands
+                    val aiMessage = parseAIMessageFromResponse(aiResponse)
+
+                    if (aiMessage == null) {
+                        // No AI message structure - end loop
+                        break
+                    }
+
+                    // 7a. COMMUNICATION MODULE (prioritaire)
+                    if (aiMessage.communicationModule != null) {
+                        if (communicationRoundtrips >= limits.maxCommunicationModules) {
+                            storeLimitReachedMessage("Communication modules limit reached", sessionId)
+                            break
+                        }
+
+                        // STOP - Attendre réponse utilisateur
+                        val userResponse = waitForUserResponse(aiMessage.communicationModule)
+
+                        // Stocker réponse user (texte simple)
+                        coordinator.processUserAction("ai_sessions.create_message", mapOf(
                             "sessionId" to sessionId,
-                            "sender" to MessageSender.SYSTEM.name,
-                            "systemMessage" to systemMessage,
+                            "sender" to MessageSender.USER.name,
+                            "textContent" to userResponse,
                             "timestamp" to System.currentTimeMillis()
                         ))
 
-                        if (!storeResult.isSuccess) {
-                            LogManager.aiSession("Failed to store Level4 SystemMessage: ${storeResult.error}", "WARN")
+                        // Renvoyer automatiquement à l'IA
+                        val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                        aiResponse = aiClient.query(newPromptData)
+                        storeAIMessage(aiResponse, sessionId)
+
+                        communicationRoundtrips++
+                        totalRoundtrips++
+                        continue
+                    }
+
+                    // 7b. DATA COMMANDS (queries)
+                    if (aiMessage.dataCommands != null && aiMessage.dataCommands.isNotEmpty()) {
+                        if (consecutiveDataQueries >= limits.maxDataQueryIterations) {
+                            storeLimitReachedMessage("Data query iterations limit reached", sessionId)
+                            break
+                        }
+
+                        val dataSystemMessage = executeDataCommands(aiMessage.dataCommands)
+                        storeSystemMessage(dataSystemMessage, sessionId)
+
+                        val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                        aiResponse = aiClient.query(newPromptData)
+                        storeAIMessage(aiResponse, sessionId)
+
+                        consecutiveDataQueries++
+                        consecutiveActionRetries = 0  // Reset
+                        totalRoundtrips++
+                        continue
+                    }
+
+                    // 7c. ACTION COMMANDS (mutations)
+                    if (aiMessage.actionCommands != null && aiMessage.actionCommands.isNotEmpty()) {
+
+                        // Validation request ?
+                        if (aiMessage.validationRequest != null) {
+                            // STOP - Attendre validation user
+                            val validated = waitForUserValidation(aiMessage.validationRequest)
+
+                            if (!validated) {
+                                // Refuser actions
+                                val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
+                                storeSystemMessage(refusedSystemMessage, sessionId)
+                                break  // FIN - attend prochain message user
+                            }
+                        }
+
+                        // Exécuter actions
+                        val actionSystemMessage = executeActionCommands(aiMessage.actionCommands)
+                        storeSystemMessage(actionSystemMessage, sessionId)
+
+                        // Check if all actions succeeded
+                        val allSuccess = actionSystemMessage.commandResults.all { it.status == CommandStatus.SUCCESS }
+
+                        if (allSuccess) {
+                            // Succès total - FIN boucle
+                            break
+                        } else {
+                            // Échecs - retry
+                            if (consecutiveActionRetries >= limits.maxActionRetries) {
+                                storeLimitReachedMessage("Action retries limit reached", sessionId)
+                                break
+                            }
+
+                            val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                            aiResponse = aiClient.query(newPromptData)
+                            storeAIMessage(aiResponse, sessionId)
+
+                            consecutiveActionRetries++
+                            consecutiveDataQueries = 0  // Reset
+                            totalRoundtrips++
+                            continue
                         }
                     }
+
+                    // Rien à faire
+                    break
                 }
 
-                // 6. Build history section with all messages including SystemMessages
-                val history = PromptManager.buildHistorySection(sessionId, context)
-
-                // 7. Assemble final prompt
-                val finalPrompt = PromptManager.assembleFinalPrompt(
-                    promptResult = promptResult,
-                    history = history,
-                    providerId = session.providerId
-                )
-
-                // 8. Token validation on final prompt
-                val tokenLimit = TokenCalculator.getTokenLimit(context)
-                val totalTokens = promptResult.level1Tokens + promptResult.level2Tokens +
-                                promptResult.level3Tokens + promptResult.level4Tokens +
-                                PromptManager.estimateTokens(history)
-
-                if (totalTokens > tokenLimit) {
-                    LogManager.aiSession("Token limit exceeded: $totalTokens > $tokenLimit", "WARN")
-                    return@withContext OperationResult.error(s.shared("ai_error_token_limit_exceeded").format(totalTokens))
+                if (totalRoundtrips >= limits.maxAutonomousRoundtrips) {
+                    storeLimitReachedMessage("Total autonomous roundtrips limit reached", sessionId)
                 }
 
-                // 9. Send to AI client
-                val aiResponse = aiClient.query(finalPrompt, session.providerId)
-
-                if (aiResponse.success) {
-                    // 10. Process and store AI response
-                    val responseData = aiResponse.data as Map<String, Any>
-                    val aiMessage = responseData["aiMessage"] as? AIMessage
-                    val aiMessageJson = responseData["aiMessageJson"] as? String ?: ""
-
-                    // Store AI message first
-                    val aiMessageResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
-                        "sessionId" to sessionId,
-                        "sender" to MessageSender.AI.name,
-                        "aiMessageJson" to aiMessageJson as Any,
-                        "timestamp" to System.currentTimeMillis() as Any
-                    ))
-
-                    if (!aiMessageResult.isSuccess) {
-                        return@withContext OperationResult.error(s.shared("ai_error_store_ai_response").format(aiMessageResult.error ?: ""))
-                    }
-
-                    // 11. Execute AI commands if present
-                    if (aiMessage != null) {
-                        processAICommands(aiMessage, sessionId)
-                    }
-
-                    LogManager.aiSession("Message sent and AI response stored successfully", "INFO")
-                    OperationResult.success(mapOf("aiMessage" to aiMessageJson as Any))
-                } else {
-                    OperationResult.error(s.shared("ai_error_ai_query_failed").format(aiResponse.error ?: ""))
-                }
+                LogManager.aiSession("Message sent and processed successfully", "INFO")
+                OperationResult.success()
 
             } catch (e: Exception) {
                 LogManager.aiSession("AIOrchestrator.sendMessage - Error: ${e.message}", "ERROR", e)
-                OperationResult.error(s.shared("ai_error_orchestration").format(e.message ?: ""))
+                OperationResult.error("Orchestration error: ${e.message}")
             }
         }
     }
 
     /**
-     * Create new AI session via coordinator and initialize with startup SystemMessages
+     * Create new AI session via coordinator
      */
     suspend fun createSession(
         name: String,
@@ -166,34 +300,6 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             val sessionId = result.data?.get("sessionId") as? String ?: ""
             LogManager.aiSession("Session created successfully: $sessionId", "INFO")
-
-            // Generate and store startup SystemMessages (L1-3)
-            try {
-                val session = loadSession(sessionId)
-                if (session != null) {
-                    val promptResult = PromptManager.buildPrompt(session, context)
-
-                    if (promptResult.systemMessagesStartup.isNotEmpty()) {
-                        LogManager.aiSession("Storing ${promptResult.systemMessagesStartup.size} startup SystemMessages for new session", "DEBUG")
-
-                        for (systemMessage in promptResult.systemMessagesStartup) {
-                            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
-                                "sessionId" to sessionId,
-                                "sender" to MessageSender.SYSTEM.name,
-                                "systemMessage" to systemMessage,
-                                "timestamp" to System.currentTimeMillis()
-                            ))
-
-                            if (!storeResult.isSuccess) {
-                                LogManager.aiSession("Failed to store startup SystemMessage: ${storeResult.error}", "WARN")
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                LogManager.aiSession("Failed to generate startup messages: ${e.message}", "WARN", e)
-            }
-
             sessionId
         } else {
             LogManager.aiSession("Failed to create session: ${result.error}", "ERROR")
@@ -202,205 +308,40 @@ class AIOrchestrator(private val context: Context) {
     }
 
     /**
-     * Load AI session via coordinator
+     * Load session by ID
+     * TODO: Implement full session parsing when needed by UI
      */
     suspend fun loadSession(sessionId: String): AISession? {
         LogManager.aiSession("AIOrchestrator.loadSession() called for $sessionId", "DEBUG")
 
-        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf(
-            "sessionId" to sessionId
-        ))
+        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
 
         return if (result.isSuccess) {
-            parseAISessionFromResult(result.data)
+            val sessionData = result.data?.get("session") as? Map<*, *>
+            val messagesData = result.data?.get("messages") as? List<*>
+
+            if (sessionData != null) {
+                // Stub implementation - return minimal AISession
+                AISession(
+                    id = sessionData["id"] as? String ?: sessionId,
+                    name = sessionData["name"] as? String ?: "",
+                    type = try {
+                        SessionType.valueOf(sessionData["type"] as? String ?: "CHAT")
+                    } catch (e: Exception) {
+                        SessionType.CHAT
+                    },
+                    providerId = sessionData["providerId"] as? String ?: "claude",
+                    providerSessionId = sessionData["providerSessionId"] as? String ?: "",
+                    schedule = null,
+                    createdAt = (sessionData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                    lastActivity = (sessionData["lastActivity"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                    messages = emptyList(), // TODO: Parse messages when needed
+                    isActive = sessionData["isActive"] as? Boolean ?: false
+                )
+            } else {
+                null
+            }
         } else {
-            LogManager.aiSession(s.shared("ai_error_load_session").format(result.error ?: ""), "ERROR")
-            null
-        }
-    }
-
-    // ========================================================================================
-    // Private Parsing Logic - Complete implementation with stub/fallbacks for JSON parsing
-    // ========================================================================================
-
-    /**
-     * Parse AISession from coordinator result data
-     * Complete parsing logic with graceful fallbacks for complex JSON fields
-     */
-    private fun parseAISessionFromResult(data: Map<String, Any>?): AISession? {
-        if (data == null) {
-            LogManager.aiSession("No data returned from coordinator", "WARN")
-            return null
-        }
-
-        return try {
-            val sessionData = data["session"] as? Map<String, Any>
-                ?: throw IllegalArgumentException("Missing session data")
-
-            val messagesData = data["messages"] as? List<Map<String, Any>>
-                ?: emptyList()
-
-            // Parse basic session fields
-            val sessionId = sessionData["id"] as? String
-                ?: throw IllegalArgumentException("Missing session id")
-            val name = sessionData["name"] as? String
-                ?: throw IllegalArgumentException("Missing session name")
-            val typeString = sessionData["type"] as? String
-                ?: throw IllegalArgumentException("Missing session type")
-            val providerId = sessionData["providerId"] as? String
-                ?: throw IllegalArgumentException("Missing providerId")
-            val providerSessionId = sessionData["providerSessionId"] as? String ?: ""
-            val createdAt = (sessionData["createdAt"] as? Number)?.toLong()
-                ?: throw IllegalArgumentException("Missing createdAt")
-            val lastActivity = (sessionData["lastActivity"] as? Number)?.toLong()
-                ?: throw IllegalArgumentException("Missing lastActivity")
-            val isActive = sessionData["isActive"] as? Boolean ?: false
-
-            // Parse session type with fallback
-            val sessionType = try {
-                SessionType.valueOf(typeString)
-            } catch (e: Exception) {
-                LogManager.aiSession("Invalid session type: $typeString, defaulting to CHAT", "WARN")
-                SessionType.CHAT
-            }
-
-            // Parse messages with complete logic but stub JSON parsing
-            val messages = messagesData.mapNotNull { messageData ->
-                parseSessionMessageFromData(messageData)
-            }
-
-            // TODO: Parse schedule config for AUTOMATION sessions (currently null)
-            val scheduleConfig: ScheduleConfig? = null
-
-            LogManager.aiSession("Successfully parsed AISession: $sessionId with ${messages.size} messages", "DEBUG")
-
-            AISession(
-                id = sessionId,
-                name = name,
-                type = sessionType,
-                providerId = providerId,
-                providerSessionId = providerSessionId,
-                schedule = scheduleConfig,
-                createdAt = createdAt,
-                lastActivity = lastActivity,
-                messages = messages,
-                isActive = isActive
-            )
-
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to parse AISession: ${e.message}", "ERROR", e)
-            null
-        }
-    }
-
-    /**
-     * Parse SessionMessage from message data
-     * Complete parsing logic with graceful JSON deserialization fallbacks
-     */
-    private fun parseSessionMessageFromData(messageData: Map<String, Any>): SessionMessage? {
-        return try {
-            val id = messageData["id"] as? String
-                ?: throw IllegalArgumentException("Missing message id")
-            val timestamp = (messageData["timestamp"] as? Number)?.toLong()
-                ?: throw IllegalArgumentException("Missing message timestamp")
-            val senderString = messageData["sender"] as? String
-                ?: throw IllegalArgumentException("Missing message sender")
-
-            // Parse sender with fallback
-            val sender = try {
-                MessageSender.valueOf(senderString)
-            } catch (e: Exception) {
-                LogManager.aiSession("Invalid message sender: $senderString, defaulting to USER", "WARN")
-                MessageSender.USER
-            }
-
-            // Parse rich content JSON with fallback
-            val richContent = messageData["richContentJson"]?.let { jsonString ->
-                if (jsonString is String && jsonString.isNotEmpty()) {
-                    parseRichMessageFromJson(jsonString)
-                } else null
-            }
-
-            // Parse simple text content
-            val textContent = messageData["textContent"] as? String
-
-            // Parse AI message JSON with fallback
-            val aiMessage = messageData["aiMessageJson"]?.let { jsonString ->
-                if (jsonString is String && jsonString.isNotEmpty()) {
-                    parseAIMessageFromJson(jsonString)
-                } else null
-            }
-
-            // Store original AI JSON for prompt history consistency
-            val aiMessageJson = messageData["aiMessageJson"] as? String
-
-            // Parse system message if present
-            val systemMessage = messageData["systemMessageJson"]?.let { jsonString ->
-                if (jsonString is String && jsonString.isNotEmpty()) {
-                    SystemMessage.fromJson(jsonString)
-                } else null
-            }
-
-            // TODO: Parse execution metadata for automation messages
-            val executionMetadata: ExecutionMetadata? = null
-
-            SessionMessage(
-                id = id,
-                timestamp = timestamp,
-                sender = sender,
-                richContent = richContent,
-                textContent = textContent,
-                aiMessage = aiMessage,
-                aiMessageJson = aiMessageJson,
-                systemMessage = systemMessage,
-                executionMetadata = executionMetadata
-            )
-
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to parse SessionMessage: ${e.message}", "WARN", e)
-            null // Return null to filter out invalid messages
-        }
-    }
-
-    /**
-     * Parse RichMessage from JSON string
-     * Uses RichMessage.fromJson() for complete deserialization
-     */
-    private fun parseRichMessageFromJson(jsonString: String): RichMessage? {
-        return try {
-            val richMessage = RichMessage.fromJson(jsonString)
-            if (richMessage == null) {
-                LogManager.aiSession("Failed to deserialize RichMessage from JSON: ${jsonString.take(50)}...", "WARN")
-            }
-            richMessage
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to parse RichMessage JSON: ${e.message}", "WARN", e)
-            null
-        }
-    }
-
-    /**
-     * Parse AIMessage from JSON string
-     * TODO: Implement complete JSON deserialization with all AIMessage fields
-     * Currently returns stub implementation for compilation
-     */
-    private fun parseAIMessageFromJson(jsonString: String): AIMessage? {
-        return try {
-            // TODO: Implement proper JSON parsing for AIMessage
-            // Should parse preText, validationRequest, dataCommands, actionCommands, postText, communicationModule
-            LogManager.aiSession("TODO: Implement AIMessage JSON parsing for: ${jsonString.take(50)}...", "DEBUG")
-
-            // Stub implementation for now
-            AIMessage(
-                preText = "AI response content", // TODO: Extract from JSON
-                validationRequest = null, // TODO: Parse ValidationRequest from JSON
-                dataCommands = null, // TODO: Parse DataCommand list from JSON
-                actionCommands = null, // TODO: Parse DataCommand list from JSON
-                postText = null, // TODO: Extract from JSON
-                communicationModule = null // TODO: Parse CommunicationModule from JSON
-            )
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to parse AIMessage JSON: ${e.message}", "WARN", e)
             null
         }
     }
@@ -416,19 +357,22 @@ class AIOrchestrator(private val context: Context) {
         return if (result.isSuccess) {
             val hasActiveSession = result.data?.get("hasActiveSession") as? Boolean ?: false
             if (hasActiveSession) {
-                parseAISessionFromResult(result.data)
+                val sessionId = result.data?.get("sessionId") as? String
+                if (sessionId != null) {
+                    loadSession(sessionId)
+                } else {
+                    null
+                }
             } else {
-                LogManager.aiSession("No active session found", "DEBUG")
                 null
             }
         } else {
-            LogManager.aiSession(s.shared("ai_error_get_active_session").format(result.error ?: ""), "ERROR")
             null
         }
     }
 
     /**
-     * Stop current active session (deactivate all sessions)
+     * Stop current active session
      */
     suspend fun stopActiveSession(): OperationResult {
         LogManager.aiSession("AIOrchestrator.stopActiveSession() called", "DEBUG")
@@ -438,7 +382,7 @@ class AIOrchestrator(private val context: Context) {
             LogManager.aiSession("Active session stopped successfully", "INFO")
             OperationResult.success()
         } else {
-            OperationResult.error(result.error ?: s.shared("ai_error_stop_session"))
+            OperationResult.error(result.error ?: "Failed to stop session")
         }
     }
 
@@ -455,89 +399,155 @@ class AIOrchestrator(private val context: Context) {
             LogManager.aiSession("Session $sessionId set as active", "INFO")
             OperationResult.success()
         } else {
-            OperationResult.error(result.error ?: s.shared("ai_error_set_active_session").format(""))
+            OperationResult.error(result.error ?: "Failed to set active session")
         }
     }
 
     // ========================================================================================
-    // AI Command Processing
+    // Private Helpers - Autonomous Loop Support
     // ========================================================================================
 
     /**
-     * Process AI commands (dataCommands or actionCommands) from AIMessage
-     *
-     * Flow:
-     * 1. If dataCommands present → process and execute via AICommandProcessor + CommandExecutor
-     * 2. If actionCommands present → check validation status and execute
-     * 3. Store SystemMessages generated by command execution
+     * Get session limits based on session type
      */
-    private suspend fun processAICommands(aiMessage: AIMessage, sessionId: String) {
-        LogManager.aiSession("Processing AI commands for session $sessionId", "DEBUG")
+    private fun getLimitsForSessionType(type: SessionType): SessionLimits {
+        val aiLimits = AppConfigManager.getAILimits()
 
-        try {
-            // Process data commands (queries)
-            if (!aiMessage.dataCommands.isNullOrEmpty()) {
-                LogManager.aiSession("Processing ${aiMessage.dataCommands.size} AI data commands", "DEBUG")
-
-                val processor = com.assistant.core.ai.processing.AICommandProcessor(context)
-                val executableCommands = processor.processDataCommands(aiMessage.dataCommands)
-
-                if (executableCommands.isNotEmpty()) {
-                    val executor = com.assistant.core.ai.prompts.CommandExecutor(context)
-                    val executionResult = executor.executeCommands(
-                        commands = executableCommands,
-                        messageType = SystemMessageType.DATA_ADDED,
-                        level = "ai_data"
-                    )
-
-                    // Store SystemMessage generated by data queries
-                    storeSystemMessage(executionResult.systemMessage, sessionId)
-
-                    LogManager.aiSession("AI data commands executed: ${executionResult.systemMessage.summary}", "INFO")
-                }
-            }
-
-            // Process action commands (mutations)
-            if (!aiMessage.actionCommands.isNullOrEmpty()) {
-                LogManager.aiSession("Processing ${aiMessage.actionCommands.size} AI action commands", "DEBUG")
-
-                // Check validation status
-                if (aiMessage.validationRequest != null) {
-                    // TODO: Implement validation flow for action commands
-                    // - Store validation request state in session
-                    // - Wait for user confirmation/rejection
-                    // - Execute actions only if confirmed
-                    // - Handle cascade failure on rejection
-                    LogManager.aiSession("TODO: Validation flow not yet implemented - actions require user validation", "WARN")
-                    LogManager.aiSession("ValidationRequest: ${aiMessage.validationRequest.message}", "DEBUG")
-                } else {
-                    // Autonomous execution (no validation required)
-                    val processor = com.assistant.core.ai.processing.AICommandProcessor(context)
-                    val executableCommands = processor.processActionCommands(aiMessage.actionCommands)
-
-                    if (executableCommands.isNotEmpty()) {
-                        val executor = com.assistant.core.ai.prompts.CommandExecutor(context)
-                        val executionResult = executor.executeCommands(
-                            commands = executableCommands,
-                            messageType = SystemMessageType.ACTIONS_EXECUTED,
-                            level = "ai_actions"
-                        )
-
-                        // Store SystemMessage generated by actions
-                        storeSystemMessage(executionResult.systemMessage, sessionId)
-
-                        LogManager.aiSession("AI action commands executed: ${executionResult.systemMessage.summary}", "INFO")
-                    }
-                }
-            }
-
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to process AI commands: ${e.message}", "ERROR", e)
+        return when (type) {
+            SessionType.CHAT -> SessionLimits(
+                maxDataQueryIterations = aiLimits.chatMaxDataQueryIterations,
+                maxActionRetries = aiLimits.chatMaxActionRetries,
+                maxAutonomousRoundtrips = aiLimits.chatMaxAutonomousRoundtrips,
+                maxCommunicationModules = aiLimits.chatMaxCommunicationModulesRoundtrips
+            )
+            SessionType.AUTOMATION -> SessionLimits(
+                maxDataQueryIterations = aiLimits.automationMaxDataQueryIterations,
+                maxActionRetries = aiLimits.automationMaxActionRetries,
+                maxAutonomousRoundtrips = aiLimits.automationMaxAutonomousRoundtrips,
+                maxCommunicationModules = aiLimits.automationMaxCommunicationModulesRoundtrips
+            )
         }
     }
 
     /**
-     * Store SystemMessage in session via coordinator
+     * Execute user enrichments and return SystemMessage
+     * Uses same pipeline as old Level 4: EnrichmentProcessor → UserCommandProcessor → CommandExecutor
+     */
+    private suspend fun executeEnrichments(
+        commands: List<DataCommand>
+    ): SystemMessage {
+        val processor = UserCommandProcessor(context)
+        val executableCommands = processor.processCommands(commands)
+
+        val executor = CommandExecutor(context)
+        val result = executor.executeCommands(
+            commands = executableCommands,
+            messageType = SystemMessageType.DATA_ADDED,
+            level = "enrichments"
+        )
+
+        // Format formattedData from promptResults
+        val formattedData = result.promptResults.joinToString("\n\n") {
+            "# ${it.dataTitle}\n${it.formattedData}"
+        }
+
+        return result.systemMessage.copy(
+            formattedData = formattedData
+        )
+    }
+
+    /**
+     * Execute AI data commands (queries)
+     */
+    private suspend fun executeDataCommands(commands: List<DataCommand>): SystemMessage {
+        val processor = AICommandProcessor(context)
+        val executableCommands = processor.processDataCommands(commands)
+
+        val executor = CommandExecutor(context)
+        val result = executor.executeCommands(
+            commands = executableCommands,
+            messageType = SystemMessageType.DATA_ADDED,
+            level = "ai_data"
+        )
+
+        // Format formattedData from promptResults
+        val formattedData = result.promptResults.joinToString("\n\n") {
+            "# ${it.dataTitle}\n${it.formattedData}"
+        }
+
+        return result.systemMessage.copy(
+            formattedData = formattedData
+        )
+    }
+
+    /**
+     * Execute AI action commands (mutations)
+     */
+    private suspend fun executeActionCommands(commands: List<DataCommand>): SystemMessage {
+        val processor = AICommandProcessor(context)
+        val executableCommands = processor.processActionCommands(commands)
+
+        val executor = CommandExecutor(context)
+        val result = executor.executeCommands(
+            commands = executableCommands,
+            messageType = SystemMessageType.ACTIONS_EXECUTED,
+            level = "ai_actions"
+        )
+
+        return result.systemMessage
+    }
+
+    /**
+     * Create SystemMessage for refused actions
+     */
+    private fun createRefusedActionsMessage(actions: List<DataCommand>): SystemMessage {
+        return SystemMessage(
+            type = SystemMessageType.ACTIONS_EXECUTED,
+            commandResults = actions.map { action ->
+                CommandResult(
+                    command = action.type,
+                    status = CommandStatus.CANCELLED,
+                    details = "User refused this action"
+                )
+            },
+            summary = "User refused ${actions.size} proposed action(s)",
+            formattedData = null
+        )
+    }
+
+    /**
+     * Store limit reached message
+     */
+    private suspend fun storeLimitReachedMessage(reason: String, sessionId: String) {
+        val systemMessage = SystemMessage(
+            type = SystemMessageType.LIMIT_REACHED,
+            commandResults = emptyList(),
+            summary = reason,
+            formattedData = null
+        )
+        storeSystemMessage(systemMessage, sessionId)
+    }
+
+    /**
+     * Wait for user validation (suspend until UI calls resumeWithValidation)
+     */
+    private suspend fun waitForUserValidation(request: ValidationRequest): Boolean =
+        suspendCancellableCoroutine { cont ->
+            _waitingState.value = WaitingState.WaitingValidation(request)
+            validationContinuation = cont
+        }
+
+    /**
+     * Wait for user response to communication module (suspend until UI calls resumeWithResponse)
+     */
+    private suspend fun waitForUserResponse(module: CommunicationModule): String =
+        suspendCancellableCoroutine { cont ->
+            _waitingState.value = WaitingState.WaitingResponse(module)
+            responseContinuation = cont
+        }
+
+    /**
+     * Store SystemMessage in session
      */
     private suspend fun storeSystemMessage(systemMessage: SystemMessage, sessionId: String) {
         try {
@@ -549,12 +559,66 @@ class AIOrchestrator(private val context: Context) {
             ))
 
             if (!storeResult.isSuccess) {
-                LogManager.aiSession("Failed to store AI-generated SystemMessage: ${storeResult.error}", "WARN")
+                LogManager.aiSession("Failed to store SystemMessage: ${storeResult.error}", "WARN")
             }
         } catch (e: Exception) {
-            LogManager.aiSession("Error storing AI-generated SystemMessage: ${e.message}", "ERROR", e)
+            LogManager.aiSession("Error storing SystemMessage: ${e.message}", "ERROR", e)
         }
     }
 
+    /**
+     * Store AI message response
+     */
+    private suspend fun storeAIMessage(aiResponse: AIResponse, sessionId: String) {
+        try {
+            val aiMessageJson = aiResponse.content
+
+            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                "sessionId" to sessionId,
+                "sender" to MessageSender.AI.name,
+                "aiMessageJson" to aiMessageJson,
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            if (!storeResult.isSuccess) {
+                LogManager.aiSession("Failed to store AI message: ${storeResult.error}", "WARN")
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Error storing AI message: ${e.message}", "ERROR", e)
+        }
+    }
+
+    /**
+     * Parse AIMessage from AIResponse
+     * TODO: Implement full JSON parsing when needed
+     */
+    private fun parseAIMessageFromResponse(aiResponse: AIResponse): AIMessage? {
+        if (!aiResponse.success) return null
+
+        return try {
+            // TODO: Parse aiResponse.content as JSON and extract AIMessage structure
+            // For now, return stub
+            AIMessage(
+                preText = "",
+                validationRequest = null,
+                dataCommands = null,
+                actionCommands = null,
+                postText = null,
+                communicationModule = null
+            )
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to parse AIMessage from response: ${e.message}", "WARN", e)
+            null
+        }
+    }
 }
 
+/**
+ * Session limits configuration
+ */
+data class SessionLimits(
+    val maxDataQueryIterations: Int,
+    val maxActionRetries: Int,
+    val maxAutonomousRoundtrips: Int,
+    val maxCommunicationModules: Int
+)

@@ -1,6 +1,8 @@
 package com.assistant.core.utils
 
 import android.content.Context
+import com.assistant.core.config.TimeConfig
+import com.assistant.core.config.AILimitsConfig
 import com.assistant.core.services.AppConfigService
 import kotlinx.coroutines.runBlocking
 
@@ -17,6 +19,9 @@ object AppConfigManager {
     private var cachedWeekStartDay: String? = null
 
     @Volatile
+    private var cachedAILimits: AILimitsConfig? = null
+
+    @Volatile
     private var isInitialized = false
 
     /**
@@ -31,14 +36,16 @@ object AppConfigManager {
             runBlocking {
                 cachedDayStartHour = service.getDayStartHour()
                 cachedWeekStartDay = service.getWeekStartDay()
+                cachedAILimits = service.getAILimits()
             }
             isInitialized = true
-            LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay")
+            LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay, aiLimits=$cachedAILimits")
         } catch (e: Exception) {
             LogManager.service("Failed to initialize AppConfigManager: ${e.message}", "ERROR", e)
             // Set defaults as fallback
             cachedDayStartHour = 4
             cachedWeekStartDay = "monday"
+            cachedAILimits = AILimitsConfig() // Use data class defaults
             isInitialized = true
         }
     }
@@ -62,6 +69,27 @@ object AppConfigManager {
     }
 
     /**
+     * Get time configuration (cached)
+     * Throws IllegalStateException if not initialized
+     */
+    fun getTimeConfig(): TimeConfig {
+        check(isInitialized) { "AppConfigManager not initialized. Call initialize(context) at app startup." }
+        return TimeConfig(
+            dayStartHour = cachedDayStartHour!!,
+            weekStartDay = cachedWeekStartDay!!
+        )
+    }
+
+    /**
+     * Get AI limits configuration (cached)
+     * Throws IllegalStateException if not initialized
+     */
+    fun getAILimits(): AILimitsConfig {
+        check(isInitialized) { "AppConfigManager not initialized. Call initialize(context) at app startup." }
+        return cachedAILimits!!
+    }
+
+    /**
      * Refresh cache from database
      * Call after config changes
      */
@@ -76,6 +104,7 @@ object AppConfigManager {
     fun clear() {
         cachedDayStartHour = null
         cachedWeekStartDay = null
+        cachedAILimits = null
         isInitialized = false
     }
 }

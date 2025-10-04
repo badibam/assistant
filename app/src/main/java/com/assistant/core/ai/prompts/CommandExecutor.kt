@@ -215,6 +215,11 @@ class CommandExecutor(private val context: Context) {
                     else -> s.shared("ai_system_actions_partial").format(successCount, failedCount)
                 }
             }
+            SystemMessageType.LIMIT_REACHED -> {
+                // LIMIT_REACHED messages should provide their own summary directly
+                // This case should not be reached in normal flow
+                "Limit reached"
+            }
         }
     }
 

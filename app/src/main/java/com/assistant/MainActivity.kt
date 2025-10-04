@@ -15,6 +15,7 @@ import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.update.UpdateManager
 import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.ai.orchestration.AIOrchestrator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +32,9 @@ class MainActivity : ComponentActivity() {
 
         // Initialize app config cache
         AppConfigManager.initialize(this)
+
+        // Initialize AI orchestrator singleton
+        AIOrchestrator.initialize(this)
 
         // Initialize coordinator
         coordinator = Coordinator(this)

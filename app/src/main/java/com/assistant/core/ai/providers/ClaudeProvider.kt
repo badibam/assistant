@@ -2,6 +2,8 @@ package com.assistant.core.ai.providers
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import com.assistant.core.ai.data.PromptData
+import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.providers.ui.ClaudeConfigScreen
 import com.assistant.core.utils.LogManager
 import com.assistant.core.validation.Schema
@@ -225,26 +227,42 @@ class ClaudeProvider : AIProvider {
     }
 
     /**
-     * Send query to Claude API
-     * TODO: Implement real Claude API call with authentication and error handling
+     * Send query to Claude API with PromptData
+     *
+     * Provider responsibilities:
+     * - Transform PromptData to Claude API format (messages array)
+     * - Fuse SystemMessages with formattedData into conversation history
+     * - Add cache breakpoints for L1-L3 (Claude prompt caching)
+     * - Make API call
+     * - Return raw JSON response
+     *
+     * TODO: Implement real Claude API call with authentication and caching
      */
-    override suspend fun query(prompt: String, config: String): AIResponse {
-        LogManager.aiService("ClaudeProvider.query() called with prompt length: ${prompt.length}")
+    override suspend fun query(promptData: PromptData, config: String): AIResponse {
+        LogManager.aiService("ClaudeProvider.query() called with ${promptData.sessionMessages.size} messages")
         LogManager.aiService("Claude config: $config")
 
         try {
             // TODO: Parse config JSON to extract api_key, model, max_tokens
-            // TODO: Make actual HTTP request to Claude API
-            // TODO: Parse response and convert to AIMessage structure
+            // val configJson = JSONObject(config)
+            // val apiKey = configJson.getString("api_key")
+            // val model = configJson.getString("model")
+            // val maxTokens = configJson.getInt("max_tokens")
+
+            // Build prompt from PromptData
+            // TODO: Transform to Claude Messages API format with cache breakpoints
+            val prompt = buildPromptFromData(promptData)
+
+            LogManager.aiService("Built prompt: ${prompt.length} characters")
+            LogManager.aiService("TODO: Implement real Claude API call with prompt caching")
 
             // Stub implementation for flow testing
-            LogManager.aiService("TODO: Implement real Claude API call")
-
             val stubResponse = """
             {
                 "preText": "Je suis Claude, assistant IA créé par Anthropic. Voici ma réponse de test.",
-                "actions": null,
-                "postText": "Ceci est une réponse stub pour tester le flow complet.",
+                "dataCommands": null,
+                "actionCommands": null,
+                "postText": null,
                 "communicationModule": null
             }
             """.trimIndent()
@@ -253,7 +271,10 @@ class ClaudeProvider : AIProvider {
                 success = true,
                 content = stubResponse,
                 errorMessage = null,
-                tokensUsed = 42 // Stub token count
+                tokensUsed = 42, // Stub token count
+                cacheCreationTokens = 100,
+                cacheReadTokens = 500,
+                inputTokens = 50
             )
 
         } catch (e: Exception) {
@@ -265,5 +286,58 @@ class ClaudeProvider : AIProvider {
                 tokensUsed = 0
             )
         }
+    }
+
+    /**
+     * Build final prompt string from PromptData
+     * TODO: Transform to Claude Messages API format instead of string
+     *
+     * This is a TEMPORARY stub - real implementation should:
+     * 1. Build messages array with system/user/assistant roles
+     * 2. Fuse SystemMessages.formattedData into conversation
+     * 3. Add cache breakpoints after L1, L2, L3
+     */
+    private fun buildPromptFromData(promptData: PromptData): String {
+        val sb = StringBuilder()
+
+        // Add levels as system context
+        sb.appendLine(promptData.level1Content)
+        sb.appendLine()
+        sb.appendLine(promptData.level2Content)
+        sb.appendLine()
+        sb.appendLine(promptData.level3Content)
+        sb.appendLine()
+
+        // Add conversation history
+        sb.appendLine("## Conversation History")
+        sb.appendLine()
+
+        for (message in promptData.sessionMessages) {
+            when (message.sender) {
+                MessageSender.USER -> {
+                    sb.appendLine("[USER]")
+                    val text = message.richContent?.linearText ?: message.textContent ?: ""
+                    sb.appendLine(text)
+                    sb.appendLine()
+                }
+                MessageSender.AI -> {
+                    sb.appendLine("[ASSISTANT]")
+                    val text = message.aiMessageJson ?: message.textContent ?: ""
+                    sb.appendLine(text)
+                    sb.appendLine()
+                }
+                MessageSender.SYSTEM -> {
+                    sb.appendLine("[SYSTEM]")
+                    sb.appendLine(message.systemMessage?.summary ?: "")
+                    if (message.systemMessage?.formattedData != null) {
+                        sb.appendLine()
+                        sb.appendLine(message.systemMessage.formattedData)
+                    }
+                    sb.appendLine()
+                }
+            }
+        }
+
+        return sb.toString()
     }
 }
