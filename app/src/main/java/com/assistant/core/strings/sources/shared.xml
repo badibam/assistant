@@ -71,6 +71,14 @@
     <string name="ai_message_rich_prefix">Riche:</string>
     <string name="ai_message_enrichments_count">Enrichissements: %1$d</string>
 
+    <!-- AI Interaction - Validation and Communication Modules -->
+    <string name="ai_validation_title">Validation requise</string>
+    <string name="ai_validation_status">Statut</string>
+    <string name="ai_module_multiple_choice_title">Choix multiple</string>
+    <string name="ai_module_validation_title">Confirmation</string>
+    <string name="ai_module_no_question">Aucune question fournie</string>
+    <string name="ai_module_no_message">Aucun message fourni</string>
+
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
     <string name="ai_data_tool">données outil</string>

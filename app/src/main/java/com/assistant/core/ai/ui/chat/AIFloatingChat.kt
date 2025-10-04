@@ -15,6 +15,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
+import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.ai.ui.components.RichComposer
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
@@ -45,6 +46,9 @@ fun AIFloatingChat(
     val scope = rememberCoroutineScope()
     // AIOrchestrator is now a singleton, no need to remember/create
     val aiOrchestrator = AIOrchestrator
+
+    // Observe waiting state for user interactions
+    val waitingState by aiOrchestrator.waitingState.collectAsState()
 
     // Initialize session on first load
     LaunchedEffect(Unit) {
@@ -193,6 +197,29 @@ fun AIFloatingChat(
             LogManager.aiUI("Error: $message", "ERROR")
             // Clear error after showing
             errorMessage = null
+        }
+    }
+
+    // User interaction dialogs based on waiting state
+    when (val state = waitingState) {
+        is WaitingState.WaitingValidation -> {
+            ValidationDialog(
+                request = state.request,
+                onValidate = { validated ->
+                    aiOrchestrator.resumeWithValidation(validated)
+                }
+            )
+        }
+        is WaitingState.WaitingResponse -> {
+            CommunicationModuleDialog(
+                module = state.module,
+                onResponse = { response ->
+                    aiOrchestrator.resumeWithResponse(response)
+                }
+            )
+        }
+        WaitingState.None -> {
+            // No dialog needed
         }
     }
 }
@@ -383,6 +410,134 @@ private fun ChatMessageBubble(
                             type = TextType.BODY
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Validation dialog for AI action requests
+ * Displays when AI asks user to validate proposed actions
+ */
+@Composable
+private fun ValidationDialog(
+    request: ValidationRequest,
+    onValidate: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    UI.Dialog(
+        type = DialogType.CONFIRM,
+        onConfirm = { onValidate(true) },
+        onCancel = { onValidate(false) }
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            UI.Text(
+                text = s.shared("ai_validation_title"),
+                type = TextType.TITLE
+            )
+            UI.Text(
+                text = request.message,
+                type = TextType.BODY
+            )
+            request.status?.let { status ->
+                UI.Text(
+                    text = "${s.shared("ai_validation_status")}: ${status.name}",
+                    type = TextType.CAPTION
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Communication module dialog for AI questions
+ * Handles different module types (MultipleChoice, Validation, etc.)
+ */
+@Composable
+private fun CommunicationModuleDialog(
+    module: CommunicationModule,
+    onResponse: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    when (module) {
+        is CommunicationModule.MultipleChoice -> {
+            val question = module.data["question"] as? String ?: s.shared("ai_module_no_question")
+            val options = (module.data["options"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            var selectedOption by remember { mutableStateOf<String?>(null) }
+
+            UI.Dialog(
+                type = DialogType.CONFIRM,
+                onConfirm = {
+                    selectedOption?.let { onResponse(it) }
+                },
+                onCancel = {
+                    onResponse("") // Empty response = cancelled
+                }
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    UI.Text(
+                        text = s.shared("ai_module_multiple_choice_title"),
+                        type = TextType.TITLE
+                    )
+                    UI.Text(
+                        text = question,
+                        type = TextType.BODY
+                    )
+
+                    // Options as radio buttons
+                    options.forEach { option ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            UI.Button(
+                                type = if (selectedOption == option) ButtonType.PRIMARY else ButtonType.DEFAULT,
+                                size = Size.M,
+                                onClick = { selectedOption = option }
+                            ) {
+                                UI.Text(
+                                    text = option,
+                                    type = TextType.BODY
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        is CommunicationModule.Validation -> {
+            val message = module.data["message"] as? String ?: s.shared("ai_module_no_message")
+
+            UI.Dialog(
+                type = DialogType.CONFIRM,
+                onConfirm = { onResponse("confirmed") },
+                onCancel = { onResponse("cancelled") }
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    UI.Text(
+                        text = s.shared("ai_module_validation_title"),
+                        type = TextType.TITLE
+                    )
+                    UI.Text(
+                        text = message,
+                        type = TextType.BODY
+                    )
                 }
             }
         }
