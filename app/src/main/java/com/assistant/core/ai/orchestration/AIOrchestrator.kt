@@ -668,27 +668,173 @@ object AIOrchestrator {
     }
 
     /**
-     * Parse AIMessage from AIResponse
-     * TODO: Implement full JSON parsing when needed
+     * Parse AI response content as AIMessage structure
+     *
+     * All providers must return JSON content matching AIMessage structure:
+     * {
+     *   "preText": "...",
+     *   "validationRequest": { "message": "...", "status": "..." },
+     *   "dataCommands": [...],
+     *   "actionCommands": [...],
+     *   "postText": "...",
+     *   "communicationModule": { "type": "...", "data": {...} }
+     * }
+     *
+     * Provider responsibility: Transform their API response to this format
+     *
+     * FALLBACK: If JSON parsing fails (AI didn't respect format), creates basic AIMessage
+     * with error prefix and raw text as preText
+     *
+     * Returns null only if response is not successful
      */
     private fun parseAIMessageFromResponse(aiResponse: AIResponse): AIMessage? {
-        if (!aiResponse.success) return null
+        if (!aiResponse.success) {
+            LogManager.aiSession("AI response not successful, skipping parse", "DEBUG")
+            return null
+        }
+
+        if (aiResponse.content.isEmpty()) {
+            LogManager.aiSession("AI response content is empty", "DEBUG")
+            return null
+        }
 
         return try {
-            // TODO: Parse aiResponse.content as JSON and extract AIMessage structure
-            // For now, return stub
+            val json = org.json.JSONObject(aiResponse.content)
+
+            // preText is required
+            val preText = json.optString("preText", "")
+            if (preText.isEmpty()) {
+                LogManager.aiSession("AIMessage missing required preText field", "WARN")
+                return null
+            }
+
+            // Parse optional validationRequest
+            val validationRequest = json.optJSONObject("validationRequest")?.let { vr ->
+                val message = vr.getString("message")
+                val statusStr = vr.optString("status")
+                val status = if (statusStr.isNotEmpty()) {
+                    try { ValidationStatus.valueOf(statusStr) } catch (e: Exception) { null }
+                } else null
+                ValidationRequest(message, status)
+            }
+
+            // Parse optional dataCommands
+            val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
+                (0 until array.length()).mapNotNull { i ->
+                    try {
+                        val cmd = array.getJSONObject(i)
+                        DataCommand(
+                            id = cmd.getString("id"),
+                            type = cmd.getString("type"),
+                            params = parseJsonObjectToMap(cmd.getJSONObject("params")),
+                            isRelative = cmd.optBoolean("isRelative", false)
+                        )
+                    } catch (e: Exception) {
+                        LogManager.aiSession("Failed to parse dataCommand at index $i: ${e.message}", "WARN")
+                        null
+                    }
+                }
+            }
+
+            // Parse optional actionCommands
+            val actionCommands = json.optJSONArray("actionCommands")?.let { array ->
+                (0 until array.length()).mapNotNull { i ->
+                    try {
+                        val cmd = array.getJSONObject(i)
+                        DataCommand(
+                            id = cmd.getString("id"),
+                            type = cmd.getString("type"),
+                            params = parseJsonObjectToMap(cmd.getJSONObject("params")),
+                            isRelative = cmd.optBoolean("isRelative", false)
+                        )
+                    } catch (e: Exception) {
+                        LogManager.aiSession("Failed to parse actionCommand at index $i: ${e.message}", "WARN")
+                        null
+                    }
+                }
+            }
+
+            // Parse optional postText
+            val postText = json.optString("postText").takeIf { it.isNotEmpty() }
+
+            // Parse optional communicationModule
+            val communicationModule = json.optJSONObject("communicationModule")?.let { module ->
+                try {
+                    val type = module.getString("type")
+                    val data = parseJsonObjectToMap(module.getJSONObject("data"))
+
+                    when (type) {
+                        "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
+                        "Validation" -> CommunicationModule.Validation(type, data)
+                        else -> {
+                            LogManager.aiSession("Unknown communication module type: $type", "WARN")
+                            null
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogManager.aiSession("Failed to parse communicationModule: ${e.message}", "WARN")
+                    null
+                }
+            }
+
+            // Log parsing success
+            LogManager.aiSession(
+                "Parsed AIMessage - preText: ${preText.length} chars, " +
+                "dataCommands: ${dataCommands?.size ?: 0}, " +
+                "actionCommands: ${actionCommands?.size ?: 0}, " +
+                "validationRequest: ${validationRequest != null}, " +
+                "communicationModule: ${communicationModule != null}"
+            )
+
             AIMessage(
-                preText = "",
+                preText = preText,
+                validationRequest = validationRequest,
+                dataCommands = dataCommands,
+                actionCommands = actionCommands,
+                postText = postText,
+                communicationModule = communicationModule
+            )
+
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to parse AIMessage from response: ${e.message}", "WARN", e)
+            LogManager.aiSession("Falling back to raw text display with error prefix", "WARN")
+
+            // FALLBACK: Create basic AIMessage with error prefix
+            val errorPrefix = s.shared("ai_response_invalid_format")
+            AIMessage(
+                preText = "$errorPrefix ${aiResponse.content}",
                 validationRequest = null,
                 dataCommands = null,
                 actionCommands = null,
                 postText = null,
                 communicationModule = null
             )
-        } catch (e: Exception) {
-            LogManager.aiSession("Failed to parse AIMessage from response: ${e.message}", "WARN", e)
-            null
         }
+    }
+
+    /**
+     * Helper to parse JSONObject to Map<String, Any>
+     * Handles nested objects and arrays
+     */
+    private fun parseJsonObjectToMap(jsonObject: org.json.JSONObject): Map<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        jsonObject.keys().forEach { key ->
+            val value = jsonObject.get(key)
+            map[key] = when (value) {
+                is org.json.JSONObject -> parseJsonObjectToMap(value)
+                is org.json.JSONArray -> {
+                    (0 until value.length()).map { i ->
+                        val item = value.get(i)
+                        when (item) {
+                            is org.json.JSONObject -> parseJsonObjectToMap(item)
+                            else -> item
+                        }
+                    }
+                }
+                else -> value
+            }
+        }
+        return map
     }
 }
 

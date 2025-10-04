@@ -341,6 +341,7 @@
     <string name="shared_ai_module_validation_title">Confirmation</string>
     <string name="shared_ai_module_no_question">Aucune question fournie</string>
     <string name="shared_ai_module_no_message">Aucun message fourni</string>
+    <string name="shared_ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
     <string name="shared_ai_data_zone">données zone</string>
     <string name="shared_ai_data_tool">données outil</string>
     <string name="shared_ai_data_field">champ données</string>
