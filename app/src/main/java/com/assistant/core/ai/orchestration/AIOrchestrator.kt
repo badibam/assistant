@@ -698,6 +698,9 @@ object AIOrchestrator {
             return null
         }
 
+        // Log raw AI response content (VERBOSE level)
+        LogManager.aiSession("AI RAW RESPONSE: ${aiResponse.content}", "VERBOSE")
+
         return try {
             val json = org.json.JSONObject(aiResponse.content)
 
@@ -777,16 +780,8 @@ object AIOrchestrator {
                 }
             }
 
-            // Log parsing success
-            LogManager.aiSession(
-                "Parsed AIMessage - preText: ${preText.length} chars, " +
-                "dataCommands: ${dataCommands?.size ?: 0}, " +
-                "actionCommands: ${actionCommands?.size ?: 0}, " +
-                "validationRequest: ${validationRequest != null}, " +
-                "communicationModule: ${communicationModule != null}"
-            )
-
-            AIMessage(
+            // Create AIMessage
+            val aiMessage = AIMessage(
                 preText = preText,
                 validationRequest = validationRequest,
                 dataCommands = dataCommands,
@@ -795,13 +790,27 @@ object AIOrchestrator {
                 communicationModule = communicationModule
             )
 
+            // Log parsed structure (DEBUG level)
+            LogManager.aiSession(
+                "AI PARSED MESSAGE:\n" +
+                "  preText: ${preText.take(100)}${if (preText.length > 100) "..." else ""}\n" +
+                "  validationRequest: ${validationRequest?.message?.take(50) ?: "null"}\n" +
+                "  dataCommands: ${dataCommands?.size ?: 0} commands\n" +
+                "  actionCommands: ${actionCommands?.size ?: 0} commands\n" +
+                "  postText: ${postText?.take(50) ?: "null"}\n" +
+                "  communicationModule: ${communicationModule?.type ?: "null"}",
+                "DEBUG"
+            )
+
+            aiMessage
+
         } catch (e: Exception) {
             LogManager.aiSession("Failed to parse AIMessage from response: ${e.message}", "WARN", e)
             LogManager.aiSession("Falling back to raw text display with error prefix", "WARN")
 
             // FALLBACK: Create basic AIMessage with error prefix
             val errorPrefix = s.shared("ai_response_invalid_format")
-            AIMessage(
+            val fallbackMessage = AIMessage(
                 preText = "$errorPrefix ${aiResponse.content}",
                 validationRequest = null,
                 dataCommands = null,
@@ -809,6 +818,15 @@ object AIOrchestrator {
                 postText = null,
                 communicationModule = null
             )
+
+            // Log fallback message (DEBUG level)
+            LogManager.aiSession(
+                "AI FALLBACK MESSAGE (invalid JSON):\n" +
+                "  preText: ${fallbackMessage.preText.take(100)}${if (fallbackMessage.preText.length > 100) "..." else ""}",
+                "DEBUG"
+            )
+
+            fallbackMessage
         }
     }
 
