@@ -338,6 +338,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             return OperationResult.success(mapOf(
                 "hasActiveSession" to true,
+                "sessionId" to activeSessionEntity.id,
                 "session" to mapOf(
                     "id" to activeSessionEntity.id,
                     "name" to activeSessionEntity.name,

@@ -25,11 +25,12 @@ data class AILimitsConfig(
     val automationMaxAutonomousRoundtrips: Int = 20,
     val automationMaxCommunicationModulesRoundtrips: Int = 10,
 
-    // ===== TIMEOUTS INACTIVITÉ (ms) =====
-    val chatInactivityTimeout: Long = 5 * 60 * 1000,        // 5 min
-    val automationInactivityTimeout: Long = 30 * 60 * 1000, // 30 min
+    // ===== CHAT : DURÉE MAX INACTIVITÉ AVANT ÉVICTION PAR AUTOMATION (ms) =====
+    // Si AUTOMATION demande la main et CHAT inactive depuis > cette durée → arrêt forcé CHAT
+    // Si CHAT inactive depuis < cette durée → AUTOMATION attend en queue
+    val chatMaxInactivityBeforeAutomationEviction: Long = 5 * 60 * 1000, // 5 min
 
     // ===== AUTOMATION : DURÉE MAX OCCUPATION SESSION (ms) =====
-    // CHAT n'a pas de timeout exécution (bouton "Interrompre" dans UI)
+    // Watchdog pour éviter boucles infinies (CHAT n'a pas de timeout - bouton UI)
     val automationMaxSessionDuration: Long = 10 * 60 * 1000 // 10 min
 )

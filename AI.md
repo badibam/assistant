@@ -159,10 +159,10 @@ data class AILimitsConfig(
     val automationMaxActionRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
     val automationMaxCommunicationModulesRoundtrips: Int = 10,
-    // TIMEOUTS (ms)
-    val chatInactivityTimeout: Long = 5 * 60 * 1000,         // 5 min
-    val automationInactivityTimeout: Long = 30 * 60 * 1000,  // 30 min
-    val automationMaxSessionDuration: Long = 10 * 60 * 1000  // 10 min (CHAT : pas de timeout, bouton UI)
+    // CHAT : ÉVICTION PAR AUTOMATION (ms)
+    val chatMaxInactivityBeforeAutomationEviction: Long = 5 * 60 * 1000,  // 5 min
+    // AUTOMATION : WATCHDOG (ms)
+    val automationMaxSessionDuration: Long = 10 * 60 * 1000  // 10 min
 )
 ```
 
@@ -172,9 +172,9 @@ data class AILimitsConfig(
 - **AutonomousRoundtrips** : Limite totale tous types (sécurité)
 - **CommunicationModulesRoundtrips** : Échanges questions/réponses
 
-**Timeouts** :
-- **InactivityTimeout** : Fermeture automatique session inactive
-- **MaxSessionDuration** : Durée max occupation session AUTOMATION (watchdog)
+**Gestion session** :
+- **chatMaxInactivityBeforeAutomationEviction** : Si AUTOMATION demande la main et CHAT inactive depuis > cette durée → arrêt forcé CHAT. Si CHAT inactive < cette durée → AUTOMATION attend en queue
+- **automationMaxSessionDuration** : Watchdog pour éviter boucles infinies AUTOMATION (CHAT n'a pas de timeout - arrêt via bouton UI)
 
 **Compteurs** : Consécutifs pour DataQuery/ActionRetry (reset si changement), total pour AutonomousRoundtrips (jamais reset), séparé pour Communication.
 
@@ -227,11 +227,19 @@ AI:   AIMessage → AICommandProcessor → CommandTransformer/Actions → Comman
 ### Session active exclusive
 Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FIFO.
 
-**Règles CHAT** : Switch immédiat si autre CHAT actif, priorité position 1 si AUTOMATION active, un seul CHAT en queue.
+**Règles CHAT** :
+- Switch immédiat si autre CHAT actif
+- Priorité position 1 si AUTOMATION active
+- Un seul CHAT en queue
 
-**Règles AUTOMATION** : Queue FIFO standard.
+**Règles AUTOMATION** :
+- Si CHAT actif et inactif depuis > `chatMaxInactivityBeforeAutomationEviction` → arrêt forcé CHAT, activation AUTOMATION
+- Si CHAT actif et inactif depuis < limite → queue FIFO standard
+- Si AUTOMATION active → queue FIFO standard
 
-**Timeouts** : Monitor inactivité (1 min check) ferme session si timeout dépassé. Watchdog AUTOMATION (flag `shouldTerminateRound`) force termination si `automationMaxSessionDuration` dépassé → SESSION_TIMEOUT.
+**Persistance sessions** : Aucun timeout d'inactivité automatique. Sessions persistent jusqu'à arrêt explicite (bouton UI) ou éviction par AUTOMATION (CHAT uniquement).
+
+**Watchdog AUTOMATION** : Flag `shouldTerminateRound` force termination si `automationMaxSessionDuration` dépassé → SESSION_TIMEOUT.
 
 ## 6. Séparation message/round
 

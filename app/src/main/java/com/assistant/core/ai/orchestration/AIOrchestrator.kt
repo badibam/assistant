@@ -67,9 +67,6 @@ object AIOrchestrator {
     // Session queue (FIFO with priority rules)
     private val sessionQueue = mutableListOf<QueuedSession>()
 
-    // Inactivity monitor job
-    private var monitorJob: Job? = null
-
     /**
      * Queued session data
      */
@@ -91,52 +88,7 @@ object AIOrchestrator {
         this.aiClient = AIClient(this.context)
         this.s = Strings.`for`(context = this.context)
 
-        // Start inactivity monitor
-        startInactivityMonitor()
-
         LogManager.aiSession("AIOrchestrator initialized as singleton")
-    }
-
-    /**
-     * Start inactivity timeout monitor
-     * Checks every minute for inactive sessions
-     */
-    private fun startInactivityMonitor() {
-        monitorJob = CoroutineScope(Dispatchers.Default).launch {
-            while (isActive) {
-                delay(60_000) // 1 minute
-                checkInactivityTimeout()
-            }
-        }
-        LogManager.aiSession("Inactivity monitor started", "DEBUG")
-    }
-
-    /**
-     * Check if active session has timed out due to inactivity
-     */
-    private fun checkInactivityTimeout() {
-        // Skip if no active session or round in progress
-        if (activeSessionId == null || _isRoundInProgress.value) {
-            return
-        }
-
-        val limits = AppConfigManager.getAILimits()
-        val now = System.currentTimeMillis()
-        val inactivityDuration = now - lastActivityTimestamp
-
-        val timeout = when (activeSessionType) {
-            SessionType.CHAT -> limits.chatInactivityTimeout
-            SessionType.AUTOMATION -> limits.automationInactivityTimeout
-            null -> return
-        }
-
-        if (inactivityDuration > timeout) {
-            LogManager.aiSession(
-                "Session $activeSessionId timed out after ${inactivityDuration / 1000}s inactivity (limit: ${timeout / 1000}s)",
-                "INFO"
-            )
-            closeActiveSession()
-        }
     }
 
     // ========================================================================================
@@ -197,7 +149,29 @@ object AIOrchestrator {
             return SessionControlResult.QUEUED(1)
         }
 
-        // AUTOMATION logic: FIFO
+        // AUTOMATION logic: Check if active CHAT can be evicted
+        if (type == SessionType.AUTOMATION && activeSessionType == SessionType.CHAT) {
+            val limits = AppConfigManager.getAILimits()
+            val now = System.currentTimeMillis()
+            val inactivityDuration = now - lastActivityTimestamp
+
+            if (inactivityDuration > limits.chatMaxInactivityBeforeAutomationEviction) {
+                LogManager.aiSession(
+                    "Active CHAT inactive for ${inactivityDuration / 1000}s (limit: ${limits.chatMaxInactivityBeforeAutomationEviction / 1000}s) - evicting for AUTOMATION: $sessionId",
+                    "INFO"
+                )
+                closeActiveSession()
+                activateSession(sessionId, type, automationId, scheduledExecutionTime)
+                return SessionControlResult.ACTIVATED
+            } else {
+                LogManager.aiSession(
+                    "Active CHAT still active (inactive for ${inactivityDuration / 1000}s < ${limits.chatMaxInactivityBeforeAutomationEviction / 1000}s) - queuing AUTOMATION: $sessionId",
+                    "INFO"
+                )
+            }
+        }
+
+        // AUTOMATION queued normally (FIFO)
         enqueueSession(sessionId, type, automationId, scheduledExecutionTime, priority = false)
         val position = sessionQueue.indexOfFirst { it.sessionId == sessionId } + 1
         LogManager.aiSession("AUTOMATION queued at position $position: $sessionId", "INFO")
