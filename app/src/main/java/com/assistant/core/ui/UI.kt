@@ -479,4 +479,7 @@ object UI {
     ) = com.assistant.core.ui.components.Pagination(
         currentPage, totalPages, onPageChange, showPageInfo
     )
+
+    @Composable
+    fun AIThinkingIndicator() = CurrentTheme.current.AIThinkingIndicator()
 }

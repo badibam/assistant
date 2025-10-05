@@ -10,7 +10,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.darkColorScheme
@@ -1401,6 +1403,47 @@ object DefaultTheme : ThemeContract {
                         size = Size.M,
                         onClick = onRightClick ?: { }
                     )
+                }
+            }
+        }
+    }
+
+    @Composable
+    override fun AIThinkingIndicator() {
+        val colors = CurrentTheme.getCurrentColorScheme()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Three animated dots
+            repeat(3) { index ->
+                val infiniteTransition = rememberInfiniteTransition(label = "thinkingDot$index")
+                val alpha by infiniteTransition.animateFloat(
+                    initialValue = 0.3f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse,
+                        initialStartOffset = StartOffset(index * 200)
+                    ),
+                    label = "dotAlpha$index"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(
+                            color = colors.primary.copy(alpha = alpha),
+                            shape = CircleShape
+                        )
+                )
+
+                if (index < 2) {
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
             }
         }

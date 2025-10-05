@@ -1,4 +1,4 @@
-package com.assistant.core.ai.data
+package com.assistant.core.ai.orchestration
 
 /**
  * Reason for AI round execution

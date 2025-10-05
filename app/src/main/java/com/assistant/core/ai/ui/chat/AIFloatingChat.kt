@@ -15,6 +15,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
+import com.assistant.core.ai.orchestration.RoundReason
 import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.ai.ui.components.RichComposer
 import com.assistant.core.coordinator.isSuccess
@@ -49,6 +50,9 @@ fun AIFloatingChat(
 
     // Observe waiting state for user interactions
     val waitingState by aiOrchestrator.waitingState.collectAsState()
+
+    // Observe round in progress for AI thinking indicator
+    val isRoundInProgress by aiOrchestrator.isRoundInProgress.collectAsState()
 
     // Reload session every time dialog becomes visible (not just first mount)
     LaunchedEffect(isVisible) {
@@ -124,7 +128,7 @@ fun AIFloatingChat(
                 ) {
                     ChatMessageList(
                         messages = activeSession?.messages ?: emptyList(),
-                        isLoading = isLoading,
+                        isLoading = isRoundInProgress,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -159,18 +163,37 @@ fun AIFloatingChat(
                                         }
 
                                         sessionToUse?.let { session ->
-                                            // Send via AIOrchestrator (complete flow)
-                                            val result = aiOrchestrator.sendMessage(richMessage, session.id)
+                                            // Activate session if not already active
+                                            if (aiOrchestrator.getActiveSessionId() != session.id) {
+                                                aiOrchestrator.requestSessionControl(session.id, SessionType.CHAT)
+                                            }
 
-                                            if (result.success) {
-                                                // Reload session with new messages
+                                            // 1. Process user message (stores message + executes enrichments)
+                                            val processResult = aiOrchestrator.processUserMessage(richMessage)
+
+                                            if (!processResult.success) {
+                                                errorMessage = processResult.error
+                                                LogManager.aiUI("Failed to process message: ${processResult.error}", "ERROR")
+                                                return@launch
+                                            }
+
+                                            // 2. Reload session immediately to show user message
+                                            val sessionWithUserMessage = aiOrchestrator.loadSession(session.id)
+                                            activeSession = sessionWithUserMessage
+                                            segments = emptyList() // Clear composer
+                                            LogManager.aiUI("User message displayed, starting AI round")
+
+                                            // 3. Execute AI round (will show indicator via isRoundInProgress)
+                                            val aiRoundResult = aiOrchestrator.executeAIRound(RoundReason.USER_MESSAGE)
+
+                                            if (aiRoundResult.success) {
+                                                // Reload session with AI response
                                                 val updatedSession = aiOrchestrator.loadSession(session.id)
                                                 activeSession = updatedSession
-                                                segments = emptyList() // Clear composer
-                                                LogManager.aiUI("Message sent successfully, session updated")
+                                                LogManager.aiUI("AI round completed successfully")
                                             } else {
-                                                errorMessage = result.error
-                                                LogManager.aiUI("Failed to send message: ${result.error}", "ERROR")
+                                                errorMessage = aiRoundResult.error
+                                                LogManager.aiUI("Failed AI round: ${aiRoundResult.error}", "ERROR")
                                             }
                                         } ?: run {
                                             errorMessage = s.shared("ai_error_create_session").format("")
@@ -324,18 +347,10 @@ private fun ChatMessageList(
                 ChatMessageBubble(message = message)
             }
 
-            // Loading indicator
+            // AI thinking indicator
             if (isLoading) {
                 item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        UI.Text(
-                            text = s.shared("ai_status_thinking"),
-                            type = TextType.CAPTION
-                        )
-                    }
+                    UI.AIThinkingIndicator()
                 }
             }
         }

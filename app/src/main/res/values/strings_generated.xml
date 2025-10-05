@@ -691,5 +691,10 @@
     <string name="shared_ai_session_queued_priority">Session en attente prioritaire</string>
     <string name="shared_ai_automation_running">Automation en cours, veuillez patienter</string>
     <string name="shared_action_interrupt_round">Interrompre</string>
+    <string name="shared_ai_limit_format_errors_reached">Limite d\'erreurs de format atteinte</string>
+    <string name="shared_ai_limit_communication_modules_reached">Limite de modules de communication atteinte</string>
+    <string name="shared_ai_limit_data_queries_reached">Limite d\'itérations de requêtes de données atteinte</string>
+    <string name="shared_ai_limit_action_retries_reached">Limite de tentatives d\'actions atteinte</string>
+    <string name="shared_ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
 
 </resources>

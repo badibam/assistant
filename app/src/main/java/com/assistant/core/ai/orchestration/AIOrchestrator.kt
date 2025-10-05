@@ -505,7 +505,7 @@ object AIOrchestrator {
             if (parseResult.formatErrors.isNotEmpty()) {
                 // Check limit
                 if (consecutiveFormatErrors >= limits.maxFormatErrorRetries) {
-                    storeLimitReachedMessage("Format errors limit reached", sessionId)
+                    storeLimitReachedMessage(s.shared("ai_limit_format_errors_reached"), sessionId)
                     break
                 }
 
@@ -537,7 +537,7 @@ object AIOrchestrator {
             // 4a. COMMUNICATION MODULE (prioritaire)
             if (aiMessage.communicationModule != null) {
                 if (communicationRoundtrips >= limits.maxCommunicationModules) {
-                    storeLimitReachedMessage("Communication modules limit reached", sessionId)
+                    storeLimitReachedMessage(s.shared("ai_limit_communication_modules_reached"), sessionId)
                     break
                 }
 
@@ -566,7 +566,7 @@ object AIOrchestrator {
             // 4b. DATA COMMANDS (queries)
             if (aiMessage.dataCommands != null && aiMessage.dataCommands.isNotEmpty()) {
                 if (consecutiveDataQueries >= limits.maxDataQueryIterations) {
-                    storeLimitReachedMessage("Data query iterations limit reached", sessionId)
+                    storeLimitReachedMessage(s.shared("ai_limit_data_queries_reached"), sessionId)
                     break
                 }
 
@@ -613,7 +613,7 @@ object AIOrchestrator {
                 } else {
                     // Échecs - retry
                     if (consecutiveActionRetries >= limits.maxActionRetries) {
-                        storeLimitReachedMessage("Action retries limit reached", sessionId)
+                        storeLimitReachedMessage(s.shared("ai_limit_action_retries_reached"), sessionId)
                         break
                     }
 
@@ -634,7 +634,7 @@ object AIOrchestrator {
         }
 
         if (totalRoundtrips >= limits.maxAutonomousRoundtrips) {
-            storeLimitReachedMessage("Total autonomous roundtrips limit reached", sessionId)
+            storeLimitReachedMessage(s.shared("ai_limit_total_roundtrips_reached"), sessionId)
         }
 
         LogManager.aiSession("AI round completed successfully", "INFO")

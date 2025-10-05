@@ -298,7 +298,13 @@ interface ThemeContract {
      * @return ColorScheme for the palette, or default if not found
      */
     fun getColorScheme(paletteId: String): ColorScheme
-    
-    
+
+    /**
+     * AI Thinking Indicator
+     * Visual indicator shown while waiting for AI response
+     */
+    @Composable
+    fun AIThinkingIndicator()
+
     // Old buttons removed - use ActionButton
 }
