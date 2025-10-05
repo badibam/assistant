@@ -10,25 +10,15 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 - **AUTOMATION** : Prompt programmable, queries relatives, feedback exécutions
 
 ### AIOrchestrator singleton
-L'orchestrateur IA est un singleton qui survit au lifecycle des composants UI et maintient l'état des sessions actives.
+L'orchestrateur IA maintient une session active unique avec queue FIFO pour sessions en attente.
 
-```kotlin
-object AIOrchestrator {
-    private val _waitingState = MutableStateFlow<WaitingState>(WaitingState.None)
-    val waitingState: StateFlow<WaitingState> = _waitingState.asStateFlow()
+**API principale** :
+- `requestSessionControl()` : Demande contrôle session (ACTIVATED/ALREADY_ACTIVE/QUEUED)
+- `processUserMessage()` : Traite message user avec enrichments
+- `executeAIRound(reason)` : Exécute round IA complet avec boucles autonomes
+- `sendMessage()` : Wrapper processUserMessage + executeAIRound
 
-    fun initialize(context: Context)
-    suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult
-}
-
-sealed class WaitingState {
-    object None : WaitingState()
-    data class WaitingValidation(val request: ValidationRequest) : WaitingState()
-    data class WaitingResponse(val module: CommunicationModule) : WaitingState()
-}
-```
-
-**Pattern UI** : Les composants observent `waitingState` via `collectAsState()` et affichent dialogues selon l'état. Reconnexion UI automatique.
+**StateFlows observables** : `waitingState` (validation/communication), `isRoundInProgress` (protection concurrent).
 
 ## 2. Types et structures
 
@@ -42,15 +32,19 @@ data class AISession(
     val id: String,
     val name: String,
     val type: SessionType,
+    val automationId: String?,              // AUTOMATION : ID automation source, null pour CHAT
+    val scheduledExecutionTime: Long?,      // AUTOMATION : timestamp référence pour résolution périodes relatives
     val providerId: String,
     val providerSessionId: String,
-    val schedule: ScheduleConfig?,        // AUTOMATION uniquement
+    val schedule: ScheduleConfig?,          // AUTOMATION uniquement
     val createdAt: Long,
     val lastActivity: Long,
     val messages: List<SessionMessage>,
     val isActive: Boolean
 )
 ```
+
+**scheduledExecutionTime** : Pour AUTOMATION, référence temporelle utilisée pour résolution RelativePeriod (permet traitement correct même si exécution retardée).
 
 ### SessionMessage (structure unifiée)
 ```kotlin
@@ -94,11 +88,18 @@ data class AIMessage(
 ### SystemMessage
 ```kotlin
 data class SystemMessage(
-    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED
+    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, EXECUTION_ERROR
     val commandResults: List<CommandResult>,
     val summary: String,
     val formattedData: String?              // JSON résultats (queries uniquement)
 )
+
+enum class SystemMessageType {
+    DATA_ADDED,          // Résultats queries → envoyé au prompt
+    ACTIONS_EXECUTED,    // Résultats actions → envoyé au prompt
+    LIMIT_REACHED,       // Limite atteinte → envoyé au prompt
+    EXECUTION_ERROR      // Erreurs exécution → envoyé au prompt (sauf réseau, voir Architecture prompts)
+}
 ```
 
 **formattedData** : Données JSON complètes formatées pour prompt. Concaténation `PromptCommandResult` avec titres. DATA_ADDED uniquement.
@@ -142,7 +143,7 @@ data class AIResponse(
 ## 3. Configuration IA
 
 ### AILimitsConfig
-Configuration globale des limites de boucles autonomes intégrée dans `AppConfig`.
+Configuration globale des limites de boucles autonomes et timeouts, intégrée dans `AppConfig`.
 
 ```kotlin
 data class AILimitsConfig(
@@ -155,7 +156,11 @@ data class AILimitsConfig(
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
-    val automationMaxCommunicationModulesRoundtrips: Int = 10
+    val automationMaxCommunicationModulesRoundtrips: Int = 10,
+    // TIMEOUTS (ms)
+    val chatInactivityTimeout: Long = 5 * 60 * 1000,         // 5 min
+    val automationInactivityTimeout: Long = 30 * 60 * 1000,  // 30 min
+    val automationMaxSessionDuration: Long = 10 * 60 * 1000  // 10 min (CHAT : pas de timeout, bouton UI)
 )
 ```
 
@@ -164,6 +169,10 @@ data class AILimitsConfig(
 - **ActionRetries** : Tentatives pour actions échouées
 - **AutonomousRoundtrips** : Limite totale tous types (sécurité)
 - **CommunicationModulesRoundtrips** : Échanges questions/réponses
+
+**Timeouts** :
+- **InactivityTimeout** : Fermeture automatique session inactive
+- **MaxSessionDuration** : Durée max occupation session AUTOMATION (watchdog)
 
 **Compteurs** : Consécutifs pour DataQuery/ActionRetry (reset si changement), total pour AutonomousRoundtrips (jamais reset), séparé pour Communication.
 
@@ -205,26 +214,37 @@ data class CommandExecutionResult(
 
 **Responsabilités** : Point unique d'exécution (User/AI), appels coordinator, formatage PromptCommandResult (queries), génération SystemMessage (UN par série), NE stocke JAMAIS.
 
-### Flow AIOrchestrator.sendMessage()
-```kotlin
-1. Exécuter enrichments AVANT stockage (executeEnrichments si dataCommands présent)
-2. Stocker message user
-3. Stocker SystemMessage enrichments (si présent)
-4. Construire promptData via PromptManager.buildPromptData()
-5. Appeler aiClient.query(promptData, providerId)
-6. Stocker réponse IA
-7. BOUCLES AUTONOMES (voir section 5)
-```
-
-**executeEnrichments** : UserCommandProcessor → CommandTransformer → CommandExecutor → retourne SystemMessage avec formattedData.
-
 ### Command Processing Pipeline
 ```
 User: EnrichmentBlock → EnrichmentProcessor → UserCommandProcessor → CommandTransformer → CommandExecutor
 AI:   AIMessage → AICommandProcessor → CommandTransformer/Actions → CommandExecutor
 ```
 
-## 5. Boucles autonomes
+## 5. Contrôle de session
+
+### Session active exclusive
+Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FIFO.
+
+**Règles CHAT** : Switch immédiat si autre CHAT actif, priorité position 1 si AUTOMATION active, un seul CHAT en queue.
+
+**Règles AUTOMATION** : Queue FIFO standard.
+
+**Timeouts** : Monitor inactivité (1 min check) ferme session si timeout dépassé. Watchdog AUTOMATION (flag `shouldTerminateRound`) force termination si `automationMaxSessionDuration` dépassé → EXECUTION_ERROR.
+
+## 6. Séparation message/round
+
+### RoundReason
+`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`.
+
+### Méthodes principales
+
+**processUserMessage()** : Exécute enrichments, stocke message user + SystemMessage enrichments, update lastActivityTimestamp.
+
+**executeAIRound(reason)** : Protection concurrent (`isRoundInProgress`), build promptData, check réseau, query IA (retry si AUTOMATION), boucles autonomes, processNextInQueue(). Watchdog AUTOMATION vérifie `shouldTerminateRound` dans boucle.
+
+**sendMessage()** : Wrapper processUserMessage + executeAIRound.
+
+## 7. Boucles autonomes
 
 ### Architecture 4 compteurs
 ```kotlin
@@ -236,9 +256,10 @@ var communicationRoundtrips = 0
 val limits = getLimitsForSessionType(sessionType)
 ```
 
-### Flow logique dans sendMessage()
+### Flow logique dans executeAIRound()
 ```
-while (totalRoundtrips < limits.maxAutonomousRoundtrips):
+// AUTOMATION uniquement : watchdog concurrent avec flag shouldTerminateRound
+while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound):
 
   Priorité 1: COMMUNICATION MODULE
     - Vérifier limite communicationRoundtrips
@@ -289,7 +310,17 @@ fun resumeWithValidation(validated: Boolean) {
 
 **Helpers** : `createRefusedActionsMessage()` retourne SystemMessage avec status CANCELLED, `storeLimitReachedMessage()` crée SystemMessage type LIMIT_REACHED.
 
-## 6. Enrichissements
+## 8. Gestion réseau et erreurs
+
+**NetworkUtils** : `isNetworkAvailable(context)` pour vérification connectivité (core/utils).
+
+**Timeout HTTP** : 2 minutes (OkHttp config providers).
+
+**AUTOMATION** : Check réseau avant appel → offline = requeue + EXECUTION_ERROR. Retry 3x avec backoff (5s, 15s, 30s) si erreur → échec final = requeue + EXECUTION_ERROR.
+
+**CHAT** : Check réseau avant appel → offline = toast, session reste active. Pas de retry automatique, toast erreur, EXECUTION_ERROR stocké, session reste active.
+
+## 9. Enrichissements
 
 ### Types d'enrichissements
 - **🔍 POINTER** - Référencer données (zones ou instances)
@@ -322,7 +353,7 @@ class EnrichmentProcessor {
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.
 **AI** : Source AIMessage.dataCommands + actionCommands, types queries + actions réelles, but demander données + exécuter actions.
 
-## 7. Architecture prompts
+## 10. Architecture prompts
 
 ### 3 niveaux (plus de Level 4)
 **Level 1: DOC** - Rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schéma zone, tooltypes + schema_ids.
@@ -338,7 +369,14 @@ suspend fun buildPromptData(sessionId: String): PromptData {
     val level1Results = commandExecutor.executeCommands(buildLevel1Commands(session.type), DATA_ADDED, "L1")
     val level1Content = formatLevel("Level 1: System Documentation", level1Results.promptResults)
     // Idem L2, L3
-    val sessionMessages = loadMessages(sessionId)  // Incluant SystemMessages enrichments stockés
+
+    // Filtrage problèmes connexion réseau (pollue contexte IA, audit uniquement)
+    val sessionMessages = loadMessages(sessionId)
+        .filter { message ->
+            message.systemMessage?.type != SystemMessageType.EXECUTION_ERROR ||
+            !message.systemMessage.summary.contains("Network", ignoreCase = true)
+        }
+
     return PromptData(level1Content, level2Content, level3Content, sessionMessages)
 }
 ```
@@ -353,7 +391,7 @@ suspend fun buildPromptData(sessionId: String): PromptData {
 **CHAT** (isRelative=false) : Périodes absolues (Period timestamps fixes).
 **AUTOMATION** (isRelative=true) : Périodes relatives (RelativePeriod "offset_TYPE") résolues via AppConfigManager.
 
-## 8. Provider abstraction
+## 11. Provider abstraction
 
 ### Signature AIProvider
 ```kotlin
@@ -390,7 +428,7 @@ Le provider fusionne USER/SYSTEM consécutifs pour respecter contraintes API.
 ### Configuration
 Configurations gérées par `AIProviderConfigService`, providers découverts via `AIProviderRegistry`, `AIClient` utilise coordinator (pas d'accès DB direct).
 
-## 9. Communication modules
+## 12. Communication modules
 
 ### Structure
 ```kotlin
@@ -429,7 +467,7 @@ when (waitingState) {
 ### Validation et permissions
 Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirmation user), `forbidden` (interdit), `ask_first` (permission avant).
 
-## 10. SystemMessages
+## 13. SystemMessages
 
 ### Génération et stockage
 **Générés par** : CommandExecutor après chaque série de commandes. **Stockés comme** : SessionMessage sender=SYSTEM. **Point unique** : CommandExecutor seul responsable (User et AI).
@@ -439,9 +477,12 @@ Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirma
 **AI queries** : Générés après exécution dataCommands IA, stockés après réponse AI, type DATA_ADDED avec formattedData.
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
+**Erreurs exécution** : Générés pour erreurs réseau/timeout/session, type EXECUTION_ERROR. Erreurs réseau filtrées du prompt (polluent contexte).
 
 ### Format dans prompts
 Provider décide du format d'inclusion. Généralement fusion avec messages USER consécutifs (formattedData ajouté comme content block).
+
+**Filtrage** : EXECUTION_ERROR avec "Network" dans summary exclu du contexte IA (audit uniquement).
 
 ---
 
