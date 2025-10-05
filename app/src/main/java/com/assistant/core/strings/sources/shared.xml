@@ -144,6 +144,8 @@
     <string name="ai_error_network_call_failed">Échec de l\'appel IA</string>
     <string name="ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
     <string name="ai_error_system_generic">Erreur système</string>
+    <string name="ai_error_format_errors">Erreurs de format dans la réponse IA:\n%1$s</string>
+    <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
 
     <!-- AI Communication Modules - Schemas -->
     <string name="ai_schema_communication_multiple_choice_name">Module de communication: Choix multiple</string>

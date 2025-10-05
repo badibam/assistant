@@ -88,7 +88,7 @@ data class AIMessage(
 ### SystemMessage
 ```kotlin
 data class SystemMessage(
-    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, NETWORK_ERROR, SESSION_TIMEOUT
+    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, FORMAT_ERROR, NETWORK_ERROR, SESSION_TIMEOUT
     val commandResults: List<CommandResult>,
     val summary: String,
     val formattedData: String?              // JSON résultats (queries uniquement)
@@ -98,6 +98,7 @@ enum class SystemMessageType {
     DATA_ADDED,          // Résultats queries → envoyé au prompt
     ACTIONS_EXECUTED,    // Résultats actions → envoyé au prompt
     LIMIT_REACHED,       // Limite atteinte → envoyé au prompt
+    FORMAT_ERROR,        // Erreur de format réponse IA → envoyé au prompt pour correction
     NETWORK_ERROR,       // Erreurs réseau/HTTP/provider → filtré du prompt (audit uniquement)
     SESSION_TIMEOUT      // Timeout watchdog session → filtré du prompt (audit uniquement)
 }
@@ -261,6 +262,12 @@ val limits = getLimitsForSessionType(sessionType)
 ```
 // AUTOMATION uniquement : watchdog concurrent avec flag shouldTerminateRound
 while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound):
+
+  Priorité 0: FORMAT ERRORS (avant tout traitement)
+    - Vérifier parseResult.formatErrors après parsing réponse IA
+    - Si erreurs → stocker FORMAT_ERROR SystemMessage
+    - Renvoyer auto à IA avec erreurs pour correction
+    - Incrémenter totalRoundtrips, continue
 
   Priorité 1: COMMUNICATION MODULE
     - Vérifier limite communicationRoundtrips
@@ -478,6 +485,7 @@ Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirma
 **AI queries** : Générés après exécution dataCommands IA, stockés après réponse AI, type DATA_ADDED avec formattedData.
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
+**Format errors** : Générés quand parsing communicationModule échoue, type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
 **Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR) et timeout watchdog (SESSION_TIMEOUT). Filtrés du prompt IA (audit uniquement).
 
 ### Format dans prompts

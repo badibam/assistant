@@ -524,8 +524,26 @@ object AIOrchestrator {
             }
 
             // Parse AI message for commands
-            val aiMessage = parseAIMessageFromResponse(aiResponse)
+            val parseResult = parseAIMessageFromResponse(aiResponse)
 
+            // Check for format errors
+            if (parseResult.formatErrors.isNotEmpty()) {
+                val errorList = parseResult.formatErrors.joinToString("\n") { "- $it" }
+                val errorSummary = s.shared("ai_error_format_errors").format(errorList)
+                LogManager.aiSession("Format errors detected: $errorSummary", "WARN")
+                storeFormatErrorMessage(errorSummary, sessionId)
+
+                // Continue loop to send error back to AI for correction
+                val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                aiResponse = callAIWithRetry(newPromptData, sessionType)
+                if (!aiResponse.success) break
+                storeAIMessage(aiResponse, sessionId)
+
+                totalRoundtrips++
+                continue
+            }
+
+            val aiMessage = parseResult.aiMessage
             if (aiMessage == null) {
                 // No AI message structure - end loop
                 break
@@ -1031,6 +1049,19 @@ object AIOrchestrator {
     }
 
     /**
+     * Store FORMAT_ERROR message for AI response format errors
+     */
+    private suspend fun storeFormatErrorMessage(summary: String, sessionId: String) {
+        val systemMessage = SystemMessage(
+            type = SystemMessageType.FORMAT_ERROR,
+            commandResults = emptyList(),
+            summary = summary,
+            formattedData = null
+        )
+        storeSystemMessage(systemMessage, sessionId)
+    }
+
+    /**
      * Wait for user validation (suspend until UI calls resumeWithValidation)
      */
     private suspend fun waitForUserValidation(request: ValidationRequest): Boolean =
@@ -1110,19 +1141,21 @@ object AIOrchestrator {
      *
      * Returns null only if response is not successful
      */
-    private fun parseAIMessageFromResponse(aiResponse: AIResponse): AIMessage? {
+    private fun parseAIMessageFromResponse(aiResponse: AIResponse): ParseResult {
         if (!aiResponse.success) {
             LogManager.aiSession("AI response not successful, skipping parse", "DEBUG")
-            return null
+            return ParseResult(aiMessage = null)
         }
 
         if (aiResponse.content.isEmpty()) {
             LogManager.aiSession("AI response content is empty", "DEBUG")
-            return null
+            return ParseResult(aiMessage = null)
         }
 
         // Log raw AI response content (VERBOSE level)
         LogManager.aiSession("AI RAW RESPONSE: ${aiResponse.content}", "VERBOSE")
+
+        val formatErrors = mutableListOf<String>()
 
         return try {
             val json = org.json.JSONObject(aiResponse.content)
@@ -1131,7 +1164,8 @@ object AIOrchestrator {
             val preText = json.optString("preText", "")
             if (preText.isEmpty()) {
                 LogManager.aiSession("AIMessage missing required preText field", "WARN")
-                return null
+                val errorMsg = s.shared("ai_error_missing_required_field").format("preText")
+                return ParseResult(aiMessage = null, formatErrors = listOf(errorMsg))
             }
 
             // Parse optional validationRequest
@@ -1193,12 +1227,16 @@ object AIOrchestrator {
                         "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
                         "Validation" -> CommunicationModule.Validation(type, data)
                         else -> {
-                            LogManager.aiSession("Unknown communication module type: $type", "WARN")
+                            val errorMsg = "Unknown communication module type: $type"
+                            LogManager.aiSession(errorMsg, "WARN")
+                            formatErrors.add("communicationModule: $errorMsg")
                             null
                         }
                     }
                 } catch (e: Exception) {
-                    LogManager.aiSession("Failed to parse communicationModule: ${e.message}", "WARN")
+                    val errorMsg = "Failed to parse communicationModule: ${e.message}"
+                    LogManager.aiSession(errorMsg, "WARN")
+                    formatErrors.add("communicationModule: ${e.message}")
                     null
                 }
             }
@@ -1225,7 +1263,7 @@ object AIOrchestrator {
                 "DEBUG"
             )
 
-            aiMessage
+            ParseResult(aiMessage, formatErrors)
 
         } catch (e: Exception) {
             LogManager.aiSession("Failed to parse AIMessage from response: ${e.message}", "WARN", e)
@@ -1249,7 +1287,7 @@ object AIOrchestrator {
                 "DEBUG"
             )
 
-            fallbackMessage
+            ParseResult(fallbackMessage, listOf("General JSON parsing error: ${e.message}"))
         }
     }
 
@@ -1278,6 +1316,14 @@ object AIOrchestrator {
         return map
     }
 }
+
+/**
+ * Result of parsing AI response
+ */
+data class ParseResult(
+    val aiMessage: AIMessage?,
+    val formatErrors: List<String> = emptyList()
+)
 
 /**
  * Session limits configuration
