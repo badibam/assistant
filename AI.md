@@ -152,11 +152,13 @@ data class AILimitsConfig(
     // CHAT LIMITS
     val chatMaxDataQueryIterations: Int = 3,
     val chatMaxActionRetries: Int = 3,
+    val chatMaxFormatErrorRetries: Int = 3,
     val chatMaxAutonomousRoundtrips: Int = 10,
     val chatMaxCommunicationModulesRoundtrips: Int = 5,
     // AUTOMATION LIMITS
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
+    val automationMaxFormatErrorRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
     val automationMaxCommunicationModulesRoundtrips: Int = 10,
     // CHAT : ÉVICTION PAR AUTOMATION (ms)
@@ -169,6 +171,7 @@ data class AILimitsConfig(
 **Types de limites** :
 - **DataQueryIterations** : Nombre consécutif de dataCommands IA
 - **ActionRetries** : Tentatives pour actions échouées
+- **FormatErrorRetries** : Tentatives pour erreurs de format (communicationModule, etc.)
 - **AutonomousRoundtrips** : Limite totale tous types (sécurité)
 - **CommunicationModulesRoundtrips** : Échanges questions/réponses
 
@@ -176,7 +179,7 @@ data class AILimitsConfig(
 - **chatMaxInactivityBeforeAutomationEviction** : Si AUTOMATION demande la main et CHAT inactive depuis > cette durée → arrêt forcé CHAT. Si CHAT inactive < cette durée → AUTOMATION attend en queue
 - **automationMaxSessionDuration** : Watchdog pour éviter boucles infinies AUTOMATION (CHAT n'a pas de timeout - arrêt via bouton UI)
 
-**Compteurs** : Consécutifs pour DataQuery/ActionRetry (reset si changement), total pour AutonomousRoundtrips (jamais reset), séparé pour Communication.
+**Compteurs** : Consécutifs pour DataQuery/ActionRetry/FormatError (reset si changement type), total pour AutonomousRoundtrips (jamais reset), séparé pour Communication.
 
 **API** : `AppConfigService.getAILimits()`, `AppConfigManager.getAILimits()` (cache volatile).
 
@@ -256,11 +259,12 @@ Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FI
 
 ## 7. Boucles autonomes
 
-### Architecture 4 compteurs
+### Architecture 5 compteurs
 ```kotlin
 var totalRoundtrips = 0
 var consecutiveDataQueries = 0
 var consecutiveActionRetries = 0
+var consecutiveFormatErrors = 0
 var communicationRoundtrips = 0
 
 val limits = getLimitsForSessionType(sessionType)
@@ -273,9 +277,12 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
 
   Priorité 0: FORMAT ERRORS (avant tout traitement)
     - Vérifier parseResult.formatErrors après parsing réponse IA
-    - Si erreurs → stocker FORMAT_ERROR SystemMessage
+    - Si erreurs → vérifier limite consecutiveFormatErrors
+    - Si limite atteinte → storeLimitReachedMessage + break
+    - Stocker FORMAT_ERROR SystemMessage
     - Renvoyer auto à IA avec erreurs pour correction
-    - Incrémenter totalRoundtrips, continue
+    - Incrémenter consecutiveFormatErrors + totalRoundtrips, continue
+    - Si message correctement parsé → reset consecutiveFormatErrors
 
   Priorité 1: COMMUNICATION MODULE
     - Vérifier limite communicationRoundtrips

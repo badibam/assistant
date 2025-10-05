@@ -16,12 +16,14 @@ data class AILimitsConfig(
     // ===== CHAT LIMITS =====
     val chatMaxDataQueryIterations: Int = 3,
     val chatMaxActionRetries: Int = 3,
+    val chatMaxFormatErrorRetries: Int = 3,
     val chatMaxAutonomousRoundtrips: Int = 10,
     val chatMaxCommunicationModulesRoundtrips: Int = 5,
 
     // ===== AUTOMATION LIMITS =====
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
+    val automationMaxFormatErrorRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
     val automationMaxCommunicationModulesRoundtrips: Int = 10,
 

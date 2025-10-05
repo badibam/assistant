@@ -485,6 +485,7 @@ object AIOrchestrator {
         var totalRoundtrips = 0
         var consecutiveDataQueries = 0
         var consecutiveActionRetries = 0
+        var consecutiveFormatErrors = 0
         var communicationRoundtrips = 0
 
         while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
@@ -502,6 +503,12 @@ object AIOrchestrator {
 
             // Check for format errors
             if (parseResult.formatErrors.isNotEmpty()) {
+                // Check limit
+                if (consecutiveFormatErrors >= limits.maxFormatErrorRetries) {
+                    storeLimitReachedMessage("Format errors limit reached", sessionId)
+                    break
+                }
+
                 val errorList = parseResult.formatErrors.joinToString("\n") { "- $it" }
                 val errorSummary = s.shared("ai_error_format_errors").format(errorList)
                 LogManager.aiSession("Format errors detected: $errorSummary", "WARN")
@@ -513,9 +520,13 @@ object AIOrchestrator {
                 if (!aiResponse.success) break
                 storeAIMessage(aiResponse, sessionId)
 
+                consecutiveFormatErrors++
                 totalRoundtrips++
                 continue
             }
+
+            // Reset format errors counter when message is correctly parsed
+            consecutiveFormatErrors = 0
 
             val aiMessage = parseResult.aiMessage
             if (aiMessage == null) {
@@ -885,12 +896,14 @@ object AIOrchestrator {
             SessionType.CHAT -> SessionLimits(
                 maxDataQueryIterations = aiLimits.chatMaxDataQueryIterations,
                 maxActionRetries = aiLimits.chatMaxActionRetries,
+                maxFormatErrorRetries = aiLimits.chatMaxFormatErrorRetries,
                 maxAutonomousRoundtrips = aiLimits.chatMaxAutonomousRoundtrips,
                 maxCommunicationModules = aiLimits.chatMaxCommunicationModulesRoundtrips
             )
             SessionType.AUTOMATION -> SessionLimits(
                 maxDataQueryIterations = aiLimits.automationMaxDataQueryIterations,
                 maxActionRetries = aiLimits.automationMaxActionRetries,
+                maxFormatErrorRetries = aiLimits.automationMaxFormatErrorRetries,
                 maxAutonomousRoundtrips = aiLimits.automationMaxAutonomousRoundtrips,
                 maxCommunicationModules = aiLimits.automationMaxCommunicationModulesRoundtrips
             )
@@ -1305,6 +1318,7 @@ data class ParseResult(
 data class SessionLimits(
     val maxDataQueryIterations: Int,
     val maxActionRetries: Int,
+    val maxFormatErrorRetries: Int,
     val maxAutonomousRoundtrips: Int,
     val maxCommunicationModules: Int
 )
