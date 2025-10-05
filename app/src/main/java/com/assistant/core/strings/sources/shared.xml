@@ -138,6 +138,13 @@
     <string name="service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="error_not_implemented">Pas encore implémenté</string>
 
+    <!-- AI Errors - Network and System -->
+    <string name="ai_error_network_unavailable">Réseau indisponible</string>
+    <string name="ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
+    <string name="ai_error_network_call_failed">Échec de l\'appel IA</string>
+    <string name="ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
+    <string name="ai_error_system_generic">Erreur système</string>
+
     <!-- AI Communication Modules - Schemas -->
     <string name="ai_schema_communication_multiple_choice_name">Module de communication: Choix multiple</string>
     <string name="ai_schema_communication_multiple_choice_desc">Schéma pour l\'interaction utilisateur par choix multiple</string>

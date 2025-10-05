@@ -418,7 +418,8 @@ object AIOrchestrator {
                 var shouldTerminateRound = false
                 val watchdogJob = if (sessionType == SessionType.AUTOMATION) {
                     CoroutineScope(Dispatchers.Default).launch {
-                        delay(limits.automationMaxSessionDuration)
+                        val aiLimits = AppConfigManager.getAILimits()
+                        delay(aiLimits.automationMaxSessionDuration)
                         shouldTerminateRound = true
                         LogManager.aiSession("AUTOMATION timeout reached, forcing termination", "WARN")
                     }
@@ -480,7 +481,7 @@ object AIOrchestrator {
     private suspend fun executeRoundWithAutonomousLoops(
         sessionId: String,
         sessionType: SessionType,
-        limits: AILimits,
+        limits: SessionLimits,
         reason: RoundReason,
         shouldTerminate: () -> Boolean
     ): OperationResult {
@@ -491,8 +492,8 @@ object AIOrchestrator {
         var aiResponse = callAIWithRetry(promptData, sessionType)
 
         if (!aiResponse.success) {
-            // Network error or timeout - store EXECUTION_ERROR and potentially requeue
-            storeExecutionErrorMessage(aiResponse.errorMessage ?: "AI call failed", sessionId)
+            // Network error or timeout - store NETWORK_ERROR and potentially requeue
+            storeNetworkErrorMessage(aiResponse.errorMessage ?: s.shared("ai_error_network_call_failed"), sessionId)
 
             if (sessionType == SessionType.AUTOMATION) {
                 // Requeue AUTOMATION at priority position
@@ -500,7 +501,7 @@ object AIOrchestrator {
                 closeActiveSession()
             }
 
-            return OperationResult.error(aiResponse.errorMessage ?: "AI call failed")
+            return OperationResult.error(aiResponse.errorMessage ?: s.shared("ai_error_network_call_failed"))
         }
 
         // 3. Store AI response
@@ -516,7 +517,9 @@ object AIOrchestrator {
 
             // Check watchdog termination flag
             if (shouldTerminate()) {
-                storeExecutionErrorMessage("Automation session duration exceeded (${limits.automationMaxSessionDuration / 60000} min), terminated", sessionId)
+                val aiLimits = AppConfigManager.getAILimits()
+                val timeoutMinutes = aiLimits.automationMaxSessionDuration / 60000
+                storeSessionTimeoutMessage(s.shared("ai_error_session_timeout_automation").format(timeoutMinutes), sessionId)
                 break
             }
 
@@ -641,8 +644,9 @@ object AIOrchestrator {
     private suspend fun callAIWithRetry(promptData: PromptData, sessionType: SessionType): AIResponse {
         // Check network before call
         if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            LogManager.aiSession("Network unavailable", "WARN")
-            return AIResponse(success = false, content = "", errorMessage = "Network unavailable")
+            val errorMsg = s.shared("ai_error_network_unavailable")
+            LogManager.aiSession(errorMsg, "WARN")
+            return AIResponse(success = false, content = "", errorMessage = errorMsg)
         }
 
         if (sessionType == SessionType.AUTOMATION) {
@@ -665,7 +669,8 @@ object AIOrchestrator {
             }
 
             LogManager.aiSession("All 3 AI call attempts failed", "ERROR")
-            return AIResponse(success = false, content = "", errorMessage = "Network timeout after 3 retries: $lastError")
+            val errorMsg = s.shared("ai_error_network_timeout_retries").format(3, lastError ?: "")
+            return AIResponse(success = false, content = "", errorMessage = errorMsg)
 
         } else {
             // CHAT: no retry, single attempt
@@ -990,11 +995,24 @@ object AIOrchestrator {
      * Store limit reached message
      */
     /**
-     * Store EXECUTION_ERROR message for network/timeout errors
+     * Store NETWORK_ERROR message for network/HTTP/provider errors
      */
-    private suspend fun storeExecutionErrorMessage(summary: String, sessionId: String) {
+    private suspend fun storeNetworkErrorMessage(summary: String, sessionId: String) {
         val systemMessage = SystemMessage(
-            type = SystemMessageType.EXECUTION_ERROR,
+            type = SystemMessageType.NETWORK_ERROR,
+            commandResults = emptyList(),
+            summary = summary,
+            formattedData = null
+        )
+        storeSystemMessage(systemMessage, sessionId)
+    }
+
+    /**
+     * Store SESSION_TIMEOUT message for watchdog timeout errors
+     */
+    private suspend fun storeSessionTimeoutMessage(summary: String, sessionId: String) {
+        val systemMessage = SystemMessage(
+            type = SystemMessageType.SESSION_TIMEOUT,
             commandResults = emptyList(),
             summary = summary,
             formattedData = null

@@ -382,6 +382,11 @@
     <string name="shared_ai_error_param_config_required">Paramètre obligatoire: config</string>
     <string name="shared_service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="shared_error_not_implemented">Pas encore implémenté</string>
+    <string name="shared_ai_error_network_unavailable">Réseau indisponible</string>
+    <string name="shared_ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
+    <string name="shared_ai_error_network_call_failed">Échec de l\'appel IA</string>
+    <string name="shared_ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
+    <string name="shared_ai_error_system_generic">Erreur système</string>
     <string name="shared_ai_schema_communication_multiple_choice_name">Module de communication: Choix multiple</string>
     <string name="shared_ai_schema_communication_multiple_choice_desc">Schéma pour l\'interaction utilisateur par choix multiple</string>
     <string name="shared_ai_schema_communication_validation_name">Module de communication: Validation</string>

@@ -85,14 +85,15 @@ object PromptManager {
         val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
         val allMessages = parseSessionMessages(messagesData)
 
-        // 6. Filter out EXECUTION_ERROR messages (audit only, not sent to AI)
+        // 6. Filter out NETWORK_ERROR and SESSION_TIMEOUT messages (audit only, not sent to AI)
         val sessionMessages = allMessages.filter { message ->
-            message.systemMessage?.type != SystemMessageType.EXECUTION_ERROR
+            val type = message.systemMessage?.type
+            type != SystemMessageType.NETWORK_ERROR && type != SystemMessageType.SESSION_TIMEOUT
         }
 
         val filtered = allMessages.size - sessionMessages.size
         if (filtered > 0) {
-            LogManager.aiPrompt("Filtered $filtered EXECUTION_ERROR messages from prompt", "DEBUG")
+            LogManager.aiPrompt("Filtered $filtered system error messages from prompt", "DEBUG")
         }
 
         LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")

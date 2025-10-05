@@ -88,7 +88,7 @@ data class AIMessage(
 ### SystemMessage
 ```kotlin
 data class SystemMessage(
-    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, EXECUTION_ERROR
+    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, NETWORK_ERROR, SESSION_TIMEOUT
     val commandResults: List<CommandResult>,
     val summary: String,
     val formattedData: String?              // JSON résultats (queries uniquement)
@@ -98,7 +98,8 @@ enum class SystemMessageType {
     DATA_ADDED,          // Résultats queries → envoyé au prompt
     ACTIONS_EXECUTED,    // Résultats actions → envoyé au prompt
     LIMIT_REACHED,       // Limite atteinte → envoyé au prompt
-    EXECUTION_ERROR      // Erreurs exécution → envoyé au prompt (sauf réseau, voir Architecture prompts)
+    NETWORK_ERROR,       // Erreurs réseau/HTTP/provider → filtré du prompt (audit uniquement)
+    SESSION_TIMEOUT      // Timeout watchdog session → filtré du prompt (audit uniquement)
 }
 ```
 
@@ -229,7 +230,7 @@ Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FI
 
 **Règles AUTOMATION** : Queue FIFO standard.
 
-**Timeouts** : Monitor inactivité (1 min check) ferme session si timeout dépassé. Watchdog AUTOMATION (flag `shouldTerminateRound`) force termination si `automationMaxSessionDuration` dépassé → EXECUTION_ERROR.
+**Timeouts** : Monitor inactivité (1 min check) ferme session si timeout dépassé. Watchdog AUTOMATION (flag `shouldTerminateRound`) force termination si `automationMaxSessionDuration` dépassé → SESSION_TIMEOUT.
 
 ## 6. Séparation message/round
 
@@ -316,9 +317,9 @@ fun resumeWithValidation(validated: Boolean) {
 
 **Timeout HTTP** : 2 minutes (OkHttp config providers).
 
-**AUTOMATION** : Check réseau avant appel → offline = requeue + EXECUTION_ERROR. Retry 3x avec backoff (5s, 15s, 30s) si erreur → échec final = requeue + EXECUTION_ERROR.
+**AUTOMATION** : Check réseau avant appel → offline = requeue + NETWORK_ERROR. Retry 3x avec backoff (5s, 15s, 30s) si erreur → échec final = requeue + NETWORK_ERROR.
 
-**CHAT** : Check réseau avant appel → offline = toast, session reste active. Pas de retry automatique, toast erreur, EXECUTION_ERROR stocké, session reste active.
+**CHAT** : Check réseau avant appel → offline = toast, session reste active. Pas de retry automatique, toast erreur, NETWORK_ERROR stocké, session reste active.
 
 ## 9. Enrichissements
 
@@ -370,11 +371,11 @@ suspend fun buildPromptData(sessionId: String): PromptData {
     val level1Content = formatLevel("Level 1: System Documentation", level1Results.promptResults)
     // Idem L2, L3
 
-    // Filtrage problèmes connexion réseau (pollue contexte IA, audit uniquement)
+    // Filtrage erreurs système (pollue contexte IA, audit uniquement)
     val sessionMessages = loadMessages(sessionId)
         .filter { message ->
-            message.systemMessage?.type != SystemMessageType.EXECUTION_ERROR ||
-            !message.systemMessage.summary.contains("Network", ignoreCase = true)
+            val type = message.systemMessage?.type
+            type != SystemMessageType.NETWORK_ERROR && type != SystemMessageType.SESSION_TIMEOUT
         }
 
     return PromptData(level1Content, level2Content, level3Content, sessionMessages)
@@ -477,12 +478,12 @@ Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirma
 **AI queries** : Générés après exécution dataCommands IA, stockés après réponse AI, type DATA_ADDED avec formattedData.
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
-**Erreurs exécution** : Générés pour erreurs réseau/timeout/session, type EXECUTION_ERROR. Erreurs réseau filtrées du prompt (polluent contexte).
+**Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR) et timeout watchdog (SESSION_TIMEOUT). Filtrés du prompt IA (audit uniquement).
 
 ### Format dans prompts
 Provider décide du format d'inclusion. Généralement fusion avec messages USER consécutifs (formattedData ajouté comme content block).
 
-**Filtrage** : EXECUTION_ERROR avec "Network" dans summary exclu du contexte IA (audit uniquement).
+**Filtrage** : NETWORK_ERROR et SESSION_TIMEOUT exclus du contexte IA (audit uniquement, messages localisés affichés en UI).
 
 ---
 

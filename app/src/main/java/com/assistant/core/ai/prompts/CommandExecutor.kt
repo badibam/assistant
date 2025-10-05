@@ -220,6 +220,11 @@ class CommandExecutor(private val context: Context) {
                 // This case should not be reached in normal flow
                 "Limit reached"
             }
+            SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT -> {
+                // These messages should never reach here (filtered from prompts)
+                // But provide fallback just in case
+                s.shared("ai_error_system_generic")
+            }
         }
     }
 
