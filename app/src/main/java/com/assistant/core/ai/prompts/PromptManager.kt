@@ -83,7 +83,17 @@ object PromptManager {
 
         // 5. Load session messages (raw, provider will transform them)
         val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
-        val sessionMessages = parseSessionMessages(messagesData)
+        val allMessages = parseSessionMessages(messagesData)
+
+        // 6. Filter out EXECUTION_ERROR messages (audit only, not sent to AI)
+        val sessionMessages = allMessages.filter { message ->
+            message.systemMessage?.type != SystemMessageType.EXECUTION_ERROR
+        }
+
+        val filtered = allMessages.size - sessionMessages.size
+        if (filtered > 0) {
+            LogManager.aiPrompt("Filtered $filtered EXECUTION_ERROR messages from prompt", "DEBUG")
+        }
 
         LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")
 

@@ -14,8 +14,7 @@ import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +51,36 @@ object AIOrchestrator {
     private var validationContinuation: Continuation<Boolean>? = null
     private var responseContinuation: Continuation<String>? = null
 
+    // ========================================================================================
+    // Session Control State
+    // ========================================================================================
+
+    // Active session state (one session active at a time)
+    private var activeSessionId: String? = null
+    private var activeSessionType: SessionType? = null
+    private var lastActivityTimestamp: Long = 0
+
+    // Round execution state
+    private val _isRoundInProgress = MutableStateFlow(false)
+    val isRoundInProgress: StateFlow<Boolean> = _isRoundInProgress.asStateFlow()
+
+    // Session queue (FIFO with priority rules)
+    private val sessionQueue = mutableListOf<QueuedSession>()
+
+    // Inactivity monitor job
+    private var monitorJob: Job? = null
+
+    /**
+     * Queued session data
+     */
+    data class QueuedSession(
+        val sessionId: String,
+        val type: SessionType,
+        val automationId: String?,
+        val scheduledExecutionTime: Long?,
+        val enqueuedAt: Long
+    )
+
     /**
      * Initialize orchestrator with context
      * Must be called at app startup before any usage
@@ -61,7 +90,206 @@ object AIOrchestrator {
         this.coordinator = Coordinator(this.context)
         this.aiClient = AIClient(this.context)
         this.s = Strings.`for`(context = this.context)
+
+        // Start inactivity monitor
+        startInactivityMonitor()
+
         LogManager.aiSession("AIOrchestrator initialized as singleton")
+    }
+
+    /**
+     * Start inactivity timeout monitor
+     * Checks every minute for inactive sessions
+     */
+    private fun startInactivityMonitor() {
+        monitorJob = CoroutineScope(Dispatchers.Default).launch {
+            while (isActive) {
+                delay(60_000) // 1 minute
+                checkInactivityTimeout()
+            }
+        }
+        LogManager.aiSession("Inactivity monitor started", "DEBUG")
+    }
+
+    /**
+     * Check if active session has timed out due to inactivity
+     */
+    private fun checkInactivityTimeout() {
+        // Skip if no active session or round in progress
+        if (activeSessionId == null || _isRoundInProgress.value) {
+            return
+        }
+
+        val limits = AppConfigManager.getAILimits()
+        val now = System.currentTimeMillis()
+        val inactivityDuration = now - lastActivityTimestamp
+
+        val timeout = when (activeSessionType) {
+            SessionType.CHAT -> limits.chatInactivityTimeout
+            SessionType.AUTOMATION -> limits.automationInactivityTimeout
+            null -> return
+        }
+
+        if (inactivityDuration > timeout) {
+            LogManager.aiSession(
+                "Session $activeSessionId timed out after ${inactivityDuration / 1000}s inactivity (limit: ${timeout / 1000}s)",
+                "INFO"
+            )
+            closeActiveSession()
+        }
+    }
+
+    // ========================================================================================
+    // Session Control API
+    // ========================================================================================
+
+    /**
+     * Result of session control request
+     */
+    sealed class SessionControlResult {
+        object ACTIVATED : SessionControlResult()
+        object ALREADY_ACTIVE : SessionControlResult()
+        data class QUEUED(val position: Int) : SessionControlResult()
+    }
+
+    /**
+     * Request control of a session
+     * Returns ACTIVATED if session activated immediately, ALREADY_ACTIVE if already active, or QUEUED with position
+     */
+    @Synchronized
+    fun requestSessionControl(
+        sessionId: String,
+        type: SessionType,
+        automationId: String? = null,
+        scheduledExecutionTime: Long? = null
+    ): SessionControlResult {
+        LogManager.aiSession("Requesting session control: sessionId=$sessionId, type=$type", "DEBUG")
+
+        // Already active?
+        if (activeSessionId == sessionId) {
+            LogManager.aiSession("Session already active: $sessionId", "DEBUG")
+            return SessionControlResult.ALREADY_ACTIVE
+        }
+
+        // No active session → activate immediately
+        if (activeSessionId == null) {
+            activateSession(sessionId, type, automationId, scheduledExecutionTime)
+            LogManager.aiSession("Session activated immediately: $sessionId", "INFO")
+            return SessionControlResult.ACTIVATED
+        }
+
+        // CHAT logic: one CHAT at a time
+        if (type == SessionType.CHAT) {
+            // Remove any other CHAT from queue
+            sessionQueue.removeAll { it.type == SessionType.CHAT }
+
+            // If other CHAT is active, close it and activate new one
+            if (activeSessionType == SessionType.CHAT) {
+                LogManager.aiSession("Closing active CHAT and switching to new CHAT: $sessionId", "INFO")
+                closeActiveSession()
+                activateSession(sessionId, type, automationId, scheduledExecutionTime)
+                return SessionControlResult.ACTIVATED
+            }
+
+            // AUTOMATION active → queue CHAT with priority (position 1)
+            enqueueSession(sessionId, type, automationId, scheduledExecutionTime, priority = true)
+            LogManager.aiSession("CHAT queued with priority: $sessionId", "INFO")
+            return SessionControlResult.QUEUED(1)
+        }
+
+        // AUTOMATION logic: FIFO
+        enqueueSession(sessionId, type, automationId, scheduledExecutionTime, priority = false)
+        val position = sessionQueue.indexOfFirst { it.sessionId == sessionId } + 1
+        LogManager.aiSession("AUTOMATION queued at position $position: $sessionId", "INFO")
+        return SessionControlResult.QUEUED(position)
+    }
+
+    /**
+     * Close active session manually
+     */
+    @Synchronized
+    fun closeActiveSession() {
+        if (activeSessionId == null) {
+            LogManager.aiSession("No active session to close", "DEBUG")
+            return
+        }
+
+        LogManager.aiSession("Closing active session: $activeSessionId", "INFO")
+        activeSessionId = null
+        activeSessionType = null
+        lastActivityTimestamp = 0
+
+        // Process queue
+        processNextInQueue()
+    }
+
+    /**
+     * Get active session ID
+     */
+    fun getActiveSessionId(): String? = activeSessionId
+
+    /**
+     * Activate a session
+     */
+    private fun activateSession(
+        sessionId: String,
+        type: SessionType,
+        automationId: String?,
+        scheduledExecutionTime: Long?
+    ) {
+        activeSessionId = sessionId
+        activeSessionType = type
+        lastActivityTimestamp = System.currentTimeMillis()
+        LogManager.aiSession("Session activated: $sessionId (type=$type, automationId=$automationId)", "DEBUG")
+    }
+
+    /**
+     * Enqueue a session with optional priority
+     */
+    private fun enqueueSession(
+        sessionId: String,
+        type: SessionType,
+        automationId: String?,
+        scheduledExecutionTime: Long?,
+        priority: Boolean
+    ) {
+        val queued = QueuedSession(
+            sessionId = sessionId,
+            type = type,
+            automationId = automationId,
+            scheduledExecutionTime = scheduledExecutionTime,
+            enqueuedAt = System.currentTimeMillis()
+        )
+
+        // CHAT: remove any other CHAT (already done in requestSessionControl, but defensive)
+        if (type == SessionType.CHAT) {
+            sessionQueue.removeAll { it.type == SessionType.CHAT }
+        }
+
+        if (priority) {
+            sessionQueue.add(0, queued) // Position 1 (CHAT prioritaire)
+        } else {
+            sessionQueue.add(queued) // FIFO normal
+        }
+
+        LogManager.aiSession("Session enqueued: $sessionId at position ${sessionQueue.size} (priority=$priority)", "DEBUG")
+    }
+
+    /**
+     * Process next session in queue
+     */
+    private fun processNextInQueue() {
+        if (sessionQueue.isEmpty()) {
+            LogManager.aiSession("Queue empty, no session to process", "DEBUG")
+            return
+        }
+
+        val next = sessionQueue.removeAt(0)
+        activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
+        LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
+
+        // TODO: Trigger session execution (for AUTOMATION, will be done when scheduler is implemented)
+        // For CHAT, UI will detect active session change and open chat interface
     }
 
     // ========================================================================================
@@ -93,36 +321,23 @@ object AIOrchestrator {
     // ========================================================================================
 
     /**
-     * Send user message to AI with autonomous loops
+     * Process user message: execute enrichments and store message
+     * Does NOT execute AI round (use executeAIRound for that)
      *
      * Flow:
      * 1. Execute enrichments BEFORE storing message
      * 2. Store user message
      * 3. Store SystemMessage enrichments (if present)
-     * 4. Build prompt data (L1-L3 + messages)
-     * 5. Call AI with PromptData
-     * 6. Store AI response
-     * 7. AUTONOMOUS LOOPS (data queries, actions with retries, communication modules)
      */
-    suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult {
-        LogManager.aiSession("AIOrchestrator.sendMessage() called for session $sessionId", "DEBUG")
+    suspend fun processUserMessage(richMessage: RichMessage): OperationResult {
+        val sessionId = activeSessionId ?: return OperationResult.error("No active session")
+
+        LogManager.aiSession("AIOrchestrator.processUserMessage() for session $sessionId", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
-                // Load session for type and limits
-                val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
-                if (!sessionResult.isSuccess) {
-                    return@withContext OperationResult.error("Failed to load session: ${sessionResult.error}")
-                }
-
-                val sessionData = sessionResult.data?.get("session") as? Map<*, *>
-                    ?: return@withContext OperationResult.error("No session data found")
-
-                val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
-                val sessionType = SessionType.valueOf(sessionTypeStr)
-
-                // Get limits for session type
-                val limits = getLimitsForSessionType(sessionType)
+                // Update activity timestamp
+                lastActivityTimestamp = System.currentTimeMillis()
 
                 // 1. Execute enrichments BEFORE storing message user
                 val enrichmentSystemMessage = if (richMessage.dataCommands.isNotEmpty()) {
@@ -146,138 +361,315 @@ object AIOrchestrator {
                     storeSystemMessage(enrichmentSystemMessage, sessionId)
                 }
 
-                // 4. Build prompt data
-                val promptData = PromptManager.buildPromptData(sessionId, context)
-
-                // 5. Call AI with PromptData
-                var aiResponse = aiClient.query(promptData)
-
-                // 6. Store AI response
-                storeAIMessage(aiResponse, sessionId)
-
-                // 7. AUTONOMOUS LOOPS
-                var totalRoundtrips = 0
-                var consecutiveDataQueries = 0
-                var consecutiveActionRetries = 0
-                var communicationRoundtrips = 0
-
-                while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
-
-                    // Parse AI message for commands
-                    val aiMessage = parseAIMessageFromResponse(aiResponse)
-
-                    if (aiMessage == null) {
-                        // No AI message structure - end loop
-                        break
-                    }
-
-                    // 7a. COMMUNICATION MODULE (prioritaire)
-                    if (aiMessage.communicationModule != null) {
-                        if (communicationRoundtrips >= limits.maxCommunicationModules) {
-                            storeLimitReachedMessage("Communication modules limit reached", sessionId)
-                            break
-                        }
-
-                        // STOP - Attendre réponse utilisateur
-                        val userResponse = waitForUserResponse(aiMessage.communicationModule)
-
-                        // Stocker réponse user (texte simple)
-                        coordinator.processUserAction("ai_sessions.create_message", mapOf(
-                            "sessionId" to sessionId,
-                            "sender" to MessageSender.USER.name,
-                            "textContent" to userResponse,
-                            "timestamp" to System.currentTimeMillis()
-                        ))
-
-                        // Renvoyer automatiquement à l'IA
-                        val newPromptData = PromptManager.buildPromptData(sessionId, context)
-                        aiResponse = aiClient.query(newPromptData)
-                        storeAIMessage(aiResponse, sessionId)
-
-                        communicationRoundtrips++
-                        totalRoundtrips++
-                        continue
-                    }
-
-                    // 7b. DATA COMMANDS (queries)
-                    if (aiMessage.dataCommands != null && aiMessage.dataCommands.isNotEmpty()) {
-                        if (consecutiveDataQueries >= limits.maxDataQueryIterations) {
-                            storeLimitReachedMessage("Data query iterations limit reached", sessionId)
-                            break
-                        }
-
-                        val dataSystemMessage = executeDataCommands(aiMessage.dataCommands)
-                        storeSystemMessage(dataSystemMessage, sessionId)
-
-                        val newPromptData = PromptManager.buildPromptData(sessionId, context)
-                        aiResponse = aiClient.query(newPromptData)
-                        storeAIMessage(aiResponse, sessionId)
-
-                        consecutiveDataQueries++
-                        consecutiveActionRetries = 0  // Reset
-                        totalRoundtrips++
-                        continue
-                    }
-
-                    // 7c. ACTION COMMANDS (mutations)
-                    if (aiMessage.actionCommands != null && aiMessage.actionCommands.isNotEmpty()) {
-
-                        // Validation request ?
-                        if (aiMessage.validationRequest != null) {
-                            // STOP - Attendre validation user
-                            val validated = waitForUserValidation(aiMessage.validationRequest)
-
-                            if (!validated) {
-                                // Refuser actions
-                                val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
-                                storeSystemMessage(refusedSystemMessage, sessionId)
-                                break  // FIN - attend prochain message user
-                            }
-                        }
-
-                        // Exécuter actions
-                        val actionSystemMessage = executeActionCommands(aiMessage.actionCommands)
-                        storeSystemMessage(actionSystemMessage, sessionId)
-
-                        // Check if all actions succeeded
-                        val allSuccess = actionSystemMessage.commandResults.all { it.status == CommandStatus.SUCCESS }
-
-                        if (allSuccess) {
-                            // Succès total - FIN boucle
-                            break
-                        } else {
-                            // Échecs - retry
-                            if (consecutiveActionRetries >= limits.maxActionRetries) {
-                                storeLimitReachedMessage("Action retries limit reached", sessionId)
-                                break
-                            }
-
-                            val newPromptData = PromptManager.buildPromptData(sessionId, context)
-                            aiResponse = aiClient.query(newPromptData)
-                            storeAIMessage(aiResponse, sessionId)
-
-                            consecutiveActionRetries++
-                            consecutiveDataQueries = 0  // Reset
-                            totalRoundtrips++
-                            continue
-                        }
-                    }
-
-                    // Rien à faire
-                    break
-                }
-
-                if (totalRoundtrips >= limits.maxAutonomousRoundtrips) {
-                    storeLimitReachedMessage("Total autonomous roundtrips limit reached", sessionId)
-                }
-
-                LogManager.aiSession("Message sent and processed successfully", "INFO")
+                LogManager.aiSession("User message processed successfully", "INFO")
                 OperationResult.success()
 
             } catch (e: Exception) {
-                LogManager.aiSession("AIOrchestrator.sendMessage - Error: ${e.message}", "ERROR", e)
-                OperationResult.error("Orchestration error: ${e.message}")
+                LogManager.aiSession("processUserMessage - Error: ${e.message}", "ERROR", e)
+                OperationResult.error("Failed to process user message: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * Execute AI round with autonomous loops
+     * Uses active session, requires processUserMessage() or similar to have been called first
+     *
+     * Flow:
+     * 1. Build prompt data (L1-L3 + messages)
+     * 2. Call AI with PromptData (with network checks, retry for AUTOMATION)
+     * 3. Store AI response
+     * 4. AUTONOMOUS LOOPS (data queries, actions with retries, communication modules)
+     */
+    suspend fun executeAIRound(reason: RoundReason): OperationResult {
+        val sessionId = activeSessionId ?: return OperationResult.error("No active session")
+
+        // Prevent concurrent rounds
+        if (_isRoundInProgress.value) {
+            LogManager.aiSession("AI round already in progress, rejecting concurrent call", "WARN")
+            return OperationResult.error("AI round already in progress")
+        }
+
+        LogManager.aiSession("AIOrchestrator.executeAIRound($reason) for session $sessionId", "DEBUG")
+
+        _isRoundInProgress.value = true
+
+        return withContext(Dispatchers.IO) {
+            try {
+                // Update activity timestamp
+                lastActivityTimestamp = System.currentTimeMillis()
+
+                // Load session for type and limits
+                val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                if (!sessionResult.isSuccess) {
+                    return@withContext OperationResult.error("Failed to load session: ${sessionResult.error}")
+                }
+
+                val sessionData = sessionResult.data?.get("session") as? Map<*, *>
+                    ?: return@withContext OperationResult.error("No session data found")
+
+                val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
+                val sessionType = SessionType.valueOf(sessionTypeStr)
+
+                // Get limits for session type
+                val limits = getLimitsForSessionType(sessionType)
+
+                // Watchdog for AUTOMATION (timeout occupation)
+                var shouldTerminateRound = false
+                val watchdogJob = if (sessionType == SessionType.AUTOMATION) {
+                    CoroutineScope(Dispatchers.Default).launch {
+                        delay(limits.automationMaxSessionDuration)
+                        shouldTerminateRound = true
+                        LogManager.aiSession("AUTOMATION timeout reached, forcing termination", "WARN")
+                    }
+                } else null
+
+                try {
+                    // Execute round with watchdog
+                    val result = executeRoundWithAutonomousLoops(sessionId, sessionType, limits, reason) { shouldTerminateRound }
+                    result
+                } finally {
+                    watchdogJob?.cancel()
+                }
+
+            } catch (e: Exception) {
+                LogManager.aiSession("executeAIRound - Error: ${e.message}", "ERROR", e)
+                OperationResult.error("AI round error: ${e.message}")
+            } finally {
+                _isRoundInProgress.value = false
+                processNextInQueue()
+            }
+        }
+    }
+
+    /**
+     * Send user message to AI with autonomous loops (wrapper for compatibility)
+     *
+     * Flow:
+     * 1. Process user message (enrichments + store)
+     * 2. Execute AI round
+     */
+    suspend fun sendMessage(richMessage: RichMessage, sessionId: String): OperationResult {
+        // Activate session if not already active
+        if (activeSessionId != sessionId) {
+            val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+            if (!sessionResult.isSuccess) {
+                return OperationResult.error("Failed to load session: ${sessionResult.error}")
+            }
+
+            val sessionData = sessionResult.data?.get("session") as? Map<*, *>
+                ?: return OperationResult.error("No session data found")
+
+            val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
+            val sessionType = SessionType.valueOf(sessionTypeStr)
+
+            requestSessionControl(sessionId, sessionType)
+        }
+
+        // Process message
+        val processResult = processUserMessage(richMessage)
+        if (!processResult.success) return processResult
+
+        // Execute AI round
+        return executeAIRound(RoundReason.USER_MESSAGE)
+    }
+
+    /**
+     * Execute AI round with autonomous loops (internal implementation)
+     */
+    private suspend fun executeRoundWithAutonomousLoops(
+        sessionId: String,
+        sessionType: SessionType,
+        limits: AILimits,
+        reason: RoundReason,
+        shouldTerminate: () -> Boolean
+    ): OperationResult {
+        // 1. Build prompt data
+        val promptData = PromptManager.buildPromptData(sessionId, context)
+
+        // 2. Call AI with PromptData (with network check and retry)
+        var aiResponse = callAIWithRetry(promptData, sessionType)
+
+        if (!aiResponse.success) {
+            // Network error or timeout - store EXECUTION_ERROR and potentially requeue
+            storeExecutionErrorMessage(aiResponse.errorMessage ?: "AI call failed", sessionId)
+
+            if (sessionType == SessionType.AUTOMATION) {
+                // Requeue AUTOMATION at priority position
+                enqueueSession(sessionId, sessionType, null, null, priority = true)
+                closeActiveSession()
+            }
+
+            return OperationResult.error(aiResponse.errorMessage ?: "AI call failed")
+        }
+
+        // 3. Store AI response
+        storeAIMessage(aiResponse, sessionId)
+
+        // 4. AUTONOMOUS LOOPS
+        var totalRoundtrips = 0
+        var consecutiveDataQueries = 0
+        var consecutiveActionRetries = 0
+        var communicationRoundtrips = 0
+
+        while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
+
+            // Check watchdog termination flag
+            if (shouldTerminate()) {
+                storeExecutionErrorMessage("Automation session duration exceeded (${limits.automationMaxSessionDuration / 60000} min), terminated", sessionId)
+                break
+            }
+
+            // Parse AI message for commands
+            val aiMessage = parseAIMessageFromResponse(aiResponse)
+
+            if (aiMessage == null) {
+                // No AI message structure - end loop
+                break
+            }
+
+            // 4a. COMMUNICATION MODULE (prioritaire)
+            if (aiMessage.communicationModule != null) {
+                if (communicationRoundtrips >= limits.maxCommunicationModules) {
+                    storeLimitReachedMessage("Communication modules limit reached", sessionId)
+                    break
+                }
+
+                // STOP - Attendre réponse utilisateur
+                val userResponse = waitForUserResponse(aiMessage.communicationModule)
+
+                // Stocker réponse user (texte simple)
+                coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                    "sessionId" to sessionId,
+                    "sender" to MessageSender.USER.name,
+                    "textContent" to userResponse,
+                    "timestamp" to System.currentTimeMillis()
+                ))
+
+                // Renvoyer automatiquement à l'IA
+                val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                aiResponse = callAIWithRetry(newPromptData, sessionType)
+                if (!aiResponse.success) break
+                storeAIMessage(aiResponse, sessionId)
+
+                communicationRoundtrips++
+                totalRoundtrips++
+                continue
+            }
+
+            // 4b. DATA COMMANDS (queries)
+            if (aiMessage.dataCommands != null && aiMessage.dataCommands.isNotEmpty()) {
+                if (consecutiveDataQueries >= limits.maxDataQueryIterations) {
+                    storeLimitReachedMessage("Data query iterations limit reached", sessionId)
+                    break
+                }
+
+                val dataSystemMessage = executeDataCommands(aiMessage.dataCommands)
+                storeSystemMessage(dataSystemMessage, sessionId)
+
+                val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                aiResponse = callAIWithRetry(newPromptData, sessionType)
+                if (!aiResponse.success) break
+                storeAIMessage(aiResponse, sessionId)
+
+                consecutiveDataQueries++
+                consecutiveActionRetries = 0  // Reset
+                totalRoundtrips++
+                continue
+            }
+
+            // 4c. ACTION COMMANDS (mutations)
+            if (aiMessage.actionCommands != null && aiMessage.actionCommands.isNotEmpty()) {
+
+                // Validation request ?
+                if (aiMessage.validationRequest != null) {
+                    // STOP - Attendre validation user
+                    val validated = waitForUserValidation(aiMessage.validationRequest)
+
+                    if (!validated) {
+                        // Refuser actions
+                        val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
+                        storeSystemMessage(refusedSystemMessage, sessionId)
+                        break  // FIN - attend prochain message user
+                    }
+                }
+
+                // Exécuter actions
+                val actionSystemMessage = executeActionCommands(aiMessage.actionCommands)
+                storeSystemMessage(actionSystemMessage, sessionId)
+
+                // Check if all actions succeeded
+                val allSuccess = actionSystemMessage.commandResults.all { it.status == CommandStatus.SUCCESS }
+
+                if (allSuccess) {
+                    // Succès total - FIN boucle
+                    break
+                } else {
+                    // Échecs - retry
+                    if (consecutiveActionRetries >= limits.maxActionRetries) {
+                        storeLimitReachedMessage("Action retries limit reached", sessionId)
+                        break
+                    }
+
+                    val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                    aiResponse = callAIWithRetry(newPromptData, sessionType)
+                    if (!aiResponse.success) break
+                    storeAIMessage(aiResponse, sessionId)
+
+                    consecutiveActionRetries++
+                    consecutiveDataQueries = 0  // Reset
+                    totalRoundtrips++
+                    continue
+                }
+            }
+
+            // Rien à faire
+            break
+        }
+
+        if (totalRoundtrips >= limits.maxAutonomousRoundtrips) {
+            storeLimitReachedMessage("Total autonomous roundtrips limit reached", sessionId)
+        }
+
+        LogManager.aiSession("AI round completed successfully", "INFO")
+        return OperationResult.success()
+    }
+
+    /**
+     * Call AI with retry logic for AUTOMATION, network checks for both
+     */
+    private suspend fun callAIWithRetry(promptData: PromptData, sessionType: SessionType): AIResponse {
+        // Check network before call
+        if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
+            LogManager.aiSession("Network unavailable", "WARN")
+            return AIResponse(success = false, content = "", errorMessage = "Network unavailable")
+        }
+
+        if (sessionType == SessionType.AUTOMATION) {
+            // Retry logic for AUTOMATION (3x with backoff)
+            val delays = listOf(5_000L, 15_000L, 30_000L)
+            var lastError: String? = null
+
+            for (attempt in 0..2) {
+                val response = aiClient.query(promptData)
+                if (response.success) {
+                    return response
+                }
+
+                lastError = response.errorMessage
+                LogManager.aiSession("AI call attempt ${attempt + 1} failed: $lastError", "WARN")
+
+                if (attempt < 2) {
+                    delay(delays[attempt])
+                }
+            }
+
+            LogManager.aiSession("All 3 AI call attempts failed", "ERROR")
+            return AIResponse(success = false, content = "", errorMessage = "Network timeout after 3 retries: $lastError")
+
+        } else {
+            // CHAT: no retry, single attempt
+            return aiClient.query(promptData)
         }
     }
 
@@ -597,6 +989,19 @@ object AIOrchestrator {
     /**
      * Store limit reached message
      */
+    /**
+     * Store EXECUTION_ERROR message for network/timeout errors
+     */
+    private suspend fun storeExecutionErrorMessage(summary: String, sessionId: String) {
+        val systemMessage = SystemMessage(
+            type = SystemMessageType.EXECUTION_ERROR,
+            commandResults = emptyList(),
+            summary = summary,
+            formattedData = null
+        )
+        storeSystemMessage(systemMessage, sessionId)
+    }
+
     private suspend fun storeLimitReachedMessage(reason: String, sessionId: String) {
         val systemMessage = SystemMessage(
             type = SystemMessageType.LIMIT_REACHED,

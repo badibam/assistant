@@ -13,16 +13,19 @@ import com.assistant.core.ai.data.SessionType
     indices = [
         Index(value = ["isActive"]),
         Index(value = ["type"]),
-        Index(value = ["lastActivity"])
+        Index(value = ["lastActivity"]),
+        Index(value = ["automationId"])
     ]
 )
 data class AISessionEntity(
     @PrimaryKey val id: String,
     val name: String,
     val type: SessionType,
-    val providerId: String,        // Fixed for the session
-    val providerSessionId: String, // Provider API session ID
-    val scheduleConfigJson: String?, // JSON for ScheduleConfig (automation only)
+    val automationId: String?,              // null for CHAT, automation ID for AUTOMATION
+    val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
+    val providerId: String,                 // Fixed for the session
+    val providerSessionId: String,          // Provider API session ID
+    val scheduleConfigJson: String?,        // JSON for ScheduleConfig (automation only)
     val createdAt: Long,
     val lastActivity: Long,
     val isActive: Boolean

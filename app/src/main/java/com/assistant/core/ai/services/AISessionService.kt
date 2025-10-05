@@ -86,6 +86,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             id = sessionId,
             name = name,
             type = SessionType.valueOf(type),
+            automationId = params.optString("automationId").takeIf { it.isNotEmpty() }, // null for CHAT
+            scheduledExecutionTime = if (params.has("scheduledExecutionTime")) params.getLong("scheduledExecutionTime") else null,
             providerId = providerId,
             providerSessionId = "",
             scheduleConfigJson = null, // No schedule for regular sessions
@@ -141,6 +143,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to sessionEntity.id,
                     "name" to sessionEntity.name,
                     "type" to sessionEntity.type.name, // Convert enum to string
+                    "automationId" to sessionEntity.automationId,
+                    "scheduledExecutionTime" to sessionEntity.scheduledExecutionTime,
                     "providerId" to sessionEntity.providerId,
                     "providerSessionId" to sessionEntity.providerSessionId,
                     "createdAt" to sessionEntity.createdAt,

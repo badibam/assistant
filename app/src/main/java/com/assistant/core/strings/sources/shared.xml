@@ -81,6 +81,8 @@
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
+    <string name="ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
+    <string name="ai_error_communication_module_parse">Erreur de parsing du communicationModule: %1$s</string>
 
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
@@ -510,5 +512,13 @@
     <string name="ai_error_update_message">Échec de la mise à jour du message: %1$s</string>
     <string name="ai_error_delete_message">Échec de la suppression du message: %1$s</string>
 
+    <!-- Session control -->
+    <string name="ai_network_unavailable">Pas de connexion réseau</string>
+    <string name="ai_session_queued">Session en attente (position %1$d)</string>
+    <string name="ai_session_queued_priority">Session en attente prioritaire</string>
+    <string name="ai_automation_running">Automation en cours, veuillez patienter</string>
+
+    <!-- Round control -->
+    <string name="action_interrupt_round">Interrompre</string>
 
 </resources>

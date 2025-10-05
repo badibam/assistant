@@ -76,9 +76,10 @@ data class SystemMessage(
 }
 
 enum class SystemMessageType {
-    DATA_ADDED,      // Data requests completed and added to context
+    DATA_ADDED,       // Data requests completed and added to context
     ACTIONS_EXECUTED, // AI actions execution results
-    LIMIT_REACHED    // Autonomous loop limit reached (stops execution, waits for next user message)
+    LIMIT_REACHED,    // Autonomous loop limit reached (stops execution, waits for next user message)
+    EXECUTION_ERROR   // Network/timeout/session errors (stored for audit, FILTERED from prompt)
 }
 
 /**

@@ -45,15 +45,15 @@ class ClaudeProvider : AIProvider {
     companion object {
         private const val CLAUDE_API_BASE_URL = "https://api.anthropic.com"
         private const val ANTHROPIC_VERSION = "2023-06-01"
-        private const val TIMEOUT_SECONDS = 30L
+        private const val TIMEOUT_MINUTES = 2L  // 2 minutes timeout per HTTP request
     }
 
     // Shared OkHttp client instance
     private val httpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .connectTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .readTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .writeTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .build()
     }
 

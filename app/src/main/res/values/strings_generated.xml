@@ -342,6 +342,8 @@
     <string name="shared_ai_module_no_question">Aucune question fournie</string>
     <string name="shared_ai_module_no_message">Aucun message fourni</string>
     <string name="shared_ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
+    <string name="shared_ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
+    <string name="shared_ai_error_communication_module_parse">Erreur de parsing du communicationModule: %1$s</string>
     <string name="shared_ai_data_zone">données zone</string>
     <string name="shared_ai_data_tool">données outil</string>
     <string name="shared_ai_data_field">champ données</string>
@@ -677,5 +679,10 @@
     <string name="shared_ai_error_list_messages">Échec de la récupération des messages: %1$s</string>
     <string name="shared_ai_error_update_message">Échec de la mise à jour du message: %1$s</string>
     <string name="shared_ai_error_delete_message">Échec de la suppression du message: %1$s</string>
+    <string name="shared_ai_network_unavailable">Pas de connexion réseau</string>
+    <string name="shared_ai_session_queued">Session en attente (position %1$d)</string>
+    <string name="shared_ai_session_queued_priority">Session en attente prioritaire</string>
+    <string name="shared_ai_automation_running">Automation en cours, veuillez patienter</string>
+    <string name="shared_action_interrupt_round">Interrompre</string>
 
 </resources>

@@ -23,5 +23,13 @@ data class AILimitsConfig(
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
-    val automationMaxCommunicationModulesRoundtrips: Int = 10
+    val automationMaxCommunicationModulesRoundtrips: Int = 10,
+
+    // ===== TIMEOUTS INACTIVITÉ (ms) =====
+    val chatInactivityTimeout: Long = 5 * 60 * 1000,        // 5 min
+    val automationInactivityTimeout: Long = 30 * 60 * 1000, // 30 min
+
+    // ===== AUTOMATION : DURÉE MAX OCCUPATION SESSION (ms) =====
+    // CHAT n'a pas de timeout exécution (bouton "Interrompre" dans UI)
+    val automationMaxSessionDuration: Long = 10 * 60 * 1000 // 10 min
 )
