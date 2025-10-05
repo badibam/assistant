@@ -38,11 +38,12 @@ fun AIFloatingChat(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Session management
+    // Session management - store ID only, reload messages reactively
+    var activeSessionId by remember { mutableStateOf<String?>(null) }
     var activeSession by remember { mutableStateOf<AISession?>(null) }
     var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var messagesReloadTrigger by remember { mutableStateOf(0) }
 
     val scope = rememberCoroutineScope()
     // AIOrchestrator is now a singleton, no need to remember/create
@@ -64,16 +65,50 @@ fun AIFloatingChat(
 
             if (existingSession != null) {
                 // Reuse existing active session
+                activeSessionId = existingSession.id
                 activeSession = existingSession
                 LogManager.aiUI("AIFloatingChat reusing active session: ${existingSession.id}")
             } else {
                 // No active session - will be created on first message send
+                activeSessionId = null
                 activeSession = null
                 LogManager.aiUI("AIFloatingChat opened without active session - will create on first message")
             }
         } catch (e: Exception) {
             LogManager.aiUI("Failed to check for active session: ${e.message}", "ERROR")
             errorMessage = s.shared("ai_error_check_session")
+        }
+    }
+
+    // Reactive session reload - triggers when messagesReloadTrigger changes
+    LaunchedEffect(messagesReloadTrigger, activeSessionId) {
+        if (messagesReloadTrigger > 0 && activeSessionId != null) {
+            try {
+                LogManager.aiUI("Reloading session: $activeSessionId (trigger=$messagesReloadTrigger)", "INFO")
+                val updatedSession = aiOrchestrator.loadSession(activeSessionId!!)
+                LogManager.aiUI("Session loaded: ${updatedSession?.messages?.size ?: 0} messages", "INFO")
+                activeSession = updatedSession
+            } catch (e: Exception) {
+                LogManager.aiUI("Failed to reload session: ${e.message}", "ERROR")
+            }
+        }
+    }
+
+    // Auto-reload during round progress (polling every 500ms)
+    LaunchedEffect(isRoundInProgress, activeSessionId) {
+        if (isRoundInProgress && activeSessionId != null) {
+            LogManager.aiUI("Starting polling while round in progress", "DEBUG")
+            while (isRoundInProgress) {
+                kotlinx.coroutines.delay(500)
+                try {
+                    val updatedSession = aiOrchestrator.loadSession(activeSessionId!!)
+                    activeSession = updatedSession
+                    LogManager.aiUI("Polling reload: ${updatedSession?.messages?.size ?: 0} messages", "DEBUG")
+                } catch (e: Exception) {
+                    LogManager.aiUI("Polling reload failed: ${e.message}", "ERROR")
+                }
+            }
+            LogManager.aiUI("Polling stopped (round finished)", "DEBUG")
         }
     }
 
@@ -99,13 +134,14 @@ fun AIFloatingChat(
                 ChatHeader(
                     sessionName = activeSession?.name ?: s.shared("ai_chat_new"),
                     isActive = activeSession?.isActive ?: false,
-                    isLoading = isLoading,
+                    isLoading = isRoundInProgress,
                     onClose = onDismiss,
                     onStopSession = {
                         scope.launch {
                             try {
                                 val result = aiOrchestrator.stopActiveSession()
                                 if (result.success) {
+                                    activeSessionId = null
                                     activeSession = null
                                     LogManager.aiUI("Session stopped successfully")
                                 } else {
@@ -147,63 +183,54 @@ fun AIFloatingChat(
                                 LogManager.aiUI("RichMessage.dataCommands: ${richMessage.dataCommands.size} commands")
 
                                 scope.launch {
-                                    isLoading = true
                                     errorMessage = null
 
                                     try {
-                                        // Get or create session
-                                        val sessionToUse = activeSession ?: run {
+                                        // Get or create session ID
+                                        val sessionId = activeSessionId ?: run {
                                             // Create new session on first message
                                             LogManager.aiUI("Creating new session for first message")
-                                            val sessionId = aiOrchestrator.createSession(s.shared("ai_session_default_name"), SessionType.CHAT)
-                                            aiOrchestrator.setActiveSession(sessionId)
-                                            val newSession = aiOrchestrator.loadSession(sessionId)
-                                            activeSession = newSession
-                                            newSession
+                                            val newSessionId = aiOrchestrator.createSession(s.shared("ai_session_default_name"), SessionType.CHAT)
+                                            aiOrchestrator.setActiveSession(newSessionId)
+                                            activeSessionId = newSessionId
+                                            newSessionId
                                         }
 
-                                        sessionToUse?.let { session ->
-                                            // Activate session if not already active
-                                            if (aiOrchestrator.getActiveSessionId() != session.id) {
-                                                aiOrchestrator.requestSessionControl(session.id, SessionType.CHAT)
-                                            }
+                                        // Activate session if not already active
+                                        if (aiOrchestrator.getActiveSessionId() != sessionId) {
+                                            aiOrchestrator.requestSessionControl(sessionId, SessionType.CHAT)
+                                        }
 
-                                            // 1. Process user message (stores message + executes enrichments)
-                                            val processResult = aiOrchestrator.processUserMessage(richMessage)
+                                        // 1. Process user message (stores message + executes enrichments)
+                                        val processResult = aiOrchestrator.processUserMessage(richMessage)
 
-                                            if (!processResult.success) {
-                                                errorMessage = processResult.error
-                                                LogManager.aiUI("Failed to process message: ${processResult.error}", "ERROR")
-                                                return@launch
-                                            }
+                                        if (!processResult.success) {
+                                            errorMessage = processResult.error
+                                            LogManager.aiUI("Failed to process message: ${processResult.error}", "ERROR")
+                                            return@launch
+                                        }
 
-                                            // 2. Reload session immediately to show user message
-                                            val sessionWithUserMessage = aiOrchestrator.loadSession(session.id)
-                                            activeSession = sessionWithUserMessage
-                                            segments = emptyList() // Clear composer
-                                            LogManager.aiUI("User message displayed, starting AI round")
+                                        // 2. Trigger UI update to show user message
+                                        segments = emptyList() // Clear composer
+                                        messagesReloadTrigger++
+                                        LogManager.aiUI("User message sent, triggering reload")
 
-                                            // 3. Execute AI round (will show indicator via isRoundInProgress)
-                                            val aiRoundResult = aiOrchestrator.executeAIRound(RoundReason.USER_MESSAGE)
+                                        // 3. Execute AI round (UI will auto-reload when round finishes)
+                                        val aiRoundResult = aiOrchestrator.executeAIRound(RoundReason.USER_MESSAGE)
 
-                                            if (aiRoundResult.success) {
-                                                // Reload session with AI response
-                                                val updatedSession = aiOrchestrator.loadSession(session.id)
-                                                activeSession = updatedSession
-                                                LogManager.aiUI("AI round completed successfully")
-                                            } else {
-                                                errorMessage = aiRoundResult.error
-                                                LogManager.aiUI("Failed AI round: ${aiRoundResult.error}", "ERROR")
-                                            }
-                                        } ?: run {
-                                            errorMessage = s.shared("ai_error_create_session").format("")
-                                            LogManager.aiUI("Failed to create or get session", "ERROR")
+                                        // 4. Trigger reload after round completion
+                                        messagesReloadTrigger++
+                                        LogManager.aiUI("AI round finished, triggered reload (trigger=$messagesReloadTrigger)")
+
+                                        if (!aiRoundResult.success) {
+                                            errorMessage = aiRoundResult.error
+                                            LogManager.aiUI("Failed AI round: ${aiRoundResult.error}", "ERROR")
+                                        } else {
+                                            LogManager.aiUI("AI round completed successfully")
                                         }
                                     } catch (e: Exception) {
                                         errorMessage = s.shared("ai_error_send_message").format(e.message ?: "")
                                         LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
-                                    } finally {
-                                        isLoading = false
                                     }
                                 }
                             },
