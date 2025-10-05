@@ -252,6 +252,9 @@ class ClaudeProvider : AIProvider {
             LogManager.aiService("Built Claude request: ${requestBody.length} characters")
             LogManager.aiService("Request includes ${promptData.sessionMessages.size} messages")
 
+            // Log raw prompt for debugging (VERBOSE level)
+            LogManager.aiService("=== RAW PROMPT TO CLAUDE API ===\n$requestBody\n=== END RAW PROMPT ===", "VERBOSE")
+
             // Build HTTP request
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val request = Request.Builder()

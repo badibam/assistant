@@ -6,6 +6,7 @@ import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.Schema
+import com.assistant.core.schemas.ZoneSchemaProvider
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -109,9 +110,9 @@ class SchemaService(private val context: Context) : ExecutableService {
     private fun getSystemSchema(schemaId: String): Schema? {
         return when {
             schemaId.startsWith("zone_") -> {
-                // TODO: Get zone schemas from ZoneService or dedicated provider
-                LogManager.service("System schema requested: $schemaId - STUB implementation")
-                null
+                // Use ZoneSchemaProvider for zone schemas
+                LogManager.service("System schema requested: $schemaId - using ZoneSchemaProvider")
+                ZoneSchemaProvider.getSchema(schemaId, context)
             }
             schemaId.startsWith("app_config_") -> {
                 // TODO: Get app config schemas from AppConfigService

@@ -8,6 +8,7 @@ import com.assistant.core.services.ToolDataService
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
+import com.assistant.core.services.SchemaService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.tools.ToolTypeManager
@@ -28,6 +29,7 @@ class ServiceRegistry(private val context: Context) {
         "app_config" to AppConfigService::class,
         "icon_preload" to IconPreloadService::class,
         "backup" to BackupService::class,
+        "schemas" to SchemaService::class,
         "ai_sessions" to AISessionService::class,
         "ai_provider_config" to AIProviderConfigService::class
     )
