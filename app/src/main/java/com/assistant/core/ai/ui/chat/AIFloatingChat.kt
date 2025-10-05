@@ -50,8 +50,10 @@ fun AIFloatingChat(
     // Observe waiting state for user interactions
     val waitingState by aiOrchestrator.waitingState.collectAsState()
 
-    // Initialize session on first load
-    LaunchedEffect(Unit) {
+    // Reload session every time dialog becomes visible (not just first mount)
+    LaunchedEffect(isVisible) {
+        if (!isVisible) return@LaunchedEffect
+
         try {
             // Check for existing active session only, don't create one yet
             val existingSession = aiOrchestrator.getActiveSession()
