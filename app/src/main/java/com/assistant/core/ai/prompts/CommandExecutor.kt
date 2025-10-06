@@ -292,8 +292,8 @@ class CommandExecutor(private val context: Context) {
                     parts.joinToString(", ")
                 }
                 "schemas" -> {
-                    val schemaName = data["name"] as? String ?: data["id"] as? String ?: "unknown"
-                    "Schema: $schemaName"
+                    val schemaId = data["schema_id"] as? String ?: "unknown"
+                    "Schema: $schemaId"
                 }
                 "tools" -> {
                     when (command.operation) {
@@ -399,11 +399,19 @@ class CommandExecutor(private val context: Context) {
                     data["records"]?.let { reordered["records"] = it }
                 }
                 "schemas" -> {
-                    // Metadata: id, name
-                    // Bulk data: schema
-                    data["id"]?.let { reordered["id"] = it }
-                    data["name"]?.let { reordered["name"] = it }
-                    data["schema"]?.let { reordered["schema"] = it }
+                    // Schema data: parse content as JSON instead of keeping it as escaped string
+                    data["schema_id"]?.let { reordered["schema_id"] = it }
+
+                    // Parse content string as JSON for readable prompt formatting
+                    val contentStr = data["content"] as? String
+                    if (contentStr != null) {
+                        try {
+                            reordered["content"] = org.json.JSONObject(contentStr)
+                        } catch (e: Exception) {
+                            // If parsing fails, keep as string
+                            reordered["content"] = contentStr
+                        }
+                    }
                 }
                 "tools" -> {
                     // Config or list
