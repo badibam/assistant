@@ -1355,10 +1355,14 @@ object AIOrchestrator {
                 (0 until array.length()).mapNotNull { i ->
                     try {
                         val cmd = array.getJSONObject(i)
+                        val type = cmd.getString("type")
+                        val params = parseJsonObjectToMap(cmd.getJSONObject("params"))
+                        // Generate deterministic ID from type + params hashcode
+                        val id = "${type}_${params.hashCode()}"
                         DataCommand(
-                            id = cmd.getString("id"),
-                            type = cmd.getString("type"),
-                            params = parseJsonObjectToMap(cmd.getJSONObject("params")),
+                            id = id,
+                            type = type,
+                            params = params,
                             isRelative = cmd.optBoolean("isRelative", false)
                         )
                     } catch (e: Exception) {
@@ -1373,10 +1377,14 @@ object AIOrchestrator {
                 (0 until array.length()).mapNotNull { i ->
                     try {
                         val cmd = array.getJSONObject(i)
+                        val type = cmd.getString("type")
+                        val params = parseJsonObjectToMap(cmd.getJSONObject("params"))
+                        // Generate deterministic ID from type + params hashcode
+                        val id = "${type}_${params.hashCode()}"
                         DataCommand(
-                            id = cmd.getString("id"),
-                            type = cmd.getString("type"),
-                            params = parseJsonObjectToMap(cmd.getJSONObject("params")),
+                            id = id,
+                            type = type,
+                            params = params,
                             isRelative = cmd.optBoolean("isRelative", false)
                         )
                     } catch (e: Exception) {

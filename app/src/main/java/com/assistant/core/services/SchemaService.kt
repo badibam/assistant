@@ -7,6 +7,8 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.Schema
 import com.assistant.core.schemas.ZoneSchemaProvider
+import com.assistant.core.ai.data.AIMessageSchemas
+import com.assistant.core.ai.data.CommunicationModuleSchemas
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -60,8 +62,10 @@ class SchemaService(private val context: Context) : ExecutableService {
         val schema = getSchemaById(schemaId)
         return if (schema != null) {
             OperationResult.success(mapOf(
-                "schema_id" to schema.id,
-                "content" to schema.content
+                "schema" to mapOf(
+                    "id" to schema.id,
+                    "content" to schema.content
+                )
             ))
         } else {
             OperationResult.error("Schema not found: $schemaId")
@@ -119,6 +123,17 @@ class SchemaService(private val context: Context) : ExecutableService {
                 LogManager.service("App config schema requested: $schemaId - STUB implementation")
                 null
             }
+            schemaId == "ai_message_response" -> {
+                // AI message response schema
+                LogManager.service("AI schema requested: $schemaId - using AIMessageSchemas")
+                AIMessageSchemas.getAIMessageResponseSchema(context)
+            }
+            schemaId.startsWith("communication_module_") -> {
+                // Communication module schemas
+                LogManager.service("Communication module schema requested: $schemaId")
+                val moduleType = schemaId.removePrefix("communication_module_").replaceFirstChar { it.uppercase() }
+                CommunicationModuleSchemas.getSchema(moduleType, context)
+            }
             else -> null
         }
     }
@@ -173,9 +188,12 @@ class SchemaService(private val context: Context) : ExecutableService {
      */
     private fun getSystemSchemaIds(): List<String> {
         return listOf(
-            // TODO: Add actual system schema IDs
             "zone_config",
-            "app_config"
+            "app_config",
+            // AI schemas
+            "ai_message_response",
+            "communication_module_multiple_choice",
+            "communication_module_validation"
         )
     }
 

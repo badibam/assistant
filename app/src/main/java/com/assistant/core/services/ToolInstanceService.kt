@@ -146,19 +146,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceData = toolInstances.map { tool ->
-            // Extract name from config JSON
-            val name = try {
-                JSONObject(tool.config_json).optString("name", "")
+            // Extract name and description from config JSON (not the full config)
+            var name = ""
+            var description = ""
+            try {
+                val configJson = JSONObject(tool.config_json)
+                name = configJson.optString("name", "")
+                description = configJson.optString("description", "")
             } catch (e: Exception) {
-                ""
+                // Keep empty strings
             }
 
             mapOf(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
                 "name" to name,
+                "description" to description,
                 "tool_type" to tool.tool_type,
-                "config_json" to tool.config_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at
@@ -181,19 +185,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceData = toolInstances.map { tool ->
-            // Extract name from config JSON
-            val name = try {
-                JSONObject(tool.config_json).optString("name", "")
+            // Extract name and description from config JSON (not the full config)
+            var name = ""
+            var description = ""
+            try {
+                val configJson = JSONObject(tool.config_json)
+                name = configJson.optString("name", "")
+                description = configJson.optString("description", "")
             } catch (e: Exception) {
-                ""
+                // Keep empty strings
             }
 
             mapOf(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
                 "name" to name,
+                "description" to description,
                 "tool_type" to tool.tool_type,
-                "config_json" to tool.config_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at

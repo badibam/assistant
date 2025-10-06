@@ -36,6 +36,13 @@ object CommandTransformer {
 
         for (command in commands) {
             try {
+                // APP_STATE is special: generates multiple executable commands
+                if (command.type == "APP_STATE") {
+                    val appStateCommands = transformAppStateCommand(command)
+                    executableCommands.addAll(appStateCommands)
+                    continue
+                }
+
                 val executableCommand = when (command.type) {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
@@ -65,6 +72,27 @@ object CommandTransformer {
     // ========================================================================================
     // Transformation Methods
     // ========================================================================================
+
+    /**
+     * Transform APP_STATE command to multiple executable commands
+     * Returns zones + tool instances for complete application structure
+     */
+    private fun transformAppStateCommand(command: DataCommand): List<ExecutableCommand> {
+        LogManager.aiPrompt("transformAppStateCommand() - generating zones.list + tools.list_all", "VERBOSE")
+
+        return listOf(
+            ExecutableCommand(
+                resource = "zones",
+                operation = "list",
+                params = emptyMap()
+            ),
+            ExecutableCommand(
+                resource = "tools",
+                operation = "list_all",
+                params = emptyMap()
+            )
+        )
+    }
 
     private fun transformSchemaCommand(command: DataCommand): ExecutableCommand? {
         LogManager.aiPrompt("transformSchemaCommand() - routing to schemas.get", "VERBOSE")

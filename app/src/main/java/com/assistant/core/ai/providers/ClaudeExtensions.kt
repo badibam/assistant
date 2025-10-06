@@ -27,9 +27,11 @@ internal data class FusedMessage(
  * Transform PromptData to Claude Messages API JSON format
  *
  * Applies Claude-specific formatting:
- * - System array with L1, L2, L3 (each with cache_control breakpoint)
+ * - System array with L1, L2 (each with cache_control breakpoint)
  * - Messages array with fused USER messages (multi-block for consecutive users)
- * - Cache_control on last block of last message (4th breakpoint)
+ * - Cache_control on last block of last message (3rd breakpoint)
+ *
+ * Note: Level 3 has been removed - AI now uses APP_STATE command when needed
  *
  * @param config Provider configuration (api_key, model, max_tokens, etc.)
  * @return JsonObject ready for Claude API /v1/messages endpoint
@@ -42,7 +44,7 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
 
-        // System array with 3 cache breakpoints (L1, L2, L3)
+        // System array with 2 cache breakpoints (L1, L2)
         putJsonArray("system") {
             // L1: System Documentation
             addJsonObject {
@@ -57,15 +59,6 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
             addJsonObject {
                 put("type", "text")
                 put("text", level2Content)
-                putJsonObject("cache_control") {
-                    put("type", "ephemeral")
-                }
-            }
-
-            // L3: Application State
-            addJsonObject {
-                put("type", "text")
-                put("text", level3Content)
                 putJsonObject("cache_control") {
                     put("type", "ephemeral")
                 }

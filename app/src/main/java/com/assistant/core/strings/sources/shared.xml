@@ -148,12 +148,6 @@
     <string name="ai_error_format_errors">Erreurs de format dans la réponse IA:\n%1$s</string>
     <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
 
-    <!-- AI Communication Modules - Schemas -->
-    <string name="ai_schema_communication_multiple_choice_name">Module de communication: Choix multiple</string>
-    <string name="ai_schema_communication_multiple_choice_desc">Schéma pour l\'interaction utilisateur par choix multiple</string>
-    <string name="ai_schema_communication_validation_name">Module de communication: Validation</string>
-    <string name="ai_schema_communication_validation_desc">Schéma pour l\'interaction utilisateur de validation/confirmation</string>
-
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>
     <string name="label_description">Description</string>
@@ -537,5 +531,23 @@
     <string name="ai_limit_data_queries_reached">Limite d'itérations de requêtes de données atteinte</string>
     <string name="ai_limit_action_retries_reached">Limite de tentatives d'actions atteinte</string>
     <string name="ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
+
+    <!-- AI SCHEMAS - Schemas metadata and field descriptions -->
+    <!-- ai_message_response schema -->
+    <string name="ai_schema_message_response_name">Réponse IA structurée</string>
+    <string name="ai_schema_message_response_desc">Schéma de validation pour les réponses structurées de l\'IA</string>
+    <string name="ai_schema_field_pretext_desc">Explication de ce que tu vas faire ou de ta réponse (toujours requis)</string>
+    <string name="ai_schema_field_validation_message_desc">Question de validation à poser à l\'utilisateur</string>
+    <string name="ai_schema_field_validation_request_desc">Demande de validation optionnelle (uniquement avec actionCommands)</string>
+    <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec actionCommands et communicationModule)</string>
+    <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec dataCommands et communicationModule)</string>
+    <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec actionCommands)</string>
+    <string name="ai_schema_field_communication_module_desc">Module de communication pour interaction avec l\'utilisateur (mutuellement exclusif avec dataCommands et actionCommands)</string>
+
+    <!-- communication_module schemas -->
+    <string name="ai_schema_communication_multiple_choice_name">Module de choix multiple</string>
+    <string name="ai_schema_communication_multiple_choice_desc">Schéma pour module de communication à choix multiples</string>
+    <string name="ai_schema_communication_validation_name">Module de validation</string>
+    <string name="ai_schema_communication_validation_desc">Schéma pour module de communication de validation</string>
 
 </resources>

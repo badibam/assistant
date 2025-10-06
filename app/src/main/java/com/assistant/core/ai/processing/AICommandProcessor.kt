@@ -3,7 +3,10 @@ package com.assistant.core.ai.processing
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
+import org.json.JSONObject
 
 /**
  * AI command processor for validating and processing commands from AI responses
@@ -50,7 +53,7 @@ class AICommandProcessor(private val context: Context) {
      * @param commands List of DataCommands from AI for action execution
      * @return List of ExecutableCommands ready for coordinator dispatch
      */
-    fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand> {
+    suspend fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand> {
         LogManager.aiService("AICommandProcessor processing ${commands.size} action commands from AI", "DEBUG")
 
         // TODO: Implement AI action command strict validations
@@ -89,19 +92,26 @@ class AICommandProcessor(private val context: Context) {
      * - tool_data.* uses toolInstanceId (camelCase)
      * This will be unified in a future refactoring
      */
-    private fun transformActionCommand(command: DataCommand): ExecutableCommand? {
+    private suspend fun transformActionCommand(command: DataCommand): ExecutableCommand? {
         return when (command.type) {
             // Tool data actions - batch operations by default (per AI.md line 182)
-            "CREATE_DATA" -> ExecutableCommand(
-                resource = "tool_data",
-                operation = "batch_create",
-                params = command.params
-            )
-            "UPDATE_DATA" -> ExecutableCommand(
-                resource = "tool_data",
-                operation = "batch_update",
-                params = command.params
-            )
+            // Schema ID enrichment: automatically inject data_schema_id from tool instance config
+            "CREATE_DATA" -> {
+                val enrichedParams = enrichWithSchemaId(command.params)
+                ExecutableCommand(
+                    resource = "tool_data",
+                    operation = "batch_create",
+                    params = enrichedParams
+                )
+            }
+            "UPDATE_DATA" -> {
+                val enrichedParams = enrichWithSchemaId(command.params)
+                ExecutableCommand(
+                    resource = "tool_data",
+                    operation = "batch_update",
+                    params = enrichedParams
+                )
+            }
             "DELETE_DATA" -> ExecutableCommand(
                 resource = "tool_data",
                 operation = "batch_delete",
@@ -146,6 +156,95 @@ class AICommandProcessor(private val context: Context) {
                 LogManager.aiService("Unknown action command type: ${command.type}", "WARN")
                 null
             }
+        }
+    }
+
+    /**
+     * Enrich CREATE_DATA/UPDATE_DATA params with schema_id from tool instance config
+     *
+     * AI doesn't need to specify schema_id - we automatically fetch it from the
+     * tool instance's data_schema_id configuration field.
+     *
+     * @param params Original params from AI command
+     * @return Enriched params with schema_id added to each entry
+     */
+    private suspend fun enrichWithSchemaId(params: Map<String, Any>): Map<String, Any> {
+        val toolInstanceId = params["toolInstanceId"] as? String
+
+        if (toolInstanceId.isNullOrEmpty()) {
+            LogManager.aiService("Cannot enrich schema_id: toolInstanceId missing", "ERROR")
+            return params
+        }
+
+        try {
+            // Get tool instance config to extract data_schema_id
+            val coordinator = Coordinator(context)
+            val result = coordinator.processUserAction(
+                "tools.get",
+                mapOf("tool_instance_id" to toolInstanceId)
+            )
+
+            if (!result.isSuccess) {
+                LogManager.aiService(
+                    "Failed to fetch tool instance for schema enrichment: ${result.error}",
+                    "ERROR"
+                )
+                return params
+            }
+
+            val configJson = result.data?.get("config_json") as? String
+            if (configJson.isNullOrEmpty()) {
+                LogManager.aiService(
+                    "Tool instance $toolInstanceId has no config_json",
+                    "ERROR"
+                )
+                return params
+            }
+
+            val config = JSONObject(configJson)
+            val dataSchemaId = config.optString("data_schema_id")
+
+            if (dataSchemaId.isEmpty()) {
+                LogManager.aiService(
+                    "Tool instance $toolInstanceId config has no data_schema_id",
+                    "ERROR"
+                )
+                return params
+            }
+
+            // Enrich entries with schema_id
+            val entries = params["entries"] as? List<*>
+            if (entries == null) {
+                LogManager.aiService("No entries found to enrich with schema_id", "WARN")
+                return params
+            }
+
+            val enrichedEntries = entries.map { entry ->
+                if (entry is Map<*, *>) {
+                    entry.toMutableMap().apply {
+                        put("schema_id", dataSchemaId)
+                    }
+                } else {
+                    entry
+                }
+            }
+
+            LogManager.aiService(
+                "Enriched ${enrichedEntries.size} entries with schema_id: $dataSchemaId",
+                "DEBUG"
+            )
+
+            return params.toMutableMap().apply {
+                put("entries", enrichedEntries)
+            }
+
+        } catch (e: Exception) {
+            LogManager.aiService(
+                "Exception during schema enrichment: ${e.message}",
+                "ERROR",
+                e
+            )
+            return params
         }
     }
 }

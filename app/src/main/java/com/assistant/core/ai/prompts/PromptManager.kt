@@ -48,16 +48,19 @@ object PromptManager {
         val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
         val sessionType = SessionType.valueOf(sessionTypeStr)
 
-        // 2. Build Level 1 (DOC + limits)
+        // 2. Build Level 1 (DOC + limits) using PromptChunks
         LogManager.aiPrompt("Building Level 1 (DOC)", "DEBUG")
-        val level1Commands = buildLevel1Commands(sessionType, context)
-        val level1Executable = userCommandProcessor.processCommands(level1Commands)
-        val level1Result = commandExecutor.executeCommands(
-            commands = level1Executable,
-            messageType = SystemMessageType.DATA_ADDED,
-            level = "L1"
+
+        // Generate complete documentation with PromptChunks (schemas included via placeholders)
+        val level1Content = PromptChunks.buildLevel1StaticDoc(
+            context = context,
+            sessionType = sessionType,
+            config = PromptChunks.ChunkConfig(
+                includeDegree1 = true,
+                includeDegree2 = true,
+                includeDegree3 = false  // Disabled for token economy
+            )
         )
-        val level1Content = formatLevel("Level 1: System Documentation", buildLevel1StaticDoc(sessionType, context), level1Result.promptResults)
 
         // 3. Build Level 2 (USER DATA - always_send tools)
         LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
@@ -70,16 +73,7 @@ object PromptManager {
         )
         val level2Content = formatLevel("Level 2: User Data", "", level2Result.promptResults)
 
-        // 4. Build Level 3 (APP STATE - zones + tools)
-        LogManager.aiPrompt("Building Level 3 (APP STATE)", "DEBUG")
-        val level3Commands = buildLevel3Commands(context)
-        val level3Executable = userCommandProcessor.processCommands(level3Commands)
-        val level3Result = commandExecutor.executeCommands(
-            commands = level3Executable,
-            messageType = SystemMessageType.DATA_ADDED,
-            level = "L3"
-        )
-        val level3Content = formatLevel("Level 3: Application State", "", level3Result.promptResults)
+        // Note: Level 3 has been removed - AI will use APP_STATE command when needed
 
         // 5. Load session messages (raw, provider will transform them)
         val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
@@ -96,12 +90,11 @@ object PromptManager {
             LogManager.aiPrompt("Filtered $filtered system error messages from prompt", "DEBUG")
         }
 
-        LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")
+        LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, ${sessionMessages.size} messages", "INFO")
 
         return PromptData(
             level1Content = level1Content,
             level2Content = level2Content,
-            level3Content = level3Content,
             sessionMessages = sessionMessages
         )
     }
@@ -275,107 +268,7 @@ object PromptManager {
     }
 
     // === Level Command Builders ===
-
-    /**
-     * Build Level 1 static documentation with AI limits
-     */
-    private fun buildLevel1StaticDoc(sessionType: SessionType, context: Context): String {
-        LogManager.aiPrompt("Building Level 1 static documentation with AI limits", "DEBUG")
-
-        val s = Strings.`for`(context = context)
-        val sb = StringBuilder()
-
-        // AI Role and introduction
-        sb.appendLine("# ${s.shared("ai_doc_title")}")
-        sb.appendLine()
-        sb.appendLine(s.shared("ai_doc_role"))
-        sb.appendLine()
-
-        // AI Configuration Limits
-        val aiLimits = AppConfigManager.getAILimits()
-        val limits = when (sessionType) {
-            SessionType.CHAT -> mapOf(
-                "maxDataQueryIterations" to aiLimits.chatMaxDataQueryIterations,
-                "maxActionRetries" to aiLimits.chatMaxActionRetries,
-                "maxAutonomousRoundtrips" to aiLimits.chatMaxAutonomousRoundtrips,
-                "maxCommunicationModules" to aiLimits.chatMaxCommunicationModulesRoundtrips
-            )
-            SessionType.AUTOMATION -> mapOf(
-                "maxDataQueryIterations" to aiLimits.automationMaxDataQueryIterations,
-                "maxActionRetries" to aiLimits.automationMaxActionRetries,
-                "maxAutonomousRoundtrips" to aiLimits.automationMaxAutonomousRoundtrips,
-                "maxCommunicationModules" to aiLimits.automationMaxCommunicationModulesRoundtrips
-            )
-        }
-
-        sb.appendLine("## AI Configuration Limits")
-        sb.appendLine()
-        sb.appendLine("You are operating under the following limits in this session (${sessionType.name} mode):")
-        sb.appendLine("- Maximum consecutive data queries: ${limits["maxDataQueryIterations"]}")
-        sb.appendLine("- Maximum action retry attempts: ${limits["maxActionRetries"]}")
-        sb.appendLine("- Maximum autonomous roundtrips: ${limits["maxAutonomousRoundtrips"]}")
-        sb.appendLine("- Maximum communication module roundtrips: ${limits["maxCommunicationModules"]}")
-        sb.appendLine()
-        sb.appendLine("If you exceed these limits, the system will stop and notify the user.")
-        sb.appendLine("The limits help prevent infinite loops and ensure optimal user experience.")
-        sb.appendLine()
-
-        // API Documentation
-        sb.appendLine("## ${s.shared("ai_doc_command_title")}")
-        sb.appendLine()
-        sb.appendLine(s.shared("ai_doc_command_format"))
-        sb.appendLine("- ${s.shared("ai_doc_command_format_example")}")
-        sb.appendLine("- ${s.shared("ai_doc_command_resources")}")
-        sb.appendLine()
-        sb.appendLine("### ${s.shared("ai_doc_response_title")}")
-        sb.appendLine(s.shared("ai_doc_response_structure"))
-        sb.appendLine("- ${s.shared("ai_doc_response_pretext")}")
-        sb.appendLine("- ${s.shared("ai_doc_response_validation")}")
-        sb.appendLine("- ${s.shared("ai_doc_response_datacommands")}")
-        sb.appendLine("- ${s.shared("ai_doc_response_actioncommands")}")
-        sb.appendLine("- ${s.shared("ai_doc_response_posttext")}")
-        sb.appendLine("- ${s.shared("ai_doc_response_module")}")
-        sb.appendLine()
-
-        // Available Tooltypes
-        sb.appendLine("## ${s.shared("ai_doc_tooltypes_title")}")
-        sb.appendLine()
-
-        val allToolTypes = ToolTypeManager.getAllToolTypes()
-        for ((tooltypeName, toolType) in allToolTypes) {
-            val description = toolType.getDescription(context)
-            val schemaIds = ToolTypeManager.getSchemaIdsForTooltype(tooltypeName)
-
-            sb.appendLine("### $tooltypeName")
-            sb.appendLine("**${s.shared("ai_doc_tooltype_description")}**: $description")
-            sb.appendLine("**${s.shared("ai_doc_tooltype_schemas")}**: ${schemaIds.joinToString(", ")}")
-            sb.appendLine()
-        }
-
-        return sb.toString()
-    }
-
-    /**
-     * Generate Level 1 commands: Zone schema only
-     */
-    private fun buildLevel1Commands(sessionType: SessionType, context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 1 commands (DOC)", "DEBUG")
-
-        val commands = mutableListOf<DataCommand>()
-
-        // Add command to fetch zone schema (fundamental schema)
-        commands.add(
-            DataCommand(
-                id = "schema_zone_config",
-                type = "SCHEMA",
-                params = mapOf("id" to "zone_config"),
-                isRelative = false
-            )
-        )
-
-        LogManager.aiPrompt("Level 1: Generated ${commands.size} commands", "DEBUG")
-        return commands
-    }
+    // Note: Level 1 now uses PromptChunks - no commands needed
 
     /**
      * Generate Level 2 commands: User data (tool_data with always_send flag)
@@ -432,37 +325,6 @@ object PromptManager {
         return commands
     }
 
-    /**
-     * Generate Level 3 commands: App structural state (zones + tool instances)
-     */
-    private suspend fun buildLevel3Commands(context: Context): List<DataCommand> {
-        LogManager.aiPrompt("Building Level 3 commands (APP STATE)", "DEBUG")
-
-        val commands = mutableListOf<DataCommand>()
-
-        // Command to list all zones
-        commands.add(
-            DataCommand(
-                id = "zones_list",
-                type = "ZONES",
-                params = emptyMap(),
-                isRelative = false
-            )
-        )
-
-        // Command to list all tool instances
-        commands.add(
-            DataCommand(
-                id = "tools_list_all",
-                type = "TOOL_INSTANCES",
-                params = emptyMap(),
-                isRelative = false
-            )
-        )
-
-        LogManager.aiPrompt("Level 3: Generated ${commands.size} commands", "DEBUG")
-        return commands
-    }
 
     // === Utilities ===
 
