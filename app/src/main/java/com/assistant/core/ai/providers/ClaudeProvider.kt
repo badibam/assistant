@@ -252,11 +252,10 @@ class ClaudeProvider : AIProvider {
             LogManager.aiService("Built Claude request: ${requestBody.length} characters")
             LogManager.aiService("Request includes ${promptData.sessionMessages.size} messages")
 
-            // Log raw prompt for debugging (VERBOSE level) - formatted for readability
+            // Log raw prompt for debugging (VERBOSE level) - formatted for maximum readability
             val prettyJson = Json { prettyPrint = true }
             val formattedPrompt = prettyJson.encodeToString(JsonObject.serializer(), requestJson)
-            val multilinePrompt = "=== RAW PROMPT TO CLAUDE API ===\n$formattedPrompt\n=== END RAW PROMPT ==="
-            LogManager.logMultiline("AIService", multilinePrompt, "VERBOSE")
+            LogManager.aiService("=== RAW PROMPT TO CLAUDE API ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
 
             // Build HTTP request
             val mediaType = "application/json; charset=utf-8".toMediaType()

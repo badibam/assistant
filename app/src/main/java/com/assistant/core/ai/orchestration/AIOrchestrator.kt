@@ -81,6 +81,7 @@ object AIOrchestrator {
     /**
      * Initialize orchestrator with context
      * Must be called at app startup before any usage
+     * Restores active session from DB if present
      */
     fun initialize(context: Context) {
         this.context = context.applicationContext
@@ -89,6 +90,56 @@ object AIOrchestrator {
         this.s = Strings.`for`(context = this.context)
 
         LogManager.aiSession("AIOrchestrator initialized as singleton")
+
+        // Restore active session from DB (async)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = coordinator.processUserAction("ai_sessions.get_active_session", emptyMap())
+                if (result.isSuccess) {
+                    val hasActive = result.data?.get("hasActiveSession") as? Boolean ?: false
+                    if (hasActive) {
+                        val sessionId = result.data?.get("sessionId") as? String
+                        val sessionData = result.data?.get("session") as? Map<*, *>
+                        val typeStr = sessionData?.get("type") as? String
+                        val type = typeStr?.let {
+                            try {
+                                SessionType.valueOf(it)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        when (type) {
+                            SessionType.CHAT -> {
+                                // Restore CHAT session in memory (without DB sync to avoid loop)
+                                if (sessionId != null) {
+                                    activeSessionId = sessionId
+                                    activeSessionType = type
+                                    lastActivityTimestamp = System.currentTimeMillis()
+                                    LogManager.aiSession("Restored active CHAT session: $sessionId", "INFO")
+                                }
+                            }
+                            SessionType.AUTOMATION -> {
+                                // Deactivate AUTOMATION (it's finished/interrupted after app restart)
+                                coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
+                                LogManager.aiSession("Deactivated finished AUTOMATION session: $sessionId", "INFO")
+                            }
+                            else -> {
+                                // Unknown or null type, deactivate
+                                coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
+                                LogManager.aiSession("Deactivated session with unknown type: $sessionId", "WARN")
+                            }
+                        }
+                    } else {
+                        LogManager.aiSession("No active session to restore", "DEBUG")
+                    }
+                } else {
+                    LogManager.aiSession("Failed to load active session: ${result.error}", "WARN")
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession("Exception restoring active session: ${e.message}", "ERROR", e)
+            }
+        }
     }
 
     // ========================================================================================
@@ -180,6 +231,7 @@ object AIOrchestrator {
 
     /**
      * Close active session manually
+     * Updates both memory state (immediate) and DB state (async)
      */
     @Synchronized
     fun closeActiveSession() {
@@ -188,10 +240,27 @@ object AIOrchestrator {
             return
         }
 
-        LogManager.aiSession("Closing active session: $activeSessionId", "INFO")
+        val sessionToClose = activeSessionId
+        LogManager.aiSession("Closing active session: $sessionToClose", "INFO")
+
+        // 1. Update memory state (immediate)
         activeSessionId = null
         activeSessionType = null
         lastActivityTimestamp = 0
+
+        // 2. Sync DB state (async, non-blocking)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
+                if (result.isSuccess) {
+                    LogManager.aiSession("Session deactivated in DB: $sessionToClose", "DEBUG")
+                } else {
+                    LogManager.aiSession("Failed to deactivate session in DB: ${result.error}", "WARN")
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession("Exception deactivating session in DB: ${e.message}", "ERROR", e)
+            }
+        }
 
         // Process queue
         processNextInQueue()
@@ -204,6 +273,7 @@ object AIOrchestrator {
 
     /**
      * Activate a session
+     * Updates both memory state (immediate) and DB state (async)
      */
     private fun activateSession(
         sessionId: String,
@@ -211,10 +281,27 @@ object AIOrchestrator {
         automationId: String?,
         scheduledExecutionTime: Long?
     ) {
+        // 1. Update memory state (immediate)
         activeSessionId = sessionId
         activeSessionType = type
         lastActivityTimestamp = System.currentTimeMillis()
-        LogManager.aiSession("Session activated: $sessionId (type=$type, automationId=$automationId)", "DEBUG")
+        LogManager.aiSession("Session activated in memory: $sessionId (type=$type, automationId=$automationId)", "DEBUG")
+
+        // 2. Sync DB state (async, non-blocking)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = coordinator.processUserAction("ai_sessions.set_active_session", mapOf(
+                    "sessionId" to sessionId
+                ))
+                if (result.isSuccess) {
+                    LogManager.aiSession("Session activated in DB: $sessionId", "DEBUG")
+                } else {
+                    LogManager.aiSession("Failed to activate session in DB: ${result.error}", "WARN")
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession("Exception activating session in DB: ${e.message}", "ERROR", e)
+            }
+        }
     }
 
     /**
@@ -496,9 +583,9 @@ object AIOrchestrator {
 
         while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
 
-            // Check if session was stopped by user
+            // Check if session was stopped
             if (!isSessionStillActive(sessionId)) {
-                LogManager.aiSession("Session $sessionId was stopped by user, exiting autonomous loop", "INFO")
+                LogManager.aiSession("Session $sessionId is no longer active, exiting autonomous loop", "INFO")
                 break
             }
 
@@ -888,17 +975,13 @@ object AIOrchestrator {
 
     /**
      * Stop current active session
+     * Delegates to closeActiveSession() which handles both memory and DB sync
      */
-    suspend fun stopActiveSession(): OperationResult {
+    fun stopActiveSession(): OperationResult {
         LogManager.aiSession("AIOrchestrator.stopActiveSession() called", "DEBUG")
-
-        val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
-        return if (result.isSuccess) {
-            LogManager.aiSession("Active session stopped successfully", "INFO")
-            OperationResult.success()
-        } else {
-            OperationResult.error(result.error ?: "Failed to stop session")
-        }
+        closeActiveSession()
+        LogManager.aiSession("Active session stopped successfully", "INFO")
+        return OperationResult.success()
     }
 
     /**
