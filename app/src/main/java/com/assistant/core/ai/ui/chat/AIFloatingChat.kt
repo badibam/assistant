@@ -38,12 +38,11 @@ fun AIFloatingChat(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Session management - store ID only, reload messages reactively
+    // Session management - store ID and metadata, messages come from reactive flow
     var activeSessionId by remember { mutableStateOf<String?>(null) }
     var activeSession by remember { mutableStateOf<AISession?>(null) }
     var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var messagesReloadTrigger by remember { mutableStateOf(0) }
 
     val scope = rememberCoroutineScope()
     // AIOrchestrator is now a singleton, no need to remember/create
@@ -55,6 +54,9 @@ fun AIFloatingChat(
     // Observe round in progress for AI thinking indicator
     val isRoundInProgress by aiOrchestrator.isRoundInProgress.collectAsState()
 
+    // Observe messages reactively from StateFlow (replaces polling)
+    val messages by aiOrchestrator.activeSessionMessages.collectAsState()
+
     // Reload session every time dialog becomes visible (not just first mount)
     LaunchedEffect(isVisible) {
         if (!isVisible) return@LaunchedEffect
@@ -64,10 +66,10 @@ fun AIFloatingChat(
             val existingSession = aiOrchestrator.getActiveSession()
 
             if (existingSession != null) {
-                // Reuse existing active session
+                // Set active session (messages will flow reactively from StateFlow)
                 activeSessionId = existingSession.id
                 activeSession = existingSession
-                LogManager.aiUI("AIFloatingChat reusing active session: ${existingSession.id}")
+                LogManager.aiUI("AIFloatingChat using active session: ${existingSession.id}")
             } else {
                 // No active session - will be created on first message send
                 activeSessionId = null
@@ -77,38 +79,6 @@ fun AIFloatingChat(
         } catch (e: Exception) {
             LogManager.aiUI("Failed to check for active session: ${e.message}", "ERROR")
             errorMessage = s.shared("ai_error_check_session")
-        }
-    }
-
-    // Reactive session reload - triggers when messagesReloadTrigger changes
-    LaunchedEffect(messagesReloadTrigger, activeSessionId) {
-        if (messagesReloadTrigger > 0 && activeSessionId != null) {
-            try {
-                LogManager.aiUI("Reloading session: $activeSessionId (trigger=$messagesReloadTrigger)", "INFO")
-                val updatedSession = aiOrchestrator.loadSession(activeSessionId!!)
-                LogManager.aiUI("Session loaded: ${updatedSession?.messages?.size ?: 0} messages", "INFO")
-                activeSession = updatedSession
-            } catch (e: Exception) {
-                LogManager.aiUI("Failed to reload session: ${e.message}", "ERROR")
-            }
-        }
-    }
-
-    // Auto-reload during round progress (polling every 500ms)
-    LaunchedEffect(isRoundInProgress, activeSessionId) {
-        if (isRoundInProgress && activeSessionId != null) {
-            LogManager.aiUI("Starting polling while round in progress", "DEBUG")
-            while (isRoundInProgress) {
-                kotlinx.coroutines.delay(500)
-                try {
-                    val updatedSession = aiOrchestrator.loadSession(activeSessionId!!)
-                    activeSession = updatedSession
-                    LogManager.aiUI("Polling reload: ${updatedSession?.messages?.size ?: 0} messages", "DEBUG")
-                } catch (e: Exception) {
-                    LogManager.aiUI("Polling reload failed: ${e.message}", "ERROR")
-                }
-            }
-            LogManager.aiUI("Polling stopped (round finished)", "DEBUG")
         }
     }
 
@@ -133,7 +103,7 @@ fun AIFloatingChat(
                 // Header
                 ChatHeader(
                     sessionName = activeSession?.name ?: s.shared("ai_chat_new"),
-                    isActive = activeSession?.isActive ?: false,
+                    hasActiveSession = activeSessionId != null,
                     isLoading = isRoundInProgress,
                     onClose = onDismiss,
                     onStopSession = {
@@ -163,7 +133,7 @@ fun AIFloatingChat(
                         .weight(1f)
                 ) {
                     ChatMessageList(
-                        messages = activeSession?.messages ?: emptyList(),
+                        messages = messages,
                         isLoading = isRoundInProgress,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -210,17 +180,13 @@ fun AIFloatingChat(
                                             return@launch
                                         }
 
-                                        // 2. Trigger UI update to show user message
-                                        segments = emptyList() // Clear composer
-                                        messagesReloadTrigger++
-                                        LogManager.aiUI("User message sent, triggering reload")
+                                        // 2. Clear composer (messages will update reactively via StateFlow)
+                                        segments = emptyList()
+                                        LogManager.aiUI("User message sent")
 
-                                        // 3. Execute AI round (UI will auto-reload when round finishes)
+                                        // 3. Execute AI round (messages will update reactively)
                                         val aiRoundResult = aiOrchestrator.executeAIRound(RoundReason.USER_MESSAGE)
-
-                                        // 4. Trigger reload after round completion
-                                        messagesReloadTrigger++
-                                        LogManager.aiUI("AI round finished, triggered reload (trigger=$messagesReloadTrigger)")
+                                        LogManager.aiUI("AI round finished")
 
                                         if (!aiRoundResult.success) {
                                             errorMessage = aiRoundResult.error
@@ -282,7 +248,7 @@ fun AIFloatingChat(
 @Composable
 private fun ChatHeader(
     sessionName: String,
-    isActive: Boolean,
+    hasActiveSession: Boolean,
     isLoading: Boolean,
     onClose: () -> Unit,
     onStopSession: () -> Unit
@@ -321,13 +287,13 @@ private fun ChatHeader(
         title = sessionName,
         subtitle = when {
             isLoading -> s.shared("ai_status_processing")
-            isActive -> s.shared("ai_status_ready")
+            hasActiveSession -> s.shared("ai_status_ready")
             sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
             else -> s.shared("ai_status_inactive")
         },
-        leftButton = if (isActive) ButtonAction.DELETE else null, // Stop session button (only if active)
+        leftButton = if (hasActiveSession) ButtonAction.DELETE else null, // Stop session button (only if has active session)
         rightButton = ButtonAction.CANCEL, // Close chat button
-        onLeftClick = if (isActive) { { showStopConfirmation = true } } else null,
+        onLeftClick = if (hasActiveSession) { { showStopConfirmation = true } } else null,
         onRightClick = onClose
     )
 }

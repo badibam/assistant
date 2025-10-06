@@ -47,6 +47,10 @@ object AIOrchestrator {
     private val _waitingState = MutableStateFlow<WaitingState>(WaitingState.None)
     val waitingState: StateFlow<WaitingState> = _waitingState.asStateFlow()
 
+    // Reactive messages flow for active session (observable by UI)
+    private val _activeSessionMessages = MutableStateFlow<List<SessionMessage>>(emptyList())
+    val activeSessionMessages: StateFlow<List<SessionMessage>> = _activeSessionMessages.asStateFlow()
+
     // Continuations for user interaction suspension
     private var validationContinuation: Continuation<Boolean>? = null
     private var responseContinuation: Continuation<String>? = null
@@ -117,6 +121,9 @@ object AIOrchestrator {
                                     activeSessionType = type
                                     lastActivityTimestamp = System.currentTimeMillis()
                                     LogManager.aiSession("Restored active CHAT session: $sessionId", "INFO")
+
+                                    // Initialize messages flow for restored session
+                                    updateMessagesFlow(sessionId)
                                 }
                             }
                             SessionType.AUTOMATION -> {
@@ -248,7 +255,10 @@ object AIOrchestrator {
         activeSessionType = null
         lastActivityTimestamp = 0
 
-        // 2. Sync DB state (async, non-blocking)
+        // 2. Clear messages flow
+        _activeSessionMessages.value = emptyList()
+
+        // 3. Sync DB state (async, non-blocking)
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
@@ -287,7 +297,10 @@ object AIOrchestrator {
         lastActivityTimestamp = System.currentTimeMillis()
         LogManager.aiSession("Session activated in memory: $sessionId (type=$type, automationId=$automationId)", "DEBUG")
 
-        // 2. Sync DB state (async, non-blocking)
+        // 2. Initialize messages flow for new active session
+        updateMessagesFlow(sessionId)
+
+        // 3. Sync DB state (async, non-blocking)
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.set_active_session", mapOf(
@@ -416,6 +429,9 @@ object AIOrchestrator {
                 if (!userMessageResult.isSuccess) {
                     return@withContext OperationResult.error("Failed to store user message: ${userMessageResult.error}")
                 }
+
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
 
                 // 3. Store SystemMessage enrichments (if present)
                 if (enrichmentSystemMessage != null) {
@@ -657,6 +673,9 @@ object AIOrchestrator {
                     "timestamp" to System.currentTimeMillis()
                 ))
 
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
+
                 // Check session still active before continuing
                 if (!isSessionStillActive(sessionId)) {
                     LogManager.aiSession("Session stopped before communication module response retry", "INFO")
@@ -870,6 +889,39 @@ object AIOrchestrator {
         } else {
             LogManager.aiSession("Failed to load session $sessionId: ${result.error}", "ERROR")
             null
+        }
+    }
+
+    /**
+     * Update reactive messages flow for active session
+     * Called after storing any message to trigger UI update
+     */
+    private fun updateMessagesFlow(sessionId: String) {
+        // Only update if this is still the active session
+        if (activeSessionId != sessionId) {
+            LogManager.aiSession("Skipping messages flow update for non-active session $sessionId", "DEBUG")
+            return
+        }
+
+        // Load messages asynchronously and update flow
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                if (result.isSuccess) {
+                    val messagesData = result.data?.get("messages") as? List<*>
+                    val messages = parseMessages(messagesData)
+
+                    // Update flow on main thread
+                    withContext(Dispatchers.Main) {
+                        _activeSessionMessages.value = messages
+                        LogManager.aiSession("Updated messages flow for session $sessionId: ${messages.size} messages", "DEBUG")
+                    }
+                } else {
+                    LogManager.aiSession("Failed to load messages for flow update: ${result.error}", "WARN")
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession("Exception updating messages flow: ${e.message}", "ERROR", e)
+            }
         }
     }
 
@@ -1207,6 +1259,9 @@ object AIOrchestrator {
 
             if (!storeResult.isSuccess) {
                 LogManager.aiSession("Failed to store SystemMessage: ${storeResult.error}", "WARN")
+            } else {
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
             }
         } catch (e: Exception) {
             LogManager.aiSession("Error storing SystemMessage: ${e.message}", "ERROR", e)
@@ -1229,6 +1284,9 @@ object AIOrchestrator {
 
             if (!storeResult.isSuccess) {
                 LogManager.aiSession("Failed to store AI message: ${storeResult.error}", "WARN")
+            } else {
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
             }
         } catch (e: Exception) {
             LogManager.aiSession("Error storing AI message: ${e.message}", "ERROR", e)
