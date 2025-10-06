@@ -9,7 +9,6 @@ import com.assistant.core.navigation.data.ContextualDataResult
 import com.assistant.core.navigation.data.DataResultStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
-import com.assistant.core.validation.SchemaResolver
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 import com.assistant.core.commands.CommandStatus
