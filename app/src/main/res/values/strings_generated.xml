@@ -370,6 +370,7 @@
     <string name="shared_ai_error_set_active_session">Échec de l\'activation de session: %1$s</string>
     <string name="shared_ai_error_get_active_session">Échec de la récupération de session active: %1$s</string>
     <string name="shared_ai_error_send_message">Échec de l\'envoi du message: %1$s</string>
+    <string name="shared_ai_error_session_stopped">Session arrêtée</string>
     <string name="shared_ai_error_param_name_required">Paramètre obligatoire: name</string>
     <string name="shared_ai_error_param_type_required">Paramètre obligatoire: type</string>
     <string name="shared_ai_error_param_provider_id_required">Paramètre obligatoire: providerId</string>

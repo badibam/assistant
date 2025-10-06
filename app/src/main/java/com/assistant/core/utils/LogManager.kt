@@ -49,6 +49,29 @@ object LogManager {
         safeLog("AIEnrichment", message, level, throwable)
     }
 
+    /**
+     * Log multiline content (for JSON, formatted prompts, etc.)
+     * Splits message by newlines and logs each line separately for better logcat readability
+     */
+    fun logMultiline(tag: String, message: String, level: String = "DEBUG") {
+        try {
+            val lines = message.split('\n')
+            lines.forEach { line ->
+                when (level.uppercase()) {
+                    "VERBOSE" -> Log.v(tag, line)
+                    "DEBUG" -> Log.d(tag, line)
+                    "INFO" -> Log.i(tag, line)
+                    "WARN" -> Log.w(tag, line)
+                    "ERROR" -> Log.e(tag, line)
+                    else -> Log.d(tag, line)
+                }
+            }
+        } catch (e: Exception) {
+            println("LogManager multiline fallback - $tag:")
+            message.split('\n').forEach { println(it) }
+        }
+    }
+
     private fun safeLog(tag: String, message: String, level: String, throwable: Throwable?) {
         try {
             when (level.uppercase()) {

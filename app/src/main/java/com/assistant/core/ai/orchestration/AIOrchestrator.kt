@@ -462,6 +462,12 @@ object AIOrchestrator {
         // 1. Build prompt data
         val promptData = PromptManager.buildPromptData(sessionId, context)
 
+        // Check session still active before first AI call
+        if (!isSessionStillActive(sessionId)) {
+            LogManager.aiSession("Session stopped before first AI call", "INFO")
+            return OperationResult.error(s.shared("ai_error_session_stopped"))
+        }
+
         // 2. Call AI with PromptData (with network check and retry)
         var aiResponse = callAIWithRetry(promptData, sessionType)
 
@@ -490,6 +496,12 @@ object AIOrchestrator {
 
         while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
 
+            // Check if session was stopped by user
+            if (!isSessionStillActive(sessionId)) {
+                LogManager.aiSession("Session $sessionId was stopped by user, exiting autonomous loop", "INFO")
+                break
+            }
+
             // Check watchdog termination flag
             if (shouldTerminate()) {
                 val aiLimits = AppConfigManager.getAILimits()
@@ -513,6 +525,12 @@ object AIOrchestrator {
                 val errorSummary = s.shared("ai_error_format_errors").format(errorList)
                 LogManager.aiSession("Format errors detected: $errorSummary", "WARN")
                 storeFormatErrorMessage(errorSummary, sessionId)
+
+                // Check session still active before continuing
+                if (!isSessionStillActive(sessionId)) {
+                    LogManager.aiSession("Session stopped before format error retry", "INFO")
+                    break
+                }
 
                 // Continue loop to send error back to AI for correction
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
@@ -552,6 +570,12 @@ object AIOrchestrator {
                     "timestamp" to System.currentTimeMillis()
                 ))
 
+                // Check session still active before continuing
+                if (!isSessionStillActive(sessionId)) {
+                    LogManager.aiSession("Session stopped before communication module response retry", "INFO")
+                    break
+                }
+
                 // Renvoyer automatiquement à l'IA
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
@@ -572,6 +596,12 @@ object AIOrchestrator {
 
                 val dataSystemMessage = executeDataCommands(aiMessage.dataCommands)
                 storeSystemMessage(dataSystemMessage, sessionId)
+
+                // Check session still active before continuing
+                if (!isSessionStillActive(sessionId)) {
+                    LogManager.aiSession("Session stopped before data query retry", "INFO")
+                    break
+                }
 
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
@@ -614,6 +644,12 @@ object AIOrchestrator {
                     // Échecs - retry
                     if (consecutiveActionRetries >= limits.maxActionRetries) {
                         storeLimitReachedMessage(s.shared("ai_limit_action_retries_reached"), sessionId)
+                        break
+                    }
+
+                    // Check session still active before continuing
+                    if (!isSessionStillActive(sessionId)) {
+                        LogManager.aiSession("Session stopped before action retry", "INFO")
                         break
                     }
 
@@ -885,6 +921,14 @@ object AIOrchestrator {
     // ========================================================================================
     // Private Helpers - Autonomous Loop Support
     // ========================================================================================
+
+    /**
+     * Check if session is still active (not closed by user or system)
+     * Returns false if session was closed (activeSessionId != sessionId)
+     */
+    private fun isSessionStillActive(sessionId: String): Boolean {
+        return activeSessionId == sessionId
+    }
 
     /**
      * Get session limits based on session type
