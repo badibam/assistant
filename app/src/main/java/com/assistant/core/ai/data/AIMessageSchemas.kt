@@ -124,50 +124,7 @@ object AIMessageSchemas {
               "description": "${s.shared("ai_schema_field_communication_module_desc")}"
             }
           },
-          "additionalProperties": false,
-          "oneOf": [
-            {
-              "required": ["preText"],
-              "not": {
-                "anyOf": [
-                  { "required": ["dataCommands"] },
-                  { "required": ["actionCommands"] },
-                  { "required": ["communicationModule"] }
-                ]
-              }
-            },
-            {
-              "required": ["preText", "dataCommands"],
-              "not": {
-                "anyOf": [
-                  { "required": ["actionCommands"] },
-                  { "required": ["communicationModule"] },
-                  { "required": ["validationRequest"] },
-                  { "required": ["postText"] }
-                ]
-              }
-            },
-            {
-              "required": ["preText", "actionCommands"],
-              "not": {
-                "anyOf": [
-                  { "required": ["dataCommands"] },
-                  { "required": ["communicationModule"] }
-                ]
-              }
-            },
-            {
-              "required": ["preText", "communicationModule"],
-              "not": {
-                "anyOf": [
-                  { "required": ["dataCommands"] },
-                  { "required": ["actionCommands"] },
-                  { "required": ["validationRequest"] },
-                  { "required": ["postText"] }
-                ]
-              }
-            }
-          ]
+          "additionalProperties": false
         }
     """.trimIndent()
     }

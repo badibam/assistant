@@ -87,6 +87,11 @@
     <string name="ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
     <string name="ai_error_communication_module_parse">Erreur de parsing du communicationModule: %1$s</string>
 
+    <!-- AI Response Validation Errors -->
+    <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
+    <string name="ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
+    <string name="ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
+
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
     <string name="ai_data_tool">données outil</string>

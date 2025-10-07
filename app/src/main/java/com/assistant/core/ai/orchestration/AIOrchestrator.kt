@@ -1472,16 +1472,16 @@ object AIOrchestrator {
                         "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
                         "Validation" -> CommunicationModule.Validation(type, data)
                         else -> {
-                            val errorMsg = "Unknown communication module type: $type"
+                            val errorMsg = s.shared("ai_error_communication_module_unknown_type").format(type)
                             LogManager.aiSession(errorMsg, "WARN")
-                            formatErrors.add("communicationModule: $errorMsg")
+                            formatErrors.add(errorMsg)
                             null
                         }
                     }
                 } catch (e: Exception) {
-                    val errorMsg = "Failed to parse communicationModule: ${e.message}"
+                    val errorMsg = s.shared("ai_error_communication_module_parse").format(e.message ?: "unknown error")
                     LogManager.aiSession(errorMsg, "WARN")
-                    formatErrors.add("communicationModule: ${e.message}")
+                    formatErrors.add(errorMsg)
                     null
                 }
             }
@@ -1495,6 +1495,39 @@ object AIOrchestrator {
                 postText = postText,
                 communicationModule = communicationModule
             )
+
+            // Manual validation: check mutual exclusivity and field constraints
+            val hasDataCommands = dataCommands != null && dataCommands.isNotEmpty()
+            val hasActionCommands = actionCommands != null && actionCommands.isNotEmpty()
+            val hasCommunicationModule = communicationModule != null
+
+            // Count how many "action types" are present
+            val actionTypesCount = listOf(hasDataCommands, hasActionCommands, hasCommunicationModule).count { it }
+
+            // Rule 1: At most one action type (can be none for simple text response)
+            if (actionTypesCount > 1) {
+                val presentTypes = mutableListOf<String>()
+                if (hasDataCommands) presentTypes.add("dataCommands")
+                if (hasActionCommands) presentTypes.add("actionCommands")
+                if (hasCommunicationModule) presentTypes.add("communicationModule")
+                formatErrors.add(s.shared("ai_error_validation_multiple_action_types").format(presentTypes.joinToString(", ")))
+            }
+
+            // Rule 2: validationRequest only valid with actionCommands
+            if (validationRequest != null && !hasActionCommands) {
+                formatErrors.add(s.shared("ai_error_validation_request_without_actions"))
+            }
+
+            // Rule 3: postText only valid with actionCommands
+            if (postText != null && !hasActionCommands) {
+                formatErrors.add(s.shared("ai_error_posttext_without_actions"))
+            }
+
+            // If validation errors, return null aiMessage with errors
+            if (formatErrors.isNotEmpty()) {
+                LogManager.aiSession("Validation errors detected: ${formatErrors.joinToString("; ")}", "WARN")
+                return ParseResult(aiMessage = null, formatErrors = formatErrors)
+            }
 
             // Log parsed structure (DEBUG level)
             LogManager.aiSession(

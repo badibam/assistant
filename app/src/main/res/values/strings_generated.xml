@@ -374,6 +374,9 @@
     <string name="shared_ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
     <string name="shared_ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
     <string name="shared_ai_error_communication_module_parse">Erreur de parsing du communicationModule: %1$s</string>
+    <string name="shared_ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
+    <string name="shared_ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
+    <string name="shared_ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
     <string name="shared_ai_data_zone">données zone</string>
     <string name="shared_ai_data_tool">données outil</string>
     <string name="shared_ai_data_field">champ données</string>
