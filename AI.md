@@ -57,11 +57,14 @@ data class SessionMessage(
     val aiMessage: AIMessage?,         // Structure IA parsée pour UI
     val aiMessageJson: String?,        // JSON original pour historique prompts
     val systemMessage: SystemMessage?, // Messages système avec résultats
-    val executionMetadata: ExecutionMetadata? // Automations uniquement
+    val executionMetadata: ExecutionMetadata?, // Automations uniquement
+    val excludeFromPrompt: Boolean = false // Exclure du prompt (messages UI uniquement)
 )
 ```
 
 **Pattern stockage** : Messages séparés USER → SYSTEM → AI → SYSTEM. Le provider ajuste selon ses contraintes (généralement : pas de message system dans flux des messages)
+
+**PostText success** : Après succès des actions, si `postText` présent dans AIMessage, un message séparé est créé avec `sender=AI`, `textContent=postText`, et `excludeFromPrompt=true`. Ce message s'affiche en UI mais est exclu du prompt (le postText reste dans le message AI original pour l'historique IA).
 
 ### RichMessage et AIMessage
 ```kotlin
@@ -304,7 +307,9 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
       - Si refusé → createRefusedActionsMessage (CANCELLED) + break
     - Exécuter actions via AICommandProcessor → CommandExecutor
     - Stocker SystemMessage
-    - Si allSuccess → break (FIN)
+    - Si allSuccess:
+      - Si postText présent → storePostTextMessage (excludeFromPrompt=true)
+      - break (FIN)
     - Sinon → vérifier limite consecutiveActionRetries, renvoyer IA
     - Incrémenter consecutiveActionRetries, reset consecutiveDataQueries, totalRoundtrips++
 
@@ -378,37 +383,41 @@ class EnrichmentProcessor {
 
 ## 10. Architecture prompts
 
-### 3 niveaux (plus de Level 4)
-**Level 1: DOC** - Rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schéma zone, tooltypes + schema_ids.
-**Level 2: USER DATA** - Config IA user (non implémenté), données tool instances avec `always_send: true`.
-**Level 3: APP STATE** - Zones avec configs, tool instances avec configs.
+### 2 niveaux de contexte
+**Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schémas (zone, tooltypes, communication modules).
+**Level 2: USER DATA** - Données tool instances avec `always_send: true`.
 
-**Note** : Level 4 supprimé. Enrichments dans messages séparés (SystemMessage sender=SYSTEM).
+**APP_STATE** : Zones et tool instances disponibles via command dédiée (à la demande).
+**Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
 
 ### PromptManager.buildPromptData()
 ```kotlin
 suspend fun buildPromptData(sessionId: String): PromptData {
-    // L1-L3 régénérés à chaque appel (jamais cachés en DB)
-    val level1Results = commandExecutor.executeCommands(buildLevel1Commands(session.type), DATA_ADDED, "L1")
-    val level1Content = formatLevel("Level 1: System Documentation", level1Results.promptResults)
-    // Idem L2, L3
+    // L1-L2 régénérés à chaque appel (jamais cachés en DB)
+    // L1 utilise PromptChunks avec configuration par degrés d'importance
+    val level1Content = PromptChunks.buildLevel1StaticDoc(context, sessionType, config)
+    // L2: USER DATA (always_send tools)
+    // Note: Level 3 supprimé - IA utilise APP_STATE command à la demande
 
-    // Filtrage erreurs système (pollue contexte IA, audit uniquement)
+    // Filtrage messages exclus du prompt:
+    // - NETWORK_ERROR et SESSION_TIMEOUT (audit uniquement)
+    // - excludeFromPrompt=true (messages UI uniquement, comme postText success)
     val sessionMessages = loadMessages(sessionId)
         .filter { message ->
             val type = message.systemMessage?.type
-            type != SystemMessageType.NETWORK_ERROR && type != SystemMessageType.SESSION_TIMEOUT
+            val isSystemError = type == SystemMessageType.NETWORK_ERROR || type == SystemMessageType.SESSION_TIMEOUT
+            !isSystemError && !message.excludeFromPrompt
         }
 
-    return PromptData(level1Content, level2Content, level3Content, sessionMessages)
+    return PromptData(level1Content, level2Content, sessionMessages)
 }
 ```
 
-**Note** : `assembleFinalPrompt()` et `buildHistorySection()` supprimés (délégués au provider).
+**Assembly** : Le prompt final est assemblé par le provider (fusion messages, application cache_control).
 
 ### Storage Policy
-**Stocké** : SessionMessage (USER/AI/SYSTEM), RichMessage, SystemMessage enrichments/queries/actions (formattedData + commandResults), aiMessageJson.
-**Non stocké (régénéré)** : SystemMessages L1-L3, DataCommand/ExecutableCommand (temporaire), résultats exécution, prompt final assemblé.
+**Stocké** : SessionMessage (USER/AI/SYSTEM), RichMessage, SystemMessage avec résultats queries/actions (formattedData + commandResults), aiMessageJson.
+**Non stocké (régénéré)** : Niveaux L1-L2, DataCommand/ExecutableCommand (temporaire), prompt final assemblé.
 
 ### Dual mode résolution
 **CHAT** (isRelative=false) : Périodes absolues (Period timestamps fixes).
@@ -443,10 +452,10 @@ Le provider fusionne USER/SYSTEM consécutifs pour respecter contraintes API.
 **Exemple** : DB (1.USER "Question" → 2.SYSTEM enrichments → 3.AI réponse → 4.SYSTEM queries → 5.USER "Autre") transformé en API (1.USER ["Question", "enrichments"] → 2.ASSISTANT réponse → 3.USER ["queries", "Autre"]).
 
 ### ClaudeProvider - Cache control (spécifique)
-**4 breakpoints** : L1 dernier bloc, L2 dernier bloc, L3 dernier bloc, dernier bloc du dernier message historique.
-**Automatic prefix checking** : Messages précédents (sans cache_control) automatiquement cachés (~20 blocs avant 4ème breakpoint).
+**3 breakpoints** : L1 dernier bloc, L2 dernier bloc, dernier bloc du dernier message historique.
+**Automatic prefix checking** : Messages précédents (sans cache_control) automatiquement cachés (~20 blocs avant le 3ème breakpoint).
 
-**Structure** : system array avec L1/L2/L3 + cache_control, messages array avec fusion USER/SYSTEM, cache_control sur dernier bloc dernier message.
+**Structure** : system array avec L1/L2 + cache_control, messages array avec fusion USER/SYSTEM. Le dernier message est forcé en format array pour supporter cache_control sur son dernier bloc.
 
 ### Configuration
 Configurations gérées par `AIProviderConfigService`, providers découverts via `AIProviderRegistry`, `AIClient` utilise coordinator (pas d'accès DB direct).
@@ -506,7 +515,7 @@ Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirma
 ### Format dans prompts
 Provider décide du format d'inclusion. Généralement fusion avec messages USER consécutifs (formattedData ajouté comme content block).
 
-**Filtrage** : NETWORK_ERROR et SESSION_TIMEOUT exclus du contexte IA (audit uniquement, messages localisés affichés en UI).
+**Filtrage** : NETWORK_ERROR, SESSION_TIMEOUT et messages avec `excludeFromPrompt=true` exclus du contexte IA (audit et UI uniquement).
 
 ---
 
