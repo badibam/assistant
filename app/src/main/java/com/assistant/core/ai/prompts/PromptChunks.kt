@@ -169,8 +169,8 @@ object PromptChunks {
             return "```\nError: Schema $schemaId not found\n```"
         }
 
-        val schemaData = result.data?.get("schema") as? Map<*, *>
-        val schemaContent = schemaData?.get("content") as? String
+        // SchemaService returns schema_id and content directly (no wrapper)
+        val schemaContent = result.data?.get("content") as? String
 
         if (schemaContent == null) {
             LogManager.aiPrompt("Schema $schemaId has no content", "ERROR")

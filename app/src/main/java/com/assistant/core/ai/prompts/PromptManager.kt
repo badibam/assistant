@@ -79,15 +79,18 @@ object PromptManager {
         val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
         val allMessages = parseSessionMessages(messagesData)
 
-        // 6. Filter out NETWORK_ERROR and SESSION_TIMEOUT messages (audit only, not sent to AI)
+        // 6. Filter out messages excluded from prompt:
+        //    - NETWORK_ERROR and SESSION_TIMEOUT (audit only)
+        //    - excludeFromPrompt=true (UI-only messages like postText success)
         val sessionMessages = allMessages.filter { message ->
             val type = message.systemMessage?.type
-            type != SystemMessageType.NETWORK_ERROR && type != SystemMessageType.SESSION_TIMEOUT
+            val isSystemError = type == SystemMessageType.NETWORK_ERROR || type == SystemMessageType.SESSION_TIMEOUT
+            !isSystemError && !message.excludeFromPrompt
         }
 
         val filtered = allMessages.size - sessionMessages.size
         if (filtered > 0) {
-            LogManager.aiPrompt("Filtered $filtered system error messages from prompt", "DEBUG")
+            LogManager.aiPrompt("Filtered $filtered messages from prompt", "DEBUG")
         }
 
         LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, ${sessionMessages.size} messages", "INFO")
@@ -155,7 +158,8 @@ object PromptManager {
                 aiMessage = aiMessage,
                 aiMessageJson = msg["aiMessageJson"] as? String,
                 systemMessage = systemMessage,
-                executionMetadata = null // TODO: Parse when implementing automation
+                executionMetadata = null, // TODO: Parse when implementing automation
+                excludeFromPrompt = msg["excludeFromPrompt"] as? Boolean ?: false
             )
         }
     }

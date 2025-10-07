@@ -7,6 +7,7 @@ package com.assistant.core.ai.data
  * 3. AI Chat Response: aiMessage with preText + actions + postText + modules
  * 4. User Automation Prompt: richContent (modifiable initial prompt)
  * 5. AI Automation Execution: aiMessage + executionMetadata for tracking
+ * 6. AI PostText Success: textContent with postText from successful actions (UI only, excluded from prompt)
  */
 data class SessionMessage(
     val id: String,
@@ -17,7 +18,8 @@ data class SessionMessage(
     val aiMessage: AIMessage?,     // Parsed AI structure for UI/logic
     val aiMessageJson: String?,    // Original AI JSON for prompt history consistency
     val systemMessage: SystemMessage?, // System messages for AI operation results
-    val executionMetadata: ExecutionMetadata? = null // For automation executions only
+    val executionMetadata: ExecutionMetadata? = null, // For automation executions only
+    val excludeFromPrompt: Boolean = false // Exclude from prompt generation (e.g., postText success messages)
 )
 
 /**

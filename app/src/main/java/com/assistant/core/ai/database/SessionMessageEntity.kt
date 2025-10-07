@@ -36,7 +36,8 @@ data class SessionMessageEntity(
     val aiMessageJson: String?,        // Original AI JSON for prompt consistency
     val aiMessageParsedJson: String?,  // Parsed AIMessage for UI
     val systemMessageJson: String?,    // SystemMessage serialized
-    val executionMetadataJson: String? // ExecutionMetadata for automations
+    val executionMetadataJson: String?, // ExecutionMetadata for automations
+    val excludeFromPrompt: Boolean = false // Exclude from prompt generation (UI-only messages)
 )
 
 /**

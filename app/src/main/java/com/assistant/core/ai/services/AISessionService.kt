@@ -159,7 +159,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "richContentJson" to msg.richContentJson,
                         "textContent" to msg.textContent,
                         "aiMessageJson" to msg.aiMessageJson,
-                        "systemMessageJson" to msg.systemMessageJson
+                        "systemMessageJson" to msg.systemMessageJson,
+                        "excludeFromPrompt" to msg.excludeFromPrompt
                     )
                 }
             ))
@@ -357,7 +358,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "richContentJson" to msg.richContentJson,
                         "textContent" to msg.textContent,
                         "aiMessageJson" to msg.aiMessageJson,
-                        "systemMessageJson" to msg.systemMessageJson
+                        "systemMessageJson" to msg.systemMessageJson,
+                        "excludeFromPrompt" to msg.excludeFromPrompt
                     )
                 }
             ))
@@ -428,6 +430,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                 null
             }
 
+            // Get excludeFromPrompt flag
+            val excludeFromPrompt = params.optBoolean("excludeFromPrompt", false)
+
             // Create message entity
             val messageEntity = SessionMessageEntity(
                 id = messageId,
@@ -439,7 +444,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                 aiMessageJson = aiMessageJson,
                 aiMessageParsedJson = null, // TODO: Parse AIMessage when implementing
                 systemMessageJson = systemMessageJson,
-                executionMetadataJson = null // TODO: Implement automation metadata
+                executionMetadataJson = null, // TODO: Implement automation metadata
+                excludeFromPrompt = excludeFromPrompt
             )
 
             // Insert message

@@ -78,11 +78,14 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
                 addJsonObject {
                     put("role", msg.role)
 
-                    if (msg.contentBlocks.size == 1) {
-                        // Single block message - use string content
+                    val isLastMessage = index == fusedMessages.lastIndex
+
+                    // Last message must use array format to support cache_control
+                    if (msg.contentBlocks.size == 1 && !isLastMessage) {
+                        // Single block message (not last) - use string content for simplicity
                         put("content", msg.contentBlocks[0])
                     } else {
-                        // Multi-block message - use array of text objects
+                        // Multi-block message OR last message - use array of text objects
                         putJsonArray("content") {
                             msg.contentBlocks.forEachIndexed { blockIndex, block ->
                                 addJsonObject {
@@ -90,8 +93,7 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
                                     put("text", block)
 
                                     // Cache control on last block of last message (4th breakpoint)
-                                    if (index == fusedMessages.lastIndex &&
-                                        blockIndex == msg.contentBlocks.lastIndex) {
+                                    if (isLastMessage && blockIndex == msg.contentBlocks.lastIndex) {
                                         putJsonObject("cache_control") {
                                             put("type", "ephemeral")
                                         }

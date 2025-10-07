@@ -574,6 +574,9 @@ object AIOrchestrator {
         // 2. Call AI with PromptData (with network check and retry)
         var aiResponse = callAIWithRetry(promptData, sessionType)
 
+        // Log token usage stats
+        logTokenStats(aiResponse)
+
         if (!aiResponse.success) {
             // Network error or timeout - store NETWORK_ERROR and potentially requeue
             storeNetworkErrorMessage(aiResponse.errorMessage ?: s.shared("ai_error_network_call_failed"), sessionId)
@@ -638,6 +641,7 @@ object AIOrchestrator {
                 // Continue loop to send error back to AI for correction
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
+                logTokenStats(aiResponse)
                 if (!aiResponse.success) break
                 storeAIMessage(aiResponse, sessionId)
 
@@ -685,6 +689,7 @@ object AIOrchestrator {
                 // Renvoyer automatiquement à l'IA
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
+                logTokenStats(aiResponse)
                 if (!aiResponse.success) break
                 storeAIMessage(aiResponse, sessionId)
 
@@ -711,6 +716,7 @@ object AIOrchestrator {
 
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
+                logTokenStats(aiResponse)
                 if (!aiResponse.success) break
                 storeAIMessage(aiResponse, sessionId)
 
@@ -744,7 +750,11 @@ object AIOrchestrator {
                 val allSuccess = actionSystemMessage.commandResults.all { it.status == CommandStatus.SUCCESS }
 
                 if (allSuccess) {
-                    // Succès total - FIN boucle
+                    // Succès total - Store postText if present (UI only, excluded from prompt)
+                    if (aiMessage.postText != null && aiMessage.postText.isNotEmpty()) {
+                        storePostTextMessage(aiMessage.postText, sessionId)
+                    }
+                    // FIN boucle
                     break
                 } else {
                     // Échecs - retry
@@ -761,6 +771,7 @@ object AIOrchestrator {
 
                     val newPromptData = PromptManager.buildPromptData(sessionId, context)
                     aiResponse = callAIWithRetry(newPromptData, sessionType)
+                    logTokenStats(aiResponse)
                     if (!aiResponse.success) break
                     storeAIMessage(aiResponse, sessionId)
 
@@ -980,6 +991,7 @@ object AIOrchestrator {
                 } else null
 
                 // executionMetadata = null (TODO: automation)
+                val excludeFromPrompt = msgMap["excludeFromPrompt"] as? Boolean ?: false
 
                 SessionMessage(
                     id = id,
@@ -990,7 +1002,8 @@ object AIOrchestrator {
                     aiMessage = aiMessage,
                     aiMessageJson = aiMessageJsonStr?.takeIf { it.isNotEmpty() }, // Keep original JSON
                     systemMessage = systemMessage,
-                    executionMetadata = null // TODO: Parse when automation implemented
+                    executionMetadata = null, // TODO: Parse when automation implemented
+                    excludeFromPrompt = excludeFromPrompt
                 )
 
             } catch (e: Exception) {
@@ -1246,6 +1259,31 @@ object AIOrchestrator {
         }
 
     /**
+     * Store postText as separate AI message (UI only, excluded from prompt)
+     * Called after successful actions to display completion message
+     */
+    private suspend fun storePostTextMessage(postText: String, sessionId: String) {
+        try {
+            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                "sessionId" to sessionId,
+                "sender" to MessageSender.AI.name,
+                "textContent" to postText,
+                "excludeFromPrompt" to true,
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            if (!storeResult.isSuccess) {
+                LogManager.aiSession("Failed to store postText message: ${storeResult.error}", "WARN")
+            } else {
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Error storing postText message: ${e.message}", "ERROR", e)
+        }
+    }
+
+    /**
      * Store SystemMessage in session
      */
     private suspend fun storeSystemMessage(systemMessage: SystemMessage, sessionId: String) {
@@ -1494,6 +1532,39 @@ object AIOrchestrator {
             }
         }
         return map
+    }
+
+    /**
+     * Log token usage statistics in one line
+     * Format: Total tokens, cache write, cache read, uncached, output (with counts and percentages)
+     */
+    private fun logTokenStats(aiResponse: AIResponse) {
+        if (!aiResponse.success) return
+
+        // Calculate total input tokens (all sources)
+        val totalInput = aiResponse.inputTokens + aiResponse.cacheCreationTokens + aiResponse.cacheReadTokens
+        val totalTokens = totalInput + aiResponse.tokensUsed
+
+        // Avoid division by zero
+        if (totalTokens == 0) {
+            LogManager.aiSession("Tokens: 0 total", "INFO")
+            return
+        }
+
+        // Calculate percentages
+        val cacheWritePct = (aiResponse.cacheCreationTokens * 100.0 / totalTokens)
+        val cacheReadPct = (aiResponse.cacheReadTokens * 100.0 / totalTokens)
+        val uncachedPct = (aiResponse.inputTokens * 100.0 / totalTokens)
+        val outputPct = (aiResponse.tokensUsed * 100.0 / totalTokens)
+
+        // Format one-line log
+        val logMessage = "Tokens: $totalTokens total, " +
+                "cache_write: ${aiResponse.cacheCreationTokens} (%.1f%%), ".format(cacheWritePct) +
+                "cache_read: ${aiResponse.cacheReadTokens} (%.1f%%), ".format(cacheReadPct) +
+                "uncached: ${aiResponse.inputTokens} (%.1f%%), ".format(uncachedPct) +
+                "output: ${aiResponse.tokensUsed} (%.1f%%)".format(outputPct)
+
+        LogManager.aiSession(logMessage, "INFO")
     }
 }
 
