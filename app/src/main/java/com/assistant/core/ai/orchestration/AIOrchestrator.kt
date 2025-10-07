@@ -53,7 +53,7 @@ object AIOrchestrator {
 
     // Continuations for user interaction suspension
     private var validationContinuation: Continuation<Boolean>? = null
-    private var responseContinuation: Continuation<String>? = null
+    private var responseContinuation: Continuation<String?>? = null
 
     // ========================================================================================
     // Session Control State
@@ -382,9 +382,11 @@ object AIOrchestrator {
 
     /**
      * Resume execution after user response to communication module
-     * Called from UI when user provides response
+     * Called from UI when user provides response or cancels
+     *
+     * @param response User response text, or null if cancelled
      */
-    fun resumeWithResponse(response: String) {
+    fun resumeWithResponse(response: String?) {
         responseContinuation?.resume(response)
         responseContinuation = null
         _waitingState.value = WaitingState.None
@@ -669,11 +671,29 @@ object AIOrchestrator {
                 // STOP - Attendre réponse utilisateur
                 val userResponse = waitForUserResponse(aiMessage.communicationModule)
 
-                // Stocker réponse user (texte simple)
+                // Check if user cancelled
+                if (userResponse == null) {
+                    // User cancelled - store SystemMessage and break (do not send to AI)
+                    LogManager.aiSession("User cancelled communication module", "INFO")
+
+                    val cancelledMessage = SystemMessage(
+                        type = SystemMessageType.COMMUNICATION_CANCELLED,
+                        commandResults = emptyList(),
+                        summary = s.shared("ai_module_cancelled"),
+                        formattedData = null
+                    )
+                    storeSystemMessage(cancelledMessage, sessionId)
+
+                    break
+                }
+
+                // User provided response - format with prefix and store
+                val formattedResponse = "${s.shared("ai_module_response_prefix")} $userResponse"
+
                 coordinator.processUserAction("ai_sessions.create_message", mapOf(
                     "sessionId" to sessionId,
                     "sender" to MessageSender.USER.name,
-                    "textContent" to userResponse,
+                    "textContent" to formattedResponse,
                     "timestamp" to System.currentTimeMillis()
                 ))
 
@@ -1251,8 +1271,10 @@ object AIOrchestrator {
 
     /**
      * Wait for user response to communication module (suspend until UI calls resumeWithResponse)
+     *
+     * @return User response text, or null if cancelled
      */
-    private suspend fun waitForUserResponse(module: CommunicationModule): String =
+    private suspend fun waitForUserResponse(module: CommunicationModule): String? =
         suspendCancellableCoroutine { cont ->
             _waitingState.value = WaitingState.WaitingResponse(module)
             responseContinuation = cont

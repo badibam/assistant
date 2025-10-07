@@ -78,6 +78,9 @@
     <string name="ai_module_validation_title">Confirmation</string>
     <string name="ai_module_no_question">Aucune question fournie</string>
     <string name="ai_module_no_message">Aucun message fourni</string>
+    <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
+    <string name="ai_module_response_prefix">Réponse :</string>
+    <string name="ai_module_select_option">Sélectionnez une option</string>
 
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>

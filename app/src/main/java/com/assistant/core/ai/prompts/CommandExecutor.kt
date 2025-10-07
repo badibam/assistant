@@ -225,6 +225,11 @@ class CommandExecutor(private val context: Context) {
                 // This case should not be reached in normal flow
                 "Format error"
             }
+            SystemMessageType.COMMUNICATION_CANCELLED -> {
+                // COMMUNICATION_CANCELLED messages provide their own summary directly
+                // This case should not be reached in normal flow
+                "Communication cancelled"
+            }
             SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT -> {
                 // These messages should never reach here (filtered from prompts)
                 // But provide fallback just in case

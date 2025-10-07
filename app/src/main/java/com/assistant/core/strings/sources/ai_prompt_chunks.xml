@@ -62,7 +62,17 @@ Si tu atteins une limite, le système **s\'arrête automatiquement** et notifie 
 
 Tu dois **obligatoirement** répondre avec une structure JSON valide selon ce schéma :
 
-{{SCHEMA:ai_message_response}}]]></string>
+{{SCHEMA:ai_message_response}}
+
+### RÈGLE CRITIQUE DE FORMATAGE
+
+**Ta réponse est DIRECTEMENT le JSON documenté ci-dessus. AUCUN TEXTE EN DEHORS DU JSON.**
+
+❌ **INTERDIT** : Ajouter du texte avant ou après le JSON
+❌ **INTERDIT** : Utiliser des blocs de code markdown (```json)
+❌ **INTERDIT** : Ajouter des explications autour du JSON
+
+✅ **CORRECT** : Uniquement le JSON brut, rien d\'autre]]></string>
 
     <!-- B.2 Règles de Validation [DEGRÉ 1] -->
     <string name="ai_chunk_response_rules"><![CDATA[## Points Clés du Format

@@ -76,12 +76,13 @@ data class SystemMessage(
 }
 
 enum class SystemMessageType {
-    DATA_ADDED,       // Data requests completed and added to context
-    ACTIONS_EXECUTED, // AI actions execution results
-    LIMIT_REACHED,    // Autonomous loop limit reached (stops execution, waits for next user message)
-    FORMAT_ERROR,     // AI response format error (sent to AI for correction)
-    NETWORK_ERROR,    // Network/HTTP/provider errors (stored for audit, FILTERED from prompt)
-    SESSION_TIMEOUT   // Session watchdog timeout (stored for audit, FILTERED from prompt)
+    DATA_ADDED,              // Data requests completed and added to context
+    ACTIONS_EXECUTED,        // AI actions execution results
+    LIMIT_REACHED,           // Autonomous loop limit reached (stops execution, waits for next user message)
+    FORMAT_ERROR,            // AI response format error (sent to AI for correction)
+    NETWORK_ERROR,           // Network/HTTP/provider errors (stored for audit, FILTERED from prompt)
+    SESSION_TIMEOUT,         // Session watchdog timeout (stored for audit, FILTERED from prompt)
+    COMMUNICATION_CANCELLED  // User cancelled communication module (sent to AI prompt for context)
 }
 
 /**

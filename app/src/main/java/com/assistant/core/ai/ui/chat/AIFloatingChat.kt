@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -147,6 +148,7 @@ fun AIFloatingChat(
                     ChatMessageList(
                         messages = messages,
                         isLoading = isRoundInProgress,
+                        waitingState = waitingState,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -241,12 +243,8 @@ fun AIFloatingChat(
             )
         }
         is WaitingState.WaitingResponse -> {
-            CommunicationModuleDialog(
-                module = state.module,
-                onResponse = { response ->
-                    aiOrchestrator.resumeWithResponse(response)
-                }
-            )
+            // Communication modules are now displayed inline in message flow
+            // No dialog needed
         }
         WaitingState.None -> {
             // No dialog needed
@@ -370,6 +368,7 @@ private fun ChatHeader(
 private fun ChatMessageList(
     messages: List<SessionMessage>,
     isLoading: Boolean,
+    waitingState: WaitingState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -382,6 +381,9 @@ private fun ChatMessageList(
             listState.animateScrollToItem(messages.size - 1)
         }
     }
+
+    // Determine which message should show active module (last AI message if waiting for response)
+    val lastAIMessageIndex = messages.indexOfLast { it.sender == MessageSender.AI }
 
     LazyColumn(
         state = listState,
@@ -401,8 +403,12 @@ private fun ChatMessageList(
                 }
             }
         } else {
-            items(messages) { message ->
-                ChatMessageBubble(message = message)
+            itemsIndexed(messages) { index, message ->
+                ChatMessageBubble(
+                    message = message,
+                    waitingState = waitingState,
+                    isLastAIMessage = index == lastAIMessageIndex
+                )
             }
 
             // AI thinking indicator
@@ -420,7 +426,9 @@ private fun ChatMessageList(
  */
 @Composable
 private fun ChatMessageBubble(
-    message: SessionMessage
+    message: SessionMessage,
+    waitingState: WaitingState,
+    isLastAIMessage: Boolean = false
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -474,10 +482,31 @@ private fun ChatMessageBubble(
                         )
                     }
                     message.aiMessage != null -> {
+                        // AI message with preText
                         UI.Text(
                             text = message.aiMessage.preText,
                             type = TextType.BODY
                         )
+
+                        // Communication module (inline in flow, after preText)
+                        // Show only if this is the last AI message AND we're waiting for a response
+                        message.aiMessage.communicationModule?.let { module ->
+                            val shouldShowModule = isLastAIMessage &&
+                                                 waitingState is WaitingState.WaitingResponse
+
+                            if (shouldShowModule) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                com.assistant.core.ai.ui.components.CommunicationModuleCard(
+                                    module = module,
+                                    onResponse = { response ->
+                                        AIOrchestrator.resumeWithResponse(response)
+                                    },
+                                    onCancel = {
+                                        AIOrchestrator.resumeWithResponse(null)
+                                    }
+                                )
+                            }
+                        }
                     }
                     message.systemMessage != null -> {
                         UI.Text(
@@ -530,94 +559,6 @@ private fun ValidationDialog(
     }
 }
 
-/**
- * Communication module dialog for AI questions
- * Handles different module types (MultipleChoice, Validation, etc.)
- */
-@Composable
-private fun CommunicationModuleDialog(
-    module: CommunicationModule,
-    onResponse: (String) -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    when (module) {
-        is CommunicationModule.MultipleChoice -> {
-            val question = module.data["question"] as? String ?: s.shared("ai_module_no_question")
-            val options = (module.data["options"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
-            var selectedOption by remember { mutableStateOf<String?>(null) }
-
-            UI.Dialog(
-                type = DialogType.CONFIRM,
-                onConfirm = {
-                    selectedOption?.let { onResponse(it) }
-                },
-                onCancel = {
-                    onResponse("") // Empty response = cancelled
-                }
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    UI.Text(
-                        text = s.shared("ai_module_multiple_choice_title"),
-                        type = TextType.TITLE
-                    )
-                    UI.Text(
-                        text = question,
-                        type = TextType.BODY
-                    )
-
-                    // Options as radio buttons
-                    options.forEach { option ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            UI.Button(
-                                type = if (selectedOption == option) ButtonType.PRIMARY else ButtonType.DEFAULT,
-                                size = Size.M,
-                                onClick = { selectedOption = option }
-                            ) {
-                                UI.Text(
-                                    text = option,
-                                    type = TextType.BODY
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        is CommunicationModule.Validation -> {
-            val message = module.data["message"] as? String ?: s.shared("ai_module_no_message")
-
-            UI.Dialog(
-                type = DialogType.CONFIRM,
-                onConfirm = { onResponse("confirmed") },
-                onCancel = { onResponse("cancelled") }
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    UI.Text(
-                        text = s.shared("ai_module_validation_title"),
-                        type = TextType.TITLE
-                    )
-                    UI.Text(
-                        text = message,
-                        type = TextType.BODY
-                    )
-                }
-            }
-        }
-    }
-}
 
 /**
  * Session stats dialog - displays cost breakdown
