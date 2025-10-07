@@ -18,6 +18,7 @@ import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.orchestration.RoundReason
 import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.ai.ui.components.RichComposer
+import com.assistant.core.ai.ui.SessionCostDisplay
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
@@ -43,6 +44,7 @@ fun AIFloatingChat(
     var activeSession by remember { mutableStateOf<AISession?>(null) }
     var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showStats by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     // AIOrchestrator is now a singleton, no need to remember/create
@@ -106,6 +108,7 @@ fun AIFloatingChat(
                     hasActiveSession = activeSessionId != null,
                     isLoading = isRoundInProgress,
                     onClose = onDismiss,
+                    onShowStats = { showStats = true },
                     onStopSession = {
                         scope.launch {
                             try {
@@ -125,6 +128,15 @@ fun AIFloatingChat(
                         }
                     }
                 )
+
+                // Stats dialog
+                if (showStats && activeSessionId != null) {
+                    SessionStatsDialog(
+                        sessionId = activeSessionId!!,
+                        sessionName = activeSession?.name ?: s.shared("ai_chat_new"),
+                        onDismiss = { showStats = false }
+                    )
+                }
 
                 // Messages area (scrollable)
                 Box(
@@ -251,6 +263,7 @@ private fun ChatHeader(
     hasActiveSession: Boolean,
     isLoading: Boolean,
     onClose: () -> Unit,
+    onShowStats: () -> Unit,
     onStopSession: () -> Unit
 ) {
     val context = LocalContext.current
@@ -283,19 +296,71 @@ private fun ChatHeader(
         }
     }
 
-    UI.PageHeader(
-        title = sessionName,
-        subtitle = when {
-            isLoading -> s.shared("ai_status_processing")
-            hasActiveSession -> s.shared("ai_status_ready")
-            sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
-            else -> s.shared("ai_status_inactive")
-        },
-        leftButton = if (hasActiveSession) ButtonAction.DELETE else null, // Stop session button (only if has active session)
-        rightButton = ButtonAction.CANCEL, // Close chat button
-        onLeftClick = if (hasActiveSession) { { showStopConfirmation = true } } else null,
-        onRightClick = onClose
-    )
+    // Custom header with stats button
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF5F5F5))
+            .padding(16.dp)
+    ) {
+        // Top row with title and buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Title
+            Column(modifier = Modifier.weight(1f)) {
+                UI.Text(
+                    text = sessionName,
+                    type = TextType.TITLE
+                )
+                UI.Text(
+                    text = when {
+                        isLoading -> s.shared("ai_status_processing")
+                        hasActiveSession -> s.shared("ai_status_ready")
+                        sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
+                        else -> s.shared("ai_status_inactive")
+                    },
+                    type = TextType.CAPTION
+                )
+            }
+
+            // Right buttons: Stats + Close
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Stats button (only if has active session)
+                if (hasActiveSession) {
+                    UI.ActionButton(
+                        action = ButtonAction.CONFIGURE,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onShowStats
+                    )
+                }
+
+                // Close button
+                UI.ActionButton(
+                    action = ButtonAction.CANCEL,
+                    display = ButtonDisplay.ICON,
+                    size = Size.M,
+                    onClick = onClose
+                )
+            }
+        }
+
+        // Stop session button below (only if has active session)
+        if (hasActiveSession) {
+            Spacer(modifier = Modifier.height(8.dp))
+            UI.ActionButton(
+                action = ButtonAction.DELETE,
+                display = ButtonDisplay.LABEL,
+                size = Size.S,
+                onClick = { showStopConfirmation = true }
+            )
+        }
+    }
 }
 
 /**
@@ -554,3 +619,50 @@ private fun CommunicationModuleDialog(
     }
 }
 
+/**
+ * Session stats dialog - displays cost breakdown
+ */
+@Composable
+private fun SessionStatsDialog(
+    sessionId: String,
+    sessionName: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.Text(
+                        text = sessionName,
+                        type = TextType.TITLE
+                    )
+                    UI.ActionButton(
+                        action = ButtonAction.CANCEL,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        onClick = onDismiss
+                    )
+                }
+
+                // Cost display
+                SessionCostDisplay(sessionId = sessionId)
+            }
+        }
+    }
+}

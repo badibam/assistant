@@ -15,6 +15,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.util.concurrent.TimeUnit
@@ -131,6 +132,15 @@ class ClaudeProvider : AIProvider {
     suspend fun fetchAvailableModels(apiKey: String): FetchModelsResult = withContext(Dispatchers.IO) {
         try {
             LogManager.aiService("ClaudeProvider.fetchAvailableModels() - Fetching models from API")
+
+            // Refresh model prices in parallel (non-blocking)
+            launch {
+                try {
+                    com.assistant.core.ai.utils.ModelPriceManager.refresh()
+                } catch (e: Exception) {
+                    LogManager.aiService("Failed to refresh model prices: ${e.message}", "WARN")
+                }
+            }
 
             // Build request
             val request = Request.Builder()
@@ -288,7 +298,7 @@ class ClaudeProvider : AIProvider {
                     content = "",
                     errorMessage = errorMessage,
                     tokensUsed = 0,
-                    cacheCreationTokens = 0,
+                    cacheWriteTokens = 0,
                     cacheReadTokens = 0,
                     inputTokens = 0
                 )
@@ -301,7 +311,7 @@ class ClaudeProvider : AIProvider {
 
             LogManager.aiService(
                 "Claude tokens - Input: ${aiResponse.inputTokens}, " +
-                "Cache creation: ${aiResponse.cacheCreationTokens}, " +
+                "Cache write: ${aiResponse.cacheWriteTokens}, " +
                 "Cache read: ${aiResponse.cacheReadTokens}, " +
                 "Output: ${aiResponse.tokensUsed}"
             )
@@ -315,7 +325,7 @@ class ClaudeProvider : AIProvider {
                 content = "",
                 errorMessage = "Claude API error: ${e.message}",
                 tokensUsed = 0,
-                cacheCreationTokens = 0,
+                cacheWriteTokens = 0,
                 cacheReadTokens = 0,
                 inputTokens = 0
             )

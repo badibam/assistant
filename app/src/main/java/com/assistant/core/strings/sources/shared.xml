@@ -148,6 +148,26 @@
     <string name="ai_error_format_errors">Erreurs de format dans la réponse IA:\n%1$s</string>
     <string name="ai_error_missing_required_field">Champ obligatoire manquant: %1$s</string>
 
+    <!-- AI COSTS - Token usage and pricing -->
+    <string name="ai_cost_total">Coût total</string>
+    <string name="ai_cost_input">Entrée</string>
+    <string name="ai_cost_cache_write">Écriture cache</string>
+    <string name="ai_cost_cache_read">Lecture cache</string>
+    <string name="ai_cost_output">Sortie</string>
+    <string name="ai_cost_tokens">tokens</string>
+    <string name="ai_cost_unavailable">Prix indisponible</string>
+    <string name="ai_cost_loading">Chargement des coûts…</string>
+    <string name="ai_cost_currency_usd">USD</string>
+    <string name="ai_cost_breakdown_title">Détail des coûts</string>
+    <string name="ai_cost_session_total">Coût session</string>
+
+    <!-- AI COSTS - Errors -->
+    <string name="error_session_id_required">ID de session requis</string>
+    <string name="error_cost_calculation_failed">Échec du calcul des coûts</string>
+    <string name="error_model_prices_fetch_failed">Échec du téléchargement des prix des modèles</string>
+    <string name="error_model_price_not_found">Prix du modèle introuvable</string>
+    <string name="error_model_id_extraction_failed">Échec de l\'extraction de l\'ID du modèle</string>
+
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>
     <string name="label_description">Description</string>

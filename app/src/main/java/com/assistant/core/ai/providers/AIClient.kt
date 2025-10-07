@@ -277,8 +277,8 @@ data class AIResponse(
     val content: String,
     val errorMessage: String? = null,
     val tokensUsed: Int = 0,
-    // Cache metrics (provider-specific, 0 if not supported)
-    val cacheCreationTokens: Int = 0,
-    val cacheReadTokens: Int = 0,
+    // Cache metrics (generic, supported by multiple providers, 0 if not supported)
+    val cacheWriteTokens: Int = 0,  // Cache write/creation tokens (Claude, OpenAI, etc.)
+    val cacheReadTokens: Int = 0,   // Cache read tokens (Claude, OpenAI, etc.)
     val inputTokens: Int = 0
 )

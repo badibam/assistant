@@ -3,6 +3,9 @@ package com.assistant.core.ai.services
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.database.AIDao
+import com.assistant.core.ai.utils.SessionCostCalculator
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
@@ -56,6 +59,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "list_messages" -> listMessages(params, token)
                 "update_message" -> updateMessage(params, token)
                 "delete_message" -> deleteMessage(params, token)
+
+                // Cost calculation
+                "get_cost" -> getSessionCost(params, token)
 
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
@@ -433,6 +439,12 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Get excludeFromPrompt flag
             val excludeFromPrompt = params.optBoolean("excludeFromPrompt", false)
 
+            // Extract token usage metrics (for AI messages only, 0 for USER/SYSTEM)
+            val inputTokens = params.optInt("inputTokens", 0)
+            val cacheWriteTokens = params.optInt("cacheWriteTokens", 0)
+            val cacheReadTokens = params.optInt("cacheReadTokens", 0)
+            val outputTokens = params.optInt("outputTokens", 0)
+
             // Create message entity
             val messageEntity = SessionMessageEntity(
                 id = messageId,
@@ -445,7 +457,12 @@ class AISessionService(private val context: Context) : ExecutableService {
                 aiMessageParsedJson = null, // TODO: Parse AIMessage when implementing
                 systemMessageJson = systemMessageJson,
                 executionMetadataJson = null, // TODO: Implement automation metadata
-                excludeFromPrompt = excludeFromPrompt
+                excludeFromPrompt = excludeFromPrompt,
+                // Token usage metrics for cost calculation
+                inputTokens = inputTokens,
+                cacheWriteTokens = cacheWriteTokens,
+                cacheReadTokens = cacheReadTokens,
+                outputTokens = outputTokens
             )
 
             // Insert message
@@ -609,6 +626,97 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to delete message: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("ai_error_delete_message").format(e.message ?: ""))
+        }
+    }
+
+    /**
+     * Get session cost calculation
+     * Calculates total cost for a session based on token usage and LiteLLM pricing
+     */
+    private suspend fun getSessionCost(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("error_session_id_required"))
+
+        LogManager.aiSession("Getting cost for session: $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+
+            // Get session
+            val session = database.aiDao().getSession(sessionId)
+                ?: return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+
+            // Get all messages for session
+            val messages = database.aiDao().getMessagesForSession(sessionId)
+
+            // Get provider configuration to extract model ID
+            val coordinator = Coordinator(context)
+            val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
+                "providerId" to session.providerId
+            ))
+
+            if (!configResult.isSuccess) {
+                LogManager.aiSession("Failed to get provider config for ${session.providerId}: ${configResult.error}", "ERROR")
+                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
+            }
+
+            val providerConfigJson = configResult.data?.get("config") as? String
+            if (providerConfigJson.isNullOrEmpty()) {
+                LogManager.aiSession("Provider config is empty for ${session.providerId}", "ERROR")
+                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
+            }
+
+            // Extract model ID from config JSON
+            val configJson = JSONObject(providerConfigJson)
+            val modelId = configJson.optString("model").takeIf { it.isNotEmpty() }
+            if (modelId == null) {
+                LogManager.aiSession("Model ID not found in provider config for ${session.providerId}", "ERROR")
+                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
+            }
+
+            // Calculate cost using SessionCostCalculator
+            val cost = SessionCostCalculator.calculateSessionCost(
+                messages = messages,
+                providerId = session.providerId,
+                modelId = modelId
+            )
+
+            if (cost == null) {
+                LogManager.aiSession("Cost calculation failed for session $sessionId", "ERROR")
+                return OperationResult.error(s.shared("error_cost_calculation_failed"))
+            }
+
+            LogManager.aiSession("Session cost calculated: sessionId=$sessionId, total=\$${String.format("%.6f", cost.totalCost ?: 0.0)}, priceAvailable=${cost.priceAvailable}", "INFO")
+
+            // Build map without null values for costs if price unavailable
+            val resultMap = buildMap<String, Any> {
+                put("sessionId", sessionId)
+                put("modelId", cost.modelId)
+                put("totalInputTokens", cost.totalInputTokens)
+                put("totalCacheWriteTokens", cost.totalCacheWriteTokens)
+                put("totalCacheReadTokens", cost.totalCacheReadTokens)
+                put("totalOutputTokens", cost.totalOutputTokens)
+                put("regularInputTokens", cost.regularInputTokens)
+                put("priceAvailable", cost.priceAvailable)
+                put("currency", "USD")
+
+                // Only include cost fields if price is available
+                if (cost.priceAvailable) {
+                    cost.inputCost?.let { put("inputCost", it) }
+                    cost.cacheWriteCost?.let { put("cacheWriteCost", it) }
+                    cost.cacheReadCost?.let { put("cacheReadCost", it) }
+                    cost.outputCost?.let { put("outputCost", it) }
+                    cost.totalCost?.let { put("totalCost", it) }
+                }
+            }
+
+            return OperationResult.success(resultMap)
+
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to get session cost: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("error_cost_calculation_failed"))
         }
     }
 

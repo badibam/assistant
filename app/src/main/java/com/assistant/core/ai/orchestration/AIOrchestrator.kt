@@ -1317,7 +1317,12 @@ object AIOrchestrator {
                 "sessionId" to sessionId,
                 "sender" to MessageSender.AI.name,
                 "aiMessageJson" to aiMessageJson,
-                "timestamp" to System.currentTimeMillis()
+                "timestamp" to System.currentTimeMillis(),
+                // Token usage metrics for cost calculation
+                "inputTokens" to aiResponse.inputTokens,
+                "cacheWriteTokens" to aiResponse.cacheWriteTokens,
+                "cacheReadTokens" to aiResponse.cacheReadTokens,
+                "outputTokens" to aiResponse.tokensUsed
             ))
 
             if (!storeResult.isSuccess) {
@@ -1542,7 +1547,7 @@ object AIOrchestrator {
         if (!aiResponse.success) return
 
         // Calculate total input tokens (all sources)
-        val totalInput = aiResponse.inputTokens + aiResponse.cacheCreationTokens + aiResponse.cacheReadTokens
+        val totalInput = aiResponse.inputTokens + aiResponse.cacheWriteTokens + aiResponse.cacheReadTokens
         val totalTokens = totalInput + aiResponse.tokensUsed
 
         // Avoid division by zero
@@ -1552,14 +1557,14 @@ object AIOrchestrator {
         }
 
         // Calculate percentages
-        val cacheWritePct = (aiResponse.cacheCreationTokens * 100.0 / totalTokens)
+        val cacheWritePct = (aiResponse.cacheWriteTokens * 100.0 / totalTokens)
         val cacheReadPct = (aiResponse.cacheReadTokens * 100.0 / totalTokens)
         val uncachedPct = (aiResponse.inputTokens * 100.0 / totalTokens)
         val outputPct = (aiResponse.tokensUsed * 100.0 / totalTokens)
 
         // Format one-line log
         val logMessage = "Tokens: $totalTokens total, " +
-                "cache_write: ${aiResponse.cacheCreationTokens} (%.1f%%), ".format(cacheWritePct) +
+                "cache_write: ${aiResponse.cacheWriteTokens} (%.1f%%), ".format(cacheWritePct) +
                 "cache_read: ${aiResponse.cacheReadTokens} (%.1f%%), ".format(cacheReadPct) +
                 "uncached: ${aiResponse.inputTokens} (%.1f%%), ".format(uncachedPct) +
                 "output: ${aiResponse.tokensUsed} (%.1f%%)".format(outputPct)

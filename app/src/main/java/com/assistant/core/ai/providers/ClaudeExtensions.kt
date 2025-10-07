@@ -199,10 +199,10 @@ private fun extractTextContent(message: SessionMessage): String? {
  *
  * Extracts:
  * - Content text
- * - Token usage (input, cache_creation, cache_read, output)
+ * - Token usage (input, cache_write, cache_read, output)
  * - Error information if present
  *
- * @return AIResponse with Claude-specific cache metrics
+ * @return AIResponse with Claude cache metrics
  */
 internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     val jsonObj = this.jsonObject
@@ -216,7 +216,7 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
             content = "",
             errorMessage = errorMessage,
             tokensUsed = 0,
-            cacheCreationTokens = 0,
+            cacheWriteTokens = 0,
             cacheReadTokens = 0,
             inputTokens = 0
         )
@@ -229,7 +229,7 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     // Extract usage metrics
     val usage = jsonObj["usage"]?.jsonObject
     val inputTokens = usage?.get("input_tokens")?.jsonPrimitive?.int ?: 0
-    val cacheCreationTokens = usage?.get("cache_creation_input_tokens")?.jsonPrimitive?.int ?: 0
+    val cacheWriteTokens = usage?.get("cache_creation_input_tokens")?.jsonPrimitive?.int ?: 0
     val cacheReadTokens = usage?.get("cache_read_input_tokens")?.jsonPrimitive?.int ?: 0
     val outputTokens = usage?.get("output_tokens")?.jsonPrimitive?.int ?: 0
 
@@ -238,7 +238,7 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
         content = content,
         errorMessage = null,
         tokensUsed = outputTokens,
-        cacheCreationTokens = cacheCreationTokens,
+        cacheWriteTokens = cacheWriteTokens,
         cacheReadTokens = cacheReadTokens,
         inputTokens = inputTokens
     )

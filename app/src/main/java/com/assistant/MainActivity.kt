@@ -33,6 +33,15 @@ class MainActivity : ComponentActivity() {
         // Initialize app config cache
         AppConfigManager.initialize(this)
 
+        // Initialize model price manager (async, non-blocking)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                com.assistant.core.ai.utils.ModelPriceManager.initialize(this@MainActivity)
+            } catch (e: Exception) {
+                LogManager.service("Failed to initialize ModelPriceManager: ${e.message}", "WARN")
+            }
+        }
+
         // Initialize AI orchestrator singleton
         AIOrchestrator.initialize(this)
 
