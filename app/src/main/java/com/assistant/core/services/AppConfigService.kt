@@ -339,4 +339,23 @@ class AppConfigService(private val context: Context) : ExecutableService {
         return map
     }
 
+    /**
+     * Verbalize AppConfig operation
+     * Format: substantive form (e.g., "Modification de la configuration de l'application")
+     * Usage: (a) UI validation display, (b) SystemMessage feedback
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return when (operation) {
+            "get" -> {
+                // get is a read operation, not typically verbalized for validation
+                s.shared("action_verbalize_unknown")
+            }
+            else -> {
+                // Any write operation to app config
+                s.shared("action_verbalize_update_app_config")
+            }
+        }
+    }
+
 }

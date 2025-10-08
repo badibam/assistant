@@ -4,8 +4,11 @@ import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
 /**
@@ -181,5 +184,47 @@ class ZoneService(private val context: Context) : ExecutableService {
             "zones" to zoneData,
             "count" to zoneData.size
         ))
+    }
+
+    /**
+     * Generates human-readable description of zone action
+     * Format: substantive form (e.g., "Création de la zone \"Santé\"")
+     * Usage: (a) UI validation display, (b) SystemMessage feedback
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return when (operation) {
+            "create" -> {
+                val name = params.optString("name", s.shared("content_unnamed"))
+                s.shared("action_verbalize_create_zone").format(name)
+            }
+            "update" -> {
+                val zoneId = params.optString("zone_id")
+                val zoneName = getZoneName(zoneId, context) ?: s.shared("content_unnamed")
+                s.shared("action_verbalize_update_zone").format(zoneName)
+            }
+            "delete" -> {
+                val zoneId = params.optString("zone_id")
+                val zoneName = getZoneName(zoneId, context) ?: s.shared("content_unnamed")
+                s.shared("action_verbalize_delete_zone").format(zoneName)
+            }
+            else -> s.shared("action_verbalize_unknown")
+        }
+    }
+
+    /**
+     * Helper to retrieve zone name by ID
+     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
+     */
+    private fun getZoneName(zoneId: String, context: Context): String? {
+        if (zoneId.isBlank()) return null
+        return runBlocking {
+            val coordinator = Coordinator(context)
+            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            if (result.status == CommandStatus.SUCCESS) {
+                val zone = result.data?.get("zone") as? Map<*, *>
+                zone?.get("name") as? String
+            } else null
+        }
     }
 }

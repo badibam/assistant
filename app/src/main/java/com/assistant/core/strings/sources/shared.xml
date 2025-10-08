@@ -85,6 +85,18 @@
     <string name="ai_module_response_prefix">Réponse :</string>
     <string name="ai_module_select_option">Sélectionnez une option</string>
 
+    <!-- Validation UI -->
+    <string name="validation_title">L\'IA souhaite effectuer les actions suivantes</string>
+    <string name="validation_action_confirm">Autoriser</string>
+    <string name="validation_action_refuse">Refuser</string>
+
+    <!-- Validation reasons -->
+    <string name="validation_reason_app_config">Configuration application</string>
+    <string name="validation_reason_zone_config">Zone %1$s</string>
+    <string name="validation_reason_tool_config">Outil %1$s</string>
+    <string name="validation_reason_session">Validation de session activée</string>
+    <string name="validation_reason_ai_request">Demande de l\'IA</string>
+
     <!-- AI Response Parsing -->
     <string name="ai_response_invalid_format">Format de réponse non respecté par l\'IA - texte brut :</string>
     <string name="ai_error_communication_module_unknown_type">Type de communicationModule inconnu: %1$s</string>
@@ -150,6 +162,19 @@
     <string name="service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="error_not_implemented">Pas encore implémenté</string>
 
+    <!-- Action verbalization (substantive form for validation + SystemMessage) -->
+    <string name="action_verbalize_create_zone">Création de la zone \"%1$s\"</string>
+    <string name="action_verbalize_update_zone">Modification de la zone \"%1$s\"</string>
+    <string name="action_verbalize_delete_zone">Suppression de la zone \"%1$s\"</string>
+    <string name="action_verbalize_create_tool">Création de l\'outil \"%1$s\" dans la zone \"%2$s\"</string>
+    <string name="action_verbalize_update_tool_config">Modification de la configuration de l\'outil \"%1$s\"</string>
+    <string name="action_verbalize_delete_tool">Suppression de l\'outil \"%1$s\"</string>
+    <string name="action_verbalize_create_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : ajout de %3$d entrée(s)</string>
+    <string name="action_verbalize_update_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : modification de %3$d entrée(s)</string>
+    <string name="action_verbalize_delete_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : suppression de %3$d entrée(s)</string>
+    <string name="action_verbalize_update_app_config">Modification de la configuration de l\'application</string>
+    <string name="action_verbalize_unknown">Action inconnue</string>
+
     <!-- AI Errors - Network and System -->
     <string name="ai_error_network_unavailable">Réseau indisponible</string>
     <string name="ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
@@ -193,6 +218,7 @@
     <string name="label_name">Nom</string>
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
+    <string name="label_validation">Validation</string>
     
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
@@ -296,6 +322,7 @@
 
     <string name="new_item">Nouvel élément</string>
     <string name="unnamed">Sans nom</string>
+    <string name="content_unnamed">sans nom</string>
 
     <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
     <string name="tools_config_label_name">Nom</string>

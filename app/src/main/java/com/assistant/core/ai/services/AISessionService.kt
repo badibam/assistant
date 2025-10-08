@@ -725,4 +725,13 @@ class AISessionService(private val context: Context) : ExecutableService {
     private fun getAIDao(): AIDao {
         return AppDatabase.getDatabase(context).aiDao()
     }
+
+    /**
+     * Verbalize AI session operation
+     * AI session management is typically not exposed to AI actions
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return s.shared("action_verbalize_unknown")
+    }
 }

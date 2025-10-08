@@ -2,6 +2,8 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Operation
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.dao.BaseToolDataDao
@@ -9,6 +11,7 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.strings.Strings
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
 
@@ -549,5 +552,108 @@ class ToolDataService(private val context: Context) : ExecutableService {
      */
     private fun getToolDataDao(): BaseToolDataDao {
         return AppDatabase.getDatabase(context).toolDataDao()
+    }
+
+    /**
+     * Generates human-readable description of tool data action
+     * Format: substantive form (e.g., "Utilisation de l'outil \"Poids\" (zone \"Santé\") : ajout de 10 entrée(s)")
+     * Usage: (a) UI validation display, (b) SystemMessage feedback
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+
+        return when (operation) {
+            "create", "batch_create" -> {
+                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInfo = getToolInfo(toolInstanceId, context)
+
+                val count = if (operation == "batch_create") {
+                    params.optJSONArray("entries")?.length() ?: 1
+                } else 1
+
+                s.shared("action_verbalize_create_data").format(
+                    toolInfo.name,
+                    toolInfo.zoneName,
+                    count
+                )
+            }
+            "update", "batch_update" -> {
+                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInfo = getToolInfo(toolInstanceId, context)
+
+                val count = if (operation == "batch_update") {
+                    params.optJSONArray("entries")?.length() ?: 1
+                } else 1
+
+                s.shared("action_verbalize_update_data").format(
+                    toolInfo.name,
+                    toolInfo.zoneName,
+                    count
+                )
+            }
+            "delete", "batch_delete" -> {
+                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInfo = getToolInfo(toolInstanceId, context)
+
+                val count = if (operation == "batch_delete") {
+                    params.optJSONArray("ids")?.length() ?: 1
+                } else 1
+
+                s.shared("action_verbalize_delete_data").format(
+                    toolInfo.name,
+                    toolInfo.zoneName,
+                    count
+                )
+            }
+            else -> s.shared("action_verbalize_unknown")
+        }
+    }
+
+    /**
+     * Helper data class for tool information
+     */
+    private data class ToolInfo(val name: String, val zoneName: String)
+
+    /**
+     * Helper to retrieve tool and zone information
+     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
+     */
+    private fun getToolInfo(toolInstanceId: String, context: Context): ToolInfo {
+        val s = Strings.`for`(context = context)
+        val defaultName = s.shared("content_unnamed")
+
+        if (toolInstanceId.isBlank()) {
+            return ToolInfo(defaultName, defaultName)
+        }
+
+        return runBlocking {
+            val coordinator = Coordinator(context)
+
+            // Get tool instance
+            val toolResult = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+
+            val toolName = if (toolResult.status == CommandStatus.SUCCESS) {
+                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
+                tool?.get("name") as? String ?: defaultName
+            } else defaultName
+
+            // Get zone name
+            val zoneId = if (toolResult.status == CommandStatus.SUCCESS) {
+                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
+                tool?.get("zone_id") as? String
+            } else null
+
+            val zoneName = if (zoneId != null) {
+                val zoneResult = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+                if (zoneResult.status == CommandStatus.SUCCESS) {
+                    val zone = zoneResult.data?.get("zone") as? Map<*, *>
+                    zone?.get("name") as? String ?: defaultName
+                } else defaultName
+            } else defaultName
+
+            ToolInfo(toolName, zoneName)
+        }
     }
 }

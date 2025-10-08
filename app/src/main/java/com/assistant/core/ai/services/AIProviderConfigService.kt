@@ -310,4 +310,13 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             return OperationResult.error(s.shared("ai_error_provider_config").format(e.message ?: ""))
         }
     }
+
+    /**
+     * Verbalize AI provider config operation
+     * AI provider configuration is typically not exposed to AI actions
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return s.shared("action_verbalize_unknown")
+    }
 }

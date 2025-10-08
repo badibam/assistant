@@ -4,8 +4,11 @@ import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.CancellationToken
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
 /**
@@ -249,5 +252,73 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "updated_at" to toolInstance.updated_at
             )
         ))
+    }
+
+    /**
+     * Generates human-readable description of tool instance action
+     * Format: substantive form (e.g., "Création de l'outil \"Poids\" dans la zone \"Santé\"")
+     * Usage: (a) UI validation display, (b) SystemMessage feedback
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return when (operation) {
+            "create" -> {
+                // For create, name is directly in params
+                val configJson = params.optString("config_json", "{}")
+                val toolName = try {
+                    JSONObject(configJson).optString("name", s.shared("content_unnamed"))
+                } catch (e: Exception) {
+                    s.shared("content_unnamed")
+                }
+                val zoneId = params.optString("zone_id")
+                val zoneName = getZoneName(zoneId, context) ?: s.shared("content_unnamed")
+                s.shared("action_verbalize_create_tool").format(toolName, zoneName)
+            }
+            "update" -> {
+                val toolId = params.optString("tool_instance_id")
+                val toolName = getToolName(toolId, context) ?: s.shared("content_unnamed")
+                s.shared("action_verbalize_update_tool_config").format(toolName)
+            }
+            "delete" -> {
+                val toolId = params.optString("tool_instance_id")
+                val toolName = getToolName(toolId, context) ?: s.shared("content_unnamed")
+                s.shared("action_verbalize_delete_tool").format(toolName)
+            }
+            else -> s.shared("action_verbalize_unknown")
+        }
+    }
+
+    /**
+     * Helper to retrieve tool name by ID
+     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
+     */
+    private fun getToolName(toolInstanceId: String, context: Context): String? {
+        if (toolInstanceId.isBlank()) return null
+        return runBlocking {
+            val coordinator = Coordinator(context)
+            val result = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+            if (result.status == CommandStatus.SUCCESS) {
+                val tool = result.data?.get("tool_instance") as? Map<*, *>
+                tool?.get("name") as? String
+            } else null
+        }
+    }
+
+    /**
+     * Helper to retrieve zone name by ID
+     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
+     */
+    private fun getZoneName(zoneId: String, context: Context): String? {
+        if (zoneId.isBlank()) return null
+        return runBlocking {
+            val coordinator = Coordinator(context)
+            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            if (result.status == CommandStatus.SUCCESS) {
+                val zone = result.data?.get("zone") as? Map<*, *>
+                zone?.get("name") as? String
+            } else null
+        }
     }
 }

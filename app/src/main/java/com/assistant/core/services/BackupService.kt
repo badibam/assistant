@@ -64,10 +64,19 @@ class BackupService(private val context: Context) : ExecutableService {
         LogManager.service("TODO: implement list backups")
         // TODO: Scan backup storage for available backups
         // TODO: Return metadata for each backup
-        
+
         return OperationResult.success(mapOf(
             "backups" to emptyList<Map<String, Any>>()
         ))
+    }
+
+    /**
+     * Verbalize backup operation
+     * Backups are typically not exposed to AI actions
+     */
+    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+        val s = Strings.`for`(context = context)
+        return s.shared("action_verbalize_unknown")
     }
 }
 
