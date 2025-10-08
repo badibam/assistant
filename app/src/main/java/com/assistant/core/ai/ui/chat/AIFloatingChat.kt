@@ -235,12 +235,9 @@ fun AIFloatingChat(
     // User interaction dialogs based on waiting state
     when (val state = waitingState) {
         is WaitingState.WaitingValidation -> {
-            ValidationDialog(
-                request = state.request,
-                onValidate = { validated ->
-                    aiOrchestrator.resumeWithValidation(validated)
-                }
-            )
+            // TODO Phase 5: Implement ValidationUI with ValidationContext
+            // For now, validation UI is not implemented (Phase 1 placeholder)
+            LogManager.aiUI("Validation UI not yet implemented (Phase 5 TODO)", "DEBUG")
         }
         is WaitingState.WaitingResponse -> {
             // Communication modules are now displayed inline in message flow
@@ -523,42 +520,12 @@ private fun ChatMessageBubble(
 
 /**
  * Validation dialog for AI action requests
- * Displays when AI asks user to validate proposed actions
+ * TODO Phase 5: Reimplement with ValidationContext and ValidationUI
+ * REMOVED: Old implementation using ValidationRequest (which no longer exists)
  */
-@Composable
-private fun ValidationDialog(
-    request: ValidationRequest,
-    onValidate: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    UI.Dialog(
-        type = DialogType.CONFIRM,
-        onConfirm = { onValidate(true) },
-        onCancel = { onValidate(false) }
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            UI.Text(
-                text = s.shared("ai_validation_title"),
-                type = TextType.TITLE
-            )
-            UI.Text(
-                text = request.message,
-                type = TextType.BODY
-            )
-            request.status?.let { status ->
-                UI.Text(
-                    text = "${s.shared("ai_validation_status")}: ${status.name}",
-                    type = TextType.CAPTION
-                )
-            }
-        }
-    }
-}
+// @Composable
+// private fun ValidationDialog(...) { ... }
+// Will be replaced with ValidationUI in Phase 5
 
 
 /**

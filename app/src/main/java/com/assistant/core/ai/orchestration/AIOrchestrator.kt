@@ -1340,12 +1340,15 @@ object AIOrchestrator {
 
     /**
      * Wait for user validation (suspend until UI calls resumeWithValidation)
+     * TODO Phase 6: Replace with ValidationContext-based implementation
+     * For now, this is a placeholder that always validates (validation disabled until Phase 6)
      */
-    private suspend fun waitForUserValidation(request: ValidationRequest): Boolean =
-        suspendCancellableCoroutine { cont ->
-            _waitingState.value = WaitingState.WaitingValidation(request)
-            validationContinuation = cont
-        }
+    private suspend fun waitForUserValidation(aiRequestedValidation: Boolean?): Boolean {
+        // TODO Phase 6: Implement proper validation with ValidationResolver
+        // For now, always return true (auto-validate) until Phase 6 implementation
+        LogManager.aiSession("Validation requested by AI but not yet implemented (Phase 6 TODO)", "WARN")
+        return true
+    }
 
     /**
      * Wait for user response to communication module (suspend until UI calls resumeWithResponse)
@@ -1483,15 +1486,10 @@ object AIOrchestrator {
                 return ParseResult(aiMessage = null, formatErrors = listOf(errorMsg))
             }
 
-            // Parse optional validationRequest
-            val validationRequest = json.optJSONObject("validationRequest")?.let { vr ->
-                val message = vr.getString("message")
-                val statusStr = vr.optString("status")
-                val status = if (statusStr.isNotEmpty()) {
-                    try { ValidationStatus.valueOf(statusStr) } catch (e: Exception) { null }
-                } else null
-                ValidationRequest(message, status)
-            }
+            // Parse optional validationRequest (boolean: true = validation required)
+            val validationRequest = if (json.has("validationRequest")) {
+                json.optBoolean("validationRequest", false)
+            } else null
 
             // Parse optional dataCommands
             val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
@@ -1611,7 +1609,7 @@ object AIOrchestrator {
             LogManager.aiSession(
                 "AI PARSED MESSAGE:\n" +
                 "  preText: ${preText.take(100)}${if (preText.length > 100) "..." else ""}\n" +
-                "  validationRequest: ${validationRequest?.message?.take(50) ?: "null"}\n" +
+                "  validationRequest: ${validationRequest ?: "null"}\n" +
                 "  dataCommands: ${dataCommands?.size ?: 0} commands\n" +
                 "  actionCommands: ${actionCommands?.size ?: 0} commands\n" +
                 "  postText: ${postText?.take(50) ?: "null"}\n" +

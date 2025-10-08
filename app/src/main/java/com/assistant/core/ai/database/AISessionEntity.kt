@@ -21,6 +21,8 @@ data class AISessionEntity(
     @PrimaryKey val id: String,
     val name: String,
     val type: SessionType,
+    val requireValidation: Boolean = false,  // Session-level validation toggle
+    val waitingStateJson: String? = null,    // Persisted waiting state (null = no waiting)
     val automationId: String?,              // null for CHAT, automation ID for AUTOMATION
     val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
     val providerId: String,                 // Fixed for the session

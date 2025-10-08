@@ -152,24 +152,10 @@ class AIClient(private val context: Context) {
             // Parse required preText
             val preText = json.getString("preText")
 
-            // Parse optional fields
-            val validationRequest = json.optJSONObject("validationRequest")?.let {
-                val statusString = it.optString("status", "")
-                val status = if (statusString.isNotEmpty()) {
-                    try {
-                        ValidationStatus.valueOf(statusString)
-                    } catch (e: Exception) {
-                        ValidationStatus.PENDING
-                    }
-                } else {
-                    ValidationStatus.PENDING
-                }
-
-                ValidationRequest(
-                    message = it.getString("message"),
-                    status = status
-                )
-            }
+            // Parse optional validationRequest (boolean: true = validation required)
+            val validationRequest = if (json.has("validationRequest")) {
+                json.optBoolean("validationRequest", false)
+            } else null
 
             val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
                 (0 until array.length()).map { index ->

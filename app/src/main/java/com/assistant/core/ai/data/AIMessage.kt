@@ -6,10 +6,16 @@ import org.json.JSONObject
 /**
  * AI message structure with validation, data commands and action commands
  * Important constraint: Either dataCommands OR actionCommands, never both simultaneously
+ *
+ * VALIDATION REQUEST CHANGE:
+ * - Previously: validationRequest was a data class with message and status
+ * - Now: validationRequest is a simple Boolean (true = validation required, null/false = no validation)
+ * - The AI explains its intentions in preText instead of using a separate validation message
+ * - The UI displays detailed verbalized actions automatically via ValidationResolver
  */
 data class AIMessage(
     val preText: String,                              // Required introduction/analysis
-    val validationRequest: ValidationRequest?,        // Optional - before actions
+    val validationRequest: Boolean?,                  // Optional - true if validation required before actions
     val dataCommands: List<DataCommand>?,             // Optional - AI data queries
     val actionCommands: List<DataCommand>?,           // Optional - actions to execute
     val postText: String?,                            // Optional, only if actions
@@ -23,12 +29,8 @@ data class AIMessage(
 
         json.put("preText", preText)
 
-        validationRequest?.let {
-            val validationJson = JSONObject()
-            validationJson.put("message", it.message)
-            it.status?.let { status -> validationJson.put("status", status.name) }
-            json.put("validationRequest", validationJson)
-        }
+        // Serialize validationRequest as boolean (or omit if null/false)
+        validationRequest?.let { if (it) json.put("validationRequest", true) }
 
         dataCommands?.let { commands ->
             val commandsArray = JSONArray()
@@ -79,19 +81,10 @@ data class AIMessage(
 
                 val preText = json.getString("preText")
 
-                val validationRequest = json.optJSONObject("validationRequest")?.let {
-                    val message = it.getString("message")
-                    val statusStr = it.optString("status")
-                    val status = if (statusStr.isNotEmpty()) {
-                        try {
-                            ValidationStatus.valueOf(statusStr)
-                        } catch (e: Exception) {
-                            null
-                        }
-                    } else null
-
-                    ValidationRequest(message, status)
-                }
+                // Parse validationRequest as boolean (true = validation required)
+                val validationRequest = if (json.has("validationRequest")) {
+                    json.optBoolean("validationRequest", false)
+                } else null
 
                 val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
                     (0 until array.length()).mapNotNull { i ->
@@ -165,15 +158,6 @@ data class AIMessage(
         }
     }
 }
-
-/**
- * Validation request from AI before executing actions
- */
-data class ValidationRequest(
-    val message: String,
-    val status: ValidationStatus? = null // PENDING, CONFIRMED, REFUSED
-)
-
 
 /**
  * Communication modules for user interaction

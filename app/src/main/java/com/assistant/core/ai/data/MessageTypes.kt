@@ -21,9 +21,3 @@ enum class EnrichmentType {
     CREATE,      // ✨ Créer - new elements (tools, zones)
     MODIFY_CONFIG // 🔧 Modifier Config - tool configuration changes
 }
-
-enum class ValidationStatus {
-    PENDING,
-    CONFIRMED,
-    REFUSED
-}

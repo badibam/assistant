@@ -47,6 +47,8 @@ data class AISession(
     val id: String,
     val name: String,
     val type: SessionType,         // CHAT, AUTOMATION
+    val requireValidation: Boolean = false,      // Session-level validation toggle (user controlled)
+    val waitingStateJson: String? = null,        // Persisted waiting state for app closure (null = no waiting)
     val providerId: String,        // Fixed for the session
     val providerSessionId: String, // Provider API session ID
     val schedule: ScheduleConfig?, // For AUTOMATION only
