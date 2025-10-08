@@ -163,6 +163,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "description" to description,
                 "tool_type" to tool.tool_type,
+                "config_json" to tool.config_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at
@@ -202,6 +203,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "name" to name,
                 "description" to description,
                 "tool_type" to tool.tool_type,
+                "config_json" to tool.config_json,
                 "order_index" to tool.order_index,
                 "created_at" to tool.created_at,
                 "updated_at" to tool.updated_at
