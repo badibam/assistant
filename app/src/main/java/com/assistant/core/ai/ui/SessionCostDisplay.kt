@@ -94,12 +94,12 @@ fun SessionCostDisplay(sessionId: String) {
                     )
                 } else {
                     // Token counts
-                    val totalInputTokens = data["totalInputTokens"] as? Int ?: 0
+                    val totalUncachedInputTokens = data["totalUncachedInputTokens"] as? Int ?: 0
                     val totalCacheWriteTokens = data["totalCacheWriteTokens"] as? Int ?: 0
                     val totalCacheReadTokens = data["totalCacheReadTokens"] as? Int ?: 0
                     val totalOutputTokens = data["totalOutputTokens"] as? Int ?: 0
 
-                    // Costs
+                    // Costs (no rounding for calculations, only for display)
                     val inputCost = data["inputCost"] as? Double ?: 0.0
                     val cacheWriteCost = data["cacheWriteCost"] as? Double ?: 0.0
                     val cacheReadCost = data["cacheReadCost"] as? Double ?: 0.0
@@ -107,10 +107,10 @@ fun SessionCostDisplay(sessionId: String) {
                     val totalCost = data["totalCost"] as? Double ?: 0.0
 
                     // Input row (uncached tokens, only if > 0)
-                    if (totalInputTokens > 0) {
+                    if (totalUncachedInputTokens > 0) {
                         TokenCostRow(
                             label = s.shared("ai_cost_input"),
-                            tokens = totalInputTokens,
+                            tokens = totalUncachedInputTokens,
                             cost = inputCost,
                             s = s
                         )
@@ -209,9 +209,9 @@ private fun formatTokenCount(tokens: Int, s: com.assistant.core.strings.StringsC
 }
 
 /**
- * Format cost in USD with 6 decimal places
+ * Format cost in USD with 3 decimal places (calculations stay unrounded)
  */
 private fun formatCost(cost: Double, s: com.assistant.core.strings.StringsContext): String {
-    val formatted = String.format("%.6f", cost)
+    val formatted = String.format("%.3f", cost)
     return "\$$formatted ${s.shared("ai_cost_currency_usd")}"
 }

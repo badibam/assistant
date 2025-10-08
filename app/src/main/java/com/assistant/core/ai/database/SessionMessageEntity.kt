@@ -40,7 +40,8 @@ data class SessionMessageEntity(
     val excludeFromPrompt: Boolean = false, // Exclude from prompt generation (UI-only messages)
 
     // Token usage metrics (for AI messages only, 0 for USER/SYSTEM)
-    val inputTokens: Int = 0,           // Regular input tokens (non-cached)
+    // Note: API providers return inputTokens as UNCACHED only. Total input = inputTokens + cacheWriteTokens + cacheReadTokens
+    val inputTokens: Int = 0,           // Uncached input tokens (from API, already excludes cache tokens)
     val cacheWriteTokens: Int = 0,      // Cache write tokens (generic, all providers)
     val cacheReadTokens: Int = 0,       // Cache read tokens (generic, all providers)
     val outputTokens: Int = 0           // Output tokens generated

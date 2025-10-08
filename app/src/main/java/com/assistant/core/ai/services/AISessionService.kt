@@ -688,13 +688,13 @@ class AISessionService(private val context: Context) : ExecutableService {
                 return OperationResult.error(s.shared("error_cost_calculation_failed"))
             }
 
-            LogManager.aiSession("Session cost calculated: sessionId=$sessionId, total=\$${String.format("%.6f", cost.totalCost ?: 0.0)}, priceAvailable=${cost.priceAvailable}", "INFO")
+            LogManager.aiSession("Session cost calculated: sessionId=$sessionId, total=\$${String.format("%.3f", cost.totalCost ?: 0.0)}, priceAvailable=${cost.priceAvailable}", "INFO")
 
             // Build map without null values for costs if price unavailable
             val resultMap = buildMap<String, Any> {
                 put("sessionId", sessionId)
                 put("modelId", cost.modelId)
-                put("totalInputTokens", cost.totalInputTokens)
+                put("totalUncachedInputTokens", cost.totalUncachedInputTokens)
                 put("totalCacheWriteTokens", cost.totalCacheWriteTokens)
                 put("totalCacheReadTokens", cost.totalCacheReadTokens)
                 put("totalOutputTokens", cost.totalOutputTokens)
