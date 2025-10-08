@@ -411,10 +411,11 @@ private fun ChatMessageList(
                 )
             }
 
-            // AI thinking indicator
-            if (isLoading) {
+            // AI thinking indicator with interrupt button
+            // Exception: don't show during communication module (has its own cancel button)
+            if (isLoading && waitingState !is WaitingState.WaitingResponse) {
                 item {
-                    UI.AIThinkingIndicator()
+                    ChatLoadingIndicator()
                 }
             }
         }
@@ -604,6 +605,44 @@ private fun SessionStatsDialog(
                 // Cost display
                 SessionCostDisplay(sessionId = sessionId)
             }
+        }
+    }
+}
+
+/**
+ * Loading indicator with interrupt button
+ * Shows "Interrupting..." message after user clicks interrupt
+ */
+@Composable
+private fun ChatLoadingIndicator() {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    var isInterrupting by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        UI.AIThinkingIndicator()
+
+        if (isInterrupting) {
+            // Show "Interrupting..." message after button clicked
+            UI.Text(
+                text = s.shared("ai_status_interrupting"),
+                type = TextType.CAPTION
+            )
+        } else {
+            // Show interrupt button
+            UI.ActionButton(
+                action = ButtonAction.INTERRUPT,
+                display = ButtonDisplay.LABEL,
+                size = Size.S,
+                onClick = {
+                    isInterrupting = true
+                    AIOrchestrator.interruptActiveRound()
+                }
+            )
         }
     }
 }

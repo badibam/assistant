@@ -80,11 +80,13 @@ object PromptManager {
         val allMessages = parseSessionMessages(messagesData)
 
         // 6. Filter out messages excluded from prompt:
-        //    - NETWORK_ERROR and SESSION_TIMEOUT (audit only)
+        //    - NETWORK_ERROR, SESSION_TIMEOUT, and INTERRUPTED (audit only)
         //    - excludeFromPrompt=true (UI-only messages like postText success)
         val sessionMessages = allMessages.filter { message ->
             val type = message.systemMessage?.type
-            val isSystemError = type == SystemMessageType.NETWORK_ERROR || type == SystemMessageType.SESSION_TIMEOUT
+            val isSystemError = type == SystemMessageType.NETWORK_ERROR ||
+                               type == SystemMessageType.SESSION_TIMEOUT ||
+                               type == SystemMessageType.INTERRUPTED
             !isSystemError && !message.excludeFromPrompt
         }
 

@@ -354,7 +354,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE -> ButtonType.SECONDARY
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT -> ButtonType.DEFAULT
         }
     }
     
@@ -382,6 +382,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.LEFT -> s.shared("action_left")
             ButtonAction.RIGHT -> s.shared("action_right")
             ButtonAction.AI_CHAT -> s.shared("action_ai_chat")
+            ButtonAction.INTERRUPT -> s.shared("action_interrupt")
         }
     }
     
@@ -406,6 +407,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.LEFT -> "◀"      // Triangle gauche
             ButtonAction.RIGHT -> "▶"     // Triangle droite
             ButtonAction.AI_CHAT -> "🤖"   // Robot face
+            ButtonAction.INTERRUPT -> "⏸"  // Pause symbol
         }
     }
     

@@ -68,6 +68,10 @@ object AIOrchestrator {
     private val _isRoundInProgress = MutableStateFlow(false)
     val isRoundInProgress: StateFlow<Boolean> = _isRoundInProgress.asStateFlow()
 
+    // Round interruption flag (set by user via UI)
+    @Volatile
+    private var shouldInterruptRound = false
+
     // Session queue (FIFO with priority rules)
     private val sessionQueue = mutableListOf<QueuedSession>()
 
@@ -392,6 +396,20 @@ object AIOrchestrator {
         _waitingState.value = WaitingState.None
     }
 
+    /**
+     * Interrupt active AI round
+     * Called from UI when user wants to stop autonomous loops
+     * The round will stop after current operation completes
+     */
+    fun interruptActiveRound() {
+        if (_isRoundInProgress.value) {
+            shouldInterruptRound = true
+            LogManager.aiSession("User requested round interruption", "INFO")
+        } else {
+            LogManager.aiSession("No active round to interrupt", "DEBUG")
+        }
+    }
+
     // ========================================================================================
     // Main Public API
     // ========================================================================================
@@ -564,6 +582,9 @@ object AIOrchestrator {
         reason: RoundReason,
         shouldTerminate: () -> Boolean
     ): OperationResult {
+        // Reset interruption flag at start of new round
+        shouldInterruptRound = false
+
         // 1. Build prompt data
         val promptData = PromptManager.buildPromptData(sessionId, context)
 
@@ -590,6 +611,13 @@ object AIOrchestrator {
             }
 
             return OperationResult.error(aiResponse.errorMessage ?: s.shared("ai_error_network_call_failed"))
+        }
+
+        // Check 1: Interruption before storing initial AI response
+        if (shouldInterruptRound) {
+            LogManager.aiSession("Round interrupted before storing initial AI response", "INFO")
+            storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+            return OperationResult.success()
         }
 
         // 3. Store AI response
@@ -645,6 +673,14 @@ object AIOrchestrator {
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
                 logTokenStats(aiResponse)
                 if (!aiResponse.success) break
+
+                // Check interruption BEFORE storing (ignore response completely)
+                if (shouldInterruptRound) {
+                    LogManager.aiSession("Round interrupted before storing format error correction response", "INFO")
+                    storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
                 storeAIMessage(aiResponse, sessionId)
 
                 consecutiveFormatErrors++
@@ -711,6 +747,14 @@ object AIOrchestrator {
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
                 logTokenStats(aiResponse)
                 if (!aiResponse.success) break
+
+                // Check interruption BEFORE storing (ignore response completely)
+                if (shouldInterruptRound) {
+                    LogManager.aiSession("Round interrupted before storing communication module response", "INFO")
+                    storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
                 storeAIMessage(aiResponse, sessionId)
 
                 communicationRoundtrips++
@@ -734,10 +778,25 @@ object AIOrchestrator {
                     break
                 }
 
+                // Check interruption after executing data commands
+                if (shouldInterruptRound) {
+                    LogManager.aiSession("Round interrupted after data commands execution", "INFO")
+                    storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
                 val newPromptData = PromptManager.buildPromptData(sessionId, context)
                 aiResponse = callAIWithRetry(newPromptData, sessionType)
                 logTokenStats(aiResponse)
                 if (!aiResponse.success) break
+
+                // Check interruption BEFORE storing (ignore response completely)
+                if (shouldInterruptRound) {
+                    LogManager.aiSession("Round interrupted before storing data query response", "INFO")
+                    storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
                 storeAIMessage(aiResponse, sessionId)
 
                 consecutiveDataQueries++
@@ -789,10 +848,25 @@ object AIOrchestrator {
                         break
                     }
 
+                    // Check interruption after executing actions
+                    if (shouldInterruptRound) {
+                        LogManager.aiSession("Round interrupted after action commands execution", "INFO")
+                        storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                        break
+                    }
+
                     val newPromptData = PromptManager.buildPromptData(sessionId, context)
                     aiResponse = callAIWithRetry(newPromptData, sessionType)
                     logTokenStats(aiResponse)
                     if (!aiResponse.success) break
+
+                    // Check interruption BEFORE storing (ignore response completely)
+                    if (shouldInterruptRound) {
+                        LogManager.aiSession("Round interrupted before storing action retry response", "INFO")
+                        storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                        break
+                    }
+
                     storeAIMessage(aiResponse, sessionId)
 
                     consecutiveActionRetries++
@@ -1230,6 +1304,19 @@ object AIOrchestrator {
     private suspend fun storeSessionTimeoutMessage(summary: String, sessionId: String) {
         val systemMessage = SystemMessage(
             type = SystemMessageType.SESSION_TIMEOUT,
+            commandResults = emptyList(),
+            summary = summary,
+            formattedData = null
+        )
+        storeSystemMessage(systemMessage, sessionId)
+    }
+
+    /**
+     * Store INTERRUPTED message when user stops autonomous loop
+     */
+    private suspend fun storeInterruptedMessage(summary: String, sessionId: String) {
+        val systemMessage = SystemMessage(
+            type = SystemMessageType.INTERRUPTED,
             commandResults = emptyList(),
             summary = summary,
             formattedData = null

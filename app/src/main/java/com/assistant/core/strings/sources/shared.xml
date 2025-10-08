@@ -33,6 +33,7 @@
     <string name="action_left">Précédent</string>
     <string name="action_right">Suivant</string>
     <string name="action_ai_chat">Assistant IA</string>
+    <string name="action_interrupt">Interrompre</string>
 
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Écris ton message...</string>
@@ -63,6 +64,8 @@
     <string name="ai_status_send_to_start">Envoyer un message pour commencer</string>
     <string name="ai_status_inactive">Inactif</string>
     <string name="ai_status_thinking">L\'IA réfléchit...</string>
+    <string name="ai_status_interrupted">Interrompu par l\'utilisateur</string>
+    <string name="ai_status_interrupting">Interruption en cours...</string>
 
     <!-- AI Messages - Display -->
     <string name="ai_sender_user">Vous</string>
