@@ -8,6 +8,9 @@ import com.assistant.core.ai.processing.UserCommandProcessor
 import com.assistant.core.ai.processing.AICommandProcessor
 import com.assistant.core.ai.providers.AIClient
 import com.assistant.core.ai.providers.AIResponse
+import com.assistant.core.ai.validation.ValidationResolver
+import com.assistant.core.ai.validation.ValidationResult
+import com.assistant.core.ai.validation.ValidationContext
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.OperationResult
@@ -35,6 +38,10 @@ import kotlin.coroutines.resume
  * - Session persistence across UI lifecycle (Dialog open/close)
  * - State observation via StateFlow for UI reconnection
  * - Global access without dependency injection
+ *
+ * IMPORTANT: Uses its own CoroutineScope (singleton-scoped) for async operations.
+ * This ensures that coroutines are NOT tied to UI lifecycle (ChatScreen navigation).
+ * Continuations remain valid as long as the app is open, fixing navigation bugs.
  */
 object AIOrchestrator {
 
@@ -42,6 +49,11 @@ object AIOrchestrator {
     private lateinit var coordinator: Coordinator
     private lateinit var aiClient: AIClient
     private lateinit var s: com.assistant.core.strings.StringsContext
+
+    // Own coroutine scope for singleton lifecycle (not tied to UI)
+    // SupervisorJob ensures one child failure doesn't cancel others
+    // Dispatchers.Main for UI state updates
+    private val orchestratorScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // State for user interaction (observable by UI)
     private val _waitingState = MutableStateFlow<WaitingState>(WaitingState.None)
@@ -52,6 +64,7 @@ object AIOrchestrator {
     val activeSessionMessages: StateFlow<List<SessionMessage>> = _activeSessionMessages.asStateFlow()
 
     // Continuations for user interaction suspension
+    // These remain valid across ChatScreen navigation since they're in singleton scope
     private var validationContinuation: Continuation<Boolean>? = null
     private var responseContinuation: Continuation<String?>? = null
 
@@ -100,7 +113,7 @@ object AIOrchestrator {
         LogManager.aiSession("AIOrchestrator initialized as singleton")
 
         // Restore active session from DB (async)
-        CoroutineScope(Dispatchers.IO).launch {
+        orchestratorScope.launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.get_active_session", emptyMap())
                 if (result.isSuccess) {
@@ -263,7 +276,7 @@ object AIOrchestrator {
         _activeSessionMessages.value = emptyList()
 
         // 3. Sync DB state (async, non-blocking)
-        CoroutineScope(Dispatchers.IO).launch {
+        orchestratorScope.launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
                 if (result.isSuccess) {
@@ -305,7 +318,7 @@ object AIOrchestrator {
         updateMessagesFlow(sessionId)
 
         // 3. Sync DB state (async, non-blocking)
-        CoroutineScope(Dispatchers.IO).launch {
+        orchestratorScope.launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.set_active_session", mapOf(
                     "sessionId" to sessionId
@@ -514,7 +527,7 @@ object AIOrchestrator {
                 // Watchdog for AUTOMATION (timeout occupation)
                 var shouldTerminateRound = false
                 val watchdogJob = if (sessionType == SessionType.AUTOMATION) {
-                    CoroutineScope(Dispatchers.Default).launch {
+                    orchestratorScope.launch {
                         val aiLimits = AppConfigManager.getAILimits()
                         delay(aiLimits.automationMaxSessionDuration)
                         shouldTerminateRound = true
@@ -620,8 +633,8 @@ object AIOrchestrator {
             return OperationResult.success()
         }
 
-        // 3. Store AI response
-        storeAIMessage(aiResponse, sessionId)
+        // 3. Store AI response and get message ID for validation
+        val initialAIMessageId = storeAIMessage(aiResponse, sessionId)
 
         // 4. AUTONOMOUS LOOPS
         var totalRoundtrips = 0
@@ -680,6 +693,7 @@ object AIOrchestrator {
                     break
                 }
 
+                // Store AI response (don't need ID here, validation only on actions)
                 storeAIMessage(aiResponse, sessionId)
 
                 consecutiveFormatErrors++
@@ -749,6 +763,7 @@ object AIOrchestrator {
                     break
                 }
 
+                // Store AI response (don't need ID here, validation only on actions)
                 storeAIMessage(aiResponse, sessionId)
 
                 totalRoundtrips++
@@ -790,7 +805,8 @@ object AIOrchestrator {
                     break
                 }
 
-                storeAIMessage(aiResponse, sessionId)
+                // Store AI response and get message ID for potential validation
+                val currentAIMessageId = storeAIMessage(aiResponse, sessionId)
 
                 consecutiveDataQueries++
                 consecutiveActionRetries = 0  // Reset
@@ -801,16 +817,33 @@ object AIOrchestrator {
             // 4c. ACTION COMMANDS (mutations)
             if (aiMessage.actionCommands != null && aiMessage.actionCommands.isNotEmpty()) {
 
-                // Validation request ?
-                if (aiMessage.validationRequest != null) {
-                    // STOP - Attendre validation user
-                    val validated = waitForUserValidation(aiMessage.validationRequest)
+                // VALIDATION RESOLUTION (Phase 6)
+                // Determine if validation is required based on hierarchy: app > zone > tool > session > AI request
+                val validationResolver = ValidationResolver(context)
+                val currentAIMessageId = initialAIMessageId ?: ""  // Use stored message ID
 
-                    if (!validated) {
-                        // Refuser actions
-                        val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
-                        storeSystemMessage(refusedSystemMessage, sessionId)
-                        break  // FIN - attend prochain message user
+                val validationResult = validationResolver.shouldValidate(
+                    actions = aiMessage.actionCommands,
+                    sessionId = sessionId,
+                    aiMessageId = currentAIMessageId,
+                    aiRequestedValidation = aiMessage.validationRequest == true
+                )
+
+                when (validationResult) {
+                    is ValidationResult.RequiresValidation -> {
+                        // STOP - Attendre validation user
+                        val validated = waitForUserValidation(validationResult.context)
+
+                        if (!validated) {
+                            // Refuser actions
+                            val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
+                            storeSystemMessage(refusedSystemMessage, sessionId)
+                            break  // FIN - attend prochain message user
+                        }
+                        // Si validated → continuer avec l'exécution
+                    }
+                    ValidationResult.NoValidation -> {
+                        // Pas de validation nécessaire, continuer directement
                     }
                 }
 
@@ -860,6 +893,7 @@ object AIOrchestrator {
                         break
                     }
 
+                    // Store AI response (don't need ID here, we already have initialAIMessageId)
                     storeAIMessage(aiResponse, sessionId)
 
                     consecutiveActionRetries++
@@ -1002,7 +1036,7 @@ object AIOrchestrator {
         }
 
         // Load messages asynchronously and update flow
-        CoroutineScope(Dispatchers.IO).launch {
+        orchestratorScope.launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
                 if (result.isSuccess) {
@@ -1359,15 +1393,16 @@ object AIOrchestrator {
 
     /**
      * Wait for user validation (suspend until UI calls resumeWithValidation)
-     * TODO Phase 6: Replace with ValidationContext-based implementation
-     * For now, this is a placeholder that always validates (validation disabled until Phase 6)
+     * Phase 6: Implemented with ValidationContext
+     *
+     * @param context ValidationContext avec les actions et métadonnées
+     * @return true si user valide, false si user refuse
      */
-    private suspend fun waitForUserValidation(aiRequestedValidation: Boolean?): Boolean {
-        // TODO Phase 6: Implement proper validation with ValidationResolver
-        // For now, always return true (auto-validate) until Phase 6 implementation
-        LogManager.aiSession("Validation requested by AI but not yet implemented (Phase 6 TODO)", "WARN")
-        return true
-    }
+    private suspend fun waitForUserValidation(context: ValidationContext): Boolean =
+        suspendCancellableCoroutine { cont ->
+            _waitingState.value = WaitingState.WaitingValidation(context)
+            validationContinuation = cont
+        }
 
     /**
      * Wait for user response to communication module (suspend until UI calls resumeWithResponse)
@@ -1430,8 +1465,9 @@ object AIOrchestrator {
 
     /**
      * Store AI message response
+     * @return Message ID of the stored message (for validation), or null if storage failed
      */
-    private suspend fun storeAIMessage(aiResponse: AIResponse, sessionId: String) {
+    private suspend fun storeAIMessage(aiResponse: AIResponse, sessionId: String): String? {
         try {
             val aiMessageJson = aiResponse.content
 
@@ -1449,12 +1485,18 @@ object AIOrchestrator {
 
             if (!storeResult.isSuccess) {
                 LogManager.aiSession("Failed to store AI message: ${storeResult.error}", "WARN")
+                return null
             } else {
                 // Update reactive messages flow for UI
                 updateMessagesFlow(sessionId)
+
+                // Return message ID for validation
+                val messageId = storeResult.data?.get("messageId") as? String
+                return messageId
             }
         } catch (e: Exception) {
             LogManager.aiSession("Error storing AI message: ${e.message}", "ERROR", e)
+            return null
         }
     }
 
