@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,6 +109,7 @@ fun AIFloatingChat(
                     sessionName = activeSession?.name ?: s.shared("ai_chat_new"),
                     hasActiveSession = activeSessionId != null,
                     isLoading = isRoundInProgress,
+                    session = activeSession,
                     onClose = onDismiss,
                     onShowStats = { showStats = true },
                     onStopSession = {
@@ -125,6 +127,21 @@ fun AIFloatingChat(
                             } catch (e: Exception) {
                                 LogManager.aiUI("Error stopping session: ${e.message}", "ERROR")
                                 errorMessage = s.shared("ai_error_stop_session")
+                            }
+                        }
+                    },
+                    onToggleValidation = { requireValidation ->
+                        scope.launch {
+                            try {
+                                activeSessionId?.let { sessionId ->
+                                    aiOrchestrator.toggleValidation(sessionId, requireValidation)
+                                    // Refresh session to update UI
+                                    activeSession = aiOrchestrator.getActiveSession()
+                                    LogManager.aiUI("Validation toggled: $requireValidation")
+                                }
+                            } catch (e: Exception) {
+                                LogManager.aiUI("Error toggling validation: ${e.message}", "ERROR")
+                                errorMessage = s.shared("ai_error_toggle_validation")
                             }
                         }
                     }
@@ -235,9 +252,16 @@ fun AIFloatingChat(
     // User interaction dialogs based on waiting state
     when (val state = waitingState) {
         is WaitingState.WaitingValidation -> {
-            // TODO Phase 5: Implement ValidationUI with ValidationContext
-            // For now, validation UI is not implemented (Phase 1 placeholder)
-            LogManager.aiUI("Validation UI not yet implemented (Phase 5 TODO)", "DEBUG")
+            // Phase 5: ValidationUI with ValidationContext
+            com.assistant.core.ai.ui.ValidationUI(
+                context = state.context,
+                onValidate = {
+                    aiOrchestrator.resumeWithValidation(true)
+                },
+                onRefuse = {
+                    aiOrchestrator.resumeWithValidation(false)
+                }
+            )
         }
         is WaitingState.WaitingResponse -> {
             // Communication modules are now displayed inline in message flow
@@ -257,9 +281,11 @@ private fun ChatHeader(
     sessionName: String,
     hasActiveSession: Boolean,
     isLoading: Boolean,
+    session: AISession?,
     onClose: () -> Unit,
     onShowStats: () -> Unit,
-    onStopSession: () -> Unit
+    onStopSession: () -> Unit,
+    onToggleValidation: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -354,6 +380,25 @@ private fun ChatHeader(
                 size = Size.S,
                 onClick = { showStopConfirmation = true }
             )
+        }
+
+        // Validation toggle (only if has active session)
+        if (hasActiveSession && session != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UI.Text(
+                    text = s.shared("label_validation"),
+                    type = TextType.LABEL
+                )
+                Switch(
+                    checked = session.requireValidation,
+                    onCheckedChange = onToggleValidation
+                )
+            }
         }
     }
 }

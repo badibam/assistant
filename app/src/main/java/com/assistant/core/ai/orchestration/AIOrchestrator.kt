@@ -1153,6 +1153,25 @@ object AIOrchestrator {
         }
     }
 
+    /**
+     * Toggle validation requirement for a session
+     * Updates session.requireValidation flag via coordinator
+     */
+    suspend fun toggleValidation(sessionId: String, requireValidation: Boolean): OperationResult {
+        LogManager.aiSession("AIOrchestrator.toggleValidation() called for $sessionId: $requireValidation", "DEBUG")
+
+        val result = coordinator.processUserAction("ai_sessions.toggle_validation", mapOf(
+            "sessionId" to sessionId,
+            "requireValidation" to requireValidation
+        ))
+        return if (result.isSuccess) {
+            LogManager.aiSession("Session $sessionId validation toggled: $requireValidation", "INFO")
+            OperationResult.success()
+        } else {
+            OperationResult.error(result.error ?: "Failed to toggle validation")
+        }
+    }
+
     // ========================================================================================
     // Private Helpers - Autonomous Loop Support
     // ========================================================================================

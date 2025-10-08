@@ -141,6 +141,7 @@
     <string name="ai_error_get_active_session">Échec de la récupération de session active: %1$s</string>
     <string name="ai_error_send_message">Échec de l\'envoi du message: %1$s</string>
     <string name="ai_error_session_stopped">Session arrêtée</string>
+    <string name="ai_error_toggle_validation">Échec du changement de validation</string>
 
     <!-- AI Errors - Parameters -->
     <string name="ai_error_param_name_required">Paramètre obligatoire: name</string>
