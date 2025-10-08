@@ -10,11 +10,10 @@ import com.assistant.core.utils.LogManager
  */
 data class SessionCost(
     val modelId: String,
-    val totalInputTokens: Int,              // Total input tokens (includes cache write + read + regular)
+    val totalInputTokens: Int,              // Input tokens (uncached only, from API)
     val totalCacheWriteTokens: Int,
     val totalCacheReadTokens: Int,
     val totalOutputTokens: Int,
-    val regularInputTokens: Int,            // Calculated: inputTokens - cacheWrite - cacheRead
     val inputCost: Double?,                 // null if price unavailable
     val cacheWriteCost: Double?,
     val cacheReadCost: Double?,
@@ -29,11 +28,10 @@ data class SessionCost(
 data class MessageCost(
     val messageId: String,
     val modelId: String,
-    val inputTokens: Int,
+    val inputTokens: Int,                   // Input tokens (uncached only, from API)
     val cacheWriteTokens: Int,
     val cacheReadTokens: Int,
     val outputTokens: Int,
-    val regularInputTokens: Int,
     val inputCost: Double?,
     val cacheWriteCost: Double?,
     val cacheReadCost: Double?,
@@ -49,10 +47,13 @@ data class MessageCost(
  * stored in SessionMessageEntity
  *
  * Cost calculation formula:
- * - Regular input cost = (inputTokens - cacheWriteTokens - cacheReadTokens) × inputCostPerToken / 1,000,000
- * - Cache write cost = cacheWriteTokens × cacheWriteCostPerToken / 1,000,000
- * - Cache read cost = cacheReadTokens × cacheReadCostPerToken / 1,000,000
- * - Output cost = outputTokens × outputCostPerToken / 1,000,000
+ * - Input cost = inputTokens × inputCostPerToken (inputTokens are already uncached from API)
+ * - Cache write cost = cacheWriteTokens × cacheWriteCostPerToken
+ * - Cache read cost = cacheReadTokens × cacheReadCostPerToken
+ * - Output cost = outputTokens × outputCostPerToken
+ *
+ * Note: API providers (Claude, OpenAI) return inputTokens as uncached tokens only.
+ * Total input = inputTokens + cacheWriteTokens + cacheReadTokens
  *
  * Returns null costs if model price not available in LiteLLM database
  */
@@ -80,9 +81,6 @@ object SessionCostCalculator {
             val totalCacheReadTokens = messages.sumOf { it.cacheReadTokens }
             val totalOutputTokens = messages.sumOf { it.outputTokens }
 
-            // Calculate regular input tokens (not cached)
-            val regularInputTokens = totalInputTokens - totalCacheWriteTokens - totalCacheReadTokens
-
             // Get model pricing
             val modelPrice = ModelPriceManager.getModelPrice(providerId, modelId)
 
@@ -94,7 +92,6 @@ object SessionCostCalculator {
                     totalCacheWriteTokens = totalCacheWriteTokens,
                     totalCacheReadTokens = totalCacheReadTokens,
                     totalOutputTokens = totalOutputTokens,
-                    regularInputTokens = regularInputTokens,
                     inputCost = null,
                     cacheWriteCost = null,
                     cacheReadCost = null,
@@ -104,8 +101,8 @@ object SessionCostCalculator {
                 )
             }
 
-            // Calculate costs (price per token is per million tokens)
-            val inputCost = calculateCost(regularInputTokens, modelPrice.inputCostPerToken)
+            // Calculate costs (totalInputTokens already contains uncached tokens only from API)
+            val inputCost = calculateCost(totalInputTokens, modelPrice.inputCostPerToken)
             val cacheWriteCost = if (modelPrice.cacheWriteCostPerToken != null) {
                 calculateCost(totalCacheWriteTokens, modelPrice.cacheWriteCostPerToken)
             } else {
@@ -130,7 +127,6 @@ object SessionCostCalculator {
                 totalCacheWriteTokens = totalCacheWriteTokens,
                 totalCacheReadTokens = totalCacheReadTokens,
                 totalOutputTokens = totalOutputTokens,
-                regularInputTokens = regularInputTokens,
                 inputCost = inputCost,
                 cacheWriteCost = cacheWriteCost,
                 cacheReadCost = cacheReadCost,
@@ -161,8 +157,6 @@ object SessionCostCalculator {
         try {
             LogManager.aiService("SessionCostCalculator.calculateMessageCost() - Calculating for message ${message.id}")
 
-            val regularInputTokens = message.inputTokens - message.cacheWriteTokens - message.cacheReadTokens
-
             val modelPrice = ModelPriceManager.getModelPrice(providerId, modelId)
 
             if (modelPrice == null) {
@@ -174,7 +168,6 @@ object SessionCostCalculator {
                     cacheWriteTokens = message.cacheWriteTokens,
                     cacheReadTokens = message.cacheReadTokens,
                     outputTokens = message.outputTokens,
-                    regularInputTokens = regularInputTokens,
                     inputCost = null,
                     cacheWriteCost = null,
                     cacheReadCost = null,
@@ -184,8 +177,8 @@ object SessionCostCalculator {
                 )
             }
 
-            // Calculate costs
-            val inputCost = calculateCost(regularInputTokens, modelPrice.inputCostPerToken)
+            // Calculate costs (message.inputTokens already contains uncached tokens only from API)
+            val inputCost = calculateCost(message.inputTokens, modelPrice.inputCostPerToken)
             val cacheWriteCost = if (modelPrice.cacheWriteCostPerToken != null) {
                 calculateCost(message.cacheWriteTokens, modelPrice.cacheWriteCostPerToken)
             } else {
@@ -207,7 +200,6 @@ object SessionCostCalculator {
                 cacheWriteTokens = message.cacheWriteTokens,
                 cacheReadTokens = message.cacheReadTokens,
                 outputTokens = message.outputTokens,
-                regularInputTokens = regularInputTokens,
                 inputCost = inputCost,
                 cacheWriteCost = cacheWriteCost,
                 cacheReadCost = cacheReadCost,

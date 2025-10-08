@@ -98,7 +98,6 @@ fun SessionCostDisplay(sessionId: String) {
                     val totalCacheWriteTokens = data["totalCacheWriteTokens"] as? Int ?: 0
                     val totalCacheReadTokens = data["totalCacheReadTokens"] as? Int ?: 0
                     val totalOutputTokens = data["totalOutputTokens"] as? Int ?: 0
-                    val regularInputTokens = data["regularInputTokens"] as? Int ?: 0
 
                     // Costs
                     val inputCost = data["inputCost"] as? Double ?: 0.0
@@ -107,11 +106,11 @@ fun SessionCostDisplay(sessionId: String) {
                     val outputCost = data["outputCost"] as? Double ?: 0.0
                     val totalCost = data["totalCost"] as? Double ?: 0.0
 
-                    // Regular input row (only if > 0)
-                    if (regularInputTokens > 0) {
+                    // Input row (uncached tokens, only if > 0)
+                    if (totalInputTokens > 0) {
                         TokenCostRow(
                             label = s.shared("ai_cost_input"),
-                            tokens = regularInputTokens,
+                            tokens = totalInputTokens,
                             cost = inputCost,
                             s = s
                         )

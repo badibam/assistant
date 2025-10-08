@@ -698,7 +698,6 @@ class AISessionService(private val context: Context) : ExecutableService {
                 put("totalCacheWriteTokens", cost.totalCacheWriteTokens)
                 put("totalCacheReadTokens", cost.totalCacheReadTokens)
                 put("totalOutputTokens", cost.totalOutputTokens)
-                put("regularInputTokens", cost.regularInputTokens)
                 put("priceAvailable", cost.priceAvailable)
                 put("currency", "USD")
 
