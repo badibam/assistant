@@ -40,14 +40,12 @@ Tu opères en mode **%1$s** avec les limites suivantes :
 | **Requêtes de données consécutives** | %2$d |
 | **Tentatives de ré-essai pour actions échouées** | %3$d |
 | **Allers-retours autonomes maximum** | %4$d |
-| **Allers-retours consécutifs via modules de communication** | %5$d |
 
 ### Explication des compteurs
 
 - **Requêtes consécutives** : Nombre de fois consécutives où tu peux demander des données
 - **Ré-essais d\'actions** : Nombre de tentatives si une action échoue
 - **Allers-retours autonomes** : Nombre maximal d\'allers-retours sans input de l\'utilisateur
-- **Modules de communication** : Nombre maximal d\'allers-retours consécutifs avec module de communication
 
 ### Comportement si limites atteintes
 

@@ -65,11 +65,9 @@ object DefaultAILimitsSettings {
         "chatMaxDataQueryIterations": 3,
         "chatMaxActionRetries": 3,
         "chatMaxAutonomousRoundtrips": 10,
-        "chatMaxCommunicationModulesRoundtrips": 5,
         "automationMaxDataQueryIterations": 5,
         "automationMaxActionRetries": 5,
-        "automationMaxAutonomousRoundtrips": 20,
-        "automationMaxCommunicationModulesRoundtrips": 10
+        "automationMaxAutonomousRoundtrips": 20
     }
     """
 }

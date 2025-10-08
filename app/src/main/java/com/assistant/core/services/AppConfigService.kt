@@ -135,11 +135,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
             chatMaxDataQueryIterations = settings.optInt("chatMaxDataQueryIterations", 3),
             chatMaxActionRetries = settings.optInt("chatMaxActionRetries", 3),
             chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", 10),
-            chatMaxCommunicationModulesRoundtrips = settings.optInt("chatMaxCommunicationModulesRoundtrips", 5),
             automationMaxDataQueryIterations = settings.optInt("automationMaxDataQueryIterations", 5),
             automationMaxActionRetries = settings.optInt("automationMaxActionRetries", 5),
-            automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20),
-            automationMaxCommunicationModulesRoundtrips = settings.optInt("automationMaxCommunicationModulesRoundtrips", 10)
+            automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20)
         )
     }
 
@@ -158,11 +156,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
             put("chatMaxDataQueryIterations", limits.chatMaxDataQueryIterations)
             put("chatMaxActionRetries", limits.chatMaxActionRetries)
             put("chatMaxAutonomousRoundtrips", limits.chatMaxAutonomousRoundtrips)
-            put("chatMaxCommunicationModulesRoundtrips", limits.chatMaxCommunicationModulesRoundtrips)
             put("automationMaxDataQueryIterations", limits.automationMaxDataQueryIterations)
             put("automationMaxActionRetries", limits.automationMaxActionRetries)
             put("automationMaxAutonomousRoundtrips", limits.automationMaxAutonomousRoundtrips)
-            put("automationMaxCommunicationModulesRoundtrips", limits.automationMaxCommunicationModulesRoundtrips)
         }
 
         settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())

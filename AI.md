@@ -157,13 +157,11 @@ data class AILimitsConfig(
     val chatMaxActionRetries: Int = 3,
     val chatMaxFormatErrorRetries: Int = 3,
     val chatMaxAutonomousRoundtrips: Int = 10,
-    val chatMaxCommunicationModulesRoundtrips: Int = 5,
     // AUTOMATION LIMITS
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
     val automationMaxFormatErrorRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20,
-    val automationMaxCommunicationModulesRoundtrips: Int = 10,
     // CHAT : ÉVICTION PAR AUTOMATION (ms)
     val chatMaxInactivityBeforeAutomationEviction: Long = 5 * 60 * 1000,  // 5 min
     // AUTOMATION : WATCHDOG (ms)
@@ -176,13 +174,12 @@ data class AILimitsConfig(
 - **ActionRetries** : Tentatives pour actions échouées
 - **FormatErrorRetries** : Tentatives pour erreurs de format (communicationModule, etc.)
 - **AutonomousRoundtrips** : Limite totale tous types (sécurité)
-- **CommunicationModulesRoundtrips** : Échanges questions/réponses
 
 **Gestion session** :
 - **chatMaxInactivityBeforeAutomationEviction** : Si AUTOMATION demande la main et CHAT inactive depuis > cette durée → arrêt forcé CHAT. Si CHAT inactive < cette durée → AUTOMATION attend en queue
 - **automationMaxSessionDuration** : Watchdog pour éviter boucles infinies AUTOMATION (CHAT n'a pas de timeout - arrêt via bouton UI)
 
-**Compteurs** : Consécutifs pour DataQuery/ActionRetry/FormatError (reset si changement type), total pour AutonomousRoundtrips (jamais reset), séparé pour Communication.
+**Compteurs** : Consécutifs pour DataQuery/ActionRetry/FormatError (reset si changement type), total pour AutonomousRoundtrips (jamais reset).
 
 **API** : `AppConfigService.getAILimits()`, `AppConfigManager.getAILimits()` (cache volatile).
 
@@ -262,13 +259,12 @@ Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FI
 
 ## 7. Boucles autonomes
 
-### Architecture 5 compteurs
+### Architecture 4 compteurs
 ```kotlin
 var totalRoundtrips = 0
 var consecutiveDataQueries = 0
 var consecutiveActionRetries = 0
 var consecutiveFormatErrors = 0
-var communicationRoundtrips = 0
 
 val limits = getLimitsForSessionType(sessionType)
 ```
@@ -288,11 +284,10 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
     - Si message correctement parsé → reset consecutiveFormatErrors
 
   Priorité 1: COMMUNICATION MODULE
-    - Vérifier limite communicationRoundtrips
     - STOP → waitForUserResponse() (suspend via StateFlow)
     - Stocker réponse user
     - Renvoyer auto à IA
-    - Incrémenter communicationRoundtrips + totalRoundtrips
+    - Incrémenter totalRoundtrips
 
   Priorité 2: DATA COMMANDS (queries)
     - Vérifier limite consecutiveDataQueries

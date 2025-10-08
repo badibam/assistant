@@ -558,7 +558,6 @@
 
     <!-- AI LIMITS - Autonomous rounds limit messages -->
     <string name="ai_limit_format_errors_reached">Limite d'erreurs de format atteinte</string>
-    <string name="ai_limit_communication_modules_reached">Limite de modules de communication atteinte</string>
     <string name="ai_limit_data_queries_reached">Limite d'itérations de requêtes de données atteinte</string>
     <string name="ai_limit_action_retries_reached">Limite de tentatives d'actions atteinte</string>
     <string name="ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>

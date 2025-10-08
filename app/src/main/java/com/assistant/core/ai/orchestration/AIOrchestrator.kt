@@ -628,7 +628,6 @@ object AIOrchestrator {
         var consecutiveDataQueries = 0
         var consecutiveActionRetries = 0
         var consecutiveFormatErrors = 0
-        var communicationRoundtrips = 0
 
         while (totalRoundtrips < limits.maxAutonomousRoundtrips) {
 
@@ -699,11 +698,6 @@ object AIOrchestrator {
 
             // 4a. COMMUNICATION MODULE (prioritaire)
             if (aiMessage.communicationModule != null) {
-                if (communicationRoundtrips >= limits.maxCommunicationModules) {
-                    storeLimitReachedMessage(s.shared("ai_limit_communication_modules_reached"), sessionId)
-                    break
-                }
-
                 // STOP - Attendre réponse utilisateur
                 val userResponse = waitForUserResponse(aiMessage.communicationModule)
 
@@ -757,7 +751,6 @@ object AIOrchestrator {
 
                 storeAIMessage(aiResponse, sessionId)
 
-                communicationRoundtrips++
                 totalRoundtrips++
                 continue
             }
@@ -1183,15 +1176,13 @@ object AIOrchestrator {
                 maxDataQueryIterations = aiLimits.chatMaxDataQueryIterations,
                 maxActionRetries = aiLimits.chatMaxActionRetries,
                 maxFormatErrorRetries = aiLimits.chatMaxFormatErrorRetries,
-                maxAutonomousRoundtrips = aiLimits.chatMaxAutonomousRoundtrips,
-                maxCommunicationModules = aiLimits.chatMaxCommunicationModulesRoundtrips
+                maxAutonomousRoundtrips = aiLimits.chatMaxAutonomousRoundtrips
             )
             SessionType.AUTOMATION -> SessionLimits(
                 maxDataQueryIterations = aiLimits.automationMaxDataQueryIterations,
                 maxActionRetries = aiLimits.automationMaxActionRetries,
                 maxFormatErrorRetries = aiLimits.automationMaxFormatErrorRetries,
-                maxAutonomousRoundtrips = aiLimits.automationMaxAutonomousRoundtrips,
-                maxCommunicationModules = aiLimits.automationMaxCommunicationModulesRoundtrips
+                maxAutonomousRoundtrips = aiLimits.automationMaxAutonomousRoundtrips
             )
         }
     }
@@ -1730,6 +1721,5 @@ data class SessionLimits(
     val maxDataQueryIterations: Int,
     val maxActionRetries: Int,
     val maxFormatErrorRetries: Int,
-    val maxAutonomousRoundtrips: Int,
-    val maxCommunicationModules: Int
+    val maxAutonomousRoundtrips: Int
 )
