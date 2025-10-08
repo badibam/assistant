@@ -50,15 +50,15 @@ object BaseSchemas {
                     "default": "activity",
                     "description": "${s.shared("tools_base_schema_config_icon_name")}"
                 },
-                "config_validation": {
-                    "type": "string",
-                    "enum": ["enabled", "disabled"],
-                    "description": "${s.shared("tools_base_schema_config_config_validation")}"
+                "validateConfig": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "${s.shared("tools_base_schema_config_validate_config")}"
                 },
-                "data_validation": {
-                    "type": "string",
-                    "enum": ["enabled", "disabled"],
-                    "description": "${s.shared("tools_base_schema_config_data_validation")}"
+                "validateData": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "${s.shared("tools_base_schema_config_validate_data")}"
                 },
                 "schema_id": {
                     "type": "string",
@@ -74,7 +74,7 @@ object BaseSchemas {
                     "description": "${s.shared("tools_base_schema_config_always_send")}"
                 }
             },
-            "required": ["name", "management", "display_mode", "config_validation", "data_validation"],
+            "required": ["name", "management", "display_mode"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -235,8 +235,8 @@ object BaseSchemas {
             "management" -> s.shared("tools_config_label_management")
             "display_mode" -> s.shared("tools_config_label_display_mode")
             "icon_name" -> s.shared("tools_config_label_icon")
-            "config_validation" -> s.shared("tools_config_label_config_validation")
-            "data_validation" -> s.shared("tools_config_label_data_validation")
+            "validateConfig" -> s.shared("tools_config_label_validate_config")
+            "validateData" -> s.shared("tools_config_label_validate_data")
             "schema_id" -> s.shared("tools_config_label_schema_id")
             "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
             else -> null

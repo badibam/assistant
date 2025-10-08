@@ -21,6 +21,7 @@ data class AppSettingsCategory(
 object AppSettingCategories {
     const val FORMAT = "format"
     const val AI_LIMITS = "ai_limits"
+    const val VALIDATION_CONFIG = "validation_config"
 
     // Future categories:
     // const val UI = "ui"
@@ -68,6 +69,21 @@ object DefaultAILimitsSettings {
         "automationMaxDataQueryIterations": 5,
         "automationMaxActionRetries": 5,
         "automationMaxAutonomousRoundtrips": 20
+    }
+    """
+}
+
+/**
+ * Default validation configuration
+ * Hierarchy: app > zone > tool > session > AI request (OR logic)
+ */
+object DefaultValidationSettings {
+    const val JSON = """
+    {
+        "validateAppConfigChanges": false,
+        "validateZoneConfigChanges": false,
+        "validateToolConfigChanges": false,
+        "validateToolDataChanges": false
     }
     """
 }

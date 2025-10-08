@@ -34,3 +34,14 @@ data class AILimitsConfig(
     // Watchdog pour éviter boucles infinies (CHAT n'a pas de timeout - bouton UI)
     val automationMaxSessionDuration: Long = 10 * 60 * 1000 // 10 min
 )
+
+/**
+ * AI action validation configuration
+ * Hierarchy: app > zone > tool > session > AI request (OR logic)
+ */
+data class ValidationConfig(
+    val validateAppConfigChanges: Boolean = false,      // Modif config app
+    val validateZoneConfigChanges: Boolean = false,     // Modif config zones
+    val validateToolConfigChanges: Boolean = false,     // Modif config outils
+    val validateToolDataChanges: Boolean = false        // Modif données outils
+)

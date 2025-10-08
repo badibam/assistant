@@ -3,11 +3,13 @@ package com.assistant.core.services
 import android.content.Context
 import com.assistant.core.config.TimeConfig
 import com.assistant.core.config.AILimitsConfig
+import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultFormatSettings
 import com.assistant.core.database.entities.DefaultAILimitsSettings
+import com.assistant.core.database.entities.DefaultValidationSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
@@ -198,12 +200,74 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Get structured validation configuration
+     * Hierarchy: app > zone > tool > session > AI request (OR logic)
+     */
+    suspend fun getValidationConfig(): ValidationConfig {
+        val settings = getValidationSettings()
+        return ValidationConfig(
+            validateAppConfigChanges = settings.optBoolean("validateAppConfigChanges", false),
+            validateZoneConfigChanges = settings.optBoolean("validateZoneConfigChanges", false),
+            validateToolConfigChanges = settings.optBoolean("validateToolConfigChanges", false),
+            validateToolDataChanges = settings.optBoolean("validateToolDataChanges", false)
+        )
+    }
+
+    /**
+     * Set validation configuration
+     */
+    suspend fun setValidationConfig(config: ValidationConfig) {
+        val settings = JSONObject().apply {
+            put("validateAppConfigChanges", config.validateAppConfigChanges)
+            put("validateZoneConfigChanges", config.validateZoneConfigChanges)
+            put("validateToolConfigChanges", config.validateToolConfigChanges)
+            put("validateToolDataChanges", config.validateToolDataChanges)
+        }
+
+        settingsDao.updateSettings(AppSettingCategories.VALIDATION_CONFIG, settings.toString())
+    }
+
+    /**
+     * Validation settings management with automatic defaults creation
+     */
+    private suspend fun getValidationSettings(): JSONObject {
+        LogManager.service("Getting validation settings from database")
+        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.VALIDATION_CONFIG)
+        return if (settingsJson != null) {
+            try {
+                LogManager.service("Found existing validation settings: $settingsJson")
+                JSONObject(settingsJson)
+            } catch (e: Exception) {
+                LogManager.service("Error parsing validation settings JSON: ${e.message}", "ERROR", e)
+                createDefaultValidationSettings()
+            }
+        } else {
+            LogManager.service("No validation settings found, creating defaults")
+            createDefaultValidationSettings()
+        }
+    }
+
+    private suspend fun createDefaultValidationSettings(): JSONObject {
+        LogManager.service("Creating default validation settings")
+        val defaultSettings = JSONObject(DefaultValidationSettings.JSON.trimIndent())
+        settingsDao.insertOrUpdateSettings(
+            AppSettingsCategory(
+                category = AppSettingCategories.VALIDATION_CONFIG,
+                settings = defaultSettings.toString()
+            )
+        )
+        LogManager.service("Default validation settings inserted: $defaultSettings")
+        return defaultSettings
+    }
+
+    /**
      * Generic utilities
      */
     suspend fun getCategorySettings(category: String): JSONObject? {
         return when (category) {
             AppSettingCategories.FORMAT -> getFormatSettings()
             AppSettingCategories.AI_LIMITS -> getAILimitsSettings()
+            AppSettingCategories.VALIDATION_CONFIG -> getValidationSettings()
             else -> {
                 // Generic fallback for unknown categories - no auto-creation
                 val settingsJson = settingsDao.getSettingsJsonForCategory(category)
@@ -225,6 +289,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
             }
             AppSettingCategories.AI_LIMITS -> {
                 settingsDao.updateSettings(category, DefaultAILimitsSettings.JSON.trimIndent())
+            }
+            AppSettingCategories.VALIDATION_CONFIG -> {
+                settingsDao.updateSettings(category, DefaultValidationSettings.JSON.trimIndent())
             }
             // Future categories handled here
         }

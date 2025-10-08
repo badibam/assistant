@@ -551,6 +551,8 @@
     <string name="shared_tools_config_label_schema_id">Identifiant de schéma</string>
     <string name="shared_tools_config_label_data_schema_id">Identifiant de schéma de données</string>
     <string name="shared_tools_config_label_always_send">Toujours envoyer à l\'IA</string>
+    <string name="shared_tools_config_label_validate_config">Validation config</string>
+    <string name="shared_tools_config_label_validate_data">Validation données</string>
     <string name="shared_tools_config_option_manual">Manuel</string>
     <string name="shared_tools_config_option_ai">IA</string>
     <string name="shared_tools_config_option_enabled">Activée</string>
@@ -587,6 +589,8 @@
     <string name="shared_tools_base_schema_config_schema_id"></string>
     <string name="shared_tools_base_schema_config_data_schema_id"></string>
     <string name="shared_tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
+    <string name="shared_tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
+    <string name="shared_tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
     <string name="shared_tools_base_schema_data_id"></string>
     <string name="shared_tools_base_schema_data_tool_instance_id"></string>
     <string name="shared_tools_base_schema_data_tooltype"></string>
@@ -614,6 +618,12 @@
     <string name="shared_zone_schema_description"></string>
     <string name="shared_zone_schema_icon_name"></string>
     <string name="shared_zone_schema_color"></string>
+    <string name="shared_zone_schema_validate_zone_config_changes">Requiert validation pour modifications de configuration de cette zone</string>
+    <string name="shared_zone_schema_validate_tool_config_changes">Requiert validation pour modifications de configuration des outils de cette zone</string>
+    <string name="shared_zone_schema_validate_tool_data_changes">Requiert validation pour modifications de données des outils de cette zone</string>
+    <string name="shared_label_validate_zone_config_changes">Validation config zone</string>
+    <string name="shared_label_validate_tool_config_changes">Validation config outils</string>
+    <string name="shared_label_validate_tool_data_changes">Validation données outils</string>
     <string name="shared_scope_all_instances">Tous les outils</string>
     <string name="shared_scope_all_fields">Tous les champs</string>
     <string name="shared_scope_selector_title">Sélection de données</string>
