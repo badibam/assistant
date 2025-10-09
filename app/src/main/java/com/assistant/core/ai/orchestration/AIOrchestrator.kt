@@ -256,6 +256,7 @@ object AIOrchestrator {
     /**
      * Close active session manually
      * Updates both memory state (immediate) and DB state (async)
+     * Interrupts any ongoing AI round and resumes pending user interactions
      */
     @Synchronized
     fun closeActiveSession() {
@@ -267,15 +268,35 @@ object AIOrchestrator {
         val sessionToClose = activeSessionId
         LogManager.aiSession("Closing active session: $sessionToClose", "INFO")
 
-        // 1. Update memory state (immediate)
+        // 1. Interrupt ongoing AI round
+        if (_isRoundInProgress.value) {
+            shouldInterruptRound = true
+            LogManager.aiSession("Interrupting ongoing AI round for session closure", "INFO")
+        }
+
+        // 2. Resume any pending user interactions to unblock suspended coroutines
+        //    This prevents the round from staying blocked on waitForUserResponse/waitForUserValidation
+        if (_waitingState.value is WaitingState.WaitingResponse) {
+            responseContinuation?.resume(null)  // Resume with null (cancelled)
+            responseContinuation = null
+            LogManager.aiSession("Resumed pending communication module with cancellation", "DEBUG")
+        }
+        if (_waitingState.value is WaitingState.WaitingValidation) {
+            validationContinuation?.resume(false)  // Resume with false (refused)
+            validationContinuation = null
+            LogManager.aiSession("Resumed pending validation with refusal", "DEBUG")
+        }
+        _waitingState.value = WaitingState.None
+
+        // 3. Update memory state (immediate)
         activeSessionId = null
         activeSessionType = null
         lastActivityTimestamp = 0
 
-        // 2. Clear messages flow
+        // 4. Clear messages flow
         _activeSessionMessages.value = emptyList()
 
-        // 3. Sync DB state (async, non-blocking)
+        // 5. Sync DB state (async, non-blocking)
         orchestratorScope.launch {
             try {
                 val result = coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
