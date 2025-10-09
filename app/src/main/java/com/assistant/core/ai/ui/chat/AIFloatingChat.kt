@@ -575,22 +575,6 @@ private fun ChatMessageList(
                 )
             }
 
-            // Validation UI (inline in flow, after messages)
-            // Show when waiting for validation
-            if (waitingState is WaitingState.WaitingValidation) {
-                item {
-                    com.assistant.core.ai.ui.ValidationUI(
-                        context = waitingState.context,
-                        onValidate = {
-                            AIOrchestrator.resumeWithValidation(true)
-                        },
-                        onRefuse = {
-                            AIOrchestrator.resumeWithValidation(false)
-                        }
-                    )
-                }
-            }
-
             // AI thinking indicator with interrupt button
             // Exception: don't show during communication module or validation (have their own buttons)
             if (isLoading && waitingState !is WaitingState.WaitingResponse && waitingState !is WaitingState.WaitingValidation) {
@@ -687,6 +671,21 @@ private fun ChatMessageBubble(
                                     }
                                 )
                             }
+                        }
+
+                        // Validation UI (inline in flow, after preText)
+                        // Show only if this is the last AI message AND we're waiting for validation
+                        if (isLastAIMessage && waitingState is WaitingState.WaitingValidation) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            com.assistant.core.ai.ui.ValidationUI(
+                                context = waitingState.context,
+                                onValidate = {
+                                    AIOrchestrator.resumeWithValidation(true)
+                                },
+                                onRefuse = {
+                                    AIOrchestrator.resumeWithValidation(false)
+                                }
+                            )
                         }
                     }
                     message.systemMessage != null -> {

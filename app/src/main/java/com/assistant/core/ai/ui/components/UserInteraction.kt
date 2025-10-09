@@ -1,12 +1,15 @@
 package com.assistant.core.ai.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +26,8 @@ import com.assistant.core.ui.UI
  *
  * Pattern réutilisable pour toutes les interactions nécessitant une réponse user.
  * Utilisé pour : validation des actions IA, communication modules, etc.
+ *
+ * Design: Card avec bordure primary pour attirer l'attention sur l'interaction requise.
  */
 @Composable
 fun InteractionCard(
@@ -30,32 +35,43 @@ fun InteractionCard(
     content: @Composable ColumnScope.() -> Unit,
     actions: @Composable RowScope.() -> Unit
 ) {
-    UI.Card(
-        type = CardType.DEFAULT
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Title
-            UI.Text(
-                text = title,
-                type = TextType.TITLE,
-                fillMaxWidth = true,
-                textAlign = TextAlign.Center
+    // Card avec bordure highlight pour indiquer action requise
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.medium
             )
-
-            // Content
-            content()
-
-            // Actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        UI.Card(
+            type = CardType.DEFAULT
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                actions()
+                // Title
+                UI.Text(
+                    text = title,
+                    type = TextType.TITLE,
+                    fillMaxWidth = true,
+                    textAlign = TextAlign.Center
+                )
+
+                // Content
+                content()
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    actions()
+                }
             }
         }
     }

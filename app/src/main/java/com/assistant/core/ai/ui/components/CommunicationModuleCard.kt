@@ -33,43 +33,36 @@ fun CommunicationModuleCard(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Card with highlighted border to indicate action needed
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = MaterialTheme.shapes.medium
-            )
-    ) {
-        UI.Card(type = CardType.DEFAULT) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Module-specific content
-                when (module) {
-                    is CommunicationModule.MultipleChoice -> {
-                        MultipleChoiceModule(
-                            module = module,
-                            onResponse = onResponse,
-                            onCancel = onCancel
-                        )
-                    }
-                    is CommunicationModule.Validation -> {
-                        ValidationModule(
-                            module = module,
-                            onResponse = onResponse,
-                            onCancel = onCancel
-                        )
-                    }
+    // Use unified InteractionCard with primary border
+    InteractionCard(
+        title = when (module) {
+            is CommunicationModule.MultipleChoice -> s.shared("ai_module_multiple_choice_title")
+            is CommunicationModule.Validation -> s.shared("ai_module_validation_title")
+        },
+        content = {
+            // Module-specific content
+            when (module) {
+                is CommunicationModule.MultipleChoice -> {
+                    MultipleChoiceModule(
+                        module = module,
+                        onResponse = onResponse,
+                        onCancel = onCancel
+                    )
+                }
+                is CommunicationModule.Validation -> {
+                    ValidationModule(
+                        module = module,
+                        onResponse = onResponse,
+                        onCancel = onCancel
+                    )
                 }
             }
+        },
+        actions = {
+            // Action buttons are handled within the specific modules
+            // This slot is not used for communication modules
         }
-    }
+    )
 }
 
 /**
