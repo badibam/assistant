@@ -129,9 +129,11 @@ internal fun fuseConsecutiveUserMessages(messages: List<SessionMessage>): List<F
     messages.forEach { msg ->
         when (msg.sender) {
             MessageSender.USER -> {
-                // Accumulate USER content blocks
+                // Accumulate USER content blocks (filter empty/blank blocks)
                 extractTextContent(msg)?.let { text ->
-                    currentUserBlocks.add(text)
+                    if (text.isNotBlank()) {
+                        currentUserBlocks.add(text)
+                    }
                 }
             }
             MessageSender.AI -> {
@@ -142,14 +144,19 @@ internal fun fuseConsecutiveUserMessages(messages: List<SessionMessage>): List<F
                 }
 
                 // Add AI message (use aiMessageJson if available, otherwise construct)
+                // Filter empty content to avoid API errors
                 val aiContent = msg.aiMessageJson ?: extractTextContent(msg) ?: ""
-                result.add(FusedMessage("assistant", listOf(aiContent)))
+                if (aiContent.isNotBlank()) {
+                    result.add(FusedMessage("assistant", listOf(aiContent)))
+                }
             }
             MessageSender.SYSTEM -> {
                 // Should never happen after transformSystemMessagesToUser
-                // But handle gracefully by treating as USER
+                // But handle gracefully by treating as USER (filter empty/blank blocks)
                 extractTextContent(msg)?.let { text ->
-                    currentUserBlocks.add(text)
+                    if (text.isNotBlank()) {
+                        currentUserBlocks.add(text)
+                    }
                 }
             }
         }
