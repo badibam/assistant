@@ -62,7 +62,7 @@ fun SettingsDialog(
 
     UI.Dialog(
         type = DialogType.INFO,
-        onConfirm = { /* No confirm button for this dialog */ },
+        onConfirm = onDismiss,
         onCancel = onDismiss
     ) {
         Column(
