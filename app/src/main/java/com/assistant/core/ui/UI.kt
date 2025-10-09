@@ -482,4 +482,21 @@ object UI {
 
     @Composable
     fun AIThinkingIndicator() = CurrentTheme.current.AIThinkingIndicator()
+
+    // =====================================
+    // AI MESSAGING COMPONENTS
+    // =====================================
+
+    @Composable
+    fun MessageBubble(
+        sender: com.assistant.core.ai.data.MessageSender,
+        content: @Composable () -> Unit
+    ) = CurrentTheme.current.MessageBubble(sender, content)
+
+    @Composable
+    fun InteractionCard(
+        title: String,
+        content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+        actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+    ) = CurrentTheme.current.InteractionCard(title, content, actions)
 }

@@ -3,6 +3,7 @@ package com.assistant.themes.default
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.assistant.core.validation.FieldLimits
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -1452,6 +1453,80 @@ object DefaultTheme : ThemeContract {
 
                 if (index < 2) {
                     Spacer(modifier = Modifier.width(8.dp))
+                }
+            }
+        }
+    }
+
+    // =====================================
+    // AI MESSAGING COMPONENTS IMPLEMENTATION
+    // =====================================
+
+    @Composable
+    override fun MessageBubble(
+        sender: com.assistant.core.ai.data.MessageSender,
+        content: @Composable () -> Unit
+    ) {
+        // Just wrap in a Card like the original code did - no custom styling
+        // The alignment logic stays in AIFloatingChat.kt where it was before
+        Card(type = CardType.DEFAULT, size = Size.M) {
+            Box(modifier = Modifier.padding(12.dp)) {
+                content()
+            }
+        }
+    }
+
+    @Composable
+    override fun InteractionCard(
+        title: String,
+        content: @Composable ColumnScope.() -> Unit,
+        actions: @Composable RowScope.() -> Unit
+    ) {
+        val colors = CurrentTheme.getCurrentColorScheme()
+
+        // Card with primary border highlight for attention
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 2.dp,
+                    color = colors.primary,
+                    shape = MaterialTheme.shapes.medium
+                )
+        ) {
+            androidx.compose.material3.Card(
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = colors.surface,
+                    contentColor = colors.onSurface
+                ),
+                shape = CardShape
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Title
+                    androidx.compose.material3.Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = colors.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    // Content
+                    content()
+
+                    // Actions
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        actions()
+                    }
                 }
             }
         }

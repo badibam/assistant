@@ -306,5 +306,41 @@ interface ThemeContract {
     @Composable
     fun AIThinkingIndicator()
 
+    // =====================================
+    // AI MESSAGING COMPONENTS
+    // =====================================
+
+    /**
+     * MessageBubble - Container for AI/User/System messages in chat
+     *
+     * Themed container with alignment and appearance based on message sender.
+     * The theme controls borders, colors, shadows, and positioning.
+     *
+     * @param sender Who sent the message (USER, AI, SYSTEM)
+     * @param content Message content to display
+     */
+    @Composable
+    fun MessageBubble(
+        sender: com.assistant.core.ai.data.MessageSender,
+        content: @Composable () -> Unit
+    )
+
+    /**
+     * InteractionCard - Themed card for user interactions (validation, communication modules)
+     *
+     * Highlighted card to draw attention to actions requiring user response.
+     * Theme controls border style, highlight color, and overall appearance.
+     *
+     * @param title Title of the interaction
+     * @param content Main content area
+     * @param actions Action buttons area (typically CONFIRM/CANCEL)
+     */
+    @Composable
+    fun InteractionCard(
+        title: String,
+        content: @Composable ColumnScope.() -> Unit,
+        actions: @Composable RowScope.() -> Unit
+    )
+
     // Old buttons removed - use ActionButton
 }

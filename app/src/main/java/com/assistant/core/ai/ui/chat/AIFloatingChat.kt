@@ -587,7 +587,7 @@ private fun ChatMessageList(
 }
 
 /**
- * Individual message bubble
+ * Individual message bubble - now uses themed UI.MessageBubble
  */
 @Composable
 private fun ChatMessageBubble(
@@ -598,6 +598,7 @@ private fun ChatMessageBubble(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
+    // Preserve original alignment logic
     val alignment = when (message.sender) {
         MessageSender.USER -> Alignment.CenterEnd
         MessageSender.AI -> Alignment.CenterStart
@@ -608,93 +609,93 @@ private fun ChatMessageBubble(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = alignment
     ) {
-        UI.Card(type = CardType.DEFAULT) {
+        // Delegate to themed MessageBubble for appearance
+        UI.MessageBubble(sender = message.sender) {
             Column(
-                modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Sender indicator
-                UI.Text(
-                    text = when (message.sender) {
-                        MessageSender.USER -> s.shared("ai_sender_user")
-                        MessageSender.AI -> s.shared("ai_sender_ai")
-                        MessageSender.SYSTEM -> s.shared("ai_sender_system")
-                    },
-                    type = TextType.LABEL
-                )
+            // Sender indicator
+            UI.Text(
+                text = when (message.sender) {
+                    MessageSender.USER -> s.shared("ai_sender_user")
+                    MessageSender.AI -> s.shared("ai_sender_ai")
+                    MessageSender.SYSTEM -> s.shared("ai_sender_system")
+                },
+                type = TextType.LABEL
+            )
 
-                // Message content
-                when {
-                    message.richContent != null -> {
-                        // Rich message with segments
+            // Message content
+            when {
+                message.richContent != null -> {
+                    // Rich message with segments
+                    UI.Text(
+                        text = "${s.shared("ai_message_rich_prefix")} ${message.richContent.linearText}",
+                        type = TextType.BODY
+                    )
+                    if (message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().isNotEmpty()) {
                         UI.Text(
-                            text = "${s.shared("ai_message_rich_prefix")} ${message.richContent.linearText}",
-                            type = TextType.BODY
-                        )
-                        if (message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().isNotEmpty()) {
-                            UI.Text(
-                                text = s.shared("ai_message_enrichments_count").format(
-                                    message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().size
-                                ),
-                                type = TextType.CAPTION
-                            )
-                        }
-                    }
-                    message.textContent != null -> {
-                        UI.Text(
-                            text = message.textContent,
-                            type = TextType.BODY
+                            text = s.shared("ai_message_enrichments_count").format(
+                                message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().size
+                            ),
+                            type = TextType.CAPTION
                         )
                     }
-                    message.aiMessage != null -> {
-                        // AI message with preText
-                        UI.Text(
-                            text = message.aiMessage.preText,
-                            type = TextType.BODY
-                        )
+                }
+                message.textContent != null -> {
+                    UI.Text(
+                        text = message.textContent,
+                        type = TextType.BODY
+                    )
+                }
+                message.aiMessage != null -> {
+                    // AI message with preText
+                    UI.Text(
+                        text = message.aiMessage.preText,
+                        type = TextType.BODY
+                    )
 
-                        // Communication module (inline in flow, after preText)
-                        // Show only if this is the last AI message AND we're waiting for a response
-                        message.aiMessage.communicationModule?.let { module ->
-                            val shouldShowModule = isLastAIMessage &&
-                                                 waitingState is WaitingState.WaitingResponse
+                    // Communication module (inline in flow, after preText)
+                    // Show only if this is the last AI message AND we're waiting for a response
+                    message.aiMessage.communicationModule?.let { module ->
+                        val shouldShowModule = isLastAIMessage &&
+                                             waitingState is WaitingState.WaitingResponse
 
-                            if (shouldShowModule) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                com.assistant.core.ai.ui.components.CommunicationModuleCard(
-                                    module = module,
-                                    onResponse = { response ->
-                                        AIOrchestrator.resumeWithResponse(response)
-                                    },
-                                    onCancel = {
-                                        AIOrchestrator.resumeWithResponse(null)
-                                    }
-                                )
-                            }
-                        }
-
-                        // Validation UI (inline in flow, after preText)
-                        // Show only if this is the last AI message AND we're waiting for validation
-                        if (isLastAIMessage && waitingState is WaitingState.WaitingValidation) {
+                        if (shouldShowModule) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            com.assistant.core.ai.ui.ValidationUI(
-                                context = waitingState.context,
-                                onValidate = {
-                                    AIOrchestrator.resumeWithValidation(true)
+                            com.assistant.core.ai.ui.components.CommunicationModuleCard(
+                                module = module,
+                                onResponse = { response ->
+                                    AIOrchestrator.resumeWithResponse(response)
                                 },
-                                onRefuse = {
-                                    AIOrchestrator.resumeWithValidation(false)
+                                onCancel = {
+                                    AIOrchestrator.resumeWithResponse(null)
                                 }
                             )
                         }
                     }
-                    message.systemMessage != null -> {
-                        UI.Text(
-                            text = message.systemMessage.summary,
-                            type = TextType.BODY
+
+                    // Validation UI (inline in flow, after preText)
+                    // Show only if this is the last AI message AND we're waiting for validation
+                    if (isLastAIMessage && waitingState is WaitingState.WaitingValidation) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        com.assistant.core.ai.ui.ValidationUI(
+                            context = waitingState.context,
+                            onValidate = {
+                                AIOrchestrator.resumeWithValidation(true)
+                            },
+                            onRefuse = {
+                                AIOrchestrator.resumeWithValidation(false)
+                            }
                         )
                     }
                 }
+                message.systemMessage != null -> {
+                    UI.Text(
+                        text = message.systemMessage.summary,
+                        type = TextType.BODY
+                    )
+                }
+            }
             }
         }
     }
