@@ -82,9 +82,22 @@ Tu dois **obligatoirement** répondre avec une structure JSON valide selon ce sc
     <!-- B.3 ValidationRequest [DEGRÉ 1] -->
     <string name="ai_chunk_response_validation_request"><![CDATA[## ValidationRequest - Validation Explicite
 
+### Format
+
+`validationRequest` est un **Boolean** : `true` pour demander validation, `false` ou absent sinon.
+
+**Format correct** :
+```json
+{
+  "preText": "Je vais créer une zone...",
+  "validationRequest": true,
+  "actionCommands": [...]
+}
+```
+
 ### Quand l\'utiliser
 
-Utilise `validationRequest` **uniquement avec actionCommands** pour demander une confirmation explicite avant d\'effectuer des actions, notamment pour :
+Utilise `validationRequest: true` **uniquement avec actionCommands** pour demander une confirmation explicite avant d\'effectuer des actions, notamment pour :
 - Créations importantes (zones, outils)
 - Suppressions de données
 - Modifications substantielles de configuration
@@ -137,9 +150,7 @@ Structure : {{SCHEMA:communication_module_validation}}
 ```json
 {
   "preText": "Je vais créer une zone Finances avec l\'icône euro. Cette zone contiendra tes outils de suivi budgétaire.",
-  "validationRequest": {
-    "message": "Confirmes-tu la création de la zone Finances ?"
-  },
+  "validationRequest": true,
   "actionCommands": [
     {
       "type": "CREATE_ZONE",
@@ -802,9 +813,7 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 ```json
 {
   "preText": "Je vais supprimer la zone Productivité. Cette action supprimera également tous les outils qu\'elle contient.",
-  "validationRequest": {
-    "message": "Es-tu sûr de vouloir supprimer la zone Productivité et tous ses outils ?"
-  },
+  "validationRequest": true,
   "actionCommands": [
     {
       "type": "DELETE_ZONE",

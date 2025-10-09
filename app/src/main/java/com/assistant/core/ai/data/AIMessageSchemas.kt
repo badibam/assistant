@@ -53,16 +53,7 @@ object AIMessageSchemas {
               "description": "${s.shared("ai_schema_field_pretext_desc")}"
             },
             "validationRequest": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "minLength": 1,
-                  "description": "${s.shared("ai_schema_field_validation_message_desc")}"
-                }
-              },
-              "required": ["message"],
-              "additionalProperties": false,
+              "type": "boolean",
               "description": "${s.shared("ai_schema_field_validation_request_desc")}"
             },
             "dataCommands": {

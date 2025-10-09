@@ -609,8 +609,7 @@
     <string name="ai_schema_message_response_name">Réponse IA structurée</string>
     <string name="ai_schema_message_response_desc">Schéma de validation pour les réponses structurées de l\'IA</string>
     <string name="ai_schema_field_pretext_desc">Explication de ce que tu vas faire ou de ta réponse (toujours requis)</string>
-    <string name="ai_schema_field_validation_message_desc">Question de validation à poser à l\'utilisateur</string>
-    <string name="ai_schema_field_validation_request_desc">Demande de validation optionnelle (uniquement avec actionCommands)</string>
+    <string name="ai_schema_field_validation_request_desc">Demande de validation optionnelle (Boolean, uniquement avec actionCommands)</string>
     <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec actionCommands et communicationModule)</string>
     <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec dataCommands et communicationModule)</string>
     <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec actionCommands)</string>

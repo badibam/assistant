@@ -1732,7 +1732,7 @@ object AIOrchestrator {
      * All providers must return JSON content matching AIMessage structure:
      * {
      *   "preText": "...",
-     *   "validationRequest": { "message": "...", "status": "..." },
+     *   "validationRequest": true,  // boolean, optional
      *   "dataCommands": [...],
      *   "actionCommands": [...],
      *   "postText": "...",
