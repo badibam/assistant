@@ -112,6 +112,24 @@ fun AIFloatingChat(
                     session = activeSession,
                     onClose = onDismiss,
                     onShowStats = { showStats = true },
+                    onStartSession = {
+                        scope.launch {
+                            try {
+                                val newSessionId = aiOrchestrator.createSession(
+                                    s.shared("ai_session_default_name"),
+                                    SessionType.CHAT
+                                )
+                                aiOrchestrator.setActiveSession(newSessionId)
+                                // Session will be picked up by LaunchedEffect
+                                activeSessionId = newSessionId
+                                activeSession = aiOrchestrator.getActiveSession()
+                                LogManager.aiUI("New session created: $newSessionId")
+                            } catch (e: Exception) {
+                                LogManager.aiUI("Error creating session: ${e.message}", "ERROR")
+                                errorMessage = s.shared("ai_error_create_session").format(e.message ?: "")
+                            }
+                        }
+                    },
                     onStopSession = {
                         scope.launch {
                             try {
@@ -261,12 +279,15 @@ private fun ChatHeader(
     session: AISession?,
     onClose: () -> Unit,
     onShowStats: () -> Unit,
+    onStartSession: () -> Unit,
     onStopSession: () -> Unit,
     onToggleValidation: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     var showStopConfirmation by remember { mutableStateOf(false) }
+    var showSettingsMenu by remember { mutableStateOf(false) }
+    var showSessionSettings by remember { mutableStateOf(false) }
 
     // Stop session confirmation dialog
     if (showStopConfirmation) {
@@ -294,87 +315,223 @@ private fun ChatHeader(
         }
     }
 
-    // Custom header with stats button
-    Column(
+    // Settings menu dialog
+    if (showSettingsMenu && hasActiveSession) {
+        SettingsMenuDialog(
+            session = session,
+            onDismiss = { showSettingsMenu = false },
+            onShowCosts = {
+                showSettingsMenu = false
+                onShowStats()
+            },
+            onShowSessionSettings = {
+                LogManager.aiUI("Opening session settings, session=$session", "DEBUG")
+                showSettingsMenu = false
+                showSessionSettings = true
+            }
+        )
+    }
+
+    // Session settings dialog
+    if (showSessionSettings) {
+        LogManager.aiUI("Showing session settings dialog: session=$session", "DEBUG")
+        if (session != null) {
+            SessionSettingsDialog(
+                session = session,
+                onDismiss = { showSessionSettings = false },
+                onToggleValidation = onToggleValidation
+            )
+        } else {
+            LogManager.aiUI("ERROR: session is null, cannot show settings dialog", "ERROR")
+            // Reset state if session is null
+            showSessionSettings = false
+        }
+    }
+
+    // Header: single horizontal row
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F5))
-            .padding(16.dp)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Top row with title and buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Title
-            Column(modifier = Modifier.weight(1f)) {
-                UI.Text(
-                    text = sessionName,
-                    type = TextType.TITLE
-                )
-                UI.Text(
-                    text = when {
-                        isLoading -> s.shared("ai_status_processing")
-                        hasActiveSession -> s.shared("ai_status_ready")
-                        sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
-                        else -> s.shared("ai_status_inactive")
-                    },
-                    type = TextType.CAPTION
-                )
-            }
-
-            // Right buttons: Stats + Close
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Stats button (only if has active session)
-                if (hasActiveSession) {
-                    UI.ActionButton(
-                        action = ButtonAction.CONFIGURE,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onShowStats
-                    )
-                }
-
-                // Close button
-                UI.ActionButton(
-                    action = ButtonAction.CANCEL,
-                    display = ButtonDisplay.ICON,
-                    size = Size.M,
-                    onClick = onClose
-                )
-            }
+        // Title with status
+        Column(modifier = Modifier.weight(1f)) {
+            UI.Text(
+                text = sessionName,
+                type = TextType.TITLE
+            )
+            UI.Text(
+                text = when {
+                    isLoading -> s.shared("ai_status_processing")
+                    hasActiveSession -> s.shared("ai_status_ready")
+                    sessionName == s.shared("ai_chat_new") -> s.shared("ai_status_send_to_start")
+                    else -> s.shared("ai_status_inactive")
+                },
+                type = TextType.CAPTION
+            )
         }
 
-        // Stop session button below (only if has active session)
-        if (hasActiveSession) {
-            Spacer(modifier = Modifier.height(8.dp))
+        // Start session button (only if NO active session)
+        if (!hasActiveSession) {
             UI.ActionButton(
-                action = ButtonAction.DELETE,
-                display = ButtonDisplay.LABEL,
-                size = Size.S,
+                action = ButtonAction.START,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onStartSession
+            )
+        }
+
+        // Stop session button (only if has active session)
+        if (hasActiveSession) {
+            UI.ActionButton(
+                action = ButtonAction.STOP,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
                 onClick = { showStopConfirmation = true }
             )
         }
 
-        // Validation toggle (only if has active session)
-        if (hasActiveSession && session != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // Settings button (only if has active session)
+        if (hasActiveSession) {
+            UI.ActionButton(
+                action = ButtonAction.CONFIGURE,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = { showSettingsMenu = true }
+            )
+        }
+
+        // Close button
+        UI.ActionButton(
+            action = ButtonAction.CANCEL,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = onClose
+        )
+    }
+}
+
+/**
+ * Settings menu dialog - lists settings options
+ */
+@Composable
+private fun SettingsMenuDialog(
+    session: AISession?,
+    onDismiss: () -> Unit,
+    onShowCosts: () -> Unit,
+    onShowSessionSettings: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Header
                 UI.Text(
-                    text = s.shared("label_validation"),
-                    type = TextType.LABEL
+                    text = s.shared("ai_settings_menu_title"),
+                    type = TextType.TITLE
                 )
-                Switch(
-                    checked = session.requireValidation,
-                    onCheckedChange = onToggleValidation
-                )
+
+                // Option 1: Costs
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    onClick = onShowCosts
+                ) {
+                    UI.Text(
+                        text = s.shared("ai_settings_costs"),
+                        type = TextType.BODY
+                    )
+                }
+
+                // Option 2: Session settings
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    onClick = onShowSessionSettings
+                ) {
+                    UI.Text(
+                        text = s.shared("ai_settings_session"),
+                        type = TextType.BODY
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Session settings dialog - validation toggle and other session parameters
+ */
+@Composable
+private fun SessionSettingsDialog(
+    session: AISession,
+    onDismiss: () -> Unit,
+    onToggleValidation: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.Text(
+                        text = s.shared("ai_settings_session"),
+                        type = TextType.TITLE
+                    )
+                    UI.ActionButton(
+                        action = ButtonAction.CANCEL,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        onClick = onDismiss
+                    )
+                }
+
+                // Validation toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.Text(
+                        text = s.shared("label_validation"),
+                        type = TextType.BODY
+                    )
+                    Switch(
+                        checked = session.requireValidation,
+                        onCheckedChange = onToggleValidation
+                    )
+                }
             }
         }
     }

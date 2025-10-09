@@ -348,13 +348,13 @@ object DefaultTheme : ThemeContract {
     private fun getDefaultButtonType(action: ButtonAction): ButtonType {
         return when (action) {
             // PRIMARY: Actions critiques/importantes
-            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT -> ButtonType.PRIMARY
+            ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START -> ButtonType.PRIMARY
 
             // SECONDARY: Actions destructives/dangereuses avec confirmation
-            ButtonAction.DELETE -> ButtonType.SECONDARY
+            ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.SECONDARY
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE -> ButtonType.DEFAULT
         }
     }
     
@@ -383,6 +383,9 @@ object DefaultTheme : ThemeContract {
             ButtonAction.RIGHT -> s.shared("action_right")
             ButtonAction.AI_CHAT -> s.shared("action_ai_chat")
             ButtonAction.INTERRUPT -> s.shared("action_interrupt")
+            ButtonAction.STOP -> s.shared("action_stop")
+            ButtonAction.PAUSE -> s.shared("action_pause")
+            ButtonAction.START -> s.shared("action_start")
         }
     }
     
@@ -408,6 +411,9 @@ object DefaultTheme : ThemeContract {
             ButtonAction.RIGHT -> "▶"     // Triangle droite
             ButtonAction.AI_CHAT -> "🤖"   // Robot face
             ButtonAction.INTERRUPT -> "⏸"  // Pause symbol
+            ButtonAction.STOP -> "⏹"      // Stop symbol
+            ButtonAction.PAUSE -> "⏸"     // Pause symbol
+            ButtonAction.START -> "▶"     // Play symbol
         }
     }
     

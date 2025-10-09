@@ -34,6 +34,9 @@
     <string name="action_right">Suivant</string>
     <string name="action_ai_chat">Assistant IA</string>
     <string name="action_interrupt">Interrompre</string>
+    <string name="action_stop">Arrêter</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_start">Démarrer</string>
 
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Écris ton message...</string>
@@ -57,6 +60,11 @@
     <string name="ai_chat_new">Nouveau chat</string>
     <string name="ai_chat_start_conversation">Commencer une conversation...</string>
     <string name="ai_session_default_name">Chat Session</string>
+
+    <!-- AI Interface - Settings Menu -->
+    <string name="ai_settings_menu_title">Paramètres</string>
+    <string name="ai_settings_costs">Coûts</string>
+    <string name="ai_settings_session">Paramètres session</string>
 
     <!-- AI Status - Processing and State -->
     <string name="ai_status_processing">Traitement en cours...</string>

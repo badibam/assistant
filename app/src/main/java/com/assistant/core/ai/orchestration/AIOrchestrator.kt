@@ -1110,6 +1110,7 @@ object AIOrchestrator {
                     } catch (e: Exception) {
                         SessionType.CHAT
                     },
+                    requireValidation = sessionData["requireValidation"] as? Boolean ?: false,
                     providerId = sessionData["providerId"] as? String ?: "claude",
                     providerSessionId = sessionData["providerSessionId"] as? String ?: "",
                     schedule = null, // TODO: Parse schedule when needed

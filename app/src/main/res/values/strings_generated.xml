@@ -334,6 +334,9 @@
     <string name="shared_action_right">Suivant</string>
     <string name="shared_action_ai_chat">Assistant IA</string>
     <string name="shared_action_interrupt">Interrompre</string>
+    <string name="shared_action_stop">Arrêter</string>
+    <string name="shared_action_pause">Pause</string>
+    <string name="shared_action_start">Démarrer</string>
     <string name="shared_ai_composer_placeholder">Écris ton message...</string>
     <string name="shared_ai_enrichment_config">Configuration enrichissement</string>
     <string name="shared_pointer_enrichment_selector_title">Sélectionner données</string>
@@ -353,6 +356,9 @@
     <string name="shared_ai_chat_new">Nouveau chat</string>
     <string name="shared_ai_chat_start_conversation">Commencer une conversation...</string>
     <string name="shared_ai_session_default_name">Chat Session</string>
+    <string name="shared_ai_settings_menu_title">Paramètres</string>
+    <string name="shared_ai_settings_costs">Coûts</string>
+    <string name="shared_ai_settings_session">Paramètres session</string>
     <string name="shared_ai_status_processing">Traitement en cours...</string>
     <string name="shared_ai_status_ready">Prêt</string>
     <string name="shared_ai_status_send_to_start">Envoyer un message pour commencer</string>

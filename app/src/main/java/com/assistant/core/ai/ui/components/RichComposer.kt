@@ -75,23 +75,6 @@ fun UI.RichComposer(
             fieldType = FieldType.TEXT_LONG
         )
 
-        // Enrichment buttons (if enabled)
-        if (showEnrichmentButtons) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                enrichmentTypes.forEach { type ->
-                    UI.ActionButton(
-                        action = getEnrichmentButtonAction(type),
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = { showEnrichmentDialog = type }
-                    )
-                }
-            }
-        }
-
         // Enrichment blocks list
         if (enrichmentBlocks.isNotEmpty()) {
             Column(
@@ -110,11 +93,28 @@ fun UI.RichComposer(
             }
         }
 
-        // Send button
+        // Enrichment buttons + Send button on same line
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Enrichment buttons (if enabled)
+            if (showEnrichmentButtons) {
+                enrichmentTypes.forEach { type ->
+                    UI.ActionButton(
+                        action = getEnrichmentButtonAction(type),
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = { showEnrichmentDialog = type }
+                    )
+                }
+            }
+
+            // Spacer to push send button to the right
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Send button
             UI.ActionButton(
                 action = ButtonAction.CONFIRM, // Use CONFIRM for send action
                 onClick = {

@@ -63,6 +63,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                 // Cost calculation
                 "get_cost" -> getSessionCost(params, token)
 
+                // Validation toggle
+                "toggle_validation" -> toggleValidation(params, token)
+
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -149,6 +152,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to sessionEntity.id,
                     "name" to sessionEntity.name,
                     "type" to sessionEntity.type.name, // Convert enum to string
+                    "requireValidation" to sessionEntity.requireValidation,
                     "automationId" to sessionEntity.automationId,
                     "scheduledExecutionTime" to sessionEntity.scheduledExecutionTime,
                     "providerId" to sessionEntity.providerId,
@@ -350,6 +354,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to activeSessionEntity.id,
                     "name" to activeSessionEntity.name,
                     "type" to activeSessionEntity.type.name, // Convert enum to string
+                    "requireValidation" to activeSessionEntity.requireValidation,
                     "providerId" to activeSessionEntity.providerId,
                     "providerSessionId" to activeSessionEntity.providerSessionId,
                     "createdAt" to activeSessionEntity.createdAt,
@@ -716,6 +721,45 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to get session cost: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("error_cost_calculation_failed"))
+        }
+    }
+
+    /**
+     * Toggle validation requirement for a session
+     */
+    private suspend fun toggleValidation(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+        val requireValidation = params.optBoolean("requireValidation", false)
+
+        LogManager.aiSession("Toggling validation for session $sessionId: $requireValidation", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Get session
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Update requireValidation field
+            val updatedSession = session.copy(requireValidation = requireValidation)
+            dao.updateSession(updatedSession)
+
+            LogManager.aiSession("Successfully toggled validation for session $sessionId: $requireValidation", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "requireValidation" to requireValidation
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to toggle validation for session $sessionId: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_toggle_validation"))
         }
     }
 

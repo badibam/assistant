@@ -255,12 +255,13 @@ class ValidationResolver(private val context: Context) {
      */
     private suspend fun loadSessionRequiresValidation(sessionId: String): Boolean {
         return try {
-            val result = coordinator.processUserAction("ai_sessions.get", mapOf(
-                "session_id" to sessionId
+            val result = coordinator.processUserAction("ai_sessions.get_session", mapOf(
+                "sessionId" to sessionId
             ))
 
             if (result.status == CommandStatus.SUCCESS) {
-                (result.data?.get("requireValidation") as? Boolean) ?: false
+                val sessionData = result.data?.get("session") as? Map<*, *>
+                (sessionData?.get("requireValidation") as? Boolean) ?: false
             } else {
                 LogManager.aiService("ValidationResolver: Failed to load session: ${result.error}", "WARN")
                 false
