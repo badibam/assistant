@@ -659,6 +659,97 @@ object AIOrchestrator {
     }
 
     /**
+     * Send message asynchronously (non-blocking, fire-and-forget)
+     * Launches in orchestratorScope to survive UI lifecycle (Dialog close/reopen)
+     *
+     * This method solves the navigation bug where closing the chat dialog would cancel
+     * ongoing coroutines, making communication modules and validation non-functional after reopen.
+     *
+     * Flow:
+     * 1. Get or create session
+     * 2. Activate session if needed
+     * 3. Process user message (enrichments + store)
+     * 4. Clear composer via callback
+     * 5. Execute AI round
+     *
+     * @param richMessage User message with segments and enrichments
+     * @param onSessionCreated Called when session is created/activated (for UI state update)
+     * @param onComposerClear Called after message stored successfully (to clear composer)
+     * @param onError Called if any step fails (for error display)
+     */
+    fun sendMessageAsync(
+        richMessage: RichMessage,
+        onSessionCreated: (String) -> Unit = {},
+        onComposerClear: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        orchestratorScope.launch {
+            try {
+                LogManager.aiUI("sendMessageAsync() called with linearText: '${richMessage.linearText}'")
+
+                // 1. Get or create session ID
+                val sessionId = activeSessionId ?: run {
+                    // Create new session on first message
+                    LogManager.aiUI("Creating new session for first message")
+                    val newSessionId = createSession(s.shared("ai_session_default_name"), SessionType.CHAT)
+                    if (newSessionId.isEmpty()) {
+                        onError(s.shared("ai_error_create_session").format(""))
+                        return@launch
+                    }
+                    setActiveSession(newSessionId)
+                    withContext(Dispatchers.Main) {
+                        onSessionCreated(newSessionId)
+                    }
+                    newSessionId
+                }
+
+                // 2. Activate session if not already active
+                if (activeSessionId != sessionId) {
+                    requestSessionControl(sessionId, SessionType.CHAT)
+                    withContext(Dispatchers.Main) {
+                        onSessionCreated(sessionId)
+                    }
+                }
+
+                // 3. Process user message (stores message + executes enrichments)
+                val processResult = processUserMessage(richMessage)
+                if (!processResult.success) {
+                    withContext(Dispatchers.Main) {
+                        onError(processResult.error ?: s.shared("ai_error_send_message").format(""))
+                    }
+                    LogManager.aiUI("Failed to process message: ${processResult.error}", "ERROR")
+                    return@launch
+                }
+
+                // 4. Clear composer (messages will update reactively via StateFlow)
+                withContext(Dispatchers.Main) {
+                    onComposerClear()
+                }
+                LogManager.aiUI("User message sent")
+
+                // 5. Execute AI round (messages will update reactively)
+                val aiRoundResult = executeAIRound(RoundReason.USER_MESSAGE)
+                LogManager.aiUI("AI round finished")
+
+                if (!aiRoundResult.success) {
+                    withContext(Dispatchers.Main) {
+                        onError(aiRoundResult.error ?: s.shared("ai_error_send_message").format(""))
+                    }
+                    LogManager.aiUI("Failed AI round: ${aiRoundResult.error}", "ERROR")
+                } else {
+                    LogManager.aiUI("AI round completed successfully")
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError(s.shared("ai_error_send_message").format(e.message ?: ""))
+                }
+                LogManager.aiUI("Exception in sendMessageAsync: ${e.message}", "ERROR", e)
+            }
+        }
+    }
+
+    /**
      * Execute AI round with autonomous loops (internal implementation)
      */
     private suspend fun executeRoundWithAutonomousLoops(

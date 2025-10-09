@@ -219,53 +219,23 @@ fun AIFloatingChat(
                                 LogManager.aiUI("RichMessage.linearText: '${richMessage.linearText}'")
                                 LogManager.aiUI("RichMessage.dataCommands: ${richMessage.dataCommands.size} commands")
 
-                                scope.launch {
-                                    errorMessage = null
+                                // Clear error before sending
+                                errorMessage = null
 
-                                    try {
-                                        // Get or create session ID
-                                        val sessionId = activeSessionId ?: run {
-                                            // Create new session on first message
-                                            LogManager.aiUI("Creating new session for first message")
-                                            val newSessionId = aiOrchestrator.createSession(s.shared("ai_session_default_name"), SessionType.CHAT)
-                                            aiOrchestrator.setActiveSession(newSessionId)
-                                            activeSessionId = newSessionId
-                                            newSessionId
-                                        }
-
-                                        // Activate session if not already active
-                                        if (aiOrchestrator.getActiveSessionId() != sessionId) {
-                                            aiOrchestrator.requestSessionControl(sessionId, SessionType.CHAT)
-                                        }
-
-                                        // 1. Process user message (stores message + executes enrichments)
-                                        val processResult = aiOrchestrator.processUserMessage(richMessage)
-
-                                        if (!processResult.success) {
-                                            errorMessage = processResult.error
-                                            LogManager.aiUI("Failed to process message: ${processResult.error}", "ERROR")
-                                            return@launch
-                                        }
-
-                                        // 2. Clear composer (messages will update reactively via StateFlow)
+                                // Use sendMessageAsync() which launches in AIOrchestrator.orchestratorScope
+                                // This ensures coroutines survive Dialog close/reopen, fixing communication module bug
+                                aiOrchestrator.sendMessageAsync(
+                                    richMessage = richMessage,
+                                    onSessionCreated = { sessionId ->
+                                        activeSessionId = sessionId
+                                    },
+                                    onComposerClear = {
                                         segments = emptyList()
-                                        LogManager.aiUI("User message sent")
-
-                                        // 3. Execute AI round (messages will update reactively)
-                                        val aiRoundResult = aiOrchestrator.executeAIRound(RoundReason.USER_MESSAGE)
-                                        LogManager.aiUI("AI round finished")
-
-                                        if (!aiRoundResult.success) {
-                                            errorMessage = aiRoundResult.error
-                                            LogManager.aiUI("Failed AI round: ${aiRoundResult.error}", "ERROR")
-                                        } else {
-                                            LogManager.aiUI("AI round completed successfully")
-                                        }
-                                    } catch (e: Exception) {
-                                        errorMessage = s.shared("ai_error_send_message").format(e.message ?: "")
-                                        LogManager.aiUI("Exception sending message: ${e.message}", "ERROR")
+                                    },
+                                    onError = { error ->
+                                        errorMessage = error
                                     }
-                                }
+                                )
                             },
                             placeholder = s.shared("ai_composer_placeholder")
                         )
