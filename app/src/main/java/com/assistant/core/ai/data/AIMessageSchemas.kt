@@ -99,6 +99,10 @@ object AIMessageSchemas {
               "minLength": 1,
               "description": "${s.shared("ai_schema_field_posttext_desc")}"
             },
+            "keepControl": {
+              "type": "boolean",
+              "description": "${s.shared("ai_schema_field_keep_control_desc")}"
+            },
             "communicationModule": {
               "type": "object",
               "required": ["type", "data"],

@@ -20,6 +20,7 @@ data class AIMessage(
     val dataCommands: List<DataCommand>?,             // Optional - AI data queries
     val actionCommands: List<DataCommand>?,           // Optional - actions to execute
     val postText: String?,                            // Optional, only if actions
+    val keepControl: Boolean?,                        // Optional - true to keep control after successful actions
     val communicationModule: CommunicationModule?     // Optional, always last
 ) {
     /**
@@ -60,6 +61,9 @@ data class AIMessage(
         }
 
         postText?.let { json.put("postText", it) }
+
+        // Serialize keepControl as boolean (or omit if null/false)
+        keepControl?.let { if (it) json.put("keepControl", true) }
 
         communicationModule?.let { module ->
             val moduleJson = JSONObject()
@@ -121,6 +125,11 @@ data class AIMessage(
 
                 val postText = json.optString("postText").takeIf { it.isNotEmpty() }
 
+                // Parse keepControl as boolean (true = keep control after successful actions)
+                val keepControl = if (json.has("keepControl")) {
+                    json.optBoolean("keepControl", false)
+                } else null
+
                 val communicationModule = json.optJSONObject("communicationModule")?.let { moduleJson ->
                     try {
                         val type = moduleJson.getString("type")
@@ -142,6 +151,7 @@ data class AIMessage(
                     dataCommands = dataCommands,
                     actionCommands = actionCommands,
                     postText = postText,
+                    keepControl = keepControl,
                     communicationModule = communicationModule
                 )
 

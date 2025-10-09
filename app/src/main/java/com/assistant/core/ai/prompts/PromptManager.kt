@@ -194,6 +194,7 @@ object PromptManager {
             dataCommands = null,
             actionCommands = null,
             postText = null,
+            keepControl = null,
             communicationModule = null
         )
     }

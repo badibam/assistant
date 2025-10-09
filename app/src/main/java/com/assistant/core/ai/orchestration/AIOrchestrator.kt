@@ -1059,12 +1059,54 @@ object AIOrchestrator {
                 val allSuccess = actionSystemMessage.commandResults.all { it.status == CommandStatus.SUCCESS }
 
                 if (allSuccess) {
-                    // Succès total - Store postText if present (UI only, excluded from prompt)
+                    // Store postText if present (UI only, excluded from prompt)
                     if (aiMessage.postText != null && aiMessage.postText.isNotEmpty()) {
                         storePostTextMessage(aiMessage.postText, sessionId)
                     }
-                    // FIN boucle
-                    break
+
+                    // Check if AI wants to keep control after successful actions
+                    if (aiMessage.keepControl == true) {
+                        // AI keeps control - continue with results for next iteration
+                        LogManager.aiSession("AI requested keepControl, continuing autonomous loop with action results", "DEBUG")
+
+                        // Check session still active before continuing
+                        if (!isSessionStillActive(sessionId)) {
+                            LogManager.aiSession("Session stopped before keepControl continuation", "INFO")
+                            break
+                        }
+
+                        // Check interruption before continuing
+                        if (shouldInterruptRound) {
+                            LogManager.aiSession("Round interrupted before keepControl continuation", "INFO")
+                            storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                            break
+                        }
+
+                        // Build new prompt with action results and continue
+                        val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                        aiResponse = callAIWithRetry(newPromptData, sessionType)
+                        logTokenStats(aiResponse)
+                        if (!aiResponse.success) break
+
+                        // Check interruption BEFORE storing
+                        if (shouldInterruptRound) {
+                            LogManager.aiSession("Round interrupted before storing keepControl continuation response", "INFO")
+                            storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                            break
+                        }
+
+                        // Store AI response and get message ID for potential validation
+                        val currentAIMessageId = storeAIMessage(aiResponse, sessionId)
+
+                        // Reset consecutive counters (new cycle)
+                        consecutiveActionRetries = 0
+                        consecutiveDataQueries = 0
+                        totalRoundtrips++
+                        continue
+                    } else {
+                        // Normal success - end loop
+                        break
+                    }
                 } else {
                     // Échecs - retry
                     if (consecutiveActionRetries >= limits.maxActionRetries) {
@@ -1951,6 +1993,11 @@ object AIOrchestrator {
             // Parse optional postText
             val postText = json.optString("postText").takeIf { it.isNotEmpty() }
 
+            // Parse optional keepControl (boolean: true = keep control after successful actions)
+            val keepControl = if (json.has("keepControl")) {
+                json.optBoolean("keepControl", false)
+            } else null
+
             // Parse optional communicationModule
             val communicationModule = json.optJSONObject("communicationModule")?.let { module ->
                 try {
@@ -1982,6 +2029,7 @@ object AIOrchestrator {
                 dataCommands = dataCommands,
                 actionCommands = actionCommands,
                 postText = postText,
+                keepControl = keepControl,
                 communicationModule = communicationModule
             )
 
@@ -2026,6 +2074,7 @@ object AIOrchestrator {
                 "  dataCommands: ${dataCommands?.size ?: 0} commands\n" +
                 "  actionCommands: ${actionCommands?.size ?: 0} commands\n" +
                 "  postText: ${postText?.take(50) ?: "null"}\n" +
+                "  keepControl: ${keepControl ?: "null"}\n" +
                 "  communicationModule: ${communicationModule?.type ?: "null"}",
                 "DEBUG"
             )
@@ -2044,6 +2093,7 @@ object AIOrchestrator {
                 dataCommands = null,
                 actionCommands = null,
                 postText = null,
+                keepControl = null,
                 communicationModule = null
             )
 

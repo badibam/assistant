@@ -77,7 +77,8 @@ Tu dois **obligatoirement** répondre avec une structure JSON valide selon ce sc
 
 - `preText` est **toujours requis** : explique ce que tu vas faire ou ta réponse
 - **Exclusivité mutuelle** : un seul parmi `dataCommands`, `actionCommands` ou `communicationModule` par réponse
-- `validationRequest` et `postText` : uniquement avec `actionCommands`]]></string>
+- `validationRequest`, `postText` et `keepControl` : uniquement avec `actionCommands`
+- `keepControl` : Garde la main après succès des actions pour continuer avec les résultats système. Utile pour séquences multi-étapes avec feedback intermédiaire. Compte dans les limites de boucles autonomes.]]></string>
 
     <!-- B.3 ValidationRequest [DEGRÉ 1] -->
     <string name="ai_chunk_response_validation_request"><![CDATA[## ValidationRequest - Validation Explicite

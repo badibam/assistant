@@ -621,6 +621,7 @@
     <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec actionCommands et communicationModule)</string>
     <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec dataCommands et communicationModule)</string>
     <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec actionCommands)</string>
+    <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour continuer avec les résultats système. Utile pour séquences multi-étapes avec feedback intermédiaire. Compte dans les limites de boucles autonomes.</string>
     <string name="ai_schema_field_communication_module_desc">Module de communication pour interaction avec l\'utilisateur (mutuellement exclusif avec dataCommands et actionCommands)</string>
 
     <!-- communication_module schemas -->

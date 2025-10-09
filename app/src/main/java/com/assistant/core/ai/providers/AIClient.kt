@@ -223,6 +223,7 @@ class AIClient(private val context: Context) {
                 dataCommands = dataCommands,
                 actionCommands = actionCommands,
                 postText = postText,
+                keepControl = null,
                 communicationModule = communicationModule
             )
 

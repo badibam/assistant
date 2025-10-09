@@ -80,6 +80,7 @@ data class AIMessage(
     val dataCommands: List<DataCommand>?,     // OU actions (exclusif)
     val actionCommands: List<DataCommand>?,
     val postText: String?,
+    val keepControl: Boolean?,                // true = garde la main après succès actions
     val communicationModule: CommunicationModule?
 )
 ```
@@ -305,7 +306,8 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
     - Stocker SystemMessage
     - Si allSuccess:
       - Si postText présent → storePostTextMessage (excludeFromPrompt=true)
-      - break (FIN)
+      - Si keepControl == true → renvoyer auto à IA avec résultats, reset compteurs consécutifs, totalRoundtrips++, continue
+      - Sinon → break (FIN)
     - Sinon → vérifier limite consecutiveActionRetries, renvoyer IA
     - Incrémenter consecutiveActionRetries, reset consecutiveDataQueries, totalRoundtrips++
 
