@@ -86,6 +86,23 @@ fun AIFloatingChat(
         }
     }
 
+    // Update activeSession whenever activeSessionId changes
+    LaunchedEffect(activeSessionId) {
+        val sessionId = activeSessionId  // Local copy for smart cast
+        if (sessionId != null) {
+            try {
+                // Load session by ID to get the full AISession object
+                activeSession = aiOrchestrator.loadSession(sessionId)
+                LogManager.aiUI("Updated activeSession object for ID: $sessionId, session=${activeSession?.name}", "DEBUG")
+            } catch (e: Exception) {
+                LogManager.aiUI("Failed to update activeSession: ${e.message}", "ERROR")
+            }
+        } else {
+            activeSession = null
+            LogManager.aiUI("Cleared activeSession (activeSessionId is null)", "DEBUG")
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
