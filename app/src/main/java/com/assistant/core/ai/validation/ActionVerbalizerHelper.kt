@@ -2,6 +2,8 @@ package com.assistant.core.ai.validation
 
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
+import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.ai.processing.AICommandProcessor
 import com.assistant.core.ai.processing.CommandTransformer
 import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.services.ExecutableService
@@ -13,13 +15,20 @@ import org.json.JSONObject
  *
  * Architecture:
  * - Takes DataCommand (AI command format)
- * - Transforms to ExecutableCommand via CommandTransformer
+ * - Transforms to ExecutableCommand via AICommandProcessor (for actions) or CommandTransformer (for queries)
  * - Retrieves service via ServiceRegistry
  * - Calls service.verbalize() to generate description
  *
  * Usage: ValidationResolver uses this to verbalize all actions before displaying to user
  */
 object ActionVerbalizerHelper {
+
+    // Action command types that AICommandProcessor handles
+    private val ACTION_TYPES = setOf(
+        "CREATE_DATA", "UPDATE_DATA", "DELETE_DATA",
+        "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL",
+        "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE"
+    )
 
     /**
      * Verbalizes a single action command
@@ -34,13 +43,18 @@ object ActionVerbalizerHelper {
     ): String {
         return try {
             // Transform DataCommand to ExecutableCommand
-            val executableCommands = CommandTransformer.transformToExecutable(listOf(action), context)
-
-            if (executableCommands.isEmpty()) {
-                return "Action: ${action.type}"
+            // Use AICommandProcessor for actions, CommandTransformer for queries
+            val executableCommand: ExecutableCommand? = if (action.type in ACTION_TYPES) {
+                val processor = AICommandProcessor(context)
+                processor.transformActionForVerbalization(action)
+            } else {
+                val executableCommands = CommandTransformer.transformToExecutable(listOf(action), context)
+                executableCommands.firstOrNull()
             }
 
-            val executableCommand = executableCommands.first()
+            if (executableCommand == null) {
+                return "Action: ${action.type}"
+            }
 
             // Get service for this resource using ServiceRegistry instance
             val serviceRegistry = com.assistant.core.coordinator.ServiceRegistry(context)

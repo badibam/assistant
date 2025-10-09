@@ -915,26 +915,38 @@ object AIOrchestrator {
 
                 when (validationResult) {
                     is ValidationResult.RequiresValidation -> {
-                        // 1. Create fallback VALIDATION_CANCELLED message (deleted if user validates)
-                        val cancelMessageId = createAndStoreValidationCancelledMessage(sessionId)
+                        LogManager.aiSession("ValidationResult.RequiresValidation - ${validationResult.context.verbalizedActions.size} actions", "DEBUG")
 
-                        // 2. STOP - Attendre validation user (pass cancelMessageId for WaitingState)
+                        // 1. Create fallback VALIDATION_CANCELLED message (deleted if user validates)
+                        //    Store WITHOUT triggering UI update yet (will be visible only if user refuses)
+                        val cancelMessageId = createAndStoreValidationCancelledMessage(sessionId, triggerUIUpdate = false)
+                        LogManager.aiSession("Fallback message created: $cancelMessageId", "DEBUG")
+
+                        // 2. STOP - Update WaitingState and suspend for user validation
+                        //    This triggers UI to display validation dialog
+                        LogManager.aiSession("About to call waitForUserValidation()...", "DEBUG")
                         val validated = if (cancelMessageId != null) {
                             waitForUserValidation(validationResult.context, cancelMessageId)
                         } else {
                             // Fallback if cancel message creation failed (shouldn't happen)
+                            LogManager.aiSession("cancelMessageId is null, using empty string", "WARN")
                             waitForUserValidation(validationResult.context, "")
                         }
 
+                        LogManager.aiSession("User validation result: $validated", "DEBUG")
                         if (!validated) {
-                            // User refused - VALIDATION_CANCELLED message already created, just break
-                            LogManager.aiSession("User refused validation, keeping fallback VALIDATION_CANCELLED message", "INFO")
+                            // User refused - VALIDATION_CANCELLED message already created
+                            // Trigger UI update to show it
+                            updateMessagesFlow(sessionId)
+                            LogManager.aiSession("User refused validation, showing VALIDATION_CANCELLED message", "INFO")
                             break  // FIN - attend prochain message user
                         }
-                        // Si validated → continuer avec l'exécution
+                        // Si validated → VALIDATION_CANCELLED message will be deleted by resumeWithValidation()
+                        LogManager.aiSession("User validated actions, continuing execution", "INFO")
                     }
                     ValidationResult.NoValidation -> {
                         // Pas de validation nécessaire, continuer directement
+                        LogManager.aiSession("ValidationResult.NoValidation - continuing directly", "DEBUG")
                     }
                 }
 
@@ -1578,9 +1590,14 @@ object AIOrchestrator {
      * This message is created as a fallback when no validation is provided for AI actions
      * It will be deleted if the user actually validates the actions
      *
+     * @param sessionId Session ID
+     * @param triggerUIUpdate Whether to trigger updateMessagesFlow (default true for backward compatibility)
      * @return Message ID of the stored cancellation message, or null if storage failed
      */
-    private suspend fun createAndStoreValidationCancelledMessage(sessionId: String): String? {
+    private suspend fun createAndStoreValidationCancelledMessage(
+        sessionId: String,
+        triggerUIUpdate: Boolean = true
+    ): String? {
         try {
             val systemMessage = SystemMessage(
                 type = SystemMessageType.VALIDATION_CANCELLED,
@@ -1600,12 +1617,14 @@ object AIOrchestrator {
                 LogManager.aiSession("Failed to store VALIDATION_CANCELLED message: ${storeResult.error}", "WARN")
                 return null
             } else {
-                // Update reactive messages flow for UI
-                updateMessagesFlow(sessionId)
+                // Update reactive messages flow for UI only if requested
+                if (triggerUIUpdate) {
+                    updateMessagesFlow(sessionId)
+                }
 
                 // Return message ID for potential deletion
                 val messageId = storeResult.data?.get("messageId") as? String
-                LogManager.aiSession("Created VALIDATION_CANCELLED fallback message: $messageId", "DEBUG")
+                LogManager.aiSession("Created VALIDATION_CANCELLED fallback message: $messageId (UI update: $triggerUIUpdate)", "DEBUG")
                 return messageId
             }
         } catch (e: Exception) {
@@ -1624,8 +1643,12 @@ object AIOrchestrator {
      */
     private suspend fun waitForUserValidation(context: ValidationContext, cancelMessageId: String): Boolean =
         suspendCancellableCoroutine { cont ->
+            LogManager.aiSession("waitForUserValidation() called - updating WaitingState", "DEBUG")
+            LogManager.aiSession("ValidationContext has ${context.verbalizedActions.size} actions", "DEBUG")
             _waitingState.value = WaitingState.WaitingValidation(context, cancelMessageId)
+            LogManager.aiSession("WaitingState updated to WaitingValidation", "DEBUG")
             validationContinuation = cont
+            LogManager.aiSession("Validation continuation set, suspending coroutine...", "DEBUG")
         }
 
     /**

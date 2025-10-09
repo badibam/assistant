@@ -248,29 +248,6 @@ fun AIFloatingChat(
             errorMessage = null
         }
     }
-
-    // User interaction dialogs based on waiting state
-    when (val state = waitingState) {
-        is WaitingState.WaitingValidation -> {
-            // Phase 5: ValidationUI with ValidationContext
-            com.assistant.core.ai.ui.ValidationUI(
-                context = state.context,
-                onValidate = {
-                    aiOrchestrator.resumeWithValidation(true)
-                },
-                onRefuse = {
-                    aiOrchestrator.resumeWithValidation(false)
-                }
-            )
-        }
-        is WaitingState.WaitingResponse -> {
-            // Communication modules are now displayed inline in message flow
-            // No dialog needed
-        }
-        WaitingState.None -> {
-            // No dialog needed
-        }
-    }
 }
 
 /**
@@ -453,9 +430,25 @@ private fun ChatMessageList(
                 )
             }
 
+            // Validation UI (inline in flow, after messages)
+            // Show when waiting for validation
+            if (waitingState is WaitingState.WaitingValidation) {
+                item {
+                    com.assistant.core.ai.ui.ValidationUI(
+                        context = waitingState.context,
+                        onValidate = {
+                            AIOrchestrator.resumeWithValidation(true)
+                        },
+                        onRefuse = {
+                            AIOrchestrator.resumeWithValidation(false)
+                        }
+                    )
+                }
+            }
+
             // AI thinking indicator with interrupt button
-            // Exception: don't show during communication module (has its own cancel button)
-            if (isLoading && waitingState !is WaitingState.WaitingResponse) {
+            // Exception: don't show during communication module or validation (have their own buttons)
+            if (isLoading && waitingState !is WaitingState.WaitingResponse && waitingState !is WaitingState.WaitingValidation) {
                 item {
                     ChatLoadingIndicator()
                 }

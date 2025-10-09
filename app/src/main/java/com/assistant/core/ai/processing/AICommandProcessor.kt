@@ -160,6 +160,73 @@ class AICommandProcessor(private val context: Context) {
     }
 
     /**
+     * Transform a single action command for verbalization (without enrichment)
+     * Public method for ActionVerbalizerHelper to transform actions
+     *
+     * @param command DataCommand to transform
+     * @return ExecutableCommand ready for verbalization, or null if unknown type
+     */
+    fun transformActionForVerbalization(command: DataCommand): ExecutableCommand? {
+        return when (command.type) {
+            // Tool data actions
+            "CREATE_DATA" -> ExecutableCommand(
+                resource = "tool_data",
+                operation = "batch_create",
+                params = command.params
+            )
+            "UPDATE_DATA" -> ExecutableCommand(
+                resource = "tool_data",
+                operation = "batch_update",
+                params = command.params
+            )
+            "DELETE_DATA" -> ExecutableCommand(
+                resource = "tool_data",
+                operation = "batch_delete",
+                params = command.params
+            )
+
+            // Tool instance actions
+            "CREATE_TOOL" -> ExecutableCommand(
+                resource = "tools",
+                operation = "create",
+                params = command.params
+            )
+            "UPDATE_TOOL" -> ExecutableCommand(
+                resource = "tools",
+                operation = "update",
+                params = command.params
+            )
+            "DELETE_TOOL" -> ExecutableCommand(
+                resource = "tools",
+                operation = "delete",
+                params = command.params
+            )
+
+            // Zone actions
+            "CREATE_ZONE" -> ExecutableCommand(
+                resource = "zones",
+                operation = "create",
+                params = command.params
+            )
+            "UPDATE_ZONE" -> ExecutableCommand(
+                resource = "zones",
+                operation = "update",
+                params = command.params
+            )
+            "DELETE_ZONE" -> ExecutableCommand(
+                resource = "zones",
+                operation = "delete",
+                params = command.params
+            )
+
+            else -> {
+                LogManager.aiService("Unknown action command type for verbalization: ${command.type}", "WARN")
+                null
+            }
+        }
+    }
+
+    /**
      * Enrich CREATE_DATA/UPDATE_DATA params with schema_id from tool instance config
      *
      * AI doesn't need to specify schema_id - we automatically fetch it from the
