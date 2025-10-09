@@ -230,6 +230,11 @@ class CommandExecutor(private val context: Context) {
                 // This case should not be reached in normal flow
                 "Communication cancelled"
             }
+            SystemMessageType.VALIDATION_CANCELLED -> {
+                // VALIDATION_CANCELLED messages provide their own summary directly
+                // This case should not be reached in normal flow
+                "Validation cancelled"
+            }
             SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT, SystemMessageType.INTERRUPTED -> {
                 // These messages should never reach here (filtered from prompts, audit only)
                 // But provide fallback just in case

@@ -392,6 +392,30 @@ object AIOrchestrator {
      * Called from UI when user responds to validation request
      */
     fun resumeWithValidation(validated: Boolean) {
+        // Delete VALIDATION_CANCELLED message if user validated
+        if (validated) {
+            val currentState = _waitingState.value
+            if (currentState is WaitingState.WaitingValidation) {
+                val cancelMessageId = currentState.cancelMessageId
+                if (cancelMessageId.isNotEmpty()) {
+                    orchestratorScope.launch {
+                        try {
+                            val deleteResult = coordinator.processUserAction("ai_sessions.delete_message", mapOf(
+                                "messageId" to cancelMessageId
+                            ))
+                            if (deleteResult.isSuccess) {
+                                LogManager.aiSession("Deleted VALIDATION_CANCELLED fallback message: $cancelMessageId", "DEBUG")
+                            } else {
+                                LogManager.aiSession("Failed to delete VALIDATION_CANCELLED message: ${deleteResult.error}", "WARN")
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiSession("Exception deleting VALIDATION_CANCELLED message: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+            }
+        }
+
         validationContinuation?.resume(validated)
         validationContinuation = null
         _waitingState.value = WaitingState.None
@@ -404,6 +428,30 @@ object AIOrchestrator {
      * @param response User response text, or null if cancelled
      */
     fun resumeWithResponse(response: String?) {
+        // Delete COMMUNICATION_CANCELLED message if user provided a response
+        if (response != null) {
+            val currentState = _waitingState.value
+            if (currentState is WaitingState.WaitingResponse) {
+                val cancelMessageId = currentState.cancelMessageId
+                if (cancelMessageId.isNotEmpty()) {
+                    orchestratorScope.launch {
+                        try {
+                            val deleteResult = coordinator.processUserAction("ai_sessions.delete_message", mapOf(
+                                "messageId" to cancelMessageId
+                            ))
+                            if (deleteResult.isSuccess) {
+                                LogManager.aiSession("Deleted COMMUNICATION_CANCELLED fallback message: $cancelMessageId", "DEBUG")
+                            } else {
+                                LogManager.aiSession("Failed to delete COMMUNICATION_CANCELLED message: ${deleteResult.error}", "WARN")
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiSession("Exception deleting COMMUNICATION_CANCELLED message: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+            }
+        }
+
         responseContinuation?.resume(response)
         responseContinuation = null
         _waitingState.value = WaitingState.None
@@ -712,22 +760,32 @@ object AIOrchestrator {
 
             // 4a. COMMUNICATION MODULE (prioritaire)
             if (aiMessage.communicationModule != null) {
-                // STOP - Attendre réponse utilisateur
-                val userResponse = waitForUserResponse(aiMessage.communicationModule)
+                // 1. Store AI message as text (for UI history display, excludeFromPrompt=true)
+                val moduleText = aiMessage.communicationModule.toText(context)
+                coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                    "sessionId" to sessionId,
+                    "sender" to MessageSender.AI.name,
+                    "textContent" to moduleText,
+                    "excludeFromPrompt" to true,
+                    "timestamp" to System.currentTimeMillis()
+                ))
+                updateMessagesFlow(sessionId)
+
+                // 2. Create fallback COMMUNICATION_CANCELLED message (deleted if user responds)
+                val cancelMessageId = createAndStoreCommunicationCancelledMessage(sessionId)
+
+                // 3. STOP - Attendre réponse utilisateur (pass cancelMessageId for WaitingState)
+                val userResponse = if (cancelMessageId != null) {
+                    waitForUserResponse(aiMessage.communicationModule, cancelMessageId)
+                } else {
+                    // Fallback if cancel message creation failed (shouldn't happen)
+                    waitForUserResponse(aiMessage.communicationModule, "")
+                }
 
                 // Check if user cancelled
                 if (userResponse == null) {
-                    // User cancelled - store SystemMessage and break (do not send to AI)
-                    LogManager.aiSession("User cancelled communication module", "INFO")
-
-                    val cancelledMessage = SystemMessage(
-                        type = SystemMessageType.COMMUNICATION_CANCELLED,
-                        commandResults = emptyList(),
-                        summary = s.shared("ai_module_cancelled"),
-                        formattedData = null
-                    )
-                    storeSystemMessage(cancelledMessage, sessionId)
-
+                    // User cancelled - COMMUNICATION_CANCELLED message already created, just break
+                    LogManager.aiSession("User cancelled communication module, keeping fallback COMMUNICATION_CANCELLED message", "INFO")
                     break
                 }
 
@@ -831,13 +889,20 @@ object AIOrchestrator {
 
                 when (validationResult) {
                     is ValidationResult.RequiresValidation -> {
-                        // STOP - Attendre validation user
-                        val validated = waitForUserValidation(validationResult.context)
+                        // 1. Create fallback VALIDATION_CANCELLED message (deleted if user validates)
+                        val cancelMessageId = createAndStoreValidationCancelledMessage(sessionId)
+
+                        // 2. STOP - Attendre validation user (pass cancelMessageId for WaitingState)
+                        val validated = if (cancelMessageId != null) {
+                            waitForUserValidation(validationResult.context, cancelMessageId)
+                        } else {
+                            // Fallback if cancel message creation failed (shouldn't happen)
+                            waitForUserValidation(validationResult.context, "")
+                        }
 
                         if (!validated) {
-                            // Refuser actions
-                            val refusedSystemMessage = createRefusedActionsMessage(aiMessage.actionCommands)
-                            storeSystemMessage(refusedSystemMessage, sessionId)
+                            // User refused - VALIDATION_CANCELLED message already created, just break
+                            LogManager.aiSession("User refused validation, keeping fallback VALIDATION_CANCELLED message", "INFO")
                             break  // FIN - attend prochain message user
                         }
                         // Si validated → continuer avec l'exécution
@@ -1392,26 +1457,111 @@ object AIOrchestrator {
     }
 
     /**
+     * Create and store COMMUNICATION_CANCELLED message
+     * This message is created as a fallback when no response is provided to a communication module
+     * It will be deleted if the user actually provides a response
+     *
+     * @return Message ID of the stored cancellation message, or null if storage failed
+     */
+    private suspend fun createAndStoreCommunicationCancelledMessage(sessionId: String): String? {
+        try {
+            val systemMessage = SystemMessage(
+                type = SystemMessageType.COMMUNICATION_CANCELLED,
+                commandResults = emptyList(),
+                summary = s.shared("ai_system_communication_no_response"),
+                formattedData = null
+            )
+
+            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                "sessionId" to sessionId,
+                "sender" to MessageSender.SYSTEM.name,
+                "systemMessage" to systemMessage,
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            if (!storeResult.isSuccess) {
+                LogManager.aiSession("Failed to store COMMUNICATION_CANCELLED message: ${storeResult.error}", "WARN")
+                return null
+            } else {
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
+
+                // Return message ID for potential deletion
+                val messageId = storeResult.data?.get("messageId") as? String
+                LogManager.aiSession("Created COMMUNICATION_CANCELLED fallback message: $messageId", "DEBUG")
+                return messageId
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Error storing COMMUNICATION_CANCELLED message: ${e.message}", "ERROR", e)
+            return null
+        }
+    }
+
+    /**
+     * Create and store VALIDATION_CANCELLED message
+     * This message is created as a fallback when no validation is provided for AI actions
+     * It will be deleted if the user actually validates the actions
+     *
+     * @return Message ID of the stored cancellation message, or null if storage failed
+     */
+    private suspend fun createAndStoreValidationCancelledMessage(sessionId: String): String? {
+        try {
+            val systemMessage = SystemMessage(
+                type = SystemMessageType.VALIDATION_CANCELLED,
+                commandResults = emptyList(),
+                summary = s.shared("ai_system_validation_refused"),
+                formattedData = null
+            )
+
+            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                "sessionId" to sessionId,
+                "sender" to MessageSender.SYSTEM.name,
+                "systemMessage" to systemMessage,
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            if (!storeResult.isSuccess) {
+                LogManager.aiSession("Failed to store VALIDATION_CANCELLED message: ${storeResult.error}", "WARN")
+                return null
+            } else {
+                // Update reactive messages flow for UI
+                updateMessagesFlow(sessionId)
+
+                // Return message ID for potential deletion
+                val messageId = storeResult.data?.get("messageId") as? String
+                LogManager.aiSession("Created VALIDATION_CANCELLED fallback message: $messageId", "DEBUG")
+                return messageId
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Error storing VALIDATION_CANCELLED message: ${e.message}", "ERROR", e)
+            return null
+        }
+    }
+
+    /**
      * Wait for user validation (suspend until UI calls resumeWithValidation)
      * Phase 6: Implemented with ValidationContext
      *
      * @param context ValidationContext avec les actions et métadonnées
+     * @param cancelMessageId ID of VALIDATION_CANCELLED message to delete if user validates
      * @return true si user valide, false si user refuse
      */
-    private suspend fun waitForUserValidation(context: ValidationContext): Boolean =
+    private suspend fun waitForUserValidation(context: ValidationContext, cancelMessageId: String): Boolean =
         suspendCancellableCoroutine { cont ->
-            _waitingState.value = WaitingState.WaitingValidation(context)
+            _waitingState.value = WaitingState.WaitingValidation(context, cancelMessageId)
             validationContinuation = cont
         }
 
     /**
      * Wait for user response to communication module (suspend until UI calls resumeWithResponse)
      *
+     * @param module Communication module to display
+     * @param cancelMessageId ID of COMMUNICATION_CANCELLED message to delete if user responds
      * @return User response text, or null if cancelled
      */
-    private suspend fun waitForUserResponse(module: CommunicationModule): String? =
+    private suspend fun waitForUserResponse(module: CommunicationModule, cancelMessageId: String): String? =
         suspendCancellableCoroutine { cont ->
-            _waitingState.value = WaitingState.WaitingResponse(module)
+            _waitingState.value = WaitingState.WaitingResponse(module, cancelMessageId)
             responseContinuation = cont
         }
 

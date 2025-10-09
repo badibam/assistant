@@ -20,11 +20,21 @@ sealed class WaitingState {
      * - aiMessageId for persistence/reconstruction
      * - actions list (all actions, validated and non-validated)
      * - verbalized actions with descriptions, warnings, and reasons
+     *
+     * @param cancelMessageId ID of the VALIDATION_CANCELLED system message to delete if user validates
      */
-    data class WaitingValidation(val context: ValidationContext) : WaitingState()
+    data class WaitingValidation(
+        val context: ValidationContext,
+        val cancelMessageId: String
+    ) : WaitingState()
 
     /**
      * Waiting for user response to communication module
+     *
+     * @param cancelMessageId ID of the COMMUNICATION_CANCELLED system message to delete if user responds
      */
-    data class WaitingResponse(val module: CommunicationModule) : WaitingState()
+    data class WaitingResponse(
+        val module: CommunicationModule,
+        val cancelMessageId: String
+    ) : WaitingState()
 }

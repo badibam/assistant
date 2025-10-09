@@ -1,5 +1,6 @@
 package com.assistant.core.ai.data
 
+import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -175,13 +176,31 @@ sealed class CommunicationModule {
     abstract val data: Map<String, Any>
 
     /**
+     * Convert module to text representation for display in message history
+     * Used to show the question/prompt even after the module is no longer interactive
+     */
+    abstract fun toText(context: Context): String
+
+    /**
      * Multiple choice question
      * Data: question (String), options (List<String>)
      */
     data class MultipleChoice(
         override val type: String = "MultipleChoice",
         override val data: Map<String, Any>
-    ) : CommunicationModule()
+    ) : CommunicationModule() {
+        override fun toText(context: Context): String {
+            val question = data["question"] as? String ?: ""
+            @Suppress("UNCHECKED_CAST")
+            val options = data["options"] as? List<String> ?: emptyList()
+
+            val optionsList = options.mapIndexed { index, option ->
+                "${index + 1}. $option"
+            }.joinToString("\n")
+
+            return "$question\n\n$optionsList"
+        }
+    }
 
     /**
      * Validation/confirmation request
@@ -190,7 +209,11 @@ sealed class CommunicationModule {
     data class Validation(
         override val type: String = "Validation",
         override val data: Map<String, Any>
-    ) : CommunicationModule()
+    ) : CommunicationModule() {
+        override fun toText(context: Context): String {
+            return data["message"] as? String ?: ""
+        }
+    }
 
     // TODO: Add Slider, DataSelector modules when needed
 }

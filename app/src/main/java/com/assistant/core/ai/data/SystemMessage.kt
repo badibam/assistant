@@ -83,7 +83,8 @@ enum class SystemMessageType {
     NETWORK_ERROR,           // Network/HTTP/provider errors (stored for audit, FILTERED from prompt)
     SESSION_TIMEOUT,         // Session watchdog timeout (stored for audit, FILTERED from prompt)
     INTERRUPTED,             // User interrupted autonomous loop (stored for audit, FILTERED from prompt)
-    COMMUNICATION_CANCELLED  // User cancelled communication module (sent to AI prompt for context)
+    COMMUNICATION_CANCELLED, // User did not respond to communication module (sent to AI prompt for context)
+    VALIDATION_CANCELLED     // User did not validate AI actions or explicitly refused (sent to AI prompt for context)
 }
 
 /**
