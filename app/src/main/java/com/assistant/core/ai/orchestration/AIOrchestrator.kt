@@ -428,12 +428,14 @@ object AIOrchestrator {
      * @param response User response text, or null if cancelled
      */
     fun resumeWithResponse(response: String?) {
+        val currentSessionId = activeSessionId
+
         // Delete COMMUNICATION_CANCELLED message if user provided a response
         if (response != null) {
             val currentState = _waitingState.value
             if (currentState is WaitingState.WaitingResponse) {
                 val cancelMessageId = currentState.cancelMessageId
-                if (cancelMessageId.isNotEmpty()) {
+                if (cancelMessageId.isNotEmpty() && currentSessionId != null) {
                     orchestratorScope.launch {
                         try {
                             val deleteResult = coordinator.processUserAction("ai_sessions.delete_message", mapOf(
@@ -441,6 +443,8 @@ object AIOrchestrator {
                             ))
                             if (deleteResult.isSuccess) {
                                 LogManager.aiSession("Deleted COMMUNICATION_CANCELLED fallback message: $cancelMessageId", "DEBUG")
+                                // Trigger UI update to show text message (CANCELLED is now deleted)
+                                updateMessagesFlow(currentSessionId)
                             } else {
                                 LogManager.aiSession("Failed to delete COMMUNICATION_CANCELLED message: ${deleteResult.error}", "WARN")
                             }
@@ -760,21 +764,17 @@ object AIOrchestrator {
 
             // 4a. COMMUNICATION MODULE (prioritaire)
             if (aiMessage.communicationModule != null) {
-                // 1. Store AI message as text (for UI history display, excludeFromPrompt=true)
+                // 1. Store module as text message for UI display (persists in history, NOT deleted after response)
+                //    Store WITHOUT triggering UI update yet (module will display interactively first)
                 val moduleText = aiMessage.communicationModule.toText(context)
-                coordinator.processUserAction("ai_sessions.create_message", mapOf(
-                    "sessionId" to sessionId,
-                    "sender" to MessageSender.AI.name,
-                    "textContent" to moduleText,
-                    "excludeFromPrompt" to true,
-                    "timestamp" to System.currentTimeMillis()
-                ))
-                updateMessagesFlow(sessionId)
+                storeCommunicationModuleTextMessage(moduleText, sessionId, triggerUIUpdate = false)
 
-                // 2. Create fallback COMMUNICATION_CANCELLED message (deleted if user responds)
-                val cancelMessageId = createAndStoreCommunicationCancelledMessage(sessionId)
+                // 2. Create fallback COMMUNICATION_CANCELLED message (deleted if user responds, kept if cancelled)
+                //    Store WITHOUT triggering UI update yet (will be visible only if user cancels)
+                val cancelMessageId = createAndStoreCommunicationCancelledMessage(sessionId, triggerUIUpdate = false)
 
-                // 3. STOP - Attendre réponse utilisateur (pass cancelMessageId for WaitingState)
+                // 3. STOP - Update WaitingState and suspend for user response
+                //    This triggers UI to display interactive module
                 val userResponse = if (cancelMessageId != null) {
                     waitForUserResponse(aiMessage.communicationModule, cancelMessageId)
                 } else {
@@ -784,10 +784,15 @@ object AIOrchestrator {
 
                 // Check if user cancelled
                 if (userResponse == null) {
-                    // User cancelled - COMMUNICATION_CANCELLED message already created, just break
-                    LogManager.aiSession("User cancelled communication module, keeping fallback COMMUNICATION_CANCELLED message", "INFO")
+                    // User cancelled - both text and CANCELLED messages already created
+                    // Trigger UI update to show them
+                    updateMessagesFlow(sessionId)
+                    LogManager.aiSession("User cancelled communication module, showing text + CANCELLED messages", "INFO")
                     break
                 }
+
+                // User responded - CANCELLED message will be deleted by resumeWithResponse()
+                // Text message stays in history
 
                 // User provided response - format with prefix and store
                 val formattedResponse = "${s.shared("ai_module_response_prefix")} $userResponse"
@@ -1461,9 +1466,14 @@ object AIOrchestrator {
      * This message is created as a fallback when no response is provided to a communication module
      * It will be deleted if the user actually provides a response
      *
+     * @param sessionId Session ID
+     * @param triggerUIUpdate Whether to trigger updateMessagesFlow (default true for backward compatibility)
      * @return Message ID of the stored cancellation message, or null if storage failed
      */
-    private suspend fun createAndStoreCommunicationCancelledMessage(sessionId: String): String? {
+    private suspend fun createAndStoreCommunicationCancelledMessage(
+        sessionId: String,
+        triggerUIUpdate: Boolean = true
+    ): String? {
         try {
             val systemMessage = SystemMessage(
                 type = SystemMessageType.COMMUNICATION_CANCELLED,
@@ -1483,16 +1493,61 @@ object AIOrchestrator {
                 LogManager.aiSession("Failed to store COMMUNICATION_CANCELLED message: ${storeResult.error}", "WARN")
                 return null
             } else {
-                // Update reactive messages flow for UI
-                updateMessagesFlow(sessionId)
+                // Update reactive messages flow for UI only if requested
+                if (triggerUIUpdate) {
+                    updateMessagesFlow(sessionId)
+                }
 
                 // Return message ID for potential deletion
                 val messageId = storeResult.data?.get("messageId") as? String
-                LogManager.aiSession("Created COMMUNICATION_CANCELLED fallback message: $messageId", "DEBUG")
+                LogManager.aiSession("Created COMMUNICATION_CANCELLED fallback message: $messageId (UI update: $triggerUIUpdate)", "DEBUG")
                 return messageId
             }
         } catch (e: Exception) {
             LogManager.aiSession("Error storing COMMUNICATION_CANCELLED message: ${e.message}", "ERROR", e)
+            return null
+        }
+    }
+
+    /**
+     * Store communication module as text message for UI display (persists in history)
+     * This message is NOT deleted after user response, it stays in the history
+     *
+     * @param moduleText Text representation of the module
+     * @param sessionId Session ID
+     * @param triggerUIUpdate Whether to trigger updateMessagesFlow (default true for backward compatibility)
+     * @return Message ID of the stored text message, or null if storage failed
+     */
+    private suspend fun storeCommunicationModuleTextMessage(
+        moduleText: String,
+        sessionId: String,
+        triggerUIUpdate: Boolean = true
+    ): String? {
+        try {
+            val storeResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                "sessionId" to sessionId,
+                "sender" to MessageSender.AI.name,
+                "textContent" to moduleText,
+                "excludeFromPrompt" to true,
+                "timestamp" to System.currentTimeMillis()
+            ))
+
+            if (!storeResult.isSuccess) {
+                LogManager.aiSession("Failed to store communication module text message: ${storeResult.error}", "WARN")
+                return null
+            } else {
+                // Update reactive messages flow for UI only if requested
+                if (triggerUIUpdate) {
+                    updateMessagesFlow(sessionId)
+                }
+
+                // Return message ID
+                val messageId = storeResult.data?.get("messageId") as? String
+                LogManager.aiSession("Created communication module text message: $messageId (UI update: $triggerUIUpdate)", "DEBUG")
+                return messageId
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Error storing communication module text message: ${e.message}", "ERROR", e)
             return null
         }
     }
