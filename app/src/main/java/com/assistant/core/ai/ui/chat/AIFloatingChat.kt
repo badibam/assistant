@@ -349,12 +349,12 @@ private fun ChatHeader(
         }
     }
 
-    // Header: single horizontal row
+    // Header: single horizontal row with reduced padding for compactness
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F5))
-            .padding(16.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
