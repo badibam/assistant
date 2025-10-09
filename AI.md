@@ -76,7 +76,7 @@ data class RichMessage(
 
 data class AIMessage(
     val preText: String,                      // Obligatoire
-    val validationRequest: ValidationRequest?,
+    val validationRequest: Boolean?,          // true = validation requise
     val dataCommands: List<DataCommand>?,     // OU actions (exclusif)
     val actionCommands: List<DataCommand>?,
     val postText: String?,
@@ -297,9 +297,10 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
     - Incrémenter consecutiveDataQueries, reset consecutiveActionRetries, totalRoundtrips++
 
   Priorité 3: ACTION COMMANDS (mutations)
-    - Si validationRequest présent:
-      - STOP → waitForUserValidation() (suspend via StateFlow)
-      - Si refusé → createRefusedActionsMessage (CANCELLED) + break
+    - ValidationResolver analyse hiérarchie configs → ValidationContext si requis
+    - Créer message VALIDATION_CANCELLED fallback AVANT suspension
+    - Si validation requise → STOP → waitForUserValidation(context, cancelMessageId)
+    - Si refusé → garde message VALIDATION_CANCELLED + break
     - Exécuter actions via AICommandProcessor → CommandExecutor
     - Stocker SystemMessage
     - Si allSuccess:
@@ -315,23 +316,24 @@ Si totalRoundtrips >= limite → storeLimitReachedMessage (LIMIT_REACHED)
 
 ### Pattern StateFlow
 ```kotlin
-// Attente validation
-private suspend fun waitForUserValidation(request: ValidationRequest): Boolean =
+// Attente validation (Phase 7: fallback message + cancelMessageId)
+private suspend fun waitForUserValidation(context: ValidationContext, cancelMessageId: String): Boolean =
     suspendCancellableCoroutine { cont ->
-        _waitingState.value = WaitingState.WaitingValidation(request)
+        _waitingState.value = WaitingState.WaitingValidation(context, cancelMessageId)
         validationContinuation = cont
     }
 
 fun resumeWithValidation(validated: Boolean) {
+    if (validated) deleteMessage(cancelMessageId) // Supprime fallback si validé
     validationContinuation?.resume(validated)
     validationContinuation = null
     _waitingState.value = WaitingState.None
 }
 
-// Idem pour waitForUserResponse/resumeWithResponse
+// Idem pour waitForUserResponse/resumeWithResponse avec COMMUNICATION_CANCELLED
 ```
 
-**Helpers** : `createRefusedActionsMessage()` retourne SystemMessage avec status CANCELLED, `storeLimitReachedMessage()` crée SystemMessage type LIMIT_REACHED.
+**Helpers** : `createAndStoreValidationCancelledMessage()` crée fallback AVANT suspension, `storeLimitReachedMessage()` crée SystemMessage type LIMIT_REACHED.
 
 ## 8. Gestion réseau et erreurs
 
@@ -491,8 +493,14 @@ when (waitingState) {
 }
 ```
 
-### Validation et permissions
-Système hiérarchique : `autonomous` (IA agit), `validation_required` (confirmation user), `forbidden` (interdit), `ask_first` (permission avant).
+### Validation des actions IA
+**Hiérarchie OR** : app > zone > tool > session > AI request. Si UN niveau true → validation requise. `validationRequest` = Boolean dans AIMessage.
+
+**Flow** : ValidationResolver analyse actions → génère ValidationContext (actions verbalisées + raisons + warnings config) → `waitForUserValidation(context, cancelMessageId)` suspend → UI affiche → user valide/refuse → `resumeWithValidation(validated)` reprend.
+
+**Messages fallback** : COMMUNICATION_CANCELLED / VALIDATION_CANCELLED créés AVANT suspension (trace si fermeture app/navigation). Supprimés si user répond/valide effectivement. Communication module : message AI texte (excludeFromPrompt=true) + fallback SYSTEM. Validation : fallback SYSTEM uniquement.
+
+**Persistance** : Pas de sérialisation WaitingState. Historique messages suffit. Coroutines scope singleton AIOrchestrator (survive navigation ChatScreen).
 
 ## 13. SystemMessages
 
