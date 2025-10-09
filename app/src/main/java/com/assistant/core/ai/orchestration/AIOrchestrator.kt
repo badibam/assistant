@@ -683,6 +683,16 @@ object AIOrchestrator {
         // 2. Call AI with PromptData (with network check and retry)
         var aiResponse = callAIWithRetry(promptData, sessionType)
 
+        // Clean markdown markers from response immediately (LLMs often wrap JSON in ```json...```)
+        // This ensures consistent format throughout the round
+        if (aiResponse.success && aiResponse.content.isNotEmpty()) {
+            val cleanedContent = aiResponse.content.trim().let { content ->
+                val withoutOpening = content.removePrefix("```json").removePrefix("```").trimStart()
+                withoutOpening.removeSuffix("```").trimEnd()
+            }
+            aiResponse = aiResponse.copy(content = cleanedContent)
+        }
+
         // Log token usage stats
         logTokenStats(aiResponse)
 
@@ -1715,6 +1725,7 @@ object AIOrchestrator {
 
     /**
      * Store AI message response
+     * Note: Content is already cleaned of markdown markers in executeRoundWithAutonomousLoops
      * @return Message ID of the stored message (for validation), or null if storage failed
      */
     private suspend fun storeAIMessage(aiResponse: AIResponse, sessionId: String): String? {
