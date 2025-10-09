@@ -119,11 +119,12 @@ fun AIFloatingChat(
                                     s.shared("ai_session_default_name"),
                                     SessionType.CHAT
                                 )
-                                aiOrchestrator.setActiveSession(newSessionId)
-                                // Session will be picked up by LaunchedEffect
+                                // Request control to properly activate session in orchestrator
+                                aiOrchestrator.requestSessionControl(newSessionId, SessionType.CHAT)
+                                // Update local state
                                 activeSessionId = newSessionId
                                 activeSession = aiOrchestrator.getActiveSession()
-                                LogManager.aiUI("New session created: $newSessionId")
+                                LogManager.aiUI("New session created and activated: $newSessionId")
                             } catch (e: Exception) {
                                 LogManager.aiUI("Error creating session: ${e.message}", "ERROR")
                                 errorMessage = s.shared("ai_error_create_session").format(e.message ?: "")
