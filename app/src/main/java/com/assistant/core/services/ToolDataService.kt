@@ -11,6 +11,7 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
@@ -123,6 +124,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         dao.insert(entity)
 
+        // Notify UI of data change in this tool instance
+        val zoneId = getZoneIdForTool(toolInstanceId)
+        if (zoneId != null) {
+            DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
+        }
+
         return OperationResult.success(
             data = mapOf(
                 "id" to entity.id,
@@ -233,6 +240,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         dao.update(updatedEntity)
 
+        // Notify UI of data change in this tool instance
+        val zoneId = getZoneIdForTool(existingEntity.toolInstanceId)
+        if (zoneId != null) {
+            DataChangeNotifier.notifyToolDataChanged(existingEntity.toolInstanceId, zoneId)
+        }
+
         return OperationResult.success(
             data = mapOf(
                 "id" to updatedEntity.id,
@@ -250,7 +263,19 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         val dao = getToolDataDao()
+
+        // Get entity before deleting to retrieve toolInstanceId for notification
+        val entity = dao.getById(entryId)
+
         dao.deleteById(entryId)
+
+        // Notify UI of data change in this tool instance
+        if (entity != null) {
+            val zoneId = getZoneIdForTool(entity.toolInstanceId)
+            if (zoneId != null) {
+                DataChangeNotifier.notifyToolDataChanged(entity.toolInstanceId, zoneId)
+            }
+        }
 
         return OperationResult.success()
     }
@@ -375,6 +400,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         dao.deleteByToolInstance(toolInstanceId)
 
+        // Notify UI of data change in this tool instance
+        val zoneId = getZoneIdForTool(toolInstanceId)
+        if (zoneId != null) {
+            DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
+        }
+
         return OperationResult.success()
     }
 
@@ -428,6 +459,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 failureCount++
             }
         }
+
+        // Note: No notification here - createEntry() already notifies for each entry
 
         return OperationResult.success(mapOf(
             "created_count" to successCount,
@@ -488,6 +521,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
         }
 
+        // Note: No notification here - updateEntry() already notifies for each entry
+
         return OperationResult.success(mapOf(
             "updated_count" to successCount,
             "failed_count" to failureCount
@@ -540,6 +575,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 failureCount++
             }
         }
+
+        // Note: No notification here - deleteEntry() already notifies for each entry
 
         return OperationResult.success(mapOf(
             "deleted_count" to successCount,
@@ -607,6 +644,16 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
             else -> s.shared("action_verbalize_unknown")
         }
+    }
+
+    /**
+     * Helper to get zone_id from tool_instance_id
+     */
+    private suspend fun getZoneIdForTool(toolInstanceId: String): String? {
+        val database = AppDatabase.getDatabase(context)
+        val toolInstanceDao = database.toolInstanceDao()
+        val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
+        return toolInstance?.zone_id
     }
 
     /**

@@ -17,6 +17,8 @@ import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DataChangeEvent
 import com.assistant.tools.notes.ui.components.NoteCard
 import com.assistant.tools.notes.ui.components.EditNoteDialog
 import kotlinx.coroutines.launch
@@ -127,6 +129,21 @@ fun NotesScreen(
             } else {
                 notes = emptyList()
                 LogManager.ui("No notes found or error loading notes")
+            }
+        }
+    }
+
+    // Observe data changes and refresh notes automatically
+    LaunchedEffect(toolInstanceId) {
+        DataChangeNotifier.changes.collect { event ->
+            when (event) {
+                is DataChangeEvent.ToolDataChanged -> {
+                    // Only refresh if the change affects this tool instance
+                    if (event.toolInstanceId == toolInstanceId) {
+                        refreshTrigger++
+                    }
+                }
+                else -> {} // Ignore other events
             }
         }
     }

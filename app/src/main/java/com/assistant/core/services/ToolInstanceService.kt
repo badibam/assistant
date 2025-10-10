@@ -8,6 +8,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -68,7 +69,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         toolInstanceDao.insertToolInstance(newToolInstance)
-        
+
+        // Notify UI of tools change in this zone
+        DataChangeNotifier.notifyToolsChanged(zoneId)
+
         return OperationResult.success(mapOf(
             "tool_instance_id" to newToolInstance.id,
             "zone_id" to newToolInstance.zone_id,
@@ -102,7 +106,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         toolInstanceDao.updateToolInstance(updatedTool)
-        
+
+        // Notify UI of tools change in this zone
+        DataChangeNotifier.notifyToolsChanged(updatedTool.zone_id)
+
         return OperationResult.success(mapOf(
             "tool_instance_id" to updatedTool.id,
             "updated_at" to updatedTool.updated_at
@@ -127,7 +134,10 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         toolInstanceDao.deleteToolInstanceById(toolInstanceId)
-        
+
+        // Notify UI of tools change in this zone
+        DataChangeNotifier.notifyToolsChanged(existingTool.zone_id)
+
         return OperationResult.success(mapOf(
             "tool_instance_id" to toolInstanceId,
             "deleted_at" to System.currentTimeMillis()

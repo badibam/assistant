@@ -17,6 +17,8 @@ import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DataChangeEvent
 import org.json.JSONObject
 
 /**
@@ -54,7 +56,22 @@ fun TrackingScreen(
             toolInstance = result.mapSingleData("tool_instance") { map -> map }
         }
     }
-    
+
+    // Observe data changes and refresh history automatically
+    LaunchedEffect(toolInstanceId) {
+        DataChangeNotifier.changes.collect { event ->
+            when (event) {
+                is DataChangeEvent.ToolDataChanged -> {
+                    // Only refresh if the change affects this tool instance
+                    if (event.toolInstanceId == toolInstanceId) {
+                        historyRefreshTrigger++
+                    }
+                }
+                else -> {} // Ignore other events
+            }
+        }
+    }
+
     // Parse configuration
     val config = remember(toolInstance) {
         val configJson = toolInstance?.get("config_json") as? String ?: "{}"

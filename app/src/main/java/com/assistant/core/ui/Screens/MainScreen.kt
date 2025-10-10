@@ -20,6 +20,8 @@ import com.assistant.core.database.entities.Zone
 import com.assistant.core.ui.dialogs.SettingsDialog
 import com.assistant.core.ai.ui.screens.AIProvidersScreen
 import com.assistant.core.ai.ui.chat.AIFloatingChat
+import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DataChangeEvent
 import kotlinx.coroutines.launch
 
 /**
@@ -69,7 +71,34 @@ fun MainScreen() {
             }
         }
     }
-    
+
+    // Observe data changes and reload zones automatically
+    LaunchedEffect(Unit) {
+        DataChangeNotifier.changes.collect { event ->
+            when (event) {
+                is DataChangeEvent.ZonesChanged -> {
+                    coordinator.executeWithLoading(
+                        operation = "zones.list",
+                        onLoading = { isLoading = it },
+                        onError = { error -> errorMessage = error }
+                    )?.let { result ->
+                        zones = result.mapData("zones") { map ->
+                            Zone(
+                                id = map["id"] as String,
+                                name = map["name"] as String,
+                                description = map["description"] as? String,
+                                order_index = (map["order_index"] as Number).toInt(),
+                                created_at = (map["created_at"] as Number).toLong(),
+                                updated_at = (map["updated_at"] as Number).toLong()
+                            )
+                        }
+                    }
+                }
+                else -> {} // Ignore other events
+            }
+        }
+    }
+
     // Function to reload zones after operations
     val reloadZones = {
         coroutineScope.launch {

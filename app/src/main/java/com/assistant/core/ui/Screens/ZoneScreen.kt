@@ -17,6 +17,8 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapData
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DataChangeEvent
 import kotlinx.coroutines.launch
 
 /**
@@ -73,7 +75,39 @@ fun ZoneScreen(
             }
         }
     }
-    
+
+    // Observe data changes and reload tools automatically for this zone
+    LaunchedEffect(zone.id) {
+        DataChangeNotifier.changes.collect { event ->
+            when (event) {
+                is DataChangeEvent.ToolsChanged -> {
+                    // Only reload if the change affects this zone
+                    if (event.zoneId == zone.id) {
+                        coordinator.executeWithLoading(
+                            operation = "tools.list",
+                            params = mapOf("zone_id" to zone.id),
+                            onLoading = { isLoading = it },
+                            onError = { error -> errorMessage = error }
+                        )?.let { result ->
+                            toolInstances = result.mapData("tool_instances") { map ->
+                                ToolInstance(
+                                    id = map["id"] as String,
+                                    zone_id = map["zone_id"] as String,
+                                    tool_type = map["tool_type"] as String,
+                                    config_json = map["config_json"] as String,
+                                    order_index = (map["order_index"] as Number).toInt(),
+                                    created_at = (map["created_at"] as Number).toLong(),
+                                    updated_at = (map["updated_at"] as Number).toLong()
+                                )
+                            }
+                        }
+                    }
+                }
+                else -> {} // Ignore other events
+            }
+        }
+    }
+
     // Function to reload tool instances after operations
     val reloadToolInstances = {
         coroutineScope.launch {

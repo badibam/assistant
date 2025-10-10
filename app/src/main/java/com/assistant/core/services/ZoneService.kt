@@ -8,6 +8,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -70,7 +71,10 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         zoneDao.insertZone(newZone)
-        
+
+        // Notify UI of zones change
+        DataChangeNotifier.notifyZonesChanged()
+
         return OperationResult.success(mapOf(
             "zone_id" to newZone.id,
             "name" to newZone.name,
@@ -101,7 +105,10 @@ class ZoneService(private val context: Context) : ExecutableService {
         )
         
         zoneDao.updateZone(updatedZone)
-        
+
+        // Notify UI of zones change
+        DataChangeNotifier.notifyZonesChanged()
+
         return OperationResult.success(mapOf(
             "zone_id" to updatedZone.id,
             "updated_at" to updatedZone.updated_at
@@ -126,7 +133,10 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
         
         zoneDao.deleteZoneById(zoneId)
-        
+
+        // Notify UI of zones change
+        DataChangeNotifier.notifyZonesChanged()
+
         return OperationResult.success(mapOf(
             "zone_id" to zoneId,
             "deleted_at" to System.currentTimeMillis()
