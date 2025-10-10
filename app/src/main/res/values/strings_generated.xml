@@ -762,6 +762,8 @@
     <string name="shared_ai_provider_claude_no_models">Aucun modèle disponible</string>
     <string name="shared_ai_provider_claude_fetch_error">Erreur: %1$s</string>
     <string name="shared_ai_provider_claude_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
+    <string name="shared_ai_error_no_provider_configured">Aucun fournisseur IA configuré. Veuillez configurer un fournisseur dans les paramètres.</string>
+    <string name="shared_ai_error_provider_not_found">Fournisseur introuvable: %1$s</string>
     <string name="shared_ai_error_provider_not_configured">Provider %1$s non configuré</string>
     <string name="shared_ai_error_cannot_delete_active_provider">Impossible de supprimer le provider actif</string>
     <string name="shared_ai_error_schema_not_found">Schéma de validation introuvable</string>

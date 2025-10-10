@@ -41,15 +41,17 @@ class AIProviderRegistry(private val context: Context) {
 
     /**
      * Check if provider is configured
+     * NO FALLBACK - must be explicitly configured via AIProviderConfigService
      */
-    fun isProviderConfigured(providerId: String): Boolean {
-        // TODO: Check if provider has valid configuration
-        // Stub: Claude is always configured for testing
-        return providerId == "claude"
+    fun isProviderConfigured(@Suppress("UNUSED_PARAMETER") providerId: String): Boolean {
+        // TODO: Load from database via coordinator
+        // For now always return false - configuration must be done explicitly
+        return false
     }
 
     /**
      * Check if provider is active
+     * NO FALLBACK - must be explicitly activated via AIProviderConfigService
      */
     fun isProviderActive(providerId: String): Boolean {
         return getActiveProviderId() == providerId
@@ -57,11 +59,12 @@ class AIProviderRegistry(private val context: Context) {
 
     /**
      * Get active provider ID
+     * NO FALLBACK - returns null if no provider is configured
      */
     fun getActiveProviderId(): String? {
-        // TODO: Load from app config
+        // TODO: Load from app config via coordinator
         LogManager.aiService("Getting active provider ID")
-        return "claude" // Stub: Claude is default active provider for testing
+        return null // NO FALLBACK - must be explicitly configured
     }
 
     /**
