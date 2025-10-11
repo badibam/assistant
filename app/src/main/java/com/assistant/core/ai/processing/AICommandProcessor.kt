@@ -24,6 +24,11 @@ class AICommandProcessor(private val context: Context) {
     /**
      * Process AI data commands (queries) with security validation
      *
+     * All AI dataCommands are marked as relative (isRelative=true) to ensure:
+     * - AI uses relative period format: period_start/period_end with "offset_TYPE" (e.g., "-7_DAY")
+     * - Automatic resolution using user's dayStartHour and weekStartDay configuration
+     * - AI doesn't need to handle timestamps, timezones, or calendar calculations
+     *
      * @param commands List of DataCommands from AI for data retrieval
      * @return List of ExecutableCommands ready for coordinator dispatch
      */
@@ -36,8 +41,15 @@ class AICommandProcessor(private val context: Context) {
         // 3. Parameter sanitization (validate dates, IDs, limits)
         // 4. Rate limiting for repeated queries
 
+        // Force isRelative=true for all AI dataCommands to enable relative period resolution
+        val relativeCommands = commands.map { command ->
+            command.copy(isRelative = true)
+        }
+
+        LogManager.aiService("Marked ${relativeCommands.size} AI dataCommands as relative", "DEBUG")
+
         // Delegate transformation to shared CommandTransformer
-        val executableCommands = CommandTransformer.transformToExecutable(commands, context)
+        val executableCommands = CommandTransformer.transformToExecutable(relativeCommands, context)
 
         LogManager.aiService("AICommandProcessor generated ${executableCommands.size} executable data commands", "DEBUG")
         return executableCommands

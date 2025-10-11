@@ -220,12 +220,21 @@
     <string name="shared_ai_doc_command_format_example">Exemple : { \"type\": \"TOOL_DATA\", \"params\": { \"id\": \"tool_instance_id\" } }</string>
     <string name="shared_ai_doc_command_resources">Ressources disponibles : zones, tools, tool_data, schemas</string>
     <string name="shared_ai_doc_query_commands_title">Commandes de Requête</string>
-    <string name="shared_ai_doc_query_tool_data">TOOL_DATA : Récupérer les données d\'un outil (tool_instance_id, period optionnel)</string>
+    <string name="shared_ai_doc_query_tool_data">TOOL_DATA : Récupérer les données d\'un outil (id: tool_instance_id, period_start, period_end optionnels)</string>
     <string name="shared_ai_doc_query_tool_config">TOOL_CONFIG : Récupérer la configuration d\'un outil (tool_instance_id)</string>
     <string name="shared_ai_doc_query_tool_instances">TOOL_INSTANCES : Liste des instances d\'outils (zone_id optionnel, tool_type optionnel)</string>
     <string name="shared_ai_doc_query_zone_config">ZONE_CONFIG : Configuration d\'une zone (zone_id)</string>
     <string name="shared_ai_doc_query_zones">ZONES : Liste de toutes les zones</string>
     <string name="shared_ai_doc_query_schema">SCHEMA : Récupérer un schéma JSON (schema_id)</string>
+    <string name="shared_ai_doc_temporal_title">Filtres Temporels (Périodes Relatives)</string>
+    <string name="shared_ai_doc_temporal_intro">Pour toutes les requêtes de données, utilise des périodes RELATIVES au lieu de calculer des timestamps.</string>
+    <string name="shared_ai_doc_temporal_format">Format : \"offset_TYPE\" où offset est un nombre (négatif=passé, 0=actuel, positif=futur)</string>
+    <string name="shared_ai_doc_temporal_types">Types disponibles : HOUR, DAY, WEEK, MONTH, YEAR</string>
+    <string name="shared_ai_doc_temporal_examples">Exemples : \"-7_DAY\" (il y a 7 jours), \"0_WEEK\" (cette semaine), \"-1_MONTH\" (le mois dernier)</string>
+    <string name="shared_ai_doc_temporal_params">Paramètres : period_start (début de la plage), period_end (fin de la plage)</string>
+    <string name="shared_ai_doc_temporal_example_range">Exemple TOOL_DATA : {\"type\": \"TOOL_DATA\", \"params\": {\"id\": \"abc123\", \"period_start\": \"-7_DAY\", \"period_end\": \"0_DAY\"}}</string>
+    <string name="shared_ai_doc_temporal_config">Le système résout automatiquement selon dayStartHour et weekStartDay de l\'utilisateur</string>
+    <string name="shared_ai_doc_temporal_no_timestamps">IMPORTANT : Ne jamais calculer de timestamps, timezones ou dates absolues</string>
     <string name="shared_ai_doc_action_commands_title">Commandes d\'Action</string>
     <string name="shared_ai_doc_action_create_data">CREATE_DATA : Créer des données (batch) - tool_instance_id, tooltype, entries[]</string>
     <string name="shared_ai_doc_action_update_data">UPDATE_DATA : Mettre à jour des données (batch) - entries[] avec id</string>

@@ -11,6 +11,15 @@ import com.assistant.core.validation.SchemaCategory
  * Defines the JSON Schema for validating AIMessage structure returned by AI.
  * This ensures AI responses are properly formatted with required fields and
  * mutual exclusivity between dataCommands, actionCommands and communicationModule.
+ *
+ * TEMPORAL PARAMETERS FOR DATA COMMANDS:
+ * All AI dataCommands support temporal filtering via relative periods:
+ * - Use period_start and period_end params with format "offset_TYPE"
+ * - Example: period_start: "-7_DAY", period_end: "0_DAY" (last 7 days)
+ * - Available types: HOUR, DAY, WEEK, MONTH, YEAR
+ * - Negative offset = past, 0 = current period, positive = future
+ * - System automatically resolves using user's dayStartHour and weekStartDay config
+ * - AI never needs to calculate timestamps, timezones, or handle calendar logic
  */
 object AIMessageSchemas {
 
@@ -67,7 +76,8 @@ object AIMessageSchemas {
                     "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "SCHEMA"]
                   },
                   "params": {
-                    "type": "object"
+                    "type": "object",
+                    "description": "Command parameters. For temporal filtering, use period_start and period_end with format: offset_TYPE (e.g., -7_DAY for 7 days ago, 0_WEEK for current week). Available types: HOUR, DAY, WEEK, MONTH, YEAR. The system automatically applies user's dayStartHour and weekStartDay configuration."
                   }
                 },
                 "additionalProperties": false

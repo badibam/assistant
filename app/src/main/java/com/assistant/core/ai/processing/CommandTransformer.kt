@@ -137,22 +137,8 @@ object CommandTransformer {
 
         val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
 
-        // Handle temporal parameters
-        if (command.isRelative) {
-            // Resolve relative periods to absolute timestamps
-            val periodStart = command.params["period_start"] as? String
-            val periodEnd = command.params["period_end"] as? String
-
-            if (periodStart != null && periodEnd != null) {
-                val (startTime, endTime) = resolveRelativePeriods(periodStart, periodEnd)
-                if (startTime != null) params["startTime"] = startTime
-                if (endTime != null) params["endTime"] = endTime
-            }
-        } else {
-            // Use absolute timestamps directly
-            command.params["startTime"]?.let { params["startTime"] = it }
-            command.params["endTime"]?.let { params["endTime"] = it }
-        }
+        // Apply temporal parameter resolution
+        applyTemporalParameters(params, command)
 
         // Add pagination if specified
         command.params["limit"]?.let { params["limit"] = it }
@@ -171,6 +157,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_STATS command to tool_data.stats call
         // - Similar to TOOL_DATA but with aggregate functions
         // - Generate appropriate groupBy and functions parameters
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command)
 
         return null
     }
@@ -181,6 +168,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
         // - Add default limit for sampling (e.g., limit: 10)
         // - Use recent data ordering (orderBy: timestamp DESC)
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command)
 
         return null
     }
@@ -236,6 +224,45 @@ object CommandTransformer {
     // ========================================================================================
     // Helper Methods
     // ========================================================================================
+
+    /**
+     * Apply temporal parameters to command params
+     * Handles both relative periods (period_start/period_end) and absolute timestamps (startTime/endTime)
+     *
+     * For relative periods:
+     * - Format: "offset_PeriodType" (e.g., "-7_DAY" = 7 days ago, "0_WEEK" = current week)
+     * - Automatically applies user's dayStartHour and weekStartDay configuration
+     * - AI doesn't need to handle timezones or calendar calculations
+     *
+     * For absolute timestamps:
+     * - Direct Long values in milliseconds
+     * - Used only when explicitly provided (not recommended for AI)
+     */
+    private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand) {
+        if (command.isRelative) {
+            // Resolve relative periods to absolute timestamps
+            val periodStart = command.params["period_start"] as? String
+            val periodEnd = command.params["period_end"] as? String
+
+            if (periodStart != null && periodEnd != null) {
+                val (startTime, endTime) = resolveRelativePeriods(periodStart, periodEnd)
+                if (startTime != null) params["startTime"] = startTime
+                if (endTime != null) params["endTime"] = endTime
+
+                LogManager.aiPrompt("Applied relative periods: $periodStart -> $startTime, $periodEnd -> $endTime", "VERBOSE")
+            }
+        } else {
+            // Use absolute timestamps directly
+            command.params["startTime"]?.let {
+                params["startTime"] = it
+                LogManager.aiPrompt("Applied absolute startTime: $it", "VERBOSE")
+            }
+            command.params["endTime"]?.let {
+                params["endTime"] = it
+                LogManager.aiPrompt("Applied absolute endTime: $it", "VERBOSE")
+            }
+        }
+    }
 
     /**
      * Resolve relative periods to absolute timestamps
