@@ -1,4 +1,4 @@
-package com.assistant.core.ui.Screens
+package com.assistant.core.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -18,6 +18,7 @@ import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.ui.dialogs.SettingsDialog
+import com.assistant.core.ui.screens.settings.*
 import com.assistant.core.ai.ui.screens.AIProvidersScreen
 import com.assistant.core.ai.ui.chat.AIFloatingChat
 import com.assistant.core.utils.DataChangeNotifier
@@ -46,6 +47,11 @@ fun MainScreen() {
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAIProviders by rememberSaveable { mutableStateOf(false) }
+    var showFormat by rememberSaveable { mutableStateOf(false) }
+    var showAILimits by rememberSaveable { mutableStateOf(false) }
+    var showValidation by rememberSaveable { mutableStateOf(false) }
+    var showUI by rememberSaveable { mutableStateOf(false) }
+    var showData by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
@@ -129,6 +135,56 @@ fun MainScreen() {
             }
         )
         return // Exit MainScreen composition when showing AI Providers
+    }
+
+    // Show Format settings screen when requested
+    if (showFormat) {
+        FormatSettingsScreen(
+            onBack = {
+                showFormat = false
+            }
+        )
+        return // Exit MainScreen composition when showing Format settings
+    }
+
+    // Show AI Limits settings screen when requested
+    if (showAILimits) {
+        AILimitsSettingsScreen(
+            onBack = {
+                showAILimits = false
+            }
+        )
+        return // Exit MainScreen composition when showing AI Limits settings
+    }
+
+    // Show Validation settings screen when requested
+    if (showValidation) {
+        ValidationSettingsScreen(
+            onBack = {
+                showValidation = false
+            }
+        )
+        return // Exit MainScreen composition when showing Validation settings
+    }
+
+    // Show UI settings screen when requested
+    if (showUI) {
+        UISettingsScreen(
+            onBack = {
+                showUI = false
+            }
+        )
+        return // Exit MainScreen composition when showing UI settings
+    }
+
+    // Show Data settings screen when requested
+    if (showData) {
+        DataSettingsScreen(
+            onBack = {
+                showData = false
+            }
+        )
+        return // Exit MainScreen composition when showing Data settings
     }
 
     // Show CreateZoneScreen in edit mode when zone config is requested
@@ -253,7 +309,11 @@ fun MainScreen() {
             onOptionSelected = { optionId ->
                 when (optionId) {
                     "ai_providers" -> showAIProviders = true
-                    // Future settings options will be added here
+                    "format" -> showFormat = true
+                    "ai_limits" -> showAILimits = true
+                    "validation" -> showValidation = true
+                    "ui" -> showUI = true
+                    "data" -> showData = true
                 }
                 showSettings = false
             }

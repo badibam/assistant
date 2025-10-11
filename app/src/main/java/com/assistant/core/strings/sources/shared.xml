@@ -558,6 +558,25 @@
     <string name="settings_ai_providers_description">Configurer les fournisseurs d\'intelligence artificielle</string>
     <string name="settings_ai_providers_config">Configuration du fournisseur</string>
 
+    <string name="settings_format">Format et dates</string>
+    <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
+
+    <string name="settings_ai_limits">Limites IA</string>
+    <string name="settings_ai_limits_description">Configurer les limites des boucles autonomes de l\'IA</string>
+
+    <string name="settings_validation">Validation IA</string>
+    <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>
+
+    <string name="settings_ui">Interface utilisateur</string>
+    <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
+
+    <string name="settings_data">Gestion des données</string>
+    <string name="settings_data_description">Configurer la sauvegarde, l\'export et l\'import des données</string>
+
+    <!-- SETTINGS - Stub placeholders -->
+    <string name="settings_stub_coming_soon">Cette fonctionnalité sera disponible prochainement</string>
+    <string name="settings_stub_description">Description détaillée des paramètres configurables :</string>
+
     <!-- AI PROVIDERS - Provider management -->
     <string name="message_no_providers">Aucun fournisseur IA disponible</string>
     <string name="provider_status_configured">Configuré</string>

@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.assistant.core.ui.Screens.MainScreen
+import com.assistant.core.ui.screens.MainScreen
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*

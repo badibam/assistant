@@ -2,6 +2,8 @@ package com.assistant.core.ui.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +49,7 @@ fun SettingsDialog(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val scrollState = rememberScrollState()
 
     // Available settings options
     val options = remember {
@@ -55,8 +58,32 @@ fun SettingsDialog(
                 id = "ai_providers",
                 label = s.shared("settings_ai_providers"),
                 description = s.shared("settings_ai_providers_description")
+            ),
+            SettingsOption(
+                id = "format",
+                label = s.shared("settings_format"),
+                description = s.shared("settings_format_description")
+            ),
+            SettingsOption(
+                id = "ai_limits",
+                label = s.shared("settings_ai_limits"),
+                description = s.shared("settings_ai_limits_description")
+            ),
+            SettingsOption(
+                id = "validation",
+                label = s.shared("settings_validation"),
+                description = s.shared("settings_validation_description")
+            ),
+            SettingsOption(
+                id = "ui",
+                label = s.shared("settings_ui"),
+                description = s.shared("settings_ui_description")
+            ),
+            SettingsOption(
+                id = "data",
+                label = s.shared("settings_data"),
+                description = s.shared("settings_data_description")
             )
-            // Future settings options will be added here
         )
     }
 
@@ -68,6 +95,7 @@ fun SettingsDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(scrollState)
                 .padding(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
