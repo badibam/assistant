@@ -183,8 +183,8 @@ val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
 - **description** : Description
 - **management** : Mode de gestion (AI/USER/HYBRID)
 - **display_mode** : Mode d'affichage (ICON/MINIMAL/LINE/etc.)
-- **config_validation** : Validation stricte/flexible
-- **data_validation** : Validation stricte/flexible
+- **validateConfig** : Boolean - Requiert validation utilisateur avant modification configuration (default: false)
+- **validateData** : Boolean - Requiert validation utilisateur avant modification données (default: false)
 
 ### Champ always_send (Level 2 AI)
 ```kotlin

@@ -39,8 +39,8 @@ fun ToolGeneralConfigSection(
     val iconName = config.optString("icon_name", "")
     val displayMode = config.optString("display_mode", "")
     val management = config.optString("management", "")
-    val configValidation = config.optString("config_validation", "")
-    val dataValidation = config.optString("data_validation", "")
+    val validateConfig = config.optBoolean("validateConfig", false)
+    val validateData = config.optBoolean("validateData", false)
     val alwaysSend = config.optBoolean("always_send", false)
 
     UI.Card(type = CardType.DEFAULT) {
@@ -133,17 +133,9 @@ fun ToolGeneralConfigSection(
             UI.FormSelection(
                 label = s.shared("tools_config_label_config_validation"),
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
-                selected = when(configValidation) {
-                    "enabled" -> s.shared("tools_config_option_enabled")
-                    "disabled" -> s.shared("tools_config_option_disabled")
-                    else -> configValidation
-                },
+                selected = if (validateConfig) s.shared("tools_config_option_enabled") else s.shared("tools_config_option_disabled"),
                 onSelect = { selectedLabel ->
-                    updateConfig("config_validation", when(selectedLabel) {
-                        s.shared("tools_config_option_enabled") -> "enabled"
-                        s.shared("tools_config_option_disabled") -> "disabled"
-                        else -> selectedLabel
-                    })
+                    updateConfig("validateConfig", selectedLabel == s.shared("tools_config_option_enabled"))
                 },
                 required = true
             )
@@ -152,17 +144,9 @@ fun ToolGeneralConfigSection(
             UI.FormSelection(
                 label = s.shared("tools_config_label_data_validation"),
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
-                selected = when(dataValidation) {
-                    "enabled" -> s.shared("tools_config_option_enabled")
-                    "disabled" -> s.shared("tools_config_option_disabled")
-                    else -> dataValidation
-                },
+                selected = if (validateData) s.shared("tools_config_option_enabled") else s.shared("tools_config_option_disabled"),
                 onSelect = { selectedLabel ->
-                    updateConfig("data_validation", when(selectedLabel) {
-                        s.shared("tools_config_option_enabled") -> "enabled"
-                        s.shared("tools_config_option_disabled") -> "disabled"
-                        else -> selectedLabel
-                    })
+                    updateConfig("validateData", selectedLabel == s.shared("tools_config_option_enabled"))
                 },
                 required = true
             )

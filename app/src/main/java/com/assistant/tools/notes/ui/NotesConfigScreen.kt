@@ -44,8 +44,8 @@ fun NotesConfigScreen(
     var iconName by remember { mutableStateOf("note") }
     var displayMode by remember { mutableStateOf("EXTENDED") }
     var management by remember { mutableStateOf("manual") }
-    var configValidation by remember { mutableStateOf("disabled") }
-    var dataValidation by remember { mutableStateOf("disabled") }
+    var validateConfig by remember { mutableStateOf(false) }
+    var validateData by remember { mutableStateOf(false) }
 
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
@@ -72,8 +72,8 @@ fun NotesConfigScreen(
                         iconName = config.optString("icon_name", "note")
                         displayMode = config.optString("display_mode", "EXTENDED")
                         management = config.optString("management", "manual")
-                        configValidation = config.optString("config_validation", "disabled")
-                        dataValidation = config.optString("data_validation", "disabled")
+                        validateConfig = config.optBoolean("validateConfig", false)
+                        validateData = config.optBoolean("validateData", false)
                         LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
@@ -127,8 +127,8 @@ fun NotesConfigScreen(
                     put("icon_name", iconName)
                     put("display_mode", displayMode)
                     put("management", management)
-                    put("config_validation", configValidation)
-                    put("data_validation", dataValidation)
+                    put("validateConfig", validateConfig)
+                    put("validateData", validateData)
                 }
             }
         }
@@ -142,8 +142,8 @@ fun NotesConfigScreen(
                     "icon_name" -> iconName = value as String
                     "display_mode" -> displayMode = value as String
                     "management" -> management = value as String
-                    "config_validation" -> configValidation = value as String
-                    "data_validation" -> dataValidation = value as String
+                    "validateConfig" -> validateConfig = value as Boolean
+                    "validateData" -> validateData = value as Boolean
                 }
             },
             toolTypeName = "notes"
@@ -162,8 +162,8 @@ fun NotesConfigScreen(
                         "icon_name" to iconName,
                         "display_mode" to displayMode,
                         "management" to management,
-                        "config_validation" to configValidation,
-                        "data_validation" to dataValidation
+                        "validateConfig" to validateConfig,
+                        "validateData" to validateData
                     )
 
                     // Use unified ValidationHelper

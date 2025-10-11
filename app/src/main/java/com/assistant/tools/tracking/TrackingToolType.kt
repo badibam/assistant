@@ -46,8 +46,8 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             "description": "",
             "icon_name": "activity",
             "management": "manual",
-            "config_validation": "disabled",
-            "data_validation": "disabled",
+            "validateConfig": false,
+            "validateData": false,
             "display_mode": "LINE"
         }
         """.trimIndent()

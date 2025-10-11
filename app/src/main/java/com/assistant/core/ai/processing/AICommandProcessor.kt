@@ -131,16 +131,22 @@ class AICommandProcessor(private val context: Context) {
             )
 
             // Tool instance actions
-            "CREATE_TOOL" -> ExecutableCommand(
-                resource = "tools",
-                operation = "create",
-                params = command.params
-            )
-            "UPDATE_TOOL" -> ExecutableCommand(
-                resource = "tools",
-                operation = "update",
-                params = command.params
-            )
+            "CREATE_TOOL" -> {
+                val transformedParams = transformToolParams(command.params)
+                ExecutableCommand(
+                    resource = "tools",
+                    operation = "create",
+                    params = transformedParams
+                )
+            }
+            "UPDATE_TOOL" -> {
+                val transformedParams = transformToolParams(command.params)
+                ExecutableCommand(
+                    resource = "tools",
+                    operation = "update",
+                    params = transformedParams
+                )
+            }
             "DELETE_TOOL" -> ExecutableCommand(
                 resource = "tools",
                 operation = "delete",
@@ -198,16 +204,22 @@ class AICommandProcessor(private val context: Context) {
             )
 
             // Tool instance actions
-            "CREATE_TOOL" -> ExecutableCommand(
-                resource = "tools",
-                operation = "create",
-                params = command.params
-            )
-            "UPDATE_TOOL" -> ExecutableCommand(
-                resource = "tools",
-                operation = "update",
-                params = command.params
-            )
+            "CREATE_TOOL" -> {
+                val transformedParams = transformToolParams(command.params)
+                ExecutableCommand(
+                    resource = "tools",
+                    operation = "create",
+                    params = transformedParams
+                )
+            }
+            "UPDATE_TOOL" -> {
+                val transformedParams = transformToolParams(command.params)
+                ExecutableCommand(
+                    resource = "tools",
+                    operation = "update",
+                    params = transformedParams
+                )
+            }
             "DELETE_TOOL" -> ExecutableCommand(
                 resource = "tools",
                 operation = "delete",
@@ -324,6 +336,40 @@ class AICommandProcessor(private val context: Context) {
                 e
             )
             return params
+        }
+    }
+
+    /**
+     * Transform tool params from AI format to service format
+     * Converts "config" object to "config_json" string for ToolInstanceService
+     *
+     * @param params Original params from AI command with "config" as object
+     * @return Transformed params with "config_json" as JSON string
+     */
+    private fun transformToolParams(params: Map<String, Any>): Map<String, Any> {
+        val config = params["config"]
+
+        if (config == null) {
+            LogManager.aiService("CREATE_TOOL/UPDATE_TOOL missing config parameter", "WARN")
+            return params
+        }
+
+        return params.toMutableMap().apply {
+            // Remove "config" key
+            remove("config")
+
+            // Add "config_json" key with JSON string
+            val configJson = when (config) {
+                is Map<*, *> -> JSONObject(config as Map<String, Any>).toString()
+                is String -> config  // Already a JSON string
+                else -> {
+                    LogManager.aiService("Unexpected config type: ${config::class.java.simpleName}", "WARN")
+                    config.toString()
+                }
+            }
+            put("config_json", configJson)
+
+            LogManager.aiService("Transformed config object to config_json string", "DEBUG")
         }
     }
 }

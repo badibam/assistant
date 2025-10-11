@@ -9,6 +9,9 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.LogManager
+import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -58,6 +61,18 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
         }
 
+        // Validate configuration before creating tool instance
+        val validationResult = validateToolConfig(toolType, configJson)
+        if (!validationResult.isValid) {
+            LogManager.service(
+                "Tool config validation failed for type $toolType: ${validationResult.errorMessage}",
+                "ERROR"
+            )
+            return OperationResult.error(
+                validationResult.errorMessage ?: s.shared("message_validation_error_simple")
+            )
+        }
+
         if (token.isCancelled) return OperationResult.cancelled()
 
         val newToolInstance = ToolInstance(
@@ -65,9 +80,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             tool_type = toolType,
             config_json = configJson
         )
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         toolInstanceDao.insertToolInstance(newToolInstance)
 
         // Notify UI of tools change in this zone
@@ -96,15 +111,28 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
 
+        // Validate new configuration if provided
+        val finalConfigJson = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json
+        val validationResult = validateToolConfig(existingTool.tool_type, finalConfigJson)
+        if (!validationResult.isValid) {
+            LogManager.service(
+                "Tool config validation failed for update of tool $toolInstanceId: ${validationResult.errorMessage}",
+                "ERROR"
+            )
+            return OperationResult.error(
+                validationResult.errorMessage ?: s.shared("message_validation_error_simple")
+            )
+        }
+
         if (token.isCancelled) return OperationResult.cancelled()
 
         val updatedTool = existingTool.copy(
-            config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
+            config_json = finalConfigJson,
             updated_at = System.currentTimeMillis()
         )
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         toolInstanceDao.updateToolInstance(updatedTool)
 
         // Notify UI of tools change in this zone
@@ -329,6 +357,75 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 val zone = result.data?.get("zone") as? Map<*, *>
                 zone?.get("name") as? String
             } else null
+        }
+    }
+
+    /**
+     * Validate tool configuration using JSON Schema
+     * Per CORE.md line 95-98: Services MUST validate via SchemaValidator
+     *
+     * @param toolTypeName The tool type name (e.g., "tracking", "notes")
+     * @param configJson The configuration JSON string to validate
+     * @return ValidationResult with isValid and errorMessage
+     */
+    private fun validateToolConfig(
+        toolTypeName: String,
+        configJson: String
+    ): com.assistant.core.validation.ValidationResult {
+        try {
+            // Parse config JSON to Map
+            val configData = JSONObject(configJson).let { json ->
+                json.keys().asSequence().associateWith { key ->
+                    json.get(key)
+                }
+            }
+
+            // Get ToolType via ToolTypeManager
+            val toolType = ToolTypeManager.getToolType(toolTypeName)
+            if (toolType == null) {
+                LogManager.service("ToolType not found: $toolTypeName", "ERROR")
+                return com.assistant.core.validation.ValidationResult.error(
+                    s.shared("error_tooltype_not_found").format(toolTypeName)
+                )
+            }
+
+            // Extract schema_id from config
+            val schemaId = configData["schema_id"] as? String
+            if (schemaId.isNullOrEmpty()) {
+                LogManager.service("Missing schema_id in config for $toolTypeName", "ERROR")
+                return com.assistant.core.validation.ValidationResult.error(
+                    s.shared("error_missing_schema_id")
+                )
+            }
+
+            // Get Schema via toolType.getSchema()
+            val schema = toolType.getSchema(schemaId, context)
+            if (schema == null) {
+                LogManager.service("Schema not found: $schemaId for $toolTypeName", "ERROR")
+                return com.assistant.core.validation.ValidationResult.error(
+                    "Schema not found: $schemaId"
+                )
+            }
+
+            // Validate via SchemaValidator
+            val validationResult = SchemaValidator.validate(schema, configData, context)
+
+            if (validationResult.isValid) {
+                LogManager.service("Tool config validation successful for $toolTypeName", "DEBUG")
+            } else {
+                LogManager.service(
+                    "Tool config validation failed for $toolTypeName: ${validationResult.errorMessage}",
+                    "WARN"
+                )
+            }
+
+            return validationResult
+
+        } catch (e: Exception) {
+            LogManager.service("Exception during tool config validation: ${e.message}", "ERROR", e)
+            return com.assistant.core.validation.ValidationResult.error(
+                "Validation error: ${e.message}"
+            )
         }
     }
 }
