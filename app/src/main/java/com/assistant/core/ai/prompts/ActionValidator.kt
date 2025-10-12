@@ -344,33 +344,42 @@ class ActionValidator(private val context: Context) {
     /**
      * Validate zone configuration (zones.create/update)
      *
-     * Expects params to contain:
-     * - name: String (zone name)
-     * - icon: String (icon identifier)
+     * Uses SchemaValidator with zone_config schema from ZoneSchemaProvider
      *
-     * Note: Zone validation is simpler - just basic field presence checks
-     * Future: Could add JSON schema validation for zones if needed
+     * Expects params to contain:
+     * - name: String (zone name, max 60 chars)
+     * - icon_name: String (optional, icon identifier)
+     * - description: String (optional, max 250 chars)
+     * - color: String (optional)
      */
     private fun validateZoneConfig(params: Map<String, Any>): ValidationResult {
-        // Basic validation for zones (name + icon required for create)
-        val name = params["name"] as? String
-        if (name.isNullOrBlank()) {
-            LogManager.aiService("Missing or empty name in zones.create/update", "ERROR")
-            return ValidationResult.error(s.shared("error_missing_name"))
-        }
+        try {
+            // Get ZoneSchemaProvider (registered in SchemaService)
+            val schemaProvider = com.assistant.core.schemas.ZoneSchemaProvider
+            val schema = schemaProvider.getSchema("zone_config", context)
 
-        // For create operation, icon is required
-        // For update, icon is optional (keeps existing if not provided)
-        val isUpdate = params.containsKey("zone_id")
-        if (!isUpdate) {
-            val icon = params["icon"] as? String
-            if (icon.isNullOrBlank()) {
-                LogManager.aiService("Missing or empty icon in zones.create", "ERROR")
-                return ValidationResult.error(s.shared("error_missing_icon"))
+            if (schema == null) {
+                LogManager.aiService("Zone config schema not found", "ERROR")
+                return ValidationResult.error("Zone config schema not found")
             }
-        }
 
-        LogManager.aiService("Zone validation successful", "DEBUG")
-        return ValidationResult.success()
+            // Validate via SchemaValidator
+            val validationResult = SchemaValidator.validate(schema, params, context)
+
+            if (validationResult.isValid) {
+                LogManager.aiService("Zone config validation successful", "DEBUG")
+            } else {
+                LogManager.aiService(
+                    "Zone config validation failed: ${validationResult.errorMessage}",
+                    "WARN"
+                )
+            }
+
+            return validationResult
+
+        } catch (e: Exception) {
+            LogManager.aiService("Exception during zone config validation: ${e.message}", "ERROR", e)
+            return ValidationResult.error("Validation error: ${e.message}")
+        }
     }
 }
