@@ -229,11 +229,24 @@ object PromptManager {
                 }
                 val details = resultObj.optString("details", null)
 
+                // Parse data field if present
+                val data = resultObj.optJSONObject("data")?.let { dataJson ->
+                    val map = mutableMapOf<String, Any>()
+                    dataJson.keys().forEach { key ->
+                        map[key] = dataJson.get(key)
+                    }
+                    map
+                }
+
+                val error = resultObj.optString("error", null)
+
                 commandResults.add(
                     CommandResult(
                         command = command,
                         status = status,
-                        details = details
+                        details = details,
+                        data = data,
+                        error = error
                     )
                 )
             }

@@ -3,7 +3,9 @@ package com.assistant.core.ai.prompts
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.services.ExecutableService
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
@@ -99,7 +101,9 @@ class CommandExecutor(private val context: Context) {
                     com.assistant.core.ai.data.CommandResult(
                         command = "${command.resource}.${command.operation}",
                         status = CommandStatus.FAILED,
-                        details = "Execution failed"
+                        details = "Execution failed",
+                        data = null,
+                        error = "Internal execution error"
                     )
                 )
                 LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands", "WARN")
@@ -149,12 +153,18 @@ class CommandExecutor(private val context: Context) {
                 if (!validationResult.isValid) {
                     val errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
                     LogManager.aiPrompt("Command validation failed: $errorMessage", "WARN")
+
+                    // Get verbalized description (even for validation failures)
+                    val verbalizedDescription = getVerbalizedDescription(command)
+
                     return@withContext InternalCommandResult(
                         promptResult = PromptCommandResult("", ""),
                         commandResult = com.assistant.core.ai.data.CommandResult(
                             command = commandString,
                             status = CommandStatus.FAILED,
-                            details = errorMessage
+                            details = verbalizedDescription,
+                            data = null,
+                            error = errorMessage
                         )
                     )
                 }
@@ -180,7 +190,9 @@ class CommandExecutor(private val context: Context) {
                             commandResult = com.assistant.core.ai.data.CommandResult(
                                 command = commandString,
                                 status = CommandStatus.SUCCESS,
-                                details = "No data returned"
+                                details = "No data returned",
+                                data = null,
+                                error = null
                             )
                         )
                     }
@@ -188,23 +200,41 @@ class CommandExecutor(private val context: Context) {
                     val dataTitle = generateDataTitle(command, data)
                     val formattedData = if (isActionCommand) "" else formatResultData(command, data)
 
+                    // Get verbalized description for action commands
+                    val verbalizedDescription = if (isActionCommand) {
+                        getVerbalizedDescription(command)
+                    } else null
+
+                    // Filter result data for action commands
+                    val filteredData = if (isActionCommand) {
+                        filterActionResultData(command.operation, data)
+                    } else null
+
                     LogManager.aiPrompt("Command succeeded", "DEBUG")
                     return@withContext InternalCommandResult(
                         promptResult = PromptCommandResult(dataTitle, formattedData),
                         commandResult = com.assistant.core.ai.data.CommandResult(
                             command = commandString,
                             status = CommandStatus.SUCCESS,
-                            details = null
+                            details = verbalizedDescription,
+                            data = filteredData,
+                            error = null
                         )
                     )
                 } else {
                     LogManager.aiPrompt("Command failed: ${result.error}", "WARN")
+
+                    // Get verbalized description (even for failures)
+                    val verbalizedDescription = getVerbalizedDescription(command)
+
                     return@withContext InternalCommandResult(
                         promptResult = PromptCommandResult("", ""),
                         commandResult = com.assistant.core.ai.data.CommandResult(
                             command = commandString,
                             status = CommandStatus.FAILED,
-                            details = result.error
+                            details = verbalizedDescription,
+                            data = null,
+                            error = result.error
                         )
                     )
                 }
@@ -212,6 +242,74 @@ class CommandExecutor(private val context: Context) {
             } catch (e: Exception) {
                 LogManager.aiPrompt("Command execution failed: ${e.message}", "ERROR", e)
                 return@withContext null
+            }
+        }
+    }
+
+    /**
+     * Get verbalized description from service for action command
+     * Returns substantive form description (e.g., "Création de la zone \"Santé\"")
+     */
+    private fun getVerbalizedDescription(command: ExecutableCommand): String {
+        return try {
+            val serviceRegistry = ServiceRegistry(context)
+            val service = serviceRegistry.getService(command.resource)
+
+            if (service is ExecutableService) {
+                val paramsJson = org.json.JSONObject(command.params)
+                service.verbalize(command.operation, paramsJson, context)
+            } else {
+                // Fallback if service doesn't implement ExecutableService
+                "${command.resource}.${command.operation}"
+            }
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Failed to verbalize command ${command.resource}.${command.operation}: ${e.message}", "WARN", e)
+            "${command.resource}.${command.operation}"
+        }
+    }
+
+    /**
+     * Filter action result data according to rules:
+     * - create/update: keep only name + id fields
+     * - delete: return null (no data needed)
+     * - batch_*: keep only count fields (*_count)
+     * - Remove all timestamp fields (created_at, updated_at, deleted_at, createdAt, updatedAt)
+     */
+    private fun filterActionResultData(operation: String, data: Map<String, Any>): Map<String, Any>? {
+        return when (operation) {
+            "delete" -> {
+                // Delete operations: no data needed
+                null
+            }
+            "create", "update" -> {
+                // Create/Update: keep only name + id fields (zone_id, tool_instance_id, id, name, tooltype)
+                val filtered = mutableMapOf<String, Any>()
+
+                // ID fields (various naming patterns)
+                data["zone_id"]?.let { filtered["zone_id"] = it }
+                data["tool_instance_id"]?.let { filtered["tool_instance_id"] = it }
+                data["id"]?.let { filtered["id"] = it }
+
+                // Name/type fields
+                data["name"]?.let { filtered["name"] = it }
+                data["tooltype"]?.let { filtered["tooltype"] = it }
+
+                if (filtered.isEmpty()) null else filtered
+            }
+            "batch_create", "batch_update", "batch_delete" -> {
+                // Batch operations: keep only count fields
+                val filtered = mutableMapOf<String, Any>()
+
+                data["created_count"]?.let { filtered["created_count"] = it }
+                data["failed_count"]?.let { filtered["failed_count"] = it }
+                data["updated_count"]?.let { filtered["updated_count"] = it }
+                data["deleted_count"]?.let { filtered["deleted_count"] = it }
+
+                if (filtered.isEmpty()) null else filtered
+            }
+            else -> {
+                // Unknown operation: pass through without filtering
+                data
             }
         }
     }

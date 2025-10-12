@@ -446,6 +446,7 @@
     <string name="shared_ai_error_param_config_required">Paramètre obligatoire: config</string>
     <string name="shared_service_error_ai_session">Erreur AISessionService: %1$s</string>
     <string name="shared_error_not_implemented">Pas encore implémenté</string>
+    <string name="shared_ai_error_label">Erreur : %1$s</string>
     <string name="shared_action_verbalize_create_zone">Création de la zone \"%1$s\"</string>
     <string name="shared_action_verbalize_update_zone">Modification de la zone \"%1$s\"</string>
     <string name="shared_action_verbalize_delete_zone">Suppression de la zone \"%1$s\"</string>

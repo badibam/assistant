@@ -690,10 +690,69 @@ private fun ChatMessageBubble(
                     }
                 }
                 message.systemMessage != null -> {
-                    UI.Text(
-                        text = message.systemMessage.summary,
-                        type = TextType.BODY
-                    )
+                    // System message: show summary + command details
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Summary
+                        UI.Text(
+                            text = message.systemMessage.summary,
+                            type = TextType.BODY
+                        )
+
+                        // Command results details (if present)
+                        if (message.systemMessage.commandResults.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            message.systemMessage.commandResults.forEach { commandResult ->
+                                UI.Card(type = CardType.DEFAULT) {
+                                    Column(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // Status icon + details
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            UI.Text(
+                                                text = if (commandResult.status == CommandStatus.SUCCESS) "✓" else "✗",
+                                                type = TextType.BODY
+                                            )
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                // Verbalized description
+                                                commandResult.details?.let {
+                                                    UI.Text(
+                                                        text = it,
+                                                        type = TextType.BODY
+                                                    )
+                                                }
+
+                                                // Data (if success)
+                                                commandResult.data?.let { data ->
+                                                    if (data.isNotEmpty()) {
+                                                        val dataText = data.entries.joinToString(", ") { (k, v) ->
+                                                            "$k: $v"
+                                                        }
+                                                        UI.Text(
+                                                            text = dataText,
+                                                            type = TextType.CAPTION
+                                                        )
+                                                    }
+                                                }
+
+                                                // Error (if failed)
+                                                commandResult.error?.let { error ->
+                                                    UI.Text(
+                                                        text = s.shared("ai_error_label").format(error),
+                                                        type = TextType.CAPTION
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             }

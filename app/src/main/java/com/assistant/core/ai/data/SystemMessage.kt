@@ -29,7 +29,15 @@ data class SystemMessage(
             val resultJson = JSONObject()
             resultJson.put("command", result.command)
             resultJson.put("status", result.status.name)
-            resultJson.put("details", result.details)
+            if (result.details != null) {
+                resultJson.put("details", result.details)
+            }
+            if (result.data != null) {
+                resultJson.put("data", JSONObject(result.data as Map<*, *>))
+            }
+            if (result.error != null) {
+                resultJson.put("error", result.error)
+            }
             resultsArray.put(resultJson)
         }
         json.put("commandResults", resultsArray)
@@ -53,11 +61,25 @@ data class SystemMessage(
                 val resultsArray = json.getJSONArray("commandResults")
                 for (i in 0 until resultsArray.length()) {
                     val resultJson = resultsArray.getJSONObject(i)
+
+                    // Parse data field if present
+                    val data = resultJson.optJSONObject("data")?.let { dataJson ->
+                        val map = mutableMapOf<String, Any>()
+                        dataJson.keys().forEach { key ->
+                            map[key] = dataJson.get(key)
+                        }
+                        map
+                    }
+
+                    val error = resultJson.optString("error").takeIf { it.isNotEmpty() }
+
                     commandResults.add(
                         CommandResult(
                             command = resultJson.getString("command"),
                             status = CommandStatus.valueOf(resultJson.getString("status")),
-                            details = resultJson.optString("details").takeIf { it.isNotEmpty() }
+                            details = resultJson.optString("details").takeIf { it.isNotEmpty() },
+                            data = data,
+                            error = error
                         )
                     )
                 }
@@ -91,9 +113,11 @@ enum class SystemMessageType {
  * Individual command execution result
  */
 data class CommandResult(
-    val command: String,    // Command executed (e.g., "tool_data.get")
+    val command: String,         // Command executed (e.g., "tool_data.get")
     val status: CommandStatus,
-    val details: String?    // Error message or result summary
+    val details: String?,        // Verbalized action description (e.g., "Création de la zone \"Santé\"")
+    val data: Map<String, Any>?, // Structured result data (filtered: IDs, names, counts)
+    val error: String?           // Technical error message if failed (e.g., "nom déjà existant")
 )
 
 enum class CommandStatus {
