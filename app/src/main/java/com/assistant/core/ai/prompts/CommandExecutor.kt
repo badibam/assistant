@@ -43,6 +43,7 @@ data class CommandExecutionResult(
 class CommandExecutor(private val context: Context) {
 
     private val coordinator = Coordinator(context)
+    private val validator = ActionValidator(context)
     private val s = Strings.`for`(context = context)
 
     /**
@@ -87,10 +88,11 @@ class CommandExecutor(private val context: Context) {
                 commandResults.add(result.commandResult)
                 if (result.commandResult.status == CommandStatus.SUCCESS) {
                     successCount++
+                    LogManager.aiPrompt("Command ${index + 1} succeeded", "DEBUG")
                 } else {
                     failedCount++
+                    LogManager.aiPrompt("Command ${index + 1} failed: ${result.commandResult.details}", "WARN")
                 }
-                LogManager.aiPrompt("Command ${index + 1} succeeded", "DEBUG")
             } else {
                 failedCount++
                 commandResults.add(
@@ -132,6 +134,8 @@ class CommandExecutor(private val context: Context) {
      *
      * Routes to coordinator using resource.operation pattern and returns
      * InternalCommandResult with prompt data and command status.
+     *
+     * Validates action commands before execution via ActionValidator.
      */
     private suspend fun executeCommand(command: ExecutableCommand): InternalCommandResult? {
         LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}", "VERBOSE")
@@ -139,6 +143,22 @@ class CommandExecutor(private val context: Context) {
         return withContext(Dispatchers.IO) {
             try {
                 val commandString = "${command.resource}.${command.operation}"
+
+                // Validate command before execution
+                val validationResult = validator.validate(command)
+                if (!validationResult.isValid) {
+                    val errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
+                    LogManager.aiPrompt("Command validation failed: $errorMessage", "WARN")
+                    return@withContext InternalCommandResult(
+                        promptResult = PromptCommandResult("", ""),
+                        commandResult = com.assistant.core.ai.data.CommandResult(
+                            command = commandString,
+                            status = CommandStatus.FAILED,
+                            details = errorMessage
+                        )
+                    )
+                }
+
                 val paramsMap = command.params
                 val paramsJson = org.json.JSONObject()
                 paramsMap.forEach { (key, value) -> paramsJson.put(key, value) }

@@ -282,13 +282,11 @@ class ValidationResolver(private val context: Context) {
             ))
 
             if (result.status == CommandStatus.SUCCESS) {
-                val config = result.data?.get("config") as? String
-                if (config != null) {
-                    JSONObject(config)
-                } else {
-                    LogManager.aiService("ValidationResolver: Zone $zoneId has no config", "WARN")
-                    JSONObject()
-                }
+                // zones.get returns "zone" map (zones don't have config_json - they're simpler entities)
+                // For now, zones don't have validation configs, so we return empty JSON
+                // Future: could add config_json field to Zone entity if needed
+                LogManager.aiService("ValidationResolver: Zone $zoneId loaded (zones don't have config_json yet)", "DEBUG")
+                JSONObject()
             } else {
                 LogManager.aiService("ValidationResolver: Failed to load zone $zoneId: ${result.error}", "WARN")
                 JSONObject()
@@ -309,9 +307,11 @@ class ValidationResolver(private val context: Context) {
             ))
 
             if (result.status == CommandStatus.SUCCESS) {
-                val config = result.data?.get("config") as? String
-                if (config != null) {
-                    JSONObject(config)
+                // tools.get returns "tool_instance" map containing config_json
+                val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+                val configJson = toolInstance?.get("config_json") as? String
+                if (configJson != null) {
+                    JSONObject(configJson)
                 } else {
                     LogManager.aiService("ValidationResolver: Tool $toolInstanceId has no config", "WARN")
                     JSONObject()
@@ -337,7 +337,9 @@ class ValidationResolver(private val context: Context) {
             ))
 
             if (toolResult.status == CommandStatus.SUCCESS) {
-                val zoneId = toolResult.data?.get("zone_id") as? String
+                // tools.get returns "tool_instance" map containing zone_id
+                val toolInstance = toolResult.data?.get("tool_instance") as? Map<*, *>
+                val zoneId = toolInstance?.get("zone_id") as? String
                 if (zoneId != null) {
                     loadZoneConfig(zoneId)
                 } else {

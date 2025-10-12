@@ -389,7 +389,7 @@ fun TrackingConfigScreen(
                     )
                     LogManager.tracking("Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
                     if (!deleteResult.isSuccess) {
-                        LogManager.tracking("Failed to delete existing data: ${deleteResult.message}", "WARN")
+                        LogManager.tracking("Failed to delete existing data: ${deleteResult.error}", "WARN")
                     } else {
                         LogManager.tracking("Data deletion successful")
                     }

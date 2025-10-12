@@ -50,7 +50,7 @@ class DataNavigator(private val context: Context) {
                     )
                 }
             } else {
-                LogManager.coordination("Failed to load zones: ${result.message}", "ERROR")
+                LogManager.coordination("Failed to load zones: ${result.error}", "ERROR")
                 emptyList()
             }
         } catch (e: Exception) {
@@ -298,7 +298,7 @@ class DataNavigator(private val context: Context) {
                     )
                 }
             } else {
-                LogManager.coordination("Failed to load tools for zone $zoneId: ${result.message}", "ERROR")
+                LogManager.coordination("Failed to load tools for zone $zoneId: ${result.error}", "ERROR")
                 emptyList()
             }
         } catch (e: Exception) {
@@ -331,7 +331,7 @@ class DataNavigator(private val context: Context) {
                     null
                 }
             } else {
-                LogManager.coordination("Failed to load tool instance $toolInstanceId: ${result.message}", "ERROR")
+                LogManager.coordination("Failed to load tool instance $toolInstanceId: ${result.error}", "ERROR")
                 null
             }
         } catch (e: Exception) {

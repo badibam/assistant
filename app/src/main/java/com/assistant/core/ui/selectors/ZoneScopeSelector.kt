@@ -871,7 +871,7 @@ private fun NameSelectorSection(
 
                         onNameSelectionChange(nameSelection.copy(availableNames = names))
                     } else {
-                        LogManager.coordination("Failed to load names for tool $toolInstanceId: ${result.message}", "ERROR")
+                        LogManager.coordination("Failed to load names for tool $toolInstanceId: ${result.error}", "ERROR")
                         onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
                     }
                 } else {

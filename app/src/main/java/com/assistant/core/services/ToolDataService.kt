@@ -8,8 +8,6 @@ import com.assistant.core.coordinator.Operation
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.AppDatabase
-import com.assistant.core.tools.ToolTypeManager
-import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
@@ -58,49 +56,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
-        }
-
-        // Validation via ToolType
-        val toolType = ToolTypeManager.getToolType(tooltype)
-        if (toolType != null) {
-            // Build complete structure for validation (base fields + data field)
-            val fullDataMap = mutableMapOf<String, Any>().apply {
-                // Base fields required by schema
-                put("tool_instance_id", toolInstanceId)
-                put("tooltype", tooltype)
-                timestamp?.let { put("timestamp", it) }
-                name?.let { put("name", it) }
-                
-                // Data field containing tool type specific data
-                val dataContent = JSONObject(dataJson).let { json ->
-                    mutableMapOf<String, Any>().apply {
-                        json.keys().forEach { key ->
-                            put(key, json.get(key))
-                        }
-                    }
-                }
-                put("data", dataContent)
-            }
-
-            // Use schema_id from params for validation
-            val schemaId = params.optString("schema_id")
-            if (schemaId.isNotEmpty()) {
-                fullDataMap["schema_id"] = schemaId  // Add schema_id to root level for validation
-            }
-
-            val validation = if (schemaId.isNotEmpty()) {
-                val schema = toolType.getSchema(schemaId, context)
-                if (schema != null) {
-                    SchemaValidator.validate(schema, fullDataMap, context)
-                } else {
-                    com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
-                }
-            } else {
-                com.assistant.core.validation.ValidationResult.error("Missing schema_id in data")
-            }
-            if (!validation.isValid) {
-                return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
-            }
         }
 
         // Handle position-based insertion
@@ -187,49 +142,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
-
-        // Validation if new data provided
-        if (dataJson != null) {
-            val toolType = ToolTypeManager.getToolType(existingEntity.tooltype)
-            if (toolType != null) {
-                // Build complete structure for validation (base fields + data field)
-                val fullDataMap = mutableMapOf<String, Any>().apply {
-                    // Base fields required by schema
-                    put("tool_instance_id", existingEntity.toolInstanceId)
-                    put("tooltype", existingEntity.tooltype)
-                    put("timestamp", timestamp ?: existingEntity.timestamp ?: 0L)
-                    put("name", name ?: existingEntity.name ?: "")
-                    
-                    // Data field containing tool type specific data
-                    val dataContent = JSONObject(dataJson).let { json ->
-                        mutableMapOf<String, Any>().apply {
-                            json.keys().forEach { key ->
-                                put(key, json.get(key))
-                            }
-                        }
-                    }
-                    put("data", dataContent)
-                }
-                
-                // Use schema_id from data for validation
-            val dataContent = JSONObject(dataJson)
-            val schemaId = dataContent.optString("schema_id")
-
-            val validation = if (schemaId.isNotEmpty()) {
-                val schema = toolType.getSchema(schemaId, context)
-                if (schema != null) {
-                    SchemaValidator.validate(schema, fullDataMap, context)
-                } else {
-                    com.assistant.core.validation.ValidationResult.error("Schema not found: $schemaId")
-                }
-            } else {
-                com.assistant.core.validation.ValidationResult.error("Missing schema_id in data")
-            }
-                if (!validation.isValid) {
-                    return OperationResult.error(s.shared("service_error_validation_failed").format(validation.errorMessage ?: ""))
-                }
-            }
-        }
 
         val updatedEntity = existingEntity.copy(
             data = dataJson ?: existingEntity.data,
@@ -452,15 +364,23 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     result.data?.get("id")?.let { createdIds.add(it.toString()) }
                     successCount++
+                    com.assistant.core.utils.LogManager.service("Batch entry $i created successfully", "DEBUG")
                 } else {
                     failureCount++
+                    com.assistant.core.utils.LogManager.service("Batch entry $i failed: ${result.error}", "WARN")
                 }
             } catch (e: Exception) {
                 failureCount++
+                com.assistant.core.utils.LogManager.service("Batch entry $i exception: ${e.message}", "ERROR", e)
             }
         }
 
         // Note: No notification here - createEntry() already notifies for each entry
+
+        // Return error if all entries failed
+        if (successCount == 0 && failureCount > 0) {
+            return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
 
         return OperationResult.success(mapOf(
             "created_count" to successCount,
@@ -523,6 +443,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Note: No notification here - updateEntry() already notifies for each entry
 
+        // Return error if all entries failed
+        if (successCount == 0 && failureCount > 0) {
+            return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
+
         return OperationResult.success(mapOf(
             "updated_count" to successCount,
             "failed_count" to failureCount
@@ -577,6 +502,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         // Note: No notification here - deleteEntry() already notifies for each entry
+
+        // Return error if all entries failed
+        if (successCount == 0 && failureCount > 0) {
+            return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
 
         return OperationResult.success(mapOf(
             "deleted_count" to successCount,

@@ -109,7 +109,9 @@ class AICommandProcessor(private val context: Context) {
             // Tool data actions - batch operations by default (per AI.md line 182)
             // Schema ID enrichment: automatically inject data_schema_id from tool instance config
             "CREATE_DATA" -> {
+                LogManager.aiService("CREATE_DATA original params keys: ${command.params.keys}", "DEBUG")
                 val enrichedParams = enrichWithSchemaId(command.params)
+                LogManager.aiService("CREATE_DATA enriched params keys: ${enrichedParams.keys}", "DEBUG")
                 ExecutableCommand(
                     resource = "tool_data",
                     operation = "batch_create",
@@ -283,7 +285,17 @@ class AICommandProcessor(private val context: Context) {
                 return params
             }
 
-            val configJson = result.data?.get("config_json") as? String
+            // tools.get returns { "tool_instance": { "config_json": "...", ... } }
+            val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+            if (toolInstance == null) {
+                LogManager.aiService(
+                    "Tool instance $toolInstanceId not found in result",
+                    "ERROR"
+                )
+                return params
+            }
+
+            val configJson = toolInstance["config_json"] as? String
             if (configJson.isNullOrEmpty()) {
                 LogManager.aiService(
                     "Tool instance $toolInstanceId has no config_json",
