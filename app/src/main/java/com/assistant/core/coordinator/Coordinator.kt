@@ -233,7 +233,7 @@ class Coordinator(context: Context) {
         operation: String,
         phase: Int = 1
     ): CommandResult {
-        LogManager.coordination("executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase")
+        LogManager.coordination("executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase", "VERBOSE")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
@@ -241,14 +241,20 @@ class Coordinator(context: Context) {
         return try {
             val params = JSONObject().apply {
                 command.params.forEach { (key, value) ->
-                    put(key, value)
+                    // Convert value to JSON-compatible type
+                    val jsonValue = when (value) {
+                        is List<*> -> org.json.JSONArray(value)
+                        is Map<*, *> -> JSONObject(value as Map<*, *>)
+                        else -> value
+                    }
+                    put(key, jsonValue)
                 }
                 put("phase", phase)
             }
             
-            LogManager.coordination("Calling service.execute with params: $params")
+            LogManager.coordination("Calling service.execute with params: $params", "VERBOSE")
             val result = service.execute(operation, params, token)
-            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}")
+            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
             
             CommandResult(
                 commandId = command.id,
@@ -257,7 +263,8 @@ class Coordinator(context: Context) {
                     result.success -> CommandStatus.SUCCESS
                     else -> CommandStatus.ERROR
                 },
-                message = result.error ?: "Operation completed successfully",
+                message = if (result.success) "Operation completed successfully" else null,
+                error = result.error,
                 data = result.data,
                 requiresBackground = result.requiresBackground,
                 requiresContinuation = result.requiresContinuation

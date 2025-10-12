@@ -411,9 +411,12 @@
     <string name="tools_base_schema_data_timestamp"></string>
     <string name="tools_base_schema_data_created_at"></string>
     <string name="tools_base_schema_data_updated_at"></string>
+    <string name="tools_base_schema_data_schema_id"></string>
+    <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
 
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
     <string name="zone_config_schema_display_name"></string>
+    <string name="zone_config_schema_description">Schéma de configuration pour les zones</string>
     <string name="app_config_format_schema_display_name"></string>
     <string name="main_screen_config_schema_display_name"></string>
 

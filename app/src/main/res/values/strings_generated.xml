@@ -6,6 +6,7 @@
     <string name="notes_description">Prise de notes simple et rapide avec organisation flexible</string>
     <string name="notes_schema_config_display_name"></string>
     <string name="notes_schema_data_display_name"></string>
+    <string name="notes_schema_data_description">Schéma de validation pour les entrées de notes</string>
     <string name="notes_schema_data_name">Nom de l\'entrée de note</string>
     <string name="notes_schema_data_timestamp">Horodatage de création de la note</string>
     <string name="notes_schema_data_data">Données de contenu de la note</string>
@@ -637,7 +638,10 @@
     <string name="shared_tools_base_schema_data_timestamp"></string>
     <string name="shared_tools_base_schema_data_created_at"></string>
     <string name="shared_tools_base_schema_data_updated_at"></string>
+    <string name="shared_tools_base_schema_data_schema_id"></string>
+    <string name="shared_tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
     <string name="shared_zone_config_schema_display_name"></string>
+    <string name="shared_zone_config_schema_description">Schéma de configuration pour les zones</string>
     <string name="shared_app_config_format_schema_display_name"></string>
     <string name="shared_main_screen_config_schema_display_name"></string>
     <string name="shared_app_config_schema_format_week_start_day"></string>
