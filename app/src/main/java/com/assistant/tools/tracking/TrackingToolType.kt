@@ -16,7 +16,6 @@ import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.SchemaProvider
 import com.assistant.core.validation.FieldLimits
 import com.assistant.core.tools.BaseSchemas
-import com.assistant.tools.tracking.handlers.TrackingTypeFactory
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
 import com.assistant.tools.tracking.ui.TrackingScreen
 import org.json.JSONObject
@@ -455,11 +454,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_numeric_unit")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "quantity"],
@@ -518,11 +512,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_scale_max_label")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "rating", "min_value", "max_value"],
@@ -573,11 +562,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_boolean_false_label")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "state"],
@@ -627,11 +611,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                                 "type": "string",
                                 "maxLength": ${FieldLimits.SHORT_LENGTH}
                             }
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "selected_option", "available_options"],
@@ -672,11 +651,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                         "increment": {
                             "type": "integer",
                             "description": "${s.tool("schema_data_counter_increment")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "increment"],
@@ -718,11 +692,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "integer",
                             "minimum": 0,
                             "description": "${s.tool("schema_data_timer_duration_seconds")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "duration_seconds"],
@@ -764,11 +733,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.MEDIUM_LENGTH},
                             "description": "${s.tool("schema_data_text_content")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "text"],
@@ -865,13 +829,13 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
      * @return User-friendly field name for display (e.g., "Quantity", "Name")
      */
     override fun getFormFieldName(fieldName: String, context: Context): String {
-        
+
         val s = Strings.`for`(tool = "tracking", context = context)
-        
+
         // Try common fields for all tooltypes first
         val commonFieldName = BaseSchemas.getCommonFieldName(fieldName, context)
         if (commonFieldName != null) return commonFieldName
-        
+
         // Then tracking-specific fields
         return when(fieldName) {
             "default_quantity" -> s.tool("field_default_quantity")
@@ -894,6 +858,95 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             "type" -> s.tool("field_type")
             "raw" -> s.tool("field_raw")
             else -> s.tool("field_unknown")
+        }
+    }
+
+    /**
+     * Enrich tracking data by calculating the 'raw' display field
+     * The 'raw' field is an auto-generated human-readable representation of the data
+     *
+     * Important: The 'raw' field should NOT be provided by AI/user - it's always calculated here
+     * If 'raw' is present in dataJson, it will be removed and recalculated
+     *
+     * @param dataJson The data JSON to enrich
+     * @param name The entry name (optional, used for some types)
+     * @param configJson The tool instance config (optional, used for default labels)
+     * @return Enriched data JSON with 'raw' field added
+     * @throws Exception if enrichment fails (parsing errors, missing required fields, etc.)
+     */
+    override fun enrichData(dataJson: String, name: String?, configJson: String?): String {
+        try {
+            val dataObj = JSONObject(dataJson)
+
+            // Remove raw if explicitly provided (auto-generated field only)
+            if (dataObj.has("raw")) {
+                dataObj.remove("raw")
+            }
+
+            // Calculate raw based on type
+            val trackingType = dataObj.optString("type")
+            val calculatedRaw = when (trackingType) {
+                "numeric" -> {
+                    val quantity = dataObj.optDouble("quantity")
+                    val unit = dataObj.optString("unit", "")
+                    if (unit.isNotBlank()) "$quantity $unit" else quantity.toString()
+                }
+
+                "scale" -> {
+                    val rating = dataObj.optInt("rating")
+                    val maxValue = dataObj.optInt("max_value")
+                    "$rating/$maxValue"
+                }
+
+                "boolean" -> {
+                    val state = dataObj.optBoolean("state")
+                    val trueLabel = dataObj.optString("true_label", "Yes")
+                    val falseLabel = dataObj.optString("false_label", "No")
+                    if (state) trueLabel else falseLabel
+                }
+
+                "choice" -> {
+                    dataObj.optString("selected_option", "")
+                }
+
+                "counter" -> {
+                    dataObj.optInt("increment").toString()
+                }
+
+                "timer" -> {
+                    val seconds = dataObj.optInt("duration_seconds", 0)
+                    val h = seconds / 3600
+                    val m = (seconds % 3600) / 60
+                    val s = seconds % 60
+                    buildString {
+                        if (h > 0) append("${h}h ")
+                        if (m > 0) append("${m}m ")
+                        if (s > 0 || (h == 0 && m == 0)) append("${s}s")
+                    }.trim()
+                }
+
+                "text" -> {
+                    dataObj.optString("text", "")
+                }
+
+                else -> {
+                    // Unknown type: use name as fallback
+                    name ?: "[unknown]"
+                }
+            }
+
+            // Add calculated raw to data
+            dataObj.put("raw", calculatedRaw)
+            return dataObj.toString()
+
+        } catch (e: Exception) {
+            // Log error with context and re-throw to fail the operation
+            LogManager.tracking(
+                "Failed to enrich tracking data: dataJson=$dataJson, name=$name",
+                "ERROR",
+                e
+            )
+            throw e
         }
     }
 

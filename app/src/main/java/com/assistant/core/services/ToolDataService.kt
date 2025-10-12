@@ -10,6 +10,7 @@ import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
@@ -63,6 +64,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (insertPosition != null) {
             finalDataJson = handlePositionInsertion(toolInstanceId, tooltype, dataJson, insertPosition)
         }
+
+        // Enrich data with auto-generated fields (e.g., raw display field for tracking)
+        finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, finalDataJson, name)
 
         val now = System.currentTimeMillis()
         val entity = ToolDataEntity(
@@ -584,6 +588,53 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val toolInstanceDao = database.toolInstanceDao()
         val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
         return toolInstance?.zone_id
+    }
+
+    /**
+     * Enrich data using ToolType's enrichData() method if supported
+     * Returns enriched data, or original data if:
+     * - ToolType not found
+     * - Config not found
+     * - enrichData() not overridden (returns data unchanged)
+     *
+     * @param tooltype The tooltype name (e.g., "tracking", "notes")
+     * @param toolInstanceId The tool instance ID (to fetch config)
+     * @param dataJson The data JSON to enrich
+     * @param name The entry name (optional)
+     * @return Enriched data JSON
+     */
+    private suspend fun enrichDataIfSupported(
+        tooltype: String,
+        toolInstanceId: String,
+        dataJson: String,
+        name: String?
+    ): String {
+        return try {
+            // Get ToolType from ToolTypeManager
+            val toolType = ToolTypeManager.getToolType(tooltype) ?: return dataJson
+
+            // Get tool instance config
+            val coordinator = Coordinator(context)
+            val toolResult = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+
+            val configJson = if (toolResult.status == CommandStatus.SUCCESS) {
+                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
+                tool?.get("config_json") as? String
+            } else null
+
+            // Call enrichData() - default implementation returns data unchanged
+            toolType.enrichData(dataJson, name, configJson)
+        } catch (e: Exception) {
+            // Log error but return original data (enrichment is not critical for data creation)
+            com.assistant.core.utils.LogManager.service(
+                "Failed to enrich data for tooltype=$tooltype: ${e.message}",
+                "WARN",
+                e
+            )
+            dataJson
+        }
     }
 
     /**

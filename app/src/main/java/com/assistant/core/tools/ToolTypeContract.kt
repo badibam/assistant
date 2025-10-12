@@ -106,4 +106,27 @@ interface ToolTypeContract : SchemaProvider {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
+
+    /**
+     * Enrich data before storage by calculating derived/auto-generated fields
+     * This method is called by ToolDataService before inserting data into database
+     *
+     * Common use cases:
+     * - Calculate display-friendly "raw" field from structured data
+     * - Add computed fields based on configuration
+     * - Normalize data format
+     *
+     * Important: Any field marked as auto-generated should be:
+     * - Removed if explicitly provided in dataJson (ignored)
+     * - Recalculated by this method
+     * - Documented as auto-generated in schema descriptions
+     * - NOT included in validation schemas (not user-provided)
+     *
+     * @param dataJson The data JSON to enrich
+     * @param name The entry name (optional, may be used in calculations)
+     * @param configJson The tool instance configuration JSON (optional, may be needed for calculations)
+     * @return Enriched data JSON with auto-generated fields added
+     * @throws Exception if enrichment fails (will cause the create operation to fail)
+     */
+    fun enrichData(dataJson: String, name: String?, configJson: String?): String = dataJson
 }
