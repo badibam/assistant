@@ -14,7 +14,8 @@ import com.assistant.core.ai.data.SessionType
         Index(value = ["isActive"]),
         Index(value = ["type"]),
         Index(value = ["lastActivity"]),
-        Index(value = ["automationId"])
+        Index(value = ["automationId"]),
+        Index(value = ["state"])
     ]
 )
 data class AISessionEntity(
@@ -23,14 +24,16 @@ data class AISessionEntity(
     val type: SessionType,
     val requireValidation: Boolean = false,  // Session-level validation toggle
     val waitingStateJson: String? = null,    // Persisted waiting state (null = no waiting)
-    val automationId: String?,              // null for CHAT, automation ID for AUTOMATION
+    val automationId: String?,              // null for CHAT/SEED, automation ID for AUTOMATION
     val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
     val providerId: String,                 // Fixed for the session
     val providerSessionId: String,          // Provider API session ID
-    val scheduleConfigJson: String?,        // JSON for ScheduleConfig (automation only)
     val createdAt: Long,
     val lastActivity: Long,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val state: String = "IDLE",             // SessionState as string
+    val lastNetworkErrorTime: Long? = null, // Last network error timestamp
+    val endReason: String? = null           // SessionEndReason as string
 )
 
 /**

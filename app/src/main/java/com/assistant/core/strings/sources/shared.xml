@@ -637,6 +637,9 @@
     <string name="ai_limit_action_retries_reached">Limite de tentatives d'actions atteinte</string>
     <string name="ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
 
+    <!-- AI AUTOMATION - Messages for autonomous executions -->
+    <string name="ai_automation_continue_reminder">Continue jusqu'à ce que la tâche demandée soit complétée. Lorsque tu as terminé, utilise le flag \"completed\": true dans ta réponse.</string>
+
     <!-- AI SCHEMAS - Schemas metadata and field descriptions -->
     <!-- ai_message_response schema -->
     <string name="ai_schema_message_response_name">Réponse IA structurée</string>

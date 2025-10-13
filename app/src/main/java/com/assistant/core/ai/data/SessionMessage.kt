@@ -41,30 +41,23 @@ data class ExecutionFeedback(
 )
 
 /**
- * AI Session structure unifying chat and automation
+ * AI Session structure unifying chat, automation, and seed sessions
  */
 data class AISession(
     val id: String,
     val name: String,
-    val type: SessionType,         // CHAT, AUTOMATION
+    val type: SessionType,         // CHAT, AUTOMATION, SEED
     val requireValidation: Boolean = false,      // Session-level validation toggle (user controlled)
     val waitingStateJson: String? = null,        // Persisted waiting state for app closure (null = no waiting)
+    val automationId: String? = null,            // null for CHAT/SEED, automation ID for AUTOMATION
+    val scheduledExecutionTime: Long? = null,    // For AUTOMATION: scheduled trigger time (not actual exec time)
     val providerId: String,        // Fixed for the session
     val providerSessionId: String, // Provider API session ID
-    val schedule: ScheduleConfig?, // For AUTOMATION only
     val createdAt: Long,
     val lastActivity: Long,
     val messages: List<SessionMessage>,
-    val isActive: Boolean
-)
-
-/**
- * Schedule configuration for automation sessions
- * TODO: Define structure when implementing scheduling
- */
-data class ScheduleConfig(
-    val enabled: Boolean,
-    val cronExpression: String,
-    val timezone: String,
-    val nextExecution: Long?
+    val isActive: Boolean,
+    val state: SessionState = SessionState.IDLE,        // Execution state for tracking
+    val lastNetworkErrorTime: Long? = null,             // Last network error timestamp (for inactivity calculation)
+    val endReason: SessionEndReason? = null             // Why session ended (for audit)
 )

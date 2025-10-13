@@ -16,10 +16,15 @@ import com.assistant.core.update.UpdateManager
 import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
+import com.assistant.core.ai.scheduling.SchedulerWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.LogManager
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -44,6 +49,9 @@ class MainActivity : ComponentActivity() {
 
         // Initialize AI orchestrator singleton
         AIOrchestrator.initialize(this)
+
+        // Schedule automation worker (15 min periodic check)
+        scheduleAutomationWorker()
 
         // Initialize coordinator
         coordinator = Coordinator(this)
@@ -156,12 +164,34 @@ class MainActivity : ComponentActivity() {
                 val result = coordinator.processUserAction("icon_preload.preload_theme_icons", mapOf(
                     "operationId" to "startup_preload_${System.currentTimeMillis()}"
                 ))
-                
+
                 LogManager.service("Started icon preloading: ${result.status} - ${result.message}")
-                
+
             } catch (e: Exception) {
                 LogManager.service("Failed to start icon preloading: ${e.message}", "WARN", e)
             }
+        }
+    }
+
+    /**
+     * Schedule periodic automation worker
+     * Checks every 15 minutes for automations that should trigger
+     */
+    private fun scheduleAutomationWorker() {
+        try {
+            val workRequest = PeriodicWorkRequestBuilder<SchedulerWorker>(
+                15, TimeUnit.MINUTES
+            ).build()
+
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "automation_scheduler",
+                ExistingPeriodicWorkPolicy.KEEP, // Keep existing if already scheduled
+                workRequest
+            )
+
+            LogManager.service("Automation scheduler registered (15 min periodic check)", "INFO")
+        } catch (e: Exception) {
+            LogManager.service("Failed to schedule automation worker: ${e.message}", "ERROR", e)
         }
     }
 }

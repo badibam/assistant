@@ -21,7 +21,8 @@ data class AIMessage(
     val actionCommands: List<DataCommand>?,           // Optional - actions to execute
     val postText: String?,                            // Optional, only if actions
     val keepControl: Boolean?,                        // Optional - true to keep control after successful actions
-    val communicationModule: CommunicationModule?     // Optional, always last
+    val communicationModule: CommunicationModule?,    // Optional, always last
+    val completed: Boolean?                           // Optional - true when AI indicates work is done (AUTOMATION sessions)
 ) {
     /**
      * Serialize AIMessage to JSON string for storage
@@ -71,6 +72,9 @@ data class AIMessage(
             moduleJson.put("data", JSONObject(module.data))
             json.put("communicationModule", moduleJson)
         }
+
+        // Serialize completed as boolean (or omit if null/false)
+        completed?.let { if (it) json.put("completed", true) }
 
         return json.toString()
     }
@@ -145,6 +149,11 @@ data class AIMessage(
                     }
                 }
 
+                // Parse completed as boolean (true = work completed)
+                val completed = if (json.has("completed")) {
+                    json.optBoolean("completed", false)
+                } else null
+
                 AIMessage(
                     preText = preText,
                     validationRequest = validationRequest,
@@ -152,7 +161,8 @@ data class AIMessage(
                     actionCommands = actionCommands,
                     postText = postText,
                     keepControl = keepControl,
-                    communicationModule = communicationModule
+                    communicationModule = communicationModule,
+                    completed = completed
                 )
 
             } catch (e: Exception) {

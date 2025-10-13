@@ -126,6 +126,11 @@ class AIResponseParser(private val context: Context) {
                 json.optBoolean("keepControl", false)
             } else null
 
+            // Parse optional completed flag (AUTOMATION only: true = work completed)
+            val completed = if (json.has("completed")) {
+                json.optBoolean("completed", false)
+            } else null
+
             // Parse optional communicationModule
             val communicationModule = json.optJSONObject("communicationModule")?.let { module ->
                 try {
@@ -158,7 +163,8 @@ class AIResponseParser(private val context: Context) {
                 actionCommands = actionCommands,
                 postText = postText,
                 keepControl = keepControl,
-                communicationModule = communicationModule
+                communicationModule = communicationModule,
+                completed = completed
             )
 
             // Manual validation: check mutual exclusivity and field constraints
@@ -222,7 +228,8 @@ class AIResponseParser(private val context: Context) {
                 actionCommands = null,
                 postText = null,
                 keepControl = null,
-                communicationModule = null
+                communicationModule = null,
+                completed = null
             )
 
             // Log fallback message (DEBUG level)

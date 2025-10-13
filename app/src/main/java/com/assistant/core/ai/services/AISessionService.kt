@@ -66,6 +66,12 @@ class AISessionService(private val context: Context) : ExecutableService {
                 // Validation toggle
                 "toggle_validation" -> toggleValidation(params, token)
 
+                // Session state updates (for AUTOMATION)
+                "update_state" -> updateSessionState(params, token)
+                "update_last_network_error_time" -> updateLastNetworkErrorTime(params, token)
+                "update_end_reason" -> updateEndReason(params, token)
+                "reset_session_state" -> resetSessionState(params, token)
+
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -99,7 +105,6 @@ class AISessionService(private val context: Context) : ExecutableService {
             scheduledExecutionTime = if (params.has("scheduledExecutionTime")) params.getLong("scheduledExecutionTime") else null,
             providerId = providerId,
             providerSessionId = "",
-            scheduleConfigJson = null, // No schedule for regular sessions
             createdAt = now,
             lastActivity = now,
             isActive = false // Will be activated separately
@@ -760,6 +765,168 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to toggle validation for session $sessionId: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("ai_error_toggle_validation"))
+        }
+    }
+
+    /**
+     * Update session state (IDLE, PROCESSING, WAITING_NETWORK, WAITING_USER_RESPONSE, WAITING_VALIDATION)
+     */
+    private suspend fun updateSessionState(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+        val stateString = params.optString("state").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error("Parameter 'state' is required")
+
+        LogManager.aiSession("Updating session state for $sessionId: $stateString", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Get session
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Update state field
+            val updatedSession = session.copy(state = stateString)
+            dao.updateSession(updatedSession)
+
+            LogManager.aiSession("Successfully updated session state for $sessionId: $stateString", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "state" to stateString
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to update session state for $sessionId: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to update session state")
+        }
+    }
+
+    /**
+     * Update last network error time (for inactivity calculation)
+     */
+    private suspend fun updateLastNetworkErrorTime(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+        val timestamp = params.optLong("timestamp", System.currentTimeMillis())
+
+        LogManager.aiSession("Updating last network error time for $sessionId: $timestamp", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Get session
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Update lastNetworkErrorTime field
+            val updatedSession = session.copy(lastNetworkErrorTime = timestamp)
+            dao.updateSession(updatedSession)
+
+            LogManager.aiSession("Successfully updated last network error time for $sessionId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "lastNetworkErrorTime" to timestamp
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to update last network error time for $sessionId: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to update last network error time")
+        }
+    }
+
+    /**
+     * Update session end reason (COMPLETED, LIMIT_REACHED, INACTIVITY_TIMEOUT, CHAT_EVICTION, DISMISSED, USER_CANCELLED)
+     */
+    private suspend fun updateEndReason(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+        val endReasonString = params.optString("endReason").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error("Parameter 'endReason' is required")
+
+        LogManager.aiSession("Updating session end reason for $sessionId: $endReasonString", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Get session
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Update endReason field
+            val updatedSession = session.copy(endReason = endReasonString)
+            dao.updateSession(updatedSession)
+
+            LogManager.aiSession("Successfully updated session end reason for $sessionId: $endReasonString", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "endReason" to endReasonString
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to update session end reason for $sessionId: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to update session end reason")
+        }
+    }
+
+    /**
+     * Reset session state and endReason (called when session is reactivated)
+     * Sets state to IDLE and endReason to null
+     */
+    private suspend fun resetSessionState(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+
+        LogManager.aiSession("Resetting session state and endReason for $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Get session
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Reset state to IDLE and endReason to null
+            val updatedSession = session.copy(
+                state = SessionState.IDLE.name,
+                endReason = null,
+                lastNetworkErrorTime = null  // Also reset network error time
+            )
+            dao.updateSession(updatedSession)
+
+            LogManager.aiSession("Successfully reset session state for $sessionId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "state" to SessionState.IDLE.name
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to reset session state for $sessionId: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to reset session state")
         }
     }
 

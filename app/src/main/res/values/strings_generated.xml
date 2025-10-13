@@ -812,6 +812,7 @@
     <string name="shared_ai_limit_data_queries_reached">Limite d\'itérations de requêtes de données atteinte</string>
     <string name="shared_ai_limit_action_retries_reached">Limite de tentatives d\'actions atteinte</string>
     <string name="shared_ai_limit_total_roundtrips_reached">Limite totale de rounds autonomes atteinte</string>
+    <string name="shared_ai_automation_continue_reminder">Continue jusqu\'à ce que la tâche demandée soit complétée. Lorsque tu as terminé, utilise le flag \"completed\": true dans ta réponse.</string>
     <string name="shared_ai_schema_message_response_name">Réponse IA structurée</string>
     <string name="shared_ai_schema_message_response_desc">Schéma de validation pour les réponses structurées de l\'IA</string>
     <string name="shared_ai_schema_field_pretext_desc">Explication de ce que tu vas faire ou de ta réponse (toujours requis)</string>

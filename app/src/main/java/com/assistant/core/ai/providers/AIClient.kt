@@ -256,7 +256,8 @@ class AIClient(private val context: Context) {
                 actionCommands = actionCommands,
                 postText = postText,
                 keepControl = null,
-                communicationModule = communicationModule
+                communicationModule = communicationModule,
+                completed = null
             )
 
             LogManager.aiService("Successfully parsed AIMessage: preText present, ${actionCommands?.size ?: 0} actionCommands, ${dataCommands?.size ?: 0} dataCommands")

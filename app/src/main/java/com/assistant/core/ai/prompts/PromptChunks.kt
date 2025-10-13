@@ -46,7 +46,9 @@ object PromptChunks {
     private val ALL_CHUNKS = listOf(
         // PARTIE A : INTRODUCTION & CONFIGURATION
         Chunk("intro_role", 1) { ctx, _ -> buildIntroRole(ctx) },
+        Chunk("session_types", 1) { ctx, sessionType -> buildSessionTypes(ctx, sessionType) },
         Chunk("config_limits", 2) { ctx, sessionType -> buildConfigLimits(ctx, sessionType) },
+        Chunk("automation_completion", 1) { ctx, sessionType -> buildAutomationCompletion(ctx, sessionType) },
 
         // PARTIE B : FORMAT DE RÉPONSE IA
         Chunk("response_structure", 1) { ctx, _ -> buildChunk("response_structure", ctx) },
@@ -211,6 +213,31 @@ object PromptChunks {
         buildChunk("intro_role", context)
 
     /**
+     * Build session types explanation chunk
+     * Explains the distinction between CHAT and AUTOMATION sessions
+     */
+    private fun buildSessionTypes(context: Context, sessionType: SessionType): String {
+        val currentMode = when (sessionType) {
+            SessionType.CHAT -> "CHAT"
+            SessionType.AUTOMATION -> "AUTOMATION"
+            SessionType.SEED -> throw IllegalStateException("Cannot build session types for SEED session type")
+        }
+
+        return """
+## Type de session actuelle : $currentMode
+
+**CHAT** : Conversation interactive avec l'utilisateur.
+- Communication modules et Validation Request autorisés
+- Pas de flag `completed` (l'utilisateur contrôle la fin)
+
+**AUTOMATION** : Exécution autonome programmée.
+- Communication modules et Validation Request **interdits** (exécution autonome)
+- **DOIT** utiliser `"completed": true` pour terminer
+- `preText` reste obligatoire, `postText` optionnel
+""".trimIndent()
+    }
+
+    /**
      * Build config limits chunk with dynamic values based on SessionType
      */
     private fun buildConfigLimits(context: Context, sessionType: SessionType): String {
@@ -230,6 +257,10 @@ object PromptChunks {
                 aiLimits.automationMaxActionRetries,
                 aiLimits.automationMaxAutonomousRoundtrips
             )
+            SessionType.SEED -> {
+                // SEED sessions are never executed, should never generate prompts
+                throw IllegalStateException("Cannot build config limits for SEED session type")
+            }
         }
 
         return String.format(
@@ -260,5 +291,32 @@ object PromptChunks {
         }
 
         return sb.toString()
+    }
+
+    /**
+     * Build automation completion instructions (AUTOMATION sessions only)
+     * Explains how to signal work completion using the completed flag
+     */
+    private fun buildAutomationCompletion(context: Context, sessionType: SessionType): String {
+        // Only include for AUTOMATION sessions
+        if (sessionType != SessionType.AUTOMATION) {
+            return ""
+        }
+
+        return """
+## AUTOMATION : Signaler la fin du travail
+
+**IMPORTANT** : Tu DOIS ajouter `"completed": true` dans ta réponse finale pour signaler que ton travail est terminé.
+
+Exemple :
+```json
+{
+  "preText": "Analyse terminée. Résultats : [...]",
+  "completed": true
+}
+```
+
+Sans ce flag, l'automation continue jusqu'aux limites de boucles.
+""".trimIndent()
     }
 }

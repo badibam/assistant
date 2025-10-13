@@ -29,9 +29,21 @@ class AISessionController(
     private val scope: CoroutineScope
 ) {
 
+    // Round executor reference (set after construction for circular dependency)
+    private var roundExecutor: AIRoundExecutor? = null
+
+    /**
+     * Set round executor (called from AIOrchestrator after all components are initialized)
+     */
+    fun setRoundExecutor(executor: AIRoundExecutor) {
+        roundExecutor = executor
+    }
+
     // Active session state (one session active at a time)
     private var activeSessionId: String? = null
     private var activeSessionType: SessionType? = null
+    private var activeAutomationId: String? = null
+    private var activeScheduledExecutionTime: Long? = null
     private var lastActivityTimestamp: Long = 0
 
     // Session queue (FIFO with priority rules)
@@ -126,9 +138,43 @@ class AISessionController(
                 return SessionControlResult.ACTIVATED
             }
 
-            // AUTOMATION active → queue CHAT with priority (position 1)
-            enqueueSession(sessionId, type, automationId, scheduledExecutionTime, priority = true)
-            LogManager.aiSession("CHAT queued with priority: $sessionId", "INFO")
+            // AUTOMATION active → check if can evict
+            if (activeSessionType == SessionType.AUTOMATION) {
+                val limits = AppConfigManager.getAILimits()
+                val now = System.currentTimeMillis()
+                val inactivityDuration = now - lastActivityTimestamp
+
+                if (inactivityDuration > limits.chatMaxInactivityBeforeAutomationEviction) {
+                    LogManager.aiSession(
+                        "Active AUTOMATION inactive for ${inactivityDuration / 1000}s (limit: ${limits.chatMaxInactivityBeforeAutomationEviction / 1000}s) - evicting for CHAT: $sessionId",
+                        "INFO"
+                    )
+                    // Re-queue automation with its original scheduledExecutionTime
+                    val evictedSessionId = activeSessionId!!
+                    val evictedAutomationId = activeAutomationId
+                    val evictedScheduledTime = activeScheduledExecutionTime
+
+                    closeActiveSession()
+
+                    // Re-queue evicted automation (will be picked first due to older scheduledExecutionTime)
+                    if (evictedAutomationId != null) {
+                        enqueueSession(evictedSessionId, SessionType.AUTOMATION, evictedAutomationId, evictedScheduledTime)
+                        LogManager.aiSession("Re-queued evicted AUTOMATION: $evictedSessionId", "INFO")
+                    }
+
+                    activateSession(sessionId, type, automationId, scheduledExecutionTime)
+                    return SessionControlResult.ACTIVATED
+                } else {
+                    LogManager.aiSession(
+                        "Active AUTOMATION still active (inactive for ${inactivityDuration / 1000}s < ${limits.chatMaxInactivityBeforeAutomationEviction / 1000}s) - queuing CHAT: $sessionId",
+                        "INFO"
+                    )
+                }
+            }
+
+            // Queue CHAT (will have priority in processNextInQueue)
+            enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+            LogManager.aiSession("CHAT queued: $sessionId", "INFO")
             return SessionControlResult.QUEUED(1)
         }
 
@@ -154,9 +200,9 @@ class AISessionController(
             }
         }
 
-        // AUTOMATION queued normally (FIFO)
-        enqueueSession(sessionId, type, automationId, scheduledExecutionTime, priority = false)
-        val position = sessionQueue.indexOfFirst { it.sessionId == sessionId } + 1
+        // AUTOMATION queued (sorted by scheduledExecutionTime in processNextInQueue)
+        enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+        val position = sessionQueue.size
         LogManager.aiSession("AUTOMATION queued at position $position: $sessionId", "INFO")
         return SessionControlResult.QUEUED(position)
     }
@@ -182,6 +228,8 @@ class AISessionController(
         // 2. Update memory state (immediate)
         activeSessionId = null
         activeSessionType = null
+        activeAutomationId = null
+        activeScheduledExecutionTime = null
         lastActivityTimestamp = 0
 
         // 3. Sync DB state (async, non-blocking)
@@ -223,6 +271,7 @@ class AISessionController(
     /**
      * Activate a session
      * Updates both memory state (immediate) and DB state (async)
+     * Also resets session state and endReason for fresh execution
      */
     private fun activateSession(
         sessionId: String,
@@ -233,6 +282,8 @@ class AISessionController(
         // 1. Update memory state (immediate)
         activeSessionId = sessionId
         activeSessionType = type
+        activeAutomationId = automationId
+        activeScheduledExecutionTime = scheduledExecutionTime
         lastActivityTimestamp = System.currentTimeMillis()
         LogManager.aiSession("Session activated in memory: $sessionId (type=$type, automationId=$automationId)", "DEBUG")
 
@@ -242,6 +293,12 @@ class AISessionController(
         // 3. Sync DB state (async, non-blocking)
         scope.launch {
             try {
+                // Reset session state and endReason for fresh execution
+                coordinator.processUserAction("ai_sessions.reset_session_state", mapOf(
+                    "sessionId" to sessionId
+                ))
+
+                // Set session as active
                 val result = coordinator.processUserAction("ai_sessions.set_active_session", mapOf(
                     "sessionId" to sessionId
                 ))
@@ -257,14 +314,14 @@ class AISessionController(
     }
 
     /**
-     * Enqueue a session with optional priority
+     * Enqueue a session
+     * Sorting is handled in processNextInQueue() (CHAT priority, then by scheduledExecutionTime)
      */
     private fun enqueueSession(
         sessionId: String,
         type: SessionType,
         automationId: String?,
-        scheduledExecutionTime: Long?,
-        priority: Boolean
+        scheduledExecutionTime: Long?
     ) {
         val queued = QueuedSession(
             sessionId = sessionId,
@@ -279,17 +336,18 @@ class AISessionController(
             sessionQueue.removeAll { it.type == SessionType.CHAT }
         }
 
-        if (priority) {
-            sessionQueue.add(0, queued) // Position 1 (CHAT prioritaire)
-        } else {
-            sessionQueue.add(queued) // FIFO normal
-        }
+        sessionQueue.add(queued)
 
-        LogManager.aiSession("Session enqueued: $sessionId at position ${sessionQueue.size} (priority=$priority)", "DEBUG")
+        LogManager.aiSession("Session enqueued: $sessionId (queue size=${sessionQueue.size})", "DEBUG")
     }
 
     /**
      * Process next session in queue
+     * Selection logic:
+     * - CHAT has absolute priority (anywhere in queue)
+     * - AUTOMATION: earliest scheduledExecutionTime
+     *
+     * Also handles dismiss logic for automations
      */
     private fun processNextInQueue() {
         if (sessionQueue.isEmpty()) {
@@ -297,12 +355,84 @@ class AISessionController(
             return
         }
 
-        val next = sessionQueue.removeAt(0)
-        activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
-        LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
+        // Smart selection: CHAT priority, else earliest scheduledExecutionTime
+        val chatIndex = sessionQueue.indexOfFirst { it.type == SessionType.CHAT }
+        val nextIndex = if (chatIndex >= 0) {
+            chatIndex // CHAT found → priority
+        } else {
+            // Only AUTOMATION → select earliest scheduledExecutionTime
+            sessionQueue
+                .withIndex()
+                .minByOrNull { it.value.scheduledExecutionTime ?: Long.MAX_VALUE }
+                ?.index ?: 0
+        }
 
-        // TODO: Trigger session execution (for AUTOMATION, will be done when scheduler is implemented)
-        // For CHAT, UI will detect active session change and open chat interface
+        val next = sessionQueue[nextIndex]
+
+        // Dismiss logic: check if automation with dismissOlderInstances and newer instance exists
+        if (next.type == SessionType.AUTOMATION && next.automationId != null) {
+            scope.launch {
+                try {
+                    // Load automation to check dismissOlderInstances flag
+                    val automationResult = coordinator.processUserAction("automations.get", mapOf(
+                        "automation_id" to next.automationId!!
+                    ))
+
+                    if (automationResult.isSuccess) {
+                        val automationData = automationResult.data?.get("automation") as? Map<*, *>
+                        val dismissOlderInstances = automationData?.get("dismiss_older_instances") as? Boolean ?: false
+
+                        if (dismissOlderInstances) {
+                            // Check if newer instance of same automation exists in queue
+                            val hasNewerInstance = sessionQueue
+                                .drop(1) // Skip current (first)
+                                .any { it.automationId == next.automationId }
+
+                            if (hasNewerInstance) {
+                                LogManager.aiSession("Skipping older automation instance ${next.sessionId} (newer instance in queue)", "INFO")
+                                sessionQueue.removeAt(nextIndex)
+
+                                // Store DISMISSED system message
+                                // TODO: Create and store SystemMessage with type DISMISSED
+
+                                // Process next recursively
+                                processNextInQueue()
+                                return@launch
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    LogManager.aiSession("Error checking dismiss logic: ${e.message}", "ERROR", e)
+                }
+
+                // No dismiss or no newer instance → activate and execute
+                sessionQueue.removeAt(nextIndex)
+                activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
+                LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
+
+                // Trigger execution for AUTOMATION
+                if (next.type == SessionType.AUTOMATION) {
+                    roundExecutor?.let { executor ->
+                        scope.launch {
+                            try {
+                                LogManager.aiSession("Triggering AUTOMATION execution for session ${next.sessionId}", "INFO")
+                                executor.executeAIRound(RoundReason.AUTOMATION_START)
+                            } catch (e: Exception) {
+                                LogManager.aiSession("Error executing automation round: ${e.message}", "ERROR", e)
+                            }
+                        }
+                    } ?: run {
+                        LogManager.aiSession("RoundExecutor not set, cannot trigger automation", "ERROR")
+                    }
+                }
+                // For CHAT, UI will detect active session change and open chat interface
+            }
+        } else {
+            // Not an automation or no automation ID → activate immediately
+            sessionQueue.removeAt(nextIndex)
+            activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
+            LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
+        }
     }
 }
 

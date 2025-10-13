@@ -9,5 +9,6 @@ enum class RoundReason {
     FORMAT_ERROR_CORRECTION,   // Correction après erreur format parsing
     LIMIT_NOTIFICATION,        // Notification limite atteinte
     DATA_RESPONSE,             // Retour données suite requête IA
-    MANUAL_TRIGGER             // Déclenchement manuel/debug
+    MANUAL_TRIGGER,            // Déclenchement manuel/debug
+    AUTOMATION_START           // Démarrage session automation
 }

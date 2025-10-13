@@ -120,6 +120,9 @@ object AIOrchestrator {
             responseParser = responseParser
         )
 
+        // Set roundExecutor in sessionController (for automation execution)
+        sessionController.setRoundExecutor(roundExecutor)
+
         // Configure component callbacks
         sessionController.setOnSessionActivatedCallback { sessionId ->
             messageStorage.updateMessagesFlow(sessionId)
@@ -155,21 +158,19 @@ object AIOrchestrator {
 
                         when (type) {
                             SessionType.CHAT -> {
-                                // Restore CHAT session in memory
-                                if (sessionId != null) {
-                                    sessionController.restoreActiveSession(sessionId, type)
-                                    LogManager.aiSession("Restored active CHAT session: $sessionId", "INFO")
-                                }
+                                // Deactivate CHAT (never resumed automatically after app restart)
+                                coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
+                                LogManager.aiSession("Deactivated CHAT session on app restart: $sessionId", "INFO")
                             }
                             SessionType.AUTOMATION -> {
-                                // Deactivate AUTOMATION (it's finished/interrupted after app restart)
+                                // Deactivate AUTOMATION (finished/interrupted after app restart)
                                 coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
-                                LogManager.aiSession("Deactivated finished AUTOMATION session: $sessionId", "INFO")
+                                LogManager.aiSession("Deactivated AUTOMATION session on app restart: $sessionId", "INFO")
                             }
                             else -> {
                                 // Unknown or null type, deactivate
                                 coordinator.processUserAction("ai_sessions.stop_active_session", emptyMap())
-                                LogManager.aiSession("Deactivated session with unknown type: $sessionId", "WARN")
+                                LogManager.aiSession("Deactivated session with unknown type on app restart: $sessionId", "WARN")
                             }
                         }
                     } else {
@@ -503,9 +504,10 @@ object AIOrchestrator {
                     },
                     requireValidation = sessionData["requireValidation"] as? Boolean ?: false,
                     waitingStateJson = sessionData["waitingStateJson"] as? String,
+                    automationId = sessionData["automationId"] as? String,
+                    scheduledExecutionTime = (sessionData["scheduledExecutionTime"] as? Number)?.toLong(),
                     providerId = sessionData["providerId"] as? String ?: "claude",
                     providerSessionId = sessionData["providerSessionId"] as? String ?: "",
-                    schedule = null, // TODO: Parse schedule when needed
                     createdAt = (sessionData["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                     lastActivity = (sessionData["lastActivity"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                     messages = emptyList(), // TODO: Parse messages properly
@@ -561,6 +563,122 @@ object AIOrchestrator {
             OperationResult.success()
         } else {
             OperationResult.error(result.error ?: "Failed to toggle validation")
+        }
+    }
+
+    // ========================================================================================
+    // Automation Execution API
+    // ========================================================================================
+
+    /**
+     * Execute an automation by creating a new AUTOMATION session and triggering execution
+     *
+     * Flow:
+     * 1. Load automation configuration
+     * 2. Load SEED session containing initial message
+     * 3. Create new AUTOMATION session (copy USER messages from SEED)
+     * 4. Request session control (queues if needed, executes when ready)
+     */
+    suspend fun executeAutomation(automationId: String): OperationResult {
+        LogManager.aiSession("AIOrchestrator.executeAutomation() called for $automationId", "DEBUG")
+
+        return withContext(Dispatchers.IO) {
+            try {
+                // 1. Load automation
+                val automationResult = coordinator.processUserAction("automations.get", mapOf(
+                    "automation_id" to automationId
+                ))
+
+                if (!automationResult.isSuccess) {
+                    return@withContext OperationResult.error("Failed to load automation: ${automationResult.error}")
+                }
+
+                val automationData = automationResult.data?.get("automation") as? Map<*, *>
+                    ?: return@withContext OperationResult.error("No automation data found")
+
+                val seedSessionId = automationData["seed_session_id"] as? String
+                    ?: return@withContext OperationResult.error("No seed session ID in automation")
+                val providerId = automationData["provider_id"] as? String
+                    ?: return@withContext OperationResult.error("No provider ID in automation")
+
+                // 2. Load SEED session
+                val seedSessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
+                    "sessionId" to seedSessionId
+                ))
+
+                if (!seedSessionResult.isSuccess) {
+                    return@withContext OperationResult.error("Failed to load seed session: ${seedSessionResult.error}")
+                }
+
+                val seedMessages = seedSessionResult.data?.get("messages") as? List<*>
+                    ?: return@withContext OperationResult.error("No messages in seed session")
+
+                // Filter USER messages only
+                val userMessages = seedMessages.mapNotNull { msgData ->
+                    val msg = msgData as? Map<*, *> ?: return@mapNotNull null
+                    val sender = msg["sender"] as? String
+                    if (sender == "USER") msg else null
+                }
+
+                if (userMessages.isEmpty()) {
+                    return@withContext OperationResult.error("No USER messages found in seed session")
+                }
+
+                LogManager.aiSession("Found ${userMessages.size} USER messages in seed session", "DEBUG")
+
+                // 3. Create new AUTOMATION session
+                val sessionId = java.util.UUID.randomUUID().toString()
+                val now = System.currentTimeMillis()
+
+                val createSessionResult = coordinator.processUserAction("ai_sessions.create_session", mapOf(
+                    "name" to "Execution ${automationData["name"]}",
+                    "type" to SessionType.AUTOMATION.name,
+                    "providerId" to providerId,
+                    "automationId" to automationId,
+                    "scheduledExecutionTime" to now
+                ))
+
+                if (!createSessionResult.isSuccess) {
+                    return@withContext OperationResult.error("Failed to create automation session: ${createSessionResult.error}")
+                }
+
+                val executionSessionId = createSessionResult.data?.get("sessionId") as? String
+                    ?: return@withContext OperationResult.error("No session ID returned")
+
+                // 4. Copy USER messages from SEED to new session
+                for (userMsg in userMessages) {
+                    val copyResult = coordinator.processUserAction("ai_sessions.create_message", mapOf(
+                        "sessionId" to executionSessionId,
+                        "sender" to MessageSender.USER.name,
+                        "richContent" to (userMsg["richContentJson"] ?: ""),
+                        "textContent" to (userMsg["textContent"] ?: ""),
+                        "timestamp" to now
+                    ))
+
+                    if (!copyResult.isSuccess) {
+                        LogManager.aiSession("Failed to copy message: ${copyResult.error}", "WARN")
+                    }
+                }
+
+                LogManager.aiSession("Created AUTOMATION session $executionSessionId for automation $automationId", "INFO")
+
+                // 5. Request session control (this will queue and execute when ready)
+                requestSessionControl(
+                    sessionId = executionSessionId,
+                    type = SessionType.AUTOMATION,
+                    automationId = automationId,
+                    scheduledExecutionTime = now
+                )
+
+                OperationResult.success(mapOf(
+                    "session_id" to executionSessionId,
+                    "automation_id" to automationId
+                ))
+
+            } catch (e: Exception) {
+                LogManager.aiSession("executeAutomation - Error: ${e.message}", "ERROR", e)
+                OperationResult.error("Failed to execute automation: ${e.message}")
+            }
         }
     }
 }

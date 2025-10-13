@@ -211,6 +211,13 @@ class AIRoundExecutor(
                 val aiLimits = AppConfigManager.getAILimits()
                 val timeoutMinutes = aiLimits.automationMaxSessionDuration / 60000
                 messageStorage.storeSessionTimeoutMessage(s.shared("ai_error_session_timeout_automation").format(timeoutMinutes), sessionId)
+
+                // Update session endReason to SESSION_TIMEOUT
+                coordinator.processUserAction("ai_sessions.update_end_reason", mapOf(
+                    "sessionId" to sessionId,
+                    "endReason" to SessionEndReason.INACTIVITY_TIMEOUT.name
+                ))
+
                 break
             }
 
@@ -263,6 +270,21 @@ class AIRoundExecutor(
             val aiMessage = parseResult.aiMessage
             if (aiMessage == null) {
                 // No AI message structure - end loop
+                break
+            }
+
+            // PRIORITY 0: Check if AI indicated completion (AUTOMATION only)
+            if (aiMessage.completed == true) {
+                LogManager.aiSession("AI indicated completion with completed=true flag", "INFO")
+
+                // Update session endReason to COMPLETED
+                coordinator.processUserAction("ai_sessions.update_end_reason", mapOf(
+                    "sessionId" to sessionId,
+                    "endReason" to SessionEndReason.COMPLETED.name
+                ))
+
+                // No need for explicit system message, AI's preText already explains completion
+                // Session will be deactivated naturally when loop exits
                 break
             }
 
@@ -385,7 +407,49 @@ class AIRoundExecutor(
                 }
             }
 
-            // Rien à faire
+            // No commands: For AUTOMATION, send reminder to continue or complete
+            if (sessionType == SessionType.AUTOMATION) {
+                LogManager.aiSession("AUTOMATION: No commands in AI response, sending continuation reminder", "DEBUG")
+
+                messageStorage.storeSystemMessage(
+                    SystemMessage(
+                        type = SystemMessageType.DATA_ADDED,
+                        commandResults = emptyList(),
+                        summary = s.shared("ai_automation_continue_reminder"),
+                        formattedData = null
+                    ),
+                    sessionId
+                )
+
+                // Check session still active
+                if (!isSessionStillActive(sessionId)) {
+                    LogManager.aiSession("Session stopped before continuation reminder", "INFO")
+                    break
+                }
+
+                if (userInteractionManager.shouldInterruptRound()) {
+                    LogManager.aiSession("Round interrupted before sending continuation reminder", "INFO")
+                    messageStorage.storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
+                // Continue loop to send reminder to AI
+                aiResponse = callAIWithRetry(PromptManager.buildPromptData(sessionId, context), sessionType)
+                responseParser.logTokenStats(aiResponse)
+                if (!aiResponse.success) break
+
+                if (userInteractionManager.shouldInterruptRound()) {
+                    LogManager.aiSession("Round interrupted before storing continuation response", "INFO")
+                    messageStorage.storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                    break
+                }
+
+                messageStorage.storeAIMessage(aiResponse, sessionId)
+                totalRoundtrips++
+                continue
+            }
+
+            // CHAT: No commands, end loop normally
             break
         }
 
@@ -514,24 +578,30 @@ class AIRoundExecutor(
                 messageStorage.storePostTextMessage(aiMessage.postText, sessionId)
             }
 
-            // Check if AI wants to keep control
-            if (aiMessage.keepControl == true) {
-                LogManager.aiSession("AI requested keepControl, continuing autonomous loop", "DEBUG")
+            // Check if AI wants to keep control OR if AUTOMATION (always continue for AUTOMATION)
+            val shouldKeepControl = aiMessage.keepControl == true || sessionType == SessionType.AUTOMATION
+
+            if (shouldKeepControl) {
+                if (sessionType == SessionType.AUTOMATION) {
+                    LogManager.aiSession("AUTOMATION mode: continuing autonomous loop after successful actions", "DEBUG")
+                } else {
+                    LogManager.aiSession("AI requested keepControl, continuing autonomous loop", "DEBUG")
+                }
 
                 if (!isSessionStillActive(sessionId)) {
-                    LogManager.aiSession("Session stopped before keepControl continuation", "INFO")
+                    LogManager.aiSession("Session stopped before continuation", "INFO")
                     return Pair(false, 0)
                 }
 
                 if (userInteractionManager.shouldInterruptRound()) {
-                    LogManager.aiSession("Round interrupted before keepControl continuation", "INFO")
+                    LogManager.aiSession("Round interrupted before continuation", "INFO")
                     messageStorage.storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
                     return Pair(false, 0)
                 }
 
                 return Pair(true, 0) // Keep control
             } else {
-                return Pair(false, 0) // Normal success end
+                return Pair(false, 0) // Normal success end (CHAT only)
             }
         } else {
             // Failures - retry
@@ -560,41 +630,68 @@ class AIRoundExecutor(
     // ========================================================================================
 
     /**
-     * Call AI with retry logic for AUTOMATION, network checks for both
+     * Call AI with retry logic for AUTOMATION (infinite retries with 30s delay), network checks for both
      */
     private suspend fun callAIWithRetry(promptData: PromptData, sessionType: SessionType): AIResponse {
-        // Check network before call
-        if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
-            val errorMsg = s.shared("ai_error_network_unavailable")
-            LogManager.aiSession(errorMsg, "WARN")
-            return AIResponse(success = false, content = "", errorMessage = errorMsg)
-        }
+        val sessionId = sessionController.getActiveSessionId()
 
-        if (sessionType == SessionType.AUTOMATION) {
-            // Retry logic for AUTOMATION (3x with backoff)
-            val delays = listOf(5_000L, 15_000L, 30_000L)
-            var lastError: String? = null
+        if (sessionType == SessionType.AUTOMATION && sessionId != null) {
+            // AUTOMATION: Infinite retries with network check loop
+            while (true) {
+                // Check network availability
+                if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
+                    LogManager.aiSession("Network unavailable for AUTOMATION, entering wait loop", "WARN")
 
-            for (attempt in 0..2) {
+                    // Update session state to WAITING_NETWORK
+                    coordinator.processUserAction("ai_sessions.update_state", mapOf(
+                        "sessionId" to sessionId,
+                        "state" to SessionState.WAITING_NETWORK.name
+                    ))
+
+                    // Update lastNetworkErrorTime
+                    coordinator.processUserAction("ai_sessions.update_last_network_error_time", mapOf(
+                        "sessionId" to sessionId,
+                        "timestamp" to System.currentTimeMillis()
+                    ))
+
+                    // Wait 30 seconds before retry
+                    delay(30_000)
+                    continue // Loop back to network check
+                }
+
+                // Network available - reset state to PROCESSING
+                coordinator.processUserAction("ai_sessions.update_state", mapOf(
+                    "sessionId" to sessionId,
+                    "state" to SessionState.PROCESSING.name
+                ))
+
+                // Try AI call
                 val response = aiClient.query(promptData)
                 if (response.success) {
                     return response
                 }
 
-                lastError = response.errorMessage
-                LogManager.aiSession("AI call attempt ${attempt + 1} failed: $lastError", "WARN")
+                // AI call failed (not network issue) - log and retry after delay
+                LogManager.aiSession("AI call failed for AUTOMATION: ${response.errorMessage}", "WARN")
 
-                if (attempt < 2) {
-                    delay(delays[attempt])
-                }
+                // Update lastNetworkErrorTime if error seems network-related
+                coordinator.processUserAction("ai_sessions.update_last_network_error_time", mapOf(
+                    "sessionId" to sessionId,
+                    "timestamp" to System.currentTimeMillis()
+                ))
+
+                // Wait 30 seconds before retry
+                delay(30_000)
+                // Continue infinite loop
+            }
+        } else {
+            // CHAT: Single attempt with network check
+            if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
+                val errorMsg = s.shared("ai_error_network_unavailable")
+                LogManager.aiSession(errorMsg, "WARN")
+                return AIResponse(success = false, content = "", errorMessage = errorMsg)
             }
 
-            LogManager.aiSession("All 3 AI call attempts failed", "ERROR")
-            val errorMsg = s.shared("ai_error_network_timeout_retries").format(3, lastError ?: "")
-            return AIResponse(success = false, content = "", errorMessage = errorMsg)
-
-        } else {
-            // CHAT: no retry, single attempt
             return aiClient.query(promptData)
         }
     }
@@ -625,6 +722,50 @@ class AIRoundExecutor(
                 maxFormatErrorRetries = aiLimits.automationMaxFormatErrorRetries,
                 maxAutonomousRoundtrips = aiLimits.automationMaxAutonomousRoundtrips
             )
+            SessionType.SEED -> {
+                // SEED sessions are never executed, they serve as templates only
+                throw IllegalStateException("Cannot execute AI round for SEED session type")
+            }
+        }
+    }
+
+    /**
+     * Check if session is inactive for real reason (not network-related)
+     * Used to distinguish real inactivity from legitimate network wait
+     *
+     * @param session The session to check
+     * @param thresholdMillis Inactivity threshold in milliseconds
+     * @return true if inactive for real reason, false if network-related or not yet inactive
+     */
+    private fun isInactiveForRealReason(session: AISession, thresholdMillis: Long): Boolean {
+        val now = System.currentTimeMillis()
+
+        // Find time of last command execution (DATA_ADDED or ACTIONS_EXECUTED)
+        val lastCommandTime = session.messages
+            .filter { msg ->
+                val type = msg.systemMessage?.type
+                type == SystemMessageType.DATA_ADDED || type == SystemMessageType.ACTIONS_EXECUTED
+            }
+            .maxOfOrNull { it.timestamp } ?: session.createdAt
+
+        val inactivityDuration = now - lastCommandTime
+
+        // Not yet inactive
+        if (inactivityDuration < thresholdMillis) {
+            return false
+        }
+
+        // Inactive for > threshold, but is it due to network issues?
+        return when {
+            // Currently waiting for network → legitimate wait, not real inactivity
+            session.state == SessionState.WAITING_NETWORK -> false
+
+            // Recent network error (within threshold) → legitimate wait, not real inactivity
+            session.lastNetworkErrorTime != null &&
+                (now - session.lastNetworkErrorTime!!) < thresholdMillis -> false
+
+            // No network issues → real inactivity
+            else -> true
         }
     }
 }
