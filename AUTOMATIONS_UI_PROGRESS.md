@@ -63,7 +63,7 @@ Composant footer pour édition SEED :
 - Message input avec RichComposer (enrichments possibles)
 - Bouton "Configurer horaire" → ScheduleConfigEditor
 - Bouton "Configurer déclencheurs" → TriggerSelector (stub)
-- FormActions : Save/Cancel/Test (test = execute_manual)
+- FormActions : Save/Cancel
 
 ### 2. ScheduleConfigEditor Dialog
 Dialogue réutilisable pour 6 patterns :
@@ -75,13 +75,13 @@ Dialogue réutilisable pour 6 patterns :
 - **SpecificDates** : "Le 15 mars 2025 à 14h30 et le 20 avril 2025 à 10h"
 
 Interface :
-- Sélecteur de pattern (tabs ou dropdown)
+- Sélecteur de pattern (dropdown)
 - UI adaptée selon pattern sélectionné
-- Preview label : "Quotidien 9h" ou "Hebdomadaire Lun/Mer/Ven"
+- Preview label : "Quotidien 9h" ou "Par semaine Lun/Mer/Ven"
 
 ### 3. SeedMode implémentation complète
 Remplacer stub actuel par :
-- Affichage message SEED (read-only ou éditable ?)
+- Affichage message SEED (readonly, comme pour historique messages)
 - AutomationEditorFooter en bas
 - Sauvegarde via `AutomationService.update()`
 - **Isolation complète** : Pas d'appel `requestSessionControl()`, juste `loadSession()`
@@ -90,7 +90,7 @@ Remplacer stub actuel par :
 
 ## 📋 TODO Phase 3 : ZoneScreen Integration
 
-### Onglet Automations dans ZoneScreen
+### Section Automation dans ZoneScreen : après les tools, 1 automation par ligne + bouton pour créer
 Pattern similaire à Tools :
 ```kotlin
 // ZoneScreen.kt - Ajouter state
@@ -104,7 +104,7 @@ var selectedTab by remember { mutableStateOf("tools") }
 Card compacte pour liste :
 ```
 ┌─────────────────────────────────────┐
-│ [📊] Rapport quotidien santé    [⚙️]│
+│ [📊] Rapport quotidien santé    [⚙️] │
 │ Prochain : dans 3h                  │
 └─────────────────────────────────────┘
 ```
@@ -115,9 +115,8 @@ Card compacte pour liste :
 - Bouton ⚙️ édition
 
 Interactions :
-- **Clic simple** → AutomationDetailsScreen
-- **Bouton ⚙️** → AIScreen mode SEED (fullscreen, pas Dialog)
-- **Long press** → Menu contextuel (éditer, dupliquer, supprimer, activer/désactiver)
+- **Clic simple** → AutomationDetailsScreen. Détail et boutons: éditer, dupliquer, supprimer, activer/désactiver
+- **Bouton ⚙️** ou **Long press** → AIScreen mode SEED (fullscreen, pas Dialog)
 
 ### Dialogue création automation
 Dialogue compact avant ouverture SEED :
@@ -141,7 +140,7 @@ Screen de détails avec :
   - Coût estimé (total + moyenne)
 - **Historique** : Liste sessions d'exécution (pagination)
   - Clic item → AIScreen mode AUTOMATION (Dialog viewer)
-- **Actions** : Exécuter maintenant, Éditer, Dupliquer, Supprimer
+- **Actions** : Exécuter maintenant, Éditer, Dupliquer, Supprimer, Activer/désactiver (logique + champ prévu déjà ou à ajouter ? à voir ensemble)
 
 ---
 
@@ -155,21 +154,15 @@ Préfixes suggérés :
 
 Exemples nécessaires :
 ```
-automation_display_name = "Automation"
-automation_create = "Créer une automation"
-automation_edit = "Éditer l'automation"
-automation_execute_now = "Exécuter maintenant"
+automation_display_name = "Automatisation"
+automation_execute_now = "Déclencher maintenant"
 automation_next_execution = "Prochain déclenchement : %1$s"
 automation_status_running = "En cours"
 automation_status_manual = "Manuel"
 automation_status_triggered = "Selon déclencheurs"
 
-schedule_daily = "Quotidien"
-schedule_weekly = "Hebdomadaire"
-schedule_monthly = "Mensuel"
-schedule_yearly = "Annuel"
-schedule_specific_dates = "Dates spécifiques"
-schedule_not_configured = "Non configuré"
+schedule_... -> À défininr ensemble
+
 ```
 
 ### Tests manuels

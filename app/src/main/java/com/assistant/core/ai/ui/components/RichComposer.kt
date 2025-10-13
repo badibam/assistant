@@ -38,6 +38,7 @@ fun UI.RichComposer(
     onSend: (RichMessage) -> Unit,
     placeholder: String = "",
     showEnrichmentButtons: Boolean = true,
+    showSendButton: Boolean = true,
     enrichmentTypes: List<EnrichmentType> = EnrichmentType.values().toList(),
     modifier: Modifier = Modifier,
     sessionType: SessionType = SessionType.CHAT
@@ -114,16 +115,18 @@ fun UI.RichComposer(
             // Spacer to push send button to the right
             Spacer(modifier = Modifier.weight(1f))
 
-            // Send button
-            UI.ActionButton(
-                action = ButtonAction.CONFIRM, // Use CONFIRM for send action
-                onClick = {
-                    LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
-                    val richMessage = createRichMessage(context, segments, sessionType)
-                    LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
-                    onSend(richMessage)
-                }
-            )
+            // Send button (conditionally shown)
+            if (showSendButton) {
+                UI.ActionButton(
+                    action = ButtonAction.CONFIRM, // Use CONFIRM for send action
+                    onClick = {
+                        LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
+                        val richMessage = createRichMessage(context, segments, sessionType)
+                        LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
+                        onSend(richMessage)
+                    }
+                )
+            }
         }
     }
 

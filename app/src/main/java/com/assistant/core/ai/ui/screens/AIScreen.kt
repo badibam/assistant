@@ -16,6 +16,7 @@ import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.orchestration.RoundReason
 import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.ai.ui.components.RichComposer
+import com.assistant.core.commands.CommandStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.LogManager
@@ -236,7 +237,7 @@ private fun ChatMode(
 
 /**
  * SEED mode - Automation template editor
- * TODO: Implement full editor with AutomationEditorFooter
+ * Full implementation with message editing, schedule and triggers configuration
  */
 @Composable
 private fun SeedMode(
@@ -245,29 +246,338 @@ private fun SeedMode(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val scope = rememberCoroutineScope()
+    val coordinator = remember { com.assistant.core.coordinator.Coordinator(context) }
 
-    // TODO Phase 2: Full SEED editor implementation
+    // Load automation associated with this SEED session
+    var automation by remember { mutableStateOf<Automation?>(null) }
+    var isLoadingAutomation by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Editor states
+    var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
+    var scheduleConfig by remember { mutableStateOf<com.assistant.core.utils.ScheduleConfig?>(null) }
+    var triggersCount by remember { mutableStateOf(0) }
+
+    // Dialogs
+    var showScheduleEditor by remember { mutableStateOf(false) }
+    var showTriggersEditor by remember { mutableStateOf(false) }
+
+    // Load automation on mount
+    LaunchedEffect(session.id) {
+        try {
+            isLoadingAutomation = true
+            val result = coordinator.processUserAction(
+                "automations.get_by_seed_session",
+                mapOf("seed_session_id" to session.id)
+            )
+
+            if (result.status == CommandStatus.SUCCESS) {
+                @Suppress("UNCHECKED_CAST")
+                val automationMap = result.data?.get("automation") as? Map<String, Any>
+                if (automationMap != null) {
+                    // Parse automation data
+                    val scheduleJson = automationMap["schedule"] as? String
+                    automation = Automation(
+                        id = automationMap["id"] as String,
+                        name = automationMap["name"] as String,
+                        icon = automationMap["icon"] as String,
+                        zoneId = automationMap["zone_id"] as String,
+                        seedSessionId = automationMap["seed_session_id"] as String,
+                        schedule = scheduleJson?.let {
+                            kotlinx.serialization.json.Json.decodeFromString(it)
+                        },
+                        triggerIds = (automationMap["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        dismissOlderInstances = automationMap["dismiss_older_instances"] as? Boolean ?: false,
+                        providerId = automationMap["provider_id"] as String,
+                        isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
+                        createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
+                        lastExecutionId = automationMap["last_execution_id"] as? String,
+                        executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                    )
+
+                    // Initialize states from automation
+                    scheduleConfig = automation?.schedule
+                    triggersCount = automation?.triggerIds?.size ?: 0
+
+                    // Extract segments from SEED session first message
+                    val firstUserMessage = session.messages.firstOrNull { it.sender == MessageSender.USER }
+                    segments = firstUserMessage?.richContent?.segments ?: emptyList()
+
+                    LogManager.aiUI("SeedMode loaded automation: ${automation?.id}, ${segments.size} segments", "DEBUG")
+                }
+            } else {
+                errorMessage = result.error ?: s.shared("error_automation_not_found")
+                LogManager.aiUI("Failed to load automation for SEED session ${session.id}: ${result.error}", "ERROR")
+            }
+        } catch (e: Exception) {
+            errorMessage = s.shared("error_automation_load_failed")
+            LogManager.aiUI("Exception loading automation: ${e.message}", "ERROR", e)
+        } finally {
+            isLoadingAutomation = false
+        }
+    }
+
+    // Loading state
+    if (isLoadingAutomation) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            SeedHeader(
+                session = session,
+                onClose = onClose,
+                onConfigureAutomation = { }
+            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                UI.Text(
+                    text = s.shared("message_loading"),
+                    type = TextType.BODY
+                )
+            }
+        }
+        return
+    }
+
+    // Error state
+    if (automation == null) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            SeedHeader(
+                session = session,
+                onClose = onClose,
+                onConfigureAutomation = { }
+            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    UI.Text(
+                        text = errorMessage ?: s.shared("error_automation_not_found"),
+                        type = TextType.BODY
+                    )
+                    UI.ActionButton(
+                        action = ButtonAction.BACK,
+                        display = ButtonDisplay.LABEL,
+                        onClick = onClose
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    // Schedule editor dialog
+    if (showScheduleEditor) {
+        com.assistant.core.ai.ui.automation.ScheduleConfigEditor(
+            existingConfig = scheduleConfig,
+            onDismiss = { showScheduleEditor = false },
+            onConfirm = { newSchedule ->
+                scheduleConfig = newSchedule
+                showScheduleEditor = false
+                LogManager.aiUI("SeedMode: Schedule configured", "DEBUG")
+            }
+        )
+    }
+
+    // Triggers editor dialog (stub)
+    if (showTriggersEditor) {
+        UI.Dialog(
+            type = DialogType.CONFIGURE,
+            onConfirm = { showTriggersEditor = false },
+            onCancel = { showTriggersEditor = false }
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("automation_triggers_config_title"),
+                    type = TextType.TITLE
+                )
+                UI.Text(
+                    text = s.shared("automation_triggers_coming_soon"),
+                    type = TextType.BODY
+                )
+            }
+        }
+    }
+
+    // Main editor
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Temporary header
+        // Header
         SeedHeader(
             session = session,
             onClose = onClose,
             onConfigureAutomation = {
-                // TODO: Open automation config dialog
+                // TODO: Open general automation config (name, icon, provider, etc.)
             }
         )
 
+        // Message display area (read-only, shows current message)
         Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(16.dp)
         ) {
-            UI.Text(
-                text = "SEED editor - Coming soon",
-                type = TextType.TITLE
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("automation_seed_message_label"),
+                    type = TextType.SUBTITLE
+                )
+
+                // Show current message preview
+                if (segments.isNotEmpty()) {
+                    val textContent = segments.filterIsInstance<MessageSegment.Text>()
+                        .joinToString("") { it.content }
+                    val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
+
+                    if (textContent.isNotEmpty()) {
+                        UI.Card(type = CardType.DEFAULT) {
+                            Box(modifier = Modifier.padding(12.dp)) {
+                                UI.Text(
+                                    text = textContent,
+                                    type = TextType.BODY
+                                )
+                            }
+                        }
+                    }
+
+                    if (enrichmentBlocks.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            UI.Text(
+                                text = s.shared("automation_enrichments_label"),
+                                type = TextType.LABEL
+                            )
+                            enrichmentBlocks.forEach { block ->
+                                UI.Card(type = CardType.DEFAULT) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        UI.Text(text = getEnrichmentIcon(block.type), type = TextType.BODY)
+                                        UI.Text(text = block.preview, type = TextType.BODY)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    UI.Text(
+                        text = s.shared("automation_no_message"),
+                        type = TextType.CAPTION
+                    )
+                }
+            }
         }
+
+        // Editor footer with composer and config buttons
+        UI.Card(type = CardType.DEFAULT) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                com.assistant.core.ai.ui.automation.AutomationEditorFooter(
+                    automation = automation,
+                    segments = segments,
+                    onSegmentsChange = { segments = it },
+                    scheduleConfig = scheduleConfig,
+                    onConfigureSchedule = { showScheduleEditor = true },
+                    triggersCount = triggersCount,
+                    onConfigureTriggers = { showTriggersEditor = true },
+                    onSave = {
+                        scope.launch {
+                            try {
+                                // Build RichMessage from segments
+                                val richMessage = com.assistant.core.ai.data.RichMessage(
+                                    segments = segments,
+                                    linearText = segments.joinToString(" ") { segment ->
+                                        when (segment) {
+                                            is MessageSegment.Text -> segment.content
+                                            is MessageSegment.EnrichmentBlock -> segment.preview
+                                        }
+                                    }.trim(),
+                                    dataCommands = emptyList() // Will be computed when automation executes
+                                )
+
+                                // Update SEED session message
+                                // TODO: Call AISessionService.updateSeedMessage or similar
+
+                                // Update automation config (schedule, triggers)
+                                val updateParams = mutableMapOf<String, Any>(
+                                    "automation_id" to automation!!.id
+                                )
+                                scheduleConfig?.let {
+                                    updateParams["schedule"] = kotlinx.serialization.json.Json.encodeToString(
+                                        com.assistant.core.utils.ScheduleConfig.serializer(),
+                                        it
+                                    )
+                                }
+
+                                val result = coordinator.processUserAction("automations.update", updateParams)
+                                if (result.status == CommandStatus.SUCCESS) {
+                                    UI.Toast(context, s.shared("automation_saved_success"), Duration.SHORT)
+                                    LogManager.aiUI("SeedMode: Automation saved successfully", "INFO")
+                                    onClose()
+                                } else {
+                                    errorMessage = result.error ?: s.shared("automation_save_failed")
+                                    LogManager.aiUI("SeedMode: Save failed: ${result.error}", "ERROR")
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = s.shared("automation_save_failed")
+                                LogManager.aiUI("SeedMode: Save exception: ${e.message}", "ERROR", e)
+                            }
+                        }
+                    },
+                    onCancel = onClose,
+                    onTest = {
+                        // Manual execution
+                        scope.launch {
+                            val result = coordinator.processUserAction(
+                                "automations.execute_manual",
+                                mapOf("automation_id" to automation!!.id)
+                            )
+                            if (result.status == CommandStatus.SUCCESS) {
+                                UI.Toast(context, s.shared("automation_execution_triggered"), Duration.SHORT)
+                                LogManager.aiUI("SeedMode: Manual execution triggered", "INFO")
+                            } else {
+                                errorMessage = result.error
+                                LogManager.aiUI("SeedMode: Execution failed: ${result.error}", "ERROR")
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    // Error display
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            UI.Toast(context, message, Duration.LONG)
+            errorMessage = null
+        }
+    }
+}
+
+/**
+ * Get icon for enrichment type (helper for preview)
+ */
+private fun getEnrichmentIcon(type: com.assistant.core.ai.data.EnrichmentType): String {
+    return when (type) {
+        com.assistant.core.ai.data.EnrichmentType.POINTER -> "🔍"
+        com.assistant.core.ai.data.EnrichmentType.USE -> "📝"
+        com.assistant.core.ai.data.EnrichmentType.CREATE -> "✨"
+        com.assistant.core.ai.data.EnrichmentType.MODIFY_CONFIG -> "🔧"
     }
 }
 

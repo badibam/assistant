@@ -658,4 +658,129 @@
     <string name="ai_schema_communication_validation_name">Module de validation</string>
     <string name="ai_schema_communication_validation_desc">Schéma pour module de communication de validation</string>
 
+    <!-- AUTOMATIONS - General -->
+    <string name="automation_display_name">Automatisation</string>
+    <string name="automation_message_placeholder">Message de démarrage de l\'automatisation...</string>
+    <string name="automation_seed_message_label">Message actuel</string>
+    <string name="automation_enrichments_label">Enrichissements</string>
+    <string name="automation_no_message">Aucun message configuré</string>
+    <string name="automation_schedule_not_configured">Pas de horaire</string>
+    <string name="automation_triggers_none">Aucun déclencheur</string>
+    <string name="automation_triggers_count">%1$d déclencheur(s)</string>
+    <string name="automation_triggers_config_title">Configuration déclencheurs</string>
+    <string name="automation_triggers_coming_soon">Les déclencheurs seront disponibles prochainement</string>
+
+    <!-- AUTOMATIONS - Actions -->
+    <string name="automation_execute_now">Déclencher maintenant</string>
+    <string name="automation_execution_triggered">Exécution déclenchée</string>
+    <string name="automation_saved_success">Automatisation sauvegardée</string>
+    <string name="automation_save_failed">Échec de la sauvegarde</string>
+
+    <!-- AUTOMATIONS - Status -->
+    <string name="automation_status_running">En cours</string>
+    <string name="automation_status_manual">Manuel</string>
+    <string name="automation_status_triggered">Selon déclencheurs</string>
+    <string name="automation_next_execution">Prochain : %1$s</string>
+    <string name="ai_status_completed">Terminé</string>
+
+    <!-- AUTOMATIONS - Schedule patterns (short labels for buttons) -->
+    <string name="automation_schedule_daily">Quotidien %1$s</string>
+    <string name="automation_schedule_weekly">%1$s %2$s</string>
+    <string name="automation_schedule_monthly">Le %1$d de %2$s %3$s</string>
+    <string name="automation_schedule_weekly_custom">%1$d moments/semaine</string>
+    <string name="automation_schedule_yearly">%1$d dates/an</string>
+    <string name="automation_schedule_specific">%1$d dates spécifiques</string>
+
+    <!-- AUTOMATIONS - Errors -->
+    <string name="error_automation_not_found">Automatisation introuvable</string>
+    <string name="error_automation_load_failed">Échec du chargement de l\'automatisation</string>
+    <string name="error_param_automation_id_required">ID automatisation requis</string>
+    <string name="error_param_seed_session_required">ID session SEED requis</string>
+    <string name="error_param_zone_id_required">ID zone requis</string>
+    <string name="error_param_icon_required">Icône requise</string>
+    <string name="error_param_provider_id_required">ID fournisseur IA requis</string>
+    <string name="service_error_automation">Erreur AutomationService: %1$s</string>
+
+    <!-- SCHEDULE CONFIG - Main labels -->
+    <string name="schedule_config_title">Configuration horaire</string>
+    <string name="schedule_pattern_label">Type de récurrence</string>
+    <string name="schedule_preview_label">Aperçu</string>
+
+    <!-- SCHEDULE CONFIG - Pattern names -->
+    <string name="schedule_pattern_DailyMultiple">Quotidien (horaires multiples)</string>
+    <string name="schedule_pattern_WeeklySimple">Hebdomadaire (jours + horaire)</string>
+    <string name="schedule_pattern_MonthlyRecurrent">Mensuel (mois + jour)</string>
+    <string name="schedule_pattern_WeeklyCustom">Hebdomadaire (moments personnalisés)</string>
+    <string name="schedule_pattern_YearlyRecurrent">Annuel (dates récurrentes)</string>
+    <string name="schedule_pattern_SpecificDates">Dates spécifiques</string>
+
+    <!-- SCHEDULE CONFIG - Field labels -->
+    <string name="schedule_time_label">Heure %1$d</string>
+    <string name="schedule_time_label_single">Heure</string>
+    <string name="schedule_daily_times_label">Horaires quotidiens</string>
+    <string name="schedule_weekly_days_label">Jours de la semaine</string>
+    <string name="schedule_monthly_config_label">Configuration mensuelle</string>
+    <string name="schedule_day_of_month_label">Jour du mois (1-31)</string>
+    <string name="schedule_weekly_custom_label">Moments hebdomadaires</string>
+    <string name="schedule_day_label">Jour</string>
+    <string name="schedule_yearly_recurrent_label">Dates annuelles</string>
+    <string name="schedule_month_label">Mois</string>
+    <string name="schedule_specific_dates_label">Dates spécifiques</string>
+    <string name="schedule_date_label">Date %1$d</string>
+
+    <!-- SCHEDULE CONFIG - Preview formats -->
+    <string name="schedule_preview_daily">Quotidien : %1$s</string>
+    <string name="schedule_preview_weekly_simple">%1$s à %2$s</string>
+    <string name="schedule_preview_monthly">Le %1$d de %2$s à %3$s</string>
+    <string name="schedule_preview_weekly_custom">%1$s</string>
+    <string name="schedule_preview_yearly">%1$s chaque année</string>
+    <string name="schedule_preview_specific">%1$d dates programmées</string>
+    <string name="schedule_preview_unknown">Configuration inconnue</string>
+
+    <!-- Days of week (full names - already exist as month_ but adding explicit day_of_week_) -->
+    <string name="day_of_week_1">Lundi</string>
+    <string name="day_of_week_2">Mardi</string>
+    <string name="day_of_week_3">Mercredi</string>
+    <string name="day_of_week_4">Jeudi</string>
+    <string name="day_of_week_5">Vendredi</string>
+    <string name="day_of_week_6">Samedi</string>
+    <string name="day_of_week_7">Dimanche</string>
+
+    <!-- Days of week (short names for compact display) -->
+    <string name="day_of_week_short_1">Lun</string>
+    <string name="day_of_week_short_2">Mar</string>
+    <string name="day_of_week_short_3">Mer</string>
+    <string name="day_of_week_short_4">Jeu</string>
+    <string name="day_of_week_short_5">Ven</string>
+    <string name="day_of_week_short_6">Sam</string>
+    <string name="day_of_week_short_7">Dim</string>
+
+    <!-- Months (full names already exist as month_january etc, adding ordinal numbers) -->
+    <string name="month_1">Janvier</string>
+    <string name="month_2">Février</string>
+    <string name="month_3">Mars</string>
+    <string name="month_4">Avril</string>
+    <string name="month_5">Mai</string>
+    <string name="month_6">Juin</string>
+    <string name="month_7">Juillet</string>
+    <string name="month_8">Août</string>
+    <string name="month_9">Septembre</string>
+    <string name="month_10">Octobre</string>
+    <string name="month_11">Novembre</string>
+    <string name="month_12">Décembre</string>
+
+    <!-- Months (short names for compact display) -->
+    <string name="month_short_1">Jan</string>
+    <string name="month_short_2">Fév</string>
+    <string name="month_short_3">Mar</string>
+    <string name="month_short_4">Avr</string>
+    <string name="month_short_5">Mai</string>
+    <string name="month_short_6">Juin</string>
+    <string name="month_short_7">Juil</string>
+    <string name="month_short_8">Aoû</string>
+    <string name="month_short_9">Sep</string>
+    <string name="month_short_10">Oct</string>
+    <string name="month_short_11">Nov</string>
+    <string name="month_short_12">Déc</string>
+
 </resources>

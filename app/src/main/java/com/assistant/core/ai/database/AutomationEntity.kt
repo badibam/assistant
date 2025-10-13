@@ -42,6 +42,9 @@ interface AutomationDao {
     @Query("SELECT * FROM automations WHERE zoneId = :zoneId ORDER BY createdAt DESC")
     suspend fun getByZone(zoneId: String): List<AutomationEntity>
 
+    @Query("SELECT * FROM automations WHERE seedSessionId = :seedSessionId")
+    suspend fun getBySeedSession(seedSessionId: String): AutomationEntity?
+
     @Query("SELECT * FROM automations ORDER BY createdAt DESC")
     suspend fun getAll(): List<AutomationEntity>
 

@@ -60,6 +60,7 @@ class AutomationService(private val context: Context) : ExecutableService {
                 "update" -> updateAutomation(params, token)
                 "delete" -> deleteAutomation(params, token)
                 "get" -> getAutomation(params, token)
+                "get_by_seed_session" -> getAutomationBySeedSession(params, token)
                 "list" -> listAutomations(params, token)
                 "list_all" -> listAllAutomations(token)
                 "enable" -> setEnabled(params, token, true)
@@ -248,6 +249,28 @@ class AutomationService(private val context: Context) : ExecutableService {
         LogManager.service("Getting automation: $automationId", "DEBUG")
 
         val entity = dao.getById(automationId)
+            ?: return OperationResult.error(s.shared("error_automation_not_found"))
+
+        val automation = entityToAutomation(entity)
+
+        return OperationResult.success(mapOf(
+            "automation" to automationToMap(automation)
+        ))
+    }
+
+    /**
+     * Get automation by seed session ID
+     * Useful for SEED editor to load associated automation
+     */
+    private suspend fun getAutomationBySeedSession(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val seedSessionId = params.optString("seed_session_id").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("error_param_seed_session_required"))
+
+        LogManager.service("Getting automation by seed session: $seedSessionId", "DEBUG")
+
+        val entity = dao.getBySeedSession(seedSessionId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         val automation = entityToAutomation(entity)
