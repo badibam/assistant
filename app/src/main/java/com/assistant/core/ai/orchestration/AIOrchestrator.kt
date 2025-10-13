@@ -77,6 +77,13 @@ object AIOrchestrator {
     val isRoundInProgress: StateFlow<Boolean>
         get() = roundExecutor.isRoundInProgress
 
+    /**
+     * Active session ID (reactive)
+     * Emits new value when session activation/deactivation occurs
+     */
+    val activeSessionId: StateFlow<String?>
+        get() = sessionController.activeSessionId
+
     // ========================================================================================
     // Initialization
     // ========================================================================================

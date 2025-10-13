@@ -8,6 +8,9 @@ import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * AI Session Controller - manages session activation and queue
@@ -40,7 +43,9 @@ class AISessionController(
     }
 
     // Active session state (one session active at a time)
-    private var activeSessionId: String? = null
+    private var _activeSessionId: MutableStateFlow<String?> = MutableStateFlow(null)
+    val activeSessionId: StateFlow<String?> = _activeSessionId.asStateFlow()
+
     private var activeSessionType: SessionType? = null
     private var activeAutomationId: String? = null
     private var activeScheduledExecutionTime: Long? = null
@@ -70,9 +75,9 @@ class AISessionController(
     }
 
     /**
-     * Get active session ID
+     * Get active session ID (current value)
      */
-    fun getActiveSessionId(): String? = activeSessionId
+    fun getActiveSessionId(): String? = _activeSessionId.value
 
     /**
      * Get active session type
@@ -113,13 +118,13 @@ class AISessionController(
         LogManager.aiSession("Requesting session control: sessionId=$sessionId, type=$type", "DEBUG")
 
         // Already active?
-        if (activeSessionId == sessionId) {
+        if (_activeSessionId.value == sessionId) {
             LogManager.aiSession("Session already active: $sessionId", "DEBUG")
             return SessionControlResult.ALREADY_ACTIVE
         }
 
         // No active session → activate immediately
-        if (activeSessionId == null) {
+        if (_activeSessionId.value == null) {
             activateSession(sessionId, type, automationId, scheduledExecutionTime)
             LogManager.aiSession("Session activated immediately: $sessionId", "INFO")
             return SessionControlResult.ACTIVATED
@@ -150,7 +155,7 @@ class AISessionController(
                         "INFO"
                     )
                     // Re-queue automation with its original scheduledExecutionTime
-                    val evictedSessionId = activeSessionId!!
+                    val evictedSessionId = _activeSessionId.value!!
                     val evictedAutomationId = activeAutomationId
                     val evictedScheduledTime = activeScheduledExecutionTime
 
@@ -214,19 +219,19 @@ class AISessionController(
      */
     @Synchronized
     fun closeActiveSession() {
-        if (activeSessionId == null) {
+        if (_activeSessionId.value == null) {
             LogManager.aiSession("No active session to close", "DEBUG")
             return
         }
 
-        val sessionToClose = activeSessionId
+        val sessionToClose = _activeSessionId.value
         LogManager.aiSession("Closing active session: $sessionToClose", "INFO")
 
         // 1. Call callback for coordination (interruption, clear messages, resume interactions)
         onSessionClosed?.invoke()
 
         // 2. Update memory state (immediate)
-        activeSessionId = null
+        _activeSessionId.value = null
         activeSessionType = null
         activeAutomationId = null
         activeScheduledExecutionTime = null
@@ -255,7 +260,7 @@ class AISessionController(
      * Called from AIOrchestrator.initialize()
      */
     fun restoreActiveSession(sessionId: String, type: SessionType) {
-        activeSessionId = sessionId
+        _activeSessionId.value = sessionId
         activeSessionType = type
         lastActivityTimestamp = System.currentTimeMillis()
         LogManager.aiSession("Restored active session: $sessionId (type=$type)", "INFO")
@@ -280,7 +285,7 @@ class AISessionController(
         scheduledExecutionTime: Long?
     ) {
         // 1. Update memory state (immediate)
-        activeSessionId = sessionId
+        _activeSessionId.value = sessionId
         activeSessionType = type
         activeAutomationId = automationId
         activeScheduledExecutionTime = scheduledExecutionTime
