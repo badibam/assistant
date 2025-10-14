@@ -11,7 +11,6 @@ import com.assistant.core.utils.ScheduleConfig
 data class Automation(
     val id: String,
     val name: String,
-    val icon: String,                       // User-chosen icon
     val zoneId: String,                     // Automation attached to a zone
     val seedSessionId: String,              // Points to SEED session with initial message
     val schedule: ScheduleConfig?,          // null = no time-based triggering

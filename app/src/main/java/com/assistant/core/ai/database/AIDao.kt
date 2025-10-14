@@ -93,4 +93,36 @@ interface AIDao {
 
     @Query("DELETE FROM ai_provider_configs WHERE providerId = :providerId")
     suspend fun deleteProviderConfigById(providerId: String)
+
+    // === Automations ===
+
+    @Query("SELECT * FROM automations WHERE id = :id")
+    suspend fun getAutomationById(id: String): AutomationEntity?
+
+    @Query("SELECT * FROM automations WHERE zoneId = :zoneId ORDER BY createdAt DESC")
+    suspend fun getAutomationsByZone(zoneId: String): List<AutomationEntity>
+
+    @Query("SELECT * FROM automations WHERE seedSessionId = :seedSessionId")
+    suspend fun getAutomationBySeedSession(seedSessionId: String): AutomationEntity?
+
+    @Query("SELECT * FROM automations ORDER BY createdAt DESC")
+    suspend fun getAllAutomations(): List<AutomationEntity>
+
+    @Query("SELECT * FROM automations WHERE isEnabled = 1")
+    suspend fun getAllEnabledAutomations(): List<AutomationEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAutomation(automation: AutomationEntity)
+
+    @Update
+    suspend fun updateAutomation(automation: AutomationEntity)
+
+    @Query("DELETE FROM automations WHERE id = :id")
+    suspend fun deleteAutomationById(id: String)
+
+    @Query("UPDATE automations SET isEnabled = :enabled WHERE id = :id")
+    suspend fun setAutomationEnabled(id: String, enabled: Boolean)
+
+    @Query("UPDATE automations SET lastExecutionId = :executionId WHERE id = :id")
+    suspend fun updateAutomationLastExecution(id: String, executionId: String)
 }

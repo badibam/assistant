@@ -1,11 +1,9 @@
 package com.assistant.core.ai.services
 
 import android.content.Context
-import androidx.room.Room
 import com.assistant.core.ai.data.Automation
-import com.assistant.core.ai.database.AutomationDao
-import com.assistant.core.ai.database.AutomationDatabase
 import com.assistant.core.ai.database.AutomationEntity
+import com.assistant.core.database.AppDatabase
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
@@ -33,17 +31,10 @@ class AutomationService(private val context: Context) : ExecutableService {
     private val s = Strings.`for`(context = context)
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Lazy database initialization
-    private val database: AutomationDatabase by lazy {
-        Room.databaseBuilder(
-            context.applicationContext,
-            AutomationDatabase::class.java,
-            "automation_database"
-        ).build()
+    // Access common database
+    private val dao by lazy {
+        AppDatabase.getDatabase(context).aiDao()
     }
-
-    private val dao: AutomationDao
-        get() = database.automationDao()
 
     override suspend fun execute(
         operation: String,
@@ -83,8 +74,6 @@ class AutomationService(private val context: Context) : ExecutableService {
         // Extract required parameters
         val name = params.optString("name").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("error_param_name_required"))
-        val icon = params.optString("icon").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error(s.shared("error_param_icon_required"))
         val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("error_param_zone_id_required"))
         val seedSessionId = params.optString("seed_session_id").takeIf { it.isNotEmpty() }
@@ -120,7 +109,6 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = AutomationEntity(
             id = automationId,
             name = name,
-            icon = icon,
             zoneId = zoneId,
             seedSessionId = seedSessionId,
             scheduleJson = updatedSchedule?.let { json.encodeToString(it) },
@@ -133,7 +121,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             executionHistoryJson = json.encodeToString(emptyList<String>())
         )
 
-        dao.insert(entity)
+        dao.insertAutomation(entity)
 
         LogManager.service("Successfully created automation: $automationId", "INFO")
 
@@ -156,12 +144,11 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Updating automation: $automationId", "DEBUG")
 
-        val entity = dao.getById(automationId)
+        val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         // Update fields if provided
         val name = params.optString("name").takeIf { it.isNotEmpty() } ?: entity.name
-        val icon = params.optString("icon").takeIf { it.isNotEmpty() } ?: entity.icon
 
         // Parse schedule if provided
         val scheduleJson = params.optString("schedule")
@@ -196,13 +183,12 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         val updatedEntity = entity.copy(
             name = name,
-            icon = icon,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
             dismissOlderInstances = dismissOlderInstances
         )
 
-        dao.update(updatedEntity)
+        dao.updateAutomation(updatedEntity)
 
         LogManager.service("Successfully updated automation: $automationId", "INFO")
 
@@ -224,10 +210,10 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Deleting automation: $automationId", "DEBUG")
 
-        val entity = dao.getById(automationId)
+        val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        dao.deleteById(automationId)
+        dao.deleteAutomationById(automationId)
 
         LogManager.service("Successfully deleted automation: $automationId", "INFO")
 
@@ -248,7 +234,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Getting automation: $automationId", "DEBUG")
 
-        val entity = dao.getById(automationId)
+        val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         val automation = entityToAutomation(entity)
@@ -270,7 +256,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Getting automation by seed session: $seedSessionId", "DEBUG")
 
-        val entity = dao.getBySeedSession(seedSessionId)
+        val entity = dao.getAutomationBySeedSession(seedSessionId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         val automation = entityToAutomation(entity)
@@ -291,7 +277,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Listing automations for zone: $zoneId", "DEBUG")
 
-        val entities = dao.getByZone(zoneId)
+        val entities = dao.getAutomationsByZone(zoneId)
         val automations = entities.map { entityToAutomation(it) }
 
         return OperationResult.success(mapOf(
@@ -309,7 +295,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Listing all automations", "DEBUG")
 
-        val entities = dao.getAll()
+        val entities = dao.getAllAutomations()
         val automations = entities.map { entityToAutomation(it) }
 
         return OperationResult.success(mapOf(
@@ -333,10 +319,10 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Setting automation $automationId enabled=$enabled", "DEBUG")
 
-        val entity = dao.getById(automationId)
+        val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        dao.setEnabled(automationId, enabled)
+        dao.setAutomationEnabled(automationId, enabled)
 
         LogManager.service("Successfully set automation $automationId enabled=$enabled", "INFO")
 
@@ -359,7 +345,7 @@ class AutomationService(private val context: Context) : ExecutableService {
         LogManager.service("Manual execution requested for automation: $automationId", "INFO")
 
         // Verify automation exists
-        val entity = dao.getById(automationId)
+        val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         // Delegate to AIOrchestrator
@@ -384,7 +370,6 @@ class AutomationService(private val context: Context) : ExecutableService {
         return Automation(
             id = entity.id,
             name = entity.name,
-            icon = entity.icon,
             zoneId = entity.zoneId,
             seedSessionId = entity.seedSessionId,
             schedule = entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) },
@@ -405,7 +390,6 @@ class AutomationService(private val context: Context) : ExecutableService {
         return mapOf(
             "id" to automation.id,
             "name" to automation.name,
-            "icon" to automation.icon,
             "zone_id" to automation.zoneId,
             "seed_session_id" to automation.seedSessionId,
             "schedule" to automation.schedule?.let { json.encodeToString(it) },

@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
  * CreateAutomationDialog - Create new automation
  *
  * Flow:
- * 1. User fills name + icon + provider
+ * 1. User fills name + provider
  * 2. On confirm:
  *    - Create SEED session (empty message)
  *    - Create automation linking to SEED session
@@ -38,7 +38,6 @@ fun CreateAutomationDialog(
 
     // Form states
     var name by remember { mutableStateOf("") }
-    var icon by remember { mutableStateOf("🤖") }
     var selectedProvider by remember { mutableStateOf<String?>(null) }
 
     // Available providers
@@ -75,10 +74,6 @@ fun CreateAutomationDialog(
         onConfirm = {
             if (name.isBlank()) {
                 errorMessage = s.shared("ai_error_param_name_required")
-                return@Dialog
-            }
-            if (icon.isBlank()) {
-                errorMessage = s.shared("error_param_icon_required")
                 return@Dialog
             }
             if (selectedProvider == null) {
@@ -121,7 +116,6 @@ fun CreateAutomationDialog(
                         "automations.create",
                         mapOf(
                             "name" to name,
-                            "icon" to icon,
                             "zone_id" to zoneId,
                             "seed_session_id" to seedSessionId,
                             "provider_id" to selectedProvider!!,
@@ -168,15 +162,6 @@ fun CreateAutomationDialog(
                 label = s.shared("label_name"),
                 value = name,
                 onChange = { name = it },
-                fieldType = FieldType.TEXT,
-                required = true
-            )
-
-            // Icon field (simple text for now - could be icon picker dialog)
-            UI.FormField(
-                label = s.shared("label_icon"),
-                value = icon,
-                onChange = { icon = it },
                 fieldType = FieldType.TEXT,
                 required = true
             )

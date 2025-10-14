@@ -17,7 +17,7 @@ import java.util.*
  * AutomationCard - Display automation in zone list
  *
  * Shows:
- * - Icon + Name + Enabled status
+ * - Name + Enabled status
  * - Trigger type (manual/schedule/triggers/hybrid)
  * - Next execution time (if scheduled)
  * - Actions: Test + Edit + Toggle enabled
@@ -43,18 +43,12 @@ fun AutomationCard(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header row: Icon + Name + Enabled toggle
+            // Header row: Name + Enabled toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icon
-                UI.Text(
-                    text = automation.icon,
-                    type = TextType.TITLE
-                )
-
                 // Name
                 Box(modifier = Modifier.weight(1f)) {
                     UI.Text(

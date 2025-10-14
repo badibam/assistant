@@ -281,7 +281,6 @@ private fun SeedMode(
                     automation = Automation(
                         id = automationMap["id"] as String,
                         name = automationMap["name"] as String,
-                        icon = automationMap["icon"] as String,
                         zoneId = automationMap["zone_id"] as String,
                         seedSessionId = automationMap["seed_session_id"] as String,
                         schedule = scheduleJson?.let {
@@ -419,7 +418,7 @@ private fun SeedMode(
             session = session,
             onClose = onClose,
             onConfigureAutomation = {
-                // TODO: Open general automation config (name, icon, provider, etc.)
+                // TODO: Open general automation config (name, provider, etc.)
             }
         )
 
