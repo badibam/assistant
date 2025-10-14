@@ -26,7 +26,6 @@ Dossier tools/[type]/ contient :
 - Service.kt (logique métier)
 - Dao.kt (accès données)
 - Data.kt (entité base)
-- Database.kt (database standalone)
 - ui/ (ConfigScreen et DisplayComponent)
 
 ### Interface ToolTypeContract
@@ -61,7 +60,6 @@ Interface principale implémentant SchemaProvider avec méthodes pour :
 ### Structure de Base
 1. **Entité données** : @Entity avec id, toolInstanceId, timestamp, value (JSON), metadata
 2. **DAO** : Interface avec queries pour récupérer/insérer/modifier les données
-3. **Database standalone** : RoomDatabase avec entité et DAO
 
 ### Service Métier
 Class implémentant ExecutableService avec :
@@ -219,7 +217,6 @@ Inclure TOUTES les variables vérifiées dans le scope comme dépendances pour �
 - Service et DAO découverts dynamiquement
 
 ### Consistency Patterns
-- Standalone database par tool type
 - Validation unifiée via SchemaValidator
 - Configuration JSON avec schéma
 - Event sourcing pour toutes modifications

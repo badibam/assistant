@@ -107,7 +107,6 @@ AppVersionManager.CURRENT_APP_VERSION et build.gradle versionCode/versionName.
 - Event sourcing obligatoire pour modifications
 - **Validation centralisée** : SchemaValidator pour config/data
 - Schémas JSON pour validation automatique
-- Standalone databases pour discovery
 
 ### CommandDispatcher Extensions Pattern
 coordinator.executeWithLoading() avec operation, params, onLoading, onError et result.mapData().

@@ -229,13 +229,6 @@ val schema = toolType.getSchema(schemaId, context)
 val validation = SchemaValidator.validate(schema, data, context)
 ```
 
-### Databases Standalone
-
-**Structure** : 1 database par tool type pour discovery pure
-- TrackingDatabase → TrackingData
-- JournalDatabase → JournalData
-- Pas de foreign keys, indices de performance seulement
-
 ### Verbalisation
 
 Système de templates pour actions, états et résultats :
@@ -277,7 +270,6 @@ Système de templates pour actions, états et résultats :
 - Event sourcing obligatoire pour modifications
 - Validation centralisée via objets Schema explicites
 - Schémas autonomes avec ID déterministes
-- Standalone databases pour discovery
 
 ---
 

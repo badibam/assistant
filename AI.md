@@ -7,7 +7,8 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 
 ### Session types
 - **CHAT** : Conversation temps réel, queries absolues, modules communication
-- **AUTOMATION** : Prompt programmable, queries relatives, feedback exécutions
+- **SEED** : Template automation (message user + enrichments), jamais exécuté
+- **AUTOMATION** : Exécution autonome, queries relatives, copie messages SEED au démarrage
 
 ### AIOrchestrator singleton
 L'orchestrateur IA maintient une session active unique avec queue FIFO pour sessions en attente.
@@ -81,7 +82,8 @@ data class AIMessage(
     val actionCommands: List<DataCommand>?,
     val postText: String?,
     val keepControl: Boolean?,                // true = garde la main après succès actions
-    val communicationModule: CommunicationModule?
+    val communicationModule: CommunicationModule?,
+    val completed: Boolean?                   // true = travail terminé (AUTOMATION uniquement)
 )
 ```
 
@@ -245,10 +247,42 @@ Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FI
 
 **Watchdog AUTOMATION** : Flag `shouldTerminateRound` force termination si `automationMaxSessionDuration` dépassé → SESSION_TIMEOUT.
 
-## 6. Séparation message/round
+## 6. Automations
+
+### Concept
+Sessions AUTOMATION créées automatiquement par SchedulerWorker. Template défini dans session SEED (message user + enrichments). À chaque déclenchement : copie messages SEED → nouvelle session AUTOMATION → queue FIFO (tri par scheduledExecutionTime).
+
+### Déclenchement
+```kotlin
+// SchedulerWorker (toutes les 15 min) → AIOrchestrator
+AIOrchestrator.executeAutomation(automationId)
+  → Copie messages SEED
+  → Création session AUTOMATION
+  → requestSessionControl() (queue si occupé)
+```
+
+### Spécificités AUTOMATION vs CHAT
+
+**Flag completed** : IA signale fin de travail avec `completed: true` dans AIMessage → arrêt immédiat boucle autonome.
+
+**Continuation automatique** : Après succès actions, AUTOMATION continue automatiquement (pas de keepControl requis).
+
+**Réseau** : Tentatives infinies avec delay 30s si offline (vs CHAT qui abandonne immédiatement).
+
+**Communication modules** : Interdits pour AUTOMATION (validationRequest, communicationModule ignorés).
+
+### Arrêt AUTOMATION (4 cas)
+1. **Flag completed=true** : IA a terminé son travail
+2. **Limites boucles** : automationMaxAutonomousRoundtrips dépassé
+3. **Inactivité réelle** : > 10 min sans commandes ET pas d'attente réseau en cours
+4. **Éviction CHAT** : CHAT demande la main ET automation inactive > chatMaxInactivityBeforeAutomationEviction
+
+**Note** : Attente réseau ne compte pas comme inactivité (tentatives infinies).
+
+## 7. Séparation message/round
 
 ### RoundReason
-`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`.
+`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`, `AUTOMATION_START`.
 
 ### Méthodes principales
 
@@ -258,7 +292,7 @@ Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FI
 
 **sendMessage()** : Wrapper processUserMessage + executeAIRound.
 
-## 7. Boucles autonomes
+## 8. Boucles autonomes
 
 ### Architecture 4 compteurs
 ```kotlin
@@ -306,7 +340,7 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
     - Stocker SystemMessage
     - Si allSuccess:
       - Si postText présent → storePostTextMessage (excludeFromPrompt=true)
-      - Si keepControl == true → renvoyer auto à IA avec résultats, reset compteurs consécutifs, totalRoundtrips++, continue
+      - Si keepControl == true OU SessionType.AUTOMATION → renvoyer auto à IA avec résultats, reset compteurs consécutifs, totalRoundtrips++, continue
       - Sinon → break (FIN)
     - Sinon → vérifier limite consecutiveActionRetries, renvoyer IA
     - Incrémenter consecutiveActionRetries, reset consecutiveDataQueries, totalRoundtrips++
@@ -337,7 +371,7 @@ fun resumeWithValidation(validated: Boolean) {
 
 **Helpers** : `createAndStoreValidationCancelledMessage()` crée fallback AVANT suspension, `storeLimitReachedMessage()` crée SystemMessage type LIMIT_REACHED.
 
-## 8. Gestion réseau et erreurs
+## 9. Gestion réseau et erreurs
 
 **NetworkUtils** : `isNetworkAvailable(context)` pour vérification connectivité (core/utils).
 
@@ -347,7 +381,7 @@ fun resumeWithValidation(validated: Boolean) {
 
 **CHAT** : Check réseau avant appel → offline = toast, session reste active. Pas de retry automatique, toast erreur, NETWORK_ERROR stocké, session reste active.
 
-## 9. Enrichissements
+## 10. Enrichissements
 
 ### Types d'enrichissements
 - **🔍 POINTER** - Référencer données (zones ou instances)
@@ -380,10 +414,10 @@ class EnrichmentProcessor {
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.
 **AI** : Source AIMessage.dataCommands + actionCommands, types queries + actions réelles, but demander données + exécuter actions.
 
-## 10. Architecture prompts
+## 11. Architecture prompts
 
 ### 2 niveaux de contexte
-**Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schémas (zone, tooltypes, communication modules).
+**Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schémas (zone, tooltypes, communication modules). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
 **Level 2: USER DATA** - Données tool instances avec `always_send: true`.
 
 **APP_STATE** : Zones et tool instances disponibles via command dédiée (à la demande).
@@ -422,7 +456,7 @@ suspend fun buildPromptData(sessionId: String): PromptData {
 **CHAT** (isRelative=false) : Périodes absolues (Period timestamps fixes).
 **AUTOMATION** (isRelative=true) : Périodes relatives (RelativePeriod "offset_TYPE") résolues via AppConfigManager.
 
-## 11. Provider abstraction
+## 12. Provider abstraction
 
 ### Signature AIProvider
 ```kotlin
@@ -459,7 +493,7 @@ Le provider fusionne USER/SYSTEM consécutifs pour respecter contraintes API.
 ### Configuration
 Configurations gérées par `AIProviderConfigService`, providers découverts via `AIProviderRegistry`, `AIClient` utilise coordinator (pas d'accès DB direct).
 
-## 12. Communication modules
+## 13. Communication modules
 
 ### Structure
 ```kotlin
@@ -504,7 +538,7 @@ when (waitingState) {
 
 **Persistance** : Pas de sérialisation WaitingState. Historique messages suffit. Coroutines scope singleton AIOrchestrator (survive navigation ChatScreen).
 
-## 13. SystemMessages
+## 14. SystemMessages
 
 ### Génération et stockage
 **Générés par** : CommandExecutor après chaque série de commandes. **Stockés comme** : SessionMessage sender=SYSTEM. **Point unique** : CommandExecutor seul responsable (User et AI).
