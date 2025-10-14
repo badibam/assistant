@@ -34,6 +34,15 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET lastActivity = :timestamp WHERE id = :sessionId")
     suspend fun updateSessionActivity(sessionId: String, timestamp: Long)
 
+    @Query("UPDATE ai_sessions SET endReason = :endReason WHERE id = :sessionId")
+    suspend fun updateSessionEndReason(sessionId: String, endReason: String?)
+
+    @Query("UPDATE ai_sessions SET tokensUsed = :tokensUsed WHERE id = :sessionId")
+    suspend fun updateSessionTokens(sessionId: String, tokensUsed: Int)
+
+    @Query("UPDATE ai_sessions SET isWaitingForNetwork = :isWaiting WHERE id = :sessionId")
+    suspend fun updateNetworkFlag(sessionId: String, isWaiting: Boolean)
+
     @Delete
     suspend fun deleteSession(session: AISessionEntity)
 
@@ -125,4 +134,37 @@ interface AIDao {
 
     @Query("UPDATE automations SET lastExecutionId = :executionId WHERE id = :id")
     suspend fun updateAutomationLastExecution(id: String, executionId: String)
+
+    // === Automation Scheduling Queries ===
+
+    /**
+     * Get incomplete automation session for a specific automation
+     * Returns sessions with endReason IN (null, 'NETWORK_ERROR', 'SUSPENDED') that are not active
+     * Used by scheduler to detect sessions to resume (crash, network timeout, user pause)
+     */
+    @Query("""
+        SELECT * FROM ai_sessions
+        WHERE automationId = :automationId
+          AND type = 'AUTOMATION'
+          AND (endReason IS NULL OR endReason IN ('NETWORK_ERROR', 'SUSPENDED'))
+          AND isActive = 0
+        ORDER BY scheduledExecutionTime DESC
+        LIMIT 1
+    """)
+    suspend fun getIncompleteAutomationSession(automationId: String): AISessionEntity?
+
+    /**
+     * Get last completed automation session for a specific automation
+     * Returns sessions with endReason IN ('COMPLETED', 'CANCELLED', 'TIMEOUT', 'ERROR')
+     * Used by scheduler to calculate next expected execution time
+     */
+    @Query("""
+        SELECT * FROM ai_sessions
+        WHERE automationId = :automationId
+          AND type = 'AUTOMATION'
+          AND endReason IN ('COMPLETED', 'CANCELLED', 'TIMEOUT', 'ERROR')
+        ORDER BY scheduledExecutionTime DESC
+        LIMIT 1
+    """)
+    suspend fun getLastCompletedAutomationSession(automationId: String): AISessionEntity?
 }

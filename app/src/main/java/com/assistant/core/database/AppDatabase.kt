@@ -35,7 +35,7 @@ import com.assistant.core.utils.LogManager
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -62,6 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "assistant_database"
                 )
+                .fallbackToDestructiveMigration()  // Wipe data on schema changes (v7 -> v8: AI sessions refactor)
                 .addMigrations(*migrationOrchestrator.getAllMigrations())
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {

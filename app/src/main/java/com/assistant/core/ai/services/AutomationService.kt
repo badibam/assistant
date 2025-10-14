@@ -3,6 +3,7 @@ package com.assistant.core.ai.services
 import android.content.Context
 import com.assistant.core.ai.data.Automation
 import com.assistant.core.ai.database.AutomationEntity
+import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.ExecutableService
@@ -11,6 +12,10 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.json.JSONArray
@@ -31,6 +36,9 @@ class AutomationService(private val context: Context) : ExecutableService {
     private val s = Strings.`for`(context = context)
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Coroutine scope for async tick() calls
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     // Access common database
     private val dao by lazy {
         AppDatabase.getDatabase(context).aiDao()
@@ -45,7 +53,7 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("AutomationService.execute - operation: $operation", "DEBUG")
 
-        return try {
+        val result = try {
             when (operation) {
                 "create" -> createAutomation(params, token)
                 "update" -> updateAutomation(params, token)
@@ -63,6 +71,20 @@ class AutomationService(private val context: Context) : ExecutableService {
             LogManager.service("AutomationService.execute - Error: ${e.message}", "ERROR", e)
             OperationResult.error(s.shared("service_error_automation").format(e.message ?: ""))
         }
+
+        // Trigger tick() after CRUD operations that affect scheduling (if successful)
+        if (result.success && operation in listOf("create", "update", "enable", "disable")) {
+            LogManager.service("AutomationService: Triggering tick() after $operation", "DEBUG")
+            scope.launch {
+                try {
+                    AIOrchestrator.tick()
+                } catch (e: Exception) {
+                    LogManager.service("AutomationService: Error calling tick(): ${e.message}", "ERROR", e)
+                }
+            }
+        }
+
+        return result
     }
 
     /**
@@ -83,20 +105,9 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Creating automation: name=$name, zoneId=$zoneId", "DEBUG")
 
-        // Parse optional schedule
+        // Parse optional schedule (no nextExecutionTime calculation - dynamic via AutomationScheduler)
         val scheduleJson = params.optString("schedule").takeIf { it.isNotEmpty() }
         val schedule = scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) }
-
-        // Calculate nextExecutionTime if schedule exists
-        val updatedSchedule = schedule?.let {
-            val nextExecution = ScheduleCalculator.calculateNextExecution(
-                pattern = it.pattern,
-                timezone = it.timezone,
-                startDate = it.startDate,
-                endDate = it.endDate
-            )
-            it.copy(nextExecutionTime = nextExecution)
-        }
 
         // Parse trigger IDs
         val triggerIdsArray = params.optJSONArray("trigger_ids") ?: JSONArray()
@@ -111,7 +122,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             name = name,
             zoneId = zoneId,
             seedSessionId = seedSessionId,
-            scheduleJson = updatedSchedule?.let { json.encodeToString(it) },
+            scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
             dismissOlderInstances = params.optBoolean("dismiss_older_instances", false),
             providerId = providerId,
@@ -150,21 +161,11 @@ class AutomationService(private val context: Context) : ExecutableService {
         // Update fields if provided
         val name = params.optString("name").takeIf { it.isNotEmpty() } ?: entity.name
 
-        // Parse schedule if provided
+        // Parse schedule if provided (no nextExecutionTime calculation - dynamic via AutomationScheduler)
         val scheduleJson = params.optString("schedule")
         val schedule = when {
             scheduleJson == "null" -> null // Explicit removal
-            scheduleJson.isNotEmpty() -> {
-                val parsedSchedule = json.decodeFromString<ScheduleConfig>(scheduleJson)
-                // Recalculate nextExecutionTime
-                val nextExecution = ScheduleCalculator.calculateNextExecution(
-                    pattern = parsedSchedule.pattern,
-                    timezone = parsedSchedule.timezone,
-                    startDate = parsedSchedule.startDate,
-                    endDate = parsedSchedule.endDate
-                )
-                parsedSchedule.copy(nextExecutionTime = nextExecution)
-            }
+            scheduleJson.isNotEmpty() -> json.decodeFromString<ScheduleConfig>(scheduleJson)
             else -> entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) }
         }
 
@@ -334,7 +335,8 @@ class AutomationService(private val context: Context) : ExecutableService {
 
     /**
      * Execute automation manually
-     * This delegates to AIOrchestrator.executeAutomation()
+     * This delegates to AIOrchestrator.executeAutomation() with MANUAL trigger
+     * Manual executions go through queue if slot occupied (priority after CHAT)
      */
     private suspend fun executeManual(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -348,9 +350,13 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        // Delegate to AIOrchestrator
-        val orchestrator = com.assistant.core.ai.orchestration.AIOrchestrator
-        val result = orchestrator.executeAutomation(automationId)
+        // Delegate to AIOrchestrator with MANUAL trigger
+        // scheduledFor = now (current time for manual executions)
+        val result = AIOrchestrator.executeAutomation(
+            automationId = automationId,
+            trigger = com.assistant.core.ai.data.ExecutionTrigger.MANUAL,
+            scheduledFor = System.currentTimeMillis()
+        )
 
         return if (result.success) {
             OperationResult.success(mapOf(

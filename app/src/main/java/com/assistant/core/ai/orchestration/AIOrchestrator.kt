@@ -203,10 +203,11 @@ object AIOrchestrator {
     fun requestSessionControl(
         sessionId: String,
         type: SessionType,
+        trigger: ExecutionTrigger? = null,
         automationId: String? = null,
         scheduledExecutionTime: Long? = null
     ): AISessionController.SessionControlResult {
-        return sessionController.requestSessionControl(sessionId, type, automationId, scheduledExecutionTime)
+        return sessionController.requestSessionControl(sessionId, type, trigger, automationId, scheduledExecutionTime)
     }
 
     /**
@@ -222,6 +223,16 @@ object AIOrchestrator {
         sessionController.closeActiveSession()
         LogManager.aiSession("Active session stopped successfully", "INFO")
         return OperationResult.success()
+    }
+
+    /**
+     * Trigger scheduler tick
+     * Called by AutomationService after CRUD operations that affect scheduling
+     * and by SchedulerWorker for periodic checks
+     */
+    suspend fun tick() {
+        LogManager.aiSession("AIOrchestrator.tick() called", "DEBUG")
+        sessionController.tick()
     }
 
     /**
@@ -585,9 +596,17 @@ object AIOrchestrator {
      * 2. Load SEED session containing initial message
      * 3. Create new AUTOMATION session (copy USER messages from SEED)
      * 4. Request session control (queues if needed, executes when ready)
+     *
+     * @param automationId ID of the automation to execute
+     * @param trigger Execution trigger type (MANUAL from UI, SCHEDULED from tick, EVENT from triggers)
+     * @param scheduledFor Scheduled execution time (current time for MANUAL, calculated time for SCHEDULED)
      */
-    suspend fun executeAutomation(automationId: String): OperationResult {
-        LogManager.aiSession("AIOrchestrator.executeAutomation() called for $automationId", "DEBUG")
+    suspend fun executeAutomation(
+        automationId: String,
+        trigger: ExecutionTrigger = ExecutionTrigger.MANUAL,
+        scheduledFor: Long = System.currentTimeMillis()
+    ): OperationResult {
+        LogManager.aiSession("AIOrchestrator.executeAutomation() called for $automationId (trigger=$trigger)", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -642,7 +661,7 @@ object AIOrchestrator {
                     "type" to SessionType.AUTOMATION.name,
                     "providerId" to providerId,
                     "automationId" to automationId,
-                    "scheduledExecutionTime" to now
+                    "scheduledExecutionTime" to scheduledFor
                 ))
 
                 if (!createSessionResult.isSuccess) {
@@ -673,8 +692,9 @@ object AIOrchestrator {
                 requestSessionControl(
                     sessionId = executionSessionId,
                     type = SessionType.AUTOMATION,
+                    trigger = trigger,
                     automationId = automationId,
-                    scheduledExecutionTime = now
+                    scheduledExecutionTime = scheduledFor
                 )
 
                 OperationResult.success(mapOf(

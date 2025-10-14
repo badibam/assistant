@@ -1,9 +1,14 @@
 package com.assistant.core.ai.orchestration
 
 import android.content.Context
+import com.assistant.core.ai.data.ExecutionTrigger
+import com.assistant.core.ai.data.SessionEndReason
 import com.assistant.core.ai.data.SessionType
+import com.assistant.core.ai.scheduling.AutomationScheduler
+import com.assistant.core.ai.scheduling.NextSession
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.database.AppDatabase
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.CoroutineScope
@@ -107,11 +112,14 @@ class AISessionController(
     /**
      * Request control of a session
      * Returns ACTIVATED if session activated immediately, ALREADY_ACTIVE if already active, or QUEUED with position
+     *
+     * @param trigger null for CHAT, MANUAL/SCHEDULED/EVENT for AUTOMATION
      */
     @Synchronized
     fun requestSessionControl(
         sessionId: String,
         type: SessionType,
+        trigger: ExecutionTrigger? = null,
         automationId: String? = null,
         scheduledExecutionTime: Long? = null
     ): SessionControlResult {
@@ -125,7 +133,7 @@ class AISessionController(
 
         // No active session → enqueue and process immediately
         if (_activeSessionId.value == null) {
-            enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+            enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
             processNextInQueue() // Will activate and execute (including AI round for AUTOMATION)
             LogManager.aiSession("Session activated immediately via queue: $sessionId", "INFO")
             return SessionControlResult.ACTIVATED
@@ -139,7 +147,7 @@ class AISessionController(
             // If other CHAT is active, enqueue new one and close active (queue will process it)
             if (activeSessionType == SessionType.CHAT) {
                 LogManager.aiSession("Closing active CHAT and switching to new CHAT: $sessionId", "INFO")
-                enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+                enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
                 closeActiveSession() // Calls processNextInQueue internally, will activate enqueued session
                 return SessionControlResult.ACTIVATED
             }
@@ -162,12 +170,12 @@ class AISessionController(
 
                     // Re-queue evicted automation (will be picked first due to older scheduledExecutionTime)
                     if (evictedAutomationId != null) {
-                        enqueueSession(evictedSessionId, SessionType.AUTOMATION, evictedAutomationId, evictedScheduledTime)
+                        enqueueSession(evictedSessionId, SessionType.AUTOMATION, ExecutionTrigger.SCHEDULED, evictedAutomationId, evictedScheduledTime)
                         LogManager.aiSession("Re-queued evicted AUTOMATION: $evictedSessionId", "INFO")
                     }
 
                     // Enqueue new CHAT and close active (queue will process CHAT with priority)
-                    enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+                    enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
                     closeActiveSession() // Calls processNextInQueue internally, will activate CHAT (priority)
                     return SessionControlResult.ACTIVATED
                 } else {
@@ -179,7 +187,7 @@ class AISessionController(
             }
 
             // Queue CHAT (will have priority in processNextInQueue)
-            enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+            enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
             LogManager.aiSession("CHAT queued: $sessionId", "INFO")
             return SessionControlResult.QUEUED(1)
         }
@@ -196,7 +204,7 @@ class AISessionController(
                     "INFO"
                 )
                 // Enqueue AUTOMATION and close CHAT (queue will process it)
-                enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+                enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
                 closeActiveSession() // Calls processNextInQueue internally, will activate AUTOMATION and execute round
                 return SessionControlResult.ACTIVATED
             } else {
@@ -208,7 +216,7 @@ class AISessionController(
         }
 
         // AUTOMATION queued (sorted by scheduledExecutionTime in processNextInQueue)
-        enqueueSession(sessionId, type, automationId, scheduledExecutionTime)
+        enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
         val position = sessionQueue.size
         LogManager.aiSession("AUTOMATION queued at position $position: $sessionId", "INFO")
         return SessionControlResult.QUEUED(position)
@@ -218,6 +226,7 @@ class AISessionController(
      * Close active session manually
      * Updates both memory state (immediate) and DB state (async)
      * Calls onSessionClosed callback for coordination with other components
+     * Triggers tick() to process queue or fetch scheduled automations
      */
     @Synchronized
     fun closeActiveSession() {
@@ -253,8 +262,10 @@ class AISessionController(
             }
         }
 
-        // 4. Process queue
-        processNextInQueue()
+        // 4. Trigger tick to process queue or fetch scheduled automations
+        scope.launch {
+            tick()
+        }
     }
 
     /**
@@ -269,6 +280,192 @@ class AISessionController(
 
         // Trigger callback to initialize messages flow
         onSessionActivated?.invoke(sessionId)
+    }
+
+    // ========================================================================================
+    // Tick System - Point d'entrée unique pour scheduling
+    // ========================================================================================
+
+    /**
+     * Tick - Point d'entrée unique pour le système de scheduling
+     *
+     * Responsabilités:
+     * 1. Vérifier si session active est zombie/inactive (watchdog)
+     * 2. Traiter la queue mémoire (CHAT + MANUAL) si non vide
+     * 3. Demander au scheduler s'il y a des automations scheduled à lancer
+     *
+     * Appelé par:
+     * - WorkManager (toutes les 5 min, automatique)
+     * - closeActiveSession() (réactivité immédiate)
+     * - AutomationService CRUD (create/update/enable/disable)
+     */
+    suspend fun tick() {
+        LogManager.aiSession("Tick: Starting scheduler cycle", "DEBUG")
+
+        // 1. Si slot occupé, vérifier si session zombie/inactive (watchdog unique)
+        if (_activeSessionId.value != null) {
+            if (shouldStopInactiveSession()) {
+                LogManager.aiSession("Tick: Stopping inactive/zombie session: ${_activeSessionId.value}", "WARN")
+                closeActiveSession()  // Libère le slot et rappellera tick()
+                return  // closeActiveSession() appelera tick() récursivement
+            } else {
+                LogManager.aiSession("Tick: Slot occupied by legitimate session, early return", "DEBUG")
+                return  // Session légitime en cours, rien à faire
+            }
+        }
+
+        // 2. Queue mémoire non vide → la vider d'abord (priorités CHAT > MANUAL)
+        if (sessionQueue.isNotEmpty()) {
+            LogManager.aiSession("Tick: Processing queue (${sessionQueue.size} sessions)", "DEBUG")
+            processNextInQueue()
+            return
+        }
+
+        // 3. Queue vide → demander nouvelles automations scheduled au scheduler
+        LogManager.aiSession("Tick: Queue empty, requesting scheduled automations from scheduler", "DEBUG")
+        val next = AutomationScheduler(context).getNextSession()
+
+        when (next) {
+            is NextSession.Resume -> {
+                LogManager.aiSession("Tick: Scheduler returned RESUME for session ${next.sessionId}", "INFO")
+                resumeSession(next.sessionId)
+            }
+            is NextSession.Create -> {
+                LogManager.aiSession("Tick: Scheduler returned CREATE for automation ${next.automationId} (scheduled=${next.scheduledFor})", "INFO")
+                createScheduledSession(next.automationId, next.scheduledFor)
+            }
+            is NextSession.None -> {
+                LogManager.aiSession("Tick: No scheduled automations to execute", "DEBUG")
+            }
+        }
+    }
+
+    /**
+     * Check if active session should be stopped (zombie/inactive detection)
+     * UNIQUE watchdog - no watchdog in AIRoundExecutor
+     *
+     * Returns true if session should be stopped
+     */
+    private suspend fun shouldStopInactiveSession(): Boolean {
+        val sessionId = _activeSessionId.value ?: return false
+        val now = System.currentTimeMillis()
+        val sessionAge = now - lastActivityTimestamp
+        val limits = AppConfigManager.getAILimits()
+
+        return when (activeSessionType) {
+            SessionType.AUTOMATION -> {
+                if (sessionAge > limits.automationMaxSessionDuration) {
+                    LogManager.aiSession(
+                        "Watchdog: AUTOMATION inactive for ${sessionAge / 1000}s (limit: ${limits.automationMaxSessionDuration / 1000}s)",
+                        "WARN"
+                    )
+
+                    // Déterminer endReason selon flag réseau
+                    val database = AppDatabase.getDatabase(context)
+                    val session = database.aiDao().getSession(sessionId)
+                    val endReason = if (session?.isWaitingForNetwork == true) {
+                        SessionEndReason.NETWORK_ERROR  // Reprendre
+                    } else {
+                        SessionEndReason.TIMEOUT  // Abandonner
+                    }
+
+                    // Set endReason sur session
+                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
+                        "sessionId" to sessionId,
+                        "endReason" to endReason.name
+                    ))
+
+                    LogManager.aiSession("Watchdog: Set endReason=$endReason for session $sessionId", "INFO")
+                    true  // Stop session
+                } else {
+                    false
+                }
+            }
+            SessionType.CHAT -> {
+                // Pas de timeout automatique pour CHAT via tick
+                // (seulement éviction si AUTOMATION demande, ou user clique stop)
+                false
+            }
+            else -> false
+        }
+    }
+
+    /**
+     * Resume incomplete session (crash/network/suspended)
+     * NO system message added - transparent resume
+     */
+    private suspend fun resumeSession(sessionId: String) {
+        try {
+            // Load session to get metadata
+            val database = AppDatabase.getDatabase(context)
+            val session = database.aiDao().getSession(sessionId)
+
+            if (session == null) {
+                LogManager.aiSession("Resume: Session not found: $sessionId", "ERROR")
+                return
+            }
+
+            // Determine RoundReason based on endReason
+            val reason = when (session.endReason) {
+                null -> RoundReason.AUTOMATION_RESUME_CRASH
+                "NETWORK_ERROR" -> RoundReason.AUTOMATION_RESUME_NETWORK
+                "SUSPENDED" -> RoundReason.AUTOMATION_RESUME_SUSPENDED
+                else -> {
+                    LogManager.aiSession("Resume: Invalid endReason=${session.endReason} for session $sessionId", "WARN")
+                    RoundReason.AUTOMATION_START
+                }
+            }
+
+            LogManager.aiSession("Resume: Resuming session $sessionId with reason=$reason", "INFO")
+
+            // Request session control
+            val result = requestSessionControl(
+                sessionId = sessionId,
+                type = SessionType.AUTOMATION,
+                trigger = ExecutionTrigger.SCHEDULED,
+                automationId = session.automationId,
+                scheduledExecutionTime = session.scheduledExecutionTime
+            )
+
+            when (result) {
+                SessionControlResult.ACTIVATED -> {
+                    // Session activated, trigger AI round
+                    roundExecutor?.executeAIRound(reason)
+                        ?: LogManager.aiSession("Resume: RoundExecutor not set, cannot execute round", "ERROR")
+                }
+                is SessionControlResult.QUEUED -> {
+                    // Rare: slot pris par CHAT entre temps
+                    LogManager.aiSession("Resume: Session queued at position ${result.position}", "INFO")
+                }
+                SessionControlResult.ALREADY_ACTIVE -> {
+                    LogManager.aiSession("Resume: Session already active", "DEBUG")
+                }
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("Resume: Error resuming session $sessionId: ${e.message}", "ERROR", e)
+        }
+    }
+
+    /**
+     * Create new scheduled session for automation
+     */
+    private suspend fun createScheduledSession(automationId: String, scheduledFor: Long) {
+        try {
+            LogManager.aiSession("CreateScheduled: Creating session for automation $automationId (scheduled=$scheduledFor)", "INFO")
+
+            // Create new session via AIOrchestrator
+            val createResult = coordinator.processUserAction("automations.execute", mapOf(
+                "automation_id" to automationId,
+                "trigger" to "SCHEDULED",
+                "scheduled_for" to scheduledFor
+            ))
+
+            if (!createResult.isSuccess) {
+                LogManager.aiSession("CreateScheduled: Failed to create session: ${createResult.error}", "ERROR")
+            }
+        } catch (e: Exception) {
+            LogManager.aiSession("CreateScheduled: Error creating session: ${e.message}", "ERROR", e)
+        }
     }
 
     // ========================================================================================
@@ -327,12 +524,14 @@ class AISessionController(
     private fun enqueueSession(
         sessionId: String,
         type: SessionType,
+        trigger: ExecutionTrigger? = null,
         automationId: String?,
         scheduledExecutionTime: Long?
     ) {
         val queued = QueuedSession(
             sessionId = sessionId,
             type = type,
+            trigger = trigger,
             automationId = automationId,
             scheduledExecutionTime = scheduledExecutionTime,
             enqueuedAt = System.currentTimeMillis()
@@ -352,7 +551,10 @@ class AISessionController(
      * Process next session in queue
      * Selection logic:
      * - CHAT has absolute priority (anywhere in queue)
-     * - AUTOMATION: earliest scheduledExecutionTime
+     * - MANUAL automations: by enqueuedAt (FIFO)
+     *
+     * Note: SCHEDULED automations are NEVER in queue (created on demand by tick())
+     * Queue contains ONLY: CHAT + MANUAL
      *
      * Also handles dismiss logic for automations
      */
@@ -362,15 +564,15 @@ class AISessionController(
             return
         }
 
-        // Smart selection: CHAT priority, else earliest scheduledExecutionTime
+        // Priority selection: CHAT > MANUAL (by enqueuedat)
         val chatIndex = sessionQueue.indexOfFirst { it.type == SessionType.CHAT }
         val nextIndex = if (chatIndex >= 0) {
             chatIndex // CHAT found → priority
         } else {
-            // Only AUTOMATION → select earliest scheduledExecutionTime
+            // Only MANUAL automations → select earliest enqueuedAt (FIFO)
             sessionQueue
                 .withIndex()
-                .minByOrNull { it.value.scheduledExecutionTime ?: Long.MAX_VALUE }
+                .minByOrNull { it.value.enqueuedAt }
                 ?.index ?: 0
         }
 
@@ -440,10 +642,12 @@ class AISessionController(
 
 /**
  * Queued session data
+ * trigger is null for CHAT sessions
  */
 data class QueuedSession(
     val sessionId: String,
     val type: SessionType,
+    val trigger: ExecutionTrigger?,      // null for CHAT, MANUAL/SCHEDULED/EVENT for AUTOMATION
     val automationId: String?,
     val scheduledExecutionTime: Long?,
     val enqueuedAt: Long

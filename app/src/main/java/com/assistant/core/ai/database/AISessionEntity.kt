@@ -15,7 +15,8 @@ import com.assistant.core.ai.data.SessionType
         Index(value = ["type"]),
         Index(value = ["lastActivity"]),
         Index(value = ["automationId"]),
-        Index(value = ["state"])
+        Index(value = ["state"]),
+        Index(value = ["endReason"])
     ]
 )
 data class AISessionEntity(
@@ -32,8 +33,9 @@ data class AISessionEntity(
     val lastActivity: Long,
     val isActive: Boolean,
     val state: String = "IDLE",             // SessionState as string
-    val lastNetworkErrorTime: Long? = null, // Last network error timestamp
-    val endReason: String? = null           // SessionEndReason as string
+    val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
+    val tokensUsed: Int? = null,            // Total tokens consumed by this session (for monitoring)
+    val isWaitingForNetwork: Boolean = false // Flag for network availability (distinguishes timeout vs network issue)
 )
 
 /**

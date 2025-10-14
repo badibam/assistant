@@ -29,15 +29,29 @@ enum class SessionState {
 }
 
 /**
- * Reason why a session ended (for audit and debugging)
+ * Reason why a session ended (for audit, debugging, and scheduler logic)
+ *
+ * Sessions to resume: null (crash), NETWORK_ERROR, SUSPENDED
+ * Sessions completed: COMPLETED, CANCELLED, TIMEOUT, ERROR
  */
 enum class SessionEndReason {
-    COMPLETED,              // AI indicated completion with completed flag
-    LIMIT_REACHED,          // Autonomous loop limits exceeded
-    INACTIVITY_TIMEOUT,     // Real inactivity timeout (> 10 min for AUTOMATION)
-    CHAT_EVICTION,          // Evicted by CHAT request (AUTOMATION only)
-    DISMISSED,              // Cancelled by dismiss parameter (older instance skipped)
-    USER_CANCELLED          // Manually cancelled by user
+    COMPLETED,       // AI indicated completion with completed flag
+    TIMEOUT,         // Watchdog timeout (inactivity without network issue)
+    ERROR,           // Fatal technical error
+    CANCELLED,       // User clicked stop (or CHAT evicted by AUTOMATION)
+    INTERRUPTED,     // Legacy/alias for null (crash detected as orphan)
+    NETWORK_ERROR,   // Timeout with network flag active (to resume)
+    SUSPENDED        // User clicked pause (to resume later)
+}
+
+/**
+ * Trigger type for automation executions
+ * Used to distinguish manual vs scheduled vs event-triggered automations
+ */
+enum class ExecutionTrigger {
+    SCHEDULED,  // Created by AutomationScheduler (never goes through queue)
+    MANUAL,     // User clicked execute (goes to queue if slot occupied)
+    EVENT       // Triggered by event (future use)
 }
 
 enum class EnrichmentType {

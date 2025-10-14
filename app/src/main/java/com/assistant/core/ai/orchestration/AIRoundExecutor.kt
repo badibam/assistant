@@ -30,8 +30,9 @@ import kotlinx.coroutines.withContext
  * - Manage autonomous loop counters and limits
  * - Handle communication modules and validation during loops
  * - Coordinate with other components for storage, parsing, user interaction
- * - Manage watchdog for AUTOMATION sessions
+ * - Manage network flag for AUTOMATION retry loops
  *
+ * Note: Watchdog is handled externally by AISessionController.tick()
  * This is the most complex component, orchestrating the entire AI round flow.
  */
 class AIRoundExecutor(
@@ -98,24 +99,8 @@ class AIRoundExecutor(
                 // Get limits for session type
                 val limits = getLimitsForSessionType(sessionType)
 
-                // Watchdog for AUTOMATION (timeout occupation)
-                var shouldTerminateRound = false
-                val watchdogJob = if (sessionType == SessionType.AUTOMATION) {
-                    scope.launch {
-                        val aiLimits = AppConfigManager.getAILimits()
-                        delay(aiLimits.automationMaxSessionDuration)
-                        shouldTerminateRound = true
-                        LogManager.aiSession("AUTOMATION timeout reached, forcing termination", "WARN")
-                    }
-                } else null
-
-                try {
-                    // Execute round with watchdog
-                    val result = executeRoundWithAutonomousLoops(sessionId, sessionType, limits, reason) { shouldTerminateRound }
-                    result
-                } finally {
-                    watchdogJob?.cancel()
-                }
+                // Execute round (watchdog handled externally by AISessionController.tick())
+                executeRoundWithAutonomousLoops(sessionId, sessionType, limits, reason)
 
             } catch (e: Exception) {
                 LogManager.aiSession("executeAIRound - Error: ${e.message}", "ERROR", e)
@@ -138,8 +123,7 @@ class AIRoundExecutor(
         sessionId: String,
         sessionType: SessionType,
         limits: SessionLimits,
-        reason: RoundReason,
-        shouldTerminate: () -> Boolean
+        reason: RoundReason
     ): OperationResult {
         // Reset interruption flag at start of new round
         userInteractionManager.resetInterruptionFlag()
@@ -206,20 +190,7 @@ class AIRoundExecutor(
                 break
             }
 
-            // Check watchdog termination flag
-            if (shouldTerminate()) {
-                val aiLimits = AppConfigManager.getAILimits()
-                val timeoutMinutes = aiLimits.automationMaxSessionDuration / 60000
-                messageStorage.storeSessionTimeoutMessage(s.shared("ai_error_session_timeout_automation").format(timeoutMinutes), sessionId)
-
-                // Update session endReason to SESSION_TIMEOUT
-                coordinator.processUserAction("ai_sessions.update_end_reason", mapOf(
-                    "sessionId" to sessionId,
-                    "endReason" to SessionEndReason.INACTIVITY_TIMEOUT.name
-                ))
-
-                break
-            }
+            // Note: Watchdog timeout is handled externally by AISessionController.tick()
 
             // Parse AI message for commands
             val parseResult = responseParser.parseAIMessageFromResponse(aiResponse)
@@ -277,15 +248,18 @@ class AIRoundExecutor(
             if (aiMessage.completed == true) {
                 LogManager.aiSession("AI indicated completion with completed=true flag", "INFO")
 
-                // Update session endReason to COMPLETED
-                coordinator.processUserAction("ai_sessions.update_end_reason", mapOf(
+                // Set session endReason to COMPLETED
+                coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
                     "sessionId" to sessionId,
                     "endReason" to SessionEndReason.COMPLETED.name
                 ))
 
-                // No need for explicit system message, AI's preText already explains completion
-                // Session will be deactivated naturally when loop exits
-                break
+                // Close session to free slot (will trigger tick() to process queue)
+                // No explicit system message needed, AI's preText already explains completion
+                sessionController.closeActiveSession()
+
+                // Return immediately (session closed, no need to continue)
+                return OperationResult.success()
             }
 
             // 4a. COMMUNICATION MODULE (prioritaire)
@@ -642,16 +616,16 @@ class AIRoundExecutor(
                 if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                     LogManager.aiSession("Network unavailable for AUTOMATION, entering wait loop", "WARN")
 
+                    // Set network flag (for watchdog to detect network-related timeout)
+                    coordinator.processUserAction("ai_sessions.set_network_flag", mapOf(
+                        "sessionId" to sessionId,
+                        "isWaitingForNetwork" to true
+                    ))
+
                     // Update session state to WAITING_NETWORK
                     coordinator.processUserAction("ai_sessions.update_state", mapOf(
                         "sessionId" to sessionId,
                         "state" to SessionState.WAITING_NETWORK.name
-                    ))
-
-                    // Update lastNetworkErrorTime
-                    coordinator.processUserAction("ai_sessions.update_last_network_error_time", mapOf(
-                        "sessionId" to sessionId,
-                        "timestamp" to System.currentTimeMillis()
                     ))
 
                     // Wait 30 seconds before retry
@@ -667,17 +641,23 @@ class AIRoundExecutor(
 
                 // Try AI call
                 val response = aiClient.query(promptData)
+
                 if (response.success) {
+                    // Reset network flag on success
+                    coordinator.processUserAction("ai_sessions.set_network_flag", mapOf(
+                        "sessionId" to sessionId,
+                        "isWaitingForNetwork" to false
+                    ))
                     return response
                 }
 
-                // AI call failed (not network issue) - log and retry after delay
+                // AI call failed (potentially network issue) - set flag and retry after delay
                 LogManager.aiSession("AI call failed for AUTOMATION: ${response.errorMessage}", "WARN")
 
-                // Update lastNetworkErrorTime if error seems network-related
-                coordinator.processUserAction("ai_sessions.update_last_network_error_time", mapOf(
+                // Set network flag (might be network-related)
+                coordinator.processUserAction("ai_sessions.set_network_flag", mapOf(
                     "sessionId" to sessionId,
-                    "timestamp" to System.currentTimeMillis()
+                    "isWaitingForNetwork" to true
                 ))
 
                 // Wait 30 seconds before retry
@@ -729,45 +709,6 @@ class AIRoundExecutor(
         }
     }
 
-    /**
-     * Check if session is inactive for real reason (not network-related)
-     * Used to distinguish real inactivity from legitimate network wait
-     *
-     * @param session The session to check
-     * @param thresholdMillis Inactivity threshold in milliseconds
-     * @return true if inactive for real reason, false if network-related or not yet inactive
-     */
-    private fun isInactiveForRealReason(session: AISession, thresholdMillis: Long): Boolean {
-        val now = System.currentTimeMillis()
-
-        // Find time of last command execution (DATA_ADDED or ACTIONS_EXECUTED)
-        val lastCommandTime = session.messages
-            .filter { msg ->
-                val type = msg.systemMessage?.type
-                type == SystemMessageType.DATA_ADDED || type == SystemMessageType.ACTIONS_EXECUTED
-            }
-            .maxOfOrNull { it.timestamp } ?: session.createdAt
-
-        val inactivityDuration = now - lastCommandTime
-
-        // Not yet inactive
-        if (inactivityDuration < thresholdMillis) {
-            return false
-        }
-
-        // Inactive for > threshold, but is it due to network issues?
-        return when {
-            // Currently waiting for network → legitimate wait, not real inactivity
-            session.state == SessionState.WAITING_NETWORK -> false
-
-            // Recent network error (within threshold) → legitimate wait, not real inactivity
-            session.lastNetworkErrorTime != null &&
-                (now - session.lastNetworkErrorTime!!) < thresholdMillis -> false
-
-            // No network issues → real inactivity
-            else -> true
-        }
-    }
 }
 
 /**

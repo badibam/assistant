@@ -296,6 +296,7 @@ object PromptChunks {
     /**
      * Build automation completion instructions (AUTOMATION sessions only)
      * Explains how to signal work completion using the completed flag
+     * CRITICAL: Must be very explicit about when to use completed flag
      */
     private fun buildAutomationCompletion(context: Context, sessionType: SessionType): String {
         // Only include for AUTOMATION sessions
@@ -306,12 +307,27 @@ object PromptChunks {
         return """
 ## AUTOMATION : Signaler la fin du travail
 
-**IMPORTANT** : Tu DOIS ajouter `"completed": true` dans ta réponse finale pour signaler que ton travail est terminé.
+Le flag `"completed": true` indique que TOUTE l'automation est terminée.
 
-Exemple :
+**❌ NE PAS utiliser `"completed": true` après chaque étape intermédiaire**
+**✅ UTILISER `"completed": true` UNIQUEMENT quand ton travail complet est terminé**
+
+### Exemples d'usage INCORRECT :
+- Après avoir collecté des données → **NON**
+- Après avoir créé un outil → **NON**
+- Entre deux actions → **NON**
+
+### Exemple d'usage CORRECT :
+- Toutes les données collectées ET analysées ET rapport créé → **OUI**
+
+### Gestion des interruptions réseau/erreurs :
+Si tu rencontres des problèmes réseau ou erreurs techniques, continue de travailler normalement.
+Le système gère automatiquement les interruptions et tu reprendras exactement où tu t'es arrêté.
+
+### Exemple :
 ```json
 {
-  "preText": "Analyse terminée. Résultats : [...]",
+  "preText": "Analyse terminée. Toutes les tâches ont été accomplies : données collectées, rapport créé et graphiques générés.",
   "completed": true
 }
 ```

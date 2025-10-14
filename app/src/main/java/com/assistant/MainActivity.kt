@@ -175,12 +175,13 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Schedule periodic automation worker
-     * Checks every 15 minutes for automations that should trigger
+     * Checks every 5 minutes for automations that should trigger
+     * tick() will early return if slot occupied, so safe to call frequently
      */
     private fun scheduleAutomationWorker() {
         try {
             val workRequest = PeriodicWorkRequestBuilder<SchedulerWorker>(
-                15, TimeUnit.MINUTES
+                5, TimeUnit.MINUTES
             ).build()
 
             WorkManager.getInstance(this).enqueueUniquePeriodicWork(
@@ -189,7 +190,7 @@ class MainActivity : ComponentActivity() {
                 workRequest
             )
 
-            LogManager.service("Automation scheduler registered (15 min periodic check)", "INFO")
+            LogManager.service("Automation scheduler registered (5 min periodic tick)", "INFO")
         } catch (e: Exception) {
             LogManager.service("Failed to schedule automation worker: ${e.message}", "ERROR", e)
         }

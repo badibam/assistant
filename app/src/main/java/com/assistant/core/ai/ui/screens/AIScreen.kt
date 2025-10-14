@@ -665,6 +665,7 @@ private fun AutomationMode(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val scope = rememberCoroutineScope()
+    val coordinator = remember { com.assistant.core.coordinator.Coordinator(context) }
 
     // Observe orchestrator states
     val messages by AIOrchestrator.activeSessionMessages.collectAsState()
@@ -679,8 +680,25 @@ private fun AutomationMode(
             session = session,
             isRunning = isRoundInProgress,
             onClose = onClose,
-            onInterrupt = {
-                AIOrchestrator.interruptActiveRound()
+            onStop = {
+                // Stop automation - set CANCELLED endReason and close session
+                scope.launch {
+                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
+                        "sessionId" to session.id,
+                        "endReason" to SessionEndReason.CANCELLED.name
+                    ))
+                    AIOrchestrator.stopActiveSession()
+                }
+            },
+            onPause = {
+                // Pause automation - set SUSPENDED endReason (will resume later)
+                scope.launch {
+                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
+                        "sessionId" to session.id,
+                        "endReason" to SessionEndReason.SUSPENDED.name
+                    ))
+                    AIOrchestrator.stopActiveSession()
+                }
             }
         )
 
@@ -865,14 +883,15 @@ private fun SeedHeader(
 }
 
 /**
- * Automation header - Execution status and interrupt button
+ * Automation header - Execution status with STOP and PAUSE buttons
  */
 @Composable
 private fun AutomationHeader(
     session: AISession,
     isRunning: Boolean,
     onClose: () -> Unit,
-    onInterrupt: () -> Unit
+    onStop: () -> Unit,
+    onPause: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -897,13 +916,22 @@ private fun AutomationHeader(
             )
         }
 
-        // Interrupt button (only if running)
+        // Stop and Pause buttons (only if running)
         if (isRunning) {
+            // Pause button - Suspend automation (will resume later)
             UI.ActionButton(
-                action = ButtonAction.INTERRUPT,
+                action = ButtonAction.PAUSE,
                 display = ButtonDisplay.ICON,
                 size = Size.M,
-                onClick = onInterrupt
+                onClick = onPause
+            )
+
+            // Stop button - Cancel automation (will not resume)
+            UI.ActionButton(
+                action = ButtonAction.STOP,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onStop
             )
         }
 
