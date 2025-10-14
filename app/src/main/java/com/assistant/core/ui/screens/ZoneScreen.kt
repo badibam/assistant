@@ -381,7 +381,7 @@ fun ZoneScreen(
             )
         } else if (automations.isEmpty()) {
             UI.Text(
-                text = "Aucune automation configurée",
+                text = s.shared("automation_none_configured"),
                 type = TextType.CAPTION,
                 fillMaxWidth = true,
                 textAlign = TextAlign.Center
@@ -392,11 +392,7 @@ fun ZoneScreen(
                     automation = automation,
                     onEdit = {
                         // Navigate to SEED session editor
-                        if (onNavigateToSeedEditor != null) {
-                            onNavigateToSeedEditor(automation.seedSessionId)
-                        } else {
-                            errorMessage = "Navigation vers SEED editor non configurée"
-                        }
+                        onNavigateToSeedEditor?.invoke(automation.seedSessionId)
                     },
                     onTest = {
                         // Manual execution
@@ -412,7 +408,7 @@ fun ZoneScreen(
                                     errorMessage = result.error
                                 }
                             } catch (e: Exception) {
-                                errorMessage = "Erreur: ${e.message}"
+                                errorMessage = s.shared("message_error").format(e.message ?: "")
                             }
                         }
                     },
@@ -459,7 +455,7 @@ fun ZoneScreen(
                                     errorMessage = result.error
                                 }
                             } catch (e: Exception) {
-                                errorMessage = "Erreur: ${e.message}"
+                                errorMessage = s.shared("message_error").format(e.message ?: "")
                             }
                         }
                     }
@@ -510,11 +506,7 @@ fun ZoneScreen(
                     }
                 }
                 // Navigate to SEED editor
-                if (onNavigateToSeedEditor != null) {
-                    onNavigateToSeedEditor(seedSessionId)
-                } else {
-                    errorMessage = "Navigation vers SEED editor non configurée"
-                }
+                onNavigateToSeedEditor?.invoke(seedSessionId)
             }
         )
     }

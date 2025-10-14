@@ -117,6 +117,36 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             LogManager.aiSession("Successfully created session: $sessionId", "INFO")
 
+            // For SEED sessions, create an empty USER message as template placeholder
+            if (type == "SEED") {
+                val emptyRichMessage = RichMessage(
+                    segments = emptyList(),
+                    linearText = "",
+                    dataCommands = emptyList()
+                )
+
+                val messageEntity = SessionMessageEntity(
+                    id = UUID.randomUUID().toString(),
+                    sessionId = sessionId,
+                    timestamp = now,
+                    sender = MessageSender.USER,
+                    richContentJson = emptyRichMessage.toJson(),
+                    textContent = null,
+                    aiMessageJson = null,
+                    aiMessageParsedJson = null,
+                    systemMessageJson = null,
+                    executionMetadataJson = null,
+                    excludeFromPrompt = false,
+                    inputTokens = 0,
+                    cacheWriteTokens = 0,
+                    cacheReadTokens = 0,
+                    outputTokens = 0
+                )
+
+                database.aiDao().insertMessage(messageEntity)
+                LogManager.aiSession("Created empty USER message for SEED session: $sessionId", "DEBUG")
+            }
+
             return OperationResult.success(mapOf(
                 "sessionId" to sessionId,
                 "name" to name,
@@ -586,10 +616,12 @@ class AISessionService(private val context: Context) : ExecutableService {
             }
 
             // Extract fields to update
+            val richContentJson = params.optString("richContentJson")
             val textContent = params.optString("textContent")
             val aiMessageJson = params.optString("aiMessageJson")
 
             val updatedEntity = messageEntity.copy(
+                richContentJson = if (richContentJson.isNotEmpty()) richContentJson else messageEntity.richContentJson,
                 textContent = if (textContent.isNotEmpty()) textContent else messageEntity.textContent,
                 aiMessageJson = if (aiMessageJson.isNotEmpty()) aiMessageJson else messageEntity.aiMessageJson
             )

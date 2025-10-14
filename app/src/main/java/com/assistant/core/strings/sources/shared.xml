@@ -664,6 +664,7 @@
     <string name="automation_seed_message_label">Message actuel</string>
     <string name="automation_enrichments_label">Enrichissements</string>
     <string name="automation_no_message">Aucun message configuré</string>
+    <string name="automation_none_configured">Aucune automation configurée</string>
     <string name="automation_schedule_not_configured">Pas de horaire</string>
     <string name="automation_triggers_none">Aucun déclencheur</string>
     <string name="automation_triggers_count">%1$d déclencheur(s)</string>

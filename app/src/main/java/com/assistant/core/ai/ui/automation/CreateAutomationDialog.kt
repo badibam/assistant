@@ -51,7 +51,7 @@ fun CreateAutomationDialog(
     // Load available providers
     LaunchedEffect(Unit) {
         try {
-            val result = coordinator.processUserAction("ai_provider_configs.list", emptyMap())
+            val result = coordinator.processUserAction("ai_provider_config.list", emptyMap())
             if (result.status == CommandStatus.SUCCESS) {
                 @Suppress("UNCHECKED_CAST")
                 val allProviders = result.data?.get("providers") as? List<Map<String, Any>> ?: emptyList()
@@ -93,11 +93,11 @@ fun CreateAutomationDialog(
                     // Step 1: Create SEED session
                     val sessionName = "$name (${zoneName})"
                     val createSessionResult = coordinator.processUserAction(
-                        "ai_sessions.create",
+                        "ai_sessions.create_session",
                         mapOf(
                             "name" to sessionName,
                             "type" to "SEED",
-                            "provider_id" to selectedProvider!!
+                            "providerId" to selectedProvider!!
                         )
                     )
 
@@ -107,7 +107,7 @@ fun CreateAutomationDialog(
                         return@launch
                     }
 
-                    val seedSessionId = createSessionResult.data?.get("session_id") as? String
+                    val seedSessionId = createSessionResult.data?.get("sessionId") as? String
                     if (seedSessionId == null) {
                         errorMessage = s.shared("ai_error_create_session").format("No session ID returned")
                         LogManager.aiUI("No session ID returned from create", "ERROR")

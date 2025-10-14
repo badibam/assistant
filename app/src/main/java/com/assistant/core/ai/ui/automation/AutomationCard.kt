@@ -106,34 +106,24 @@ fun AutomationCard(
             // Action buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 // Test button (manual execution)
-                Box(modifier = Modifier.weight(1f)) {
-                    UI.Button(
-                        type = ButtonType.DEFAULT,
-                        size = Size.S,
-                        onClick = onTest
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            UI.Text(text = "▶️", type = TextType.CAPTION)
-                            UI.Text(text = s.shared("automation_execute_now"), type = TextType.CAPTION)
-                        }
-                    }
-                }
+                UI.ActionButton(
+                    action = ButtonAction.START,
+                    display = ButtonDisplay.ICON,
+                    size = Size.S,
+                    onClick = onTest
+                )
 
                 // Edit button
-                Box(modifier = Modifier.weight(1f)) {
-                    UI.ActionButton(
-                        action = ButtonAction.EDIT,
-                        display = ButtonDisplay.LABEL,
-                        size = Size.S,
-                        onClick = onEdit
-                    )
-                }
+                UI.ActionButton(
+                    action = ButtonAction.EDIT,
+                    display = ButtonDisplay.ICON,
+                    size = Size.S,
+                    onClick = onEdit
+                )
             }
         }
     }

@@ -45,6 +45,7 @@ fun MainScreen() {
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSeedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAIProviders by rememberSaveable { mutableStateOf(false) }
     var showFormat by rememberSaveable { mutableStateOf(false) }
@@ -187,6 +188,17 @@ fun MainScreen() {
         return // Exit MainScreen composition when showing Data settings
     }
 
+    // Show AIScreen for SEED session editing when requested
+    selectedSeedSessionId?.let { seedSessionId ->
+        com.assistant.core.ai.ui.screens.AIScreen(
+            sessionId = seedSessionId,
+            onClose = {
+                selectedSeedSessionId = null
+            }
+        )
+        return // Exit MainScreen composition when showing SEED editor
+    }
+
     // Show CreateZoneScreen in edit mode when zone config is requested
     configZone?.let { zone ->
         CreateZoneScreen(
@@ -212,6 +224,9 @@ fun MainScreen() {
             zone = zone,
             onBack = {
                 selectedZoneId = null
+            },
+            onNavigateToSeedEditor = { seedSessionId ->
+                selectedSeedSessionId = seedSessionId
             }
         )
         return // Exit MainScreen composition when showing ZoneScreen

@@ -34,9 +34,9 @@ fun AutomationEditorFooter(
     onConfigureSchedule: () -> Unit,
     triggersCount: Int,
     onConfigureTriggers: () -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit,
-    onTest: (() -> Unit)? = null  // Non-null if editing existing automation
+    onRefresh: () -> Unit,  // Refresh message from composer (update DB + reload preview)
+    onSave: () -> Unit,  // Save automation (calls onRefresh first, then saves automation config)
+    onCancel: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -112,19 +112,17 @@ fun AutomationEditorFooter(
             }
         }
 
-        // Form actions with conditional Test button
+        // Form actions
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Test button (only when editing existing automation)
-            onTest?.let { testCallback ->
-                UI.ActionButton(
-                    action = ButtonAction.REFRESH,
-                    display = ButtonDisplay.LABEL,
-                    onClick = testCallback
-                )
-            }
+            // Refresh button - Update message from composer to DB
+            UI.ActionButton(
+                action = ButtonAction.REFRESH,
+                display = ButtonDisplay.LABEL,
+                onClick = onRefresh
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -135,7 +133,7 @@ fun AutomationEditorFooter(
                 onClick = onCancel
             )
 
-            // Save button
+            // Save button - Refresh + save automation config
             UI.ActionButton(
                 action = ButtonAction.SAVE,
                 display = ButtonDisplay.LABEL,

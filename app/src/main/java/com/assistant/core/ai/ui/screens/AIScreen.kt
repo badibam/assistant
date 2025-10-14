@@ -255,9 +255,14 @@ private fun SeedMode(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Editor states
-    var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
+    var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Composer editing (local temp state)
+    var displaySegments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Display from DB (source of truth)
     var scheduleConfig by remember { mutableStateOf<com.assistant.core.utils.ScheduleConfig?>(null) }
     var triggersCount by remember { mutableStateOf(0) }
+    var userMessageId by remember { mutableStateOf<String?>(null) } // ID of the USER message in SEED session
+
+    // Track if session needs reload after refresh
+    var sessionReloadTrigger by remember { mutableStateOf(0) }
 
     // Dialogs
     var showScheduleEditor by remember { mutableStateOf(false) }
@@ -299,11 +304,7 @@ private fun SeedMode(
                     scheduleConfig = automation?.schedule
                     triggersCount = automation?.triggerIds?.size ?: 0
 
-                    // Extract segments from SEED session first message
-                    val firstUserMessage = session.messages.firstOrNull { it.sender == MessageSender.USER }
-                    segments = firstUserMessage?.richContent?.segments ?: emptyList()
-
-                    LogManager.aiUI("SeedMode loaded automation: ${automation?.id}, ${segments.size} segments", "DEBUG")
+                    LogManager.aiUI("SeedMode loaded automation: ${automation?.id}", "DEBUG")
                 }
             } else {
                 errorMessage = result.error ?: s.shared("error_automation_not_found")
@@ -314,6 +315,37 @@ private fun SeedMode(
             LogManager.aiUI("Exception loading automation: ${e.message}", "ERROR", e)
         } finally {
             isLoadingAutomation = false
+        }
+    }
+
+    // Load segments from DB (display state = source of truth)
+    LaunchedEffect(session.id, sessionReloadTrigger) {
+        try {
+            val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to session.id))
+            if (result.status == CommandStatus.SUCCESS) {
+                @Suppress("UNCHECKED_CAST")
+                val messagesList = result.data?.get("messages") as? List<Map<String, Any>> ?: emptyList()
+                val firstUserMessage = messagesList.firstOrNull { (it["sender"] as? String) == "USER" }
+
+                // Store USER message ID for updates
+                userMessageId = firstUserMessage?.get("id") as? String
+
+                val richContentJson = firstUserMessage?.get("richContentJson") as? String
+
+                val loadedSegments = if (richContentJson != null) {
+                    com.assistant.core.ai.data.RichMessage.fromJson(richContentJson)?.segments ?: emptyList()
+                } else {
+                    emptyList()
+                }
+
+                // Update both display (from DB) and composer (for editing)
+                displaySegments = loadedSegments
+                segments = loadedSegments
+
+                LogManager.aiUI("SeedMode loaded segments from DB: ${displaySegments.size} segments, messageId=$userMessageId", "DEBUG")
+            }
+        } catch (e: Exception) {
+            LogManager.aiUI("Failed to reload segments: ${e.message}", "ERROR", e)
         }
     }
 
@@ -437,11 +469,11 @@ private fun SeedMode(
                     type = TextType.SUBTITLE
                 )
 
-                // Show current message preview
-                if (segments.isNotEmpty()) {
-                    val textContent = segments.filterIsInstance<MessageSegment.Text>()
+                // Show current message preview (from DB state)
+                if (displaySegments.isNotEmpty()) {
+                    val textContent = displaySegments.filterIsInstance<MessageSegment.Text>()
                         .joinToString("") { it.content }
-                    val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
+                    val enrichmentBlocks = displaySegments.filterIsInstance<MessageSegment.EnrichmentBlock>()
 
                     if (textContent.isNotEmpty()) {
                         UI.Card(type = CardType.DEFAULT) {
@@ -493,9 +525,16 @@ private fun SeedMode(
                     onConfigureSchedule = { showScheduleEditor = true },
                     triggersCount = triggersCount,
                     onConfigureTriggers = { showTriggersEditor = true },
-                    onSave = {
+                    onRefresh = {
                         scope.launch {
                             try {
+                                // Check if we have a USER message ID
+                                if (userMessageId == null) {
+                                    errorMessage = s.shared("ai_error_message_not_found").format(session.id)
+                                    LogManager.aiUI("SeedMode: No USER message ID available", "ERROR")
+                                    return@launch
+                                }
+
                                 // Build RichMessage from segments
                                 val richMessage = com.assistant.core.ai.data.RichMessage(
                                     segments = segments,
@@ -508,10 +547,61 @@ private fun SeedMode(
                                     dataCommands = emptyList() // Will be computed when automation executes
                                 )
 
-                                // Update SEED session message
-                                // TODO: Call AISessionService.updateSeedMessage or similar
+                                // Update message in DB
+                                val updateResult = coordinator.processUserAction(
+                                    "ai_sessions.update_message",
+                                    mapOf(
+                                        "messageId" to userMessageId!!,
+                                        "richContentJson" to richMessage.toJson()
+                                    )
+                                )
 
-                                // Update automation config (schedule, triggers)
+                                if (updateResult.status == CommandStatus.SUCCESS) {
+                                    // Trigger reload of segments from DB
+                                    sessionReloadTrigger++
+                                    UI.Toast(context, s.shared("automation_saved_success"), Duration.SHORT)
+                                    LogManager.aiUI("SeedMode: Message refreshed successfully", "INFO")
+                                } else {
+                                    errorMessage = updateResult.error ?: s.shared("automation_save_failed")
+                                    LogManager.aiUI("SeedMode: Refresh failed: ${updateResult.error}", "ERROR")
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = s.shared("automation_save_failed")
+                                LogManager.aiUI("SeedMode: Refresh exception: ${e.message}", "ERROR", e)
+                            }
+                        }
+                    },
+                    onSave = {
+                        scope.launch {
+                            try {
+                                // Step 1: Refresh message (update DB + reload)
+                                if (userMessageId != null) {
+                                    val richMessage = com.assistant.core.ai.data.RichMessage(
+                                        segments = segments,
+                                        linearText = segments.joinToString(" ") { segment ->
+                                            when (segment) {
+                                                is MessageSegment.Text -> segment.content
+                                                is MessageSegment.EnrichmentBlock -> segment.preview
+                                            }
+                                        }.trim(),
+                                        dataCommands = emptyList()
+                                    )
+
+                                    val updateMsgResult = coordinator.processUserAction(
+                                        "ai_sessions.update_message",
+                                        mapOf(
+                                            "messageId" to userMessageId!!,
+                                            "richContentJson" to richMessage.toJson()
+                                        )
+                                    )
+
+                                    if (updateMsgResult.status != CommandStatus.SUCCESS) {
+                                        errorMessage = updateMsgResult.error ?: s.shared("automation_save_failed")
+                                        return@launch
+                                    }
+                                }
+
+                                // Step 2: Update automation config (schedule, triggers)
                                 val updateParams = mutableMapOf<String, Any>(
                                     "automation_id" to automation!!.id
                                 )
@@ -537,23 +627,7 @@ private fun SeedMode(
                             }
                         }
                     },
-                    onCancel = onClose,
-                    onTest = {
-                        // Manual execution
-                        scope.launch {
-                            val result = coordinator.processUserAction(
-                                "automations.execute_manual",
-                                mapOf("automation_id" to automation!!.id)
-                            )
-                            if (result.status == CommandStatus.SUCCESS) {
-                                UI.Toast(context, s.shared("automation_execution_triggered"), Duration.SHORT)
-                                LogManager.aiUI("SeedMode: Manual execution triggered", "INFO")
-                            } else {
-                                errorMessage = result.error
-                                LogManager.aiUI("SeedMode: Execution failed: ${result.error}", "ERROR")
-                            }
-                        }
-                    }
+                    onCancel = onClose
                 )
             }
         }
