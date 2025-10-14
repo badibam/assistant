@@ -151,7 +151,7 @@ data class AIResponse(
 ## 3. Configuration IA
 
 ### AILimitsConfig
-Configuration globale des limites de boucles autonomes et timeouts, intégrée dans `AppConfig`.
+Configuration globale des limites de boucles autonomes, intégrée dans `AppConfig`.
 
 ```kotlin
 data class AILimitsConfig(
@@ -164,11 +164,7 @@ data class AILimitsConfig(
     val automationMaxDataQueryIterations: Int = 5,
     val automationMaxActionRetries: Int = 5,
     val automationMaxFormatErrorRetries: Int = 5,
-    val automationMaxAutonomousRoundtrips: Int = 20,
-    // CHAT : ÉVICTION PAR AUTOMATION (ms)
-    val chatMaxInactivityBeforeAutomationEviction: Long = 5 * 60 * 1000,  // 5 min
-    // AUTOMATION : WATCHDOG (ms)
-    val automationMaxSessionDuration: Long = 10 * 60 * 1000  // 10 min
+    val automationMaxAutonomousRoundtrips: Int = 20
 )
 ```
 
@@ -177,10 +173,6 @@ data class AILimitsConfig(
 - **ActionRetries** : Tentatives pour actions échouées
 - **FormatErrorRetries** : Tentatives pour erreurs de format (communicationModule, etc.)
 - **AutonomousRoundtrips** : Limite totale tous types (sécurité)
-
-**Gestion session** :
-- **chatMaxInactivityBeforeAutomationEviction** : Si AUTOMATION demande la main et CHAT inactive depuis > cette durée → arrêt forcé CHAT. Si CHAT inactive < cette durée → AUTOMATION attend en queue
-- **automationMaxSessionDuration** : Watchdog pour éviter boucles infinies AUTOMATION (CHAT n'a pas de timeout - arrêt via bouton UI)
 
 **Compteurs** : Consécutifs pour DataQuery/ActionRetry/FormatError (reset si changement type), total pour AutonomousRoundtrips (jamais reset).
 
@@ -231,64 +223,101 @@ AI:   AIMessage → AICommandProcessor → CommandTransformer/Actions → Comman
 ## 5. Contrôle de session
 
 ### Session active exclusive
-Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue FIFO.
+Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue mémoire.
+
+**Queue mémoire** : Contient UNIQUEMENT CHAT + MANUAL (SCHEDULED créés à la demande par tick()).
 
 **Règles CHAT** :
-- Switch immédiat si autre CHAT actif
-- Priorité position 1 si AUTOMATION active
-- Un seul CHAT en queue
+- Switch immédiat si autre CHAT actif (remplace le CHAT en queue)
+- Priorité absolue en queue (position 1)
+- Un seul CHAT en queue maximum
 
 **Règles AUTOMATION** :
-- Si CHAT actif et inactif depuis > `chatMaxInactivityBeforeAutomationEviction` → arrêt forcé CHAT, activation AUTOMATION
-- Si CHAT actif et inactif depuis < limite → queue FIFO standard
-- Si AUTOMATION active → queue FIFO standard
+- **MANUAL** : Queue si slot occupé (priorité après CHAT)
+- **SCHEDULED** : Jamais en queue, créés à la demande par tick() si slot libre + queue vide
 
-**Persistance sessions** : Aucun timeout d'inactivité automatique. Sessions persistent jusqu'à arrêt explicite (bouton UI) ou éviction par AUTOMATION (CHAT uniquement).
-
-**Watchdog AUTOMATION** : Flag `shouldTerminateRound` force termination si `automationMaxSessionDuration` dépassé → SESSION_TIMEOUT.
+**Watchdog externe** : `AISessionController.tick()` appelle `shouldStopInactiveSession()` pour détecter timeouts. Vérifie `isWaitingForNetwork` pour distinguer timeout réseau vs inactivité réelle.
 
 ## 6. Automations
 
 ### Concept
-Sessions AUTOMATION créées automatiquement par SchedulerWorker. Template défini dans session SEED (message user + enrichments). À chaque déclenchement : copie messages SEED → nouvelle session AUTOMATION → queue FIFO (tri par scheduledExecutionTime).
+Sessions AUTOMATION créées depuis template SEED (message user + enrichments). À chaque déclenchement : copie messages SEED → nouvelle session AUTOMATION → activation directe ou queue selon ExecutionTrigger.
 
 ### Déclenchement
+**ExecutionTrigger** distingue origine :
+- **MANUAL** : User clique Execute → `executeAutomation(id, MANUAL, now())` → queue si slot occupé
+- **SCHEDULED** : tick() calcule prochaine execution → `executeAutomation(id, SCHEDULED, scheduledFor)` → créé uniquement si slot libre + queue vide
+- **EVENT** : Future (triggers non planifiés)
+
+**Triggers tick()** :
+- Périodique : SchedulerWorker (5 min)
+- Événementiel : CRUD automations (create/update/enable/disable)
+- Fin session : `closeActiveSession()` appelle tick()
+
+### Architecture pull-based
 ```kotlin
-// SchedulerWorker (toutes les 15 min) → AIOrchestrator
-AIOrchestrator.executeAutomation(automationId)
-  → Copie messages SEED
-  → Création session AUTOMATION
-  → requestSessionControl() (queue si occupé)
+tick() {
+  if (slotOccupé) return
+  if (queueNotEmpty) processQueue()
+  else {
+    nextSession = AutomationScheduler.getNextSession()  // Calcul dynamique
+    if (nextSession) executeAutomation(id, SCHEDULED, scheduledFor)
+  }
+}
 ```
+
+**AutomationScheduler** : Helper pur de calcul. Trouve sessions incomplètes (endReason null/NETWORK_ERROR/SUSPENDED) OU prochaine execution depuis historique.
 
 ### Spécificités AUTOMATION vs CHAT
 
-**Flag completed** : IA signale fin de travail avec `completed: true` dans AIMessage → arrêt immédiat boucle autonome.
+**Flag completed** : IA signale fin avec `completed: true` → set endReason=COMPLETED → libère slot via `closeActiveSession()`.
 
 **Continuation automatique** : Après succès actions, AUTOMATION continue automatiquement (pas de keepControl requis).
 
-**Réseau** : Tentatives infinies avec delay 30s si offline (vs CHAT qui abandonne immédiatement).
+**Réseau** : Retry infini avec delay 30s si offline. Flag `isWaitingForNetwork=true` en DB (watchdog ne timeout pas pendant attente réseau).
 
 **Communication modules** : Interdits pour AUTOMATION (validationRequest, communicationModule ignorés).
 
-### Arrêt AUTOMATION (4 cas)
-1. **Flag completed=true** : IA a terminé son travail
-2. **Limites boucles** : automationMaxAutonomousRoundtrips dépassé
-3. **Inactivité réelle** : > 10 min sans commandes ET pas d'attente réseau en cours
-4. **Éviction CHAT** : CHAT demande la main ET automation inactive > chatMaxInactivityBeforeAutomationEviction
+### Arrêt AUTOMATION
+**UI boutons** :
+- **STOP** : set endReason=CANCELLED + closeActiveSession() (ne reprendra pas)
+- **PAUSE** : set endReason=SUSPENDED + closeActiveSession() (reprendra plus tard)
 
-**Note** : Attente réseau ne compte pas comme inactivité (tentatives infinies).
+**Arrêt automatique** :
+- **completed=true** : IA termine son travail → COMPLETED
+- **Limites boucles** : automationMaxAutonomousRoundtrips dépassé → TIMEOUT
+- **Watchdog** : Inactivité réelle sans attente réseau → TIMEOUT
+
+### Reprise sessions
+Détection automatique sessions orphelines par AutomationScheduler :
+- **endReason null** : Crash/interruption → reprise transparente
+- **NETWORK_ERROR** : Échec réseau → reprise avec retry
+- **SUSPENDED** : User pause → reprise quand slot libre
+
+**Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
 
 ## 7. Séparation message/round
 
 ### RoundReason
-`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`, `AUTOMATION_START`.
+`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`, `AUTOMATION_START`, `AUTOMATION_RESUME_ORPHAN`, `AUTOMATION_RESUME_NETWORK`, `AUTOMATION_RESUME_SUSPENDED`.
+
+**Resume reasons** : Utilisés uniquement pour logs. L'IA ne sait pas qu'elle reprend (transparence totale).
+
+### SessionEndReason
+Raison d'arrêt session (audit + logique reprise) :
+- **COMPLETED** : IA a terminé (completed=true)
+- **TIMEOUT** : Watchdog inactivité OU limites boucles
+- **ERROR** : Erreur technique fatale
+- **CANCELLED** : User STOP (ne reprend pas)
+- **SUSPENDED** : User PAUSE (reprend plus tard)
+- **NETWORK_ERROR** : Échec réseau (reprend avec retry)
+- **null** : Crash/interruption (reprend)
 
 ### Méthodes principales
 
 **processUserMessage()** : Exécute enrichments, stocke message user + SystemMessage enrichments, update lastActivityTimestamp.
 
-**executeAIRound(reason)** : Protection concurrent (`isRoundInProgress`), build promptData, check réseau, query IA (retry si AUTOMATION), boucles autonomes, processNextInQueue(). Watchdog AUTOMATION vérifie `shouldTerminateRound` dans boucle.
+**executeAIRound(reason)** : Protection concurrent (`isRoundInProgress`), build promptData, check réseau, query IA (retry infini si AUTOMATION), boucles autonomes.
 
 **sendMessage()** : Wrapper processUserMessage + executeAIRound.
 
@@ -306,10 +335,12 @@ val limits = getLimitsForSessionType(sessionType)
 
 ### Flow logique dans executeAIRound()
 ```
-// AUTOMATION uniquement : watchdog concurrent avec flag shouldTerminateRound
-while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound):
+while (totalRoundtrips < limits.maxAutonomousRoundtrips):
 
-  Priorité 0: FORMAT ERRORS (avant tout traitement)
+  Priorité 0: COMPLETED FLAG (AUTOMATION uniquement)
+    - Si completed=true → set endReason=COMPLETED → closeActiveSession() → return
+
+  Priorité 1: FORMAT ERRORS (avant tout traitement)
     - Vérifier parseResult.formatErrors après parsing réponse IA
     - Si erreurs → vérifier limite consecutiveFormatErrors
     - Si limite atteinte → storeLimitReachedMessage + break
@@ -318,20 +349,20 @@ while (totalRoundtrips < limits.maxAutonomousRoundtrips && !shouldTerminateRound
     - Incrémenter consecutiveFormatErrors + totalRoundtrips, continue
     - Si message correctement parsé → reset consecutiveFormatErrors
 
-  Priorité 1: COMMUNICATION MODULE
+  Priorité 2: COMMUNICATION MODULE
     - STOP → waitForUserResponse() (suspend via StateFlow)
     - Stocker réponse user
     - Renvoyer auto à IA
     - Incrémenter totalRoundtrips
 
-  Priorité 2: DATA COMMANDS (queries)
+  Priorité 3: DATA COMMANDS (queries)
     - Vérifier limite consecutiveDataQueries
     - Exécuter via AICommandProcessor → CommandExecutor
     - Stocker SystemMessage
     - Renvoyer auto à IA
     - Incrémenter consecutiveDataQueries, reset consecutiveActionRetries, totalRoundtrips++
 
-  Priorité 3: ACTION COMMANDS (mutations)
+  Priorité 4: ACTION COMMANDS (mutations)
     - ValidationResolver analyse hiérarchie configs → ValidationContext si requis
     - Créer message VALIDATION_CANCELLED fallback AVANT suspension
     - Si validation requise → STOP → waitForUserValidation(context, cancelMessageId)
@@ -377,9 +408,16 @@ fun resumeWithValidation(validated: Boolean) {
 
 **Timeout HTTP** : 2 minutes (OkHttp config providers).
 
-**AUTOMATION** : Check réseau avant appel → offline = requeue + NETWORK_ERROR. Retry 3x avec backoff (5s, 15s, 30s) si erreur → échec final = requeue + NETWORK_ERROR.
+**AUTOMATION** :
+- Check réseau avant appel → offline = delay 30s + retry infini
+- Flag `isWaitingForNetwork=true` en DB (watchdog ne timeout pas)
+- State `WAITING_NETWORK` en DB (audit)
+- Retry infini jusqu'à réseau disponible OU user STOP/PAUSE
 
-**CHAT** : Check réseau avant appel → offline = toast, session reste active. Pas de retry automatique, toast erreur, NETWORK_ERROR stocké, session reste active.
+**CHAT** :
+- Check réseau avant appel → offline = toast + NETWORK_ERROR
+- Pas de retry automatique
+- Session reste active
 
 ## 10. Enrichissements
 
