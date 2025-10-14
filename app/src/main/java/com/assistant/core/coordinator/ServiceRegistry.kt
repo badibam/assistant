@@ -32,7 +32,7 @@ class ServiceRegistry(private val context: Context) {
         "backup" to BackupService::class,
         "schemas" to SchemaService::class,
         "ai_sessions" to AISessionService::class,
-        "ai_provider_config" to AIProviderConfigService::class,
+        "ai_provider_configs" to AIProviderConfigService::class,
         "automations" to AutomationService::class
     )
     

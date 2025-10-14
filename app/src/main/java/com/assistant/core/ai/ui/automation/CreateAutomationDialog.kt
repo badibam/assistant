@@ -54,7 +54,12 @@ fun CreateAutomationDialog(
             val result = coordinator.processUserAction("ai_provider_configs.list", emptyMap())
             if (result.status == CommandStatus.SUCCESS) {
                 @Suppress("UNCHECKED_CAST")
-                providers = result.data?.get("configs") as? List<Map<String, Any>> ?: emptyList()
+                val allProviders = result.data?.get("providers") as? List<Map<String, Any>> ?: emptyList()
+
+                // Filter only configured providers
+                providers = allProviders.filter { provider ->
+                    provider["isConfigured"] as? Boolean ?: false
+                }
 
                 // Auto-select first provider if available
                 if (providers.isNotEmpty() && selectedProvider == null) {
@@ -179,11 +184,11 @@ fun CreateAutomationDialog(
                 )
             } else {
                 val providerNames = providers.map {
-                    (it["name"] as? String) ?: (it["id"] as? String) ?: "Unknown"
+                    (it["displayName"] as? String) ?: (it["id"] as? String) ?: "Unknown"
                 }
                 val selectedProviderName = selectedProvider?.let { id ->
                     providers.find { (it["id"] as? String) == id }
-                        ?.let { (it["name"] as? String) ?: id }
+                        ?.let { (it["displayName"] as? String) ?: id }
                 } ?: providerNames.firstOrNull()
 
                 UI.FormSelection(

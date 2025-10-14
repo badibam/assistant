@@ -11,6 +11,7 @@ import com.assistant.core.services.BackupService
 import com.assistant.core.services.SchemaService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
+import com.assistant.core.ai.services.AutomationService
 import kotlin.reflect.KClass
 
 /**
@@ -33,6 +34,7 @@ object ServiceFactory {
             SchemaService::class -> SchemaService(context)
             AISessionService::class -> AISessionService(context)
             AIProviderConfigService::class -> AIProviderConfigService(context)
+            AutomationService::class -> AutomationService(context)
             else -> throw IllegalArgumentException("Unknown service class: ${serviceClass.simpleName}")
         }
     }
