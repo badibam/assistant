@@ -100,7 +100,6 @@ fun ZoneScreen(
                 com.assistant.core.ai.data.Automation(
                     id = map["id"] as String,
                     name = map["name"] as String,
-                    icon = map["icon"] as String,
                     zoneId = map["zone_id"] as String,
                     seedSessionId = map["seed_session_id"] as String,
                     schedule = scheduleJson?.let {
@@ -441,7 +440,6 @@ fun ZoneScreen(
                                             com.assistant.core.ai.data.Automation(
                                                 id = map["id"] as String,
                                                 name = map["name"] as String,
-                                                icon = map["icon"] as String,
                                                 zoneId = map["zone_id"] as String,
                                                 seedSessionId = map["seed_session_id"] as String,
                                                 schedule = scheduleJson?.let {
@@ -495,7 +493,6 @@ fun ZoneScreen(
                             com.assistant.core.ai.data.Automation(
                                 id = map["id"] as String,
                                 name = map["name"] as String,
-                                icon = map["icon"] as String,
                                 zoneId = map["zone_id"] as String,
                                 seedSessionId = map["seed_session_id"] as String,
                                 schedule = scheduleJson?.let {
