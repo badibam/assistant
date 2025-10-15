@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.Automation
+import com.assistant.core.ai.data.SessionType
+import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.SchedulePattern
@@ -20,7 +22,8 @@ import java.util.*
  * - Name + Enabled status
  * - Trigger type (manual/schedule/triggers/hybrid)
  * - Next execution time (if scheduled)
- * - Actions: Test + Edit + Toggle enabled
+ * - Queued status badge (if in queue)
+ * - Actions: Test + Edit + Toggle enabled + Cancel (if queued)
  *
  * Usage: In ZoneScreen automation section
  */
@@ -33,6 +36,12 @@ fun AutomationCard(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+
+    // Observe queued sessions to detect if this automation is queued
+    val queuedSessions by AIOrchestrator.queuedSessions.collectAsState()
+    val queuedAutomationSession = queuedSessions.firstOrNull {
+        it.type == SessionType.AUTOMATION && it.automationId == automation.id
+    }
 
     UI.Card(
         type = CardType.DEFAULT
@@ -103,19 +112,43 @@ fun AutomationCard(
                 }
             }
 
+            // Queued badge (if automation is in queue)
+            queuedAutomationSession?.let { queued ->
+                UI.Text(
+                    text = s.shared("ai_automation_queued_badge").format(queued.position),
+                    type = TextType.CAPTION
+                )
+            }
+
             // Action buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Test button (manual execution)
-                UI.ActionButton(
-                    action = ButtonAction.START,
-                    display = ButtonDisplay.ICON,
-                    size = Size.S,
-                    onClick = onTest
-                )
+                // Cancel execution button (if queued)
+                if (queuedAutomationSession != null) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        size = Size.S,
+                        onClick = {
+                            AIOrchestrator.cancelQueuedSession(queuedAutomationSession.sessionId)
+                        }
+                    ) {
+                        UI.Text(
+                            text = s.shared("ai_automation_cancel_execution"),
+                            type = TextType.BODY
+                        )
+                    }
+                } else {
+                    // Test button (manual execution) - only shown if not queued
+                    UI.ActionButton(
+                        action = ButtonAction.START,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        onClick = onTest
+                    )
+                }
 
                 // Edit button
                 UI.ActionButton(

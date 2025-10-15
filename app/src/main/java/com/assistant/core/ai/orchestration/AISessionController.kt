@@ -59,6 +59,10 @@ class AISessionController(
     // Session queue (FIFO with priority rules)
     private val sessionQueue = mutableListOf<QueuedSession>()
 
+    // Queued sessions flow (observable by UI)
+    private val _queuedSessions = MutableStateFlow<List<QueuedSessionInfo>>(emptyList())
+    val queuedSessions: StateFlow<List<QueuedSessionInfo>> = _queuedSessions.asStateFlow()
+
     // Callbacks for coordination with other components
     private var onSessionActivated: ((String) -> Unit)? = null
     private var onSessionClosed: (() -> Unit)? = null
@@ -94,6 +98,43 @@ class AISessionController(
      */
     fun updateActivityTimestamp() {
         lastActivityTimestamp = System.currentTimeMillis()
+    }
+
+    /**
+     * Update queued sessions flow for UI observation
+     * Called after any modification to sessionQueue
+     */
+    private fun updateQueueFlow() {
+        scope.launch {
+            try {
+                val queuedInfoList = sessionQueue.mapIndexed { index, queued ->
+                    // Load session name from DB
+                    val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
+                        "sessionId" to queued.sessionId
+                    ))
+
+                    val name = if (sessionResult.isSuccess) {
+                        val sessionData = sessionResult.data?.get("session") as? Map<*, *>
+                        sessionData?.get("name") as? String ?: "Session"
+                    } else {
+                        "Session"
+                    }
+
+                    QueuedSessionInfo(
+                        sessionId = queued.sessionId,
+                        type = queued.type,
+                        name = name,
+                        automationId = queued.automationId,
+                        position = index + 1  // 1-indexed for UI display
+                    )
+                }
+
+                _queuedSessions.value = queuedInfoList
+                LogManager.aiSession("Updated queued sessions flow: ${queuedInfoList.size} sessions", "DEBUG")
+            } catch (e: Exception) {
+                LogManager.aiSession("Error updating queued sessions flow: ${e.message}", "ERROR", e)
+            }
+        }
     }
 
     // ========================================================================================
@@ -143,6 +184,7 @@ class AISessionController(
         if (type == SessionType.CHAT) {
             // Remove any other CHAT from queue
             sessionQueue.removeAll { it.type == SessionType.CHAT }
+            updateQueueFlow()
 
             // If other CHAT is active, enqueue new one and close active (queue will process it)
             if (activeSessionType == SessionType.CHAT) {
@@ -220,6 +262,44 @@ class AISessionController(
         val position = sessionQueue.size
         LogManager.aiSession("AUTOMATION queued at position $position: $sessionId", "INFO")
         return SessionControlResult.QUEUED(position)
+    }
+
+    /**
+     * Cancel a queued session
+     * Removes session from queue and deletes from DB
+     * Does NOT affect active session
+     *
+     * @param sessionId Session ID to cancel
+     */
+    @Synchronized
+    fun cancelQueuedSession(sessionId: String) {
+        LogManager.aiSession("Cancelling queued session: $sessionId", "INFO")
+
+        // Remove from queue
+        val removed = sessionQueue.removeAll { it.sessionId == sessionId }
+
+        if (removed) {
+            // Update flow
+            updateQueueFlow()
+
+            // Delete session from DB (async)
+            scope.launch {
+                try {
+                    val result = coordinator.processUserAction("ai_sessions.delete", mapOf(
+                        "sessionId" to sessionId
+                    ))
+                    if (result.isSuccess) {
+                        LogManager.aiSession("Deleted queued session from DB: $sessionId", "DEBUG")
+                    } else {
+                        LogManager.aiSession("Failed to delete queued session from DB: ${result.error}", "WARN")
+                    }
+                } catch (e: Exception) {
+                    LogManager.aiSession("Exception deleting queued session from DB: ${e.message}", "ERROR", e)
+                }
+            }
+        } else {
+            LogManager.aiSession("Session not found in queue: $sessionId", "WARN")
+        }
     }
 
     /**
@@ -543,6 +623,7 @@ class AISessionController(
         }
 
         sessionQueue.add(queued)
+        updateQueueFlow()
 
         LogManager.aiSession("Session enqueued: $sessionId (queue size=${sessionQueue.size})", "DEBUG")
     }
@@ -600,6 +681,7 @@ class AISessionController(
                             if (hasNewerInstance) {
                                 LogManager.aiSession("Skipping older automation instance ${next.sessionId} (newer instance in queue)", "INFO")
                                 sessionQueue.removeAt(nextIndex)
+                                updateQueueFlow()
 
                                 // Store DISMISSED system message
                                 // TODO: Create and store SystemMessage with type DISMISSED
@@ -616,6 +698,7 @@ class AISessionController(
 
                 // No dismiss or no newer instance → activate session and execute AI round
                 sessionQueue.removeAt(nextIndex)
+                updateQueueFlow()
                 activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
                 LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
 
@@ -634,6 +717,7 @@ class AISessionController(
         } else {
             // CHAT or session without automationId → activate only (UI handles CHAT execution)
             sessionQueue.removeAt(nextIndex)
+            updateQueueFlow()
             activateSession(next.sessionId, next.type, next.automationId, next.scheduledExecutionTime)
             LogManager.aiSession("Processing next in queue: ${next.sessionId} (type=${next.type})", "INFO")
         }
@@ -641,7 +725,7 @@ class AISessionController(
 }
 
 /**
- * Queued session data
+ * Queued session data (internal)
  * trigger is null for CHAT sessions
  */
 data class QueuedSession(
@@ -651,4 +735,16 @@ data class QueuedSession(
     val automationId: String?,
     val scheduledExecutionTime: Long?,
     val enqueuedAt: Long
+)
+
+/**
+ * Queued session info for UI observation
+ * Exposes minimal information about queued sessions
+ */
+data class QueuedSessionInfo(
+    val sessionId: String,
+    val type: SessionType,
+    val name: String,
+    val automationId: String?,
+    val position: Int
 )

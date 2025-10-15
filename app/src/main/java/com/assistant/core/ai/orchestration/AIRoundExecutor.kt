@@ -605,6 +605,7 @@ class AIRoundExecutor(
 
     /**
      * Call AI with retry logic for AUTOMATION (infinite retries with 30s delay), network checks for both
+     * Includes interruption checkpoints for graceful stopping
      */
     private suspend fun callAIWithRetry(promptData: PromptData, sessionType: SessionType): AIResponse {
         val sessionId = sessionController.getActiveSessionId()
@@ -612,6 +613,12 @@ class AIRoundExecutor(
         if (sessionType == SessionType.AUTOMATION && sessionId != null) {
             // AUTOMATION: Infinite retries with network check loop
             while (true) {
+                // Checkpoint 1: Before network check
+                if (userInteractionManager.shouldInterruptRound()) {
+                    LogManager.aiSession("Round interrupted before network check", "INFO")
+                    return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
+                }
+
                 // Check network availability
                 if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                     LogManager.aiSession("Network unavailable for AUTOMATION, entering wait loop", "WARN")
@@ -628,8 +635,14 @@ class AIRoundExecutor(
                         "state" to SessionState.WAITING_NETWORK.name
                     ))
 
-                    // Wait 30 seconds before retry
-                    delay(30_000)
+                    // Checkpoint 2: Interruptible delay (30s → 30×1s) for network wait
+                    repeat(30) {
+                        if (userInteractionManager.shouldInterruptRound()) {
+                            LogManager.aiSession("Round interrupted during network wait delay", "INFO")
+                            return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
+                        }
+                        delay(1_000)
+                    }
                     continue // Loop back to network check
                 }
 
@@ -638,6 +651,12 @@ class AIRoundExecutor(
                     "sessionId" to sessionId,
                     "state" to SessionState.PROCESSING.name
                 ))
+
+                // Checkpoint 3: Before AI call
+                if (userInteractionManager.shouldInterruptRound()) {
+                    LogManager.aiSession("Round interrupted before AI call", "INFO")
+                    return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
+                }
 
                 // Try AI call
                 val response = aiClient.query(promptData)
@@ -660,16 +679,35 @@ class AIRoundExecutor(
                     "isWaitingForNetwork" to true
                 ))
 
-                // Wait 30 seconds before retry
-                delay(30_000)
+                // Checkpoint 4: Interruptible delay (30s → 30×1s) for failed AI call retry
+                repeat(30) {
+                    if (userInteractionManager.shouldInterruptRound()) {
+                        LogManager.aiSession("Round interrupted during AI call retry delay", "INFO")
+                        return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
+                    }
+                    delay(1_000)
+                }
                 // Continue infinite loop
             }
         } else {
             // CHAT: Single attempt with network check
+
+            // Checkpoint: Before network check (CHAT)
+            if (userInteractionManager.shouldInterruptRound()) {
+                LogManager.aiSession("Round interrupted before network check (CHAT)", "INFO")
+                return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
+            }
+
             if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                 val errorMsg = s.shared("ai_error_network_unavailable")
                 LogManager.aiSession(errorMsg, "WARN")
                 return AIResponse(success = false, content = "", errorMessage = errorMsg)
+            }
+
+            // Checkpoint: Before AI call (CHAT)
+            if (userInteractionManager.shouldInterruptRound()) {
+                LogManager.aiSession("Round interrupted before AI call (CHAT)", "INFO")
+                return AIResponse(success = false, content = "", errorMessage = s.shared("ai_status_interrupted"))
             }
 
             return aiClient.query(promptData)

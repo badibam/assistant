@@ -96,6 +96,7 @@
     <!-- AI Interaction - System Messages for Cancellations -->
     <string name="ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>
     <string name="ai_system_validation_refused">Validation refusée ou non fournie</string>
+    <string name="ai_system_round_interrupted">Round interrompu par l\'utilisateur</string>
 
     <!-- Validation UI -->
     <string name="validation_title">L\'IA souhaite effectuer les actions suivantes</string>
@@ -627,6 +628,18 @@
     <string name="ai_session_queued">Session en attente (position %1$d)</string>
     <string name="ai_session_queued_priority">Session en attente prioritaire</string>
     <string name="ai_automation_running">Automation en cours, veuillez patienter</string>
+
+    <!-- Floating Chat - States -->
+    <string name="ai_chat_no_active_session">Aucune session active</string>
+    <string name="ai_chat_start_button">Démarrer un chat</string>
+    <string name="ai_chat_queued_message">Session chat en attente, l\'automation va bientôt se terminer...</string>
+    <string name="ai_chat_after_button">Chat après</string>
+    <string name="ai_chat_interrupt_and_chat_button">Interrompre et chatter</string>
+    <string name="ai_chat_creating_session">Création de la session...</string>
+
+    <!-- Automation Queue Status -->
+    <string name="ai_automation_queued_badge">En attente dans la file (position %1$d)</string>
+    <string name="ai_automation_cancel_execution">Annuler l\'exécution</string>
 
     <!-- Round control -->
     <string name="action_interrupt_round">Interrompre</string>

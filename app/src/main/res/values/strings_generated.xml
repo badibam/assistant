@@ -392,6 +392,7 @@
     <string name="shared_ai_module_select_option">Sélectionnez une option</string>
     <string name="shared_ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>
     <string name="shared_ai_system_validation_refused">Validation refusée ou non fournie</string>
+    <string name="shared_ai_system_round_interrupted">Round interrompu par l\'utilisateur</string>
     <string name="shared_validation_title">L\'IA souhaite effectuer les actions suivantes</string>
     <string name="shared_validation_action_confirm">Autoriser</string>
     <string name="shared_validation_action_refuse">Refuser</string>
@@ -807,6 +808,14 @@
     <string name="shared_ai_session_queued">Session en attente (position %1$d)</string>
     <string name="shared_ai_session_queued_priority">Session en attente prioritaire</string>
     <string name="shared_ai_automation_running">Automation en cours, veuillez patienter</string>
+    <string name="shared_ai_chat_no_active_session">Aucune session active</string>
+    <string name="shared_ai_chat_start_button">Démarrer un chat</string>
+    <string name="shared_ai_chat_queued_message">Session chat en attente, l\'automation va bientôt se terminer...</string>
+    <string name="shared_ai_chat_after_button">Chat après</string>
+    <string name="shared_ai_chat_interrupt_and_chat_button">Interrompre et chatter</string>
+    <string name="shared_ai_chat_creating_session">Création de la session...</string>
+    <string name="shared_ai_automation_queued_badge">En attente dans la file (position %1$d)</string>
+    <string name="shared_ai_automation_cancel_execution">Annuler l\'exécution</string>
     <string name="shared_action_interrupt_round">Interrompre</string>
     <string name="shared_ai_limit_format_errors_reached">Limite d\'erreurs de format atteinte</string>
     <string name="shared_ai_limit_data_queries_reached">Limite d\'itérations de requêtes de données atteinte</string>

@@ -84,6 +84,13 @@ object AIOrchestrator {
     val activeSessionId: StateFlow<String?>
         get() = sessionController.activeSessionId
 
+    /**
+     * Queued sessions (reactive)
+     * Emits list of sessions waiting in queue with position information
+     */
+    val queuedSessions: StateFlow<List<QueuedSessionInfo>>
+        get() = sessionController.queuedSessions
+
     // ========================================================================================
     // Initialization
     // ========================================================================================
@@ -208,6 +215,16 @@ object AIOrchestrator {
         scheduledExecutionTime: Long? = null
     ): AISessionController.SessionControlResult {
         return sessionController.requestSessionControl(sessionId, type, trigger, automationId, scheduledExecutionTime)
+    }
+
+    /**
+     * Cancel a queued session
+     * Removes from queue and deletes from DB
+     * Delegates to SessionController
+     */
+    fun cancelQueuedSession(sessionId: String) {
+        LogManager.aiSession("AIOrchestrator.cancelQueuedSession() called for $sessionId", "DEBUG")
+        sessionController.cancelQueuedSession(sessionId)
     }
 
     /**
