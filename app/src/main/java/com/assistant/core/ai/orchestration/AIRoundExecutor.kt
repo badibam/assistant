@@ -244,22 +244,107 @@ class AIRoundExecutor(
                 break
             }
 
-            // PRIORITY 0: Check if AI indicated completion (AUTOMATION only)
+            // PRIORITY 0: Check if AI indicated completion (AUTOMATION only) with confirmation system
             if (aiMessage.completed == true) {
                 LogManager.aiSession("AI indicated completion with completed=true flag", "INFO")
 
-                // Set session endReason to COMPLETED
-                coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
-                    "sessionId" to sessionId,
-                    "endReason" to SessionEndReason.COMPLETED.name
-                ))
+                // Load last system message to check if it was a confirmation request
+                val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
 
-                // Close session to free slot (will trigger tick() to process queue)
-                // No explicit system message needed, AI's preText already explains completion
-                sessionController.closeActiveSession()
+                // Parse messages with ID, sender and systemMessage type
+                val messages = messagesData.mapNotNull { msgData ->
+                    try {
+                        val msgMap = msgData as? Map<*, *> ?: return@mapNotNull null
+                        val id = msgMap["id"] as? String ?: return@mapNotNull null
+                        val sender = MessageSender.valueOf(msgMap["sender"] as? String ?: return@mapNotNull null)
+                        val systemMessageJson = msgMap["systemMessageJson"] as? String
+                        val systemMessage = if (!systemMessageJson.isNullOrEmpty()) {
+                            SystemMessage.fromJson(systemMessageJson)
+                        } else null
+                        Triple(id, sender, systemMessage)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
 
-                // Return immediately (session closed, no need to continue)
-                return OperationResult.success()
+                // Find last COMPLETED_CONFIRMATION message
+                val confirmationMsg = messages.lastOrNull {
+                    it.second == MessageSender.SYSTEM && it.third?.type == SystemMessageType.COMPLETED_CONFIRMATION
+                }
+
+                if (confirmationMsg != null) {
+                    // AI is responding after confirmation request
+                    // Check if it continues with actions/commands
+                    val hasActions = aiMessage.actionCommands?.isNotEmpty() == true
+                    val hasDataCommands = aiMessage.dataCommands?.isNotEmpty() == true
+                    val hasCommunication = aiMessage.communicationModule != null
+
+                    if (hasActions || hasDataCommands || hasCommunication) {
+                        // AI continues with actions → false positive, delete confirmation message and continue
+                        LogManager.aiSession("AI continues with actions after confirmation, deleting confirmation message", "INFO")
+
+                        coordinator.processUserAction("ai_sessions.delete_message", mapOf(
+                            "messageId" to confirmationMsg.first
+                        ))
+
+                        // Don't return, let the loop continue to process the commands
+                    } else {
+                        // Pure confirmation (just text + completed: true) → TRUE END
+                        LogManager.aiSession("AI confirmed completion after confirmation request, ending session", "INFO")
+
+                        // Set session endReason to COMPLETED
+                        coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
+                            "sessionId" to sessionId,
+                            "endReason" to SessionEndReason.COMPLETED.name
+                        ))
+
+                        // Close session to free slot (will trigger tick() to process queue)
+                        sessionController.closeActiveSession()
+
+                        // Return immediately (session closed, no need to continue)
+                        return OperationResult.success()
+                    }
+                } else {
+                    // First time seeing completed flag → send confirmation request
+                    LogManager.aiSession("First completed flag detected, sending confirmation request", "INFO")
+
+                    val confirmationMessage = SystemMessage(
+                        type = SystemMessageType.COMPLETED_CONFIRMATION,
+                        commandResults = emptyList(),
+                        summary = s.shared("ai_system_completed_confirmation"),
+                        formattedData = null
+                    )
+                    messageStorage.storeSystemMessage(confirmationMessage, sessionId)
+
+                    // Check session still active before continuing
+                    if (!isSessionStillActive(sessionId)) {
+                        LogManager.aiSession("Session stopped before confirmation retry", "INFO")
+                        break
+                    }
+
+                    if (userInteractionManager.shouldInterruptRound()) {
+                        LogManager.aiSession("Round interrupted before sending confirmation request", "INFO")
+                        messageStorage.storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                        break
+                    }
+
+                    // Continue loop to send confirmation request to AI
+                    val newPromptData = PromptManager.buildPromptData(sessionId, context)
+                    aiResponse = callAIWithRetry(newPromptData, sessionType)
+                    responseParser.logTokenStats(aiResponse)
+                    if (!aiResponse.success) break
+
+                    if (userInteractionManager.shouldInterruptRound()) {
+                        LogManager.aiSession("Round interrupted before storing confirmation response", "INFO")
+                        messageStorage.storeInterruptedMessage(s.shared("ai_status_interrupted"), sessionId)
+                        break
+                    }
+
+                    messageStorage.storeAIMessage(aiResponse, sessionId)
+                    totalRoundtrips++
+                    continue
+                }
             }
 
             // 4a. COMMUNICATION MODULE (prioritaire)

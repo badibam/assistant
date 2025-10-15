@@ -97,6 +97,7 @@
     <string name="ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>
     <string name="ai_system_validation_refused">Validation refusée ou non fournie</string>
     <string name="ai_system_round_interrupted">Round interrompu par l\'utilisateur</string>
+    <string name="ai_system_completed_confirmation">Tu as inclus le flag \'completed: true\' dans ta réponse. Cela signifie-t-il que tu as terminé l\'intégralité de toutes les tâches à accomplir pour répondre à la demande initiale de l\'utilisateur ? Si c\'était juste pour indiquer la complétion d\'une étape, continue directement avec les étapes suivantes. Si tu as effectivement TOUT terminé, alors écris un message de confirmation avec le flag \'completed: true\' à nouveau inclus dans ta réponse.</string>
 
     <!-- Validation UI -->
     <string name="validation_title">L\'IA souhaite effectuer les actions suivantes</string>
