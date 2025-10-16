@@ -98,8 +98,7 @@ class AIEventProcessor(
             }
 
             Phase.PARSING_AI_RESPONSE -> {
-                // Parsing is done in AIResponseReceived handler
-                // This phase is transitional
+                parseAIResponse(state)
             }
 
             Phase.WAITING_VALIDATION -> {
@@ -146,29 +145,136 @@ class AIEventProcessor(
 
     /**
      * Execute enrichments from user message.
+     *
+     * Flow:
+     * 1. Load messages and find last USER message
+     * 2. Extract RichMessage and regenerate DataCommands from EnrichmentBlocks
+     * 3. Transform commands via UserCommandProcessor
+     * 4. Execute via CommandExecutor
+     * 5. Store SystemMessage with results
+     * 6. Emit EnrichmentsExecuted event with CommandResults
      */
     private suspend fun executeEnrichments(state: AIState) {
-        // TODO: Load enrichments from last user message
-        // TODO: Process enrichments via EnrichmentProcessor
-        // TODO: Execute commands via CommandExecutor
-        // For now, emit empty results
-        emit(AIEvent.EnrichmentsExecuted(emptyList()))
+        try {
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("executeEnrichments: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
+
+            // 1. Load messages and find last USER message
+            val messages = messageRepository.loadMessages(sessionId)
+            val lastUserMessage = messages.lastOrNull { it.sender == MessageSender.USER }
+
+            if (lastUserMessage == null) {
+                LogManager.aiSession("executeEnrichments: No USER message found", "DEBUG")
+                emit(AIEvent.EnrichmentsExecuted(emptyList()))
+                return
+            }
+
+            val richContent = lastUserMessage.richContent
+            if (richContent == null) {
+                LogManager.aiSession("executeEnrichments: USER message has no richContent", "DEBUG")
+                emit(AIEvent.EnrichmentsExecuted(emptyList()))
+                return
+            }
+
+            // 2. Regenerate DataCommands from EnrichmentBlocks
+            val enrichmentProcessor = com.assistant.core.ai.enrichments.EnrichmentProcessor(context)
+            val isRelative = state.sessionType == SessionType.AUTOMATION
+            val allDataCommands = mutableListOf<com.assistant.core.ai.data.DataCommand>()
+
+            for (segment in richContent.segments) {
+                if (segment is com.assistant.core.ai.data.MessageSegment.EnrichmentBlock) {
+                    val commands = enrichmentProcessor.generateCommands(
+                        type = segment.type,
+                        config = segment.config,
+                        isRelative = isRelative
+                    )
+                    allDataCommands.addAll(commands)
+                }
+            }
+
+            if (allDataCommands.isEmpty()) {
+                LogManager.aiSession("executeEnrichments: No enrichment commands generated", "DEBUG")
+                emit(AIEvent.EnrichmentsExecuted(emptyList()))
+                return
+            }
+
+            LogManager.aiSession("executeEnrichments: Generated ${allDataCommands.size} commands from enrichments", "DEBUG")
+
+            // 3. Transform commands via UserCommandProcessor
+            val processor = UserCommandProcessor(context)
+            val executableCommands = processor.processCommands(allDataCommands)
+
+            // 4. Execute via CommandExecutor
+            val executor = commandExecutor
+            val result = executor.executeCommands(
+                commands = executableCommands,
+                messageType = SystemMessageType.DATA_ADDED,
+                level = "enrichments"
+            )
+
+            // 5. Store SystemMessage with formattedData
+            val formattedData = result.promptResults.joinToString("\n\n") {
+                "# ${it.dataTitle}\n${it.formattedData}"
+            }
+            val systemMessageWithData = result.systemMessage.copy(
+                formattedData = formattedData
+            )
+
+            val systemSessionMessage = SessionMessage(
+                id = java.util.UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = null,
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = systemMessageWithData,
+                executionMetadata = null,
+                excludeFromPrompt = false
+            )
+
+            messageRepository.storeMessage(sessionId, systemSessionMessage)
+
+            // 6. Emit event with CommandResults
+            emit(AIEvent.EnrichmentsExecuted(result.systemMessage.commandResults))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("executeEnrichments failed: ${e.message}", "ERROR", e)
+            emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
+        }
     }
 
     /**
      * Call AI provider with current prompt.
+     *
+     * Flow:
+     * 1. Build prompt data from session
+     * 2. Check network availability
+     * 3. Call AI provider
+     * 4. Store AI message (raw JSON)
+     * 5. Parse AI response
+     * 6. Emit AIResponseReceived → triggers PARSING_AI_RESPONSE phase
      */
     private suspend fun callAI(state: AIState) {
         try {
-            val sessionId = state.sessionId ?: return
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("callAI: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
 
             // Build prompt data
             val promptData = promptManager.buildPromptData(sessionId)
 
             // Check network availability
-            if (!isNetworkAvailable()) {
+            if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
+                LogManager.aiSession("callAI: Network unavailable", "WARN")
+
                 if (state.sessionType == SessionType.AUTOMATION) {
-                    // AUTOMATION: infinite retry
+                    // AUTOMATION: infinite retry with 30s delay
                     emit(AIEvent.NetworkErrorOccurred(0))
                 } else {
                     // CHAT: immediate failure
@@ -178,19 +284,183 @@ class AIEventProcessor(
             }
 
             // Call AI provider
+            LogManager.aiSession("callAI: Calling AI provider", "DEBUG")
             val response = aiClient.query(promptData)
 
             if (response.success) {
-                // Emit success event with content
+                LogManager.aiSession("callAI: AI response received (${response.tokensUsed} tokens)", "INFO")
+
+                // Store AI message with raw JSON and token metrics
+                val aiMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.AI,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null, // Will be parsed in PARSING phase
+                    aiMessageJson = response.content,
+                    systemMessage = null,
+                    executionMetadata = null,
+                    excludeFromPrompt = false
+                )
+
+                messageRepository.storeMessage(sessionId, aiMessage)
+
+                // Emit success → triggers parsing
                 emit(AIEvent.AIResponseReceived(response.content))
+
             } else {
-                // Network error
+                LogManager.aiSession("callAI: AI provider error: ${response.errorMessage}", "ERROR")
+                // Network/provider error
                 emit(AIEvent.NetworkErrorOccurred(0))
             }
 
         } catch (e: Exception) {
-            LogManager.aiSession("AI call failed: ${e.message}", "ERROR", e)
+            LogManager.aiSession("callAI failed: ${e.message}", "ERROR", e)
             emit(AIEvent.NetworkErrorOccurred(0))
+        }
+    }
+
+    /**
+     * Parse AI response JSON into AIMessage structure.
+     *
+     * Flow:
+     * 1. Load last AI message
+     * 2. Parse aiMessageJson → AIMessage with full validation
+     * 3. Validate constraints (mutual exclusivity, field dependencies)
+     * 4. Validate communication module schemas if present
+     * 5. Log parsed structure and format errors
+     * 6. Emit AIResponseParsed or ParseErrorOccurred
+     *
+     * Fallback: If parsing fails, creates AIMessage with translated error prefix.
+     *
+     * Uses AIResponseParser logic for validation rules.
+     */
+    private suspend fun parseAIResponse(state: AIState) {
+        try {
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("parseAIResponse: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
+
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+            // Load last AI message
+            val messages = messageRepository.loadMessages(sessionId)
+            val lastAIMessage = messages.lastOrNull { it.sender == MessageSender.AI }
+
+            if (lastAIMessage == null || lastAIMessage.aiMessageJson == null) {
+                LogManager.aiSession("parseAIResponse: No AI message to parse", "ERROR")
+                emit(AIEvent.ParseErrorOccurred("No AI message found"))
+                return
+            }
+
+            val aiMessageJson = lastAIMessage.aiMessageJson
+            val formatErrors = mutableListOf<String>()
+
+            // Log raw response (VERBOSE)
+            LogManager.aiSession("AI RAW RESPONSE: $aiMessageJson", "VERBOSE")
+
+            // Parse JSON → AIMessage
+            val parsedAIMessage = AIMessage.fromJson(aiMessageJson)
+
+            if (parsedAIMessage != null) {
+                // Validate field constraints (from AIResponseParser logic)
+                val hasDataCommands = parsedAIMessage.dataCommands != null && parsedAIMessage.dataCommands.isNotEmpty()
+                val hasActionCommands = parsedAIMessage.actionCommands != null && parsedAIMessage.actionCommands.isNotEmpty()
+                val hasCommunicationModule = parsedAIMessage.communicationModule != null
+
+                // Count action types present
+                val actionTypesCount = listOf(hasDataCommands, hasActionCommands, hasCommunicationModule).count { it }
+
+                // Rule 1: At most one action type
+                if (actionTypesCount > 1) {
+                    val presentTypes = mutableListOf<String>()
+                    if (hasDataCommands) presentTypes.add("dataCommands")
+                    if (hasActionCommands) presentTypes.add("actionCommands")
+                    if (hasCommunicationModule) presentTypes.add("communicationModule")
+                    formatErrors.add(s.shared("ai_error_validation_multiple_action_types").format(presentTypes.joinToString(", ")))
+                }
+
+                // Rule 2: validationRequest only with actionCommands
+                if (parsedAIMessage.validationRequest != null && !hasActionCommands) {
+                    formatErrors.add(s.shared("ai_error_validation_request_without_actions"))
+                }
+
+                // Rule 3: postText only with actionCommands
+                if (parsedAIMessage.postText != null && !hasActionCommands) {
+                    formatErrors.add(s.shared("ai_error_posttext_without_actions"))
+                }
+
+                // Validate communication module schemas if present
+                parsedAIMessage.communicationModule?.let { module ->
+                    val schemaValidator = com.assistant.core.ai.data.CommunicationModuleSchemas
+                    val validation = when (module) {
+                        is CommunicationModule.MultipleChoice ->
+                            schemaValidator.validateMultipleChoice(module.data, context)
+                        is CommunicationModule.Validation ->
+                            schemaValidator.validateValidation(module.data, context)
+                    }
+
+                    if (!validation.isValid) {
+                        formatErrors.add("Invalid communication module: ${validation.errorMessage}")
+                    }
+                }
+
+                // If format errors detected, emit error event
+                if (formatErrors.isNotEmpty()) {
+                    LogManager.aiSession("parseAIResponse: Format errors detected: ${formatErrors.joinToString("; ")}", "WARN")
+                    emit(AIEvent.ParseErrorOccurred(formatErrors.joinToString("; ")))
+                    return
+                }
+
+                // Log parsed structure (DEBUG)
+                LogManager.aiSession(
+                    "AI PARSED MESSAGE:\n" +
+                    "  preText: ${parsedAIMessage.preText.take(100)}${if (parsedAIMessage.preText.length > 100) "..." else ""}\n" +
+                    "  validationRequest: ${parsedAIMessage.validationRequest ?: "null"}\n" +
+                    "  dataCommands: ${parsedAIMessage.dataCommands?.size ?: 0} commands\n" +
+                    "  actionCommands: ${parsedAIMessage.actionCommands?.size ?: 0} commands\n" +
+                    "  postText: ${parsedAIMessage.postText?.take(50) ?: "null"}\n" +
+                    "  keepControl: ${parsedAIMessage.keepControl ?: "null"}\n" +
+                    "  communicationModule: ${parsedAIMessage.communicationModule?.type ?: "null"}\n" +
+                    "  completed: ${parsedAIMessage.completed ?: "null"}",
+                    "DEBUG"
+                )
+
+                // Emit success
+                emit(AIEvent.AIResponseParsed(parsedAIMessage))
+
+            } else {
+                // Parsing failed - create fallback message
+                LogManager.aiSession("parseAIResponse: JSON parsing failed, creating fallback message", "WARN")
+
+                val errorPrefix = s.shared("ai_response_invalid_format")
+                val fallbackMessage = AIMessage(
+                    preText = "$errorPrefix ${aiMessageJson.take(500)}",
+                    validationRequest = null,
+                    dataCommands = null,
+                    actionCommands = null,
+                    postText = null,
+                    keepControl = null,
+                    communicationModule = null,
+                    completed = null
+                )
+
+                // Log fallback (DEBUG)
+                LogManager.aiSession(
+                    "AI FALLBACK MESSAGE (invalid JSON):\n" +
+                    "  preText: ${fallbackMessage.preText.take(100)}${if (fallbackMessage.preText.length > 100) "..." else ""}",
+                    "DEBUG"
+                )
+
+                emit(AIEvent.ParseErrorOccurred("Failed to parse AI response JSON"))
+            }
+
+        } catch (e: Exception) {
+            LogManager.aiSession("parseAIResponse failed: ${e.message}", "ERROR", e)
+            emit(AIEvent.ParseErrorOccurred(e.message ?: "Unknown parsing error"))
         }
     }
 
@@ -216,58 +486,222 @@ class AIEventProcessor(
 
     /**
      * Execute data query commands.
+     *
+     * Flow:
+     * 1. Load last AI message and extract dataCommands
+     * 2. Process via AICommandProcessor
+     * 3. Execute via CommandExecutor
+     * 4. Store SystemMessage with formatted data
+     * 5. Emit DataQueriesExecuted event
      */
     private suspend fun executeDataQueries(state: AIState) {
-        // TODO: Extract dataCommands from last AI message
-        // TODO: Execute via CommandExecutor
-        // TODO: Format results
-        // For now, emit empty results
-        emit(AIEvent.DataQueriesExecuted(emptyList()))
+        try {
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("executeDataQueries: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
+
+            // Load last AI message
+            val messages = messageRepository.loadMessages(sessionId)
+            val lastAIMessage = messages.lastOrNull { it.sender == MessageSender.AI }
+
+            if (lastAIMessage == null || lastAIMessage.aiMessage == null) {
+                LogManager.aiSession("executeDataQueries: No AI message with parsed content", "ERROR")
+                emit(AIEvent.DataQueriesExecuted(emptyList()))
+                return
+            }
+
+            val dataCommands = lastAIMessage.aiMessage.dataCommands
+            if (dataCommands.isNullOrEmpty()) {
+                LogManager.aiSession("executeDataQueries: No dataCommands to execute", "DEBUG")
+                emit(AIEvent.DataQueriesExecuted(emptyList()))
+                return
+            }
+
+            LogManager.aiSession("executeDataQueries: Executing ${dataCommands.size} data commands", "DEBUG")
+
+            // Process via AICommandProcessor
+            val processor = AICommandProcessor(context)
+            val executableCommands = processor.processDataCommands(dataCommands)
+
+            // Execute via CommandExecutor
+            val executor = commandExecutor
+            val result = executor.executeCommands(
+                commands = executableCommands,
+                messageType = SystemMessageType.DATA_ADDED,
+                level = "ai_data"
+            )
+
+            // Store SystemMessage with formattedData
+            val formattedData = result.promptResults.joinToString("\n\n") {
+                "# ${it.dataTitle}\n${it.formattedData}"
+            }
+            val systemMessageWithData = result.systemMessage.copy(
+                formattedData = formattedData
+            )
+
+            val systemSessionMessage = SessionMessage(
+                id = java.util.UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = null,
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = systemMessageWithData,
+                executionMetadata = null,
+                excludeFromPrompt = false
+            )
+
+            messageRepository.storeMessage(sessionId, systemSessionMessage)
+
+            // Emit event
+            emit(AIEvent.DataQueriesExecuted(result.systemMessage.commandResults))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("executeDataQueries failed: ${e.message}", "ERROR", e)
+            emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
+        }
     }
 
     /**
      * Execute action commands with validation logic.
+     *
+     * Flow:
+     * 1. Load last AI message and extract actionCommands
+     * 2. Check if validation is required (ValidationResolver)
+     * 3. If validation required:
+     *    - Create fallback VALIDATION_CANCELLED message
+     *    - Update waiting context in state repository
+     *    - State machine will transition to WAITING_VALIDATION
+     * 4. If no validation:
+     *    - Process via AICommandProcessor
+     *    - Execute via CommandExecutor
+     *    - Store postText if present and all success
+     *    - Store SystemMessage with results
+     *    - Emit ActionsExecuted with results, success status, and keepControl
      */
     private suspend fun executeActions(state: AIState) {
         try {
-            val sessionId = state.sessionId ?: return
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("executeActions: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
 
-            // TODO: Extract actionCommands from last AI message
-            val actions = emptyList<DataCommand>() // Placeholder
-            val aiMessageId = "" // Placeholder
+            // Load last AI message
+            val messages = messageRepository.loadMessages(sessionId)
+            val lastAIMessage = messages.lastOrNull { it.sender == MessageSender.AI }
+
+            if (lastAIMessage == null || lastAIMessage.aiMessage == null) {
+                LogManager.aiSession("executeActions: No AI message with parsed content", "ERROR")
+                emit(AIEvent.ActionsExecuted(emptyList(), true, false))
+                return
+            }
+
+            val aiMessage = lastAIMessage.aiMessage
+            val actionCommands = aiMessage.actionCommands
+            if (actionCommands.isNullOrEmpty()) {
+                LogManager.aiSession("executeActions: No actionCommands to execute", "DEBUG")
+                emit(AIEvent.ActionsExecuted(emptyList(), true, false))
+                return
+            }
+
+            LogManager.aiSession("executeActions: Processing ${actionCommands.size} action commands", "DEBUG")
 
             // Check if validation is required
             val validationResult = validationResolver.shouldValidate(
-                actions = actions,
+                actions = actionCommands,
                 sessionId = sessionId,
-                aiMessageId = aiMessageId,
-                aiRequestedValidation = false // TODO: Get from AI message
+                aiMessageId = lastAIMessage.id,
+                aiRequestedValidation = aiMessage.validationRequest == true
             )
 
             when (validationResult) {
                 is com.assistant.core.ai.validation.ValidationResult.RequiresValidation -> {
-                    // Store validation context and wait for user
+                    LogManager.aiSession("executeActions: Validation required", "INFO")
+
+                    // Create fallback VALIDATION_CANCELLED message BEFORE waiting
+                    val cancelMessageId = createFallbackMessage(sessionId, "VALIDATION_CANCELLED")
+
+                    // Update waiting context in state repository
                     val waitingContext = WaitingContext.Validation(
                         validationContext = validationResult.context,
-                        cancelMessageId = createFallbackMessage(sessionId, "VALIDATION_CANCELLED")
+                        cancelMessageId = cancelMessageId
                     )
 
                     stateRepository.updateWaitingContext(waitingContext)
+
+                    // State machine will handle the transition to WAITING_VALIDATION
+                    // No need to emit event here - the waiting context update triggers the phase change
                 }
 
                 is com.assistant.core.ai.validation.ValidationResult.NoValidation -> {
-                    // Execute actions directly
-                    // TODO: Execute via CommandExecutor
-                    val results = emptyList<com.assistant.commands.CommandResult>()
-                    val allSuccess = true
-                    val keepControl = false // TODO: Get from AI message
+                    LogManager.aiSession("executeActions: No validation required, executing directly", "DEBUG")
 
-                    emit(AIEvent.ActionsExecuted(results, allSuccess, keepControl))
+                    // Process via AICommandProcessor
+                    val processor = AICommandProcessor(context)
+                    val executableCommands = processor.processActionCommands(actionCommands)
+
+                    // Execute via CommandExecutor
+                    val executor = commandExecutor
+                    val result = executor.executeCommands(
+                        commands = executableCommands,
+                        messageType = SystemMessageType.ACTIONS_EXECUTED,
+                        level = "ai_actions"
+                    )
+
+                    // Check if all succeeded
+                    val allSuccess = result.systemMessage.commandResults.all {
+                        it.status == CommandStatus.SUCCESS
+                    }
+
+                    // Store postText as separate message if present and all success
+                    if (allSuccess && aiMessage.postText != null) {
+                        val postTextMessage = SessionMessage(
+                            id = java.util.UUID.randomUUID().toString(),
+                            timestamp = System.currentTimeMillis(),
+                            sender = MessageSender.AI,
+                            richContent = null,
+                            textContent = aiMessage.postText,
+                            aiMessage = null,
+                            aiMessageJson = null,
+                            systemMessage = null,
+                            executionMetadata = null,
+                            excludeFromPrompt = true // PostText excluded from prompt
+                        )
+                        messageRepository.storeMessage(sessionId, postTextMessage)
+                    }
+
+                    // Store SystemMessage with results
+                    val systemSessionMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = result.systemMessage,
+                        executionMetadata = null,
+                        excludeFromPrompt = false
+                    )
+
+                    messageRepository.storeMessage(sessionId, systemSessionMessage)
+
+                    // Emit event with keepControl flag
+                    val keepControl = aiMessage.keepControl == true
+                    emit(AIEvent.ActionsExecuted(
+                        results = result.systemMessage.commandResults,
+                        allSuccess = allSuccess,
+                        keepControl = keepControl
+                    ))
                 }
             }
 
         } catch (e: Exception) {
-            LogManager.aiSession("Action execution failed: ${e.message}", "ERROR", e)
+            LogManager.aiSession("executeActions failed: ${e.message}", "ERROR", e)
             emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
         }
     }
@@ -331,13 +765,6 @@ class AIEventProcessor(
         return messageId
     }
 
-    /**
-     * Check network availability.
-     */
-    private fun isNetworkAvailable(): Boolean {
-        // TODO: Implement network check via NetworkUtils
-        return true
-    }
 
     /**
      * Shutdown processor and cancel all jobs.

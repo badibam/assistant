@@ -196,8 +196,7 @@ class AIMessageRepository(
             timestamp = entity.timestamp,
             sender = entity.sender,
             richContent = entity.richContentJson?.let {
-                // TODO: Implement RichMessage.fromJson()
-                null
+                com.assistant.core.ai.data.RichMessage.fromJson(it)
             },
             textContent = entity.textContent,
             aiMessage = entity.aiMessageParsedJson?.let {
@@ -205,11 +204,10 @@ class AIMessageRepository(
             },
             aiMessageJson = entity.aiMessageJson,
             systemMessage = entity.systemMessageJson?.let {
-                // TODO: Implement SystemMessage.fromJson()
-                null
+                com.assistant.core.ai.data.SystemMessage.fromJson(it)
             },
             executionMetadata = entity.executionMetadataJson?.let {
-                // TODO: Implement ExecutionMetadata.fromJson()
+                // TODO: Implement ExecutionMetadata.fromJson() when ExecutionMetadata class exists
                 null
             },
             excludeFromPrompt = entity.excludeFromPrompt
@@ -218,19 +216,25 @@ class AIMessageRepository(
 }
 
 /**
- * Extension functions for serialization (placeholder until full implementation).
+ * Extension function to serialize RichMessage to JSON.
+ * Delegates to RichMessage.toJson() method.
  */
 private fun com.assistant.core.ai.data.RichMessage.toJson(): String {
-    // TODO: Implement proper serialization
-    return "{}"
+    return this.toJson()
 }
 
+/**
+ * Extension function to serialize SystemMessage to JSON.
+ * Delegates to SystemMessage.toJson() method.
+ */
 private fun com.assistant.core.ai.data.SystemMessage.toJson(): String {
-    // TODO: Implement proper serialization
-    return "{}"
+    return this.toJson()
 }
 
+/**
+ * Extension function to serialize ExecutionMetadata to JSON.
+ * TODO: Implement ExecutionMetadata class and serialization for AUTOMATION sessions.
+ */
 private fun com.assistant.core.ai.data.ExecutionMetadata.toJson(): String {
-    // TODO: Implement proper serialization
-    return "{}"
+    return "{}" // Placeholder until ExecutionMetadata is implemented
 }

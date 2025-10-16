@@ -119,15 +119,41 @@ object AIOrchestrator {
     /**
      * Send user message to active session.
      *
+     * Flow:
+     * 1. Store USER message in repository
+     * 2. Emit UserMessageSent event
+     * 3. Event processor handles enrichments → AI call
+     *
      * @param richMessage User message with enrichments
      */
     suspend fun sendMessage(richMessage: RichMessage) {
-        // Emit UserMessageSent event (placeholder - will be implemented)
-        // Event processor will handle enrichments and AI call
         LogManager.aiSession("sendMessage called", "INFO")
 
-        // TODO: Implement UserMessageSent event
-        // eventProcessor.emit(AIEvent.UserMessageSent(richMessage))
+        val sessionId = stateRepository.state.value.sessionId
+        if (sessionId == null) {
+            LogManager.aiSession("sendMessage: No active session", "ERROR")
+            return
+        }
+
+        // Store USER message
+        val userMessage = SessionMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.USER,
+            richContent = richMessage,
+            textContent = null,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = null,
+            executionMetadata = null,
+            excludeFromPrompt = false
+        )
+
+        messageRepository.storeMessage(sessionId, userMessage)
+
+        // Emit UserMessageSent event
+        // Event processor will transition to EXECUTING_ENRICHMENTS
+        eventProcessor.emit(AIEvent.UserMessageSent)
     }
 
     // ========================================================================================
@@ -137,13 +163,64 @@ object AIOrchestrator {
     /**
      * Request chat session activation.
      * Creates new session if needed.
+     *
+     * Flow:
+     * 1. Check if there's already an active CHAT session
+     * 2. If not, create new CHAT session
+     * 3. Emit SessionActivationRequested event
+     * 4. SessionScheduler handles queue/interruption logic
      */
     suspend fun requestChatSession() {
         LogManager.aiSession("requestChatSession called", "INFO")
 
-        // TODO: Implement session creation + activation
-        // val sessionId = createChatSession()
-        // eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+        // Check if there's already an active CHAT session
+        val currentState = stateRepository.state.value
+        val currentSessionId = currentState.sessionId
+
+        val sessionId = if (currentSessionId != null && currentState.sessionType == SessionType.CHAT) {
+            // Reuse existing CHAT session
+            LogManager.aiSession("Reusing existing CHAT session: $currentSessionId", "DEBUG")
+            currentSessionId
+        } else {
+            // Create new CHAT session
+            val newSessionId = java.util.UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+
+            // Get active provider
+            val provider = aiDao.getActiveProviderConfig()
+            val providerId = provider?.providerId ?: "claude"
+
+            val session = AISessionEntity(
+                id = newSessionId,
+                name = "Chat ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
+                type = SessionType.CHAT,
+                requireValidation = false,
+                phase = "IDLE",
+                waitingContextJson = null,
+                consecutiveFormatErrors = 0,
+                consecutiveActionFailures = 0,
+                consecutiveDataQueries = 0,
+                totalRoundtrips = 0,
+                lastEventTime = now,
+                lastUserInteractionTime = now,
+                automationId = null,
+                scheduledExecutionTime = null,
+                providerId = providerId,
+                providerSessionId = java.util.UUID.randomUUID().toString(),
+                createdAt = now,
+                lastActivity = now,
+                isActive = false, // Will be activated by SessionActivationRequested
+                endReason = null,
+                tokensUsed = null
+            )
+
+            aiDao.insertSession(session)
+            LogManager.aiSession("Created new CHAT session: $newSessionId", "INFO")
+            newSessionId
+        }
+
+        // Emit activation request
+        eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
     }
 
     /**
@@ -187,14 +264,85 @@ object AIOrchestrator {
 
     /**
      * Execute automation manually.
+     *
+     * Flow:
+     * 1. Load automation configuration
+     * 2. Load SEED session messages
+     * 3. Create new AUTOMATION session
+     * 4. Copy USER messages from SEED
+     * 5. Emit SessionActivationRequested event
      */
     suspend fun executeAutomation(automationId: String) {
         LogManager.aiSession("executeAutomation called: $automationId", "INFO")
 
-        // TODO: Implement automation execution flow
-        // 1. Create AUTOMATION session from SEED
-        // 2. Request activation
-        // eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+        try {
+            // Load automation
+            val automation = aiDao.getAutomationById(automationId)
+            if (automation == null) {
+                LogManager.aiSession("Automation not found: $automationId", "ERROR")
+                return
+            }
+
+            val seedSessionId = automation.seedSessionId
+            val providerId = automation.providerId
+
+            // Load SEED session messages
+            val seedMessages = aiDao.getMessagesForSession(seedSessionId)
+            val userMessages = seedMessages.filter { it.sender == com.assistant.core.ai.data.MessageSender.USER }
+
+            if (userMessages.isEmpty()) {
+                LogManager.aiSession("No USER messages in SEED session: $seedSessionId", "ERROR")
+                return
+            }
+
+            // Create new AUTOMATION session
+            val newSessionId = java.util.UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+
+            val session = AISessionEntity(
+                id = newSessionId,
+                name = "Execution ${automation.name}",
+                type = SessionType.AUTOMATION,
+                requireValidation = false,
+                phase = "IDLE",
+                waitingContextJson = null,
+                consecutiveFormatErrors = 0,
+                consecutiveActionFailures = 0,
+                consecutiveDataQueries = 0,
+                totalRoundtrips = 0,
+                lastEventTime = now,
+                lastUserInteractionTime = now,
+                automationId = automationId,
+                scheduledExecutionTime = now, // For MANUAL trigger
+                providerId = providerId,
+                providerSessionId = java.util.UUID.randomUUID().toString(),
+                createdAt = now,
+                lastActivity = now,
+                isActive = false, // Will be activated by SessionActivationRequested
+                endReason = null,
+                tokensUsed = null
+            )
+
+            aiDao.insertSession(session)
+            LogManager.aiSession("Created AUTOMATION session: $newSessionId", "INFO")
+
+            // Copy USER messages from SEED to new session
+            for (userMsg in userMessages) {
+                aiDao.insertMessage(userMsg.copy(
+                    id = java.util.UUID.randomUUID().toString(),
+                    sessionId = newSessionId,
+                    timestamp = now
+                ))
+            }
+
+            LogManager.aiSession("Copied ${userMessages.size} USER messages from SEED", "DEBUG")
+
+            // Emit activation request
+            eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId))
+
+        } catch (e: Exception) {
+            LogManager.aiSession("executeAutomation failed: ${e.message}", "ERROR", e)
+        }
     }
 
     /**

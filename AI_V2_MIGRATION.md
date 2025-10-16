@@ -37,65 +37,33 @@
 
 ---
 
-## 🚧 À COMPLÉTER
+## ✅ COMPLÉTÉ (Session 2)
 
-### 1. AIEventProcessor - Side Effects Complets
+### 1. AIEventProcessor - Side Effects Complets ✅
 
 **Fichier :** `core/ai/processing/AIEventProcessor.kt`
 
-#### TODOs critiques :
-```kotlin
-// executeEnrichments()
-- Load enrichments from last user message
-- Process enrichments via EnrichmentProcessor
-- Execute commands via CommandExecutor
+- ✅ `executeEnrichments()` : Load enrichments, regenerate DataCommands, execute via CommandExecutor
+- ✅ `callAI()` : Network check, AI provider call, store raw response
+- ✅ `parseAIResponse()` : Parse JSON, validate constraints, validate communication modules
+- ✅ `executeDataQueries()` : Extract dataCommands, process via AICommandProcessor, execute
+- ✅ `executeActions()` : Extract actionCommands, validation flow, execute, handle postText
 
-// callAI()
-- Implement network check via NetworkUtils
-- Handle AI response parsing via AIResponseParser
-
-// executeDataQueries()
-- Extract dataCommands from last AI message
-- Execute via CommandExecutor
-- Format results for prompt
-
-// executeActions()
-- Extract actionCommands from last AI message
-- Full validation flow integration
-- Execute via CommandExecutor
-- Handle keepControl logic
-```
-
-### 2. AIMessageRepository - Serialization
+### 2. AIMessageRepository - Serialization ✅
 
 **Fichier :** `core/ai/state/AIMessageRepository.kt`
 
-#### TODOs :
-```kotlin
-// Extension functions placeholders
-- RichMessage.toJson() / fromJson()
-- SystemMessage.toJson() / fromJson()
-- ExecutionMetadata.toJson() / fromJson()
-```
+- ✅ RichMessage.toJson() / fromJson() (delegates to RichMessage methods)
+- ✅ SystemMessage.toJson() / fromJson() (delegates to SystemMessage methods)
+- ⏸️ ExecutionMetadata.toJson() / fromJson() (placeholder - class not yet created)
 
-### 3. AIOrchestrator - API Complète
+### 3. AIOrchestrator - API Complète ✅
 
 **Fichier :** `core/ai/orchestration/AIOrchestrator.kt`
 
-#### TODOs :
-```kotlin
-// sendMessage()
-- Implement UserMessageSent event
-- Full message + enrichments flow
-
-// requestChatSession()
-- Session creation logic
-- Activation flow
-
-// executeAutomation()
-- AUTOMATION session creation from SEED
-- Activation flow
-```
+- ✅ `sendMessage()` : Store USER message, emit UserMessageSent event
+- ✅ `requestChatSession()` : Create/reuse CHAT session, emit SessionActivationRequested
+- ✅ `executeAutomation()` : Load automation, create AUTOMATION session from SEED, copy messages, emit activation
 
 ### 4. Intégration UI
 
