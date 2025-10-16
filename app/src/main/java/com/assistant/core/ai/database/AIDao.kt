@@ -40,9 +40,6 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET tokensUsed = :tokensUsed WHERE id = :sessionId")
     suspend fun updateSessionTokens(sessionId: String, tokensUsed: Int)
 
-    @Query("UPDATE ai_sessions SET isWaitingForNetwork = :isWaiting WHERE id = :sessionId")
-    suspend fun updateNetworkFlag(sessionId: String, isWaiting: Boolean)
-
     @Delete
     suspend fun deleteSession(session: AISessionEntity)
 

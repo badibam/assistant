@@ -4,9 +4,17 @@ import androidx.room.*
 import com.assistant.core.ai.data.SessionType
 
 /**
- * AI Session database entity with hybrid approach:
+ * AI Session database entity for Event-Driven Architecture V2.
+ *
+ * Stores complete session state for atomic memory + DB synchronization.
  * - Searchable fields as columns
- * - Complex structures as JSON
+ * - Waiting context as JSON
+ *
+ * Architecture: Event-Driven State Machine (V2)
+ * - phase: Current execution phase (replaces old 'state')
+ * - Retry counters: consecutiveFormatErrors, consecutiveActionFailures, consecutiveDataQueries, totalRoundtrips
+ * - Timestamps: lastEventTime, lastUserInteractionTime (for inactivity calculation)
+ * - waitingContextJson: Serialized WaitingContext (validation, communication, completion)
  */
 @Entity(
     tableName = "ai_sessions",
@@ -15,7 +23,7 @@ import com.assistant.core.ai.data.SessionType
         Index(value = ["type"]),
         Index(value = ["lastActivity"]),
         Index(value = ["automationId"]),
-        Index(value = ["state"]),
+        Index(value = ["phase"]),
         Index(value = ["endReason"])
     ]
 )
@@ -24,7 +32,39 @@ data class AISessionEntity(
     val name: String,
     val type: SessionType,
     val requireValidation: Boolean = false,  // Session-level validation toggle
-    val waitingStateJson: String? = null,    // Persisted waiting state (null = no waiting)
+
+    // ==================== Event-Driven State (V2) ====================
+
+    /** Current execution phase (IDLE, CALLING_AI, EXECUTING_ACTIONS, etc.) */
+    val phase: String = "IDLE",
+
+    /** Serialized WaitingContext (validation, communication, completion) - null if not waiting */
+    val waitingContextJson: String? = null,
+
+    // ==================== Retry Counters ====================
+
+    /** Consecutive format/parse errors count */
+    val consecutiveFormatErrors: Int = 0,
+
+    /** Consecutive action failure count */
+    val consecutiveActionFailures: Int = 0,
+
+    /** Consecutive data query count */
+    val consecutiveDataQueries: Int = 0,
+
+    /** Total autonomous roundtrips count (never reset during session) */
+    val totalRoundtrips: Int = 0,
+
+    // ==================== Timestamps ====================
+
+    /** Timestamp of last event processed (any event) */
+    val lastEventTime: Long = 0L,
+
+    /** Timestamp of last user interaction (message, validation, response) */
+    val lastUserInteractionTime: Long = 0L,
+
+    // ==================== Session Metadata ====================
+
     val automationId: String?,              // null for CHAT/SEED, automation ID for AUTOMATION
     val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
     val providerId: String,                 // Fixed for the session
@@ -32,10 +72,8 @@ data class AISessionEntity(
     val createdAt: Long,
     val lastActivity: Long,
     val isActive: Boolean,
-    val state: String = "IDLE",             // SessionState as string
     val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
-    val tokensUsed: Int? = null,            // Total tokens consumed by this session (for monitoring)
-    val isWaitingForNetwork: Boolean = false // Flag for network availability (distinguishes timeout vs network issue)
+    val tokensUsed: Int? = null             // Total tokens consumed by this session (for monitoring)
 )
 
 /**
