@@ -51,7 +51,10 @@ class AISessionController(
     private var _activeSessionId: MutableStateFlow<String?> = MutableStateFlow(null)
     val activeSessionId: StateFlow<String?> = _activeSessionId.asStateFlow()
 
-    private var activeSessionType: SessionType? = null
+    // Active session type (reactive for UI observation)
+    private var _activeSessionType: MutableStateFlow<SessionType?> = MutableStateFlow(null)
+    val activeSessionType: StateFlow<SessionType?> = _activeSessionType.asStateFlow()
+
     private var activeAutomationId: String? = null
     private var activeScheduledExecutionTime: Long? = null
     private var lastActivityTimestamp: Long = 0
@@ -89,9 +92,9 @@ class AISessionController(
     fun getActiveSessionId(): String? = _activeSessionId.value
 
     /**
-     * Get active session type
+     * Get active session type (current value)
      */
-    fun getActiveSessionType(): SessionType? = activeSessionType
+    fun getActiveSessionType(): SessionType? = _activeSessionType.value
 
     /**
      * Update activity timestamp (called when user interacts with session)
@@ -187,7 +190,7 @@ class AISessionController(
             updateQueueFlow()
 
             // If other CHAT is active, enqueue new one and close active (queue will process it)
-            if (activeSessionType == SessionType.CHAT) {
+            if (_activeSessionType.value == SessionType.CHAT) {
                 LogManager.aiSession("Closing active CHAT and switching to new CHAT: $sessionId", "INFO")
                 enqueueSession(sessionId, type, trigger, automationId, scheduledExecutionTime)
                 closeActiveSession() // Calls processNextInQueue internally, will activate enqueued session
@@ -195,7 +198,7 @@ class AISessionController(
             }
 
             // AUTOMATION active → check if can evict
-            if (activeSessionType == SessionType.AUTOMATION) {
+            if (_activeSessionType.value == SessionType.AUTOMATION) {
                 val limits = AppConfigManager.getAILimits()
                 val now = System.currentTimeMillis()
                 val inactivityDuration = now - lastActivityTimestamp
@@ -235,7 +238,7 @@ class AISessionController(
         }
 
         // AUTOMATION logic: Check if active CHAT can be evicted
-        if (type == SessionType.AUTOMATION && activeSessionType == SessionType.CHAT) {
+        if (type == SessionType.AUTOMATION && _activeSessionType.value == SessionType.CHAT) {
             val limits = AppConfigManager.getAILimits()
             val now = System.currentTimeMillis()
             val inactivityDuration = now - lastActivityTimestamp
@@ -323,7 +326,7 @@ class AISessionController(
 
         // 2. Update memory state (immediate)
         _activeSessionId.value = null
-        activeSessionType = null
+        _activeSessionType.value = null
         activeAutomationId = null
         activeScheduledExecutionTime = null
         lastActivityTimestamp = 0
@@ -354,7 +357,7 @@ class AISessionController(
      */
     fun restoreActiveSession(sessionId: String, type: SessionType) {
         _activeSessionId.value = sessionId
-        activeSessionType = type
+        _activeSessionType.value = type
         lastActivityTimestamp = System.currentTimeMillis()
         LogManager.aiSession("Restored active session: $sessionId (type=$type)", "INFO")
 
@@ -432,7 +435,7 @@ class AISessionController(
         val sessionAge = now - lastActivityTimestamp
         val limits = AppConfigManager.getAILimits()
 
-        return when (activeSessionType) {
+        return when (_activeSessionType.value) {
             SessionType.AUTOMATION -> {
                 if (sessionAge > limits.automationMaxSessionDuration) {
                     LogManager.aiSession(
@@ -565,7 +568,7 @@ class AISessionController(
     ) {
         // 1. Update memory state (immediate)
         _activeSessionId.value = sessionId
-        activeSessionType = type
+        _activeSessionType.value = type
         activeAutomationId = automationId
         activeScheduledExecutionTime = scheduledExecutionTime
         lastActivityTimestamp = System.currentTimeMillis()

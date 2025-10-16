@@ -42,37 +42,53 @@ fun AIScreen(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val scope = rememberCoroutineScope()
 
-    // Load session (once per sessionId)
+    // For active sessions: use reactive flows (avoids race condition with DB sync)
+    val activeSessionId by AIOrchestrator.activeSessionId.collectAsState()
+    val activeSessionType by AIOrchestrator.activeSessionType.collectAsState()
+
+    // Determine if this is the active session
+    val isActiveSession = activeSessionId == sessionId
+
+    // Session state
     var session by remember(sessionId) { mutableStateOf<AISession?>(null) }
-    var isLoadingSession by remember(sessionId) { mutableStateOf(true) }
+    var isLoadingSession by remember(sessionId) { mutableStateOf(!isActiveSession) }
     var errorMessage by remember(sessionId) { mutableStateOf<String?>(null) }
 
-    // Load session data
-    LaunchedEffect(sessionId) {
-        try {
-            isLoadingSession = true
-            session = AIOrchestrator.loadSession(sessionId)
-            LogManager.aiUI("AIScreen loaded session: ${session?.name} (type=${session?.type})")
-        } catch (e: Exception) {
-            LogManager.aiUI("Failed to load session $sessionId: ${e.message}", "ERROR")
-            errorMessage = s.shared("ai_error_load_session")
-        } finally {
-            isLoadingSession = false
-        }
-    }
-
-    // For CHAT/AUTOMATION: observe activeSessionId for eviction detection
-    val orchestratorSessionId by AIOrchestrator.activeSessionId.collectAsState()
-    LaunchedEffect(orchestratorSessionId) {
-        if (orchestratorSessionId == sessionId && session != null) {
-            // Session reactivated or state changed - reload
+    // Load session data - ONLY if not the active session (to avoid race condition)
+    LaunchedEffect(sessionId, isActiveSession, activeSessionType) {
+        if (!isActiveSession) {
+            // Non-active session: load from DB
             try {
+                isLoadingSession = true
                 session = AIOrchestrator.loadSession(sessionId)
-                LogManager.aiUI("AIScreen reloaded session after activation change")
+                LogManager.aiUI("AIScreen loaded non-active session from DB: ${session?.name} (type=${session?.type})")
             } catch (e: Exception) {
-                LogManager.aiUI("Failed to reload session: ${e.message}", "ERROR")
+                LogManager.aiUI("Failed to load session $sessionId: ${e.message}", "ERROR")
+                errorMessage = s.shared("ai_error_load_session")
+            } finally {
+                isLoadingSession = false
+            }
+        } else {
+            // Active session: use reactive type from flow (immediate, no DB read needed)
+            if (activeSessionType != null) {
+                session = AISession(
+                    id = sessionId,
+                    name = "", // Name not needed for routing
+                    type = activeSessionType!!,
+                    requireValidation = false,
+                    waitingStateJson = null,
+                    automationId = null,
+                    scheduledExecutionTime = null,
+                    providerId = "claude",
+                    providerSessionId = "",
+                    createdAt = System.currentTimeMillis(),
+                    lastActivity = System.currentTimeMillis(),
+                    messages = emptyList(),
+                    isActive = true
+                )
+                isLoadingSession = false
+                LogManager.aiUI("AIScreen using active session type from flow: ${activeSessionType}")
             }
         }
     }
@@ -951,9 +967,10 @@ private fun AutomationHeader(
 
 /**
  * Message list - shared by CHAT and AUTOMATION modes
+ * Made public for use in AIFloatingChat automation view
  */
 @Composable
-private fun ChatMessageList(
+fun ChatMessageList(
     messages: List<SessionMessage>,
     isLoading: Boolean,
     waitingState: WaitingState,
@@ -962,6 +979,14 @@ private fun ChatMessageList(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val listState = rememberLazyListState()
+
+    // Debug: log when messages change
+    LaunchedEffect(messages.size) {
+        LogManager.aiUI("ChatMessageList: Received ${messages.size} messages")
+        messages.forEachIndexed { index, msg ->
+            LogManager.aiUI("  Message $index: sender=${msg.sender}, hasText=${msg.textContent != null}, hasAI=${msg.aiMessage != null}, hasRich=${msg.richContent != null}")
+        }
+    }
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {

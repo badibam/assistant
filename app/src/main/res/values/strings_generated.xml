@@ -815,6 +815,12 @@
     <string name="shared_ai_chat_after_button">Chat après</string>
     <string name="shared_ai_chat_interrupt_and_chat_button">Interrompre et chatter</string>
     <string name="shared_ai_chat_creating_session">Création de la session...</string>
+    <string name="shared_ai_chat_options_dialog_title">Que souhaitez-vous faire ?</string>
+    <string name="shared_ai_chat_options_dialog_description">L\'automation est toujours en cours. Choisissez votre action :</string>
+    <string name="shared_ai_chat_option_interrupt_title">Interrompre et discuter</string>
+    <string name="shared_ai_chat_option_interrupt_description">Pause l\'automation et commence un chat immédiat</string>
+    <string name="shared_ai_chat_option_after_title">Discuter après</string>
+    <string name="shared_ai_chat_option_after_description">L\'automation continue, chat accessible après</string>
     <string name="shared_ai_automation_queued_badge">En attente dans la file (position %1$d)</string>
     <string name="shared_ai_automation_cancel_execution">Annuler l\'exécution</string>
     <string name="shared_action_interrupt_round">Interrompre</string>

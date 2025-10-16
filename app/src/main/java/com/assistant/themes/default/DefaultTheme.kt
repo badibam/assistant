@@ -261,8 +261,8 @@ object DefaultTheme : ThemeContract {
             border = if (isEnabled) config.border else null,
             modifier = Modifier
                 .defaultMinSize(minWidth = config.minWidth, minHeight = config.minHeight)
-                .clickable(enabled = isEnabled) { 
-                    if (isEnabled) onClick() 
+                .clickable(enabled = isEnabled) {
+                    if (isEnabled) onClick()
                 }
         ) {
             Box(

@@ -85,6 +85,14 @@ object AIOrchestrator {
         get() = sessionController.activeSessionId
 
     /**
+     * Active session type (reactive)
+     * Emits new value when session activation/deactivation occurs
+     * Synchronized with activeSessionId for immediate UI updates
+     */
+    val activeSessionType: StateFlow<SessionType?>
+        get() = sessionController.activeSessionType
+
+    /**
      * Queued sessions (reactive)
      * Emits list of sessions waiting in queue with position information
      */
@@ -231,6 +239,18 @@ object AIOrchestrator {
      * Get active session ID
      */
     fun getActiveSessionId(): String? = sessionController.getActiveSessionId()
+
+    /**
+     * Refresh messages flow for active session
+     * Used by UI when reconnecting to an already-active session
+     */
+    fun refreshActiveSessionMessages() {
+        val sessionId = sessionController.getActiveSessionId()
+        if (sessionId != null) {
+            LogManager.aiSession("AIOrchestrator.refreshActiveSessionMessages() called for $sessionId", "DEBUG")
+            messageStorage.updateMessagesFlow(sessionId)
+        }
+    }
 
     /**
      * Stop current active session
