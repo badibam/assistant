@@ -358,9 +358,35 @@ object AIStateMachine {
         currentTime: Long
     ): AIState {
         val message = event.message
+        val hasActions = !message.actionCommands.isNullOrEmpty()
+        val hasDataCommands = !message.dataCommands.isNullOrEmpty()
 
-        // Priority 0: COMPLETED flag (AUTOMATION only) - with double confirmation
+        // Priority 0: COMPLETED flag (AUTOMATION only) - with special handling
         if (message.completed == true && state.sessionType == SessionType.AUTOMATION) {
+            // If actions present: execute first, completed will be handled after
+            if (hasActions) {
+                return state.copy(
+                    phase = Phase.EXECUTING_ACTIONS,
+                    awaitingCompletionConfirmation = true, // Store flag to handle after actions
+                    lastEventTime = currentTime
+                )
+            }
+
+            // If dataCommands present: illogical, ignore queries and go to confirmation
+            if (hasDataCommands) {
+                com.assistant.core.utils.LogManager.aiSession(
+                    "completed=true with dataCommands ignored, going to confirmation",
+                    "WARN"
+                )
+                return state.copy(
+                    phase = Phase.PREPARING_CONTINUATION,
+                    continuationReason = ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED,
+                    awaitingCompletionConfirmation = true,
+                    lastEventTime = currentTime
+                )
+            }
+
+            // Neither actions nor queries: direct confirmation logic
             return if (!state.awaitingCompletionConfirmation) {
                 // First completed=true - ask for confirmation
                 state.copy(
@@ -459,6 +485,22 @@ object AIStateMachine {
 
         if (event.allSuccess) {
             // All actions succeeded
+
+            // Check if awaitingCompletionConfirmation is true (completed flag was set with actions)
+            if (state.awaitingCompletionConfirmation) {
+                // Actions succeeded AND completed flag was set → go to confirmation
+                return state.copy(
+                    phase = Phase.PREPARING_CONTINUATION,
+                    continuationReason = ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED,
+                    consecutiveActionFailures = 0,
+                    consecutiveDataQueries = 0,
+                    consecutiveFormatErrors = 0,
+                    totalRoundtrips = newTotalRoundtrips,
+                    lastEventTime = currentTime
+                )
+            }
+
+            // Normal flow: no completed flag
             val shouldContinue = event.keepControl == true || state.sessionType == SessionType.AUTOMATION
 
             return if (shouldContinue) {
@@ -480,9 +522,12 @@ object AIStateMachine {
                 )
             }
         } else {
-            // Some actions failed - retry logic handled by ActionFailureOccurred event
+            // Some actions failed - reset awaitingCompletionConfirmation (work not completed)
+            // Retry logic handled by ActionFailureOccurred event
             // This path should not be reached as event processor emits ActionFailureOccurred
-            return state
+            return state.copy(
+                awaitingCompletionConfirmation = false // Reset since actions failed
+            )
         }
     }
 }

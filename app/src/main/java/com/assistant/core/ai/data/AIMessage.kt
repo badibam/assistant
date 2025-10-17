@@ -99,13 +99,22 @@ data class AIMessage(
                     (0 until array.length()).mapNotNull { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
+                            val type = cmdJson.getString("type")
+                            val params = parseParams(cmdJson.getJSONObject("params"))
+                            val isRelative = cmdJson.optBoolean("isRelative", false)
+
+                            // Generate deterministic ID from command content
+                            val id = buildCommandId(type, params, isRelative)
+
                             DataCommand(
-                                id = cmdJson.getString("id"),
-                                type = cmdJson.getString("type"),
-                                params = parseParams(cmdJson.getJSONObject("params")),
-                                isRelative = cmdJson.optBoolean("isRelative", false)
+                                id = id,
+                                type = type,
+                                params = params,
+                                isRelative = isRelative
                             )
                         } catch (e: Exception) {
+                            // Log parsing error but continue with other commands
+                            android.util.Log.e("AIMessage", "Failed to parse dataCommand at index $i: ${e.message}", e)
                             null
                         }
                     }
@@ -115,11 +124,18 @@ data class AIMessage(
                     (0 until array.length()).mapNotNull { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
+                            val type = cmdJson.getString("type")
+                            val params = parseParams(cmdJson.getJSONObject("params"))
+                            val isRelative = cmdJson.optBoolean("isRelative", false)
+
+                            // Generate deterministic ID from command content
+                            val id = buildCommandId(type, params, isRelative)
+
                             DataCommand(
-                                id = cmdJson.getString("id"),
-                                type = cmdJson.getString("type"),
-                                params = parseParams(cmdJson.getJSONObject("params")),
-                                isRelative = cmdJson.optBoolean("isRelative", false)
+                                id = id,
+                                type = type,
+                                params = params,
+                                isRelative = isRelative
                             )
                         } catch (e: Exception) {
                             null
@@ -176,6 +192,17 @@ data class AIMessage(
                 params[key] = paramsJson.get(key)
             }
             return params
+        }
+
+        /**
+         * Generate deterministic ID from command content (type + params + isRelative).
+         * Same logic as EnrichmentProcessor.buildQueryId() to ensure consistency.
+         */
+        private fun buildCommandId(type: String, params: Map<String, Any>, isRelative: Boolean): String {
+            val sortedParams = params.toSortedMap()
+            val paramString = sortedParams.map { "${it.key}_${it.value}" }.joinToString(".")
+            val relativeFlag = if (isRelative) "rel" else "abs"
+            return "$type.$paramString.$relativeFlag"
         }
     }
 }

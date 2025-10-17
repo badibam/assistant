@@ -41,7 +41,7 @@ fun SessionStatusBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp),
+            .padding(vertical = 8.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         UI.Text(
