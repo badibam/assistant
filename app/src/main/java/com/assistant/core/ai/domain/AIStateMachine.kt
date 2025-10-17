@@ -61,10 +61,10 @@ object AIStateMachine {
             }
 
             is AIEvent.SessionCompleted -> {
-                // Transition to COMPLETED from any phase
+                // Transition to CLOSED from any phase
                 // Store endReason temporarily for handleSessionCompletion to persist in DB
                 state.copy(
-                    phase = Phase.COMPLETED,
+                    phase = Phase.CLOSED,
                     endReason = event.reason,
                     lastEventTime = currentTime
                 )
@@ -107,9 +107,9 @@ object AIStateMachine {
                         lastUserInteractionTime = currentTime
                     )
                 } else {
-                    // User rejected - transition to COMPLETED
+                    // User rejected - transition to CLOSED
                     state.copy(
-                        phase = Phase.COMPLETED,
+                        phase = Phase.CLOSED,
                         waitingContext = null,
                         lastEventTime = currentTime,
                         lastUserInteractionTime = currentTime
@@ -180,7 +180,7 @@ object AIStateMachine {
                 if (newConsecutiveQueries >= limits.maxDataQueryIterations) {
                     // Limit reached - transition to COMPLETED
                     state.copy(
-                        phase = Phase.COMPLETED,
+                        phase = Phase.CLOSED,
                         consecutiveDataQueries = newConsecutiveQueries,
                         totalRoundtrips = state.totalRoundtrips + 1,
                         lastEventTime = currentTime
@@ -206,7 +206,7 @@ object AIStateMachine {
             is AIEvent.CompletionConfirmed -> {
                 // Transition to COMPLETED
                 state.copy(
-                    phase = Phase.COMPLETED,
+                    phase = Phase.CLOSED,
                     waitingContext = null,
                     lastEventTime = currentTime
                 )
@@ -229,7 +229,7 @@ object AIStateMachine {
                 // Session ends immediately with ERROR reason
                 // Event processor will show toast to user
                 state.copy(
-                    phase = Phase.COMPLETED,
+                    phase = Phase.CLOSED,
                     endReason = SessionEndReason.ERROR,
                     lastEventTime = currentTime
                 )
@@ -246,7 +246,7 @@ object AIStateMachine {
                 } else {
                     // CHAT - complete session with network error
                     state.copy(
-                        phase = Phase.COMPLETED,
+                        phase = Phase.CLOSED,
                         lastEventTime = currentTime
                     )
                 }
@@ -259,7 +259,7 @@ object AIStateMachine {
                 if (newFormatErrors >= limits.maxFormatErrorRetries) {
                     // Limit reached - transition to COMPLETED
                     state.copy(
-                        phase = Phase.COMPLETED,
+                        phase = Phase.CLOSED,
                         consecutiveFormatErrors = newFormatErrors,
                         totalRoundtrips = state.totalRoundtrips + 1,
                         lastEventTime = currentTime
@@ -282,7 +282,7 @@ object AIStateMachine {
                 if (newActionFailures >= limits.maxActionRetries) {
                     // Limit reached - transition to COMPLETED
                     state.copy(
-                        phase = Phase.COMPLETED,
+                        phase = Phase.CLOSED,
                         consecutiveActionFailures = newActionFailures,
                         consecutiveDataQueries = 0, // Reset other counters
                         totalRoundtrips = state.totalRoundtrips + 1,
@@ -320,7 +320,7 @@ object AIStateMachine {
             is AIEvent.SystemErrorOccurred -> {
                 // Transition to COMPLETED on system error
                 state.copy(
-                    phase = Phase.COMPLETED,
+                    phase = Phase.CLOSED,
                     lastEventTime = currentTime
                 )
             }
@@ -395,7 +395,7 @@ object AIStateMachine {
 
         // No commands - session completed
         return state.copy(
-            phase = Phase.COMPLETED,
+            phase = Phase.CLOSED,
             lastEventTime = currentTime
         )
     }
@@ -413,7 +413,7 @@ object AIStateMachine {
         val newTotalRoundtrips = state.totalRoundtrips + 1
         if (newTotalRoundtrips >= limits.maxAutonomousRoundtrips) {
             return state.copy(
-                phase = Phase.COMPLETED,
+                phase = Phase.CLOSED,
                 totalRoundtrips = newTotalRoundtrips,
                 lastEventTime = currentTime
             )
@@ -436,7 +436,7 @@ object AIStateMachine {
             } else {
                 // keepControl=false or null for CHAT - stop here
                 state.copy(
-                    phase = Phase.COMPLETED,
+                    phase = Phase.CLOSED,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
                 )

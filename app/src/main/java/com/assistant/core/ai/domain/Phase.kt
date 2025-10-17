@@ -19,7 +19,7 @@ package com.assistant.core.ai.domain
  * - WAITING_NETWORK_RETRY: Waiting before network retry (infinite for AUTOMATION)
  * - RETRYING_AFTER_FORMAT_ERROR: Retrying after AI format error
  * - RETRYING_AFTER_ACTION_FAILURE: Retrying after action failure
- * - COMPLETED: Session finished
+ * - CLOSED: Session finished
  */
 enum class Phase {
     /** No active session - slot available */
@@ -68,8 +68,8 @@ enum class Phase {
      */
     INTERRUPTED,
 
-    /** Session completed - ready for cleanup */
-    COMPLETED;
+    /** Session closed - ready for cleanup */
+    CLOSED;
 
     /**
      * Check if this phase represents an inactive state where user interaction is expected.

@@ -147,7 +147,7 @@ class AIEventProcessor(
                 createInterruptionMessage(state)
             }
 
-            Phase.COMPLETED -> {
+            Phase.CLOSED -> {
                 // Note: actual endReason will be extracted from last SessionCompleted event
                 // This is handled by tracking the event in emit() function
                 handleSessionCompletion(state)
@@ -394,14 +394,30 @@ class AIEventProcessor(
             // Log raw response (VERBOSE)
             LogManager.aiSession("AI RAW RESPONSE: $aiMessageJson", "VERBOSE")
 
+            // Clean markdown markers from response (LLMs often wrap JSON in ```json...```)
+            // This ensures consistent format for parsing
+            val cleanedJson = aiMessageJson.trim().let { content ->
+                val withoutOpening = content.removePrefix("```json").removePrefix("```").trimStart()
+                withoutOpening.removeSuffix("```").trimEnd()
+            }
+
             // Parse JSON → AIMessage
-            val parsedAIMessage = AIMessage.fromJson(aiMessageJson)
+            val parsedAIMessage = AIMessage.fromJson(cleanedJson)
 
             if (parsedAIMessage != null) {
-                // Validate field constraints (from AIResponseParser logic)
-                val hasDataCommands = parsedAIMessage.dataCommands != null && parsedAIMessage.dataCommands.isNotEmpty()
+                // Clean postText if no actionCommands (silently fix, not an error)
+                // This ensures AI sees clean response in next round without confusion
+                var cleanedAIMessage = parsedAIMessage
                 val hasActionCommands = parsedAIMessage.actionCommands != null && parsedAIMessage.actionCommands.isNotEmpty()
-                val hasCommunicationModule = parsedAIMessage.communicationModule != null
+
+                if (parsedAIMessage.postText != null && !hasActionCommands) {
+                    LogManager.aiSession("parseAIResponse: Cleaning postText without actionCommands", "DEBUG")
+                    cleanedAIMessage = parsedAIMessage.copy(postText = null)
+                }
+
+                // Validate field constraints (from AIResponseParser logic)
+                val hasDataCommands = cleanedAIMessage.dataCommands != null && cleanedAIMessage.dataCommands.isNotEmpty()
+                val hasCommunicationModule = cleanedAIMessage.communicationModule != null
 
                 // Count action types present
                 val actionTypesCount = listOf(hasDataCommands, hasActionCommands, hasCommunicationModule).count { it }
@@ -416,17 +432,12 @@ class AIEventProcessor(
                 }
 
                 // Rule 2: validationRequest only with actionCommands
-                if (parsedAIMessage.validationRequest != null && !hasActionCommands) {
+                if (cleanedAIMessage.validationRequest != null && !hasActionCommands) {
                     formatErrors.add(s.shared("ai_error_validation_request_without_actions"))
                 }
 
-                // Rule 3: postText only with actionCommands
-                if (parsedAIMessage.postText != null && !hasActionCommands) {
-                    formatErrors.add(s.shared("ai_error_posttext_without_actions"))
-                }
-
                 // Validate communication module schemas if present
-                parsedAIMessage.communicationModule?.let { module ->
+                cleanedAIMessage.communicationModule?.let { module ->
                     val schema = com.assistant.core.ai.data.CommunicationModuleSchemas.getSchema(module.type, context)
                     if (schema != null) {
                         val validation = com.assistant.core.validation.SchemaValidator.validate(
@@ -447,22 +458,22 @@ class AIEventProcessor(
                     return
                 }
 
-                // Log parsed structure (DEBUG)
+                // Log parsed structure (DEBUG) - using cleanedAIMessage
                 LogManager.aiSession(
                     "AI PARSED MESSAGE:\n" +
-                    "  preText: ${parsedAIMessage.preText.take(100)}${if (parsedAIMessage.preText.length > 100) "..." else ""}\n" +
-                    "  validationRequest: ${parsedAIMessage.validationRequest ?: "null"}\n" +
-                    "  dataCommands: ${parsedAIMessage.dataCommands?.size ?: 0} commands\n" +
-                    "  actionCommands: ${parsedAIMessage.actionCommands?.size ?: 0} commands\n" +
-                    "  postText: ${parsedAIMessage.postText?.take(50) ?: "null"}\n" +
-                    "  keepControl: ${parsedAIMessage.keepControl ?: "null"}\n" +
-                    "  communicationModule: ${parsedAIMessage.communicationModule?.type ?: "null"}\n" +
-                    "  completed: ${parsedAIMessage.completed ?: "null"}",
+                    "  preText: ${cleanedAIMessage.preText.take(100)}${if (cleanedAIMessage.preText.length > 100) "..." else ""}\n" +
+                    "  validationRequest: ${cleanedAIMessage.validationRequest ?: "null"}\n" +
+                    "  dataCommands: ${cleanedAIMessage.dataCommands?.size ?: 0} commands\n" +
+                    "  actionCommands: ${cleanedAIMessage.actionCommands?.size ?: 0} commands\n" +
+                    "  postText: ${cleanedAIMessage.postText?.take(50) ?: "null"}\n" +
+                    "  keepControl: ${cleanedAIMessage.keepControl ?: "null"}\n" +
+                    "  communicationModule: ${cleanedAIMessage.communicationModule?.type ?: "null"}\n" +
+                    "  completed: ${cleanedAIMessage.completed ?: "null"}",
                     "DEBUG"
                 )
 
-                // Emit success
-                emit(AIEvent.AIResponseParsed(parsedAIMessage))
+                // Emit success with cleanedAIMessage (postText removed if no actionCommands)
+                emit(AIEvent.AIResponseParsed(cleanedAIMessage))
 
             } else {
                 // Parsing failed - create fallback message

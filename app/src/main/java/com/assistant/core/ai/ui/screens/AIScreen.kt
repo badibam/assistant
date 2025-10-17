@@ -41,7 +41,7 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
         Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")
         Phase.PAUSED -> s.shared("ai_phase_paused")
         Phase.INTERRUPTED -> s.shared("ai_phase_interrupted")
-        Phase.COMPLETED -> s.shared("ai_phase_completed")
+        Phase.CLOSED -> s.shared("ai_phase_completed")
     }
 }
 
@@ -977,7 +977,7 @@ private fun AutomationHeader(
     val s = remember { Strings.`for`(context = context) }
 
     // Determine if controls should be shown
-    val showControls = isActiveSession && aiState.phase != Phase.COMPLETED
+    val showControls = isActiveSession && aiState.phase != Phase.CLOSED
 
     Row(
         modifier = Modifier

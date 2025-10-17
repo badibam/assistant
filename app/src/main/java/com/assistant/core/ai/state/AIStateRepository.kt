@@ -148,8 +148,8 @@ class AIStateRepository(
                 lastEventTime = state.lastEventTime,
                 lastUserInteractionTime = state.lastUserInteractionTime,
                 lastActivity = System.currentTimeMillis(),
-                isActive = state.phase != Phase.COMPLETED,
-                endReason = if (state.phase == Phase.COMPLETED) state.endReason?.name else existingSession.endReason
+                isActive = state.phase != Phase.CLOSED,
+                endReason = if (state.phase == Phase.CLOSED) state.endReason?.name else existingSession.endReason
             )
 
             aiDao.updateSession(updatedEntity)
