@@ -79,6 +79,23 @@ data class AIState(
      */
     val waitingContext: WaitingContext? = null,
 
+    // ==================== Continuation Context ====================
+
+    /**
+     * Reason for entering PREPARING_CONTINUATION phase (AUTOMATION only).
+     * Determines which guidance message to send to AI before continuing.
+     * Null when not in PREPARING_CONTINUATION phase.
+     */
+    val continuationReason: ContinuationReason? = null,
+
+    /**
+     * Flag indicating AI sent completed=true once (AUTOMATION only).
+     * Used for double confirmation: first completed=true sets this flag,
+     * second completed=true actually completes the session.
+     * Reset to false if AI sends anything other than completed=true.
+     */
+    val awaitingCompletionConfirmation: Boolean = false,
+
     // ==================== Pause State ====================
 
     /**

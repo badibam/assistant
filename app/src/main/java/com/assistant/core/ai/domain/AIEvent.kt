@@ -80,6 +80,16 @@ sealed class AIEvent {
      */
     data class AIResponseParsed(val message: AIMessage) : AIEvent()
 
+    // ==================== Continuation ====================
+
+    /**
+     * Continuation guidance message prepared and ready to continue.
+     *
+     * Emitted after PREPARING_CONTINUATION phase completes.
+     * Transition back to CALLING_AI to send guidance message to AI.
+     */
+    object ContinuationReady : AIEvent()
+
     // ==================== User Interactions ====================
 
     /**

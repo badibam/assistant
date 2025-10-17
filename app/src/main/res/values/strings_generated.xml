@@ -485,6 +485,12 @@
     <string name="shared_ai_phase_paused">En pause</string>
     <string name="shared_ai_phase_interrupted">Interrompu</string>
     <string name="shared_ai_phase_completed">Terminé</string>
+    <string name="shared_ai_phase_idle_chat">En attente</string>
+    <string name="shared_ai_phase_idle_automation">Prêt</string>
+    <string name="shared_ai_phase_executing">Traitement...</string>
+    <string name="shared_ai_phase_preparing_continuation">Préparation continuation...</string>
+    <string name="shared_ai_phase_awaiting_closure">⏱ Fermeture dans 5s...</string>
+    <string name="shared_ai_phase_closed">Session terminée</string>
     <string name="shared_ai_round_interrupted">Round IA interrompu</string>
     <string name="shared_ai_scheduler_slot_occupied">Slot occupé</string>
     <string name="shared_ai_cost_total">Coût total</string>
@@ -962,5 +968,7 @@
     <string name="shared_month_short_10">Oct</string>
     <string name="shared_month_short_11">Nov</string>
     <string name="shared_month_short_12">Déc</string>
+    <string name="shared_ai_automation_no_commands_guidance">Tu es en mode automation, tes réponses doivent contenir des requêtes de données ou des actions. Si tu as terminé, utilise le flag \'completed\'.</string>
+    <string name="shared_ai_completion_confirmation_required">Le flag \'completed\' signifie que TOUTE la demande initiale est terminée, pas juste une étape. Si c\'était bien ton intention, renvoie un message avec \'completed: true\'. Sinon, continue ton travail.</string>
 
 </resources>

@@ -11,6 +11,7 @@ package com.assistant.core.ai.domain
  * - EXECUTING_ENRICHMENTS: Processing user message enrichments
  * - CALLING_AI: Sending prompt to AI provider
  * - PARSING_AI_RESPONSE: Parsing AI response JSON
+ * - PREPARING_CONTINUATION: Preparing guidance message before continuing (AUTOMATION only)
  * - WAITING_VALIDATION: Waiting for user validation (CHAT only)
  * - WAITING_COMMUNICATION_RESPONSE: Waiting for user response to communication module (CHAT only)
  * - EXECUTING_DATA_QUERIES: Executing data query commands
@@ -19,6 +20,7 @@ package com.assistant.core.ai.domain
  * - WAITING_NETWORK_RETRY: Waiting before network retry (infinite for AUTOMATION)
  * - RETRYING_AFTER_FORMAT_ERROR: Retrying after AI format error
  * - RETRYING_AFTER_ACTION_FAILURE: Retrying after action failure
+ * - AWAITING_SESSION_CLOSURE: Waiting 5s before closing session (AUTOMATION only)
  * - CLOSED: Session finished
  */
 enum class Phase {
@@ -33,6 +35,9 @@ enum class Phase {
 
     /** Parsing AI response JSON into AIMessage */
     PARSING_AI_RESPONSE,
+
+    /** Preparing guidance message before continuing autonomous execution (AUTOMATION only) */
+    PREPARING_CONTINUATION,
 
     /** Waiting for user validation of actions (CHAT only) */
     WAITING_VALIDATION,
@@ -68,6 +73,9 @@ enum class Phase {
      */
     INTERRUPTED,
 
+    /** Waiting 5s before closing completed AUTOMATION session (user can pause to keep alive) */
+    AWAITING_SESSION_CLOSURE,
+
     /** Session closed - ready for cleanup */
     CLOSED;
 
@@ -86,7 +94,7 @@ enum class Phase {
      */
     fun isActiveProcessing(): Boolean = when (this) {
         CALLING_AI, EXECUTING_ENRICHMENTS, EXECUTING_DATA_QUERIES,
-        EXECUTING_ACTIONS, PARSING_AI_RESPONSE -> true
+        EXECUTING_ACTIONS, PARSING_AI_RESPONSE, PREPARING_CONTINUATION -> true
         else -> false
     }
 

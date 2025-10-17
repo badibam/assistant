@@ -16,6 +16,7 @@ import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.domain.WaitingContext
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.ui.components.RichComposer
+import com.assistant.core.ai.ui.components.SessionStatusBar
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
@@ -31,6 +32,7 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
         Phase.EXECUTING_ENRICHMENTS -> s.shared("ai_phase_executing_enrichments")
         Phase.CALLING_AI -> s.shared("ai_phase_calling_ai")
         Phase.PARSING_AI_RESPONSE -> s.shared("ai_phase_parsing")
+        Phase.PREPARING_CONTINUATION -> s.shared("ai_phase_preparing_continuation")
         Phase.EXECUTING_DATA_QUERIES -> s.shared("ai_phase_executing_queries")
         Phase.EXECUTING_ACTIONS -> s.shared("ai_phase_executing_actions")
         Phase.WAITING_VALIDATION -> s.shared("ai_phase_waiting_validation")
@@ -41,6 +43,7 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
         Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")
         Phase.PAUSED -> s.shared("ai_phase_paused")
         Phase.INTERRUPTED -> s.shared("ai_phase_interrupted")
+        Phase.AWAITING_SESSION_CLOSURE -> s.shared("ai_phase_awaiting_closure")
         Phase.CLOSED -> s.shared("ai_phase_completed")
     }
 }
@@ -293,6 +296,13 @@ private fun ChatMode(
                 )
             }
         }
+
+        // Status bar (always visible at bottom)
+        SessionStatusBar(
+            phase = aiState.phase,
+            sessionType = aiState.sessionType,
+            context = context
+        )
     }
 
     // Error display
@@ -769,13 +779,22 @@ private fun AutomationMode(
 
         // Messages area (read-only)
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
             ChatMessageList(
                 aiState = aiState,
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        // Status bar (always visible at bottom)
+        SessionStatusBar(
+            phase = aiState.phase,
+            sessionType = aiState.sessionType,
+            context = context
+        )
     }
 }
 

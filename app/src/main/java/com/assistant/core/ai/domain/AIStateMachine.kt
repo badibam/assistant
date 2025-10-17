@@ -95,6 +95,18 @@ object AIStateMachine {
                 handleAIResponseParsed(state, event, currentTime)
             }
 
+            // ==================== Continuation ====================
+
+            is AIEvent.ContinuationReady -> {
+                // Guidance message prepared - transition to CALLING_AI
+                state.copy(
+                    phase = Phase.CALLING_AI,
+                    continuationReason = null, // Clear continuation reason
+                    totalRoundtrips = state.totalRoundtrips + 1,
+                    lastEventTime = currentTime
+                )
+            }
+
             // ==================== User Interactions ====================
 
             is AIEvent.ValidationReceived -> {
@@ -347,20 +359,28 @@ object AIStateMachine {
     ): AIState {
         val message = event.message
 
-        // Priority 0: COMPLETED flag (AUTOMATION only)
+        // Priority 0: COMPLETED flag (AUTOMATION only) - with double confirmation
         if (message.completed == true && state.sessionType == SessionType.AUTOMATION) {
-            return state.copy(
-                phase = Phase.WAITING_COMPLETION_CONFIRMATION,
-                waitingContext = WaitingContext.CompletionConfirmation(
-                    aiMessageId = "", // Will be set by event processor
-                    scheduledConfirmationTime = currentTime + 1000L // 1 second delay
-                ),
-                lastEventTime = currentTime
-            )
+            return if (!state.awaitingCompletionConfirmation) {
+                // First completed=true - ask for confirmation
+                state.copy(
+                    phase = Phase.PREPARING_CONTINUATION,
+                    continuationReason = ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED,
+                    awaitingCompletionConfirmation = true,
+                    lastEventTime = currentTime
+                )
+            } else {
+                // Second completed=true - actually complete the session
+                state.copy(
+                    phase = Phase.AWAITING_SESSION_CLOSURE,
+                    awaitingCompletionConfirmation = false, // Reset flag
+                    lastEventTime = currentTime
+                )
+            }
         }
 
-        // Priority 1: Validation request
-        if (message.validationRequest == true) {
+        // Priority 1: Validation request (CHAT only - ignored for AUTOMATION)
+        if (message.validationRequest == true && state.sessionType == SessionType.CHAT) {
             return state.copy(
                 phase = Phase.WAITING_VALIDATION,
                 // waitingContext will be set by event processor after ValidationResolver
@@ -368,7 +388,7 @@ object AIStateMachine {
             )
         }
 
-        // Priority 2: Communication module (CHAT only)
+        // Priority 2: Communication module (CHAT only - ignored for AUTOMATION)
         if (message.communicationModule != null && state.sessionType == SessionType.CHAT) {
             return state.copy(
                 phase = Phase.WAITING_COMMUNICATION_RESPONSE,
@@ -378,26 +398,44 @@ object AIStateMachine {
         }
 
         // Priority 3: Data commands (queries)
+        // Reset awaitingCompletionConfirmation since AI is continuing work
         if (!message.dataCommands.isNullOrEmpty()) {
             return state.copy(
                 phase = Phase.EXECUTING_DATA_QUERIES,
+                awaitingCompletionConfirmation = false, // Reset since AI is continuing work
                 lastEventTime = currentTime
             )
         }
 
         // Priority 4: Action commands
+        // Reset awaitingCompletionConfirmation since AI is continuing work
         if (!message.actionCommands.isNullOrEmpty()) {
             return state.copy(
                 phase = Phase.EXECUTING_ACTIONS,
+                awaitingCompletionConfirmation = false, // Reset since AI is continuing work
                 lastEventTime = currentTime
             )
         }
 
-        // No commands - session completed
-        return state.copy(
-            phase = Phase.CLOSED,
-            lastEventTime = currentTime
-        )
+        // No commands - behavior depends on session type
+        // CHAT: preText only → return to IDLE (ready for next user message)
+        // AUTOMATION: no commands → guidance needed via PREPARING_CONTINUATION phase
+        // Also reset awaitingCompletionConfirmation since AI is continuing work
+        return if (state.sessionType == SessionType.CHAT) {
+            state.copy(
+                phase = Phase.IDLE,
+                awaitingCompletionConfirmation = false, // Reset if was set
+                lastEventTime = currentTime
+            )
+        } else {
+            // AUTOMATION without commands - need to guide AI to provide commands or mark as completed
+            state.copy(
+                phase = Phase.PREPARING_CONTINUATION,
+                continuationReason = ContinuationReason.AUTOMATION_NO_COMMANDS,
+                awaitingCompletionConfirmation = false, // Reset since AI is continuing work
+                lastEventTime = currentTime
+            )
+        }
     }
 
     /**

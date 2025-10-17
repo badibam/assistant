@@ -204,7 +204,7 @@
     <string name="ai_error_unknown">Erreur inconnue</string>
     <string name="ai_error_parsing_unknown">Erreur de parsing inconnue</string>
 
-    <!-- AI Phases (V2) -->
+    <!-- AI Phases (V2) - getPhaseLabel() for header display -->
     <string name="ai_phase_idle">En attente</string>
     <string name="ai_phase_executing_enrichments">Enrichissements...</string>
     <string name="ai_phase_calling_ai">Appel IA...</string>
@@ -219,6 +219,14 @@
     <string name="ai_phase_paused">En pause</string>
     <string name="ai_phase_interrupted">Interrompu</string>
     <string name="ai_phase_completed">Terminé</string>
+
+    <!-- AI Session Phase Labels (for SessionStatusBar bottom display) -->
+    <string name="ai_phase_idle_chat">En attente</string>
+    <string name="ai_phase_idle_automation">Prêt</string>
+    <string name="ai_phase_executing">Traitement...</string>
+    <string name="ai_phase_preparing_continuation">Préparation continuation...</string>
+    <string name="ai_phase_awaiting_closure">⏱ Fermeture dans 5s...</string>
+    <string name="ai_phase_closed">Session terminée</string>
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">Round IA interrompu</string>
@@ -831,5 +839,9 @@
     <string name="month_short_10">Oct</string>
     <string name="month_short_11">Nov</string>
     <string name="month_short_12">Déc</string>
+
+    <!-- AI Guidance Messages (for PREPARING_CONTINUATION phase) -->
+    <string name="ai_automation_no_commands_guidance">Tu es en mode automation, tes réponses doivent contenir des requêtes de données ou des actions. Si tu as terminé, utilise le flag \'completed\'.</string>
+    <string name="ai_completion_confirmation_required">Le flag \'completed\' signifie que TOUTE la demande initiale est terminée, pas juste une étape. Si c\'était bien ton intention, renvoie un message avec \'completed: true\'. Sinon, continue ton travail.</string>
 
 </resources>

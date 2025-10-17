@@ -43,6 +43,7 @@ class AIEventProcessor(
 ) {
     private val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var networkRetryJob: Job? = null
+    private var sessionClosureJob: Job? = null
 
     /**
      * Initialize processor and start listening to state changes.
@@ -101,6 +102,10 @@ class AIEventProcessor(
                 parseAIResponse(state)
             }
 
+            Phase.PREPARING_CONTINUATION -> {
+                prepareContinuation(state)
+            }
+
             Phase.WAITING_VALIDATION -> {
                 // UI handles validation display
                 // No side effects - waiting for user
@@ -145,6 +150,10 @@ class AIEventProcessor(
             Phase.INTERRUPTED -> {
                 // Create interruption system message (audit only, excluded from prompt)
                 createInterruptionMessage(state)
+            }
+
+            Phase.AWAITING_SESSION_CLOSURE -> {
+                scheduleSessionClosure(state)
             }
 
             Phase.CLOSED -> {
@@ -416,7 +425,8 @@ class AIEventProcessor(
                 }
 
                 // Validate field constraints (from AIResponseParser logic)
-                val hasDataCommands = cleanedAIMessage.dataCommands != null && cleanedAIMessage.dataCommands.isNotEmpty()
+                val dataCommandsList = cleanedAIMessage.dataCommands
+                val hasDataCommands = dataCommandsList != null && dataCommandsList.isNotEmpty()
                 val hasCommunicationModule = cleanedAIMessage.communicationModule != null
 
                 // Count action types present
@@ -504,6 +514,67 @@ class AIEventProcessor(
         } catch (e: Exception) {
             LogManager.aiSession("parseAIResponse failed: ${e.message}", "ERROR", e)
             emit(AIEvent.ParseErrorOccurred(e.message ?: "Unknown parsing error"))
+        }
+    }
+
+    /**
+     * Prepare continuation guidance message based on continuation reason.
+     *
+     * Flow:
+     * 1. Determine guidance message based on continuationReason
+     * 2. Store guidance as SYSTEM message
+     * 3. Emit ContinuationReady to continue to CALLING_AI
+     */
+    private suspend fun prepareContinuation(state: AIState) {
+        try {
+            val sessionId = state.sessionId ?: run {
+                LogManager.aiSession("prepareContinuation: No session ID in state", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No session ID"))
+                return
+            }
+
+            val reason = state.continuationReason ?: run {
+                LogManager.aiSession("prepareContinuation: No continuation reason", "ERROR")
+                emit(AIEvent.SystemErrorOccurred("No continuation reason"))
+                return
+            }
+
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+            // Determine guidance message based on reason
+            val guidanceText = when (reason) {
+                ContinuationReason.AUTOMATION_NO_COMMANDS -> {
+                    s.shared("ai_automation_no_commands_guidance")
+                }
+                ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED -> {
+                    s.shared("ai_completion_confirmation_required")
+                }
+            }
+
+            LogManager.aiSession("prepareContinuation: Creating guidance message for reason: $reason", "DEBUG")
+
+            // Store guidance as SYSTEM message (sent to AI in prompt)
+            val guidanceMessage = SessionMessage(
+                id = UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = guidanceText,
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = null,
+                executionMetadata = null,
+                excludeFromPrompt = false // Included in AI prompt
+            )
+
+            messageRepository.storeMessage(sessionId, guidanceMessage)
+
+            // Emit ContinuationReady to transition to CALLING_AI
+            emit(AIEvent.ContinuationReady)
+
+        } catch (e: Exception) {
+            LogManager.aiSession("prepareContinuation failed: ${e.message}", "ERROR", e)
+            emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
         }
     }
 
@@ -762,6 +833,35 @@ class AIEventProcessor(
     }
 
     /**
+     * Schedule session closure with 5s delay (AUTOMATION only).
+     *
+     * User can pause during this time to keep session alive and inspect results.
+     * If resumed from AWAITING_SESSION_CLOSURE, the timer restarts.
+     * If paused, the job is cancelled and timer stops.
+     */
+    private fun scheduleSessionClosure(state: AIState) {
+        // Cancel previous closure job if any
+        sessionClosureJob?.cancel()
+
+        sessionClosureJob = processingScope.launch {
+            delay(5_000L) // 5 seconds
+
+            // Check if session is still in AWAITING_SESSION_CLOSURE phase
+            // (could have been paused/resumed)
+            val currentState = stateRepository.currentState
+            if (currentState.phase == Phase.AWAITING_SESSION_CLOSURE) {
+                // Close session with COMPLETED reason
+                emit(AIEvent.SessionCompleted(SessionEndReason.COMPLETED))
+            }
+        }
+
+        LogManager.aiSession(
+            "Session closure scheduled in 5s for session ${state.sessionId}",
+            "DEBUG"
+        )
+    }
+
+    /**
      * Handle session completion cleanup.
      *
      * Persists endReason to DB (already done via syncStateToDb),
@@ -796,6 +896,7 @@ class AIEventProcessor(
 
         // Cancel any pending jobs
         networkRetryJob?.cancel()
+        sessionClosureJob?.cancel()
 
         // Force state to idle
         stateRepository.forceIdle()
@@ -860,6 +961,8 @@ class AIEventProcessor(
      * Shutdown processor and cancel all jobs.
      */
     fun shutdown() {
+        networkRetryJob?.cancel()
+        sessionClosureJob?.cancel()
         processingScope.cancel()
     }
 }
