@@ -350,22 +350,20 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        // Delegate to AIOrchestrator with MANUAL trigger
-        // scheduledFor = now (current time for manual executions)
-        val result = AIOrchestrator.executeAutomation(
-            automationId = automationId,
-            trigger = com.assistant.core.ai.data.ExecutionTrigger.MANUAL,
-            scheduledFor = System.currentTimeMillis()
-        )
+        // Delegate to AIOrchestrator V2
+        // V2 handles session creation, trigger, and scheduling internally
+        try {
+            AIOrchestrator.executeAutomation(automationId)
 
-        return if (result.success) {
-            OperationResult.success(mapOf(
+            LogManager.service("Successfully triggered automation: $automationId", "INFO")
+
+            return OperationResult.success(mapOf(
                 "automation_id" to automationId,
-                "session_id" to (result.data?.get("session_id") ?: ""),
                 "status" to "triggered"
             ))
-        } else {
-            OperationResult.error(result.error ?: "Failed to execute automation")
+        } catch (e: Exception) {
+            LogManager.service("Failed to execute automation: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to execute automation: ${e.message}")
         }
     }
 

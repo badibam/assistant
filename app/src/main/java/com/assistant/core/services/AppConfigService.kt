@@ -2,7 +2,7 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.config.TimeConfig
-import com.assistant.core.config.AILimitsConfig
+import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory

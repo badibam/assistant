@@ -1,5 +1,6 @@
 package com.assistant.core.ai.domain
 
+import com.assistant.core.ai.data.SessionEndReason
 import com.assistant.core.ai.data.SessionType
 
 /**
@@ -22,6 +23,13 @@ data class AIState(
 
     /** Type of current session (CHAT, AUTOMATION, SEED), null if IDLE */
     val sessionType: SessionType?,
+
+    /**
+     * End reason when phase == COMPLETED.
+     * Used to persist reason in DB before clearing state.
+     * Null for all other phases.
+     */
+    val endReason: SessionEndReason? = null,
 
     // ==================== Retry Counters ====================
 

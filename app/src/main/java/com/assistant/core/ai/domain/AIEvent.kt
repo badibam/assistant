@@ -26,8 +26,14 @@ sealed class AIEvent {
      *
      * Scheduler decides if activation is immediate (slot free)
      * or requires eviction/queueing (slot occupied).
+     *
+     * @param sessionId ID of session to activate
+     * @param sessionType Type of session (CHAT, AUTOMATION, SEED)
      */
-    data class SessionActivationRequested(val sessionId: String) : AIEvent()
+    data class SessionActivationRequested(
+        val sessionId: String,
+        val sessionType: com.assistant.core.ai.data.SessionType
+    ) : AIEvent()
 
     /**
      * Session completed and should be closed.
@@ -169,6 +175,16 @@ sealed class AIEvent {
     object CompletionRejected : AIEvent()
 
     // ==================== Errors & Retry ====================
+
+    /**
+     * Provider error occurred (provider not configured, invalid config, etc.).
+     *
+     * This is a permanent error that should not retry.
+     * Session ends with ERROR reason and user is notified via toast.
+     *
+     * @param message Error description for user
+     */
+    data class ProviderErrorOccurred(val message: String) : AIEvent()
 
     /**
      * Network error occurred while calling AI.

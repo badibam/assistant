@@ -5,6 +5,7 @@ import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.domain.AIEvent
+import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.ai.domain.AIState
 import com.assistant.core.ai.domain.AIStateMachine
 import com.assistant.core.ai.domain.Phase
@@ -147,7 +148,8 @@ class AIStateRepository(
                 lastEventTime = state.lastEventTime,
                 lastUserInteractionTime = state.lastUserInteractionTime,
                 lastActivity = System.currentTimeMillis(),
-                isActive = state.phase != Phase.COMPLETED
+                isActive = state.phase != Phase.COMPLETED,
+                endReason = if (state.phase == Phase.COMPLETED) state.endReason?.name else existingSession.endReason
             )
 
             aiDao.updateSession(updatedEntity)

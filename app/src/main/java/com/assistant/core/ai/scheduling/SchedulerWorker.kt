@@ -11,12 +11,13 @@ import com.assistant.core.utils.LogManager
 /**
  * WorkManager worker for scheduling automation executions
  *
- * Runs periodically (every 5 minutes) to trigger scheduler tick
- * Delegates all scheduling logic to AISessionController via AIOrchestrator.tick()
+ * Runs periodically (every 5 minutes) to trigger scheduler heartbeat
+ * Delegates all scheduling logic to AIOrchestrator.tick() (V2 event-driven architecture)
  *
- * Architecture:
- * - tick() checks slot status and decides what to execute (via AutomationScheduler)
- * - If slot occupied: early return (wait next tick)
+ * Architecture V2:
+ * - Emits SchedulerHeartbeat event via AIOrchestrator
+ * - AISessionScheduler checks slot status and decides what to execute
+ * - If slot occupied: watchdog check for inactive sessions
  * - If queue not empty: process queue first
  * - If queue empty: ask AutomationScheduler for next scheduled automation
  */

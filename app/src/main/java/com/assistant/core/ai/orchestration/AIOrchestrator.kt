@@ -56,7 +56,7 @@ object AIOrchestrator {
     private lateinit var eventProcessor: AIEventProcessor
     private lateinit var sessionScheduler: AISessionScheduler
     private lateinit var validationResolver: ValidationResolver
-    private lateinit var promptManager: PromptManager
+    // Note: promptManager is a singleton object, not a class instance
     private lateinit var aiClient: AIClient
     private lateinit var commandExecutor: CommandExecutor
     private lateinit var automationScheduler: AutomationScheduler
@@ -138,7 +138,7 @@ object AIOrchestrator {
         dequeueSession(sessionId)
 
         // Delete session from DB
-        val session = aiDao.getSessionById(sessionId)
+        val session = aiDao.getSession(sessionId)
         if (session != null) {
             aiDao.deleteSession(session)
         }
@@ -165,7 +165,7 @@ object AIOrchestrator {
         stateRepository = AIStateRepository(this.context, aiDao)
         messageRepository = AIMessageRepository(aiDao)
         validationResolver = ValidationResolver(this.context)
-        promptManager = PromptManager(this.context)
+        // promptManager is a singleton object, no initialization needed
         aiClient = AIClient(this.context)
         commandExecutor = CommandExecutor(this.context)
         automationScheduler = AutomationScheduler(this.context)
@@ -178,7 +178,7 @@ object AIOrchestrator {
             messageRepository = messageRepository,
             coordinator = coordinator,
             aiClient = aiClient,
-            promptManager = promptManager,
+            promptManager = PromptManager, // Singleton object
             validationResolver = validationResolver,
             commandExecutor = commandExecutor
         )
@@ -310,13 +310,13 @@ object AIOrchestrator {
         // Handle result
         when (activationResult) {
             is com.assistant.core.ai.scheduling.ActivationResult.ActivateImmediate -> {
-                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId, SessionType.CHAT))
             }
             is com.assistant.core.ai.scheduling.ActivationResult.EvictAndActivate -> {
                 // Evict current session
                 eventProcessor.emit(AIEvent.SessionCompleted(activationResult.evictionReason))
                 // Then activate new session
-                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId, SessionType.CHAT))
             }
             is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
                 enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, activationResult.priority)
@@ -479,7 +479,7 @@ object AIOrchestrator {
             LogManager.aiSession("Copied ${userMessages.size} USER messages from SEED", "DEBUG")
 
             // Emit activation request
-            eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId))
+            eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId, SessionType.AUTOMATION))
 
         } catch (e: Exception) {
             LogManager.aiSession("executeAutomation failed: ${e.message}", "ERROR", e)

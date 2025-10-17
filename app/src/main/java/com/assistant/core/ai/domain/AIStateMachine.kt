@@ -38,14 +38,23 @@ object AIStateMachine {
             // ==================== Session Lifecycle ====================
 
             is AIEvent.SessionActivationRequested -> {
-                // Transition from IDLE to EXECUTING_ENRICHMENTS
+                // Activate session and set sessionId + sessionType
+                // CHAT sessions stay IDLE waiting for first user message
+                // AUTOMATION sessions transition to EXECUTING_ENRICHMENTS immediately
                 if (state.phase != Phase.IDLE) {
                     // Slot not available - event processor should handle scheduling
                     state
                 } else {
+                    val nextPhase = if (event.sessionType == SessionType.CHAT) {
+                        Phase.IDLE // CHAT waits for user message
+                    } else {
+                        Phase.EXECUTING_ENRICHMENTS // AUTOMATION starts immediately
+                    }
+
                     state.copy(
                         sessionId = event.sessionId,
-                        phase = Phase.EXECUTING_ENRICHMENTS,
+                        sessionType = event.sessionType,
+                        phase = nextPhase,
                         lastEventTime = currentTime
                     )
                 }
@@ -53,7 +62,10 @@ object AIStateMachine {
 
             is AIEvent.SessionCompleted -> {
                 // Transition to COMPLETED from any phase
-                AIState.idle().copy(
+                // Store endReason temporarily for handleSessionCompletion to persist in DB
+                state.copy(
+                    phase = Phase.COMPLETED,
+                    endReason = event.reason,
                     lastEventTime = currentTime
                 )
             }
@@ -211,6 +223,17 @@ object AIStateMachine {
             }
 
             // ==================== Errors & Retry ====================
+
+            is AIEvent.ProviderErrorOccurred -> {
+                // Provider error - permanent failure (not configured, invalid config, etc.)
+                // Session ends immediately with ERROR reason
+                // Event processor will show toast to user
+                state.copy(
+                    phase = Phase.COMPLETED,
+                    endReason = SessionEndReason.ERROR,
+                    lastEventTime = currentTime
+                )
+            }
 
             is AIEvent.NetworkErrorOccurred -> {
                 // CHAT: immediate failure (handled by event processor)

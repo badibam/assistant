@@ -148,6 +148,8 @@ class AIEventProcessor(
             }
 
             Phase.COMPLETED -> {
+                // Note: actual endReason will be extracted from last SessionCompleted event
+                // This is handled by tracking the event in emit() function
                 handleSessionCompletion(state)
             }
         }
@@ -327,9 +329,22 @@ class AIEventProcessor(
                 emit(AIEvent.AIResponseReceived(response.content))
 
             } else {
-                LogManager.aiSession("callAI: AI provider error: ${response.errorMessage}", "ERROR")
-                // Network/provider error
-                emit(AIEvent.NetworkErrorOccurred(0))
+                val errorMessage = response.errorMessage ?: "Unknown error"
+                LogManager.aiSession("callAI: AI provider error: $errorMessage", "ERROR")
+
+                // Detect provider configuration errors (permanent failures)
+                val isProviderError = errorMessage.contains("provider", ignoreCase = true) ||
+                                     errorMessage.contains("configuré", ignoreCase = true) ||
+                                     errorMessage.contains("configured", ignoreCase = true)
+
+                if (isProviderError) {
+                    // Provider not configured or invalid config - permanent error
+                    // Toast will be shown in handleSessionCompletion
+                    emit(AIEvent.ProviderErrorOccurred(errorMessage))
+                } else {
+                    // Network/temporary error
+                    emit(AIEvent.NetworkErrorOccurred(0))
+                }
             }
 
         } catch (e: Exception) {
@@ -737,14 +752,33 @@ class AIEventProcessor(
 
     /**
      * Handle session completion cleanup.
+     *
+     * Persists endReason to DB (already done via syncStateToDb),
+     * shows toast for ERROR endReason, clears cache, and forces IDLE.
      */
     private suspend fun handleSessionCompletion(state: AIState) {
         val sessionId = state.sessionId ?: return
+        val endReason = state.endReason
 
         LogManager.aiSession(
-            "Session completed: $sessionId, reason: ${state.phase}",
+            "Session completed: $sessionId, reason: $endReason",
             "INFO"
         )
+
+        // Show toast for provider errors (ERROR reason)
+        if (endReason == SessionEndReason.ERROR) {
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val errorMessage = s.shared("ai_provider_error") // "Erreur du fournisseur IA"
+
+            // Show toast on main thread
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                com.assistant.core.ui.UI.Toast(
+                    context = context,
+                    message = errorMessage,
+                    duration = com.assistant.core.ui.Duration.LONG
+                )
+            }
+        }
 
         // Clear message cache
         messageRepository.clearCache(sessionId)

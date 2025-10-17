@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
  * - Calculate next scheduled execution time from schedule configuration
  *
  * NO notion of slot/queue - just pure calculation
- * Called by AISessionController.tick() when slot is free and queue is empty
+ * Called by AISessionScheduler when slot is free and queue is empty
  */
 class AutomationScheduler(private val context: Context) {
 
@@ -176,7 +176,7 @@ class AutomationScheduler(private val context: Context) {
 
 /**
  * Result of getNextSession() calculation
- * Tells AISessionController what to do (if anything)
+ * Tells AISessionScheduler what to do (if anything)
  */
 sealed class NextSession {
     /**

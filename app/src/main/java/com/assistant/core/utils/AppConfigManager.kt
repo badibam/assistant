@@ -2,7 +2,7 @@ package com.assistant.core.utils
 
 import android.content.Context
 import com.assistant.core.config.TimeConfig
-import com.assistant.core.config.AILimitsConfig
+import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.services.AppConfigService
 import kotlinx.coroutines.runBlocking
 
