@@ -12,15 +12,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
+import com.assistant.core.ai.domain.Phase
+import com.assistant.core.ai.domain.WaitingContext
 import com.assistant.core.ai.orchestration.AIOrchestrator
-import com.assistant.core.ai.orchestration.RoundReason
-import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.ai.ui.components.RichComposer
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
+
+/**
+ * Helper function to map Phase enum to localized UI string.
+ */
+private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsContext): String {
+    return when (phase) {
+        Phase.IDLE -> s.shared("ai_phase_idle")
+        Phase.EXECUTING_ENRICHMENTS -> s.shared("ai_phase_executing_enrichments")
+        Phase.CALLING_AI -> s.shared("ai_phase_calling_ai")
+        Phase.PARSING_AI_RESPONSE -> s.shared("ai_phase_parsing")
+        Phase.EXECUTING_DATA_QUERIES -> s.shared("ai_phase_executing_queries")
+        Phase.EXECUTING_ACTIONS -> s.shared("ai_phase_executing_actions")
+        Phase.WAITING_VALIDATION -> s.shared("ai_phase_waiting_validation")
+        Phase.WAITING_COMMUNICATION_RESPONSE -> s.shared("ai_phase_waiting_communication")
+        Phase.WAITING_COMPLETION_CONFIRMATION -> s.shared("ai_phase_waiting_completion")
+        Phase.WAITING_NETWORK_RETRY -> s.shared("ai_phase_waiting_network")
+        Phase.RETRYING_AFTER_FORMAT_ERROR,
+        Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")
+        Phase.PAUSED -> s.shared("ai_phase_paused")
+        Phase.INTERRUPTED -> s.shared("ai_phase_interrupted")
+        Phase.COMPLETED -> s.shared("ai_phase_completed")
+    }
+}
 
 /**
  * AI Screen - Unified interface for all session types (CHAT, SEED, AUTOMATION)
@@ -42,13 +65,13 @@ fun AIScreen(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val coordinator = remember { com.assistant.core.coordinator.Coordinator(context) }
 
-    // For active sessions: use reactive flows (avoids race condition with DB sync)
-    val activeSessionId by AIOrchestrator.activeSessionId.collectAsState()
-    val activeSessionType by AIOrchestrator.activeSessionType.collectAsState()
+    // Observe AI state for active session detection
+    val aiState by AIOrchestrator.currentState.collectAsState()
 
     // Determine if this is the active session
-    val isActiveSession = activeSessionId == sessionId
+    val isActiveSession = aiState.sessionId == sessionId
 
     // Session state
     var session by remember(sessionId) { mutableStateOf<AISession?>(null) }
@@ -56,13 +79,38 @@ fun AIScreen(
     var errorMessage by remember(sessionId) { mutableStateOf<String?>(null) }
 
     // Load session data - ONLY if not the active session (to avoid race condition)
-    LaunchedEffect(sessionId, isActiveSession, activeSessionType) {
+    LaunchedEffect(sessionId, isActiveSession, aiState.sessionType) {
         if (!isActiveSession) {
             // Non-active session: load from DB
             try {
                 isLoadingSession = true
-                session = AIOrchestrator.loadSession(sessionId)
-                LogManager.aiUI("AIScreen loaded non-active session from DB: ${session?.name} (type=${session?.type})")
+                val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                if (result.status == CommandStatus.SUCCESS) {
+                    @Suppress("UNCHECKED_CAST")
+                    val sessionData = result.data?.get("session") as? Map<String, Any>
+                    if (sessionData != null) {
+                        session = AISession(
+                            id = sessionData["id"] as String,
+                            name = sessionData["name"] as String,
+                            type = SessionType.valueOf(sessionData["type"] as String),
+                            requireValidation = sessionData["requireValidation"] as? Boolean ?: false,
+                            waitingStateJson = sessionData["waitingStateJson"] as? String,
+                            automationId = sessionData["automationId"] as? String,
+                            scheduledExecutionTime = (sessionData["scheduledExecutionTime"] as? Number)?.toLong(),
+                            providerId = sessionData["providerId"] as String,
+                            providerSessionId = sessionData["providerSessionId"] as String,
+                            createdAt = (sessionData["createdAt"] as Number).toLong(),
+                            lastActivity = (sessionData["lastActivity"] as Number).toLong(),
+                            messages = emptyList(),
+                            isActive = sessionData["isActive"] as? Boolean ?: false
+                        )
+                        LogManager.aiUI("AIScreen loaded non-active session from DB: ${session?.name} (type=${session?.type})")
+                    } else {
+                        errorMessage = s.shared("ai_error_session_not_found")
+                    }
+                } else {
+                    errorMessage = result.error ?: s.shared("ai_error_load_session")
+                }
             } catch (e: Exception) {
                 LogManager.aiUI("Failed to load session $sessionId: ${e.message}", "ERROR")
                 errorMessage = s.shared("ai_error_load_session")
@@ -70,12 +118,12 @@ fun AIScreen(
                 isLoadingSession = false
             }
         } else {
-            // Active session: use reactive type from flow (immediate, no DB read needed)
-            if (activeSessionType != null) {
+            // Active session: use reactive type from aiState (immediate, no DB read needed)
+            if (aiState.sessionType != null) {
                 session = AISession(
                     id = sessionId,
                     name = "", // Name not needed for routing
-                    type = activeSessionType!!,
+                    type = aiState.sessionType!!,
                     requireValidation = false,
                     waitingStateJson = null,
                     automationId = null,
@@ -88,7 +136,7 @@ fun AIScreen(
                     isActive = true
                 )
                 isLoadingSession = false
-                LogManager.aiUI("AIScreen using active session type from flow: ${activeSessionType}")
+                LogManager.aiUI("AIScreen using active session type from aiState: ${aiState.sessionType}")
             }
         }
     }
@@ -171,10 +219,19 @@ private fun ChatMode(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showStats by remember { mutableStateOf(false) }
 
-    // Observe orchestrator states
-    val waitingState by AIOrchestrator.waitingState.collectAsState()
-    val isRoundInProgress by AIOrchestrator.isRoundInProgress.collectAsState()
-    val messages by AIOrchestrator.activeSessionMessages.collectAsState()
+    // Observe AIState from orchestrator
+    val aiState by AIOrchestrator.currentState.collectAsState()
+
+    // Derive UI states from aiState.phase
+    val isLoading = aiState.phase in listOf(
+        Phase.CALLING_AI,
+        Phase.EXECUTING_ENRICHMENTS,
+        Phase.EXECUTING_DATA_QUERIES,
+        Phase.EXECUTING_ACTIONS,
+        Phase.PARSING_AI_RESPONSE,
+        Phase.RETRYING_AFTER_FORMAT_ERROR,
+        Phase.RETRYING_AFTER_ACTION_FAILURE
+    )
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -182,17 +239,12 @@ private fun ChatMode(
         // Header
         ChatHeader(
             session = session,
-            isLoading = isRoundInProgress,
+            phase = aiState.phase,
             onClose = onClose,
             onShowStats = { showStats = true },
             onStopSession = {
                 scope.launch {
                     AIOrchestrator.stopActiveSession()
-                }
-            },
-            onToggleValidation = { requireValidation ->
-                scope.launch {
-                    AIOrchestrator.toggleValidation(session.id, requireValidation)
                 }
             }
         )
@@ -206,16 +258,14 @@ private fun ChatMode(
             )
         }
 
-        // Messages area
+        // Messages area (includes inline validation/communication)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
             ChatMessageList(
-                messages = messages,
-                isLoading = isRoundInProgress,
-                waitingState = waitingState,
+                aiState = aiState,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -229,12 +279,15 @@ private fun ChatMode(
                     segments = segments,
                     onSegmentsChange = { segments = it },
                     onSend = { richMessage ->
-                        errorMessage = null
-                        AIOrchestrator.sendMessageAsync(
-                            richMessage = richMessage,
-                            onComposerClear = { segments = emptyList() },
-                            onError = { error -> errorMessage = error }
-                        )
+                        scope.launch {
+                            try {
+                                AIOrchestrator.sendMessage(richMessage)
+                                segments = emptyList() // Clear composer on success
+                            } catch (e: Exception) {
+                                errorMessage = e.message ?: s.shared("ai_error_send_message")
+                                LogManager.aiUI("ChatMode sendMessage failed: ${e.message}", "ERROR", e)
+                            }
+                        }
                     },
                     placeholder = s.shared("ai_composer_placeholder")
                 )
@@ -681,12 +734,12 @@ private fun AutomationMode(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val scope = rememberCoroutineScope()
-    val coordinator = remember { com.assistant.core.coordinator.Coordinator(context) }
 
-    // Observe orchestrator states
-    val messages by AIOrchestrator.activeSessionMessages.collectAsState()
-    val isRoundInProgress by AIOrchestrator.isRoundInProgress.collectAsState()
-    val waitingState by AIOrchestrator.waitingState.collectAsState()
+    // Observe AIState from orchestrator
+    val aiState by AIOrchestrator.currentState.collectAsState()
+
+    // Determine if this automation is the active session
+    val isActiveSession = aiState.sessionId == session.id
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -694,26 +747,22 @@ private fun AutomationMode(
         // Header
         AutomationHeader(
             session = session,
-            isRunning = isRoundInProgress,
+            aiState = aiState,
+            isActiveSession = isActiveSession,
             onClose = onClose,
             onStop = {
-                // Stop automation - set CANCELLED endReason and close session
                 scope.launch {
-                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
-                        "sessionId" to session.id,
-                        "endReason" to SessionEndReason.CANCELLED.name
-                    ))
                     AIOrchestrator.stopActiveSession()
                 }
             },
             onPause = {
-                // Pause automation - set SUSPENDED endReason (will resume later)
                 scope.launch {
-                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
-                        "sessionId" to session.id,
-                        "endReason" to SessionEndReason.SUSPENDED.name
-                    ))
-                    AIOrchestrator.stopActiveSession()
+                    AIOrchestrator.pauseActiveSession()
+                }
+            },
+            onResume = {
+                scope.launch {
+                    AIOrchestrator.resumeActiveSession()
                 }
             }
         )
@@ -723,9 +772,7 @@ private fun AutomationMode(
             modifier = Modifier.fillMaxSize()
         ) {
             ChatMessageList(
-                messages = messages,
-                isLoading = isRoundInProgress,
-                waitingState = waitingState,
+                aiState = aiState,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -742,11 +789,10 @@ private fun AutomationMode(
 @Composable
 private fun ChatHeader(
     session: AISession,
-    isLoading: Boolean,
+    phase: Phase,
     onClose: () -> Unit,
     onShowStats: () -> Unit,
-    onStopSession: () -> Unit,
-    onToggleValidation: (Boolean) -> Unit
+    onStopSession: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -798,10 +844,29 @@ private fun ChatHeader(
 
     // Session settings dialog
     if (showSessionSettings) {
+        val scope = rememberCoroutineScope()
+        val coordinator = remember { com.assistant.core.coordinator.Coordinator(context) }
+
         com.assistant.core.ai.ui.chat.SessionSettingsDialog(
             session = session,
             onDismiss = { showSessionSettings = false },
-            onToggleValidation = onToggleValidation
+            onToggleValidation = { enabled ->
+                scope.launch {
+                    val result = coordinator.processUserAction(
+                        "ai_sessions.update_validation",
+                        mapOf(
+                            "sessionId" to session.id,
+                            "requireValidation" to enabled
+                        )
+                    )
+
+                    if (result.status == CommandStatus.SUCCESS) {
+                        LogManager.aiUI("Session validation updated: $enabled", "INFO")
+                    } else {
+                        LogManager.aiUI("Failed to update validation: ${result.error}", "ERROR")
+                    }
+                }
+            }
         )
     }
 
@@ -814,17 +879,14 @@ private fun ChatHeader(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Title with status
+        // Title with phase status
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
                 text = session.name,
                 type = TextType.TITLE
             )
             UI.Text(
-                text = when {
-                    isLoading -> s.shared("ai_status_processing")
-                    else -> s.shared("ai_status_ready")
-                },
+                text = getPhaseLabel(phase, s),
                 type = TextType.CAPTION
             )
         }
@@ -899,18 +961,23 @@ private fun SeedHeader(
 }
 
 /**
- * Automation header - Execution status with STOP and PAUSE buttons
+ * Automation header - Execution status with STOP, PAUSE, and RESUME buttons
  */
 @Composable
 private fun AutomationHeader(
     session: AISession,
-    isRunning: Boolean,
+    aiState: com.assistant.core.ai.domain.AIState,
+    isActiveSession: Boolean,
     onClose: () -> Unit,
     onStop: () -> Unit,
-    onPause: () -> Unit
+    onPause: () -> Unit,
+    onResume: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+
+    // Determine if controls should be shown
+    val showControls = isActiveSession && aiState.phase != Phase.COMPLETED
 
     Row(
         modifier = Modifier
@@ -920,38 +987,55 @@ private fun AutomationHeader(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Title with status
+        // Title with phase status
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
                 text = session.name,
                 type = TextType.TITLE
             )
             UI.Text(
-                text = if (isRunning) s.shared("ai_status_processing") else s.shared("ai_status_completed"),
+                text = if (isActiveSession) getPhaseLabel(aiState.phase, s) else s.shared("ai_phase_completed"),
                 type = TextType.CAPTION
             )
         }
 
-        // Stop and Pause buttons (only if running)
-        if (isRunning) {
-            // Pause button - Suspend automation (will resume later)
-            UI.ActionButton(
-                action = ButtonAction.PAUSE,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onPause
-            )
-
-            // Stop button - Cancel automation (will not resume)
-            UI.ActionButton(
-                action = ButtonAction.STOP,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onStop
-            )
+        // Control buttons (only for active session)
+        if (showControls) {
+            when (aiState.phase) {
+                Phase.PAUSED -> {
+                    // Show RESUME + STOP when paused
+                    UI.ActionButton(
+                        action = ButtonAction.RESUME,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onResume
+                    )
+                    UI.ActionButton(
+                        action = ButtonAction.STOP,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onStop
+                    )
+                }
+                else -> {
+                    // Show PAUSE + STOP when running
+                    UI.ActionButton(
+                        action = ButtonAction.PAUSE,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onPause
+                    )
+                    UI.ActionButton(
+                        action = ButtonAction.STOP,
+                        display = ButtonDisplay.ICON,
+                        size = Size.M,
+                        onClick = onStop
+                    )
+                }
+            }
         }
 
-        // Close button
+        // Close button (always visible)
         UI.ActionButton(
             action = ButtonAction.CANCEL,
             display = ButtonDisplay.ICON,
@@ -971,22 +1055,21 @@ private fun AutomationHeader(
  */
 @Composable
 fun ChatMessageList(
-    messages: List<SessionMessage>,
-    isLoading: Boolean,
-    waitingState: WaitingState,
+    aiState: com.assistant.core.ai.domain.AIState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val listState = rememberLazyListState()
 
-    // Debug: log when messages change
-    LaunchedEffect(messages.size) {
-        LogManager.aiUI("ChatMessageList: Received ${messages.size} messages")
-        messages.forEachIndexed { index, msg ->
-            LogManager.aiUI("  Message $index: sender=${msg.sender}, hasText=${msg.textContent != null}, hasAI=${msg.aiMessage != null}, hasRich=${msg.richContent != null}")
+    // Observe messages for active session
+    val messages by remember(aiState.sessionId) {
+        if (aiState.sessionId != null) {
+            AIOrchestrator.observeMessages(aiState.sessionId!!)
+        } else {
+            kotlinx.coroutines.flow.flowOf(emptyList())
         }
-    }
+    }.collectAsState(initial = emptyList())
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
@@ -995,7 +1078,18 @@ fun ChatMessageList(
         }
     }
 
-    // Determine which message should show active module (last AI message if waiting for response)
+    // Determine if loading indicator should show
+    val showLoadingIndicator = aiState.phase in listOf(
+        Phase.CALLING_AI,
+        Phase.PARSING_AI_RESPONSE,
+        Phase.EXECUTING_ENRICHMENTS,
+        Phase.EXECUTING_DATA_QUERIES,
+        Phase.EXECUTING_ACTIONS,
+        Phase.RETRYING_AFTER_FORMAT_ERROR,
+        Phase.RETRYING_AFTER_ACTION_FAILURE
+    )
+
+    // Find last AI message index for inline validation/communication display
     val lastAIMessageIndex = messages.indexOfLast { it.sender == MessageSender.AI }
 
     LazyColumn(
@@ -1019,13 +1113,13 @@ fun ChatMessageList(
             itemsIndexed(messages) { index, message ->
                 com.assistant.core.ai.ui.chat.ChatMessageBubble(
                     message = message,
-                    waitingState = waitingState,
+                    aiState = aiState,
                     isLastAIMessage = index == lastAIMessageIndex
                 )
             }
 
-            // AI thinking indicator (don't show during communication module or validation)
-            if (isLoading && waitingState !is WaitingState.WaitingResponse && waitingState !is WaitingState.WaitingValidation) {
+            // AI thinking indicator
+            if (showLoadingIndicator) {
                 item {
                     com.assistant.core.ai.ui.chat.ChatLoadingIndicator()
                 }

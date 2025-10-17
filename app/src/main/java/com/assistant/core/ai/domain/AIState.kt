@@ -69,7 +69,16 @@ data class AIState(
      * Context data when waiting for user interaction (validation, communication).
      * Null when not waiting.
      */
-    val waitingContext: WaitingContext? = null
+    val waitingContext: WaitingContext? = null,
+
+    // ==================== Pause State ====================
+
+    /**
+     * Phase before manual pause (stored to resume from correct phase).
+     * Null when not paused.
+     * Set when SessionPaused event occurs, used when SessionResumed event occurs.
+     */
+    val phaseBeforePause: Phase? = null
 ) {
     /**
      * Calculate current inactivity duration in milliseconds.

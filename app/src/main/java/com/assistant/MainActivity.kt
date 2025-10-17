@@ -47,8 +47,14 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Initialize AI orchestrator singleton
-        AIOrchestrator.initialize(this)
+        // Initialize AI orchestrator singleton (V2 - suspend function)
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                AIOrchestrator.initialize(this@MainActivity)
+            } catch (e: Exception) {
+                LogManager.service("Failed to initialize AIOrchestrator: ${e.message}", "ERROR", e)
+            }
+        }
 
         // Schedule automation worker (15 min periodic check)
         scheduleAutomationWorker()

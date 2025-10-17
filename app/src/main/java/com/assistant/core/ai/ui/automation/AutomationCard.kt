@@ -12,6 +12,7 @@ import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.SchedulePattern
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -39,8 +40,32 @@ fun AutomationCard(
 
     // Observe queued sessions to detect if this automation is queued
     val queuedSessions by AIOrchestrator.queuedSessions.collectAsState()
-    val queuedAutomationSession = queuedSessions.firstOrNull {
-        it.type == SessionType.AUTOMATION && it.automationId == automation.id
+
+    // Need to load session from DB to check automationId (QueuedSession only has sessionId)
+    var queuedAutomationSession by remember { mutableStateOf<com.assistant.core.ai.scheduling.QueuedSession?>(null) }
+
+    LaunchedEffect(queuedSessions, automation.id) {
+        // Find queued AUTOMATION sessions and check if one belongs to this automation
+        val coordinator = com.assistant.core.coordinator.Coordinator(context)
+
+        for (queued in queuedSessions) {
+            if (queued.sessionType == SessionType.AUTOMATION) {
+                // Load session from DB to get automationId
+                val result = coordinator.processUserAction("ai_sessions.get", mapOf("id" to queued.sessionId))
+                if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
+                    val sessionAutomationId = result.data?.get("automationId") as? String
+                    if (sessionAutomationId == automation.id) {
+                        queuedAutomationSession = queued
+                        break
+                    }
+                }
+            }
+        }
+
+        // Reset if not found
+        if (queuedSessions.none { it.sessionId == queuedAutomationSession?.sessionId }) {
+            queuedAutomationSession = null
+        }
     }
 
     UI.Card(
@@ -114,8 +139,10 @@ fun AutomationCard(
 
             // Queued badge (if automation is in queue)
             queuedAutomationSession?.let { queued ->
+                // Calculate position in queue (1-indexed for display)
+                val position = queuedSessions.indexOfFirst { it.sessionId == queued.sessionId } + 1
                 UI.Text(
-                    text = s.shared("ai_automation_queued_badge").format(queued.position),
+                    text = s.shared("ai_automation_queued_badge").format(position),
                     type = TextType.CAPTION
                 )
             }
@@ -128,11 +155,14 @@ fun AutomationCard(
             ) {
                 // Cancel execution button (if queued)
                 if (queuedAutomationSession != null) {
+                    val scope = rememberCoroutineScope()
                     UI.Button(
                         type = ButtonType.SECONDARY,
                         size = Size.S,
                         onClick = {
-                            AIOrchestrator.cancelQueuedSession(queuedAutomationSession.sessionId)
+                            scope.launch {
+                                AIOrchestrator.cancelQueuedSession(queuedAutomationSession!!.sessionId)
+                            }
                         }
                     ) {
                         UI.Text(

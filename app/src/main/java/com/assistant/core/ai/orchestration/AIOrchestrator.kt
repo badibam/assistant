@@ -3,6 +3,7 @@ package com.assistant.core.ai.orchestration
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.database.AIDao
+import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.domain.AIEvent
 import com.assistant.core.ai.domain.AIState
 import com.assistant.core.ai.processing.AIEventProcessor
@@ -17,7 +18,10 @@ import com.assistant.core.ai.validation.ValidationResolver
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
  * AI Orchestrator singleton - Public API for AI system.
@@ -43,6 +47,9 @@ object AIOrchestrator {
     private lateinit var coordinator: Coordinator
     private lateinit var aiDao: AIDao
 
+    // Coroutine scope for async operations
+    private val orchestratorScope = CoroutineScope(Dispatchers.Default)
+
     // Core components
     private lateinit var stateRepository: AIStateRepository
     private lateinit var messageRepository: AIMessageRepository
@@ -54,6 +61,9 @@ object AIOrchestrator {
     private lateinit var commandExecutor: CommandExecutor
     private lateinit var automationScheduler: AutomationScheduler
 
+    // Session queue (managed by scheduler)
+    private val _queuedSessions = kotlinx.coroutines.flow.MutableStateFlow<List<com.assistant.core.ai.scheduling.QueuedSession>>(emptyList())
+
     // ========================================================================================
     // Public Observable State
     // ========================================================================================
@@ -63,6 +73,76 @@ object AIOrchestrator {
      */
     val currentState: StateFlow<AIState>
         get() = stateRepository.state
+
+    /**
+     * Queued sessions waiting for activation (observable)
+     */
+    val queuedSessions: StateFlow<List<com.assistant.core.ai.scheduling.QueuedSession>>
+        get() = _queuedSessions
+
+    /**
+     * Observe messages for active session.
+     *
+     * Returns a Flow that emits messages for the current active session.
+     * UI components should collect this Flow to display messages.
+     *
+     * @param sessionId Session ID to observe
+     * @return Flow of message list
+     */
+    fun observeMessages(sessionId: String): kotlinx.coroutines.flow.Flow<List<SessionMessage>> {
+        return messageRepository.observeMessages(sessionId)
+    }
+
+    /**
+     * Add session to queue (internal - called by event processor).
+     */
+    internal fun enqueueSession(sessionId: String, sessionType: SessionType, trigger: ExecutionTrigger, priority: Int) {
+        val queuedSession = com.assistant.core.ai.scheduling.QueuedSession(
+            sessionId = sessionId,
+            sessionType = sessionType,
+            trigger = trigger,
+            queuedAt = System.currentTimeMillis()
+        )
+
+        // Add to queue and sort by priority (lower priority = higher precedence)
+        val currentQueue = _queuedSessions.value.toMutableList()
+        currentQueue.add(queuedSession)
+        currentQueue.sortBy {
+            when (it.sessionType) {
+                SessionType.CHAT -> 1
+                SessionType.AUTOMATION -> if (it.trigger == ExecutionTrigger.MANUAL) 2 else 3
+                else -> 999
+            }
+        }
+
+        _queuedSessions.value = currentQueue
+
+        LogManager.aiSession("Session enqueued: $sessionId (priority $priority), queue size: ${currentQueue.size}", "INFO")
+    }
+
+    /**
+     * Remove session from queue (internal - called by event processor).
+     */
+    internal fun dequeueSession(sessionId: String) {
+        _queuedSessions.value = _queuedSessions.value.filter { it.sessionId != sessionId }
+        LogManager.aiSession("Session dequeued: $sessionId, remaining: ${_queuedSessions.value.size}", "INFO")
+    }
+
+    /**
+     * Cancel queued session (public API - called by UI).
+     */
+    suspend fun cancelQueuedSession(sessionId: String) {
+        LogManager.aiSession("Canceling queued session: $sessionId", "INFO")
+
+        // Remove from queue
+        dequeueSession(sessionId)
+
+        // Delete session from DB
+        val session = aiDao.getSessionById(sessionId)
+        if (session != null) {
+            aiDao.deleteSession(session)
+        }
+    }
 
     // ========================================================================================
     // Initialization
@@ -88,7 +168,7 @@ object AIOrchestrator {
         promptManager = PromptManager(this.context)
         aiClient = AIClient(this.context)
         commandExecutor = CommandExecutor(this.context)
-        automationScheduler = AutomationScheduler(aiDao)
+        automationScheduler = AutomationScheduler(this.context)
 
         sessionScheduler = AISessionScheduler(aiDao, automationScheduler)
 
@@ -167,8 +247,8 @@ object AIOrchestrator {
      * Flow:
      * 1. Check if there's already an active CHAT session
      * 2. If not, create new CHAT session
-     * 3. Emit SessionActivationRequested event
-     * 4. SessionScheduler handles queue/interruption logic
+     * 3. Request activation via scheduler (handles queue/eviction logic)
+     * 4. Handle activation result (immediate, enqueue, or evict)
      */
     suspend fun requestChatSession() {
         LogManager.aiSession("requestChatSession called", "INFO")
@@ -219,15 +299,76 @@ object AIOrchestrator {
             newSessionId
         }
 
-        // Emit activation request
-        eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+        // Request activation via scheduler
+        val activationResult = sessionScheduler.requestSession(
+            sessionId = sessionId,
+            sessionType = SessionType.CHAT,
+            trigger = ExecutionTrigger.MANUAL,
+            currentState = currentState
+        )
+
+        // Handle result
+        when (activationResult) {
+            is com.assistant.core.ai.scheduling.ActivationResult.ActivateImmediate -> {
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.EvictAndActivate -> {
+                // Evict current session
+                eventProcessor.emit(AIEvent.SessionCompleted(activationResult.evictionReason))
+                // Then activate new session
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId))
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
+                enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, activationResult.priority)
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Skip -> {
+                LogManager.aiSession("Session activation skipped: ${activationResult.reason}", "INFO")
+            }
+        }
     }
 
     /**
-     * Stop active session.
+     * Stop active session with CANCELLED reason.
      */
     suspend fun stopActiveSession() {
         eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.CANCELLED))
+    }
+
+    /**
+     * Pause active session (manual pause by user).
+     *
+     * Session keeps the slot but stops sending new AI requests.
+     * If currently waiting for AI response, will process it then pause.
+     * Requires manual resume via resumeActiveSession().
+     */
+    suspend fun pauseActiveSession() {
+        LogManager.aiSession("pauseActiveSession called", "INFO")
+        eventProcessor.emit(AIEvent.SessionPaused)
+    }
+
+    /**
+     * Resume paused session (manual resume by user).
+     *
+     * Session continues AI interaction flow from PAUSED phase.
+     */
+    suspend fun resumeActiveSession() {
+        LogManager.aiSession("resumeActiveSession called", "INFO")
+        eventProcessor.emit(AIEvent.SessionResumed)
+    }
+
+    /**
+     * Interrupt current AI round (CHAT only).
+     *
+     * Cancels the current AI call/processing but keeps session active.
+     * If AI response arrives, it will be ignored.
+     * Session remains active and waits for next user message.
+     *
+     * Different from pause: does not require manual resume,
+     * session continues automatically when user sends next message.
+     */
+    suspend fun interruptActiveRound() {
+        LogManager.aiSession("interruptActiveRound called", "INFO")
+        eventProcessor.emit(AIEvent.AIRoundInterrupted)
     }
 
     // ========================================================================================
@@ -241,7 +382,7 @@ object AIOrchestrator {
         LogManager.aiSession("resumeWithValidation: $approved", "INFO")
 
         // Emit validation event asynchronously
-        kotlinx.coroutines.GlobalScope.launch {
+        orchestratorScope.launch {
             eventProcessor.emit(AIEvent.ValidationReceived(approved))
         }
     }
@@ -253,7 +394,7 @@ object AIOrchestrator {
         LogManager.aiSession("resumeWithResponse: $response", "INFO")
 
         // Emit response event asynchronously
-        kotlinx.coroutines.GlobalScope.launch {
+        orchestratorScope.launch {
             eventProcessor.emit(AIEvent.CommunicationResponseReceived(response))
         }
     }

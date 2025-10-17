@@ -137,6 +137,16 @@ class AIEventProcessor(
                 emit(AIEvent.RetryScheduled)
             }
 
+            Phase.PAUSED -> {
+                // No side effects - session paused manually
+                // Waiting for user to resume
+            }
+
+            Phase.INTERRUPTED -> {
+                // Create interruption system message (audit only, excluded from prompt)
+                createInterruptionMessage(state)
+            }
+
             Phase.COMPLETED -> {
                 handleSessionCompletion(state)
             }
@@ -267,7 +277,7 @@ class AIEventProcessor(
             }
 
             // Build prompt data
-            val promptData = promptManager.buildPromptData(sessionId)
+            val promptData = promptManager.buildPromptData(sessionId, context)
 
             // Check network availability
             if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
@@ -286,6 +296,13 @@ class AIEventProcessor(
             // Call AI provider
             LogManager.aiSession("callAI: Calling AI provider", "DEBUG")
             val response = aiClient.query(promptData)
+
+            // Check if session was interrupted while we were waiting for response
+            val currentState = stateRepository.currentState
+            if (currentState.phase == Phase.INTERRUPTED) {
+                LogManager.aiSession("callAI: Session interrupted during AI call, ignoring response", "INFO")
+                return
+            }
 
             if (response.success) {
                 LogManager.aiSession("callAI: AI response received (${response.tokensUsed} tokens)", "INFO")
@@ -395,16 +412,16 @@ class AIEventProcessor(
 
                 // Validate communication module schemas if present
                 parsedAIMessage.communicationModule?.let { module ->
-                    val schemaValidator = com.assistant.core.ai.data.CommunicationModuleSchemas
-                    val validation = when (module) {
-                        is CommunicationModule.MultipleChoice ->
-                            schemaValidator.validateMultipleChoice(module.data, context)
-                        is CommunicationModule.Validation ->
-                            schemaValidator.validateValidation(module.data, context)
-                    }
-
-                    if (!validation.isValid) {
-                        formatErrors.add("Invalid communication module: ${validation.errorMessage}")
+                    val schema = com.assistant.core.ai.data.CommunicationModuleSchemas.getSchema(module.type, context)
+                    if (schema != null) {
+                        val validation = com.assistant.core.validation.SchemaValidator.validate(
+                            schema = schema,
+                            data = module.data,
+                            context = context
+                        )
+                        if (!validation.isValid) {
+                            formatErrors.add("Invalid communication module: ${validation.errorMessage}")
+                        }
                     }
                 }
 
@@ -475,7 +492,7 @@ class AIEventProcessor(
             delay(30_000L) // 30 seconds
 
             // Check if network is now available
-            if (isNetworkAvailable()) {
+            if (com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                 emit(AIEvent.NetworkAvailable)
             } else {
                 // Schedule another retry
@@ -765,6 +782,34 @@ class AIEventProcessor(
         return messageId
     }
 
+    /**
+     * Create interruption system message (audit only).
+     *
+     * This message is excluded from prompt to avoid polluting AI context.
+     * It's only for user history/audit trail.
+     */
+    private suspend fun createInterruptionMessage(state: AIState) {
+        val sessionId = state.sessionId ?: return
+
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+        val message = SessionMessage(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = s.shared("ai_round_interrupted"), // "Round IA interrompu"
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = null,
+            executionMetadata = null,
+            excludeFromPrompt = true // Excluded from AI prompt
+        )
+
+        messageRepository.storeMessage(sessionId, message)
+
+        LogManager.aiSession("Interruption message created for session $sessionId", "DEBUG")
+    }
 
     /**
      * Shutdown processor and cancel all jobs.

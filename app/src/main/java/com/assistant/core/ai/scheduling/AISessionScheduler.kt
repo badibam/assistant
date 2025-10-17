@@ -157,6 +157,8 @@ class AISessionScheduler(
         if (chatSession != null) {
             return SessionToActivate(
                 sessionId = chatSession.sessionId,
+                automationId = null,
+                scheduledFor = null,
                 sessionType = chatSession.sessionType,
                 trigger = chatSession.trigger,
                 removeFromQueue = true
@@ -170,6 +172,8 @@ class AISessionScheduler(
         if (manualSession != null) {
             return SessionToActivate(
                 sessionId = manualSession.sessionId,
+                automationId = null,
+                scheduledFor = null,
                 sessionType = manualSession.sessionType,
                 trigger = manualSession.trigger,
                 removeFromQueue = true
@@ -177,17 +181,32 @@ class AISessionScheduler(
         }
 
         // Priority 3: SCHEDULED automation (not from queue - calculated dynamically)
-        val scheduledAutomation = automationScheduler.getNextScheduledAutomation()
-        if (scheduledAutomation != null) {
-            return SessionToActivate(
-                sessionId = scheduledAutomation.sessionId,
-                sessionType = SessionType.AUTOMATION,
-                trigger = ExecutionTrigger.SCHEDULED,
-                removeFromQueue = false // Not in queue
-            )
+        val nextSession = automationScheduler.getNextSession()
+        return when (nextSession) {
+            is NextSession.Resume -> {
+                // Resume existing incomplete session
+                SessionToActivate(
+                    sessionId = nextSession.sessionId,
+                    automationId = null,
+                    scheduledFor = null,
+                    sessionType = SessionType.AUTOMATION,
+                    trigger = ExecutionTrigger.SCHEDULED, // Was scheduled, resume it
+                    removeFromQueue = false // Not in queue
+                )
+            }
+            is NextSession.Create -> {
+                // Create new scheduled session from automation
+                SessionToActivate(
+                    sessionId = null,
+                    automationId = nextSession.automationId,
+                    scheduledFor = nextSession.scheduledFor,
+                    sessionType = SessionType.AUTOMATION,
+                    trigger = ExecutionTrigger.SCHEDULED,
+                    removeFromQueue = false // Not in queue
+                )
+            }
+            NextSession.None -> null
         }
-
-        return null
     }
 
     /**
@@ -246,6 +265,8 @@ sealed class ActivationResult {
 
 /**
  * Session in queue waiting for activation.
+ *
+ * Minimal structure - additional info (like automationId) can be loaded from DB via sessionId.
  */
 data class QueuedSession(
     val sessionId: String,
@@ -256,10 +277,33 @@ data class QueuedSession(
 
 /**
  * Session to activate (result of getNextSession).
+ *
+ * Two modes:
+ * 1. Resume: sessionId is set (existing session to activate)
+ * 2. Create: automationId is set (create new session from automation)
  */
 data class SessionToActivate(
-    val sessionId: String,
+    val sessionId: String?,              // Existing session to activate (Resume)
+    val automationId: String?,           // Automation to create session from (Create)
+    val scheduledFor: Long?,             // For Create only - timestamp for scheduledExecutionTime
     val sessionType: SessionType,
     val trigger: ExecutionTrigger,
     val removeFromQueue: Boolean
-)
+) {
+    init {
+        // Exactly one of sessionId or automationId must be set
+        require((sessionId != null) xor (automationId != null)) {
+            "SessionToActivate must have either sessionId or automationId set, not both or neither"
+        }
+    }
+
+    /**
+     * Check if this is a resume (existing session)
+     */
+    fun isResume(): Boolean = sessionId != null
+
+    /**
+     * Check if this is a create (new automation session)
+     */
+    fun isCreate(): Boolean = automationId != null
+}

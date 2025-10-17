@@ -3,8 +3,13 @@ package com.assistant.core.ai.state
 import android.content.Context
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
-import com.assistant.core.ai.domain.*
-import com.assistant.core.config.AppConfigManager
+import com.assistant.core.ai.data.SessionType
+import com.assistant.core.ai.domain.AIEvent
+import com.assistant.core.ai.domain.AIState
+import com.assistant.core.ai.domain.AIStateMachine
+import com.assistant.core.ai.domain.Phase
+import com.assistant.core.ai.domain.WaitingContext
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,7 +70,7 @@ class AIStateRepository(
             AppConfigManager.getAILimits().getLimitsForSessionType(oldState.sessionType)
         } else {
             // No active session - use default CHAT limits
-            AppConfigManager.getAILimits().getLimitsForSessionType(com.assistant.core.ai.data.SessionType.CHAT)
+            AppConfigManager.getAILimits().getLimitsForSessionType(SessionType.CHAT)
         }
 
         // Calculate new state via pure state machine

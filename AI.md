@@ -10,16 +10,71 @@ Toutes les interactions IA utilisent la même structure de données `SessionMess
 - **SEED** : Template automation (message user + enrichments), jamais exécuté
 - **AUTOMATION** : Exécution autonome, queries relatives, copie messages SEED au démarrage
 
-### AIOrchestrator singleton
-L'orchestrateur IA maintient une session active unique avec queue FIFO pour sessions en attente.
+### Architecture Event-Driven (V2)
+L'orchestrateur IA fonctionne comme une machine à états pilotée par événements. Single source of truth avec synchronisation atomique memory + DB.
 
-**API principale** :
-- `requestSessionControl()` : Demande contrôle session (ACTIVATED/ALREADY_ACTIVE/QUEUED)
-- `processUserMessage()` : Traite message user avec enrichments
-- `executeAIRound(reason)` : Exécute round IA complet avec boucles autonomes
-- `sendMessage()` : Wrapper processUserMessage + executeAIRound
+**Composants principaux** :
+- **AIOrchestrator** : Façade publique singleton exposant `currentState` observable
+- **AIStateMachine** : Machine à états pure (transitions sans side effects)
+- **AIEventProcessor** : Event loop avec side effects (DB, network, commands)
+- **AIStateRepository** : Gestion atomique state memory + DB sync
+- **AIMessageRepository** : Persistence messages avec cache observable
+- **AISessionScheduler** : Scheduling, interruption, calcul inactivité
 
-**StateFlows observables** : `waitingState` (validation/communication), `isRoundInProgress` (protection concurrent).
+**API publique AIOrchestrator** :
+- `currentState: StateFlow<AIState>` : État observable (phase, sessionId, counters, timestamps, waitingContext)
+- `observeMessages(sessionId): Flow<List<SessionMessage>>` : Messages observables
+- `sendMessage(richMessage)` : Envoyer message utilisateur
+- `requestChatSession()` : Créer/activer session CHAT
+- `executeAutomation(automationId)` : Lancer automation
+- `stopActiveSession()` : Arrêter avec CANCELLED
+- `pauseActiveSession()` : Mettre en pause (garde slot)
+- `resumeActiveSession()` : Reprendre depuis pause
+- `resumeWithValidation(approved)` : Répondre à validation
+- `resumeWithResponse(response)` : Répondre à communication module
+
+### Phase et AIState
+
+**Phase** : 13 phases d'exécution
+- `IDLE` : Pas de session active
+- `EXECUTING_ENRICHMENTS` : Traitement enrichments user
+- `CALLING_AI` : Appel provider IA
+- `PARSING_AI_RESPONSE` : Parsing JSON réponse
+- `WAITING_VALIDATION` : Attente validation user (CHAT)
+- `WAITING_COMMUNICATION_RESPONSE` : Attente réponse communication module (CHAT)
+- `EXECUTING_DATA_QUERIES` : Exécution data commands
+- `EXECUTING_ACTIONS` : Exécution action commands
+- `WAITING_COMPLETION_CONFIRMATION` : Attente confirmation completion (AUTOMATION)
+- `WAITING_NETWORK_RETRY` : Attente retry réseau (AUTOMATION)
+- `RETRYING_AFTER_FORMAT_ERROR` : Retry après erreur format
+- `RETRYING_AFTER_ACTION_FAILURE` : Retry après échec actions
+- `PAUSED` : Session pausée manuellement (garde slot)
+- `COMPLETED` : Session terminée
+
+**AIState** : État complet système
+```kotlin
+data class AIState(
+    val sessionId: String?,
+    val phase: Phase,
+    val sessionType: SessionType?,
+    val consecutiveFormatErrors: Int,
+    val consecutiveActionFailures: Int,
+    val consecutiveDataQueries: Int,
+    val totalRoundtrips: Int,
+    val lastEventTime: Long,
+    val lastUserInteractionTime: Long,
+    val waitingContext: WaitingContext?,
+    val phaseBeforePause: Phase?
+)
+```
+
+**WaitingContext** : Contextes d'attente typés
+- `Validation(validationContext, cancelMessageId)` : Attente validation actions
+- `Communication(communicationModule, cancelMessageId)` : Attente réponse communication
+- `CompletionConfirmation(aiMessageId, scheduledConfirmationTime)` : Attente confirmation completion
+
+### AIEvent
+Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `SessionPaused`, `SessionResumed`, `DataQueriesExecuted`, `ActionsExecuted`, `CompletionConfirmed`, `CompletionRejected`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
 
 ## 2. Types et structures
 
@@ -27,25 +82,32 @@ L'orchestrateur IA maintient une session active unique avec queue FIFO pour sess
 - **OperationResult** : Services avec `.success: Boolean`
 - **CommandResult** : Coordinator avec `.status: CommandStatus` (SUCCESS, FAILED, CANCELLED, CACHED)
 
-### AISession
+### AISessionEntity (DB)
 ```kotlin
-data class AISession(
+data class AISessionEntity(
     val id: String,
     val name: String,
     val type: SessionType,
-    val automationId: String?,              // AUTOMATION : ID automation source, null pour CHAT
-    val scheduledExecutionTime: Long?,      // AUTOMATION : timestamp référence pour résolution périodes relatives
+    val requireValidation: Boolean,
+    val phase: String,                      // Phase actuelle (serialized)
+    val waitingContextJson: String?,        // WaitingContext (serialized)
+    val consecutiveFormatErrors: Int,
+    val consecutiveActionFailures: Int,
+    val consecutiveDataQueries: Int,
+    val totalRoundtrips: Int,
+    val lastEventTime: Long,
+    val lastUserInteractionTime: Long,
+    val automationId: String?,
+    val scheduledExecutionTime: Long?,
     val providerId: String,
     val providerSessionId: String,
-    val schedule: ScheduleConfig?,          // AUTOMATION uniquement
     val createdAt: Long,
     val lastActivity: Long,
-    val messages: List<SessionMessage>,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val endReason: SessionEndReason?,
+    val tokensUsed: String?                 // JSON tokens breakdown
 )
 ```
-
-**scheduledExecutionTime** : Pour AUTOMATION, référence temporelle utilisée pour résolution RelativePeriod (permet traitement correct même si exécution retardée).
 
 ### SessionMessage (structure unifiée)
 ```kotlin
@@ -63,9 +125,9 @@ data class SessionMessage(
 )
 ```
 
-**Pattern stockage** : Messages séparés USER → SYSTEM → AI → SYSTEM. Le provider ajuste selon ses contraintes (généralement : pas de message system dans flux des messages)
+**Pattern stockage** : Messages séparés USER → SYSTEM → AI → SYSTEM. Le provider ajuste selon ses contraintes.
 
-**PostText success** : Après succès des actions, si `postText` présent dans AIMessage, un message séparé est créé avec `sender=AI`, `textContent=postText`, et `excludeFromPrompt=true`. Ce message s'affiche en UI mais est exclu du prompt (le postText reste dans le message AI original pour l'historique IA).
+**PostText success** : Après succès des actions, si `postText` présent dans AIMessage, un message séparé est créé avec `sender=AI`, `textContent=postText`, et `excludeFromPrompt=true`.
 
 ### RichMessage et AIMessage
 ```kotlin
@@ -130,7 +192,6 @@ data class ExecutableCommand(
 data class PromptData(
     val level1Content: String,     // Documentation système (avec limites)
     val level2Content: String,     // User data (always_send tools)
-    val level3Content: String,     // Application state
     val sessionMessages: List<SessionMessage>
 )
 ```
@@ -180,79 +241,73 @@ data class AILimitsConfig(
 
 **Inclusion Level 1** : Limites documentées dans prompt L1 (valeurs fixes, pas de compteurs dynamiques).
 
-## 4. Services et responsabilités
+## 4. Composants et responsabilités
 
-### Services ExecutableService
-- `AISessionService` : CRUD sessions et messages
-- `AIProviderConfigService` : CRUD configurations providers
+### Repositories
+- **AIStateRepository** : Gestion atomique AIState (memory + DB sync), conversion Entity ↔ Domain, initialisation from DB
+- **AIMessageRepository** : Persistence synchrone messages, cache observable par session, conversion Entity ↔ Domain
 
-### Classes métier pures
-- `AIOrchestrator` : Orchestration flow IA (singleton)
-- `AIClient` : Interface vers providers externes
-- `PromptManager` : Génération prompts 3 niveaux avec PromptData
-- `EnrichmentProcessor` : Génération commands depuis enrichments UI
-- `CommandTransformer` (object) : Transformation DataCommand → ExecutableCommand
-- `UserCommandProcessor` : Délègue à CommandTransformer
-- `AICommandProcessor` : Transformation commands IA (queries et actions séparées)
-- `CommandExecutor` : Point unique d'exécution + génération SystemMessage
+### Processing
+- **AIEventProcessor** : Event loop avec side effects (executeEnrichments, callAI, parseAIResponse, executeDataQueries, executeActions)
+- **AISessionScheduler** : Queue sessions, calcul inactivité, détection timeout, éviction/reprise sessions
 
-### CommandExecutor
-```kotlin
-class CommandExecutor(context: Context) {
-    suspend fun executeCommands(
-        commands: List<ExecutableCommand>,
-        messageType: SystemMessageType,
-        level: String
-    ): CommandExecutionResult
-}
-
-data class CommandExecutionResult(
-    val promptResults: List<PromptCommandResult>,
-    val systemMessage: SystemMessage
-)
-```
-
-**Responsabilités** : Point unique d'exécution (User/AI), appels coordinator, formatage PromptCommandResult (queries), génération SystemMessage (UN par série), NE stocke JAMAIS.
+### Coordination
+- **AIOrchestrator** : Façade publique singleton, délégation aux composants spécialisés
+- **AIClient** : Interface vers providers externes
+- **PromptManager** : Génération prompts niveaux L1-L2
+- **EnrichmentProcessor** : Génération commands depuis enrichments UI
+- **CommandTransformer** : Transformation DataCommand → ExecutableCommand
+- **CommandExecutor** : Point unique exécution + génération SystemMessage
+- **ValidationResolver** : Résolution hiérarchie validation (app > zone > tool > session > AI request)
 
 ### Command Processing Pipeline
 ```
-User: EnrichmentBlock → EnrichmentProcessor → UserCommandProcessor → CommandTransformer → CommandExecutor
-AI:   AIMessage → AICommandProcessor → CommandTransformer/Actions → CommandExecutor
+User: EnrichmentBlock → EnrichmentProcessor → CommandTransformer → CommandExecutor
+AI:   AIMessage → CommandTransformer → CommandExecutor
 ```
 
 ## 5. Contrôle de session
 
 ### Session active exclusive
-Une seule session active à la fois (CHAT ou AUTOMATION), les autres en queue mémoire.
+Une seule session active à la fois (CHAT ou AUTOMATION). `AISessionScheduler` gère queue et activation.
 
-**Queue mémoire** : Contient UNIQUEMENT CHAT + MANUAL (SCHEDULED créés à la demande par tick()).
+**Règles activation** :
+- **CHAT** : Interruption immédiate si autre session active (même AUTOMATION)
+- **AUTOMATION MANUAL** : Queue si slot occupé, activation FIFO
+- **AUTOMATION SCHEDULED** : Création à la demande par `tick()` si slot libre + queue vide
 
-**Règles CHAT** :
-- Switch immédiat si autre CHAT actif (remplace le CHAT en queue)
-- Priorité absolue en queue (position 1)
-- Un seul CHAT en queue maximum
+**Scheduling** : Tick périodique (5 min) + événementiel (CRUD automations, fin session).
 
-**Règles AUTOMATION** :
-- **MANUAL** : Queue si slot occupé (priorité après CHAT)
-- **SCHEDULED** : Jamais en queue, créés à la demande par tick() si slot libre + queue vide
+**Inactivité** : Calcul via `AIState.calculateInactivity()`, phases actives (CALLING_AI, EXECUTING_*) ne timeout jamais, phases waiting utilisent `lastUserInteractionTime`.
 
-**Watchdog externe** : `AISessionController.tick()` appelle `shouldStopInactiveSession()` pour détecter timeouts. Vérifie `isWaitingForNetwork` pour distinguer timeout réseau vs inactivité réelle.
+### Pause vs Suspension
+
+**PAUSE (manuel)** :
+- Phase `PAUSED`, garde le slot, `phaseBeforePause` stockée
+- `pauseActiveSession()` → `SessionPaused` event
+- `resumeActiveSession()` → `SessionResumed` event, restaure phase
+- Utilisateur doit manuellement reprendre
+
+**SUSPENSION (système)** :
+- `endReason = SUSPENDED`, libère le slot
+- Session évincée pour laisser place à CHAT
+- Reprend automatiquement quand slot libre (scheduler)
 
 ## 6. Automations
 
 ### Concept
-Sessions AUTOMATION créées depuis template SEED (message user + enrichments). À chaque déclenchement : copie messages SEED → nouvelle session AUTOMATION → activation directe ou queue selon ExecutionTrigger.
+Sessions AUTOMATION créées depuis template SEED (message user + enrichments). À chaque déclenchement : copie messages SEED → nouvelle session AUTOMATION → activation.
 
 ### Déclenchement
 **ExecutionTrigger** distingue origine :
-- **MANUAL** : User clique Execute → `executeAutomation(id, MANUAL, now())` → queue si slot occupé
-- **SCHEDULED** : tick() calcule prochaine execution → `executeAutomation(id, SCHEDULED, scheduledFor)` → créé uniquement si slot libre + queue vide
+- **MANUAL** : User clique Execute → `executeAutomation(id)` → queue si slot occupé
+- **SCHEDULED** : tick() calcule prochaine execution → créé uniquement si slot libre + queue vide
 - **EVENT** : Future (triggers non planifiés)
 
 **Triggers tick()** :
 - Périodique : SchedulerWorker (5 min)
 - Événementiel : CRUD automations (create/update/enable/disable)
-- Fin session : `closeActiveSession()` appelle tick()
+- Fin session : scheduler déclenché après libération slot
 
 ### Architecture pull-based
 ```kotlin
@@ -261,7 +316,7 @@ tick() {
   if (queueNotEmpty) processQueue()
   else {
     nextSession = AutomationScheduler.getNextSession()  // Calcul dynamique
-    if (nextSession) executeAutomation(id, SCHEDULED, scheduledFor)
+    if (nextSession) executeAutomation(id)
   }
 }
 ```
@@ -270,18 +325,18 @@ tick() {
 
 ### Spécificités AUTOMATION vs CHAT
 
-**Flag completed** : IA signale fin avec `completed: true` → set endReason=COMPLETED → libère slot via `closeActiveSession()`.
+**Flag completed** : IA signale fin avec `completed: true` → phase `WAITING_COMPLETION_CONFIRMATION` → `CompletionConfirmed` event → `endReason=COMPLETED`.
 
 **Continuation automatique** : Après succès actions, AUTOMATION continue automatiquement (pas de keepControl requis).
 
-**Réseau** : Retry infini avec delay 30s si offline. Flag `isWaitingForNetwork=true` en DB (watchdog ne timeout pas pendant attente réseau).
+**Réseau** : Retry infini avec delay 30s si offline. Phase `WAITING_NETWORK_RETRY` (watchdog ne timeout pas).
 
 **Communication modules** : Interdits pour AUTOMATION (validationRequest, communicationModule ignorés).
 
 ### Arrêt AUTOMATION
 **UI boutons** :
-- **STOP** : set endReason=CANCELLED + closeActiveSession() (ne reprendra pas)
-- **PAUSE** : set endReason=SUSPENDED + closeActiveSession() (reprendra plus tard)
+- **STOP** : `stopActiveSession()` → `endReason=CANCELLED` (ne reprendra pas)
+- **PAUSE** : `pauseActiveSession()` → phase `PAUSED` (reprend sur resume manuel)
 
 **Arrêt automatique** :
 - **completed=true** : IA termine son travail → COMPLETED
@@ -292,16 +347,9 @@ tick() {
 Détection automatique sessions orphelines par AutomationScheduler :
 - **endReason null** : Crash/interruption → reprise transparente
 - **NETWORK_ERROR** : Échec réseau → reprise avec retry
-- **SUSPENDED** : User pause → reprise quand slot libre
+- **SUSPENDED** : Éviction système → reprise quand slot libre
 
 **Transparence** : Pas de message système, IA ne sait pas qu'elle reprend (continue naturellement).
-
-## 7. Séparation message/round
-
-### RoundReason
-`USER_MESSAGE`, `FORMAT_ERROR_CORRECTION`, `LIMIT_NOTIFICATION`, `DATA_RESPONSE`, `MANUAL_TRIGGER`, `AUTOMATION_START`, `AUTOMATION_RESUME_ORPHAN`, `AUTOMATION_RESUME_NETWORK`, `AUTOMATION_RESUME_SUSPENDED`.
-
-**Resume reasons** : Utilisés uniquement pour logs. L'IA ne sait pas qu'elle reprend (transparence totale).
 
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
@@ -309,117 +357,109 @@ Raison d'arrêt session (audit + logique reprise) :
 - **TIMEOUT** : Watchdog inactivité OU limites boucles
 - **ERROR** : Erreur technique fatale
 - **CANCELLED** : User STOP (ne reprend pas)
-- **SUSPENDED** : User PAUSE (reprend plus tard)
+- **SUSPENDED** : Éviction système (reprend plus tard)
 - **NETWORK_ERROR** : Échec réseau (reprend avec retry)
 - **null** : Crash/interruption (reprend)
 
-### Méthodes principales
+## 7. Event loop et boucles autonomes
 
-**processUserMessage()** : Exécute enrichments, stocke message user + SystemMessage enrichments, update lastActivityTimestamp.
+### Architecture event-driven
 
-**executeAIRound(reason)** : Protection concurrent (`isRoundInProgress`), build promptData, check réseau, query IA (retry infini si AUTOMATION), boucles autonomes.
+**AIEventProcessor** traite événements séquentiellement avec side effects :
+1. Écoute événements via channel
+2. Pour chaque event : `AIStateMachine.transition()` → nouveau state
+3. `AIStateRepository.updateState()` → sync memory + DB atomique
+4. Side effects selon event (appels DB, network, coordinator)
 
-**sendMessage()** : Wrapper processUserMessage + executeAIRound.
+**Boucles autonomes** : Gérées par compteurs dans `AIState` et limites `AILimitsConfig`. Machine à états gère automatiquement transitions et resets compteurs.
 
-## 8. Boucles autonomes
+### Flow logique principal
 
-### Architecture 4 compteurs
-```kotlin
-var totalRoundtrips = 0
-var consecutiveDataQueries = 0
-var consecutiveActionRetries = 0
-var consecutiveFormatErrors = 0
+```
+Event UserMessageSent:
+  → transition EXECUTING_ENRICHMENTS
+  → side effect: executeEnrichments()
+  → emit EnrichmentsExecuted
 
-val limits = getLimitsForSessionType(sessionType)
+Event EnrichmentsExecuted:
+  → transition CALLING_AI
+  → side effect: callAI()
+  → emit AIResponseReceived
+
+Event AIResponseReceived:
+  → transition PARSING_AI_RESPONSE
+  → side effect: parseAIResponse()
+  → emit AIResponseParsed
+
+Event AIResponseParsed:
+  → decision tree (completed? validation? communication? data? actions?)
+  → transition vers phase appropriée
+
+Event DataQueriesExecuted:
+  → check limit consecutiveDataQueries
+  → si limite: transition COMPLETED
+  → sinon: transition CALLING_AI, increment counter, emit nouveau round
+
+Event ActionsExecuted:
+  → si allSuccess + (keepControl OR AUTOMATION): transition CALLING_AI
+  → sinon: transition COMPLETED
+  → reset counters si succès
+
+Event ParseErrorOccurred:
+  → check limit consecutiveFormatErrors
+  → si limite: transition COMPLETED
+  → sinon: transition RETRYING_AFTER_FORMAT_ERROR, increment counter
+
+Event NetworkErrorOccurred:
+  → si CHAT: transition COMPLETED
+  → si AUTOMATION: transition WAITING_NETWORK_RETRY
+
+Event SessionPaused:
+  → store phaseBeforePause
+  → transition PAUSED
+
+Event SessionResumed:
+  → restore phase from phaseBeforePause
 ```
 
-### Flow logique dans executeAIRound()
-```
-while (totalRoundtrips < limits.maxAutonomousRoundtrips):
+### Validation et Communication
 
-  Priorité 0: COMPLETED FLAG (AUTOMATION uniquement)
-    - Si completed=true → set endReason=COMPLETED → closeActiveSession() → return
+**Validation** :
+- `ValidationResolver` analyse hiérarchie (app > zone > tool > session > AI request)
+- Si requis : `WaitingContext.Validation` créé avec `ValidationContext` + `cancelMessageId`
+- Phase `WAITING_VALIDATION`
+- Fallback message SYSTEM créé AVANT suspension
+- UI observe `aiState.waitingContext` et affiche inline dans dernier message AI
+- User répond : `resumeWithValidation(approved)` → `ValidationReceived` event
+- Si refusé : garde message fallback, transition COMPLETED
+- Si approuvé : supprime message fallback, exécute actions
 
-  Priorité 1: FORMAT ERRORS (avant tout traitement)
-    - Vérifier parseResult.formatErrors après parsing réponse IA
-    - Si erreurs → vérifier limite consecutiveFormatErrors
-    - Si limite atteinte → storeLimitReachedMessage + break
-    - Stocker FORMAT_ERROR SystemMessage
-    - Renvoyer auto à IA avec erreurs pour correction
-    - Incrémenter consecutiveFormatErrors + totalRoundtrips, continue
-    - Si message correctement parsé → reset consecutiveFormatErrors
+**Communication** :
+- Phase `WAITING_COMMUNICATION_RESPONSE`
+- `WaitingContext.Communication` créé avec module + cancelMessageId
+- Fallback message AI créé AVANT suspension (excludeFromPrompt=true)
+- UI observe `aiState.waitingContext` et affiche inline dans dernier message AI
+- User répond : `resumeWithResponse(response)` → `CommunicationResponseReceived` event
+- Stocke réponse, supprime fallback, renvoie à IA
 
-  Priorité 2: COMMUNICATION MODULE
-    - STOP → waitForUserResponse() (suspend via StateFlow)
-    - Stocker réponse user
-    - Renvoyer auto à IA
-    - Incrémenter totalRoundtrips
-
-  Priorité 3: DATA COMMANDS (queries)
-    - Vérifier limite consecutiveDataQueries
-    - Exécuter via AICommandProcessor → CommandExecutor
-    - Stocker SystemMessage
-    - Renvoyer auto à IA
-    - Incrémenter consecutiveDataQueries, reset consecutiveActionRetries, totalRoundtrips++
-
-  Priorité 4: ACTION COMMANDS (mutations)
-    - ValidationResolver analyse hiérarchie configs → ValidationContext si requis
-    - Créer message VALIDATION_CANCELLED fallback AVANT suspension
-    - Si validation requise → STOP → waitForUserValidation(context, cancelMessageId)
-    - Si refusé → garde message VALIDATION_CANCELLED + break
-    - Exécuter actions via AICommandProcessor → CommandExecutor
-    - Stocker SystemMessage
-    - Si allSuccess:
-      - Si postText présent → storePostTextMessage (excludeFromPrompt=true)
-      - Si keepControl == true OU SessionType.AUTOMATION → renvoyer auto à IA avec résultats, reset compteurs consécutifs, totalRoundtrips++, continue
-      - Sinon → break (FIN)
-    - Sinon → vérifier limite consecutiveActionRetries, renvoyer IA
-    - Incrémenter consecutiveActionRetries, reset consecutiveDataQueries, totalRoundtrips++
-
-  Si aucun → break
-
-Si totalRoundtrips >= limite → storeLimitReachedMessage (LIMIT_REACHED)
-```
-
-### Pattern StateFlow
-```kotlin
-// Attente validation (Phase 7: fallback message + cancelMessageId)
-private suspend fun waitForUserValidation(context: ValidationContext, cancelMessageId: String): Boolean =
-    suspendCancellableCoroutine { cont ->
-        _waitingState.value = WaitingState.WaitingValidation(context, cancelMessageId)
-        validationContinuation = cont
-    }
-
-fun resumeWithValidation(validated: Boolean) {
-    if (validated) deleteMessage(cancelMessageId) // Supprime fallback si validé
-    validationContinuation?.resume(validated)
-    validationContinuation = null
-    _waitingState.value = WaitingState.None
-}
-
-// Idem pour waitForUserResponse/resumeWithResponse avec COMMUNICATION_CANCELLED
-```
-
-**Helpers** : `createAndStoreValidationCancelledMessage()` crée fallback AVANT suspension, `storeLimitReachedMessage()` crée SystemMessage type LIMIT_REACHED.
-
-## 9. Gestion réseau et erreurs
+## 8. Gestion réseau et erreurs
 
 **NetworkUtils** : `isNetworkAvailable(context)` pour vérification connectivité (core/utils).
 
 **Timeout HTTP** : 2 minutes (OkHttp config providers).
 
 **AUTOMATION** :
-- Check réseau avant appel → offline = delay 30s + retry infini
-- Flag `isWaitingForNetwork=true` en DB (watchdog ne timeout pas)
-- State `WAITING_NETWORK` en DB (audit)
-- Retry infini jusqu'à réseau disponible OU user STOP/PAUSE
+- Check réseau avant appel → offline = phase `WAITING_NETWORK_RETRY`
+- Delay 30s + retry infini
+- Watchdog ne timeout pas pendant retry réseau
+- Retry jusqu'à réseau disponible OU user STOP/PAUSE
 
 **CHAT** :
-- Check réseau avant appel → offline = toast + NETWORK_ERROR
+- Check réseau avant appel → offline = toast + `NETWORK_ERROR` event
 - Pas de retry automatique
 - Session reste active
 
-## 10. Enrichissements
+## 9. Enrichissements
 
 ### Types d'enrichissements
 - **🔍 POINTER** - Référencer données (zones ou instances)
@@ -443,7 +483,7 @@ class EnrichmentProcessor {
 
 **Périodes** : CHAT (isRelative=false) → timestamps absolus via Period, AUTOMATION (isRelative=true) → périodes relatives format "offset_TYPE".
 
-**Flow** : EnrichmentProcessor → DataCommand → UserCommandProcessor → CommandTransformer → CommandExecutor → SystemMessage stocké séparément (plus dans system prompt).
+**Flow** : EnrichmentProcessor → DataCommand → CommandTransformer → CommandExecutor → SystemMessage.
 
 ### CommandTransformer
 **Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (résolution périodes), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list.
@@ -452,7 +492,7 @@ class EnrichmentProcessor {
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.
 **AI** : Source AIMessage.dataCommands + actionCommands, types queries + actions réelles, but demander données + exécuter actions.
 
-## 11. Architecture prompts
+## 10. Architecture prompts
 
 ### 2 niveaux de contexte
 **Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schémas (zone, tooltypes, communication modules). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
@@ -465,10 +505,8 @@ class EnrichmentProcessor {
 ```kotlin
 suspend fun buildPromptData(sessionId: String): PromptData {
     // L1-L2 régénérés à chaque appel (jamais cachés en DB)
-    // L1 utilise PromptChunks avec configuration par degrés d'importance
     val level1Content = PromptChunks.buildLevel1StaticDoc(context, sessionType, config)
     // L2: USER DATA (always_send tools)
-    // Note: Level 3 supprimé - IA utilise APP_STATE command à la demande
 
     // Filtrage messages exclus du prompt:
     // - NETWORK_ERROR et SESSION_TIMEOUT (audit uniquement)
@@ -494,7 +532,7 @@ suspend fun buildPromptData(sessionId: String): PromptData {
 **CHAT** (isRelative=false) : Périodes absolues (Period timestamps fixes).
 **AUTOMATION** (isRelative=true) : Périodes relatives (RelativePeriod "offset_TYPE") résolues via AppConfigManager.
 
-## 12. Provider abstraction
+## 11. Provider abstraction
 
 ### Signature AIProvider
 ```kotlin
@@ -531,7 +569,7 @@ Le provider fusionne USER/SYSTEM consécutifs pour respecter contraintes API.
 ### Configuration
 Configurations gérées par `AIProviderConfigService`, providers découverts via `AIProviderRegistry`, `AIClient` utilise coordinator (pas d'accès DB direct).
 
-## 13. Communication modules
+## 12. Communication modules
 
 ### Structure
 ```kotlin
@@ -550,33 +588,40 @@ sealed class CommunicationModule {
 
 ### Flow de réponse utilisateur
 ```kotlin
-1. IA génère AIMessage avec CommunicationModule
-2. AIOrchestrator met à jour _waitingState.value = WaitingState.WaitingResponse(module)
-3. UI observe via collectAsState() et affiche module
-4. User répond → AIOrchestrator.resumeWithResponse(userResponse)
-5. Stocker réponse dans SessionMessage.textContent
-6. Renvoyer automatiquement à IA
-7. Continuer boucle avec nouvelle réponse
-
 // Pattern UI
-val waitingState by AIOrchestrator.waitingState.collectAsState()
-when (waitingState) {
-    is WaitingState.WaitingResponse -> CommunicationModuleDialog(module) { response ->
-        AIOrchestrator.resumeWithResponse(response)
-    }
+val aiState by AIOrchestrator.currentState.collectAsState()
+
+// Affichage inline dans ChatMessageBubble (dernier message AI uniquement)
+if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
+    val ctx = aiState.waitingContext as WaitingContext.Communication
+    CommunicationModuleCard(
+        module = ctx.communicationModule,
+        onResponse = { response ->
+            AIOrchestrator.resumeWithResponse(response)
+        }
+    )
 }
 ```
+
+**Flow** :
+1. IA génère AIMessage avec CommunicationModule
+2. Event processor crée `WaitingContext.Communication`
+3. State transition → `WAITING_COMMUNICATION_RESPONSE`
+4. UI observe `aiState.waitingContext` et affiche inline
+5. User répond → `resumeWithResponse(response)`
+6. Event `CommunicationResponseReceived` → stocker réponse
+7. Transition `CALLING_AI` → renvoyer à IA
 
 ### Validation des actions IA
 **Hiérarchie OR** : app > zone > tool > session > AI request. Si UN niveau true → validation requise. `validationRequest` = Boolean dans AIMessage.
 
-**Flow** : ValidationResolver analyse actions → génère ValidationContext (actions verbalisées + raisons + warnings config) → `waitForUserValidation(context, cancelMessageId)` suspend → UI affiche → user valide/refuse → `resumeWithValidation(validated)` reprend.
+**Flow** : ValidationResolver analyse actions → génère ValidationContext (actions verbalisées + raisons + warnings config) → `WaitingContext.Validation` créé → UI affiche inline → user valide/refuse → `resumeWithValidation(validated)`.
 
-**Messages fallback** : COMMUNICATION_CANCELLED / VALIDATION_CANCELLED créés AVANT suspension (trace si fermeture app/navigation). Supprimés si user répond/valide effectivement. Communication module : message AI texte (excludeFromPrompt=true) + fallback SYSTEM. Validation : fallback SYSTEM uniquement.
+**Messages fallback** : COMMUNICATION_CANCELLED / VALIDATION_CANCELLED créés AVANT suspension (trace si fermeture app/navigation). Supprimés si user répond/valide effectivement.
 
-**Persistance** : Pas de sérialisation WaitingState. Historique messages suffit. Coroutines scope singleton AIOrchestrator (survive navigation ChatScreen).
+**Persistance** : `WaitingContext` serialisé en JSON dans DB (champ `waitingContextJson`).
 
-## 14. SystemMessages
+## 13. SystemMessages
 
 ### Génération et stockage
 **Générés par** : CommandExecutor après chaque série de commandes. **Stockés comme** : SessionMessage sender=SYSTEM. **Point unique** : CommandExecutor seul responsable (User et AI).
@@ -596,4 +641,4 @@ Provider décide du format d'inclusion. Généralement fusion avec messages USER
 
 ---
 
-*L'architecture IA garantit autonomie contrôlée, optimisation cache provider-specific, et extensibilité multi-providers.*
+*L'architecture IA V2 event-driven garantit cohérence state, recovery automatique, autonomie contrôlée et extensibilité.*

@@ -11,9 +11,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.orchestration.AIOrchestrator
-import com.assistant.core.ai.orchestration.WaitingState
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
+import kotlinx.coroutines.launch
 
 /**
  * Shared chat components extracted from AIFloatingChat
@@ -22,11 +22,13 @@ import com.assistant.core.ui.*
 
 /**
  * Individual message bubble - themed UI.MessageBubble
+ *
+ * V2: Uses aiState.waitingContext for inline validation/communication display
  */
 @Composable
 fun ChatMessageBubble(
     message: SessionMessage,
-    waitingState: WaitingState,
+    aiState: com.assistant.core.ai.domain.AIState,
     isLastAIMessage: Boolean = false
 ) {
     val context = LocalContext.current
@@ -88,13 +90,12 @@ fun ChatMessageBubble(
                             type = TextType.BODY
                         )
 
-                        // Communication module (inline in flow, after preText)
-                        // Show only if this is the last AI message AND we're waiting for a response
+                        // Communication module (inline, only on last AI message)
                         message.aiMessage.communicationModule?.let { module ->
-                            val shouldShowModule = isLastAIMessage &&
-                                    waitingState is WaitingState.WaitingResponse
+                            val shouldShow = isLastAIMessage &&
+                                aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Communication
 
-                            if (shouldShowModule) {
+                            if (shouldShow) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 com.assistant.core.ai.ui.components.CommunicationModuleCard(
                                     module = module,
@@ -102,18 +103,18 @@ fun ChatMessageBubble(
                                         AIOrchestrator.resumeWithResponse(response)
                                     },
                                     onCancel = {
-                                        AIOrchestrator.resumeWithResponse(null)
+                                        // Cancel handled by fallback message
                                     }
                                 )
                             }
                         }
 
-                        // Validation UI (inline in flow, after preText)
-                        // Show only if this is the last AI message AND we're waiting for validation
-                        if (isLastAIMessage && waitingState is WaitingState.WaitingValidation) {
+                        // Validation UI (inline, only on last AI message)
+                        if (isLastAIMessage && aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Validation) {
+                            val validationCtx = aiState.waitingContext as com.assistant.core.ai.domain.WaitingContext.Validation
                             Spacer(modifier = Modifier.height(8.dp))
                             com.assistant.core.ai.ui.ValidationUI(
-                                context = waitingState.context,
+                                context = validationCtx.validationContext,
                                 onValidate = {
                                     AIOrchestrator.resumeWithValidation(true)
                                 },
@@ -202,6 +203,7 @@ fun ChatMessageBubble(
 fun ChatLoadingIndicator() {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var isInterrupting by remember { mutableStateOf(false) }
 
     Column(
@@ -225,7 +227,9 @@ fun ChatLoadingIndicator() {
                 size = Size.S,
                 onClick = {
                     isInterrupting = true
-                    AIOrchestrator.interruptActiveRound()
+                    scope.launch {
+                        AIOrchestrator.interruptActiveRound()
+                    }
                 }
             )
         }

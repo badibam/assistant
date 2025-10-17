@@ -11,26 +11,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
+import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.orchestration.AIOrchestrator
-import com.assistant.core.ai.orchestration.QueuedSessionInfo
 import com.assistant.core.ai.ui.screens.AIScreen
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import kotlinx.coroutines.launch
 
 /**
- * Floating AI Chat interface - Dialog wrapper with 4 states
+ * Floating AI Chat interface - Dialog wrapper with simplified V2 architecture
  *
- * States:
- * - ÉTAT A: No active session → "Start Chat" button
- * - ÉTAT B: Automation active → Read-only view with Stop/Chat After/Interrupt buttons
- * - ÉTAT C: Chat active → Normal chat interface (AIScreen)
- * - ÉTAT D: Chat queued → "Waiting..." message with Cancel button
+ * States (simplified from V1):
+ * - IDLE: No active session → "Start Chat" button
+ * - CHAT: Chat active → Normal chat interface (AIScreen)
+ * - AUTOMATION: Automation active → Read-only view with interrupt/stop buttons
  *
- * Architecture:
- * - Observes activeSessionId and queuedSessions flows
- * - Determines state based on active session type and queue status
- * - Delegates to appropriate composable for each state
+ * V2 Simplifications:
+ * - No queue management (handled internally by scheduler)
+ * - Single state observation via currentState
+ * - Direct actions via requestChatSession()
  */
 @Composable
 fun AIFloatingChat(
@@ -43,13 +42,8 @@ fun AIFloatingChat(
     val s = remember { Strings.`for`(context = context) }
     val scope = rememberCoroutineScope()
 
-    // Observe orchestrator state
-    val orchestratorSessionId by AIOrchestrator.activeSessionId.collectAsState()
-    val activeSessionType by AIOrchestrator.activeSessionType.collectAsState()
-    val queuedSessions by AIOrchestrator.queuedSessions.collectAsState()
-
-    // Determine queued chat session
-    val queuedChatSession = queuedSessions.firstOrNull { it.type == SessionType.CHAT }
+    // Observe orchestrator state (V2)
+    val aiState by AIOrchestrator.currentState.collectAsState()
 
     // State for errors
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -69,108 +63,59 @@ fun AIFloatingChat(
         ) {
             // Determine state and render appropriate UI
             when {
-                // ÉTAT D: Chat queued (priority check)
-                queuedChatSession != null && orchestratorSessionId != null -> {
-                    ChatQueuedView(
-                        queuedSession = queuedChatSession,
-                        activeSessionId = orchestratorSessionId!!,
-                        onCancel = {
-                            AIOrchestrator.cancelQueuedSession(queuedChatSession.sessionId)
-                        },
-                        onClose = onDismiss
-                    )
-                }
-                // ÉTAT C: Chat active
-                orchestratorSessionId != null && activeSessionType == SessionType.CHAT -> {
+                // CHAT: Chat active
+                aiState.sessionId != null && aiState.sessionType == SessionType.CHAT -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Color.White)
                     ) {
                         AIScreen(
-                            sessionId = orchestratorSessionId!!,
+                            sessionId = aiState.sessionId!!,
                             onClose = onDismiss
                         )
                     }
                 }
-                // ÉTAT B: Automation active
-                orchestratorSessionId != null && activeSessionType == SessionType.AUTOMATION -> {
+                // AUTOMATION: Automation active
+                aiState.sessionId != null && aiState.sessionType == SessionType.AUTOMATION -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Color.White)
                     ) {
                         AutomationActiveView(
-                            sessionId = orchestratorSessionId!!,
+                            sessionId = aiState.sessionId!!,
+                            phase = aiState.phase,
                             onStop = {
-                            scope.launch {
-                                val result = AIOrchestrator.stopActiveSession()
-                                if (!result.success) {
-                                    errorMessage = result.error
-                                }
-                            }
-                        },
-                        onChatAfter = {
-                            scope.launch {
-                                try {
-                                    val sessionId = AIOrchestrator.createSession(
-                                        name = s.shared("ai_session_default_name"),
-                                        type = SessionType.CHAT
-                                    )
-                                    if (sessionId.isNotEmpty()) {
-                                        AIOrchestrator.requestSessionControl(sessionId, SessionType.CHAT)
-                                    } else {
-                                        errorMessage = s.shared("ai_error_create_session").format("")
+                                scope.launch {
+                                    try {
+                                        AIOrchestrator.stopActiveSession()
+                                    } catch (e: Exception) {
+                                        errorMessage = e.message
                                     }
-                                } catch (e: Exception) {
-                                    errorMessage = e.message
                                 }
-                            }
-                        },
-                        onInterruptAndChat = {
-                            scope.launch {
-                                try {
-                                    // Set endReason to SUSPENDED for current automation
-                                    val coordinator = com.assistant.core.coordinator.Coordinator(context)
-                                    coordinator.processUserAction("ai_sessions.set_end_reason", mapOf(
-                                        "sessionId" to orchestratorSessionId!!,
-                                        "endReason" to SessionEndReason.SUSPENDED.name
-                                    ))
-
-                                    // Create and activate chat session immediately
-                                    val sessionId = AIOrchestrator.createSession(
-                                        name = s.shared("ai_session_default_name"),
-                                        type = SessionType.CHAT
-                                    )
-                                    if (sessionId.isNotEmpty()) {
-                                        AIOrchestrator.requestSessionControl(sessionId, SessionType.CHAT)
-                                    } else {
-                                        errorMessage = s.shared("ai_error_create_session").format("")
+                            },
+                            onInterruptAndChat = {
+                                scope.launch {
+                                    try {
+                                        // Request chat session - scheduler will handle interruption
+                                        AIOrchestrator.requestChatSession()
+                                    } catch (e: Exception) {
+                                        errorMessage = e.message
                                     }
-                                } catch (e: Exception) {
-                                    errorMessage = e.message
                                 }
-                            }
-                        },
-                        onClose = onDismiss
+                            },
+                            onClose = onDismiss
                         )
                     }
                 }
-                // ÉTAT A: No active session
+                // IDLE: No active session
                 else -> {
                     NoActiveSessionView(
                         onStartChat = {
                             scope.launch {
                                 try {
-                                    val sessionId = AIOrchestrator.createSession(
-                                        name = s.shared("ai_session_default_name"),
-                                        type = SessionType.CHAT
-                                    )
-                                    if (sessionId.isNotEmpty()) {
-                                        AIOrchestrator.requestSessionControl(sessionId, SessionType.CHAT)
-                                    } else {
-                                        errorMessage = s.shared("ai_error_create_session").format("")
-                                    }
+                                    AIOrchestrator.requestChatSession()
                                 } catch (e: Exception) {
                                     errorMessage = e.message
                                 }
@@ -197,7 +142,7 @@ fun AIFloatingChat(
 // ========================================================================================
 
 /**
- * ÉTAT A: No active session
+ * IDLE: No active session
  * Shows message and "Start Chat" button
  */
 @Composable
@@ -280,42 +225,27 @@ private fun NoActiveSessionView(
 }
 
 /**
- * ÉTAT B: Automation active
- * Shows read-only automation messages with action buttons
+ * AUTOMATION: Automation active
+ * Shows read-only automation messages with interrupt/stop buttons
+ *
+ * V2 changes:
+ * - No "Chat After" option (would require queue management)
+ * - Only "Interrupt & Chat" and "Stop"
+ * - Messages and state observed from AIOrchestrator
  */
 @Composable
 private fun AutomationActiveView(
     sessionId: String,
+    phase: Phase,
     onStop: () -> Unit,
-    onChatAfter: () -> Unit,
     onInterruptAndChat: () -> Unit,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Observe messages and round state directly (avoid double header from AIScreen)
-    val messages by AIOrchestrator.activeSessionMessages.collectAsState()
-    val isRoundInProgress by AIOrchestrator.isRoundInProgress.collectAsState()
-    val waitingState by AIOrchestrator.waitingState.collectAsState()
-
-    // Dialog state for chat options
-    var showChatOptionsDialog by remember { mutableStateOf(false) }
-
-    // Chat options dialog
-    if (showChatOptionsDialog) {
-        ChatOptionsDialog(
-            onInterruptAndChat = {
-                showChatOptionsDialog = false
-                onInterruptAndChat()
-            },
-            onChatAfter = {
-                showChatOptionsDialog = false
-                onChatAfter()
-            },
-            onDismiss = { showChatOptionsDialog = false }
-        )
-    }
+    // Observe state from orchestrator
+    val aiState by AIOrchestrator.currentState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -346,12 +276,12 @@ private fun AutomationActiveView(
                 onClick = onStop
             )
 
-            // Chat button (single AI_CHAT button that opens dialog)
+            // Interrupt & Chat button (PRIMARY green)
             UI.ActionButton(
                 action = ButtonAction.AI_CHAT,
                 display = ButtonDisplay.ICON,
                 size = Size.M,
-                onClick = { showChatOptionsDialog = true }
+                onClick = onInterruptAndChat
             )
 
             // Close button
@@ -370,179 +300,7 @@ private fun AutomationActiveView(
                 .weight(1f)
         ) {
             com.assistant.core.ai.ui.screens.ChatMessageList(
-                messages = messages,
-                isLoading = isRoundInProgress,
-                waitingState = waitingState,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-
-/**
- * Chat options dialog - shown when user clicks AI_CHAT button during automation
- * Allows user to choose between interrupting automation + chat or chat after
- */
-@Composable
-private fun ChatOptionsDialog(
-    onInterruptAndChat: () -> Unit,
-    onChatAfter: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    UI.Dialog(
-        type = DialogType.SELECTION,
-        onConfirm = onDismiss,
-        onCancel = onDismiss
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Title
-            UI.Text(
-                text = s.shared("ai_chat_options_dialog_title"),
-                type = TextType.TITLE,
-                fillMaxWidth = true
-            )
-
-            // Description
-            UI.Text(
-                text = s.shared("ai_chat_options_dialog_description"),
-                type = TextType.BODY,
-                fillMaxWidth = true
-            )
-
-            // Option 1: Interrupt and chat (PRIMARY - green)
-            UI.Button(
-                type = ButtonType.PRIMARY,
-                size = Size.L,
-                onClick = onInterruptAndChat
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    UI.Text(
-                        text = s.shared("ai_chat_option_interrupt_title"),
-                        type = TextType.BODY
-                    )
-                    UI.Text(
-                        text = s.shared("ai_chat_option_interrupt_description"),
-                        type = TextType.CAPTION
-                    )
-                }
-            }
-
-            // Option 2: Chat after (DEFAULT - gray)
-            UI.Button(
-                type = ButtonType.DEFAULT,
-                size = Size.L,
-                onClick = onChatAfter
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    UI.Text(
-                        text = s.shared("ai_chat_option_after_title"),
-                        type = TextType.BODY
-                    )
-                    UI.Text(
-                        text = s.shared("ai_chat_option_after_description"),
-                        type = TextType.CAPTION
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * ÉTAT D: Chat queued
- * Shows waiting message with automation view and cancel button
- */
-@Composable
-private fun ChatQueuedView(
-    queuedSession: QueuedSessionInfo,
-    activeSessionId: String,
-    onCancel: () -> Unit,
-    onClose: () -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-
-    // Observe messages and round state directly (avoid double header from AIScreen)
-    val messages by AIOrchestrator.activeSessionMessages.collectAsState()
-    val isRoundInProgress by AIOrchestrator.isRoundInProgress.collectAsState()
-    val waitingState by AIOrchestrator.waitingState.collectAsState()
-
-    // Force refresh messages when view is mounted (in case session was already active)
-    LaunchedEffect(activeSessionId) {
-        com.assistant.core.utils.LogManager.aiUI("ChatQueuedView: Forcing refresh for session $activeSessionId")
-        AIOrchestrator.refreshActiveSessionMessages()
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // Header with queued message
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFFF3CD)) // Warning yellow
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    UI.Text(
-                        text = s.shared("ai_chat_queued_message"),
-                        type = TextType.SUBTITLE
-                    )
-                }
-
-                UI.Button(
-                    type = ButtonType.DEFAULT,
-                    size = Size.S,
-                    onClick = onCancel
-                ) {
-                    UI.Text(
-                        text = s.shared("action_cancel"),
-                        type = TextType.BODY
-                    )
-                }
-
-                UI.ActionButton(
-                    action = ButtonAction.CANCEL,
-                    display = ButtonDisplay.ICON,
-                    size = Size.M,
-                    onClick = onClose
-                )
-            }
-        }
-
-        // Show automation in progress (display directly without AIScreen to avoid double header)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            com.assistant.core.ai.ui.screens.ChatMessageList(
-                messages = messages,
-                isLoading = isRoundInProgress,
-                waitingState = waitingState,
+                aiState = aiState,
                 modifier = Modifier.fillMaxSize()
             )
         }

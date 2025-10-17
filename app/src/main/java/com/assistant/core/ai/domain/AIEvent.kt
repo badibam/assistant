@@ -1,8 +1,8 @@
 package com.assistant.core.ai.domain
 
 import com.assistant.core.ai.data.AIMessage
+import com.assistant.core.ai.data.CommandResult
 import com.assistant.core.ai.data.SessionEndReason
-import com.assistant.commands.CommandResult
 
 /**
  * Events that drive the AI state machine.
@@ -74,21 +74,56 @@ sealed class AIEvent {
      */
     data class AIResponseParsed(val message: AIMessage) : AIEvent()
 
-    // ==================== User Interactions (CHAT only) ====================
+    // ==================== User Interactions ====================
 
     /**
-     * User validated or rejected actions.
+     * User validated or rejected actions (CHAT only).
      *
      * @param approved true if user approved, false if rejected
      */
     data class ValidationReceived(val approved: Boolean) : AIEvent()
 
     /**
-     * User responded to communication module.
+     * User responded to communication module (CHAT only).
      *
      * @param response User's text response
      */
     data class CommunicationResponseReceived(val response: String) : AIEvent()
+
+    /**
+     * User manually paused active session.
+     *
+     * Session keeps the slot but stops sending new requests to AI.
+     * If waiting for AI response, will process it when received then pause.
+     * Phase transitions to PAUSED, requires manual resume.
+     */
+    object SessionPaused : AIEvent()
+
+    /**
+     * User manually resumed paused session.
+     *
+     * Session continues from PAUSED phase and resumes AI interaction flow.
+     */
+    object SessionResumed : AIEvent()
+
+    /**
+     * User interrupted current AI round (CHAT only).
+     *
+     * Cancels the current AI call/processing but keeps session active.
+     * If AI response arrives, it will be ignored.
+     * Session remains active and waits for next user message.
+     *
+     * Different from SessionPaused: does not require manual resume,
+     * session continues automatically when user sends next message.
+     */
+    object AIRoundInterrupted : AIEvent()
+
+    /**
+     * User message sent (triggers enrichment execution).
+     *
+     * First step of user message processing flow.
+     */
+    object UserMessageSent : AIEvent()
 
     // ==================== Command Execution ====================
 

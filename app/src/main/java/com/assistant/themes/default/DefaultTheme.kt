@@ -355,7 +355,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.SECONDARY
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME -> ButtonType.DEFAULT
         }
     }
     
@@ -386,10 +386,11 @@ object DefaultTheme : ThemeContract {
             ButtonAction.INTERRUPT -> s.shared("action_interrupt")
             ButtonAction.STOP -> s.shared("action_stop")
             ButtonAction.PAUSE -> s.shared("action_pause")
+            ButtonAction.RESUME -> s.shared("action_resume")
             ButtonAction.START -> s.shared("action_start")
         }
     }
-    
+
     private fun getButtonIcon(action: ButtonAction): String {
         // Unicode symbols for readability and consistency
         return when (action) {
@@ -414,6 +415,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.INTERRUPT -> "⏸"  // Pause symbol
             ButtonAction.STOP -> "⏹"      // Stop symbol
             ButtonAction.PAUSE -> "⏸"     // Pause symbol
+            ButtonAction.RESUME -> "▶"    // Play symbol
             ButtonAction.START -> "▶"     // Play symbol
         }
     }
