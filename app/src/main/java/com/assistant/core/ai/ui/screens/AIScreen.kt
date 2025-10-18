@@ -300,7 +300,7 @@ private fun ChatMode(
         // Status bar (always visible at bottom)
         SessionStatusBar(
             phase = aiState.phase,
-            sessionType = aiState.sessionType,
+            sessionType = session.type,
             context = context
         )
     }
@@ -792,7 +792,7 @@ private fun AutomationMode(
         // Status bar (always visible at bottom)
         SessionStatusBar(
             phase = aiState.phase,
-            sessionType = aiState.sessionType,
+            sessionType = session.type,
             context = context
         )
     }

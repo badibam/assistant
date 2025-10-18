@@ -41,6 +41,7 @@ fun SessionStatusBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(androidx.compose.ui.graphics.Color.Red)
             .padding(vertical = 8.dp, horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {

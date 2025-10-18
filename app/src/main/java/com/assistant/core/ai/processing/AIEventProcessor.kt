@@ -482,6 +482,10 @@ class AIEventProcessor(
                     "DEBUG"
                 )
 
+                // Update message in DB with parsed AIMessage (follows pattern of enrichments/actions storage)
+                val updatedMessage = lastAIMessage.copy(aiMessage = cleanedAIMessage)
+                messageRepository.updateMessage(sessionId, updatedMessage)
+
                 // Emit success with cleanedAIMessage (postText removed if no actionCommands)
                 emit(AIEvent.AIResponseParsed(cleanedAIMessage))
 
@@ -771,24 +775,7 @@ class AIEventProcessor(
                         it.status == CommandStatus.SUCCESS
                     }
 
-                    // Store postText as separate message if present and all success
-                    if (allSuccess && aiMessage.postText != null) {
-                        val postTextMessage = SessionMessage(
-                            id = java.util.UUID.randomUUID().toString(),
-                            timestamp = System.currentTimeMillis(),
-                            sender = MessageSender.AI,
-                            richContent = null,
-                            textContent = aiMessage.postText,
-                            aiMessage = null,
-                            aiMessageJson = null,
-                            systemMessage = null,
-                            executionMetadata = null,
-                            excludeFromPrompt = true // PostText excluded from prompt
-                        )
-                        messageRepository.storeMessage(sessionId, postTextMessage)
-                    }
-
-                    // Store SystemMessage with results
+                    // Store SystemMessage with results (always, even on failure)
                     val systemSessionMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
                         timestamp = System.currentTimeMillis(),
@@ -804,13 +791,40 @@ class AIEventProcessor(
 
                     messageRepository.storeMessage(sessionId, systemSessionMessage)
 
-                    // Emit event with keepControl flag
-                    val keepControl = aiMessage.keepControl == true
-                    emit(AIEvent.ActionsExecuted(
-                        results = result.systemMessage.commandResults,
-                        allSuccess = allSuccess,
-                        keepControl = keepControl
-                    ))
+                    if (allSuccess) {
+                        // All actions succeeded
+
+                        // Store postText as separate message if present
+                        if (aiMessage.postText != null) {
+                            val postTextMessage = SessionMessage(
+                                id = java.util.UUID.randomUUID().toString(),
+                                timestamp = System.currentTimeMillis(),
+                                sender = MessageSender.AI,
+                                richContent = null,
+                                textContent = aiMessage.postText,
+                                aiMessage = null,
+                                aiMessageJson = null,
+                                systemMessage = null,
+                                executionMetadata = null,
+                                excludeFromPrompt = true // PostText excluded from prompt
+                            )
+                            messageRepository.storeMessage(sessionId, postTextMessage)
+                        }
+
+                        // Emit success event with keepControl flag
+                        val keepControl = aiMessage.keepControl == true
+                        emit(AIEvent.ActionsExecuted(
+                            results = result.systemMessage.commandResults,
+                            allSuccess = true,
+                            keepControl = keepControl
+                        ))
+                    } else {
+                        // Some actions failed - emit ActionFailureOccurred for retry logic
+                        LogManager.aiSession("executeActions: ${result.systemMessage.commandResults.count { it.status != CommandStatus.SUCCESS }} actions failed", "WARN")
+                        emit(AIEvent.ActionFailureOccurred(
+                            errors = result.systemMessage.commandResults
+                        ))
+                    }
                 }
             }
 

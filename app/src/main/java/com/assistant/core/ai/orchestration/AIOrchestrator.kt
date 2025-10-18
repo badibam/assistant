@@ -86,10 +86,18 @@ object AIOrchestrator {
      * Returns a Flow that emits messages for the current active session.
      * UI components should collect this Flow to display messages.
      *
+     * Automatically loads messages from DB if cache is empty (first observation).
+     *
      * @param sessionId Session ID to observe
      * @return Flow of message list
      */
     fun observeMessages(sessionId: String): kotlinx.coroutines.flow.Flow<List<SessionMessage>> {
+        // Trigger background load of messages if not already loaded
+        // This populates the cache for initial display
+        orchestratorScope.launch {
+            messageRepository.loadMessages(sessionId)
+        }
+
         return messageRepository.observeMessages(sessionId)
     }
 

@@ -63,6 +63,44 @@ class AIMessageRepository(
     }
 
     /**
+     * Update an existing message (used for adding parsed AIMessage after parsing phase).
+     *
+     * @param sessionId Session ID
+     * @param message Updated message
+     */
+    suspend fun updateMessage(sessionId: String, message: SessionMessage) {
+        try {
+            // Convert to entity
+            val entity = messageToEntity(sessionId, message)
+
+            // Update in DB (synchronous)
+            aiDao.updateMessage(entity)
+
+            // Update cache (replace existing message with same ID)
+            val flow = messageCache[sessionId]
+            if (flow != null) {
+                val updated = flow.value.map {
+                    if (it.id == message.id) message else it
+                }
+                flow.value = updated
+            }
+
+            LogManager.aiSession(
+                "Message updated: session=$sessionId, sender=${message.sender}, id=${message.id}",
+                "DEBUG"
+            )
+
+        } catch (e: Exception) {
+            LogManager.aiSession(
+                "Failed to update message: ${e.message}",
+                "ERROR",
+                e
+            )
+            throw e // Rethrow to signal failure to event processor
+        }
+    }
+
+    /**
      * Delete a message (used for fallback message cleanup).
      *
      * @param sessionId Session ID

@@ -514,9 +514,12 @@ object AIStateMachine {
                     lastEventTime = currentTime
                 )
             } else {
-                // keepControl=false or null for CHAT - stop here
+                // keepControl=false or null for CHAT - return to IDLE (await next user message)
                 state.copy(
-                    phase = Phase.CLOSED,
+                    phase = Phase.IDLE,
+                    consecutiveActionFailures = 0,
+                    consecutiveDataQueries = 0,
+                    consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
                 )
