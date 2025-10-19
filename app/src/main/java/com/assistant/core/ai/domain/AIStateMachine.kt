@@ -228,13 +228,22 @@ object AIStateMachine {
 
             is AIEvent.ProviderErrorOccurred -> {
                 // Provider error - permanent failure (not configured, invalid config, etc.)
-                // Session ends immediately with ERROR reason
-                // Event processor will show toast to user
-                state.copy(
-                    phase = Phase.CLOSED,
-                    endReason = SessionEndReason.ERROR,
-                    lastEventTime = currentTime
-                )
+                // CHAT: return to IDLE (session stays active, user can configure provider)
+                // AUTOMATION: close session with ERROR reason
+                if (state.sessionType == SessionType.AUTOMATION) {
+                    // AUTOMATION - close session with ERROR
+                    state.copy(
+                        phase = Phase.CLOSED,
+                        endReason = SessionEndReason.ERROR,
+                        lastEventTime = currentTime
+                    )
+                } else {
+                    // CHAT - return to IDLE (session stays active, event processor shows toast)
+                    state.copy(
+                        phase = Phase.IDLE,
+                        lastEventTime = currentTime
+                    )
+                }
             }
 
             is AIEvent.NetworkErrorOccurred -> {

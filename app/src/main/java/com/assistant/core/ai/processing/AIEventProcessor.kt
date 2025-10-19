@@ -305,7 +305,7 @@ class AIEventProcessor(
                 LogManager.aiSession("callAI: Provider check failed: ${providerCheckResult.errorMessage}", "ERROR")
 
                 if (state.sessionType == SessionType.CHAT) {
-                    // CHAT: Show toast and return to IDLE (session continues)
+                    // CHAT: Show toast to user
                     withContext(kotlinx.coroutines.Dispatchers.Main) {
                         com.assistant.core.ui.UI.Toast(
                             context = context,
@@ -313,11 +313,8 @@ class AIEventProcessor(
                             duration = com.assistant.core.ui.Duration.LONG
                         )
                     }
-
-                    // Emit SystemErrorOccurred to return to IDLE
-                    emit(AIEvent.SystemErrorOccurred(providerCheckResult.errorMessage ?: "Provider error"))
                 } else {
-                    // AUTOMATION: Create system message and terminate with ERROR
+                    // AUTOMATION: create system message for audit
                     val errorMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
                         timestamp = System.currentTimeMillis(),
@@ -336,10 +333,12 @@ class AIEventProcessor(
                         excludeFromPrompt = true // Excluded from prompt (audit only)
                     )
                     messageRepository.storeMessage(sessionId, errorMessage)
-
-                    // Terminate session with ERROR reason
-                    emit(AIEvent.SessionCompleted(SessionEndReason.ERROR))
                 }
+
+                // Emit ProviderErrorOccurred - state machine handles CHAT vs AUTOMATION differently
+                // CHAT: returns to IDLE (session stays active)
+                // AUTOMATION: closes session with ERROR reason
+                emit(AIEvent.ProviderErrorOccurred(providerCheckResult.errorMessage ?: "Provider error"))
                 return
             }
 
