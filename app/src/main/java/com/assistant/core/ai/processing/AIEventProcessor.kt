@@ -1212,7 +1212,11 @@ class AIEventProcessor(
                 emit(AIEvent.SessionActivationRequested(nextSession.sessionId!!, nextSession.sessionType))
             } else {
                 // Create new automation session from automation
-                com.assistant.core.ai.orchestration.AIOrchestrator.executeAutomation(nextSession.automationId!!)
+                // For SCHEDULED: scheduledFor = planned execution time from scheduler
+                com.assistant.core.ai.orchestration.AIOrchestrator.executeAutomation(
+                    nextSession.automationId!!,
+                    scheduledFor = nextSession.scheduledFor!!
+                )
             }
         } else {
             LogManager.aiSession("Heartbeat: No sessions to activate", "DEBUG")

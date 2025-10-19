@@ -412,7 +412,7 @@ object AIOrchestrator {
     // ========================================================================================
 
     /**
-     * Execute automation manually.
+     * Execute automation.
      *
      * Flow:
      * 1. Load automation configuration
@@ -420,8 +420,11 @@ object AIOrchestrator {
      * 3. Create new AUTOMATION session
      * 4. Copy USER messages from SEED
      * 5. Emit SessionActivationRequested event
+     *
+     * @param automationId Automation to execute
+     * @param scheduledFor Scheduled execution timestamp (MANUAL: click time, SCHEDULED: planned time)
      */
-    suspend fun executeAutomation(automationId: String) {
+    suspend fun executeAutomation(automationId: String, scheduledFor: Long) {
         LogManager.aiSession("executeAutomation called: $automationId", "INFO")
 
         try {
@@ -462,7 +465,7 @@ object AIOrchestrator {
                 lastEventTime = now,
                 lastUserInteractionTime = now,
                 automationId = automationId,
-                scheduledExecutionTime = now, // For MANUAL trigger
+                scheduledExecutionTime = scheduledFor, // Scheduled timestamp (MANUAL: click time, SCHEDULED: planned time)
                 providerId = providerId,
                 providerSessionId = java.util.UUID.randomUUID().toString(),
                 createdAt = now,

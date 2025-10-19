@@ -360,8 +360,10 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         // Delegate to AIOrchestrator V2
         // V2 handles session creation, trigger, and scheduling internally
+        // For MANUAL: scheduledFor = click time
         try {
-            AIOrchestrator.executeAutomation(automationId)
+            val clickTime = System.currentTimeMillis()
+            AIOrchestrator.executeAutomation(automationId, scheduledFor = clickTime)
 
             LogManager.service("Successfully triggered automation: $automationId", "INFO")
 

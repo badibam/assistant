@@ -62,6 +62,15 @@ class AutomationScheduler(private val context: Context) {
 
                 if (incompleteSession != null) {
                     // Session to resume (crash, network error, or suspended)
+                    // scheduledExecutionTime must not be null for AUTOMATION sessions
+                    if (incompleteSession.scheduledExecutionTime == null) {
+                        LogManager.aiSession(
+                            "AutomationScheduler: Skipping incomplete session ${incompleteSession.id} - scheduledExecutionTime is null (data error)",
+                            "ERROR"
+                        )
+                        continue
+                    }
+
                     LogManager.aiSession(
                         "AutomationScheduler: Found incomplete session for automation ${automation.id} " +
                         "(endReason=${incompleteSession.endReason}, scheduled=${incompleteSession.scheduledExecutionTime})",
@@ -70,7 +79,7 @@ class AutomationScheduler(private val context: Context) {
                     candidates.add(
                         ScheduleCandidate(
                             automationId = automation.id,
-                            scheduledTime = incompleteSession.scheduledExecutionTime ?: System.currentTimeMillis(),
+                            scheduledTime = incompleteSession.scheduledExecutionTime,
                             action = CandidateAction.RESUME,
                             sessionId = incompleteSession.id
                         )
