@@ -185,12 +185,17 @@ class CommandExecutor(private val context: Context) {
                     // For queries, empty data is unusual
                     if (data.isEmpty() && !isActionCommand) {
                         LogManager.aiPrompt("Query succeeded but returned empty data", "WARN")
+
+                        // Generate description for empty query result
+                        val dataTitle = generateDataTitle(command, data)
+                        val description = dataTitle.ifEmpty { s.shared("ai_system_query_no_data") }
+
                         return@withContext InternalCommandResult(
                             promptResult = PromptCommandResult("", ""),
                             commandResult = com.assistant.core.ai.data.CommandResult(
                                 command = commandString,
                                 status = CommandStatus.SUCCESS,
-                                details = "No data returned",
+                                details = description,
                                 data = null,
                                 error = null
                             )
@@ -200,10 +205,14 @@ class CommandExecutor(private val context: Context) {
                     val dataTitle = generateDataTitle(command, data)
                     val formattedData = if (isActionCommand) "" else formatResultData(command, data)
 
-                    // Get verbalized description for action commands
+                    // Get verbalized description for all commands
+                    // - Action commands: use service verbalization (e.g., "Création de la zone \"Santé\"")
+                    // - Query commands: use generated data title (e.g., "Data from tool 'Poids' (5 records)")
                     val verbalizedDescription = if (isActionCommand) {
                         getVerbalizedDescription(command)
-                    } else null
+                    } else {
+                        dataTitle.ifEmpty { null }
+                    }
 
                     // Filter result data for action commands
                     val filteredData = if (isActionCommand) {

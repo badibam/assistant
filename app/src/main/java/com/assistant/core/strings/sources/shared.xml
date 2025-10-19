@@ -548,6 +548,7 @@
 
     <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
     <string name="ai_system_no_commands">Aucune commande à exécuter</string>
+    <string name="ai_system_query_no_data">Requête réussie mais aucune donnée retournée</string>
     <string name="ai_system_queries_success">%1$d requête(s) de données ajoutée(s) au contexte</string>
     <string name="ai_system_queries_all_failed">Échec de toutes les requêtes (%1$d)</string>
     <string name="ai_system_queries_partial">%1$d requête(s) réussie(s), %2$d échouée(s)</string>
