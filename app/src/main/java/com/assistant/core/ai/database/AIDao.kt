@@ -28,6 +28,9 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET isActive = 0")
     suspend fun deactivateAllSessions()
 
+    @Query("UPDATE ai_sessions SET isActive = 0 WHERE id = :sessionId")
+    suspend fun deactivateSession(sessionId: String)
+
     @Query("UPDATE ai_sessions SET isActive = 1 WHERE id = :sessionId")
     suspend fun activateSession(sessionId: String)
 

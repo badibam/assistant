@@ -231,6 +231,7 @@ class AIStateRepository(
      * Deactivates current session in DB before setting state to IDLE.
      *
      * Uses NonCancellable context to ensure cleanup completes.
+     * Uses direct SQL update to avoid race condition with syncStateToDb.
      */
     suspend fun forceIdle() {
         // Use NonCancellable to ensure cleanup completes even if parent coroutine is cancelled
@@ -239,14 +240,12 @@ class AIStateRepository(
             val currentSessionId = currentState.sessionId
             if (currentSessionId != null) {
                 try {
-                    val session = aiDao.getSession(currentSessionId)
-                    if (session != null) {
-                        aiDao.updateSession(session.copy(isActive = false))
-                        LogManager.aiSession(
-                            "Deactivated session $currentSessionId in DB before IDLE",
-                            "DEBUG"
-                        )
-                    }
+                    // Direct SQL update to avoid reloading entity and overwriting endReason
+                    aiDao.deactivateSession(currentSessionId)
+                    LogManager.aiSession(
+                        "Deactivated session $currentSessionId in DB before IDLE",
+                        "DEBUG"
+                    )
                 } catch (e: Exception) {
                     LogManager.aiSession(
                         "Failed to deactivate session in DB: ${e.message}",
