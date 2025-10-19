@@ -706,12 +706,41 @@ class AIEventProcessor(
 
             // Process via AICommandProcessor
             val processor = AICommandProcessor(context)
-            val executableCommands = processor.processDataCommands(dataCommands)
+            val transformationResult = processor.processDataCommands(dataCommands)
+
+            // Check if all commands were successfully transformed
+            if (transformationResult.errors.isNotEmpty()) {
+                LogManager.aiSession("executeDataQueries: ${transformationResult.errors.size} command(s) failed transformation", "WARN")
+
+                // Create FORMAT_ERROR message with detailed errors for AI to see and fix
+                val errorDetails = transformationResult.errors.joinToString("; ")
+                val formatErrorMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = com.assistant.core.ai.data.SystemMessage(
+                        type = SystemMessageType.FORMAT_ERROR,
+                        commandResults = emptyList(),
+                        summary = "Erreurs transformation dataCommands : $errorDetails",
+                        formattedData = null
+                    ),
+                    executionMetadata = null,
+                    excludeFromPrompt = false // Sent to AI prompt for correction
+                )
+                messageRepository.storeMessage(sessionId, formatErrorMessage)
+
+                emit(AIEvent.ParseErrorOccurred("${transformationResult.errors.size} dataCommands failed transformation"))
+                return
+            }
 
             // Execute via CommandExecutor
             val executor = commandExecutor
             val result = executor.executeCommands(
-                commands = executableCommands,
+                commands = transformationResult.executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
                 level = "ai_data"
             )
@@ -825,12 +854,41 @@ class AIEventProcessor(
 
                     // Process via AICommandProcessor
                     val processor = AICommandProcessor(context)
-                    val executableCommands = processor.processActionCommands(actionCommands)
+                    val transformationResult = processor.processActionCommands(actionCommands)
+
+                    // Check if all commands were successfully transformed
+                    if (transformationResult.errors.isNotEmpty()) {
+                        LogManager.aiSession("executeActions: ${transformationResult.errors.size} command(s) failed transformation", "WARN")
+
+                        // Create FORMAT_ERROR message with detailed errors for AI to see and fix
+                        val errorDetails = transformationResult.errors.joinToString("; ")
+                        val formatErrorMessage = SessionMessage(
+                            id = java.util.UUID.randomUUID().toString(),
+                            timestamp = System.currentTimeMillis(),
+                            sender = MessageSender.SYSTEM,
+                            richContent = null,
+                            textContent = null,
+                            aiMessage = null,
+                            aiMessageJson = null,
+                            systemMessage = com.assistant.core.ai.data.SystemMessage(
+                                type = SystemMessageType.FORMAT_ERROR,
+                                commandResults = emptyList(),
+                                summary = "Erreurs transformation actionCommands : $errorDetails",
+                                formattedData = null
+                            ),
+                            executionMetadata = null,
+                            excludeFromPrompt = false // Sent to AI prompt for correction
+                        )
+                        messageRepository.storeMessage(sessionId, formatErrorMessage)
+
+                        emit(AIEvent.ParseErrorOccurred("${transformationResult.errors.size} actionCommands failed transformation"))
+                        return
+                    }
 
                     // Execute via CommandExecutor
                     val executor = commandExecutor
                     val result = executor.executeCommands(
-                        commands = executableCommands,
+                        commands = transformationResult.executableCommands,
                         messageType = SystemMessageType.ACTIONS_EXECUTED,
                         level = "ai_actions"
                     )

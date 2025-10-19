@@ -48,8 +48,8 @@ object ActionVerbalizerHelper {
                 val processor = AICommandProcessor(context)
                 processor.transformActionForVerbalization(action)
             } else {
-                val executableCommands = CommandTransformer.transformToExecutable(listOf(action), context)
-                executableCommands.firstOrNull()
+                val result = CommandTransformer.transformToExecutable(listOf(action), context)
+                result.executableCommands.firstOrNull()
             }
 
             if (executableCommand == null) {

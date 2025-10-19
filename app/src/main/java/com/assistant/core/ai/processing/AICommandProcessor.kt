@@ -30,9 +30,9 @@ class AICommandProcessor(private val context: Context) {
      * - AI doesn't need to handle timestamps, timezones, or calendar calculations
      *
      * @param commands List of DataCommands from AI for data retrieval
-     * @return List of ExecutableCommands ready for coordinator dispatch
+     * @return TransformationResult with executable commands and transformation errors
      */
-    fun processDataCommands(commands: List<DataCommand>): List<ExecutableCommand> {
+    fun processDataCommands(commands: List<DataCommand>): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
         // TODO: Add AI-specific validations for data commands
@@ -49,10 +49,10 @@ class AICommandProcessor(private val context: Context) {
         LogManager.aiService("Marked ${relativeCommands.size} AI dataCommands as relative", "DEBUG")
 
         // Delegate transformation to shared CommandTransformer
-        val executableCommands = CommandTransformer.transformToExecutable(relativeCommands, context)
+        val result = CommandTransformer.transformToExecutable(relativeCommands, context)
 
-        LogManager.aiService("AICommandProcessor generated ${executableCommands.size} executable data commands", "DEBUG")
-        return executableCommands
+        LogManager.aiService("AICommandProcessor generated ${result.executableCommands.size} executable data commands, ${result.errors.size} errors", "DEBUG")
+        return result
     }
 
     /**
@@ -63,9 +63,9 @@ class AICommandProcessor(private val context: Context) {
      * This is different from data commands which continue on individual failures.
      *
      * @param commands List of DataCommands from AI for action execution
-     * @return List of ExecutableCommands ready for coordinator dispatch
+     * @return TransformationResult with executable commands and transformation errors
      */
-    suspend fun processActionCommands(commands: List<DataCommand>): List<ExecutableCommand> {
+    suspend fun processActionCommands(commands: List<DataCommand>): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} action commands from AI", "DEBUG")
 
         // TODO: Implement AI action command strict validations
@@ -77,18 +77,25 @@ class AICommandProcessor(private val context: Context) {
         // 6. CASCADE FAILURE enforcement (handled at execution level by CommandExecutor)
 
         val executableCommands = mutableListOf<ExecutableCommand>()
+        val errors = mutableListOf<String>()
 
-        for (command in commands) {
+        for ((index, command) in commands.withIndex()) {
             try {
                 val executableCommand = transformActionCommand(command)
-                executableCommand?.let { executableCommands.add(it) }
+                if (executableCommand == null) {
+                    errors.add("Command[$index] (${command.type}): transformation returned null")
+                } else {
+                    executableCommands.add(executableCommand)
+                }
             } catch (e: Exception) {
-                LogManager.aiService("Failed to transform action command ${command.type}: ${e.message}", "ERROR", e)
+                val error = e.message ?: "Unknown error"
+                LogManager.aiService("Failed to transform action command ${command.type}: $error", "ERROR", e)
+                errors.add("Command[$index] (${command.type}): $error")
             }
         }
 
-        LogManager.aiService("AICommandProcessor generated ${executableCommands.size} executable action commands", "DEBUG")
-        return executableCommands
+        LogManager.aiService("AICommandProcessor generated ${executableCommands.size} executable action commands, ${errors.size} errors", "DEBUG")
+        return TransformationResult(executableCommands, errors)
     }
 
     // ========================================================================================

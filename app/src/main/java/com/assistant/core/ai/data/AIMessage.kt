@@ -96,7 +96,7 @@ data class AIMessage(
                 } else null
 
                 val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
-                    (0 until array.length()).mapNotNull { i ->
+                    (0 until array.length()).map { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
                             val type = cmdJson.getString("type")
@@ -113,15 +113,15 @@ data class AIMessage(
                                 isRelative = isRelative
                             )
                         } catch (e: Exception) {
-                            // Log parsing error but continue with other commands
+                            // Fail fast - command parsing must succeed for all commands
                             android.util.Log.e("AIMessage", "Failed to parse dataCommand at index $i: ${e.message}", e)
-                            null
+                            throw IllegalArgumentException("dataCommands[$i]: ${e.message}", e)
                         }
                     }
                 }
 
                 val actionCommands = json.optJSONArray("actionCommands")?.let { array ->
-                    (0 until array.length()).mapNotNull { i ->
+                    (0 until array.length()).map { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
                             val type = cmdJson.getString("type")
@@ -138,7 +138,9 @@ data class AIMessage(
                                 isRelative = isRelative
                             )
                         } catch (e: Exception) {
-                            null
+                            // Fail fast - command parsing must succeed for all commands
+                            android.util.Log.e("AIMessage", "Failed to parse actionCommand at index $i: ${e.message}", e)
+                            throw IllegalArgumentException("actionCommands[$i]: ${e.message}", e)
                         }
                     }
                 }

@@ -22,15 +22,20 @@ class UserCommandProcessor(private val context: Context) {
      * Process user commands from enrichment blocks into executable commands
      *
      * @param commands List of DataCommands from user enrichments
-     * @return List of ExecutableCommands ready for coordinator dispatch
+     * @return List of ExecutableCommands ready for coordinator dispatch (errors logged but not returned for user commands)
      */
     fun processCommands(commands: List<DataCommand>): List<ExecutableCommand> {
         LogManager.aiPrompt("UserCommandProcessor processing ${commands.size} user commands", "DEBUG")
 
         // Delegate to shared transformer
-        val executableCommands = CommandTransformer.transformToExecutable(commands, context)
+        val result = CommandTransformer.transformToExecutable(commands, context)
 
-        LogManager.aiPrompt("UserCommandProcessor generated ${executableCommands.size} executable commands", "DEBUG")
-        return executableCommands
+        // Log errors for user commands (user can see results directly, no retry mechanism)
+        if (result.errors.isNotEmpty()) {
+            LogManager.aiPrompt("UserCommandProcessor errors: ${result.errors.joinToString("; ")}", "WARN")
+        }
+
+        LogManager.aiPrompt("UserCommandProcessor generated ${result.executableCommands.size} executable commands", "DEBUG")
+        return result.executableCommands
     }
 }

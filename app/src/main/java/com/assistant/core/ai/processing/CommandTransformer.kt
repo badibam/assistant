@@ -6,6 +6,14 @@ import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.utils.LogManager
 
 /**
+ * Result of command transformation with executable commands and errors
+ */
+data class TransformationResult(
+    val executableCommands: List<ExecutableCommand>,
+    val errors: List<String>  // Detailed error messages for failed transformations
+)
+
+/**
  * Command Transformer - pure transformation logic for DataCommands
  *
  * Core responsibilities:
@@ -24,17 +32,18 @@ object CommandTransformer {
      *
      * @param commands List of DataCommands to transform
      * @param context Android context for period resolution
-     * @return List of ExecutableCommands ready for coordinator dispatch
+     * @return TransformationResult with executable commands and errors
      */
     fun transformToExecutable(
         commands: List<DataCommand>,
         context: Context
-    ): List<ExecutableCommand> {
+    ): TransformationResult {
         LogManager.aiPrompt("CommandTransformer transforming ${commands.size} commands", "DEBUG")
 
         val executableCommands = mutableListOf<ExecutableCommand>()
+        val errors = mutableListOf<String>()
 
-        for (command in commands) {
+        for ((index, command) in commands.withIndex()) {
             try {
                 // APP_STATE is special: generates multiple executable commands
                 if (command.type == "APP_STATE") {
@@ -53,20 +62,30 @@ object CommandTransformer {
                     "ZONES" -> transformZonesCommand(command)
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
                     else -> {
+                        val error = "Type inconnu: ${command.type}"
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
+                        errors.add("Command[$index] (${command.type}): $error")
                         null
                     }
                 }
 
-                executableCommand?.let { executableCommands.add(it) }
+                if (executableCommand == null && command.type != "APP_STATE") {
+                    // Command returned null (validation failed inside transform function)
+                    // Error already logged by the specific transform function
+                    errors.add("Command[$index] (${command.type}): paramètres invalides ou manquants")
+                } else {
+                    executableCommand?.let { executableCommands.add(it) }
+                }
 
             } catch (e: Exception) {
-                LogManager.aiPrompt("Failed to transform command ${command.type}: ${e.message}", "ERROR", e)
+                val error = e.message ?: "Unknown error"
+                LogManager.aiPrompt("Failed to transform command ${command.type}: $error", "ERROR", e)
+                errors.add("Command[$index] (${command.type}): $error")
             }
         }
 
-        LogManager.aiPrompt("CommandTransformer generated ${executableCommands.size} executable commands", "DEBUG")
-        return executableCommands
+        LogManager.aiPrompt("CommandTransformer generated ${executableCommands.size} executable commands, ${errors.size} errors", "DEBUG")
+        return TransformationResult(executableCommands, errors)
     }
 
     // ========================================================================================
