@@ -31,29 +31,19 @@ data class AIState(
      */
     val endReason: SessionEndReason? = null,
 
-    // ==================== Retry Counters ====================
+    // ==================== Loop Counters (V3 Simplified) ====================
 
     /**
      * Consecutive format/parse errors count.
-     * Reset when format parsing succeeds or different counter type increments.
+     * Reset when format parsing succeeds.
+     * Only limit still enforced for both CHAT and AUTOMATION.
      */
     val consecutiveFormatErrors: Int = 0,
 
     /**
-     * Consecutive action failure count.
-     * Reset when all actions succeed or different counter type increments.
-     */
-    val consecutiveActionFailures: Int = 0,
-
-    /**
-     * Consecutive data query count.
-     * Reset when actions execute or different counter type increments.
-     */
-    val consecutiveDataQueries: Int = 0,
-
-    /**
      * Total autonomous roundtrips count (never reset during session).
-     * Incremented on each AI call (regardless of reason).
+     * Incremented on each AI call.
+     * Enforced only for AUTOMATION (CHAT has Int.MAX_VALUE).
      */
     val totalRoundtrips: Int = 0,
 

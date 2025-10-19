@@ -134,11 +134,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getAILimits(): AILimitsConfig {
         val settings = getAILimitsSettings()
         return AILimitsConfig(
-            chatMaxDataQueryIterations = settings.optInt("chatMaxDataQueryIterations", 3),
-            chatMaxActionRetries = settings.optInt("chatMaxActionRetries", 3),
-            chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", 10),
-            automationMaxDataQueryIterations = settings.optInt("automationMaxDataQueryIterations", 5),
-            automationMaxActionRetries = settings.optInt("automationMaxActionRetries", 5),
+            chatMaxFormatErrorRetries = settings.optInt("chatMaxFormatErrorRetries", 3),
+            chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", Int.MAX_VALUE),
+            automationMaxFormatErrorRetries = settings.optInt("automationMaxFormatErrorRetries", 5),
             automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20)
         )
     }
@@ -155,11 +153,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
             put("defaultPromptMaxTokens", currentSettings.optInt("defaultPromptMaxTokens", 15000))
 
             // Set new loop limits
-            put("chatMaxDataQueryIterations", limits.chatMaxDataQueryIterations)
-            put("chatMaxActionRetries", limits.chatMaxActionRetries)
+            put("chatMaxFormatErrorRetries", limits.chatMaxFormatErrorRetries)
             put("chatMaxAutonomousRoundtrips", limits.chatMaxAutonomousRoundtrips)
-            put("automationMaxDataQueryIterations", limits.automationMaxDataQueryIterations)
-            put("automationMaxActionRetries", limits.automationMaxActionRetries)
+            put("automationMaxFormatErrorRetries", limits.automationMaxFormatErrorRetries)
             put("automationMaxAutonomousRoundtrips", limits.automationMaxAutonomousRoundtrips)
         }
 

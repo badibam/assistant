@@ -32,12 +32,13 @@ enum class SessionState {
  * Reason why a session ended (for audit, debugging, and scheduler logic)
  *
  * Sessions to resume: null (crash), NETWORK_ERROR, SUSPENDED
- * Sessions completed: COMPLETED, CANCELLED, TIMEOUT, ERROR
+ * Sessions completed: COMPLETED, CANCELLED, TIMEOUT, ERROR, LIMIT_REACHED
  */
 enum class SessionEndReason {
     COMPLETED,       // AI indicated completion with completed flag
+    LIMIT_REACHED,   // Autonomous loop limit reached (maxAutonomousRoundtrips for AUTOMATION)
     TIMEOUT,         // Watchdog timeout (inactivity without network issue)
-    ERROR,           // Fatal technical error
+    ERROR,           // Fatal technical error (format errors maxed out, provider error, etc.)
     CANCELLED,       // User clicked stop (or CHAT evicted by AUTOMATION)
     INTERRUPTED,     // Legacy/alias for null (crash detected as orphan)
     NETWORK_ERROR,   // Timeout with network flag active (to resume)

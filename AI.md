@@ -217,25 +217,21 @@ Configuration globale des limites de boucles autonomes, intégrée dans `AppConf
 ```kotlin
 data class AILimitsConfig(
     // CHAT LIMITS
-    val chatMaxDataQueryIterations: Int = 3,
-    val chatMaxActionRetries: Int = 3,
     val chatMaxFormatErrorRetries: Int = 3,
-    val chatMaxAutonomousRoundtrips: Int = 10,
+    val chatMaxAutonomousRoundtrips: Int = Int.MAX_VALUE,
     // AUTOMATION LIMITS
-    val automationMaxDataQueryIterations: Int = 5,
-    val automationMaxActionRetries: Int = 5,
     val automationMaxFormatErrorRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20
 )
 ```
 
-**Types de limites** :
-- **DataQueryIterations** : Nombre consécutif de dataCommands IA
-- **ActionRetries** : Tentatives pour actions échouées
-- **FormatErrorRetries** : Tentatives pour erreurs de format (communicationModule, etc.)
-- **AutonomousRoundtrips** : Limite totale tous types (sécurité)
+**Limites** :
+- **FormatErrorRetries** : Protection contre bugs parsing IA (CHAT & AUTOMATION)
+- **AutonomousRoundtrips** : Sécurité anti-boucle infinie (AUTOMATION uniquement, CHAT = Int.MAX_VALUE)
 
-**Compteurs** : Consécutifs pour DataQuery/ActionRetry/FormatError (reset si changement type), total pour AutonomousRoundtrips (jamais reset).
+**Compteurs** : `consecutiveFormatErrors` (reset si parsing réussit), `totalRoundtrips` (jamais reset).
+
+**Rationale** : CHAT contrôlé par utilisateur (interrupt), AUTOMATION nécessite sécurité autonome. Pas de limites sur queries/actions individuelles - maxRoundtrips suffit comme filet de sécurité global.
 
 **API** : `AppConfigService.getAILimits()`, `AppConfigManager.getAILimits()` (cache volatile).
 
@@ -340,10 +336,11 @@ tick() {
 
 **Arrêt automatique** :
 - **completed=true** : IA termine son travail → AWAITING_SESSION_CLOSURE (5s) → COMPLETED
-- **Limites boucles** : automationMaxAutonomousRoundtrips dépassé → AWAITING_SESSION_CLOSURE (5s) → ERROR
+- **Limite roundtrips** : maxAutonomousRoundtrips dépassé → AWAITING_SESSION_CLOSURE (5s) → LIMIT_REACHED
+- **Erreurs format** : maxFormatErrorRetries dépassé → AWAITING_SESSION_CLOSURE (5s) → ERROR
 - **Watchdog** : Inactivité réelle sans attente réseau → AWAITING_SESSION_CLOSURE (5s) → TIMEOUT
 
-**CHAT** : Ne se ferme JAMAIS automatiquement, retourne toujours à IDLE (sauf erreurs réseau/provider/système)
+**CHAT** : Ne se ferme JAMAIS automatiquement, retourne toujours à IDLE (sauf erreurs réseau/provider/système). Limite roundtrips = Int.MAX_VALUE.
 
 ### Reprise sessions
 Détection automatique sessions orphelines par AutomationScheduler :
@@ -356,7 +353,8 @@ Détection automatique sessions orphelines par AutomationScheduler :
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
 - **COMPLETED** : IA a terminé (completed=true)
-- **ERROR** : Limites boucles atteintes (queries/actions/format/roundtrips)
+- **LIMIT_REACHED** : Limite maxAutonomousRoundtrips atteinte
+- **ERROR** : Erreurs format maxFormatErrorRetries dépassé, ou erreur provider/système
 - **TIMEOUT** : Watchdog inactivité sans attente réseau
 - **CANCELLED** : User STOP (ne reprend pas)
 - **SUSPENDED** : Éviction système (reprend plus tard)

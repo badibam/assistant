@@ -244,17 +244,15 @@ object PromptChunks {
         val s = Strings.`for`(context = context)
         val aiLimits = AppConfigManager.getAILimits()
 
-        val (mode, dataQuery, actionRetry, roundtrips) = when (sessionType) {
+        val (mode, formatErrors, roundtrips) = when (sessionType) {
             SessionType.CHAT -> listOf(
                 "CHAT",
-                aiLimits.chatMaxDataQueryIterations,
-                aiLimits.chatMaxActionRetries,
+                aiLimits.chatMaxFormatErrorRetries,
                 aiLimits.chatMaxAutonomousRoundtrips
             )
             SessionType.AUTOMATION -> listOf(
                 "AUTOMATION",
-                aiLimits.automationMaxDataQueryIterations,
-                aiLimits.automationMaxActionRetries,
+                aiLimits.automationMaxFormatErrorRetries,
                 aiLimits.automationMaxAutonomousRoundtrips
             )
             SessionType.SEED -> {
@@ -265,7 +263,7 @@ object PromptChunks {
 
         return String.format(
             s.shared("ai_chunk_config_limits"),
-            mode, dataQuery, actionRetry, roundtrips
+            mode, formatErrors, roundtrips
         )
     }
 

@@ -37,19 +37,17 @@ Tu opères en mode **%1$s** avec les limites suivantes :
 
 | Limite | Valeur |
 |--------|--------|
-| **Requêtes de données consécutives** | %2$d |
-| **Tentatives de ré-essai pour actions échouées** | %3$d |
-| **Allers-retours autonomes maximum** | %4$d |
+| **Erreurs de format consécutives** | %2$d |
+| **Allers-retours autonomes maximum** | %3$d |
 
-### Explication des compteurs
+### Explication
 
-- **Requêtes consécutives** : Nombre de fois consécutives où tu peux demander des données
-- **Ré-essais d\'actions** : Nombre de tentatives si une action échoue
-- **Allers-retours autonomes** : Nombre maximal d\'allers-retours sans input de l\'utilisateur
+- **Erreurs de format** : Si tu génères du JSON invalide %2$d fois de suite, la session s\'arrête (bug parsing)
+- **Allers-retours autonomes** : Sécurité anti-boucle infinie. En mode CHAT, cette limite est désactivée (contrôle utilisateur). En mode AUTOMATION, limite stricte pour éviter les boucles.
 
-### Comportement si limites atteintes
+### Pas de limites sur queries/actions individuelles
 
-Si tu atteins une limite, le système **s\'arrête automatiquement** et notifie l\'utilisateur. Ces limites garantissent une expérience optimale et évitent les situations bloquantes. Optimise tes requêtes pour rester dans ces limites.]]></string>
+Tu peux demander des données ou exécuter des actions autant de fois que nécessaire pour résoudre le problème. La limite d\'allers-retours globale sert uniquement de filet de sécurité contre les boucles infinies.]]></string>
 
     <!-- ================================================================ -->
     <!-- PARTIE B : FORMAT DE RÉPONSE IA                                  -->

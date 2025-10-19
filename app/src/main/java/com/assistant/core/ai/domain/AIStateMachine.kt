@@ -187,29 +187,13 @@ object AIStateMachine {
             // ==================== Command Execution ====================
 
             is AIEvent.DataQueriesExecuted -> {
-                // Check consecutive data query limit
-                val newConsecutiveQueries = state.consecutiveDataQueries + 1
-
-                if (newConsecutiveQueries >= limits.maxDataQueryIterations) {
-                    // Limit reached - transition based on session type
-                    transitionToCompletion(
-                        state = state.copy(
-                            consecutiveDataQueries = newConsecutiveQueries,
-                            totalRoundtrips = state.totalRoundtrips + 1
-                        ),
-                        currentTime = currentTime,
-                        endReason = SessionEndReason.ERROR
-                    )
-                } else {
-                    // Continue - transition to CALLING_AI with query results
-                    state.copy(
-                        phase = Phase.CALLING_AI,
-                        consecutiveDataQueries = newConsecutiveQueries,
-                        consecutiveActionFailures = 0, // Reset other counters
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
-                    )
-                }
+                // Data queries executed successfully - continue to CALLING_AI
+                state.copy(
+                    phase = Phase.CALLING_AI,
+                    consecutiveFormatErrors = 0, // Reset format errors on successful progression
+                    totalRoundtrips = state.totalRoundtrips + 1,
+                    lastEventTime = currentTime
+                )
             }
 
             is AIEvent.ActionsExecuted -> {
@@ -293,30 +277,13 @@ object AIStateMachine {
             }
 
             is AIEvent.ActionFailureOccurred -> {
-                // Check consecutive action failure limit
-                val newActionFailures = state.consecutiveActionFailures + 1
-
-                if (newActionFailures >= limits.maxActionRetries) {
-                    // Limit reached - transition based on session type
-                    transitionToCompletion(
-                        state = state.copy(
-                            consecutiveActionFailures = newActionFailures,
-                            consecutiveDataQueries = 0, // Reset other counters
-                            totalRoundtrips = state.totalRoundtrips + 1
-                        ),
-                        currentTime = currentTime,
-                        endReason = SessionEndReason.ERROR
-                    )
-                } else {
-                    // Retry - transition to RETRYING_AFTER_ACTION_FAILURE
-                    state.copy(
-                        phase = Phase.RETRYING_AFTER_ACTION_FAILURE,
-                        consecutiveActionFailures = newActionFailures,
-                        consecutiveDataQueries = 0, // Reset other counters
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
-                    )
-                }
+                // Action failed - retry (no limit, maxRoundtrips will stop if AI loops)
+                state.copy(
+                    phase = Phase.RETRYING_AFTER_ACTION_FAILURE,
+                    consecutiveFormatErrors = 0, // Reset format errors on successful progression
+                    totalRoundtrips = state.totalRoundtrips + 1,
+                    lastEventTime = currentTime
+                )
             }
 
             is AIEvent.NetworkRetryScheduled,
@@ -525,7 +492,7 @@ object AIStateMachine {
                     totalRoundtrips = newTotalRoundtrips
                 ),
                 currentTime = currentTime,
-                endReason = SessionEndReason.ERROR
+                endReason = SessionEndReason.LIMIT_REACHED
             )
         }
 
@@ -538,8 +505,6 @@ object AIStateMachine {
                 return state.copy(
                     phase = Phase.PREPARING_CONTINUATION,
                     continuationReason = ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED,
-                    consecutiveActionFailures = 0,
-                    consecutiveDataQueries = 0,
                     consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
@@ -553,8 +518,6 @@ object AIStateMachine {
                 // Continue autonomous execution
                 state.copy(
                     phase = Phase.CALLING_AI,
-                    consecutiveActionFailures = 0,
-                    consecutiveDataQueries = 0,
                     consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
@@ -563,8 +526,6 @@ object AIStateMachine {
                 // keepControl=false or null for CHAT - return to IDLE (await next user message)
                 state.copy(
                     phase = Phase.IDLE,
-                    consecutiveActionFailures = 0,
-                    consecutiveDataQueries = 0,
                     consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
