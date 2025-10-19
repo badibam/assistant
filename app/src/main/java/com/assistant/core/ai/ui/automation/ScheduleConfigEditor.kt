@@ -35,14 +35,15 @@ import java.util.*
 fun ScheduleConfigEditor(
     existingConfig: ScheduleConfig?,
     onDismiss: () -> Unit,
-    onConfirm: (ScheduleConfig) -> Unit
+    onConfirm: (ScheduleConfig?) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val scrollState = rememberScrollState()
 
-    // Pattern selection
+    // Pattern selection (with "None" option)
     val patternTypes = listOf(
+        "None",
         "DailyMultiple",
         "WeeklySimple",
         "MonthlyRecurrent",
@@ -53,7 +54,7 @@ fun ScheduleConfigEditor(
 
     var selectedPatternType by remember {
         mutableStateOf(
-            existingConfig?.pattern?.let { getPatternTypeName(it) } ?: "DailyMultiple"
+            existingConfig?.pattern?.let { getPatternTypeName(it) } ?: "None"
         )
     }
 
@@ -120,12 +121,14 @@ fun ScheduleConfigEditor(
 
     // Common config fields
     var timezone by remember { mutableStateOf(existingConfig?.timezone ?: "Europe/Paris") }
-    var enabled by remember { mutableStateOf(existingConfig?.enabled ?: true) }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,
         onConfirm = {
-            val pattern = buildSchedulePattern(
+            val pattern = if (selectedPatternType == "None") {
+                null
+            } else {
+                buildSchedulePattern(
                 patternType = selectedPatternType,
                 dailyTimes = dailyTimes,
                 weeklyDays = weeklyDays,
@@ -133,19 +136,24 @@ fun ScheduleConfigEditor(
                 monthlyMonths = monthlyMonths,
                 monthlyDay = monthlyDay,
                 monthlyTime = monthlyTime,
-                weeklyCustomMoments = weeklyCustomMoments,
-                yearlyDates = yearlyDates,
-                specificTimestamps = specificTimestamps
-            )
+                    weeklyCustomMoments = weeklyCustomMoments,
+                    yearlyDates = yearlyDates,
+                    specificTimestamps = specificTimestamps
+                )
+            }
 
-            val scheduleConfig = ScheduleConfig(
-                pattern = pattern,
-                timezone = timezone,
-                enabled = enabled,
-                startDate = null, // TODO: Add start/end date pickers if needed
-                endDate = null,
-                nextExecutionTime = null // Will be calculated by ScheduleCalculator
-            )
+            val scheduleConfig = if (pattern == null) {
+                null
+            } else {
+                ScheduleConfig(
+                    pattern = pattern,
+                    timezone = timezone,
+                    enabled = true, // Always enabled if schedule is configured
+                    startDate = null,
+                    endDate = null,
+                    nextExecutionTime = null // Will be calculated by ScheduleCalculator
+                )
+            }
 
             onConfirm(scheduleConfig)
         },
@@ -176,6 +184,16 @@ fun ScheduleConfigEditor(
 
             // Pattern-specific UI
             when (selectedPatternType) {
+                "None" -> {
+                    UI.Card(type = CardType.DEFAULT) {
+                        Box(modifier = Modifier.padding(16.dp)) {
+                            UI.Text(
+                                text = s.shared("schedule_no_schedule_message"),
+                                type = TextType.BODY
+                            )
+                        }
+                    }
+                }
                 "DailyMultiple" -> DailyMultipleEditor(
                     times = dailyTimes,
                     onTimesChange = { dailyTimes = it }
@@ -208,40 +226,35 @@ fun ScheduleConfigEditor(
                 )
             }
 
-            // Preview label
-            val previewLabel = generatePreviewLabel(
-                context = context,
-                patternType = selectedPatternType,
-                dailyTimes = dailyTimes,
-                weeklyDays = weeklyDays,
-                weeklyTime = weeklyTime,
-                monthlyMonths = monthlyMonths,
-                monthlyDay = monthlyDay,
-                monthlyTime = monthlyTime,
-                weeklyCustomMoments = weeklyCustomMoments,
-                yearlyDates = yearlyDates,
-                specificTimestamps = specificTimestamps
-            )
+            // Preview label (only if not "None")
+            if (selectedPatternType != "None") {
+                val previewLabel = generatePreviewLabel(
+                    context = context,
+                    patternType = selectedPatternType,
+                    dailyTimes = dailyTimes,
+                    weeklyDays = weeklyDays,
+                    weeklyTime = weeklyTime,
+                    monthlyMonths = monthlyMonths,
+                    monthlyDay = monthlyDay,
+                    monthlyTime = monthlyTime,
+                    weeklyCustomMoments = weeklyCustomMoments,
+                    yearlyDates = yearlyDates,
+                    specificTimestamps = specificTimestamps
+                )
 
-            UI.Card(type = CardType.DEFAULT) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    UI.Text(
-                        text = s.shared("schedule_preview_label"),
-                        type = TextType.LABEL
-                    )
-                    UI.Text(
-                        text = previewLabel,
-                        type = TextType.BODY
-                    )
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        UI.Text(
+                            text = s.shared("schedule_preview_label"),
+                            type = TextType.LABEL
+                        )
+                        UI.Text(
+                            text = previewLabel,
+                            type = TextType.BODY
+                        )
+                    }
                 }
             }
-
-            // Enabled toggle
-            UI.ToggleField(
-                label = s.shared("label_enabled"),
-                checked = enabled,
-                onCheckedChange = { enabled = it }
-            )
         }
     }
 }
@@ -692,8 +705,9 @@ private fun SpecificDatesEditor(
 /**
  * Get pattern type name from SchedulePattern instance
  */
-private fun getPatternTypeName(pattern: SchedulePattern): String {
+private fun getPatternTypeName(pattern: SchedulePattern?): String {
     return when (pattern) {
+        null -> "None"
         is SchedulePattern.DailyMultiple -> "DailyMultiple"
         is SchedulePattern.WeeklySimple -> "WeeklySimple"
         is SchedulePattern.MonthlyRecurrent -> "MonthlyRecurrent"

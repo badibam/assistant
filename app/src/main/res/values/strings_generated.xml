@@ -906,12 +906,14 @@
     <string name="shared_schedule_config_title">Configuration horaire</string>
     <string name="shared_schedule_pattern_label">Type de récurrence</string>
     <string name="shared_schedule_preview_label">Aperçu</string>
+    <string name="shared_schedule_pattern_None">Aucune programmation</string>
     <string name="shared_schedule_pattern_DailyMultiple">Quotidien (horaires multiples)</string>
     <string name="shared_schedule_pattern_WeeklySimple">Hebdomadaire (jours + horaire)</string>
     <string name="shared_schedule_pattern_MonthlyRecurrent">Mensuel (mois + jour)</string>
     <string name="shared_schedule_pattern_WeeklyCustom">Hebdomadaire (moments personnalisés)</string>
     <string name="shared_schedule_pattern_YearlyRecurrent">Annuel (dates récurrentes)</string>
     <string name="shared_schedule_pattern_SpecificDates">Dates spécifiques</string>
+    <string name="shared_schedule_no_schedule_message">Cette automation ne sera exécutée que manuellement.</string>
     <string name="shared_schedule_time_label">Heure %1$d</string>
     <string name="shared_schedule_time_label_single">Heure</string>
     <string name="shared_schedule_daily_times_label">Horaires quotidiens</string>

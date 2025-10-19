@@ -765,12 +765,14 @@
     <string name="schedule_preview_label">Aperçu</string>
 
     <!-- SCHEDULE CONFIG - Pattern names -->
+    <string name="schedule_pattern_None">Aucune programmation</string>
     <string name="schedule_pattern_DailyMultiple">Quotidien (horaires multiples)</string>
     <string name="schedule_pattern_WeeklySimple">Hebdomadaire (jours + horaire)</string>
     <string name="schedule_pattern_MonthlyRecurrent">Mensuel (mois + jour)</string>
     <string name="schedule_pattern_WeeklyCustom">Hebdomadaire (moments personnalisés)</string>
     <string name="schedule_pattern_YearlyRecurrent">Annuel (dates récurrentes)</string>
     <string name="schedule_pattern_SpecificDates">Dates spécifiques</string>
+    <string name="schedule_no_schedule_message">Cette automation ne sera exécutée que manuellement.</string>
 
     <!-- SCHEDULE CONFIG - Field labels -->
     <string name="schedule_time_label">Heure %1$d</string>
