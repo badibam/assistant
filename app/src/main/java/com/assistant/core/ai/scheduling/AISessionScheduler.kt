@@ -28,11 +28,14 @@ class AISessionScheduler(
 ) {
 
     companion object {
-        /** Chat session inactivity timeout (5 minutes) */
+        /** Chat session inactivity timeout (5 minutes) - only when automation waiting */
         const val CHAT_INACTIVITY_TIMEOUT = 300_000L
 
         /** Automation session inactivity timeout (2 minutes) */
         const val AUTO_INACTIVITY_TIMEOUT = 120_000L
+
+        /** Automation session global timeout (10 minutes) - excludes network downtime */
+        const val AUTOMATION_GLOBAL_TIMEOUT = 600_000L
     }
 
     /**
@@ -210,35 +213,93 @@ class AISessionScheduler(
     }
 
     /**
-     * Check if active session should timeout due to inactivity.
+     * Check if active session should timeout.
+     *
+     * CHAT: Timeout only if automation waiting + inactivity > 5 min
+     * AUTOMATION: Timeout if (global > 10 min OR inactivity > 2 min) AND not waiting for network
      *
      * @param currentState Current AI state
+     * @param hasWaitingAutomations True if queue or scheduled automation exists (CHAT only)
      * @return true if session should timeout
      */
-    fun shouldTimeout(currentState: AIState): Boolean {
+    fun shouldTimeout(currentState: AIState, hasWaitingAutomations: Boolean): Boolean {
         if (currentState.sessionType == null) {
             return false // No active session
         }
 
-        val inactivity = currentState.calculateInactivity(System.currentTimeMillis())
+        val currentTime = System.currentTimeMillis()
 
-        val timeout = when (currentState.sessionType) {
-            SessionType.CHAT -> CHAT_INACTIVITY_TIMEOUT
-            SessionType.AUTOMATION -> AUTO_INACTIVITY_TIMEOUT
+        when (currentState.sessionType) {
+            SessionType.CHAT -> {
+                // CHAT timeouts only if automation waiting
+                if (!hasWaitingAutomations) {
+                    return false
+                }
+
+                val inactivity = currentState.calculateInactivity(currentTime)
+                val shouldTimeout = inactivity > CHAT_INACTIVITY_TIMEOUT
+
+                if (shouldTimeout) {
+                    LogManager.aiSession(
+                        "CHAT timeout: automation waiting, inactivity=${inactivity}ms > ${CHAT_INACTIVITY_TIMEOUT}ms",
+                        "INFO"
+                    )
+                }
+
+                return shouldTimeout
+            }
+
+            SessionType.AUTOMATION -> {
+                // Skip timeout if waiting for network (actively retrying)
+                if (currentState.phase == Phase.WAITING_NETWORK_RETRY) {
+                    return false
+                }
+
+                // Check global timeout (excluding network downtime)
+                val activeTime = calculateActiveTime(currentState, currentTime)
+                if (activeTime > AUTOMATION_GLOBAL_TIMEOUT) {
+                    LogManager.aiSession(
+                        "AUTOMATION timeout: global time exceeded, activeTime=${activeTime}ms > ${AUTOMATION_GLOBAL_TIMEOUT}ms",
+                        "INFO"
+                    )
+                    return true
+                }
+
+                // Check inactivity timeout
+                val inactivity = currentState.calculateInactivity(currentTime)
+                if (inactivity > AUTO_INACTIVITY_TIMEOUT) {
+                    LogManager.aiSession(
+                        "AUTOMATION timeout: inactivity=${inactivity}ms > ${AUTO_INACTIVITY_TIMEOUT}ms",
+                        "INFO"
+                    )
+                    return true
+                }
+
+                return false
+            }
+
             else -> return false
         }
+    }
 
-        val shouldTimeout = inactivity > timeout
+    /**
+     * Calculate active time for automation (excluding network downtime).
+     *
+     * @param state Current AI state
+     * @param currentTime Current timestamp
+     * @return Active time in milliseconds (excluding time spent waiting for network)
+     */
+    private fun calculateActiveTime(state: AIState, currentTime: Long): Long {
+        val totalTime = currentTime - state.sessionCreatedAt
 
-        if (shouldTimeout) {
-            LogManager.aiSession(
-                "Session timeout: ${currentState.sessionId}, type=${currentState.sessionType}, " +
-                    "inactivity=${inactivity}ms > ${timeout}ms",
-                "INFO"
-            )
+        // Subtract network downtime if currently waiting for network
+        val networkDownTime = if (state.phase == Phase.WAITING_NETWORK_RETRY) {
+            currentTime - state.lastNetworkAvailableTime
+        } else {
+            0L
         }
 
-        return shouldTimeout
+        return totalTime - networkDownTime
     }
 }
 

@@ -63,6 +63,12 @@ class AIEventProcessor(
      */
     suspend fun emit(event: AIEvent) {
         try {
+            // Special handling for SchedulerHeartbeat before state transition
+            if (event is AIEvent.SchedulerHeartbeat) {
+                handleSchedulerHeartbeat()
+                return // Don't transition state for heartbeat
+            }
+
             // Transition state via repository (atomic memory + DB)
             val newState = stateRepository.emit(event)
 
@@ -1038,7 +1044,8 @@ class AIEventProcessor(
         // Force state to idle
         stateRepository.forceIdle()
 
-        // TODO: Emit SchedulerHeartbeat to process next session
+        // Try to activate next session (queue or scheduled)
+        processNextSessionActivation()
     }
 
     /**
@@ -1092,6 +1099,121 @@ class AIEventProcessor(
         messageRepository.storeMessage(sessionId, message)
 
         LogManager.aiSession("Interruption message created for session $sessionId", "DEBUG")
+    }
+
+    /**
+     * Handle scheduler heartbeat event.
+     *
+     * Watchdog logic:
+     * - If CHAT active: check timeout only if automation waiting
+     * - If AUTOMATION active: check global timeout + inactivity timeout
+     * - If IDLE: try to activate next session
+     */
+    private suspend fun handleSchedulerHeartbeat() {
+        val currentState = stateRepository.currentState
+
+        when (currentState.sessionType) {
+            SessionType.CHAT -> {
+                // Check if automation waiting (queue or scheduled)
+                val queuedSessions = com.assistant.core.ai.orchestration.AIOrchestrator.queuedSessions.value
+                val nextSession = com.assistant.core.ai.scheduling.AISessionScheduler(
+                    aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
+                    automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
+                ).getNextSession(queuedSessions)
+
+                val hasWaitingAutomations = nextSession != null
+
+                LogManager.aiSession(
+                    "Heartbeat: CHAT active (${currentState.sessionId}), automation waiting: $hasWaitingAutomations",
+                    "DEBUG"
+                )
+
+                if (hasWaitingAutomations) {
+                    val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
+                        aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
+                        automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
+                    )
+
+                    if (sessionScheduler.shouldTimeout(currentState, hasWaitingAutomations = true)) {
+                        LogManager.aiSession("Heartbeat: CHAT timeout (automation waiting)", "INFO")
+                        emit(AIEvent.SessionCompleted(SessionEndReason.TIMEOUT))
+                    }
+                }
+            }
+
+            SessionType.AUTOMATION -> {
+                LogManager.aiSession(
+                    "Heartbeat: AUTOMATION active (${currentState.sessionId}), checking timeouts",
+                    "DEBUG"
+                )
+
+                val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
+                    aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
+                    automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
+                )
+
+                if (sessionScheduler.shouldTimeout(currentState, hasWaitingAutomations = false)) {
+                    LogManager.aiSession("Heartbeat: AUTOMATION timeout", "INFO")
+                    emit(AIEvent.SessionCompleted(SessionEndReason.TIMEOUT))
+                }
+            }
+
+            SessionType.SEED -> {
+                // SEED sessions are never active, this should not happen
+                LogManager.aiSession("Heartbeat: SEED session active (unexpected)", "WARN")
+            }
+
+            null -> {
+                // IDLE - try to activate next session
+                processNextSessionActivation()
+            }
+        }
+    }
+
+    /**
+     * Process next session activation when slot is free.
+     *
+     * Priority: CHAT (queue) > MANUAL (queue) > SCHEDULED (calculated)
+     */
+    private suspend fun processNextSessionActivation() {
+        LogManager.aiSession("Heartbeat: Slot free, checking for next session to activate", "DEBUG")
+
+        val queuedSessions = com.assistant.core.ai.orchestration.AIOrchestrator.queuedSessions.value
+        val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
+            aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
+            automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
+        )
+
+        val nextSession = sessionScheduler.getNextSession(queuedSessions)
+
+        if (nextSession != null) {
+            val sessionInfo = if (nextSession.isResume()) {
+                "Resume session ${nextSession.sessionId}"
+            } else {
+                "Create session from automation ${nextSession.automationId}"
+            }
+
+            LogManager.aiSession(
+                "Heartbeat: Activating next session - $sessionInfo (type=${nextSession.sessionType}, trigger=${nextSession.trigger})",
+                "INFO"
+            )
+
+            // Remove from queue if needed
+            if (nextSession.removeFromQueue && nextSession.sessionId != null) {
+                com.assistant.core.ai.orchestration.AIOrchestrator.dequeueSession(nextSession.sessionId)
+            }
+
+            // Activate session based on type (Resume or Create)
+            if (nextSession.isResume()) {
+                // Resume existing session
+                emit(AIEvent.SessionActivationRequested(nextSession.sessionId!!, nextSession.sessionType))
+            } else {
+                // Create new automation session from automation
+                com.assistant.core.ai.orchestration.AIOrchestrator.executeAutomation(nextSession.automationId!!)
+            }
+        } else {
+            LogManager.aiSession("Heartbeat: No sessions to activate", "DEBUG")
+        }
     }
 
     /**

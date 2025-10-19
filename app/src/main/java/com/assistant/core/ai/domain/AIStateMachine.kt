@@ -55,6 +55,8 @@ object AIStateMachine {
                         sessionId = event.sessionId,
                         sessionType = event.sessionType,
                         phase = nextPhase,
+                        sessionCreatedAt = currentTime,
+                        lastNetworkAvailableTime = currentTime,
                         lastEventTime = currentTime
                     )
                 }
@@ -287,11 +289,21 @@ object AIStateMachine {
                 )
             }
 
-            is AIEvent.NetworkRetryScheduled,
-            is AIEvent.NetworkAvailable -> {
+            is AIEvent.NetworkRetryScheduled -> {
                 // Transition from WAITING_NETWORK_RETRY to CALLING_AI
+                // (network retry scheduled, will check again after delay)
                 state.copy(
                     phase = Phase.CALLING_AI,
+                    lastEventTime = currentTime
+                )
+            }
+
+            is AIEvent.NetworkAvailable -> {
+                // Transition from WAITING_NETWORK_RETRY to CALLING_AI
+                // Update lastNetworkAvailableTime to exclude downtime from global timeout
+                state.copy(
+                    phase = Phase.CALLING_AI,
+                    lastNetworkAvailableTime = currentTime,
                     lastEventTime = currentTime
                 )
             }

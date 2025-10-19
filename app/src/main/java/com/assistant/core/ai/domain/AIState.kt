@@ -50,6 +50,19 @@ data class AIState(
     // ==================== Timestamps ====================
 
     /**
+     * Timestamp when session was created.
+     * Used for global timeout calculation (AUTOMATION only).
+     */
+    val sessionCreatedAt: Long = 0L,
+
+    /**
+     * Timestamp when network last became available.
+     * Used to exclude network downtime from global timeout calculation.
+     * Initialized to sessionCreatedAt, updated on NetworkAvailable event.
+     */
+    val lastNetworkAvailableTime: Long = 0L,
+
+    /**
      * Timestamp of last event processed (any event).
      * Used for inactivity timeout calculation when not in active processing.
      */
