@@ -13,7 +13,7 @@ interface AIDao {
     @Query("SELECT * FROM ai_sessions ORDER BY lastActivity DESC")
     suspend fun getAllSessions(): List<AISessionEntity>
 
-    @Query("SELECT * FROM ai_sessions WHERE isActive = 1 LIMIT 1")
+    @Query("SELECT * FROM ai_sessions WHERE isActive = 1 ORDER BY lastActivity DESC LIMIT 1")
     suspend fun getActiveSession(): AISessionEntity?
 
     @Query("SELECT * FROM ai_sessions WHERE id = :sessionId")

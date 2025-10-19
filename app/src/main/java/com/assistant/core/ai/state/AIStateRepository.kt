@@ -123,6 +123,9 @@ class AIStateRepository(
      *
      * Updates the active session entity with current state values.
      * This is called automatically after each state transition.
+     *
+     * Important: When a session becomes active (phase != IDLE and != CLOSED),
+     * all other sessions are deactivated to ensure only one active session at a time.
      */
     private suspend fun syncStateToDb(state: AIState) {
         try {
@@ -137,6 +140,19 @@ class AIStateRepository(
                 return
             }
 
+            // Determine if this session should be active
+            val shouldBeActive = state.phase != Phase.CLOSED
+
+            // If this session is becoming active, deactivate all other sessions first
+            // This ensures only one session has isActive=1 at any time
+            if (shouldBeActive && !existingSession.isActive) {
+                aiDao.deactivateAllSessions()
+                LogManager.aiSession(
+                    "Deactivated all sessions before activating session: $sessionId",
+                    "DEBUG"
+                )
+            }
+
             // Update entity with new state values
             val updatedEntity = existingSession.copy(
                 phase = state.phase.name,
@@ -148,7 +164,7 @@ class AIStateRepository(
                 lastEventTime = state.lastEventTime,
                 lastUserInteractionTime = state.lastUserInteractionTime,
                 lastActivity = System.currentTimeMillis(),
-                isActive = state.phase != Phase.CLOSED,
+                isActive = shouldBeActive,
                 endReason = if (state.phase == Phase.CLOSED) state.endReason?.name else existingSession.endReason
             )
 
