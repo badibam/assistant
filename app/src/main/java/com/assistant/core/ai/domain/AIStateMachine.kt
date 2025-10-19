@@ -119,9 +119,10 @@ object AIStateMachine {
                         lastUserInteractionTime = currentTime
                     )
                 } else {
-                    // User rejected - transition to CLOSED
+                    // User rejected - CHAT returns to IDLE (session stays active)
+                    // AUTOMATION should not reach this path (no validation for AUTOMATION)
                     state.copy(
-                        phase = Phase.CLOSED,
+                        phase = Phase.IDLE,
                         waitingContext = null,
                         lastEventTime = currentTime,
                         lastUserInteractionTime = currentTime
@@ -190,12 +191,14 @@ object AIStateMachine {
                 val newConsecutiveQueries = state.consecutiveDataQueries + 1
 
                 if (newConsecutiveQueries >= limits.maxDataQueryIterations) {
-                    // Limit reached - transition to COMPLETED
-                    state.copy(
-                        phase = Phase.CLOSED,
-                        consecutiveDataQueries = newConsecutiveQueries,
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
+                    // Limit reached - transition based on session type
+                    transitionToCompletion(
+                        state = state.copy(
+                            consecutiveDataQueries = newConsecutiveQueries,
+                            totalRoundtrips = state.totalRoundtrips + 1
+                        ),
+                        currentTime = currentTime,
+                        endReason = SessionEndReason.ERROR
                     )
                 } else {
                     // Continue - transition to CALLING_AI with query results
@@ -269,12 +272,14 @@ object AIStateMachine {
                 val newFormatErrors = state.consecutiveFormatErrors + 1
 
                 if (newFormatErrors >= limits.maxFormatErrorRetries) {
-                    // Limit reached - transition to COMPLETED
-                    state.copy(
-                        phase = Phase.CLOSED,
-                        consecutiveFormatErrors = newFormatErrors,
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
+                    // Limit reached - transition based on session type
+                    transitionToCompletion(
+                        state = state.copy(
+                            consecutiveFormatErrors = newFormatErrors,
+                            totalRoundtrips = state.totalRoundtrips + 1
+                        ),
+                        currentTime = currentTime,
+                        endReason = SessionEndReason.ERROR
                     )
                 } else {
                     // Retry - transition to RETRYING_AFTER_FORMAT_ERROR
@@ -292,13 +297,15 @@ object AIStateMachine {
                 val newActionFailures = state.consecutiveActionFailures + 1
 
                 if (newActionFailures >= limits.maxActionRetries) {
-                    // Limit reached - transition to COMPLETED
-                    state.copy(
-                        phase = Phase.CLOSED,
-                        consecutiveActionFailures = newActionFailures,
-                        consecutiveDataQueries = 0, // Reset other counters
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
+                    // Limit reached - transition based on session type
+                    transitionToCompletion(
+                        state = state.copy(
+                            consecutiveActionFailures = newActionFailures,
+                            consecutiveDataQueries = 0, // Reset other counters
+                            totalRoundtrips = state.totalRoundtrips + 1
+                        ),
+                        currentTime = currentTime,
+                        endReason = SessionEndReason.ERROR
                     )
                 } else {
                     // Retry - transition to RETRYING_AFTER_ACTION_FAILURE
@@ -465,6 +472,43 @@ object AIStateMachine {
     }
 
     /**
+     * Transition to session completion based on session type.
+     *
+     * - CHAT: Returns to IDLE (session remains active, waiting for next user message)
+     * - AUTOMATION: Transitions to AWAITING_SESSION_CLOSURE (5s countdown before CLOSED)
+     */
+    private fun transitionToCompletion(
+        state: AIState,
+        currentTime: Long,
+        endReason: SessionEndReason? = null
+    ): AIState {
+        return when (state.sessionType) {
+            SessionType.CHAT -> {
+                // CHAT never closes automatically - return to IDLE
+                state.copy(
+                    phase = Phase.IDLE,
+                    lastEventTime = currentTime
+                )
+            }
+            SessionType.AUTOMATION -> {
+                // AUTOMATION: 5s countdown before closure
+                state.copy(
+                    phase = Phase.AWAITING_SESSION_CLOSURE,
+                    endReason = endReason,
+                    lastEventTime = currentTime
+                )
+            }
+            else -> {
+                // Fallback: IDLE for unknown session types
+                state.copy(
+                    phase = Phase.IDLE,
+                    lastEventTime = currentTime
+                )
+            }
+        }
+    }
+
+    /**
      * Handle ActionsExecuted event with retry and continuation logic.
      */
     private fun handleActionsExecuted(
@@ -476,10 +520,12 @@ object AIStateMachine {
         // Check total roundtrips limit first
         val newTotalRoundtrips = state.totalRoundtrips + 1
         if (newTotalRoundtrips >= limits.maxAutonomousRoundtrips) {
-            return state.copy(
-                phase = Phase.CLOSED,
-                totalRoundtrips = newTotalRoundtrips,
-                lastEventTime = currentTime
+            return transitionToCompletion(
+                state = state.copy(
+                    totalRoundtrips = newTotalRoundtrips
+                ),
+                currentTime = currentTime,
+                endReason = SessionEndReason.ERROR
             )
         }
 

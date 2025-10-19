@@ -339,9 +339,11 @@ tick() {
 - **PAUSE** : `pauseActiveSession()` → phase `PAUSED` (reprend sur resume manuel)
 
 **Arrêt automatique** :
-- **completed=true** : IA termine son travail → COMPLETED
-- **Limites boucles** : automationMaxAutonomousRoundtrips dépassé → TIMEOUT
-- **Watchdog** : Inactivité réelle sans attente réseau → TIMEOUT
+- **completed=true** : IA termine son travail → AWAITING_SESSION_CLOSURE (5s) → COMPLETED
+- **Limites boucles** : automationMaxAutonomousRoundtrips dépassé → AWAITING_SESSION_CLOSURE (5s) → ERROR
+- **Watchdog** : Inactivité réelle sans attente réseau → AWAITING_SESSION_CLOSURE (5s) → TIMEOUT
+
+**CHAT** : Ne se ferme JAMAIS automatiquement, retourne toujours à IDLE (sauf erreurs réseau/provider/système)
 
 ### Reprise sessions
 Détection automatique sessions orphelines par AutomationScheduler :
@@ -354,8 +356,8 @@ Détection automatique sessions orphelines par AutomationScheduler :
 ### SessionEndReason
 Raison d'arrêt session (audit + logique reprise) :
 - **COMPLETED** : IA a terminé (completed=true)
-- **TIMEOUT** : Watchdog inactivité OU limites boucles
-- **ERROR** : Erreur technique fatale
+- **ERROR** : Limites boucles atteintes (queries/actions/format/roundtrips)
+- **TIMEOUT** : Watchdog inactivité sans attente réseau
 - **CANCELLED** : User STOP (ne reprend pas)
 - **SUSPENDED** : Éviction système (reprend plus tard)
 - **NETWORK_ERROR** : Échec réseau (reprend avec retry)
