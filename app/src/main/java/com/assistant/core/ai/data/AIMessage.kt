@@ -1,6 +1,7 @@
 package com.assistant.core.ai.data
 
 import android.content.Context
+import com.assistant.core.ai.utils.JsonNormalizer
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -188,12 +189,20 @@ data class AIMessage(
             }
         }
 
+        /**
+         * Parse params from JSON and normalize all JSON native types to Kotlin types
+         *
+         * JSONObject.get() returns JSON native types (JSONObject, JSONArray, etc.)
+         * which are not compatible with Kotlin types (Map, List).
+         * JsonNormalizer handles recursive conversion for all nested structures.
+         */
         private fun parseParams(paramsJson: JSONObject): Map<String, Any> {
-            val params = mutableMapOf<String, Any>()
+            val rawParams = mutableMapOf<String, Any>()
             paramsJson.keys().forEach { key ->
-                params[key] = paramsJson.get(key)
+                rawParams[key] = paramsJson.get(key)
             }
-            return params
+            // Normalize all JSON types to Kotlin equivalents
+            return JsonNormalizer.normalizeParams(rawParams)
         }
 
         /**

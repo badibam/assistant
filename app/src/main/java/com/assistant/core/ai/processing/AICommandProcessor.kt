@@ -323,23 +323,17 @@ class AICommandProcessor(private val context: Context) {
             }
 
             // Enrich entries with schema_id
-            // Handle both JSONArray (from AI parsing) and List types
-            val entriesRaw = params["entries"]
-            val entries = when (entriesRaw) {
-                is org.json.JSONArray -> {
-                    // Convert JSONArray to List
-                    (0 until entriesRaw.length()).map { i ->
-                        entriesRaw.get(i)
-                    }
-                }
-                is List<*> -> entriesRaw
-                else -> {
-                    LogManager.aiService(
-                        "No entries found to enrich with schema_id (type: ${entriesRaw?.javaClass?.simpleName})",
-                        "WARN"
-                    )
-                    return params
-                }
+            // Note: params already normalized by JsonNormalizer in AIMessage.parseParams()
+            // All JSONArray → List, all JSONObject → Map conversions already done
+            @Suppress("UNCHECKED_CAST")
+            val entries = params["entries"] as? List<*>
+
+            if (entries == null) {
+                LogManager.aiService(
+                    "No entries found to enrich with schema_id (type: ${params["entries"]?.javaClass?.simpleName})",
+                    "WARN"
+                )
+                return params
             }
 
             if (entries.isEmpty()) {
@@ -348,28 +342,17 @@ class AICommandProcessor(private val context: Context) {
             }
 
             val enrichedEntries = entries.map { entry ->
-                when (entry) {
-                    is org.json.JSONObject -> {
-                        // Convert JSONObject to Map
-                        val entryMap = mutableMapOf<String, Any>()
-                        entry.keys().forEach { key ->
-                            entryMap[key] = entry.get(key)
-                        }
-                        entryMap["schema_id"] = dataSchemaId
-                        entryMap
+                if (entry is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    (entry as Map<String, Any>).toMutableMap().apply {
+                        put("schema_id", dataSchemaId)
                     }
-                    is Map<*, *> -> {
-                        entry.toMutableMap().apply {
-                            put("schema_id", dataSchemaId)
-                        }
-                    }
-                    else -> {
-                        LogManager.aiService(
-                            "Unexpected entry type: ${entry?.javaClass?.simpleName}",
-                            "WARN"
-                        )
-                        entry
-                    }
+                } else {
+                    LogManager.aiService(
+                        "Unexpected entry type: ${entry?.javaClass?.simpleName}",
+                        "WARN"
+                    )
+                    entry
                 }
             }
 
