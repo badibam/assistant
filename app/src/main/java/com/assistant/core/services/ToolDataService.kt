@@ -180,20 +180,22 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val dao = getToolDataDao()
 
-        // Get entity before deleting to retrieve toolInstanceId for notification
+        // Verify entry exists before deletion (CRITICAL: AI must know if entry doesn't exist)
         val entity = dao.getById(entryId)
+            ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
         dao.deleteById(entryId)
 
         // Notify UI of data change in this tool instance
-        if (entity != null) {
-            val zoneId = getZoneIdForTool(entity.toolInstanceId)
-            if (zoneId != null) {
-                DataChangeNotifier.notifyToolDataChanged(entity.toolInstanceId, zoneId)
-            }
+        val zoneId = getZoneIdForTool(entity.toolInstanceId)
+        if (zoneId != null) {
+            DataChangeNotifier.notifyToolDataChanged(entity.toolInstanceId, zoneId)
         }
 
-        return OperationResult.success()
+        return OperationResult.success(mapOf(
+            "id" to entryId,
+            "deleted_at" to System.currentTimeMillis()
+        ))
     }
 
     private suspend fun getEntries(params: JSONObject, token: CancellationToken): OperationResult {
@@ -313,7 +315,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
 
+        // Verify tool instance exists (MAJOR: AI must know if toolInstanceId is invalid)
+        val database = AppDatabase.getDatabase(context)
+        val toolInstanceDao = database.toolInstanceDao()
+        val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
+            ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found").format(toolInstanceId))
+
         val dao = getToolDataDao()
+        val deletedCount = dao.countByToolInstance(toolInstanceId) // Count before deletion
         dao.deleteByToolInstance(toolInstanceId)
 
         // Notify UI of data change in this tool instance
@@ -322,7 +331,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
             DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
         }
 
-        return OperationResult.success()
+        return OperationResult.success(mapOf(
+            "deleted_count" to deletedCount,
+            "toolInstanceId" to toolInstanceId
+        ))
     }
 
     /**
@@ -381,9 +393,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Note: No notification here - createEntry() already notifies for each entry
 
-        // Return error if all entries failed
+        // MAJOR: Return error if ALL entries failed (AI must know about total failure)
+        // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
             return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
+
+        // Log warning if partial failures occurred
+        if (failureCount > 0) {
+            com.assistant.core.utils.LogManager.service(
+                "Batch create completed with partial failures: $successCount succeeded, $failureCount failed",
+                "WARN"
+            )
         }
 
         return OperationResult.success(mapOf(
@@ -447,9 +468,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Note: No notification here - updateEntry() already notifies for each entry
 
-        // Return error if all entries failed
+        // MAJOR: Return error if ALL entries failed (AI must know about total failure)
+        // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
             return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
+
+        // Log warning if partial failures occurred
+        if (failureCount > 0) {
+            com.assistant.core.utils.LogManager.service(
+                "Batch update completed with partial failures: $successCount succeeded, $failureCount failed",
+                "WARN"
+            )
         }
 
         return OperationResult.success(mapOf(
@@ -507,9 +537,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Note: No notification here - deleteEntry() already notifies for each entry
 
-        // Return error if all entries failed
+        // MAJOR: Return error if ALL entries failed (AI must know about total failure)
+        // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
             return OperationResult.error("All batch entries failed: $failureCount failed")
+        }
+
+        // Log warning if partial failures occurred
+        if (failureCount > 0) {
+            com.assistant.core.utils.LogManager.service(
+                "Batch delete completed with partial failures: $successCount succeeded, $failureCount failed",
+                "WARN"
+            )
         }
 
         return OperationResult.success(mapOf(

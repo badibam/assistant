@@ -143,31 +143,41 @@ class SchemaService(private val context: Context) : ExecutableService {
 
     /**
      * Get tooltype schemas via ToolTypeManager discovery
+     *
+     * CRITICAL: Do NOT mask technical exceptions - they must propagate to AI
+     * Only catch exceptions for individual tooltypes, not the outer loop
      */
     private fun getTooltypeSchema(schemaId: String): Schema? {
         LogManager.service("Searching for schema '$schemaId' across all tooltypes")
 
-        return try {
-            val allToolTypes = ToolTypeManager.getAllToolTypes()
-
-            for ((toolTypeName, toolType) in allToolTypes) {
-                try {
-                    val schema = toolType.getSchema(schemaId, context)
-                    if (schema != null) {
-                        LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
-                        return schema
-                    }
-                } catch (e: Exception) {
-                    LogManager.service("Failed to get schema from tooltype '$toolTypeName': ${e.message}", "WARN")
-                }
-            }
-
-            LogManager.service("Schema '$schemaId' not found in any tooltype")
-            return null
+        // Outer try catches only ToolTypeManager.getAllToolTypes() failures (technical error)
+        val allToolTypes = try {
+            ToolTypeManager.getAllToolTypes()
         } catch (e: Exception) {
-            LogManager.service("Failed to search tooltype schemas: ${e.message}", "ERROR", e)
-            null
+            // CRITICAL: Technical error accessing ToolTypeManager - let it propagate
+            LogManager.service("Technical error accessing ToolTypeManager: ${e.message}", "ERROR", e)
+            throw IllegalStateException("Failed to access ToolTypeManager: ${e.message}", e)
         }
+
+        // Iterate through tooltypes - catch individual failures but continue searching
+        for ((toolTypeName, toolType) in allToolTypes) {
+            try {
+                val schema = toolType.getSchema(schemaId, context)
+                if (schema != null) {
+                    LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
+                    return schema
+                }
+                // null means "schema not found in this tooltype" - continue searching
+            } catch (e: Exception) {
+                // Individual tooltype failure - log but continue (schema might exist in other tooltypes)
+                LogManager.service("Failed to get schema from tooltype '$toolTypeName': ${e.message}", "WARN")
+                // Continue to next tooltype
+            }
+        }
+
+        // Schema not found in any tooltype (not an error, just doesn't exist)
+        LogManager.service("Schema '$schemaId' not found in any tooltype")
+        return null
     }
 
     /**

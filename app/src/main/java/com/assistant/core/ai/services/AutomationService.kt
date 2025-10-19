@@ -165,7 +165,15 @@ class AutomationService(private val context: Context) : ExecutableService {
         val scheduleJson = params.optString("schedule")
         val schedule = when {
             scheduleJson == "null" -> null // Explicit removal
-            scheduleJson.isNotEmpty() -> json.decodeFromString<ScheduleConfig>(scheduleJson)
+            scheduleJson.isNotEmpty() -> {
+                // MAJOR: Catch JSON parsing errors and return clear error message to AI
+                try {
+                    json.decodeFromString<ScheduleConfig>(scheduleJson)
+                } catch (e: Exception) {
+                    LogManager.service("Invalid schedule JSON format: ${e.message}", "ERROR", e)
+                    return OperationResult.error("Invalid schedule JSON format: ${e.message}")
+                }
+            }
             else -> entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) }
         }
 

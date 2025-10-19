@@ -36,6 +36,15 @@ Guide technique de l'architecture système centrale.
 ### Gestion des Tokens
 Chaque opération reçoit automatiquement un CancellationToken unique avec création par CommandDispatcher, stockage en ConcurrentHashMap et nettoyage automatique.
 
+### DataChangeNotifier
+**Principe** : Notification réactive des modifications de données pour rechargement automatique UI.
+
+**Events** : ZonesChanged, ToolsChanged(zoneId), ToolDataChanged(toolInstanceId, zoneId), AppConfigChanged
+
+**Usage services** : Les services appellent automatiquement les méthodes notify* après modifications (create/update/delete)
+
+**Usage UI** : LaunchedEffect collecte DataChangeNotifier.changes pour recharger données quand pertinent
+
 ## Discovery Pattern
 
 Architecture sans imports hardcodés dans Core, avec ServiceRegistry centralisé.
