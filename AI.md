@@ -203,9 +203,9 @@ data class AIResponse(
     val content: String,
     val errorMessage: String? = null,
     val tokensUsed: Int = 0,
-    val cacheCreationTokens: Int = 0,  // Provider-specific
-    val cacheReadTokens: Int = 0,
-    val inputTokens: Int = 0
+    val cacheWriteTokens: Int = 0,  // Cache write/creation tokens (generic, all providers)
+    val cacheReadTokens: Int = 0,   // Cache read tokens (generic, all providers)
+    val inputTokens: Int = 0         // Uncached input tokens
 )
 ```
 

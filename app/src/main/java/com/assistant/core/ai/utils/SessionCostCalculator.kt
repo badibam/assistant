@@ -82,8 +82,12 @@ object SessionCostCalculator {
             val totalCacheReadTokens = messages.sumOf { it.cacheReadTokens }
             val totalOutputTokens = messages.sumOf { it.outputTokens }
 
+            LogManager.aiService("SessionCostCalculator - Token totals: uncachedInput=$totalUncachedInputTokens, cacheWrite=$totalCacheWriteTokens, cacheRead=$totalCacheReadTokens, output=$totalOutputTokens", "DEBUG")
+
             // Get model pricing
             val modelPrice = ModelPriceManager.getModelPrice(providerId, modelId)
+
+            LogManager.aiService("SessionCostCalculator - ModelPrice: inputCost=${modelPrice?.inputCostPerToken}, cacheWriteCost=${modelPrice?.cacheWriteCostPerToken}, cacheReadCost=${modelPrice?.cacheReadCostPerToken}, outputCost=${modelPrice?.outputCostPerToken}", "DEBUG")
 
             if (modelPrice == null) {
                 LogManager.aiService("SessionCostCalculator - Model price not available for $providerId/$modelId", "WARN")

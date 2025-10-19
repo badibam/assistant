@@ -19,7 +19,14 @@ data class SessionMessage(
     val aiMessageJson: String?,    // Original AI JSON for prompt history consistency
     val systemMessage: SystemMessage?, // System messages for AI operation results
     val executionMetadata: ExecutionMetadata? = null, // For automation executions only
-    val excludeFromPrompt: Boolean = false // Exclude from prompt generation (e.g., postText success messages)
+    val excludeFromPrompt: Boolean = false, // Exclude from prompt generation (e.g., postText success messages)
+
+    // Token usage metrics (for AI messages only, 0 for USER/SYSTEM)
+    // Note: API providers return inputTokens as UNCACHED only. Total input = inputTokens + cacheWriteTokens + cacheReadTokens
+    val inputTokens: Int = 0,           // Uncached input tokens (from API)
+    val cacheWriteTokens: Int = 0,      // Cache write tokens
+    val cacheReadTokens: Int = 0,       // Cache read tokens
+    val outputTokens: Int = 0           // Output tokens generated
 )
 
 /**

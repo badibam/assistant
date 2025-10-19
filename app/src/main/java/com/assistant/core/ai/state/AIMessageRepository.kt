@@ -221,7 +221,12 @@ class AIMessageRepository(
             aiMessageParsedJson = message.aiMessage?.toJson(),
             systemMessageJson = message.systemMessage?.toJson(),
             executionMetadataJson = message.executionMetadata?.toJson(),
-            excludeFromPrompt = message.excludeFromPrompt
+            excludeFromPrompt = message.excludeFromPrompt,
+            // Token usage metrics
+            inputTokens = message.inputTokens,
+            cacheWriteTokens = message.cacheWriteTokens,
+            cacheReadTokens = message.cacheReadTokens,
+            outputTokens = message.outputTokens
         )
     }
 
@@ -248,7 +253,12 @@ class AIMessageRepository(
                 // TODO: Implement ExecutionMetadata.fromJson() when ExecutionMetadata class exists
                 null
             },
-            excludeFromPrompt = entity.excludeFromPrompt
+            excludeFromPrompt = entity.excludeFromPrompt,
+            // Token usage metrics
+            inputTokens = entity.inputTokens,
+            cacheWriteTokens = entity.cacheWriteTokens,
+            cacheReadTokens = entity.cacheReadTokens,
+            outputTokens = entity.outputTokens
         )
     }
 }

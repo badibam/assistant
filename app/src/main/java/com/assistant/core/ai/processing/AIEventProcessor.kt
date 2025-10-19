@@ -384,7 +384,12 @@ class AIEventProcessor(
                     aiMessageJson = response.content,
                     systemMessage = null,
                     executionMetadata = null,
-                    excludeFromPrompt = false
+                    excludeFromPrompt = false,
+                    // Token usage from API response
+                    inputTokens = response.inputTokens,
+                    cacheWriteTokens = response.cacheWriteTokens,
+                    cacheReadTokens = response.cacheReadTokens,
+                    outputTokens = response.tokensUsed
                 )
 
                 messageRepository.storeMessage(sessionId, aiMessage)
