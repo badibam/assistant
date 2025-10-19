@@ -203,9 +203,10 @@ object AIStateMachine {
             // ==================== Completion ====================
 
             is AIEvent.CompletionConfirmed -> {
-                // Transition to COMPLETED
+                // Transition to CLOSED with COMPLETED reason
                 state.copy(
                     phase = Phase.CLOSED,
+                    endReason = SessionEndReason.COMPLETED,
                     waitingContext = null,
                     lastEventTime = currentTime
                 )
@@ -235,17 +236,17 @@ object AIStateMachine {
             }
 
             is AIEvent.NetworkErrorOccurred -> {
-                // CHAT: immediate failure (handled by event processor)
-                // AUTOMATION: transition to WAITING_NETWORK_RETRY
+                // CHAT: return to IDLE (session stays active, user must retry manually)
+                // AUTOMATION: transition to WAITING_NETWORK_RETRY (automatic retry)
                 if (state.sessionType == SessionType.AUTOMATION) {
                     state.copy(
                         phase = Phase.WAITING_NETWORK_RETRY,
                         lastEventTime = currentTime
                     )
                 } else {
-                    // CHAT - complete session with network error
+                    // CHAT - return to IDLE (session stays active per AI.md line 461)
                     state.copy(
-                        phase = Phase.CLOSED,
+                        phase = Phase.IDLE,
                         lastEventTime = currentTime
                     )
                 }
@@ -304,9 +305,10 @@ object AIStateMachine {
             }
 
             is AIEvent.SystemErrorOccurred -> {
-                // Transition to COMPLETED on system error
+                // Transition to CLOSED on system error
                 state.copy(
                     phase = Phase.CLOSED,
+                    endReason = SessionEndReason.ERROR,
                     lastEventTime = currentTime
                 )
             }
