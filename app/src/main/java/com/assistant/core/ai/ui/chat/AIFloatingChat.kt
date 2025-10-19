@@ -304,5 +304,12 @@ private fun AutomationActiveView(
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        // Status bar (always visible at bottom)
+        com.assistant.core.ai.ui.components.SessionStatusBar(
+            phase = aiState.phase,
+            sessionType = SessionType.AUTOMATION,
+            context = context
+        )
     }
 }
