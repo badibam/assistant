@@ -461,9 +461,30 @@ class AIEventProcessor(
                     }
                 }
 
-                // If format errors detected, emit error event
+                // If format errors detected, store FORMAT_ERROR message and emit error event
                 if (formatErrors.isNotEmpty()) {
                     LogManager.aiSession("parseAIResponse: Format errors detected: ${formatErrors.joinToString("; ")}", "WARN")
+
+                    // Create FORMAT_ERROR system message for AI to see and fix
+                    val formatErrorMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = com.assistant.core.ai.data.SystemMessage(
+                            type = SystemMessageType.FORMAT_ERROR,
+                            commandResults = emptyList(),
+                            summary = "Erreurs de format JSON : ${formatErrors.joinToString("; ")}",
+                            formattedData = null
+                        ),
+                        executionMetadata = null,
+                        excludeFromPrompt = false // Sent to AI prompt for correction
+                    )
+                    messageRepository.storeMessage(sessionId, formatErrorMessage)
+
                     emit(AIEvent.ParseErrorOccurred(formatErrors.joinToString("; ")))
                     return
                 }
@@ -512,11 +533,55 @@ class AIEventProcessor(
                     "DEBUG"
                 )
 
+                // Create FORMAT_ERROR system message for AI to see and fix
+                val formatErrorMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = com.assistant.core.ai.data.SystemMessage(
+                        type = SystemMessageType.FORMAT_ERROR,
+                        commandResults = emptyList(),
+                        summary = "Échec parsing JSON : format invalide. Tu dois répondre avec un JSON valide selon le schéma AIMessage.",
+                        formattedData = null
+                    ),
+                    executionMetadata = null,
+                    excludeFromPrompt = false // Sent to AI prompt for correction
+                )
+                messageRepository.storeMessage(sessionId, formatErrorMessage)
+
                 emit(AIEvent.ParseErrorOccurred("Failed to parse AI response JSON"))
             }
 
         } catch (e: Exception) {
             LogManager.aiSession("parseAIResponse failed: ${e.message}", "ERROR", e)
+
+            // Create FORMAT_ERROR system message for AI to see
+            val sessionId = state.sessionId
+            if (sessionId != null) {
+                val formatErrorMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = com.assistant.core.ai.data.SystemMessage(
+                        type = SystemMessageType.FORMAT_ERROR,
+                        commandResults = emptyList(),
+                        summary = "Erreur technique lors du parsing : ${e.message}",
+                        formattedData = null
+                    ),
+                    executionMetadata = null,
+                    excludeFromPrompt = false
+                )
+                messageRepository.storeMessage(sessionId, formatErrorMessage)
+            }
+
             emit(AIEvent.ParseErrorOccurred(e.message ?: "Unknown parsing error"))
         }
     }
