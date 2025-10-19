@@ -107,7 +107,8 @@ enum class SystemMessageType {
     INTERRUPTED,             // User interrupted autonomous loop (stored for audit, FILTERED from prompt)
     COMMUNICATION_CANCELLED, // User did not respond to communication module (sent to AI prompt for context)
     VALIDATION_CANCELLED,    // User did not validate AI actions or explicitly refused (sent to AI prompt for context)
-    COMPLETED_CONFIRMATION   // AI used completed flag, asking for confirmation (sent to AI prompt for double-check)
+    COMPLETED_CONFIRMATION,  // AI used completed flag, asking for confirmation (sent to AI prompt for double-check)
+    PROVIDER_ERROR           // AI provider not configured or not found (stored for audit, FILTERED from prompt)
 }
 
 /**

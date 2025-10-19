@@ -281,12 +281,13 @@ class AIEventProcessor(
      * Call AI provider with current prompt.
      *
      * Flow:
-     * 1. Build prompt data from session
-     * 2. Check network availability
-     * 3. Call AI provider
-     * 4. Store AI message (raw JSON)
-     * 5. Parse AI response
-     * 6. Emit AIResponseReceived → triggers PARSING_AI_RESPONSE phase
+     * 1. Verify provider exists and is configured
+     * 2. Build prompt data from session
+     * 3. Check network availability
+     * 4. Call AI provider
+     * 5. Store AI message (raw JSON)
+     * 6. Parse AI response
+     * 7. Emit AIResponseReceived → triggers PARSING_AI_RESPONSE phase
      */
     private suspend fun callAI(state: AIState) {
         try {
@@ -296,7 +297,53 @@ class AIEventProcessor(
                 return
             }
 
-            // Build prompt data
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+            // 1. Verify provider before building prompt
+            val providerCheckResult = com.assistant.core.ai.providers.ProviderVerifier.verifyProvider(state, context)
+            if (!providerCheckResult.isValid) {
+                LogManager.aiSession("callAI: Provider check failed: ${providerCheckResult.errorMessage}", "ERROR")
+
+                if (state.sessionType == SessionType.CHAT) {
+                    // CHAT: Show toast and return to IDLE (session continues)
+                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        com.assistant.core.ui.UI.Toast(
+                            context = context,
+                            message = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
+                            duration = com.assistant.core.ui.Duration.LONG
+                        )
+                    }
+
+                    // Emit SystemErrorOccurred to return to IDLE
+                    emit(AIEvent.SystemErrorOccurred(providerCheckResult.errorMessage ?: "Provider error"))
+                } else {
+                    // AUTOMATION: Create system message and terminate with ERROR
+                    val errorMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = com.assistant.core.ai.data.SystemMessage(
+                            type = SystemMessageType.PROVIDER_ERROR,
+                            commandResults = emptyList(),
+                            summary = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
+                            formattedData = null
+                        ),
+                        executionMetadata = null,
+                        excludeFromPrompt = true // Excluded from prompt (audit only)
+                    )
+                    messageRepository.storeMessage(sessionId, errorMessage)
+
+                    // Terminate session with ERROR reason
+                    emit(AIEvent.SessionCompleted(SessionEndReason.ERROR))
+                }
+                return
+            }
+
+            // 2. Build prompt data
             val promptData = promptManager.buildPromptData(sessionId, context)
 
             // Check network availability

@@ -367,7 +367,7 @@ class CommandExecutor(private val context: Context) {
                 // This case should not be reached in normal flow
                 "Completion confirmation request"
             }
-            SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT, SystemMessageType.INTERRUPTED -> {
+            SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT, SystemMessageType.INTERRUPTED, SystemMessageType.PROVIDER_ERROR -> {
                 // These messages should never reach here (filtered from prompts, audit only)
                 // But provide fallback just in case
                 s.shared("ai_error_system_generic")
