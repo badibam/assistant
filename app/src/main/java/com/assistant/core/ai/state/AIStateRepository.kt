@@ -148,54 +148,61 @@ class AIStateRepository(
      *
      * Important: When a session becomes active (phase != IDLE and != CLOSED),
      * all other sessions are deactivated to ensure only one active session at a time.
+     *
+     * Uses NonCancellable context to ensure DB sync completes even if parent scope is cancelled.
+     * This is critical for session completion cleanup.
      */
     private suspend fun syncStateToDb(state: AIState) {
-        try {
-            val sessionId = state.sessionId ?: return
+        // Use NonCancellable to ensure DB sync completes even if parent coroutine is cancelled
+        // This is essential when session completion triggers scope cancellation
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            try {
+                val sessionId = state.sessionId ?: return@withContext
 
-            // Load existing session entity to preserve fields not in AIState
-            val existingSession = aiDao.getSession(sessionId) ?: run {
-                LogManager.aiSession(
-                    "Cannot sync state to DB: session $sessionId not found",
-                    "ERROR"
+                // Load existing session entity to preserve fields not in AIState
+                val existingSession = aiDao.getSession(sessionId) ?: run {
+                    LogManager.aiSession(
+                        "Cannot sync state to DB: session $sessionId not found",
+                        "ERROR"
+                    )
+                    return@withContext
+                }
+
+                // Determine if this session should be active
+                val shouldBeActive = state.phase != Phase.CLOSED
+
+                // If this session is becoming active, deactivate all other sessions first
+                // This ensures only one session has isActive=1 at any time
+                if (shouldBeActive && !existingSession.isActive) {
+                    aiDao.deactivateAllSessions()
+                    LogManager.aiSession(
+                        "Deactivated all sessions before activating session: $sessionId",
+                        "DEBUG"
+                    )
+                }
+
+                // Update entity with new state values
+                val updatedEntity = existingSession.copy(
+                    phase = state.phase.name,
+                    waitingContextJson = state.waitingContext?.toJson(),
+                    consecutiveFormatErrors = state.consecutiveFormatErrors,
+                    totalRoundtrips = state.totalRoundtrips,
+                    lastEventTime = state.lastEventTime,
+                    lastUserInteractionTime = state.lastUserInteractionTime,
+                    lastActivity = System.currentTimeMillis(),
+                    isActive = shouldBeActive,
+                    endReason = if (state.phase == Phase.CLOSED) state.endReason?.name else existingSession.endReason
                 )
-                return
-            }
 
-            // Determine if this session should be active
-            val shouldBeActive = state.phase != Phase.CLOSED
+                aiDao.updateSession(updatedEntity)
 
-            // If this session is becoming active, deactivate all other sessions first
-            // This ensures only one session has isActive=1 at any time
-            if (shouldBeActive && !existingSession.isActive) {
-                aiDao.deactivateAllSessions()
+            } catch (e: Exception) {
                 LogManager.aiSession(
-                    "Deactivated all sessions before activating session: $sessionId",
-                    "DEBUG"
+                    "Failed to sync state to DB: ${e.message}",
+                    "ERROR",
+                    e
                 )
             }
-
-            // Update entity with new state values
-            val updatedEntity = existingSession.copy(
-                phase = state.phase.name,
-                waitingContextJson = state.waitingContext?.toJson(),
-                consecutiveFormatErrors = state.consecutiveFormatErrors,
-                totalRoundtrips = state.totalRoundtrips,
-                lastEventTime = state.lastEventTime,
-                lastUserInteractionTime = state.lastUserInteractionTime,
-                lastActivity = System.currentTimeMillis(),
-                isActive = shouldBeActive,
-                endReason = if (state.phase == Phase.CLOSED) state.endReason?.name else existingSession.endReason
-            )
-
-            aiDao.updateSession(updatedEntity)
-
-        } catch (e: Exception) {
-            LogManager.aiSession(
-                "Failed to sync state to DB: ${e.message}",
-                "ERROR",
-                e
-            )
         }
     }
 
@@ -222,32 +229,37 @@ class AIStateRepository(
     /**
      * Force state to idle (used for cleanup after session completion).
      * Deactivates current session in DB before setting state to IDLE.
+     *
+     * Uses NonCancellable context to ensure cleanup completes.
      */
     suspend fun forceIdle() {
-        // Deactivate current session in DB (if any)
-        val currentSessionId = currentState.sessionId
-        if (currentSessionId != null) {
-            try {
-                val session = aiDao.getSession(currentSessionId)
-                if (session != null) {
-                    aiDao.updateSession(session.copy(isActive = false))
+        // Use NonCancellable to ensure cleanup completes even if parent coroutine is cancelled
+        kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+            // Deactivate current session in DB (if any)
+            val currentSessionId = currentState.sessionId
+            if (currentSessionId != null) {
+                try {
+                    val session = aiDao.getSession(currentSessionId)
+                    if (session != null) {
+                        aiDao.updateSession(session.copy(isActive = false))
+                        LogManager.aiSession(
+                            "Deactivated session $currentSessionId in DB before IDLE",
+                            "DEBUG"
+                        )
+                    }
+                } catch (e: Exception) {
                     LogManager.aiSession(
-                        "Deactivated session $currentSessionId in DB before IDLE",
-                        "DEBUG"
+                        "Failed to deactivate session in DB: ${e.message}",
+                        "ERROR",
+                        e
                     )
                 }
-            } catch (e: Exception) {
-                LogManager.aiSession(
-                    "Failed to deactivate session in DB: ${e.message}",
-                    "ERROR",
-                    e
-                )
             }
-        }
 
-        // Set memory state to IDLE
-        _state.value = AIState.idle()
-        LogManager.aiSession("State forced to IDLE", "INFO")
+            // Set memory state to IDLE
+            _state.value = AIState.idle()
+            LogManager.aiSession("State forced to IDLE", "INFO")
+        }
     }
 
     /**
