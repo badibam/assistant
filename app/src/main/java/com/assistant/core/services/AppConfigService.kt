@@ -316,6 +316,18 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     }
                 }
             }
+            "get_current_datetime" -> {
+                // Return current timestamp with human-readable format for AI
+                val currentTimestamp = System.currentTimeMillis()
+                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                val humanReadable = dateFormat.format(java.util.Date(currentTimestamp))
+
+                LogManager.service("Current datetime: $humanReadable (timestamp: $currentTimestamp)")
+                OperationResult.success(mapOf(
+                    "timestamp" to currentTimestamp,
+                    "formatted" to humanReadable
+                ))
+            }
             else -> {
                 LogManager.service("Unknown operation: $operation", "WARN")
                 OperationResult.error(s.shared("service_error_unknown_operation").format(operation))

@@ -233,6 +233,17 @@ Récupère l\'état global de l\'application (zones + tool instances).
 
 **Usage** : Utilise cette commande quand tu as besoin de comprendre la structure complète de l\'application (quelles zones existent, quels outils sont configurés avec leurs descriptions). Pour obtenir la configuration complète d\'un outil spécifique, utilise TOOL_CONFIG.
 
+### CURRENT_DATETIME
+Récupère la date et heure actuelle du système.
+
+**Paramètres** : aucun
+
+**Retour** :
+- `timestamp` (number) : Timestamp en millisecondes (format Unix)
+- `formatted` (string) : Date/heure formatée (yyyy-MM-dd HH:mm:ss)
+
+**Usage** : Utilise cette commande quand tu as besoin du timestamp actuel pour créer des données avec des dates précises. Exemple : créer une note avec l\'heure exacte de création.
+
 ### SCHEMA
 Récupère un schéma JSON pour validation.
 

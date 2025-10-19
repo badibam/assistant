@@ -61,6 +61,7 @@ object CommandTransformer {
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
                     "ZONES" -> transformZonesCommand(command)
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
+                    "CURRENT_DATETIME" -> transformCurrentDatetimeCommand(command)
                     else -> {
                         val error = "Type inconnu: ${command.type}"
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
@@ -238,6 +239,16 @@ object CommandTransformer {
                 params = emptyMap()
             )
         }
+    }
+
+    private fun transformCurrentDatetimeCommand(command: DataCommand): ExecutableCommand? {
+        LogManager.aiPrompt("transformCurrentDatetimeCommand() - routing to app_config.get_current_datetime", "VERBOSE")
+
+        return ExecutableCommand(
+            resource = "app_config",
+            operation = "get_current_datetime",
+            params = emptyMap()
+        )
     }
 
     // ========================================================================================
