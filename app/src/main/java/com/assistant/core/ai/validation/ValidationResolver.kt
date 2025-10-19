@@ -111,48 +111,94 @@ class ValidationResolver(private val context: Context) {
             }
 
             ActionScope.ZONE_CONFIG -> {
+                val operation = actionType.operation
                 val zoneId = extractZoneId(action)
-                val zoneConfig = loadZoneConfig(zoneId)
-                val zoneRequires = zoneConfig.optBoolean("validateZoneConfigChanges", false)
-                val appRequires = appConfig.validateZoneConfigChanges
 
-                val requiresValidation = appRequires || zoneRequires
-                ActionAnalysis(
-                    actionId = action.id,
-                    requiresValidation = requiresValidation,
-                    requiresWarning = requiresValidation,  // Config = warning
-                    trigger = when {
-                        appRequires -> ValidationTrigger.APP_CONFIG
-                        zoneRequires -> ValidationTrigger.ZONE_CONFIG
-                        else -> null
-                    },
-                    zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() }
-                )
+                when (operation) {
+                    "create" -> {
+                        // CREATE_ZONE: Zone doesn't exist yet, check app config only
+                        val appRequires = appConfig.validateZoneConfigChanges
+                        ActionAnalysis(
+                            actionId = action.id,
+                            requiresValidation = appRequires,
+                            requiresWarning = appRequires,
+                            trigger = if (appRequires) ValidationTrigger.APP_CONFIG else null
+                        )
+                    }
+                    else -> {
+                        // UPDATE_ZONE, DELETE_ZONE: Zone exists, check app + zone configs
+                        val zoneConfig = loadZoneConfig(zoneId)
+                        val zoneRequires = zoneConfig.optBoolean("validateZoneConfigChanges", false)
+                        val appRequires = appConfig.validateZoneConfigChanges
+
+                        val requiresValidation = appRequires || zoneRequires
+                        ActionAnalysis(
+                            actionId = action.id,
+                            requiresValidation = requiresValidation,
+                            requiresWarning = requiresValidation,
+                            trigger = when {
+                                appRequires -> ValidationTrigger.APP_CONFIG
+                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
+                                else -> null
+                            },
+                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() }
+                        )
+                    }
+                }
             }
 
             ActionScope.TOOL_CONFIG -> {
+                val operation = actionType.operation
                 val toolInstanceId = extractToolInstanceId(action)
-                val toolConfig = loadToolConfig(toolInstanceId)
-                val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
-                val toolRequires = toolConfig.optBoolean("validateConfig", false)
-                val zoneRequires = zoneConfig.optBoolean("validateToolConfigChanges", false)
-                val appRequires = appConfig.validateToolConfigChanges
+                when (operation) {
+                    "create" -> {
+                        // CREATE_TOOL: Tool doesn't exist yet, check app + zone configs only
+                        // Zone ID should be in params for tool creation
+                        val zoneId = action.params["zone_id"] as? String ?: ""
+                        val zoneConfig = if (zoneId.isNotEmpty()) loadZoneConfig(zoneId) else JSONObject()
 
-                val requiresValidation = appRequires || zoneRequires || toolRequires
-                ActionAnalysis(
-                    actionId = action.id,
-                    requiresValidation = requiresValidation,
-                    requiresWarning = requiresValidation,  // Config = warning
-                    trigger = when {
-                        appRequires -> ValidationTrigger.APP_CONFIG
-                        zoneRequires -> ValidationTrigger.ZONE_CONFIG
-                        toolRequires -> ValidationTrigger.TOOL_CONFIG
-                        else -> null
-                    },
-                    zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
-                    toolName = toolConfig.optString("name").takeIf { it.isNotBlank() }
-                )
+                        val zoneRequires = zoneConfig.optBoolean("validateToolConfigChanges", false)
+                        val appRequires = appConfig.validateToolConfigChanges
+
+                        val requiresValidation = appRequires || zoneRequires
+                        ActionAnalysis(
+                            actionId = action.id,
+                            requiresValidation = requiresValidation,
+                            requiresWarning = requiresValidation,
+                            trigger = when {
+                                appRequires -> ValidationTrigger.APP_CONFIG
+                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
+                                else -> null
+                            },
+                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() }
+                        )
+                    }
+                    else -> {
+                        // UPDATE_TOOL_CONFIG, DELETE_TOOL: Tool exists, check app + zone + tool configs
+                        val toolConfig = loadToolConfig(toolInstanceId)
+                        val zoneConfig = loadZoneConfigForTool(toolInstanceId)
+
+                        val toolRequires = toolConfig.optBoolean("validateConfig", false)
+                        val zoneRequires = zoneConfig.optBoolean("validateToolConfigChanges", false)
+                        val appRequires = appConfig.validateToolConfigChanges
+
+                        val requiresValidation = appRequires || zoneRequires || toolRequires
+                        ActionAnalysis(
+                            actionId = action.id,
+                            requiresValidation = requiresValidation,
+                            requiresWarning = requiresValidation,
+                            trigger = when {
+                                appRequires -> ValidationTrigger.APP_CONFIG
+                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
+                                toolRequires -> ValidationTrigger.TOOL_CONFIG
+                                else -> null
+                            },
+                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
+                            toolName = toolConfig.optString("name").takeIf { it.isNotBlank() }
+                        )
+                    }
+                }
             }
 
             ActionScope.TOOL_DATA -> {
