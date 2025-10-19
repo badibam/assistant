@@ -1,5 +1,6 @@
 package com.assistant.core.ai.ui.automation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +15,7 @@ import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.utils.SchedulePattern
 import com.assistant.core.utils.WeekMoment
 import com.assistant.core.utils.YearlyDate
+import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -284,13 +286,12 @@ private fun DailyMultipleEditor(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    UI.FormField(
+                    TimePickerField(
                         label = s.shared("schedule_time_label").format(index + 1),
                         value = time,
                         onChange = { newTime ->
                             onTimesChange(times.toMutableList().apply { set(index, newTime) })
-                        },
-                        fieldType = FieldType.TEXT
+                        }
                     )
                 }
 
@@ -367,11 +368,10 @@ private fun WeeklySimpleEditor(
         }
 
         // Time selector
-        UI.FormField(
+        TimePickerField(
             label = s.shared("schedule_time_label_single"),
             value = time,
-            onChange = onTimeChange,
-            fieldType = FieldType.TEXT
+            onChange = onTimeChange
         )
     }
 }
@@ -438,11 +438,10 @@ private fun MonthlyRecurrentEditor(
         )
 
         // Time
-        UI.FormField(
+        TimePickerField(
             label = s.shared("schedule_time_label_single"),
             value = time,
-            onChange = onTimeChange,
-            fieldType = FieldType.TEXT
+            onChange = onTimeChange
         )
     }
 }
@@ -494,7 +493,7 @@ private fun WeeklyCustomEditor(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
-                            UI.FormField(
+                            TimePickerField(
                                 label = s.shared("schedule_time_label_single"),
                                 value = moment.time,
                                 onChange = { newTime ->
@@ -503,8 +502,7 @@ private fun WeeklyCustomEditor(
                                             set(index, moment.copy(time = newTime))
                                         }
                                     )
-                                },
-                                fieldType = FieldType.TEXT
+                                }
                             )
                         }
 
@@ -599,7 +597,7 @@ private fun YearlyRecurrentEditor(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
-                            UI.FormField(
+                            TimePickerField(
                                 label = s.shared("schedule_time_label_single"),
                                 value = date.time,
                                 onChange = { newTime ->
@@ -608,8 +606,7 @@ private fun YearlyRecurrentEditor(
                                             set(index, date.copy(time = newTime))
                                         }
                                     )
-                                },
-                                fieldType = FieldType.TEXT
+                                }
                             )
                         }
 
@@ -664,17 +661,12 @@ private fun SpecificDatesEditor(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    // TODO: Use proper date/time picker component
-                    // For now, display formatted date
-                    val formattedDate = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                        .format(Date(timestamp))
-
-                    UI.FormField(
+                    DateTimePickerField(
                         label = s.shared("schedule_date_label").format(index + 1),
-                        value = formattedDate,
-                        onChange = { /* TODO: Parse date */ },
-                        fieldType = FieldType.TEXT,
-                        readonly = true // TODO: Make editable with proper date picker
+                        timestamp = timestamp,
+                        onChange = { newTimestamp ->
+                            onTimestampsChange(timestamps.toMutableList().apply { set(index, newTimestamp) })
+                        }
                     )
                 }
 
@@ -698,6 +690,100 @@ private fun SpecificDatesEditor(
             onClick = {
                 onTimestampsChange(timestamps + System.currentTimeMillis())
             }
+        )
+    }
+}
+
+/**
+ * Time picker field - clickable field that opens a time picker dialog
+ */
+@Composable
+private fun TimePickerField(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit
+) {
+    val context = LocalContext.current
+    var showPicker by remember { mutableStateOf(false) }
+
+    UI.FormField(
+        label = label,
+        value = value,
+        onChange = { },
+        fieldType = FieldType.TEXT,
+        readonly = true,
+        onClick = { showPicker = true }
+    )
+
+    if (showPicker) {
+        UI.TimePicker(
+            selectedTime = value,
+            onTimeSelected = { newTime ->
+                onChange(newTime)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false }
+        )
+    }
+}
+
+/**
+ * Date+Time picker field - clickable field that opens date then time picker dialogs
+ */
+@Composable
+private fun DateTimePickerField(
+    label: String,
+    timestamp: Long,
+    onChange: (Long) -> Unit
+) {
+    val context = LocalContext.current
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var tempDate by remember { mutableStateOf("") }
+
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
+    val dateOnlyFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val timeOnlyFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+
+    val formattedValue = dateFormatter.format(Date(timestamp))
+
+    UI.FormField(
+        label = label,
+        value = formattedValue,
+        onChange = { },
+        fieldType = FieldType.TEXT,
+        readonly = true,
+        onClick = { showDatePicker = true }
+    )
+
+    if (showDatePicker) {
+        UI.DatePicker(
+            selectedDate = dateOnlyFormatter.format(Date(timestamp)),
+            onDateSelected = { dateStr ->
+                tempDate = dateStr
+                showDatePicker = false
+                showTimePicker = true
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+
+    if (showTimePicker) {
+        UI.TimePicker(
+            selectedTime = timeOnlyFormatter.format(Date(timestamp)),
+            onTimeSelected = { timeStr ->
+                try {
+                    // Combine date and time
+                    val dateTimeStr = "$tempDate $timeStr"
+                    val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val newTimestamp = dateTimeFormatter.parse(dateTimeStr)?.time ?: timestamp
+                    onChange(newTimestamp)
+                } catch (e: Exception) {
+                    // Keep original timestamp on parse error
+                }
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false }
         )
     }
 }
