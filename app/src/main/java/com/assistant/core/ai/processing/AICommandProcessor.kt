@@ -316,19 +316,53 @@ class AICommandProcessor(private val context: Context) {
             }
 
             // Enrich entries with schema_id
-            val entries = params["entries"] as? List<*>
-            if (entries == null) {
-                LogManager.aiService("No entries found to enrich with schema_id", "WARN")
+            // Handle both JSONArray (from AI parsing) and List types
+            val entriesRaw = params["entries"]
+            val entries = when (entriesRaw) {
+                is org.json.JSONArray -> {
+                    // Convert JSONArray to List
+                    (0 until entriesRaw.length()).map { i ->
+                        entriesRaw.get(i)
+                    }
+                }
+                is List<*> -> entriesRaw
+                else -> {
+                    LogManager.aiService(
+                        "No entries found to enrich with schema_id (type: ${entriesRaw?.javaClass?.simpleName})",
+                        "WARN"
+                    )
+                    return params
+                }
+            }
+
+            if (entries.isEmpty()) {
+                LogManager.aiService("Empty entries list, cannot enrich", "WARN")
                 return params
             }
 
             val enrichedEntries = entries.map { entry ->
-                if (entry is Map<*, *>) {
-                    entry.toMutableMap().apply {
-                        put("schema_id", dataSchemaId)
+                when (entry) {
+                    is org.json.JSONObject -> {
+                        // Convert JSONObject to Map
+                        val entryMap = mutableMapOf<String, Any>()
+                        entry.keys().forEach { key ->
+                            entryMap[key] = entry.get(key)
+                        }
+                        entryMap["schema_id"] = dataSchemaId
+                        entryMap
                     }
-                } else {
-                    entry
+                    is Map<*, *> -> {
+                        entry.toMutableMap().apply {
+                            put("schema_id", dataSchemaId)
+                        }
+                    }
+                    else -> {
+                        LogManager.aiService(
+                            "Unexpected entry type: ${entry?.javaClass?.simpleName}",
+                            "WARN"
+                        )
+                        entry
+                    }
                 }
             }
 
