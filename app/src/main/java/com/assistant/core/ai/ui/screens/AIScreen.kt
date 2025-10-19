@@ -236,6 +236,27 @@ private fun ChatMode(
         Phase.RETRYING_AFTER_ACTION_FAILURE
     )
 
+    // Disable composer during processing, waiting phases, and pause/interrupt
+    // Only IDLE phase allows sending new messages
+    val isComposerEnabled = aiState.phase !in listOf(
+        Phase.CALLING_AI,
+        Phase.EXECUTING_ENRICHMENTS,
+        Phase.EXECUTING_DATA_QUERIES,
+        Phase.EXECUTING_ACTIONS,
+        Phase.PARSING_AI_RESPONSE,
+        Phase.WAITING_VALIDATION,
+        Phase.WAITING_COMMUNICATION_RESPONSE,
+        Phase.WAITING_COMPLETION_CONFIRMATION,
+        Phase.WAITING_NETWORK_RETRY,
+        Phase.RETRYING_AFTER_FORMAT_ERROR,
+        Phase.RETRYING_AFTER_ACTION_FAILURE,
+        Phase.PREPARING_CONTINUATION,
+        Phase.PAUSED,
+        Phase.INTERRUPTED,
+        Phase.AWAITING_SESSION_CLOSURE,
+        Phase.CLOSED
+    )
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -292,7 +313,8 @@ private fun ChatMode(
                             }
                         }
                     },
-                    placeholder = s.shared("ai_composer_placeholder")
+                    placeholder = s.shared("ai_composer_placeholder"),
+                    enabled = isComposerEnabled
                 )
             }
         }
@@ -1097,15 +1119,11 @@ fun ChatMessageList(
         }
     }
 
-    // Determine if loading indicator should show
+    // Determine if loading indicator with interrupt button should show
+    // Only for phases with long waits where interrupt makes sense
     val showLoadingIndicator = aiState.phase in listOf(
         Phase.CALLING_AI,
-        Phase.PARSING_AI_RESPONSE,
-        Phase.EXECUTING_ENRICHMENTS,
-        Phase.EXECUTING_DATA_QUERIES,
-        Phase.EXECUTING_ACTIONS,
-        Phase.RETRYING_AFTER_FORMAT_ERROR,
-        Phase.RETRYING_AFTER_ACTION_FAILURE
+        Phase.WAITING_NETWORK_RETRY
     )
 
     // Find last AI message index for inline validation/communication display

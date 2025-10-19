@@ -103,7 +103,7 @@ fun ChatMessageBubble(
                                         AIOrchestrator.resumeWithResponse(response)
                                     },
                                     onCancel = {
-                                        // Cancel handled by fallback message
+                                        AIOrchestrator.cancelCommunication()
                                     }
                                 )
                             }

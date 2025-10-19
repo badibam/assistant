@@ -407,6 +407,20 @@ object AIOrchestrator {
         }
     }
 
+    /**
+     * Cancel communication module (CHAT only).
+     *
+     * Creates COMMUNICATION_CANCELLED system message and transitions to IDLE.
+     */
+    fun cancelCommunication() {
+        LogManager.aiSession("cancelCommunication", "INFO")
+
+        // Emit cancellation event asynchronously
+        orchestratorScope.launch {
+            eventProcessor.emit(AIEvent.CommunicationCancelled)
+        }
+    }
+
     // ========================================================================================
     // Automation API
     // ========================================================================================

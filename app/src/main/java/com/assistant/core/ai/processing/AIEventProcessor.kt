@@ -69,6 +69,33 @@ class AIEventProcessor(
                 return // Don't transition state for heartbeat
             }
 
+            // Special handling for CommunicationCancelled - create message BEFORE transition
+            if (event is AIEvent.CommunicationCancelled) {
+                val currentState = stateRepository.currentState
+                val sessionId = currentState.sessionId
+
+                if (sessionId != null) {
+                    val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+                    // Create COMMUNICATION_CANCELLED system message
+                    val cancelMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = s.shared("ai_module_cancelled"),
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = null,
+                        executionMetadata = null,
+                        excludeFromPrompt = false // Included in prompt so AI knows user cancelled
+                    )
+
+                    messageRepository.storeMessage(sessionId, cancelMessage)
+                    LogManager.aiSession("Communication cancelled message created for session $sessionId", "DEBUG")
+                }
+            }
+
             // Transition state via repository (atomic memory + DB)
             val newState = stateRepository.emit(event)
 
@@ -93,7 +120,10 @@ class AIEventProcessor(
     private suspend fun handleStateChange(state: AIState) {
         when (state.phase) {
             Phase.IDLE -> {
-                // No side effects - waiting for activation
+                // Check if just transitioned from WAITING_COMMUNICATION_RESPONSE
+                // This happens when CommunicationCancelled event is emitted
+                // We need to handle the side effect here since the event itself doesn't have a dedicated phase
+                // (No explicit handling needed - message creation is done in emit() before transition)
             }
 
             Phase.EXECUTING_ENRICHMENTS -> {
@@ -113,13 +143,15 @@ class AIEventProcessor(
             }
 
             Phase.WAITING_VALIDATION -> {
-                // UI handles validation display
-                // No side effects - waiting for user
+                // Check if validation actually required via ValidationResolver
+                // If yes: create WaitingContext and wait for user
+                // If no: emit ValidationNotRequired to proceed directly to EXECUTING_ACTIONS
+                checkValidationRequired(state)
             }
 
             Phase.WAITING_COMMUNICATION_RESPONSE -> {
-                // UI handles communication module display
-                // No side effects - waiting for user
+                // Create WaitingContext with communication module for UI display
+                createCommunicationWaitingContext(state)
             }
 
             Phase.EXECUTING_DATA_QUERIES -> {
@@ -154,6 +186,10 @@ class AIEventProcessor(
             }
 
             Phase.INTERRUPTED -> {
+                // Cancel any pending network retry
+                networkRetryJob?.cancel()
+                networkRetryJob = null
+
                 // Create interruption system message (audit only, excluded from prompt)
                 createInterruptionMessage(state)
             }
@@ -367,6 +403,8 @@ class AIEventProcessor(
             val currentState = stateRepository.currentState
             if (currentState.phase == Phase.INTERRUPTED) {
                 LogManager.aiSession("callAI: Session interrupted during AI call, ignoring response", "INFO")
+                // Transition back to IDLE after ignoring response
+                emit(AIEvent.AIResponseIgnored)
                 return
             }
 
@@ -717,6 +755,13 @@ class AIEventProcessor(
         networkRetryJob = processingScope.launch {
             delay(30_000L) // 30 seconds
 
+            // Check if still in network retry phase (could have been interrupted)
+            val currentState = stateRepository.currentState
+            if (currentState.phase != Phase.WAITING_NETWORK_RETRY) {
+                LogManager.aiSession("scheduleNetworkRetry: Phase changed during delay, cancelling retry", "DEBUG")
+                return@launch
+            }
+
             // Check if network is now available
             if (com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                 emit(AIEvent.NetworkAvailable)
@@ -882,42 +927,16 @@ class AIEventProcessor(
 
             LogManager.aiSession("executeActions: Processing ${actionCommands.size} action commands", "DEBUG")
 
-            // Check if validation is required
-            val validationResult = validationResolver.shouldValidate(
-                actions = actionCommands,
-                sessionId = sessionId,
-                aiMessageId = lastAIMessage.id,
-                aiRequestedValidation = aiMessage.validationRequest == true
-            )
+            // Validation has already been checked in WAITING_VALIDATION phase (CHAT)
+            // or skipped entirely (AUTOMATION)
+            // Now execute actions directly
 
-            when (validationResult) {
-                is com.assistant.core.ai.validation.ValidationResult.RequiresValidation -> {
-                    LogManager.aiSession("executeActions: Validation required", "INFO")
+            // Process via AICommandProcessor
+            val processor = AICommandProcessor(context)
+            val transformationResult = processor.processActionCommands(actionCommands)
 
-                    // Create fallback VALIDATION_CANCELLED message BEFORE waiting
-                    val cancelMessageId = createFallbackMessage(sessionId, "VALIDATION_CANCELLED")
-
-                    // Update waiting context in state repository
-                    val waitingContext = WaitingContext.Validation(
-                        validationContext = validationResult.context,
-                        cancelMessageId = cancelMessageId
-                    )
-
-                    stateRepository.updateWaitingContext(waitingContext)
-
-                    // State machine will handle the transition to WAITING_VALIDATION
-                    // No need to emit event here - the waiting context update triggers the phase change
-                }
-
-                is com.assistant.core.ai.validation.ValidationResult.NoValidation -> {
-                    LogManager.aiSession("executeActions: No validation required, executing directly", "DEBUG")
-
-                    // Process via AICommandProcessor
-                    val processor = AICommandProcessor(context)
-                    val transformationResult = processor.processActionCommands(actionCommands)
-
-                    // Check if all commands were successfully transformed
-                    if (transformationResult.errors.isNotEmpty()) {
+            // Check if all commands were successfully transformed
+            if (transformationResult.errors.isNotEmpty()) {
                         LogManager.aiSession("executeActions: ${transformationResult.errors.size} command(s) failed transformation", "WARN")
 
                         // Create FORMAT_ERROR message with detailed errors for AI to see and fix
@@ -1008,8 +1027,6 @@ class AIEventProcessor(
                             errors = result.systemMessage.commandResults
                         ))
                     }
-                }
-            }
 
         } catch (e: Exception) {
             LogManager.aiSession("executeActions failed: ${e.message}", "ERROR", e)
@@ -1103,30 +1120,6 @@ class AIEventProcessor(
     }
 
     /**
-     * Create fallback message for cancellation scenarios.
-     */
-    private suspend fun createFallbackMessage(sessionId: String, type: String): String {
-        val messageId = UUID.randomUUID().toString()
-
-        val message = SessionMessage(
-            id = messageId,
-            timestamp = System.currentTimeMillis(),
-            sender = MessageSender.SYSTEM,
-            richContent = null,
-            textContent = type, // Fallback text
-            aiMessage = null,
-            aiMessageJson = null,
-            systemMessage = null,
-            executionMetadata = null,
-            excludeFromPrompt = false
-        )
-
-        messageRepository.storeMessage(sessionId, message)
-
-        return messageId
-    }
-
-    /**
      * Create interruption system message (audit only).
      *
      * This message is excluded from prompt to avoid polluting AI context.
@@ -1153,6 +1146,99 @@ class AIEventProcessor(
         messageRepository.storeMessage(sessionId, message)
 
         LogManager.aiSession("Interruption message created for session $sessionId", "DEBUG")
+    }
+
+    /**
+     * Check if validation is required and create waiting context if needed.
+     *
+     * Called when entering WAITING_VALIDATION phase (CHAT only, after actionCommands detected).
+     * Uses ValidationResolver to check if validation actually required.
+     * If yes: creates WaitingContext and waits for user
+     * If no: emits ValidationNotRequired to proceed directly to EXECUTING_ACTIONS
+     */
+    private suspend fun checkValidationRequired(state: AIState) {
+        val sessionId = state.sessionId ?: return
+
+        // Load last AI message to get action commands
+        val messages = messageRepository.loadMessages(sessionId)
+        val lastAIMessage = messages.lastOrNull { it.sender == MessageSender.AI && it.aiMessage != null } ?: run {
+            LogManager.aiSession("checkValidationRequired: No AI message found", "ERROR")
+            emit(AIEvent.ValidationNotRequired)
+            return
+        }
+
+        val aiMessage = lastAIMessage.aiMessage ?: run {
+            LogManager.aiSession("checkValidationRequired: No AIMessage found", "ERROR")
+            emit(AIEvent.ValidationNotRequired)
+            return
+        }
+
+        val actionCommands = aiMessage.actionCommands ?: emptyList()
+
+        if (actionCommands.isEmpty()) {
+            LogManager.aiSession("checkValidationRequired: No action commands", "DEBUG")
+            emit(AIEvent.ValidationNotRequired)
+            return
+        }
+
+        // Check if validation required via ValidationResolver
+        val validationResult = validationResolver.shouldValidate(
+            actions = actionCommands,
+            sessionId = sessionId,
+            aiMessageId = lastAIMessage.id,
+            aiRequestedValidation = aiMessage.validationRequest == true
+        )
+
+        when (validationResult) {
+            is com.assistant.core.ai.validation.ValidationResult.RequiresValidation -> {
+                LogManager.aiSession("checkValidationRequired: Validation required", "INFO")
+
+                // Create and set waiting context (no fallback message needed)
+                val waitingContext = WaitingContext.Validation(
+                    validationContext = validationResult.context
+                )
+
+                stateRepository.updateWaitingContext(waitingContext)
+                // Stay in WAITING_VALIDATION - wait for user response
+            }
+
+            is com.assistant.core.ai.validation.ValidationResult.NoValidation -> {
+                LogManager.aiSession("checkValidationRequired: No validation required, proceeding to execution", "DEBUG")
+                // Proceed directly to EXECUTING_ACTIONS
+                emit(AIEvent.ValidationNotRequired)
+            }
+        }
+    }
+
+    /**
+     * Create communication waiting context when entering WAITING_COMMUNICATION_RESPONSE phase.
+     *
+     * Extracts communication module from last AI message and creates WaitingContext.
+     */
+    private suspend fun createCommunicationWaitingContext(state: AIState) {
+        val sessionId = state.sessionId ?: return
+
+        // Load last AI message to get communication module
+        val messages = messageRepository.loadMessages(sessionId)
+        val lastAIMessage = messages.lastOrNull { it.sender == MessageSender.AI && it.aiMessage != null } ?: run {
+            LogManager.aiSession("createCommunicationWaitingContext: No AI message found", "ERROR")
+            return
+        }
+
+        val aiMessage = lastAIMessage.aiMessage ?: return
+        val communicationModule = aiMessage.communicationModule ?: run {
+            LogManager.aiSession("createCommunicationWaitingContext: No communication module found", "ERROR")
+            return
+        }
+
+        // Update waiting context (no fallback message needed)
+        val waitingContext = WaitingContext.Communication(
+            communicationModule = communicationModule,
+            aiMessageId = lastAIMessage.id
+        )
+
+        stateRepository.updateWaitingContext(waitingContext)
+        LogManager.aiSession("Communication waiting context created for session $sessionId", "DEBUG")
     }
 
     /**

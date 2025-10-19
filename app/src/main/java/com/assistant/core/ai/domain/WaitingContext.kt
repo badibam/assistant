@@ -20,11 +20,9 @@ sealed class WaitingContext {
      * Waiting for user validation of actions.
      *
      * @param validationContext Full validation context with verbalized actions
-     * @param cancelMessageId ID of the fallback VALIDATION_CANCELLED message created before suspension
      */
     data class Validation(
-        val validationContext: ValidationContext,
-        val cancelMessageId: String
+        val validationContext: ValidationContext
     ) : WaitingContext()
 
     /**
@@ -32,12 +30,10 @@ sealed class WaitingContext {
      *
      * @param communicationModule The module that requested user response
      * @param aiMessageId ID of the AI message containing the module (for reference)
-     * @param cancelMessageId ID of the fallback COMMUNICATION_CANCELLED message created before suspension
      */
     data class Communication(
         val communicationModule: CommunicationModule,
-        val aiMessageId: String,
-        val cancelMessageId: String
+        val aiMessageId: String
     ) : WaitingContext()
 
     /**
@@ -65,8 +61,7 @@ sealed class WaitingContext {
             is Validation -> """
                 {
                     "type": "Validation",
-                    "validationContext": ${validationContextToJson(validationContext)},
-                    "cancelMessageId": "$cancelMessageId"
+                    "validationContext": ${validationContextToJson(validationContext)}
                 }
             """.trimIndent()
 
@@ -74,8 +69,7 @@ sealed class WaitingContext {
                 {
                     "type": "Communication",
                     "communicationModule": ${communicationModuleToJson(communicationModule)},
-                    "aiMessageId": "$aiMessageId",
-                    "cancelMessageId": "$cancelMessageId"
+                    "aiMessageId": "$aiMessageId"
                 }
             """.trimIndent()
 

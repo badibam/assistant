@@ -39,6 +39,7 @@ fun UI.RichComposer(
     placeholder: String = "",
     showEnrichmentButtons: Boolean = true,
     showSendButton: Boolean = true,
+    enabled: Boolean = true,
     enrichmentTypes: List<EnrichmentType> = EnrichmentType.values().toList(),
     modifier: Modifier = Modifier,
     sessionType: SessionType = SessionType.CHAT
@@ -115,10 +116,11 @@ fun UI.RichComposer(
             // Spacer to push send button to the right
             Spacer(modifier = Modifier.weight(1f))
 
-            // Send button (conditionally shown)
+            // Send button (conditionally shown and enabled)
             if (showSendButton) {
                 UI.ActionButton(
                     action = ButtonAction.CONFIRM, // Use CONFIRM for send action
+                    enabled = enabled,
                     onClick = {
                         LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
                         val richMessage = createRichMessage(context, segments, sessionType)

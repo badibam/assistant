@@ -111,6 +111,15 @@ object AIStateMachine {
 
             // ==================== User Interactions ====================
 
+            is AIEvent.ValidationNotRequired -> {
+                // Validation check completed - no validation needed, proceed to execution
+                state.copy(
+                    phase = Phase.EXECUTING_ACTIONS,
+                    waitingContext = null,
+                    lastEventTime = currentTime
+                )
+            }
+
             is AIEvent.ValidationReceived -> {
                 if (event.approved) {
                     // User approved - transition to EXECUTING_ACTIONS
@@ -143,6 +152,16 @@ object AIStateMachine {
                 )
             }
 
+            is AIEvent.CommunicationCancelled -> {
+                // User cancelled communication - transition to IDLE (CHAT session stays active)
+                state.copy(
+                    phase = Phase.IDLE,
+                    waitingContext = null,
+                    lastEventTime = currentTime,
+                    lastUserInteractionTime = currentTime
+                )
+            }
+
             is AIEvent.SessionPaused -> {
                 // User paused session - store current phase and transition to PAUSED
                 // NOTE: If currently in CALLING_AI, will pause after response is processed
@@ -166,8 +185,8 @@ object AIStateMachine {
 
             is AIEvent.AIRoundInterrupted -> {
                 // User interrupted current AI round (CHAT only)
-                // Cancel AI processing, ignore any response if it arrives
-                // Session remains active, waits for next user message
+                // Stay in INTERRUPTED phase to ignore AI response when it arrives
+                // Will transition to IDLE after response is ignored
                 state.copy(
                     phase = Phase.INTERRUPTED,
                     waitingContext = null, // Clear any waiting context
@@ -176,9 +195,18 @@ object AIStateMachine {
                 )
             }
 
+            is AIEvent.AIResponseIgnored -> {
+                // AI response was ignored after interruption
+                // Return to IDLE, ready for next user message
+                state.copy(
+                    phase = Phase.IDLE,
+                    lastEventTime = currentTime
+                )
+            }
+
             is AIEvent.UserMessageSent -> {
                 // User sent message - transition to EXECUTING_ENRICHMENTS
-                // If coming from INTERRUPTED, this resumes normal flow
+                // Only valid from IDLE phase
                 state.copy(
                     phase = Phase.EXECUTING_ENRICHMENTS,
                     lastEventTime = currentTime,
@@ -402,16 +430,7 @@ object AIStateMachine {
             }
         }
 
-        // Priority 1: Validation request (CHAT only - ignored for AUTOMATION)
-        if (message.validationRequest == true && state.sessionType == SessionType.CHAT) {
-            return state.copy(
-                phase = Phase.WAITING_VALIDATION,
-                // waitingContext will be set by event processor after ValidationResolver
-                lastEventTime = currentTime
-            )
-        }
-
-        // Priority 2: Communication module (CHAT only - ignored for AUTOMATION)
+        // Priority 1: Communication module (CHAT only - ignored for AUTOMATION)
         if (message.communicationModule != null && state.sessionType == SessionType.CHAT) {
             return state.copy(
                 phase = Phase.WAITING_COMMUNICATION_RESPONSE,
@@ -420,7 +439,7 @@ object AIStateMachine {
             )
         }
 
-        // Priority 3: Data commands (queries)
+        // Priority 2: Data commands (queries)
         // Reset awaitingCompletionConfirmation since AI is continuing work
         if (!message.dataCommands.isNullOrEmpty()) {
             return state.copy(
@@ -430,11 +449,19 @@ object AIStateMachine {
             )
         }
 
-        // Priority 4: Action commands
+        // Priority 3: Action commands
+        // CHAT: Go through WAITING_VALIDATION first - ValidationResolver decides if validation needed
+        // AUTOMATION: Execute directly without validation (no user interaction)
         // Reset awaitingCompletionConfirmation since AI is continuing work
         if (!message.actionCommands.isNullOrEmpty()) {
+            val nextPhase = if (state.sessionType == SessionType.CHAT) {
+                Phase.WAITING_VALIDATION
+            } else {
+                Phase.EXECUTING_ACTIONS
+            }
+
             return state.copy(
-                phase = Phase.EXECUTING_ACTIONS,
+                phase = nextPhase,
                 awaitingCompletionConfirmation = false, // Reset since AI is continuing work
                 lastEventTime = currentTime
             )

@@ -93,6 +93,14 @@ sealed class AIEvent {
     // ==================== User Interactions ====================
 
     /**
+     * Validation not required after checking with ValidationResolver.
+     *
+     * Triggered when entering WAITING_VALIDATION but no validation actually needed.
+     * Transitions directly to EXECUTING_ACTIONS.
+     */
+    object ValidationNotRequired : AIEvent()
+
+    /**
      * User validated or rejected actions (CHAT only).
      *
      * @param approved true if user approved, false if rejected
@@ -105,6 +113,13 @@ sealed class AIEvent {
      * @param response User's text response
      */
     data class CommunicationResponseReceived(val response: String) : AIEvent()
+
+    /**
+     * User cancelled communication module (CHAT only).
+     *
+     * Creates COMMUNICATION_CANCELLED system message and transitions to IDLE.
+     */
+    object CommunicationCancelled : AIEvent()
 
     /**
      * User manually paused active session.
@@ -133,6 +148,14 @@ sealed class AIEvent {
      * session continues automatically when user sends next message.
      */
     object AIRoundInterrupted : AIEvent()
+
+    /**
+     * AI response ignored after interruption (CHAT only).
+     *
+     * Emitted by callAI when response arrives but session is INTERRUPTED.
+     * Transitions back to IDLE.
+     */
+    object AIResponseIgnored : AIEvent()
 
     /**
      * User message sent (triggers enrichment execution).
