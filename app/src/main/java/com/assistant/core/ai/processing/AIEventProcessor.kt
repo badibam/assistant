@@ -163,9 +163,12 @@ class AIEventProcessor(
             }
 
             Phase.CLOSED -> {
-                // Note: actual endReason will be extracted from last SessionCompleted event
-                // This is handled by tracking the event in emit() function
+                // Handle session completion cleanup
                 handleSessionCompletion(state)
+
+                // Try to activate next session AFTER cleanup is complete
+                // This ensures endReason is persisted before scheduler checks DB
+                processNextSessionActivation()
             }
         }
     }
@@ -1044,8 +1047,8 @@ class AIEventProcessor(
         // Force state to idle
         stateRepository.forceIdle()
 
-        // Try to activate next session (queue or scheduled)
-        processNextSessionActivation()
+        // Note: processNextSessionActivation() is now called in handleStateChange(Phase.CLOSED)
+        // after this function completes, ensuring endReason is persisted before scheduler checks DB
     }
 
     /**
