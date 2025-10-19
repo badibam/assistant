@@ -255,7 +255,9 @@ Crée des données en batch.
 - `entries` (array, **requis**) : Liste des entrées à créer
   - Chaque entrée : `{ name?, timestamp?, data }`
 
-**Note** : Le `schema_id` est automatiquement déduit de la configuration de la tool instance.
+**Notes** :
+- Le `schema_id` est automatiquement déduit de la configuration de la tool instance
+- **VALEURS LITTÉRALES UNIQUEMENT** : `data` contient uniquement des valeurs JSON (strings, numbers, booleans, arrays, objects). Jamais de code exécutable (new Date(), expressions, etc.)
 
 ### UPDATE_DATA
 Met à jour des données en batch.
@@ -266,7 +268,9 @@ Met à jour des données en batch.
 - `entries` (array, **requis**) : Liste des entrées à modifier
   - Chaque entrée : `{ id, data }` (id **requis**)
 
-**Note** : Le `schema_id` est automatiquement déduit de la configuration de la tool instance.
+**Notes** :
+- Le `schema_id` est automatiquement déduit de la configuration de la tool instance
+- **VALEURS LITTÉRALES UNIQUEMENT** : `data` contient uniquement des valeurs JSON (strings, numbers, booleans, arrays, objects). Jamais de code exécutable
 
 ### DELETE_DATA
 Supprime des données en batch.
