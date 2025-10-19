@@ -3,6 +3,7 @@ package com.assistant.core.ai.state
 import android.content.Context
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
+import com.assistant.core.ai.data.SessionEndReason
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.domain.AIEvent
 import com.assistant.core.ai.domain.AILimitsConfig
@@ -104,13 +105,34 @@ class AIStateRepository(
         val activeSession = aiDao.getActiveSession()
 
         if (activeSession != null) {
-            val restoredState = entityToState(activeSession)
-            _state.value = restoredState
+            // Check if session was stuck in AWAITING_SESSION_CLOSURE
+            // This happens if app was closed while timer was running
+            if (activeSession.phase == "AWAITING_SESSION_CLOSURE") {
+                LogManager.aiSession(
+                    "Session ${activeSession.id} was stuck in AWAITING_SESSION_CLOSURE - completing and deactivating",
+                    "WARN"
+                )
+                // Complete session with proper endReason
+                val completedEntity = activeSession.copy(
+                    phase = Phase.CLOSED.name,
+                    endReason = activeSession.endReason ?: SessionEndReason.COMPLETED.name,
+                    isActive = false
+                )
+                aiDao.updateSession(completedEntity)
 
-            LogManager.aiSession(
-                "State restored from DB: session=${activeSession.id}, phase=${activeSession.phase}",
-                "INFO"
-            )
+                // Start with IDLE state
+                _state.value = AIState.idle()
+                LogManager.aiSession("Started IDLE after fixing stuck session", "INFO")
+            } else {
+                // Normal restoration
+                val restoredState = entityToState(activeSession)
+                _state.value = restoredState
+
+                LogManager.aiSession(
+                    "State restored from DB: session=${activeSession.id}, phase=${activeSession.phase}",
+                    "INFO"
+                )
+            }
         } else {
             _state.value = AIState.idle()
 
@@ -199,8 +221,31 @@ class AIStateRepository(
 
     /**
      * Force state to idle (used for cleanup after session completion).
+     * Deactivates current session in DB before setting state to IDLE.
      */
     suspend fun forceIdle() {
+        // Deactivate current session in DB (if any)
+        val currentSessionId = currentState.sessionId
+        if (currentSessionId != null) {
+            try {
+                val session = aiDao.getSession(currentSessionId)
+                if (session != null) {
+                    aiDao.updateSession(session.copy(isActive = false))
+                    LogManager.aiSession(
+                        "Deactivated session $currentSessionId in DB before IDLE",
+                        "DEBUG"
+                    )
+                }
+            } catch (e: Exception) {
+                LogManager.aiSession(
+                    "Failed to deactivate session in DB: ${e.message}",
+                    "ERROR",
+                    e
+                )
+            }
+        }
+
+        // Set memory state to IDLE
         _state.value = AIState.idle()
         LogManager.aiSession("State forced to IDLE", "INFO")
     }
