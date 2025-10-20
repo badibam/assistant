@@ -1,6 +1,7 @@
 package com.assistant.core.ai.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -11,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.domain.WaitingContext
@@ -269,6 +272,16 @@ private fun ChatMode(
             onStopSession = {
                 scope.launch {
                     AIOrchestrator.stopActiveSession()
+                }
+            },
+            onPause = {
+                scope.launch {
+                    AIOrchestrator.pauseActiveSession()
+                }
+            },
+            onResume = {
+                scope.launch {
+                    AIOrchestrator.resumeActiveSession()
                 }
             }
         )
@@ -767,11 +780,33 @@ private fun AutomationMode(
     val s = remember { Strings.`for`(context = context) }
     val scope = rememberCoroutineScope()
 
+    // Local state
+    var showChatOptionsDialog by remember { mutableStateOf(false) }
+
     // Observe AIState from orchestrator
     val aiState by AIOrchestrator.currentState.collectAsState()
 
     // Determine if this automation is the active session
     val isActiveSession = aiState.sessionId == session.id
+
+    // Chat options dialog
+    if (showChatOptionsDialog) {
+        ChatOptionsDialog(
+            onDismiss = { showChatOptionsDialog = false },
+            onInterruptAndChat = {
+                showChatOptionsDialog = false
+                scope.launch {
+                    AIOrchestrator.interruptAutomationForChat()
+                }
+            },
+            onChatAfter = {
+                showChatOptionsDialog = false
+                scope.launch {
+                    AIOrchestrator.requestChatSession()
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -782,6 +817,7 @@ private fun AutomationMode(
             aiState = aiState,
             isActiveSession = isActiveSession,
             onClose = onClose,
+            onChatRequest = { showChatOptionsDialog = true },
             onStop = {
                 scope.launch {
                     AIOrchestrator.stopActiveSession()
@@ -825,6 +861,89 @@ private fun AutomationMode(
 // ================================================================================================
 
 /**
+ * Chat options dialog - Shown when user clicks Chat button during automation
+ * Allows choosing between interrupting immediately or waiting for completion
+ */
+@Composable
+private fun ChatOptionsDialog(
+    onDismiss: () -> Unit,
+    onInterruptAndChat: () -> Unit,
+    onChatAfter: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                UI.Text(
+                    text = s.shared("shared_ai_chat_options_dialog_title"),
+                    type = TextType.TITLE
+                )
+
+                // Description
+                UI.Text(
+                    text = s.shared("shared_ai_chat_options_dialog_description"),
+                    type = TextType.BODY
+                )
+
+                // Option A: Interrupt immediately
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onInterruptAndChat() }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_interrupt_title"),
+                            type = TextType.SUBTITLE
+                        )
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_interrupt_description"),
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
+
+                // Option B: Wait for completion
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onChatAfter() }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_after_title"),
+                            type = TextType.SUBTITLE
+                        )
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_after_description"),
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Chat header - Session controls, validation toggle, stats
  */
 @Composable
@@ -833,7 +952,9 @@ private fun ChatHeader(
     phase: Phase,
     onClose: () -> Unit,
     onShowStats: () -> Unit,
-    onStopSession: () -> Unit
+    onStopSession: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -932,6 +1053,23 @@ private fun ChatHeader(
             )
         }
 
+        // PAUSE/RESUME button (toggle based on phase)
+        if (phase == Phase.PAUSED) {
+            UI.ActionButton(
+                action = ButtonAction.RESUME,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onResume
+            )
+        } else {
+            UI.ActionButton(
+                action = ButtonAction.PAUSE,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onPause
+            )
+        }
+
         // Stop button
         UI.ActionButton(
             action = ButtonAction.STOP,
@@ -1010,6 +1148,7 @@ private fun AutomationHeader(
     aiState: com.assistant.core.ai.domain.AIState,
     isActiveSession: Boolean,
     onClose: () -> Unit,
+    onChatRequest: () -> Unit,
     onStop: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit
@@ -1028,6 +1167,16 @@ private fun AutomationHeader(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Chat button (always visible for active session)
+        if (showControls) {
+            UI.ActionButton(
+                action = ButtonAction.AI_CHAT,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onChatRequest
+            )
+        }
+
         // Title with phase status
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
@@ -1120,8 +1269,9 @@ fun ChatMessageList(
     }
 
     // Determine if loading indicator with interrupt button should show
+    // Only for CHAT sessions (AUTOMATION has controls in header)
     // Only for phases with long waits where interrupt makes sense
-    val showLoadingIndicator = aiState.phase in listOf(
+    val showLoadingIndicator = aiState.sessionType == SessionType.CHAT && aiState.phase in listOf(
         Phase.CALLING_AI,
         Phase.WAITING_NETWORK_RETRY
     )

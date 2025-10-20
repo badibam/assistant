@@ -1,6 +1,7 @@
 package com.assistant.core.ai.ui.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -90,16 +91,6 @@ fun AIFloatingChat(
                                 scope.launch {
                                     try {
                                         AIOrchestrator.stopActiveSession()
-                                    } catch (e: Exception) {
-                                        errorMessage = e.message
-                                    }
-                                }
-                            },
-                            onInterruptAndChat = {
-                                scope.launch {
-                                    try {
-                                        // Request chat session - scheduler will handle interruption
-                                        AIOrchestrator.requestChatSession()
                                     } catch (e: Exception) {
                                         errorMessage = e.message
                                     }
@@ -225,6 +216,88 @@ private fun NoActiveSessionView(
 }
 
 /**
+ * Chat options dialog - Shown when user clicks Chat button during automation
+ */
+@Composable
+private fun ChatOptionsDialog(
+    onDismiss: () -> Unit,
+    onInterruptAndChat: () -> Unit,
+    onChatAfter: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                UI.Text(
+                    text = s.shared("shared_ai_chat_options_dialog_title"),
+                    type = TextType.TITLE
+                )
+
+                // Description
+                UI.Text(
+                    text = s.shared("shared_ai_chat_options_dialog_description"),
+                    type = TextType.BODY
+                )
+
+                // Option A: Interrupt immediately
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onInterruptAndChat() }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_interrupt_title"),
+                            type = TextType.SUBTITLE
+                        )
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_interrupt_description"),
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
+
+                // Option B: Wait for completion
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onChatAfter() }
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_after_title"),
+                            type = TextType.SUBTITLE
+                        )
+                        UI.Text(
+                            text = s.shared("shared_ai_chat_option_after_description"),
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * AUTOMATION: Automation active
  * Shows read-only automation messages with interrupt/stop buttons
  *
@@ -238,14 +311,36 @@ private fun AutomationActiveView(
     sessionId: String,
     phase: Phase,
     onStop: () -> Unit,
-    onInterruptAndChat: () -> Unit,
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val scope = rememberCoroutineScope()
+
+    // Local state for dialog
+    var showChatOptionsDialog by remember { mutableStateOf(false) }
 
     // Observe state from orchestrator
     val aiState by AIOrchestrator.currentState.collectAsState()
+
+    // Chat options dialog
+    if (showChatOptionsDialog) {
+        ChatOptionsDialog(
+            onDismiss = { showChatOptionsDialog = false },
+            onInterruptAndChat = {
+                showChatOptionsDialog = false
+                scope.launch {
+                    AIOrchestrator.interruptAutomationForChat()
+                }
+            },
+            onChatAfter = {
+                showChatOptionsDialog = false
+                scope.launch {
+                    AIOrchestrator.requestChatSession()
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -276,12 +371,12 @@ private fun AutomationActiveView(
                 onClick = onStop
             )
 
-            // Interrupt & Chat button (PRIMARY green)
+            // Chat button - Opens dialog with interrupt/wait options
             UI.ActionButton(
                 action = ButtonAction.AI_CHAT,
                 display = ButtonDisplay.ICON,
                 size = Size.M,
-                onClick = onInterruptAndChat
+                onClick = { showChatOptionsDialog = true }
             )
 
             // Close button

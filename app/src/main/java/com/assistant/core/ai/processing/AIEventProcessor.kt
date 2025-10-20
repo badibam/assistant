@@ -454,12 +454,18 @@ class AIEventProcessor(
             LogManager.aiSession("callAI: Calling AI provider", "DEBUG")
             val response = aiClient.query(promptData)
 
-            // Check if session was interrupted while we were waiting for response
+            // Check if session was interrupted or closed while we were waiting for response
             val currentState = stateRepository.currentState
             if (currentState.phase == Phase.INTERRUPTED) {
                 LogManager.aiSession("callAI: Session interrupted during AI call, ignoring response", "INFO")
                 // Transition back to IDLE after ignoring response
                 emit(AIEvent.AIResponseIgnored)
+                return
+            }
+
+            // Check if session was stopped/closed (STOP button clicked)
+            if (currentState.phase == Phase.CLOSED || currentState.sessionId == null || currentState.sessionId != sessionId) {
+                LogManager.aiSession("callAI: Session closed during AI call (phase=${currentState.phase}, sessionId=${currentState.sessionId}), ignoring response", "INFO")
                 return
             }
 

@@ -83,66 +83,118 @@ class AISessionScheduler(
                         )
                     }
                     SessionType.AUTOMATION -> {
-                        // Check AUTOMATION inactivity
-                        if (inactivity > CHAT_INACTIVITY_TIMEOUT) {
-                            // Evict inactive automation
-                            ActivationResult.EvictAndActivate(
-                                sessionToEvict = currentState.sessionId!!,
-                                sessionToActivate = sessionId,
-                                evictionReason = SessionEndReason.CANCELLED
-                            )
-                        } else {
-                            // Automation active - enqueue CHAT
-                            ActivationResult.Enqueue(sessionId, priority = 1)
-                        }
+                        // CHAT requesting during AUTOMATION: always enqueue
+                        // User will be prompted with dialog (interrupt immediately OR wait for completion)
+                        // Dialog is shown in UI layer, not here in scheduler
+                        LogManager.aiSession(
+                            "CHAT requested during AUTOMATION: enqueuing CHAT (user will choose via dialog)",
+                            "INFO"
+                        )
+                        ActivationResult.Enqueue(sessionId, priority = 1)
                     }
                     else -> ActivationResult.ActivateImmediate(sessionId)
                 }
             }
 
-            // AUTOMATION MANUAL requests
-            sessionType == SessionType.AUTOMATION && trigger == ExecutionTrigger.MANUAL -> {
-                when (activeSessionType) {
-                    SessionType.CHAT -> {
-                        // Check CHAT inactivity
-                        if (inactivity > AUTO_INACTIVITY_TIMEOUT) {
-                            // Evict inactive chat
-                            ActivationResult.EvictAndActivate(
-                                sessionToEvict = currentState.sessionId!!,
-                                sessionToActivate = sessionId,
-                                evictionReason = SessionEndReason.CANCELLED
-                            )
-                        } else {
-                            // CHAT active - enqueue MANUAL (priority 2, after CHAT)
-                            ActivationResult.Enqueue(sessionId, priority = 2)
-                        }
-                    }
-                    SessionType.AUTOMATION -> {
-                        // Check AUTOMATION inactivity
-                        if (inactivity > AUTO_INACTIVITY_TIMEOUT) {
-                            // Evict inactive automation
-                            ActivationResult.EvictAndActivate(
-                                sessionToEvict = currentState.sessionId!!,
-                                sessionToActivate = sessionId,
-                                evictionReason = SessionEndReason.CANCELLED
-                            )
-                        } else {
-                            // Automation active - enqueue MANUAL
-                            ActivationResult.Enqueue(sessionId, priority = 2)
-                        }
-                    }
-                    else -> ActivationResult.ActivateImmediate(sessionId)
-                }
-            }
-
-            // AUTOMATION SCHEDULED requests
-            sessionType == SessionType.AUTOMATION && trigger == ExecutionTrigger.SCHEDULED -> {
-                // SCHEDULED automations never interrupt or enqueue
-                // They're created only when slot is free
-                ActivationResult.Skip("Slot occupied")
+            // AUTOMATION requests (MANUAL or SCHEDULED)
+            sessionType == SessionType.AUTOMATION -> {
+                checkEvictionForAutomation(
+                    sessionId = sessionId,
+                    trigger = trigger,
+                    currentState = currentState,
+                    activeSessionType = activeSessionType,
+                    inactivity = inactivity
+                )
             }
 
             else -> ActivationResult.Skip("Unknown session type/trigger combination")
+        }
+    }
+
+    /**
+     * Check eviction logic for AUTOMATION requests (both MANUAL and SCHEDULED).
+     *
+     * Only handles AUTOMATION → CHAT eviction logic.
+     * AUTOMATION → AUTOMATION doesn't need explicit eviction - automations timeout
+     * automatically via shouldTimeout() (watchdog) when they exceed limits.
+     *
+     * Logic:
+     * - CHAT active with inactivity > 5 min: Evict (SUSPENDED)
+     * - CHAT active with inactivity < 5 min:
+     *   - MANUAL: Enqueue (will activate when slot free)
+     *   - SCHEDULED: Skip (will retry at next tick)
+     * - AUTOMATION active: Wait for watchdog to timeout the automation
+     *   - MANUAL: Enqueue
+     *   - SCHEDULED: Skip
+     */
+    private fun checkEvictionForAutomation(
+        sessionId: String,
+        trigger: ExecutionTrigger,
+        currentState: AIState,
+        activeSessionType: SessionType?,
+        inactivity: Long
+    ): ActivationResult {
+        val triggerLabel = if (trigger == ExecutionTrigger.MANUAL) "MANUAL" else "SCHEDULED"
+
+        return when (activeSessionType) {
+            SessionType.CHAT -> {
+                // Check CHAT inactivity with CHAT timeout
+                LogManager.aiSession(
+                    "AUTOMATION $triggerLabel requesting activation: CHAT active, inactivity=${inactivity}ms, threshold=${CHAT_INACTIVITY_TIMEOUT}ms",
+                    "INFO"
+                )
+
+                if (inactivity > CHAT_INACTIVITY_TIMEOUT) {
+                    // Evict inactive CHAT
+                    LogManager.aiSession(
+                        "AUTOMATION $triggerLabel evicting inactive CHAT (inactivity > ${CHAT_INACTIVITY_TIMEOUT}ms)",
+                        "INFO"
+                    )
+                    ActivationResult.EvictAndActivate(
+                        sessionToEvict = currentState.sessionId!!,
+                        sessionToActivate = sessionId,
+                        evictionReason = SessionEndReason.SUSPENDED
+                    )
+                } else {
+                    // CHAT still active
+                    if (trigger == ExecutionTrigger.MANUAL) {
+                        LogManager.aiSession(
+                            "AUTOMATION MANUAL enqueued: CHAT still active (inactivity=${inactivity}ms < ${CHAT_INACTIVITY_TIMEOUT}ms)",
+                            "INFO"
+                        )
+                        ActivationResult.Enqueue(sessionId, priority = 2)
+                    } else {
+                        LogManager.aiSession(
+                            "AUTOMATION SCHEDULED skipped: CHAT still active (inactivity=${inactivity}ms < ${CHAT_INACTIVITY_TIMEOUT}ms)",
+                            "INFO"
+                        )
+                        ActivationResult.Skip("CHAT active")
+                    }
+                }
+            }
+            SessionType.AUTOMATION -> {
+                // AUTOMATION active: cannot evict explicitly
+                // Wait for watchdog to timeout the automation if it exceeds limits
+                LogManager.aiSession(
+                    "AUTOMATION $triggerLabel requesting activation: AUTOMATION active, waiting for watchdog timeout or completion",
+                    "INFO"
+                )
+
+                if (trigger == ExecutionTrigger.MANUAL) {
+                    LogManager.aiSession(
+                        "AUTOMATION MANUAL enqueued: will activate when current AUTOMATION completes or times out",
+                        "INFO"
+                    )
+                    ActivationResult.Enqueue(sessionId, priority = 2)
+                } else {
+                    LogManager.aiSession(
+                        "AUTOMATION SCHEDULED skipped: will retry at next tick",
+                        "INFO"
+                    )
+                    ActivationResult.Skip("AUTOMATION active")
+                }
+            }
+            else -> ActivationResult.ActivateImmediate(sessionId)
         }
     }
 

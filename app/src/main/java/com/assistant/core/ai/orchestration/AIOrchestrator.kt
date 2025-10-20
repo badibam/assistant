@@ -376,6 +376,38 @@ object AIOrchestrator {
         eventProcessor.emit(AIEvent.AIRoundInterrupted)
     }
 
+    /**
+     * Interrupt active AUTOMATION to start CHAT session.
+     *
+     * Flow:
+     * 1. Close automation with SUSPENDED reason (frees the slot, can resume later)
+     * 2. Request CHAT session (will activate immediately)
+     *
+     * Used when user clicks "Interrupt" option in ChatOptionsDialog.
+     *
+     * Note: The automation will be resumed automatically by the scheduler
+     * when the slot becomes free again (after CHAT ends or becomes inactive).
+     */
+    suspend fun interruptAutomationForChat() {
+        LogManager.aiSession("interruptAutomationForChat called", "INFO")
+
+        val currentState = stateRepository.state.value
+
+        // Verify there's an active AUTOMATION session
+        if (currentState.sessionType != SessionType.AUTOMATION) {
+            LogManager.aiSession("interruptAutomationForChat: No active AUTOMATION, ignoring", "WARN")
+            return
+        }
+
+        // Close the automation with SUSPENDED reason (frees slot + enables auto-resume)
+        eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
+
+        // Request CHAT session (will activate immediately since slot is now free)
+        requestChatSession()
+
+        LogManager.aiSession("interruptAutomationForChat: AUTOMATION suspended, CHAT session requested", "INFO")
+    }
+
     // ========================================================================================
     // User Interaction API
     // ========================================================================================
