@@ -220,7 +220,6 @@ object AIStateMachine {
                 // Data queries executed successfully - continue to CALLING_AI
                 state.copy(
                     phase = Phase.CALLING_AI,
-                    consecutiveFormatErrors = 0, // Reset format errors on successful progression
                     totalRoundtrips = state.totalRoundtrips + 1,
                     lastEventTime = currentTime
                 )
@@ -292,35 +291,19 @@ object AIStateMachine {
             }
 
             is AIEvent.ParseErrorOccurred -> {
-                // Check consecutive format error limit
-                val newFormatErrors = state.consecutiveFormatErrors + 1
-
-                if (newFormatErrors >= limits.maxFormatErrorRetries) {
-                    // Limit reached - transition based on session type
-                    transitionToCompletion(
-                        state = state.copy(
-                            consecutiveFormatErrors = newFormatErrors,
-                            totalRoundtrips = state.totalRoundtrips + 1
-                        ),
-                        currentTime = currentTime,
-                        endReason = SessionEndReason.ERROR
-                    )
-                } else {
-                    // Retry - transition to RETRYING_AFTER_FORMAT_ERROR
-                    state.copy(
-                        phase = Phase.RETRYING_AFTER_FORMAT_ERROR,
-                        consecutiveFormatErrors = newFormatErrors,
-                        totalRoundtrips = state.totalRoundtrips + 1,
-                        lastEventTime = currentTime
-                    )
-                }
+                // Parse error - retry immediately (AI should self-correct)
+                // No artificial limit, maxRoundtrips will stop if AI loops
+                state.copy(
+                    phase = Phase.RETRYING_AFTER_FORMAT_ERROR,
+                    totalRoundtrips = state.totalRoundtrips + 1,
+                    lastEventTime = currentTime
+                )
             }
 
             is AIEvent.ActionFailureOccurred -> {
                 // Action failed - retry (no limit, maxRoundtrips will stop if AI loops)
                 state.copy(
                     phase = Phase.RETRYING_AFTER_ACTION_FAILURE,
-                    consecutiveFormatErrors = 0, // Reset format errors on successful progression
                     totalRoundtrips = state.totalRoundtrips + 1,
                     lastEventTime = currentTime
                 )
@@ -555,7 +538,6 @@ object AIStateMachine {
                 return state.copy(
                     phase = Phase.PREPARING_CONTINUATION,
                     continuationReason = ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED,
-                    consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
                 )
@@ -568,7 +550,6 @@ object AIStateMachine {
                 // Continue autonomous execution
                 state.copy(
                     phase = Phase.CALLING_AI,
-                    consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
                 )
@@ -576,7 +557,6 @@ object AIStateMachine {
                 // keepControl=false or null for CHAT - return to IDLE (await next user message)
                 state.copy(
                     phase = Phase.IDLE,
-                    consecutiveFormatErrors = 0,
                     totalRoundtrips = newTotalRoundtrips,
                     lastEventTime = currentTime
                 )

@@ -37,13 +37,12 @@ Tu opères en mode **%1$s** avec les limites suivantes :
 
 | Limite | Valeur |
 |--------|--------|
-| **Erreurs de format consécutives** | %2$d |
-| **Allers-retours autonomes maximum** | %3$d |
+| **Allers-retours autonomes maximum** | %2$d |
 
 ### Explication
 
-- **Erreurs de format** : Si tu génères du JSON invalide %2$d fois de suite, la session s\'arrête (bug parsing)
 - **Allers-retours autonomes** : Sécurité anti-boucle infinie. En mode CHAT, cette limite est désactivée (contrôle utilisateur). En mode AUTOMATION, limite stricte pour éviter les boucles.
+- **Erreurs de format** : Pas de limite artificielle sur les erreurs de parsing. Tu dois auto-corriger ton JSON selon le schéma fourni. La limite d\'allers-retours globale sert de filet de sécurité.
 
 ### Pas de limites sur queries/actions individuelles
 

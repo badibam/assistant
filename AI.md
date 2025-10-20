@@ -57,9 +57,6 @@ data class AIState(
     val sessionId: String?,
     val phase: Phase,
     val sessionType: SessionType?,
-    val consecutiveFormatErrors: Int,
-    val consecutiveActionFailures: Int,
-    val consecutiveDataQueries: Int,
     val totalRoundtrips: Int,
     val lastEventTime: Long,
     val lastUserInteractionTime: Long,
@@ -91,9 +88,6 @@ data class AISessionEntity(
     val requireValidation: Boolean,
     val phase: String,                      // Phase actuelle (serialized)
     val waitingContextJson: String?,        // WaitingContext (serialized)
-    val consecutiveFormatErrors: Int,
-    val consecutiveActionFailures: Int,
-    val consecutiveDataQueries: Int,
     val totalRoundtrips: Int,
     val lastEventTime: Long,
     val lastUserInteractionTime: Long,
@@ -216,26 +210,21 @@ Configuration globale des limites de boucles autonomes, intégrée dans `AppConf
 
 ```kotlin
 data class AILimitsConfig(
-    // CHAT LIMITS
-    val chatMaxFormatErrorRetries: Int = 3,
     val chatMaxAutonomousRoundtrips: Int = Int.MAX_VALUE,
-    // AUTOMATION LIMITS
-    val automationMaxFormatErrorRetries: Int = 5,
     val automationMaxAutonomousRoundtrips: Int = 20
 )
 ```
 
-**Limites** :
-- **FormatErrorRetries** : Protection contre bugs parsing IA (CHAT & AUTOMATION)
+**Limite unique** :
 - **AutonomousRoundtrips** : Sécurité anti-boucle infinie (AUTOMATION uniquement, CHAT = Int.MAX_VALUE)
 
-**Compteurs** : `consecutiveFormatErrors` (reset si parsing réussit), `totalRoundtrips` (jamais reset).
+**Compteur** : `totalRoundtrips` (jamais reset, compte tous les allers-retours).
 
-**Rationale** : CHAT contrôlé par utilisateur (interrupt), AUTOMATION nécessite sécurité autonome. Pas de limites sur queries/actions individuelles - maxRoundtrips suffit comme filet de sécurité global.
+**Rationale** : CHAT contrôlé par utilisateur (interrupt). AUTOMATION nécessite sécurité autonome. Pas de limites artificielles sur format errors ou action failures - l'IA doit auto-corriger. maxRoundtrips suffit comme filet de sécurité global.
 
 **API** : `AppConfigService.getAILimits()`, `AppConfigManager.getAILimits()` (cache volatile).
 
-**Inclusion Level 1** : Limites documentées dans prompt L1 (valeurs fixes, pas de compteurs dynamiques).
+**Inclusion Level 1** : Limites documentées dans prompt L1.
 
 ## 4. Composants et responsabilités
 
@@ -337,7 +326,7 @@ tick() {
 **Arrêt automatique** :
 - **completed=true** : IA termine son travail → AWAITING_SESSION_CLOSURE (5s) → COMPLETED
 - **Limite roundtrips** : maxAutonomousRoundtrips dépassé → AWAITING_SESSION_CLOSURE (5s) → LIMIT_REACHED
-- **Erreurs format** : maxFormatErrorRetries dépassé → AWAITING_SESSION_CLOSURE (5s) → ERROR
+- **Erreur provider/système** : Erreur configuration provider ou erreur système → AWAITING_SESSION_CLOSURE (5s) → ERROR
 - **Watchdog** : Inactivité réelle sans attente réseau → AWAITING_SESSION_CLOSURE (5s) → TIMEOUT
 
 **CHAT** : Ne se ferme JAMAIS automatiquement, retourne toujours à IDLE (sauf erreurs réseau/provider/système). Limite roundtrips = Int.MAX_VALUE.
@@ -354,7 +343,7 @@ Détection automatique sessions orphelines par AutomationScheduler :
 Raison d'arrêt session (audit + logique reprise) :
 - **COMPLETED** : IA a terminé (completed=true)
 - **LIMIT_REACHED** : Limite maxAutonomousRoundtrips atteinte
-- **ERROR** : Erreurs format maxFormatErrorRetries dépassé, ou erreur provider/système
+- **ERROR** : Erreur provider/système
 - **TIMEOUT** : Watchdog inactivité sans attente réseau
 - **CANCELLED** : User STOP (ne reprend pas)
 - **SUSPENDED** : Éviction système (reprend plus tard)
@@ -371,7 +360,7 @@ Raison d'arrêt session (audit + logique reprise) :
 3. `AIStateRepository.updateState()` → sync memory + DB atomique
 4. Side effects selon event (appels DB, network, coordinator)
 
-**Boucles autonomes** : Gérées par compteurs dans `AIState` et limites `AILimitsConfig`. Machine à états gère automatiquement transitions et resets compteurs.
+**Boucles autonomes** : Gérées par compteur `totalRoundtrips` dans `AIState` et limites `AILimitsConfig`. Machine à états incrémente automatiquement le compteur.
 
 ### Flow logique principal
 
@@ -403,12 +392,9 @@ Event DataQueriesExecuted:
 Event ActionsExecuted:
   → si allSuccess + (keepControl OR AUTOMATION): transition CALLING_AI
   → sinon: transition COMPLETED
-  → reset counters si succès
 
 Event ParseErrorOccurred:
-  → check limit consecutiveFormatErrors
-  → si limite: transition COMPLETED
-  → sinon: transition RETRYING_AFTER_FORMAT_ERROR, increment counter
+  → transition RETRYING_AFTER_FORMAT_ERROR (pas de limite, IA doit auto-corriger)
 
 Event NetworkErrorOccurred:
   → si CHAT: transition COMPLETED

@@ -233,7 +233,7 @@ sealed class AIEvent {
      * AI response parsing failed (format error).
      *
      * Store error system message and retry with error details.
-     * Retry count checked against consecutiveFormatErrors limit.
+     * No artificial limit, maxRoundtrips will stop if AI loops.
      *
      * @param error Parse error description
      */
@@ -243,7 +243,7 @@ sealed class AIEvent {
      * Action execution had failures.
      *
      * Store results system message and retry with failure details.
-     * Retry count checked against consecutiveActionFailures limit.
+     * No artificial limit, maxRoundtrips will stop if AI loops.
      *
      * @param errors Failed command results
      */

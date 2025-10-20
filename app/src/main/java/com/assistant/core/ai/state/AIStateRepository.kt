@@ -185,7 +185,6 @@ class AIStateRepository(
                 val updatedEntity = existingSession.copy(
                     phase = state.phase.name,
                     waitingContextJson = state.waitingContext?.toJson(),
-                    consecutiveFormatErrors = state.consecutiveFormatErrors,
                     totalRoundtrips = state.totalRoundtrips,
                     lastEventTime = state.lastEventTime,
                     lastUserInteractionTime = state.lastUserInteractionTime,
@@ -216,7 +215,6 @@ class AIStateRepository(
             sessionId = entity.id,
             phase = Phase.valueOf(entity.phase),
             sessionType = entity.type,
-            consecutiveFormatErrors = entity.consecutiveFormatErrors,
             totalRoundtrips = entity.totalRoundtrips,
             lastEventTime = entity.lastEventTime,
             lastUserInteractionTime = entity.lastUserInteractionTime,

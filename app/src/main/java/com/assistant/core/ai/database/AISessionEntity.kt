@@ -12,7 +12,7 @@ import com.assistant.core.ai.data.SessionType
  *
  * Architecture: Event-Driven State Machine (V2)
  * - phase: Current execution phase (replaces old 'state')
- * - Retry counters: consecutiveFormatErrors, consecutiveActionFailures, consecutiveDataQueries, totalRoundtrips
+ * - Loop counter: totalRoundtrips (only limit enforced)
  * - Timestamps: lastEventTime, lastUserInteractionTime (for inactivity calculation)
  * - waitingContextJson: Serialized WaitingContext (validation, communication, completion)
  */
@@ -41,16 +41,7 @@ data class AISessionEntity(
     /** Serialized WaitingContext (validation, communication, completion) - null if not waiting */
     val waitingContextJson: String? = null,
 
-    // ==================== Retry Counters ====================
-
-    /** Consecutive format/parse errors count */
-    val consecutiveFormatErrors: Int = 0,
-
-    /** Consecutive action failure count */
-    val consecutiveActionFailures: Int = 0,
-
-    /** Consecutive data query count */
-    val consecutiveDataQueries: Int = 0,
+    // ==================== Loop Counters ====================
 
     /** Total autonomous roundtrips count (never reset during session) */
     val totalRoundtrips: Int = 0,

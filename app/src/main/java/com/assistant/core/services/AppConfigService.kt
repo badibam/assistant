@@ -134,9 +134,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getAILimits(): AILimitsConfig {
         val settings = getAILimitsSettings()
         return AILimitsConfig(
-            chatMaxFormatErrorRetries = settings.optInt("chatMaxFormatErrorRetries", 3),
             chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", Int.MAX_VALUE),
-            automationMaxFormatErrorRetries = settings.optInt("automationMaxFormatErrorRetries", 5),
             automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20)
         )
     }
@@ -152,10 +150,8 @@ class AppConfigService(private val context: Context) : ExecutableService {
             put("defaultCharsPerToken", currentSettings.optDouble("defaultCharsPerToken", 4.5))
             put("defaultPromptMaxTokens", currentSettings.optInt("defaultPromptMaxTokens", 15000))
 
-            // Set new loop limits
-            put("chatMaxFormatErrorRetries", limits.chatMaxFormatErrorRetries)
+            // Set loop limits
             put("chatMaxAutonomousRoundtrips", limits.chatMaxAutonomousRoundtrips)
-            put("automationMaxFormatErrorRetries", limits.automationMaxFormatErrorRetries)
             put("automationMaxAutonomousRoundtrips", limits.automationMaxAutonomousRoundtrips)
         }
 
