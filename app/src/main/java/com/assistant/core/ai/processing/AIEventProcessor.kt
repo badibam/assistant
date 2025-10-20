@@ -96,6 +96,61 @@ class AIEventProcessor(
                 }
             }
 
+            // Special handling for ValidationReceived - create message BEFORE transition
+            if (event is AIEvent.ValidationReceived) {
+                val currentState = stateRepository.currentState
+                val sessionId = currentState.sessionId
+
+                if (sessionId != null && !event.approved) {
+                    val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+                    // Create VALIDATION_REFUSED system message when user refuses
+                    val refusalMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = s.shared("ai_system_validation_refused"),
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = null,
+                        executionMetadata = null,
+                        excludeFromPrompt = false // Included in prompt so AI knows user refused
+                    )
+
+                    messageRepository.storeMessage(sessionId, refusalMessage)
+                    LogManager.aiSession("Validation refused message created for session $sessionId", "DEBUG")
+                }
+            }
+
+            // Special handling for CommunicationResponseReceived - create message BEFORE transition
+            if (event is AIEvent.CommunicationResponseReceived) {
+                val currentState = stateRepository.currentState
+                val sessionId = currentState.sessionId
+
+                if (sessionId != null) {
+                    val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+                    // Create system message with user response
+                    val responsePrefix = s.shared("ai_module_response_prefix")
+                    val responseMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = "$responsePrefix ${event.response}",
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = null,
+                        executionMetadata = null,
+                        excludeFromPrompt = false // Included in prompt so AI sees user response
+                    )
+
+                    messageRepository.storeMessage(sessionId, responseMessage)
+                    LogManager.aiSession("Communication response message created for session $sessionId", "DEBUG")
+                }
+            }
+
             // Transition state via repository (atomic memory + DB)
             val newState = stateRepository.emit(event)
 
