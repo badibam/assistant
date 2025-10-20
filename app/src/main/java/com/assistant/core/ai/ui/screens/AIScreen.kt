@@ -1099,7 +1099,7 @@ private fun SeedHeader(
 }
 
 /**
- * Automation header - Execution status with STOP button
+ * Automation header - Simplified execution header with controls
  */
 @Composable
 private fun AutomationHeader(
@@ -1113,9 +1113,6 @@ private fun AutomationHeader(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Determine if controls should be shown
-    val showControls = isActiveSession && aiState.phase != Phase.CLOSED
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1124,39 +1121,31 @@ private fun AutomationHeader(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Chat button (always visible for active session)
-        if (showControls) {
-            UI.ActionButton(
-                action = ButtonAction.AI_CHAT,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onChatRequest
-            )
-        }
-
-        // Title with phase status
+        // Title
         Column(modifier = Modifier.weight(1f)) {
             UI.Text(
-                text = session.name,
+                text = s.shared("ai_automation_running"),
                 type = TextType.TITLE
             )
-            UI.Text(
-                text = if (isActiveSession) getPhaseLabel(aiState.phase, s) else s.shared("ai_phase_completed"),
-                type = TextType.CAPTION
-            )
         }
 
-        // Control button (only for active session)
-        if (showControls) {
-            UI.ActionButton(
-                action = ButtonAction.STOP,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onStop
-            )
-        }
+        // Stop button
+        UI.ActionButton(
+            action = ButtonAction.STOP,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = onStop
+        )
 
-        // Close button (always visible)
+        // Chat button - Opens dialog with interrupt/wait options
+        UI.ActionButton(
+            action = ButtonAction.AI_CHAT,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = onChatRequest
+        )
+
+        // Close button
         UI.ActionButton(
             action = ButtonAction.CANCEL,
             display = ButtonDisplay.ICON,
