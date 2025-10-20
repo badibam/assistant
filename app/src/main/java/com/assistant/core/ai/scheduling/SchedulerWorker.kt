@@ -11,7 +11,7 @@ import com.assistant.core.utils.LogManager
 /**
  * WorkManager worker for scheduling automation executions
  *
- * Runs periodically (every 5 minutes) to trigger scheduler heartbeat
+ * Runs periodically (every 1 minute) to trigger scheduler heartbeat
  * Delegates all scheduling logic to AIOrchestrator.tick() (V2 event-driven architecture)
  *
  * Architecture V2:

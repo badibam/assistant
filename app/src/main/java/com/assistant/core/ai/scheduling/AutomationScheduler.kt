@@ -8,6 +8,9 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
 import kotlinx.serialization.json.Json
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Automation Scheduler - Pure calculation helper
@@ -26,6 +29,16 @@ class AutomationScheduler(private val context: Context) {
     private val database = AppDatabase.getDatabase(context)
     private val aiDao = database.aiDao()
     private val json = Json { ignoreUnknownKeys = true }
+
+    // Date formatter for logs (HH:mm:ss dd/MM/yyyy)
+    private val dateFormatter = SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
+
+    /**
+     * Format timestamp to human-readable date for logs
+     */
+    private fun formatTimestamp(timestamp: Long): String {
+        return dateFormatter.format(Date(timestamp))
+    }
 
     /**
      * Get next automation session to execute
@@ -129,7 +142,7 @@ class AutomationScheduler(private val context: Context) {
                 val now = System.currentTimeMillis()
                 if (nextExecutionTime <= now) {
                     LogManager.aiSession(
-                        "AutomationScheduler: Automation ${automation.id} is due (next=$nextExecutionTime, now=$now)",
+                        "AutomationScheduler: Automation ${automation.id} is due (next=${formatTimestamp(nextExecutionTime)}, now=${formatTimestamp(now)})",
                         "INFO"
                     )
                     candidates.add(
@@ -142,7 +155,7 @@ class AutomationScheduler(private val context: Context) {
                     )
                 } else {
                     LogManager.aiSession(
-                        "AutomationScheduler: Automation ${automation.id} not yet due (next=$nextExecutionTime, now=$now)",
+                        "AutomationScheduler: Automation ${automation.id} not yet due (next=${formatTimestamp(nextExecutionTime)}, now=${formatTimestamp(now)})",
                         "DEBUG"
                     )
                 }
