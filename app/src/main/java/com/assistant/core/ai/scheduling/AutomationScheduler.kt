@@ -32,31 +32,30 @@ class AutomationScheduler(private val context: Context) {
      * Returns Resume/Create/None based on enabled automations and their states
      *
      * Logic:
-     * 1. For each enabled automation with schedule:
-     *    - Check for incomplete session (crash/network/suspended) → RESUME
-     *    - Else calculate next execution time from last completed → CREATE if time passed
-     * 2. Sort all candidates by scheduledTime ASC (oldest first)
-     * 3. Return first candidate or None
+     * 1. For each enabled automation (with or without schedule):
+     *    - Check for incomplete session (crash/network/suspended/manual) → RESUME
+     * 2. For each enabled automation WITH schedule:
+     *    - Calculate next execution time from last completed → CREATE if time passed
+     * 3. Sort all candidates by scheduledTime ASC (oldest first)
+     * 4. Return first candidate or None
      */
     suspend fun getNextSession(): NextSession {
         try {
             LogManager.aiSession("AutomationScheduler: Calculating next session to execute", "DEBUG")
 
-            // Get all enabled automations with schedule
-            val enabledAutomations = aiDao.getAllEnabledAutomations()
-                .filter { !it.scheduleJson.isNullOrEmpty() }
+            // Get ALL enabled automations (with or without schedule)
+            val allEnabledAutomations = aiDao.getAllEnabledAutomations()
 
-            if (enabledAutomations.isEmpty()) {
-                LogManager.aiSession("AutomationScheduler: No enabled automations with schedule", "DEBUG")
+            if (allEnabledAutomations.isEmpty()) {
+                LogManager.aiSession("AutomationScheduler: No enabled automations", "DEBUG")
                 return NextSession.None
             }
-
-            LogManager.aiSession("AutomationScheduler: Found ${enabledAutomations.size} enabled automations with schedule", "DEBUG")
 
             // Build list of candidates (resume or create)
             val candidates = mutableListOf<ScheduleCandidate>()
 
-            for (automation in enabledAutomations) {
+            // Step 1: Check ALL enabled automations for incomplete sessions (MANUAL or SCHEDULED)
+            for (automation in allEnabledAutomations) {
                 // Check for incomplete session (to resume)
                 val incompleteSession = aiDao.getIncompleteAutomationSession(automation.id)
 
@@ -84,10 +83,23 @@ class AutomationScheduler(private val context: Context) {
                             sessionId = incompleteSession.id
                         )
                     )
-                    continue  // Skip to next automation (only one candidate per automation)
+                    // Continue to next automation (only one candidate per automation)
                 }
+            }
 
-                // No incomplete session → calculate next scheduled execution
+            // Step 2: For automations WITH schedule, calculate next scheduled execution
+            // Only if no incomplete session was found above
+            val automationsWithIncomplete = candidates.map { it.automationId }.toSet()
+            val automationsWithSchedule = allEnabledAutomations
+                .filter { !it.scheduleJson.isNullOrEmpty() && !automationsWithIncomplete.contains(it.id) }
+
+            LogManager.aiSession(
+                "AutomationScheduler: Found ${candidates.size} sessions to resume, checking ${automationsWithSchedule.size} scheduled automations",
+                "DEBUG"
+            )
+
+            for (automation in automationsWithSchedule) {
+                // Parse schedule
                 val schedule = try {
                     json.decodeFromString<ScheduleConfig>(automation.scheduleJson!!)
                 } catch (e: Exception) {

@@ -116,9 +116,9 @@ data class AIState(
     }
 
     /**
-     * Check if slot is available (IDLE phase)
+     * Check if slot is available (IDLE phase AND no active session)
      */
-    fun isSlotAvailable(): Boolean = phase == Phase.IDLE
+    fun isSlotAvailable(): Boolean = phase == Phase.IDLE && sessionId == null
 
     companion object {
         /**

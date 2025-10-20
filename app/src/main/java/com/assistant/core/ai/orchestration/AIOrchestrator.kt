@@ -21,6 +21,7 @@ import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -357,8 +358,9 @@ object AIOrchestrator {
      * Interrupt active AUTOMATION to start CHAT session.
      *
      * Flow:
-     * 1. Close automation with SUSPENDED reason (frees the slot, can resume later)
-     * 2. Request CHAT session (will activate immediately)
+     * 1. Request CHAT session first (will be enqueued with priority 1)
+     * 2. Close automation with SUSPENDED reason (frees the slot)
+     * 3. CHAT will be activated from queue before automation resumes
      *
      * Used when user clicks "Interrupt" option in ChatOptionsDialog.
      *
@@ -376,13 +378,14 @@ object AIOrchestrator {
             return
         }
 
-        // Close the automation with SUSPENDED reason (frees slot + enables auto-resume)
-        eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
-
-        // Request CHAT session (will activate immediately since slot is now free)
+        // Step 1: Request CHAT session (will be enqueued with priority 1 since slot occupied)
         requestChatSession()
 
-        LogManager.aiSession("interruptAutomationForChat: AUTOMATION suspended, CHAT session requested", "INFO")
+        // Step 2: Close the automation with SUSPENDED reason (frees slot)
+        // When slot becomes free, CHAT from queue will be activated before automation resume
+        eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
+
+        LogManager.aiSession("interruptAutomationForChat: CHAT enqueued, AUTOMATION being suspended", "INFO")
     }
 
     // ========================================================================================
@@ -506,8 +509,33 @@ object AIOrchestrator {
 
             LogManager.aiSession("Copied ${userMessages.size} USER messages from SEED", "DEBUG")
 
-            // Emit activation request
-            eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId, SessionType.AUTOMATION))
+            // Request activation via scheduler (handles inactivity check + queue logic)
+            val currentState = stateRepository.state.value
+            val activationResult = sessionScheduler.requestSession(
+                sessionId = newSessionId,
+                sessionType = SessionType.AUTOMATION,
+                trigger = ExecutionTrigger.MANUAL,
+                currentState = currentState
+            )
+
+            // Handle result
+            when (activationResult) {
+                is com.assistant.core.ai.scheduling.ActivationResult.ActivateImmediate -> {
+                    eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId, SessionType.AUTOMATION))
+                }
+                is com.assistant.core.ai.scheduling.ActivationResult.EvictAndActivate -> {
+                    // Evict current session
+                    eventProcessor.emit(AIEvent.SessionCompleted(activationResult.evictionReason))
+                    // Then activate new session
+                    eventProcessor.emit(AIEvent.SessionActivationRequested(newSessionId, SessionType.AUTOMATION))
+                }
+                is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
+                    enqueueSession(newSessionId, SessionType.AUTOMATION, ExecutionTrigger.MANUAL, activationResult.priority)
+                }
+                is com.assistant.core.ai.scheduling.ActivationResult.Skip -> {
+                    LogManager.aiSession("Automation activation skipped: ${activationResult.reason}", "INFO")
+                }
+            }
 
         } catch (e: Exception) {
             LogManager.aiSession("executeAutomation failed: ${e.message}", "ERROR", e)

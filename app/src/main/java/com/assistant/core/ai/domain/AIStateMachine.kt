@@ -57,7 +57,8 @@ object AIStateMachine {
                         phase = nextPhase,
                         sessionCreatedAt = currentTime,
                         lastNetworkAvailableTime = currentTime,
-                        lastEventTime = currentTime
+                        lastEventTime = currentTime,
+                        lastUserInteractionTime = currentTime // Initialize for CHAT inactivity calculation
                     )
                 }
             }
