@@ -535,10 +535,40 @@ class CommandExecutor(private val context: Context) {
             when (command.resource) {
                 "tool_data" -> {
                     // Metadata: toolInstanceName, count
-                    // Bulk data: records
+                    // Bulk data: entries (with parsed data JSON)
                     data["toolInstanceName"]?.let { reordered["toolInstanceName"] = it }
                     data["count"]?.let { reordered["count"] = it }
-                    data["records"]?.let { reordered["records"] = it }
+
+                    // Parse data field in each entry from string to JSON
+                    val entries = data["entries"] as? List<*>
+                    if (entries != null) {
+                        val parsedEntries = entries.map { entry ->
+                            val entryMap = entry as? Map<*, *>
+                            if (entryMap != null) {
+                                val dataStr = entryMap["data"] as? String
+                                if (dataStr != null) {
+                                    try {
+                                        val parsedData = org.json.JSONObject(dataStr)
+                                        val modifiedEntry = entryMap.toMutableMap()
+                                        modifiedEntry["data"] = parsedData
+                                        modifiedEntry
+                                    } catch (e: Exception) {
+                                        // If parsing fails, keep as string
+                                        LogManager.aiPrompt("Failed to parse data field in entry: ${e.message}", "WARN", e)
+                                        entryMap
+                                    }
+                                } else {
+                                    entryMap
+                                }
+                            } else {
+                                entry
+                            }
+                        }
+                        reordered["entries"] = parsedEntries
+                    }
+
+                    // Add pagination if present
+                    data["pagination"]?.let { reordered["pagination"] = it }
                 }
                 "schemas" -> {
                     // Schema data: parse content as JSON instead of keeping it as escaped string
@@ -560,7 +590,25 @@ class CommandExecutor(private val context: Context) {
                     data["id"]?.let { reordered["id"] = it }
                     data["name"]?.let { reordered["name"] = it }
                     data["toolType"]?.let { reordered["toolType"] = it }
-                    // Add remaining fields
+
+                    // Parse config_json string as JSON for readable prompt formatting
+                    val toolInstance = data["tool_instance"] as? Map<*, *>
+                    val configJsonStr = toolInstance?.get("config_json") as? String
+                    if (configJsonStr != null) {
+                        try {
+                            val parsedConfig = org.json.JSONObject(configJsonStr)
+                            // Replace the string with parsed JSON in tool_instance
+                            val modifiedToolInstance = toolInstance.toMutableMap()
+                            modifiedToolInstance["config_json"] = parsedConfig
+                            reordered["tool_instance"] = modifiedToolInstance
+                        } catch (e: Exception) {
+                            // If parsing fails, keep as string
+                            LogManager.aiPrompt("Failed to parse config_json in tools: ${e.message}", "WARN", e)
+                            data["tool_instance"]?.let { reordered["tool_instance"] = it }
+                        }
+                    }
+
+                    // Add remaining fields (except tool_instance if already processed)
                     data.forEach { (key, value) ->
                         if (key !in reordered) reordered[key] = value
                     }
