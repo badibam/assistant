@@ -385,20 +385,22 @@ Event AIResponseParsed:
   → transition vers phase appropriée
 
 Event DataQueriesExecuted:
-  → check limit consecutiveDataQueries
-  → si limite: transition COMPLETED
-  → sinon: transition CALLING_AI, increment counter, emit nouveau round
+  → transition CALLING_AI, emit nouveau round
 
 Event ActionsExecuted:
   → si allSuccess + (keepControl OR AUTOMATION): transition CALLING_AI
-  → sinon: transition COMPLETED
+  → sinon (CHAT sans keepControl): transition IDLE
+  → si échec actions: émet ActionFailureOccurred
+
+Event ActionFailureOccurred:
+  → transition RETRYING_AFTER_ACTION_FAILURE (pas de limite, IA doit adapter sa stratégie)
 
 Event ParseErrorOccurred:
   → transition RETRYING_AFTER_FORMAT_ERROR (pas de limite, IA doit auto-corriger)
 
 Event NetworkErrorOccurred:
-  → si CHAT: transition COMPLETED
-  → si AUTOMATION: transition WAITING_NETWORK_RETRY
+  → si CHAT: transition IDLE (session reste active, user doit réessayer manuellement)
+  → si AUTOMATION: transition WAITING_NETWORK_RETRY (retry automatique avec délai)
 
 Event SessionPaused:
   → store phaseBeforePause
