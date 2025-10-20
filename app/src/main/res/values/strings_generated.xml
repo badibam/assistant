@@ -379,7 +379,6 @@
     <string name="shared_ai_sender_user">Vous</string>
     <string name="shared_ai_sender_ai">IA</string>
     <string name="shared_ai_sender_system">Système</string>
-    <string name="shared_ai_message_rich_prefix">Riche:</string>
     <string name="shared_ai_message_enrichments_count">Enrichissements: %1$d</string>
     <string name="shared_ai_validation_title">Validation requise</string>
     <string name="shared_ai_validation_status">Statut</string>

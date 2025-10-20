@@ -208,48 +208,42 @@ class EnrichmentProcessor(
 
     /**
      * Resolve schema IDs from tool instance config
-     * Returns Pair(config_schema_id, data_schema_id) or null if resolution fails
+     * Throws IllegalStateException if resolution fails
      */
-    private suspend fun resolveSchemaIds(toolInstanceId: String): Pair<String, String>? {
+    private suspend fun resolveSchemaIds(toolInstanceId: String): Pair<String, String> {
         if (coordinator == null) {
-            LogManager.aiEnrichment("Cannot resolve schema IDs: coordinator not available", "WARN")
-            return null
+            throw IllegalStateException("Cannot resolve schema IDs: coordinator not available")
         }
 
-        try {
-            val result = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
+        val result = coordinator.processUserAction("tools.get", mapOf(
+            "tool_instance_id" to toolInstanceId
+        ))
 
-            if (!result.isSuccess) {
-                LogManager.aiEnrichment("Failed to fetch tool instance $toolInstanceId: ${result.error}", "WARN")
-                return null
-            }
-
-            val toolInstance = result.data?.get("tool") as? Map<*, *>
-            val configJson = toolInstance?.get("config") as? String
-
-            if (configJson.isNullOrEmpty()) {
-                LogManager.aiEnrichment("Tool instance $toolInstanceId has no config", "WARN")
-                return null
-            }
-
-            val config = JSONObject(configJson)
-            val configSchemaId = config.optString("schema_id", "")
-            val dataSchemaId = config.optString("data_schema_id", "")
-
-            if (configSchemaId.isEmpty() || dataSchemaId.isEmpty()) {
-                LogManager.aiEnrichment("Tool instance $toolInstanceId missing schema IDs (config=$configSchemaId, data=$dataSchemaId)", "WARN")
-                return null
-            }
-
-            LogManager.aiEnrichment("Resolved schema IDs for $toolInstanceId: config=$configSchemaId, data=$dataSchemaId", "DEBUG")
-            return Pair(configSchemaId, dataSchemaId)
-
-        } catch (e: Exception) {
-            LogManager.aiEnrichment("Error resolving schema IDs for $toolInstanceId: ${e.message}", "ERROR", e)
-            return null
+        if (!result.isSuccess) {
+            throw IllegalStateException("Failed to fetch tool instance $toolInstanceId: ${result.error}")
         }
+
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+            ?: throw IllegalStateException("Tool instance $toolInstanceId not found in response")
+
+        val configJson = toolInstance["config_json"] as? String
+        if (configJson.isNullOrBlank()) {
+            throw IllegalStateException("Tool instance $toolInstanceId has no config_json")
+        }
+
+        val config = JSONObject(configJson)
+        val configSchemaId = config.optString("schema_id", "")
+        val dataSchemaId = config.optString("data_schema_id", "")
+
+        if (configSchemaId.isEmpty()) {
+            throw IllegalStateException("Tool instance $toolInstanceId missing schema_id in config")
+        }
+        if (dataSchemaId.isEmpty()) {
+            throw IllegalStateException("Tool instance $toolInstanceId missing data_schema_id in config")
+        }
+
+        LogManager.aiEnrichment("Resolved schema IDs for $toolInstanceId: config=$configSchemaId, data=$dataSchemaId", "DEBUG")
+        return Pair(configSchemaId, dataSchemaId)
     }
 
     // ========================================================================================
@@ -301,26 +295,21 @@ class EnrichmentProcessor(
                 if (toolInstanceId.isNotEmpty()) {
                     val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
 
-                    // Resolve schema IDs from tool instance config
-                    val schemaIds = resolveSchemaIds(toolInstanceId)
-                    if (schemaIds != null) {
-                        val (configSchemaId, dataSchemaId) = schemaIds
+                    // Resolve schema IDs from tool instance config (throws if fails)
+                    val (configSchemaId, dataSchemaId) = resolveSchemaIds(toolInstanceId)
 
-                        queries.add(DataCommand(
-                            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
-                            type = "SCHEMA",
-                            params = mapOf("id" to configSchemaId),
-                            isRelative = isRelative
-                        ))
-                        queries.add(DataCommand(
-                            id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
-                            type = "SCHEMA",
-                            params = mapOf("id" to dataSchemaId),
-                            isRelative = isRelative
-                        ))
-                    } else {
-                        LogManager.aiEnrichment("POINTER INSTANCE: Cannot resolve schema IDs for $toolInstanceId - SCHEMA queries skipped", "WARN")
-                    }
+                    queries.add(DataCommand(
+                        id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                        type = "SCHEMA",
+                        params = mapOf("id" to configSchemaId),
+                        isRelative = isRelative
+                    ))
+                    queries.add(DataCommand(
+                        id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                        type = "SCHEMA",
+                        params = mapOf("id" to dataSchemaId),
+                        isRelative = isRelative
+                    ))
 
                     queries.add(DataCommand(
                         id = buildQueryId("tool_config", baseParams),
@@ -383,26 +372,21 @@ class EnrichmentProcessor(
             isRelative = isRelative
         ))
 
-        // Resolve schema IDs from tool instance config
-        val schemaIds = resolveSchemaIds(toolInstanceId)
-        if (schemaIds != null) {
-            val (configSchemaId, dataSchemaId) = schemaIds
+        // Resolve schema IDs from tool instance config (throws if fails)
+        val (configSchemaId, dataSchemaId) = resolveSchemaIds(toolInstanceId)
 
-            queries.add(DataCommand(
-                id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
-                type = "SCHEMA",
-                params = mapOf("id" to configSchemaId),
-                isRelative = isRelative
-            ))
-            queries.add(DataCommand(
-                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
-                type = "SCHEMA",
-                params = mapOf("id" to dataSchemaId),
-                isRelative = isRelative
-            ))
-        } else {
-            LogManager.aiEnrichment("USE: Cannot resolve schema IDs for $toolInstanceId - SCHEMA queries skipped", "WARN")
-        }
+        queries.add(DataCommand(
+            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+            type = "SCHEMA",
+            params = mapOf("id" to configSchemaId),
+            isRelative = isRelative
+        ))
+        queries.add(DataCommand(
+            id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+            type = "SCHEMA",
+            params = mapOf("id" to dataSchemaId),
+            isRelative = isRelative
+        ))
 
         queries.add(DataCommand(
             id = buildQueryId("tool_data_sample", baseParams),
@@ -443,20 +427,15 @@ class EnrichmentProcessor(
         val baseParams = mapOf("id" to toolInstanceId)
 
         // MODIFY_CONFIG enrichment: SCHEMA(config) + TOOL_CONFIG
-        // Resolve schema IDs from tool instance config
-        val schemaIds = resolveSchemaIds(toolInstanceId)
-        if (schemaIds != null) {
-            val (configSchemaId, _) = schemaIds
+        // Resolve schema IDs from tool instance config (throws if fails)
+        val (configSchemaId, _) = resolveSchemaIds(toolInstanceId)
 
-            queries.add(DataCommand(
-                id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
-                type = "SCHEMA",
-                params = mapOf("id" to configSchemaId),
-                isRelative = isRelative
-            ))
-        } else {
-            LogManager.aiEnrichment("MODIFY_CONFIG: Cannot resolve schema IDs for $toolInstanceId - SCHEMA query skipped", "WARN")
-        }
+        queries.add(DataCommand(
+            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+            type = "SCHEMA",
+            params = mapOf("id" to configSchemaId),
+            isRelative = isRelative
+        ))
 
         queries.add(DataCommand(
             id = buildQueryId("tool_config", baseParams),

@@ -65,7 +65,7 @@ fun ChatMessageBubble(
                     message.richContent != null -> {
                         // Rich message with segments
                         UI.Text(
-                            text = "${s.shared("ai_message_rich_prefix")} ${message.richContent.linearText}",
+                            text = "${message.richContent.linearText}",
                             type = TextType.BODY
                         )
                         if (message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().isNotEmpty()) {

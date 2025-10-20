@@ -79,7 +79,6 @@
     <string name="ai_sender_user">Vous</string>
     <string name="ai_sender_ai">IA</string>
     <string name="ai_sender_system">Système</string>
-    <string name="ai_message_rich_prefix">Riche:</string>
     <string name="ai_message_enrichments_count">Enrichissements: %1$d</string>
 
     <!-- AI Interaction - Validation and Communication Modules -->
