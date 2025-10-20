@@ -258,7 +258,7 @@ Une seule session active à la fois (CHAT ou AUTOMATION). `AISessionScheduler` g
 - **AUTOMATION MANUAL** : Queue si slot occupé, activation FIFO
 - **AUTOMATION SCHEDULED** : Création à la demande par `tick()` si slot libre + queue vide
 
-**Scheduling** : Tick périodique (1 min) + événementiel (CRUD automations, fin session).
+**Scheduling** : Double heartbeat (1 min coroutine app-open + 15 min WorkManager app-closed) + événementiel (CRUD automations, fin session).
 
 **Inactivité** : Calcul via `AIState.calculateInactivity()`, phases actives (CALLING_AI, EXECUTING_*) ne timeout jamais, phases waiting utilisent `lastUserInteractionTime`.
 
@@ -279,7 +279,7 @@ Sessions AUTOMATION créées depuis template SEED (message user + enrichments). 
 - **EVENT** : Future (triggers non planifiés)
 
 **Triggers tick()** :
-- Périodique : SchedulerWorker (1 min)
+- Périodique : AIOrchestrator coroutine (1 min, app-open) + WorkManager (15 min, app-closed)
 - Événementiel : CRUD automations (create/update/enable/disable)
 - Fin session : scheduler déclenché après libération slot
 

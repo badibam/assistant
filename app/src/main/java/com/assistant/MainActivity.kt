@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // Initialize AI orchestrator singleton (V2 - suspend function)
+        // Orchestrator includes 1-minute internal heartbeat for app-open reactivity
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 AIOrchestrator.initialize(this@MainActivity)
@@ -56,7 +57,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Schedule automation worker (15 min periodic check)
+        // Schedule WorkManager for app-closed automation checks (15 min interval)
+        // Complements AIOrchestrator's 1-minute heartbeat for app-open scenarios
         scheduleAutomationWorker()
 
         // Initialize coordinator
@@ -180,25 +182,32 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Schedule periodic automation worker
-     * Checks every 1 minute for automations that should trigger
-     * tick() will early return if slot occupied, so safe to call frequently
+     * Schedule periodic automation worker for when app is closed
+     * WorkManager minimum interval: 15 minutes
+     * For app-open reactivity, AIOrchestrator has internal 1-minute heartbeat
      */
     private fun scheduleAutomationWorker() {
+        LogManager.service("scheduleAutomationWorker: Starting WorkManager registration", "INFO")
+
         try {
+            val intervalMinutes = 15L // Minimum allowed by WorkManager
+            LogManager.service("scheduleAutomationWorker: Creating PeriodicWorkRequest with interval=${intervalMinutes}min", "DEBUG")
+
             val workRequest = PeriodicWorkRequestBuilder<SchedulerWorker>(
-                1, TimeUnit.MINUTES
+                intervalMinutes, TimeUnit.MINUTES
             ).build()
+
+            LogManager.service("scheduleAutomationWorker: Enqueueing work request with REPLACE policy", "DEBUG")
 
             WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "automation_scheduler",
-                ExistingPeriodicWorkPolicy.KEEP, // Keep existing if already scheduled
+                ExistingPeriodicWorkPolicy.REPLACE, // Replace to update interval if changed
                 workRequest
             )
 
-            LogManager.service("Automation scheduler registered (1 min periodic tick)", "INFO")
+            LogManager.service("scheduleAutomationWorker: SUCCESS - Automation scheduler registered (${intervalMinutes}min periodic tick for app-closed)", "INFO")
         } catch (e: Exception) {
-            LogManager.service("Failed to schedule automation worker: ${e.message}", "ERROR", e)
+            LogManager.service("scheduleAutomationWorker: FAILED - ${e.message}", "ERROR", e)
         }
     }
 }

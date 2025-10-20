@@ -265,7 +265,8 @@ sealed class AIEvent {
     // ==================== System ====================
 
     /**
-     * Scheduler heartbeat (every 5 minutes).
+     * Scheduler heartbeat
+     * Double trigger: internal coroutine (1 min, app-open) + WorkManager (15 min, app-closed)
      *
      * Triggers:
      * - Watchdog check (timeout detection)

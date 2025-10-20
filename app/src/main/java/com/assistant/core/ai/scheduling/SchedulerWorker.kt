@@ -9,9 +9,11 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
 
 /**
- * WorkManager worker for scheduling automation executions
+ * WorkManager worker for scheduling automation executions when app is closed
  *
- * Runs periodically (every 1 minute) to trigger scheduler heartbeat
+ * Runs periodically (every 15 minutes - WorkManager minimum) to trigger scheduler heartbeat
+ * Complements AIOrchestrator's internal 1-minute heartbeat for app-open scenarios
+ *
  * Delegates all scheduling logic to AIOrchestrator.tick() (V2 event-driven architecture)
  *
  * Architecture V2:

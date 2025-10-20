@@ -85,7 +85,7 @@ class AutomationScheduler(private val context: Context) {
 
                     LogManager.aiSession(
                         "AutomationScheduler: Found incomplete session for automation ${automation.id} " +
-                        "(endReason=${incompleteSession.endReason}, scheduled=${incompleteSession.scheduledExecutionTime})",
+                        "(endReason=${incompleteSession.endReason}, scheduled=${formatTimestamp(incompleteSession.scheduledExecutionTime)})",
                         "INFO"
                     )
                     candidates.add(
@@ -123,8 +123,20 @@ class AutomationScheduler(private val context: Context) {
                 // Get last completed session to calculate next execution time
                 val lastCompletedSession = aiDao.getLastCompletedAutomationSession(automation.id)
 
-                // Calculate next execution time from last completed (or from now if no history)
-                val fromTimestamp = lastCompletedSession?.scheduledExecutionTime ?: System.currentTimeMillis()
+                // Calculate next execution time
+                // Priority: last completed execution > schedule startDate > now
+                val fromTimestamp = lastCompletedSession?.scheduledExecutionTime
+                    ?: schedule.startDate
+                    ?: System.currentTimeMillis()
+
+                LogManager.aiSession(
+                    "AutomationScheduler: Calculating next execution for automation ${automation.id} " +
+                    "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
+                    "startDate=${schedule.startDate?.let { formatTimestamp(it) }}, " +
+                    "fromTimestamp=${formatTimestamp(fromTimestamp)})",
+                    "DEBUG"
+                )
+
                 val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
                     pattern = schedule.pattern,
                     timezone = schedule.timezone,
@@ -174,7 +186,7 @@ class AutomationScheduler(private val context: Context) {
                     val first = sortedCandidates.first()
                     LogManager.aiSession(
                         "AutomationScheduler: Selected ${first.action} for automation ${first.automationId} " +
-                        "(scheduled=${first.scheduledTime}${if (first.sessionId != null) ", sessionId=${first.sessionId}" else ""})",
+                        "(scheduled=${formatTimestamp(first.scheduledTime)}${if (first.sessionId != null) ", sessionId=${first.sessionId}" else ""})",
                         "INFO"
                     )
                     when (first.action) {
