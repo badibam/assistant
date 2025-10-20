@@ -3,6 +3,7 @@ package com.assistant.core.ai.enrichments
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.EnrichmentType
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.AppConfigManager
@@ -22,7 +23,10 @@ import org.json.JSONObject
  *   * ✨ CREATE: No query (just orientation)
  *   * 📁 ORGANIZE: No query (just orientation)
  */
-class EnrichmentProcessor(private val context: Context) {
+class EnrichmentProcessor(
+    private val context: Context,
+    private val coordinator: com.assistant.core.coordinator.Coordinator? = null // Optional for schema ID resolution
+) {
 
     private val s = Strings.`for`(context = context)
 
@@ -85,10 +89,11 @@ class EnrichmentProcessor(private val context: Context) {
     }
 
     /**
-     * Generate DataCommands for prompt Level 4 inclusion
+     * Generate DataCommands for prompt Level 4 inclusion (suspend version)
      * Returns multiple commands as enrichments can require both config and data
+     * Requires coordinator for schema ID resolution
      */
-    fun generateCommands(
+    suspend fun generateCommands(
         type: EnrichmentType,
         config: String,
         isRelative: Boolean = false
@@ -198,10 +203,60 @@ class EnrichmentProcessor(private val context: Context) {
     // }
 
     // ========================================================================================
+    // Schema ID Resolution
+    // ========================================================================================
+
+    /**
+     * Resolve schema IDs from tool instance config
+     * Returns Pair(config_schema_id, data_schema_id) or null if resolution fails
+     */
+    private suspend fun resolveSchemaIds(toolInstanceId: String): Pair<String, String>? {
+        if (coordinator == null) {
+            LogManager.aiEnrichment("Cannot resolve schema IDs: coordinator not available", "WARN")
+            return null
+        }
+
+        try {
+            val result = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+
+            if (!result.isSuccess) {
+                LogManager.aiEnrichment("Failed to fetch tool instance $toolInstanceId: ${result.error}", "WARN")
+                return null
+            }
+
+            val toolInstance = result.data?.get("tool") as? Map<*, *>
+            val configJson = toolInstance?.get("config") as? String
+
+            if (configJson.isNullOrEmpty()) {
+                LogManager.aiEnrichment("Tool instance $toolInstanceId has no config", "WARN")
+                return null
+            }
+
+            val config = JSONObject(configJson)
+            val configSchemaId = config.optString("schema_id", "")
+            val dataSchemaId = config.optString("data_schema_id", "")
+
+            if (configSchemaId.isEmpty() || dataSchemaId.isEmpty()) {
+                LogManager.aiEnrichment("Tool instance $toolInstanceId missing schema IDs (config=$configSchemaId, data=$dataSchemaId)", "WARN")
+                return null
+            }
+
+            LogManager.aiEnrichment("Resolved schema IDs for $toolInstanceId: config=$configSchemaId, data=$dataSchemaId", "DEBUG")
+            return Pair(configSchemaId, dataSchemaId)
+
+        } catch (e: Exception) {
+            LogManager.aiEnrichment("Error resolving schema IDs for $toolInstanceId: ${e.message}", "ERROR", e)
+            return null
+        }
+    }
+
+    // ========================================================================================
     // Query Generation
     // ========================================================================================
 
-    private fun generatePointerQueries(
+    private suspend fun generatePointerQueries(
         config: JSONObject,
         isRelative: Boolean
     ): List<DataCommand> {
@@ -246,19 +301,26 @@ class EnrichmentProcessor(private val context: Context) {
                 if (toolInstanceId.isNotEmpty()) {
                     val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
 
-                    // TODO: Get schema IDs from tool instance config - for now using placeholders
-                    queries.add(DataCommand(
-                        id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
-                        type = "SCHEMA",
-                        params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
-                        isRelative = isRelative
-                    ))
-                    queries.add(DataCommand(
-                        id = buildQueryId("schema_data", mapOf("id" to "data_schema_id")),
-                        type = "SCHEMA",
-                        params = mapOf("id" to "data_schema_id"), // TODO: resolve from tool instance
-                        isRelative = isRelative
-                    ))
+                    // Resolve schema IDs from tool instance config
+                    val schemaIds = resolveSchemaIds(toolInstanceId)
+                    if (schemaIds != null) {
+                        val (configSchemaId, dataSchemaId) = schemaIds
+
+                        queries.add(DataCommand(
+                            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                            type = "SCHEMA",
+                            params = mapOf("id" to configSchemaId),
+                            isRelative = isRelative
+                        ))
+                        queries.add(DataCommand(
+                            id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                            type = "SCHEMA",
+                            params = mapOf("id" to dataSchemaId),
+                            isRelative = isRelative
+                        ))
+                    } else {
+                        LogManager.aiEnrichment("POINTER INSTANCE: Cannot resolve schema IDs for $toolInstanceId - SCHEMA queries skipped", "WARN")
+                    }
 
                     queries.add(DataCommand(
                         id = buildQueryId("tool_config", baseParams),
@@ -301,7 +363,7 @@ class EnrichmentProcessor(private val context: Context) {
         return queries
     }
 
-    private fun generateUseQueries(
+    private suspend fun generateUseQueries(
         config: JSONObject,
         isRelative: Boolean
     ): List<DataCommand> {
@@ -321,19 +383,26 @@ class EnrichmentProcessor(private val context: Context) {
             isRelative = isRelative
         ))
 
-        // TODO: Get schema IDs from tool instance config - for now using placeholders
-        queries.add(DataCommand(
-            id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
-            type = "SCHEMA",
-            params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
-            isRelative = isRelative
-        ))
-        queries.add(DataCommand(
-            id = buildQueryId("schema_data", mapOf("id" to "data_schema_id")),
-            type = "SCHEMA",
-            params = mapOf("id" to "data_schema_id"), // TODO: resolve from tool instance
-            isRelative = isRelative
-        ))
+        // Resolve schema IDs from tool instance config
+        val schemaIds = resolveSchemaIds(toolInstanceId)
+        if (schemaIds != null) {
+            val (configSchemaId, dataSchemaId) = schemaIds
+
+            queries.add(DataCommand(
+                id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                type = "SCHEMA",
+                params = mapOf("id" to configSchemaId),
+                isRelative = isRelative
+            ))
+            queries.add(DataCommand(
+                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                type = "SCHEMA",
+                params = mapOf("id" to dataSchemaId),
+                isRelative = isRelative
+            ))
+        } else {
+            LogManager.aiEnrichment("USE: Cannot resolve schema IDs for $toolInstanceId - SCHEMA queries skipped", "WARN")
+        }
 
         queries.add(DataCommand(
             id = buildQueryId("tool_data_sample", baseParams),
@@ -364,7 +433,7 @@ class EnrichmentProcessor(private val context: Context) {
         return emptyList()
     }
 
-    private fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
+    private suspend fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
         LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative", "DEBUG")
 
         val toolInstanceId = config.optString("toolInstanceId", "")
@@ -374,13 +443,20 @@ class EnrichmentProcessor(private val context: Context) {
         val baseParams = mapOf("id" to toolInstanceId)
 
         // MODIFY_CONFIG enrichment: SCHEMA(config) + TOOL_CONFIG
-        // TODO: Get schema ID from tool instance config - for now using placeholder
-        queries.add(DataCommand(
-            id = buildQueryId("schema_config", mapOf("id" to "config_schema_id")),
-            type = "SCHEMA",
-            params = mapOf("id" to "config_schema_id"), // TODO: resolve from tool instance
-            isRelative = isRelative
-        ))
+        // Resolve schema IDs from tool instance config
+        val schemaIds = resolveSchemaIds(toolInstanceId)
+        if (schemaIds != null) {
+            val (configSchemaId, _) = schemaIds
+
+            queries.add(DataCommand(
+                id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                type = "SCHEMA",
+                params = mapOf("id" to configSchemaId),
+                isRelative = isRelative
+            ))
+        } else {
+            LogManager.aiEnrichment("MODIFY_CONFIG: Cannot resolve schema IDs for $toolInstanceId - SCHEMA query skipped", "WARN")
+        }
 
         queries.add(DataCommand(
             id = buildQueryId("tool_config", baseParams),

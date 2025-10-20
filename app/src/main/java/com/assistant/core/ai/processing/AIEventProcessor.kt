@@ -296,7 +296,7 @@ class AIEventProcessor(
             }
 
             // 2. Regenerate DataCommands from EnrichmentBlocks
-            val enrichmentProcessor = com.assistant.core.ai.enrichments.EnrichmentProcessor(context)
+            val enrichmentProcessor = com.assistant.core.ai.enrichments.EnrichmentProcessor(context, coordinator)
             val isRelative = state.sessionType == SessionType.AUTOMATION
             val allDataCommands = mutableListOf<com.assistant.core.ai.data.DataCommand>()
 
