@@ -482,7 +482,6 @@
     <string name="shared_ai_phase_waiting_completion">Confirmation...</string>
     <string name="shared_ai_phase_waiting_network">Attente réseau...</string>
     <string name="shared_ai_phase_retrying">Nouvelle tentative...</string>
-    <string name="shared_ai_phase_paused">En pause</string>
     <string name="shared_ai_phase_interrupted">Interrompu</string>
     <string name="shared_ai_phase_completed">Terminé</string>
     <string name="shared_ai_phase_idle_chat">En attente</string>

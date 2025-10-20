@@ -1199,10 +1199,18 @@ fun ChatMessageList(
         }
     }
 
-    // Determine if loading indicator with interrupt button should show
-    // Only for CHAT sessions (AUTOMATION has controls in header)
-    // Only for phases with long waits where interrupt makes sense
-    val showLoadingIndicator = aiState.sessionType == SessionType.CHAT && aiState.phase in listOf(
+    // Determine if loading spinner should show (for all session types)
+    val showLoadingSpinner = aiState.phase in listOf(
+        Phase.CALLING_AI,
+        Phase.EXECUTING_ENRICHMENTS,
+        Phase.EXECUTING_DATA_QUERIES,
+        Phase.EXECUTING_ACTIONS,
+        Phase.PARSING_AI_RESPONSE,
+        Phase.WAITING_NETWORK_RETRY
+    )
+
+    // Determine if interrupt button should show (CHAT only, for long AI calls)
+    val showInterruptButton = aiState.sessionType == SessionType.CHAT && aiState.phase in listOf(
         Phase.CALLING_AI,
         Phase.WAITING_NETWORK_RETRY
     )
@@ -1236,10 +1244,16 @@ fun ChatMessageList(
                 )
             }
 
-            // AI thinking indicator
-            if (showLoadingIndicator) {
+            // AI thinking indicator (spinner + optional interrupt button)
+            if (showLoadingSpinner) {
                 item {
-                    com.assistant.core.ai.ui.chat.ChatLoadingIndicator()
+                    com.assistant.core.ai.ui.chat.AILoadingSpinner()
+                }
+            }
+
+            if (showInterruptButton) {
+                item {
+                    com.assistant.core.ai.ui.chat.ChatInterruptButton()
                 }
             }
         }

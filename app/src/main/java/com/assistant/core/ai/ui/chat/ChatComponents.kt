@@ -196,23 +196,35 @@ fun ChatMessageBubble(
 }
 
 /**
- * Loading indicator with interrupt button
- * Shows "Interrupting..." message after user clicks interrupt
+ * AI loading spinner (just the spinner, no buttons)
+ * Can be used in both CHAT and AUTOMATION contexts
  */
 @Composable
-fun ChatLoadingIndicator() {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(context = context) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var isInterrupting by remember { mutableStateOf(false) }
-
-    Column(
+fun AILoadingSpinner() {
+    Box(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentAlignment = Alignment.Center
     ) {
         UI.AIThinkingIndicator()
+    }
+}
 
+/**
+ * Chat interrupt button with state management
+ * Shows "Interrupting..." message after user clicks interrupt
+ * CHAT only - not for AUTOMATION
+ */
+@Composable
+fun ChatInterruptButton() {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+    val scope = rememberCoroutineScope()
+    var isInterrupting by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
         if (isInterrupting) {
             // Show "Interrupting..." message after button clicked
             UI.Text(
