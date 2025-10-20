@@ -340,36 +340,13 @@ object AIOrchestrator {
     }
 
     /**
-     * Pause active session (manual pause by user).
-     *
-     * Session keeps the slot but stops sending new AI requests.
-     * If currently waiting for AI response, will process it then pause.
-     * Requires manual resume via resumeActiveSession().
-     */
-    suspend fun pauseActiveSession() {
-        LogManager.aiSession("pauseActiveSession called", "INFO")
-        eventProcessor.emit(AIEvent.SessionPaused)
-    }
-
-    /**
-     * Resume paused session (manual resume by user).
-     *
-     * Session continues AI interaction flow from PAUSED phase.
-     */
-    suspend fun resumeActiveSession() {
-        LogManager.aiSession("resumeActiveSession called", "INFO")
-        eventProcessor.emit(AIEvent.SessionResumed)
-    }
-
-    /**
      * Interrupt current AI round (CHAT only).
      *
      * Cancels the current AI call/processing but keeps session active.
      * If AI response arrives, it will be ignored.
      * Session remains active and waits for next user message.
      *
-     * Different from pause: does not require manual resume,
-     * session continues automatically when user sends next message.
+     * Session continues automatically when user sends next message.
      */
     suspend fun interruptActiveRound() {
         LogManager.aiSession("interruptActiveRound called", "INFO")

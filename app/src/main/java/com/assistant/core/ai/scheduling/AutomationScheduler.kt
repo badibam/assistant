@@ -189,7 +189,7 @@ class AutomationScheduler(private val context: Context) {
  */
 sealed class NextSession {
     /**
-     * Resume existing incomplete session (crash, network error, or user pause)
+     * Resume existing incomplete session (crash, network error)
      * NO system message should be added - transparent resume
      */
     data class Resume(val sessionId: String) : NextSession()

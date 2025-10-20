@@ -235,11 +235,6 @@ class AIEventProcessor(
                 emit(AIEvent.RetryScheduled)
             }
 
-            Phase.PAUSED -> {
-                // No side effects - session paused manually
-                // Waiting for user to resume
-            }
-
             Phase.INTERRUPTED -> {
                 // Cancel any pending network retry
                 networkRetryJob?.cancel()
@@ -1108,11 +1103,7 @@ class AIEventProcessor(
     }
 
     /**
-     * Schedule session closure with 5s delay (AUTOMATION only).
-     *
-     * User can pause during this time to keep session alive and inspect results.
-     * If resumed from AWAITING_SESSION_CLOSURE, the timer restarts.
-     * If paused, the job is cancelled and timer stops.
+     * Schedule session closure with 5s delay (AUTOMATION only)
      */
     private fun scheduleSessionClosure(state: AIState) {
         // Cancel previous closure job if any
@@ -1122,7 +1113,6 @@ class AIEventProcessor(
             delay(5_000L) // 5 seconds
 
             // Check if session is still in AWAITING_SESSION_CLOSURE phase
-            // (could have been paused/resumed)
             val currentState = stateRepository.currentState
             if (currentState.phase == Phase.AWAITING_SESSION_CLOSURE) {
                 // Close session with COMPLETED reason

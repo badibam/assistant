@@ -162,27 +162,6 @@ object AIStateMachine {
                 )
             }
 
-            is AIEvent.SessionPaused -> {
-                // User paused session - store current phase and transition to PAUSED
-                // NOTE: If currently in CALLING_AI, will pause after response is processed
-                state.copy(
-                    phase = Phase.PAUSED,
-                    phaseBeforePause = state.phase,
-                    lastEventTime = currentTime
-                )
-            }
-
-            is AIEvent.SessionResumed -> {
-                // User resumed session - restore phase from before pause
-                val resumePhase = state.phaseBeforePause ?: Phase.IDLE
-                state.copy(
-                    phase = resumePhase,
-                    phaseBeforePause = null,
-                    lastEventTime = currentTime,
-                    lastUserInteractionTime = currentTime
-                )
-            }
-
             is AIEvent.AIRoundInterrupted -> {
                 // User interrupted current AI round (CHAT only)
                 // Stay in INTERRUPTED phase to ignore AI response when it arrives

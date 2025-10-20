@@ -42,7 +42,7 @@ enum class SessionEndReason {
     CANCELLED,       // User clicked stop (or CHAT evicted by AUTOMATION)
     INTERRUPTED,     // Legacy/alias for null (crash detected as orphan)
     NETWORK_ERROR,   // Timeout with network flag active (to resume)
-    SUSPENDED        // User clicked pause (to resume later)
+    SUSPENDED        // To resume later
 }
 
 /**

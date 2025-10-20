@@ -243,13 +243,13 @@ private fun ChatOptionsDialog(
             ) {
                 // Header
                 UI.Text(
-                    text = s.shared("shared_ai_chat_options_dialog_title"),
+                    text = s.shared("ai_chat_options_dialog_title"),
                     type = TextType.TITLE
                 )
 
                 // Description
                 UI.Text(
-                    text = s.shared("shared_ai_chat_options_dialog_description"),
+                    text = s.shared("ai_chat_options_dialog_description"),
                     type = TextType.BODY
                 )
 
@@ -263,11 +263,11 @@ private fun ChatOptionsDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_interrupt_title"),
+                            text = s.shared("ai_chat_option_interrupt_title"),
                             type = TextType.SUBTITLE
                         )
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_interrupt_description"),
+                            text = s.shared("ai_chat_option_interrupt_description"),
                             type = TextType.CAPTION
                         )
                     }
@@ -283,11 +283,11 @@ private fun ChatOptionsDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_after_title"),
+                            text = s.shared("ai_chat_option_after_title"),
                             type = TextType.SUBTITLE
                         )
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_after_description"),
+                            text = s.shared("ai_chat_option_after_description"),
                             type = TextType.CAPTION
                         )
                     }

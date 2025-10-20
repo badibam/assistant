@@ -101,10 +101,6 @@ private fun getStatusText(
             s.shared("ai_phase_waiting_communication") // "En attente de réponse"
         }
 
-        Phase.PAUSED -> {
-            s.shared("ai_phase_paused") // "⏸ Session en pause"
-        }
-
         Phase.INTERRUPTED -> {
             // Interrupted is brief transitional state, show idle label
             if (sessionType == SessionType.CHAT) {

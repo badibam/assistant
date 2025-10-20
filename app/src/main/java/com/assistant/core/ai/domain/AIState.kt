@@ -90,16 +90,7 @@ data class AIState(
      * second completed=true actually completes the session.
      * Reset to false if AI sends anything other than completed=true.
      */
-    val awaitingCompletionConfirmation: Boolean = false,
-
-    // ==================== Pause State ====================
-
-    /**
-     * Phase before manual pause (stored to resume from correct phase).
-     * Null when not paused.
-     * Set when SessionPaused event occurs, used when SessionResumed event occurs.
-     */
-    val phaseBeforePause: Phase? = null
+    val awaitingCompletionConfirmation: Boolean = false
 ) {
     /**
      * Calculate current inactivity duration in milliseconds.

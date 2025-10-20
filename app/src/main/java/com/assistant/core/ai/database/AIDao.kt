@@ -140,7 +140,7 @@ interface AIDao {
     /**
      * Get incomplete automation session for a specific automation
      * Returns sessions with endReason IN (null, 'NETWORK_ERROR', 'SUSPENDED') that are not active
-     * Used by scheduler to detect sessions to resume (crash, network timeout, user pause)
+     * Used by scheduler to detect sessions to resume (crash, network timeout)
      */
     @Query("""
         SELECT * FROM ai_sessions

@@ -216,7 +216,6 @@
     <string name="ai_phase_waiting_completion">Confirmation...</string>
     <string name="ai_phase_waiting_network">Attente réseau...</string>
     <string name="ai_phase_retrying">Nouvelle tentative...</string>
-    <string name="ai_phase_paused">En pause</string>
     <string name="ai_phase_interrupted">Interrompu</string>
     <string name="ai_phase_completed">Terminé</string>
 

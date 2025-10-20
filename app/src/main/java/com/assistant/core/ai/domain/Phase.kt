@@ -63,9 +63,6 @@ enum class Phase {
     /** Retrying after action execution failure */
     RETRYING_AFTER_ACTION_FAILURE,
 
-    /** Session manually paused by user (keeps slot, manual resume required) */
-    PAUSED,
-
     /**
      * AI round interrupted by user (CHAT only).
      * Session active, waiting for next user message.
@@ -73,7 +70,7 @@ enum class Phase {
      */
     INTERRUPTED,
 
-    /** Waiting 5s before closing completed AUTOMATION session (user can pause to keep alive) */
+    /** Waiting 5s before closing completed AUTOMATION session*/
     AWAITING_SESSION_CLOSURE,
 
     /** Session closed - ready for cleanup */
@@ -84,7 +81,7 @@ enum class Phase {
      * Used for inactivity timeout calculation.
      */
     fun isWaitingForUser(): Boolean = when (this) {
-        WAITING_VALIDATION, WAITING_COMMUNICATION_RESPONSE, PAUSED -> true
+        WAITING_VALIDATION, WAITING_COMMUNICATION_RESPONSE -> true
         else -> false
     }
 

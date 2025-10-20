@@ -122,30 +122,13 @@ sealed class AIEvent {
     object CommunicationCancelled : AIEvent()
 
     /**
-     * User manually paused active session.
-     *
-     * Session keeps the slot but stops sending new requests to AI.
-     * If waiting for AI response, will process it when received then pause.
-     * Phase transitions to PAUSED, requires manual resume.
-     */
-    object SessionPaused : AIEvent()
-
-    /**
-     * User manually resumed paused session.
-     *
-     * Session continues from PAUSED phase and resumes AI interaction flow.
-     */
-    object SessionResumed : AIEvent()
-
-    /**
      * User interrupted current AI round (CHAT only).
      *
      * Cancels the current AI call/processing but keeps session active.
      * If AI response arrives, it will be ignored.
      * Session remains active and waits for next user message.
      *
-     * Different from SessionPaused: does not require manual resume,
-     * session continues automatically when user sends next message.
+     * Session continues automatically when user sends next message.
      */
     object AIRoundInterrupted : AIEvent()
 

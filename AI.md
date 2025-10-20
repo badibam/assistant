@@ -28,8 +28,7 @@ L'orchestrateur IA fonctionne comme une machine à états pilotée par événeme
 - `requestChatSession()` : Créer/activer session CHAT
 - `executeAutomation(automationId)` : Lancer automation
 - `stopActiveSession()` : Arrêter avec CANCELLED
-- `pauseActiveSession()` : Mettre en pause (garde slot)
-- `resumeActiveSession()` : Reprendre depuis pause
+- `resumeActiveSession()` : Reprendre la session
 - `resumeWithValidation(approved)` : Répondre à validation
 - `resumeWithResponse(response)` : Répondre à communication module
 
@@ -48,7 +47,6 @@ L'orchestrateur IA fonctionne comme une machine à états pilotée par événeme
 - `WAITING_NETWORK_RETRY` : Attente retry réseau (AUTOMATION)
 - `RETRYING_AFTER_FORMAT_ERROR` : Retry après erreur format
 - `RETRYING_AFTER_ACTION_FAILURE` : Retry après échec actions
-- `PAUSED` : Session pausée manuellement (garde slot)
 - `COMPLETED` : Session terminée
 
 **AIState** : État complet système
@@ -60,8 +58,7 @@ data class AIState(
     val totalRoundtrips: Int,
     val lastEventTime: Long,
     val lastUserInteractionTime: Long,
-    val waitingContext: WaitingContext?,
-    val phaseBeforePause: Phase?
+    val waitingContext: WaitingContext?
 )
 ```
 
@@ -71,7 +68,7 @@ data class AIState(
 - `CompletionConfirmation(aiMessageId, scheduledConfirmationTime)` : Attente confirmation completion
 
 ### AIEvent
-Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `SessionPaused`, `SessionResumed`, `DataQueriesExecuted`, `ActionsExecuted`, `CompletionConfirmed`, `CompletionRejected`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
+Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `DataQueriesExecuted`, `ActionsExecuted`, `CompletionConfirmed`, `CompletionRejected`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
 
 ## 2. Types et structures
 
@@ -265,14 +262,6 @@ Une seule session active à la fois (CHAT ou AUTOMATION). `AISessionScheduler` g
 
 **Inactivité** : Calcul via `AIState.calculateInactivity()`, phases actives (CALLING_AI, EXECUTING_*) ne timeout jamais, phases waiting utilisent `lastUserInteractionTime`.
 
-### Pause vs Suspension
-
-**PAUSE (manuel)** :
-- Phase `PAUSED`, garde le slot, `phaseBeforePause` stockée
-- `pauseActiveSession()` → `SessionPaused` event
-- `resumeActiveSession()` → `SessionResumed` event, restaure phase
-- Utilisateur doit manuellement reprendre
-
 **SUSPENSION (système)** :
 - `endReason = SUSPENDED`, libère le slot
 - Session évincée pour laisser place à CHAT
@@ -321,7 +310,6 @@ tick() {
 ### Arrêt AUTOMATION
 **UI boutons** :
 - **STOP** : `stopActiveSession()` → `endReason=CANCELLED` (ne reprendra pas)
-- **PAUSE** : `pauseActiveSession()` → phase `PAUSED` (reprend sur resume manuel)
 
 **Arrêt automatique** :
 - **completed=true** : IA termine son travail → AWAITING_SESSION_CLOSURE (5s) → COMPLETED
@@ -401,13 +389,6 @@ Event ParseErrorOccurred:
 Event NetworkErrorOccurred:
   → si CHAT: transition IDLE (session reste active, user doit réessayer manuellement)
   → si AUTOMATION: transition WAITING_NETWORK_RETRY (retry automatique avec délai)
-
-Event SessionPaused:
-  → store phaseBeforePause
-  → transition PAUSED
-
-Event SessionResumed:
-  → restore phase from phaseBeforePause
 ```
 
 ### Validation et Communication
@@ -440,7 +421,7 @@ Event SessionResumed:
 - Check réseau avant appel → offline = phase `WAITING_NETWORK_RETRY`
 - Delay 30s + retry infini
 - Watchdog ne timeout pas pendant retry réseau
-- Retry jusqu'à réseau disponible OU user STOP/PAUSE
+- Retry jusqu'à réseau disponible OU user STOP
 
 **CHAT** :
 - Check réseau avant appel → offline = toast + `NETWORK_ERROR` event

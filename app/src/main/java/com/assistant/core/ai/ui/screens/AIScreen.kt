@@ -44,7 +44,6 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
         Phase.WAITING_NETWORK_RETRY -> s.shared("ai_phase_waiting_network")
         Phase.RETRYING_AFTER_FORMAT_ERROR,
         Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")
-        Phase.PAUSED -> s.shared("ai_phase_paused")
         Phase.INTERRUPTED -> s.shared("ai_phase_interrupted")
         Phase.AWAITING_SESSION_CLOSURE -> s.shared("ai_phase_awaiting_closure")
         Phase.CLOSED -> s.shared("ai_phase_completed")
@@ -239,7 +238,7 @@ private fun ChatMode(
         Phase.RETRYING_AFTER_ACTION_FAILURE
     )
 
-    // Disable composer during processing, waiting phases, and pause/interrupt
+    // Disable composer during processing, waiting phases, and interrupt
     // Only IDLE phase allows sending new messages
     val isComposerEnabled = aiState.phase !in listOf(
         Phase.CALLING_AI,
@@ -254,7 +253,6 @@ private fun ChatMode(
         Phase.RETRYING_AFTER_FORMAT_ERROR,
         Phase.RETRYING_AFTER_ACTION_FAILURE,
         Phase.PREPARING_CONTINUATION,
-        Phase.PAUSED,
         Phase.INTERRUPTED,
         Phase.AWAITING_SESSION_CLOSURE,
         Phase.CLOSED
@@ -272,16 +270,6 @@ private fun ChatMode(
             onStopSession = {
                 scope.launch {
                     AIOrchestrator.stopActiveSession()
-                }
-            },
-            onPause = {
-                scope.launch {
-                    AIOrchestrator.pauseActiveSession()
-                }
-            },
-            onResume = {
-                scope.launch {
-                    AIOrchestrator.resumeActiveSession()
                 }
             }
         )
@@ -822,16 +810,6 @@ private fun AutomationMode(
                 scope.launch {
                     AIOrchestrator.stopActiveSession()
                 }
-            },
-            onPause = {
-                scope.launch {
-                    AIOrchestrator.pauseActiveSession()
-                }
-            },
-            onResume = {
-                scope.launch {
-                    AIOrchestrator.resumeActiveSession()
-                }
             }
         )
 
@@ -889,13 +867,13 @@ private fun ChatOptionsDialog(
             ) {
                 // Header
                 UI.Text(
-                    text = s.shared("shared_ai_chat_options_dialog_title"),
+                    text = s.shared("ai_chat_options_dialog_title"),
                     type = TextType.TITLE
                 )
 
                 // Description
                 UI.Text(
-                    text = s.shared("shared_ai_chat_options_dialog_description"),
+                    text = s.shared("ai_chat_options_dialog_description"),
                     type = TextType.BODY
                 )
 
@@ -909,11 +887,11 @@ private fun ChatOptionsDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_interrupt_title"),
+                            text = s.shared("ai_chat_option_interrupt_title"),
                             type = TextType.SUBTITLE
                         )
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_interrupt_description"),
+                            text = s.shared("ai_chat_option_interrupt_description"),
                             type = TextType.CAPTION
                         )
                     }
@@ -929,11 +907,11 @@ private fun ChatOptionsDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_after_title"),
+                            text = s.shared("ai_chat_option_after_title"),
                             type = TextType.SUBTITLE
                         )
                         UI.Text(
-                            text = s.shared("shared_ai_chat_option_after_description"),
+                            text = s.shared("ai_chat_option_after_description"),
                             type = TextType.CAPTION
                         )
                     }
@@ -952,9 +930,7 @@ private fun ChatHeader(
     phase: Phase,
     onClose: () -> Unit,
     onShowStats: () -> Unit,
-    onStopSession: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit
+    onStopSession: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -1053,23 +1029,6 @@ private fun ChatHeader(
             )
         }
 
-        // PAUSE/RESUME button (toggle based on phase)
-        if (phase == Phase.PAUSED) {
-            UI.ActionButton(
-                action = ButtonAction.RESUME,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onResume
-            )
-        } else {
-            UI.ActionButton(
-                action = ButtonAction.PAUSE,
-                display = ButtonDisplay.ICON,
-                size = Size.M,
-                onClick = onPause
-            )
-        }
-
         // Stop button
         UI.ActionButton(
             action = ButtonAction.STOP,
@@ -1140,7 +1099,7 @@ private fun SeedHeader(
 }
 
 /**
- * Automation header - Execution status with STOP, PAUSE, and RESUME buttons
+ * Automation header - Execution status with STOP button
  */
 @Composable
 private fun AutomationHeader(
@@ -1149,9 +1108,7 @@ private fun AutomationHeader(
     isActiveSession: Boolean,
     onClose: () -> Unit,
     onChatRequest: () -> Unit,
-    onStop: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit
+    onStop: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -1189,40 +1146,14 @@ private fun AutomationHeader(
             )
         }
 
-        // Control buttons (only for active session)
+        // Control button (only for active session)
         if (showControls) {
-            when (aiState.phase) {
-                Phase.PAUSED -> {
-                    // Show RESUME + STOP when paused
-                    UI.ActionButton(
-                        action = ButtonAction.RESUME,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onResume
-                    )
-                    UI.ActionButton(
-                        action = ButtonAction.STOP,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onStop
-                    )
-                }
-                else -> {
-                    // Show PAUSE + STOP when running
-                    UI.ActionButton(
-                        action = ButtonAction.PAUSE,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onPause
-                    )
-                    UI.ActionButton(
-                        action = ButtonAction.STOP,
-                        display = ButtonDisplay.ICON,
-                        size = Size.M,
-                        onClick = onStop
-                    )
-                }
-            }
+            UI.ActionButton(
+                action = ButtonAction.STOP,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onStop
+            )
         }
 
         // Close button (always visible)
