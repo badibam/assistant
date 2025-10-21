@@ -475,6 +475,7 @@
     <string name="shared_label_actions">Actions</string>
     <string name="shared_label_configuration">Configuration</string>
     <string name="shared_label_validation">Validation</string>
+    <string name="shared_label_tools">Outils</string>
     <string name="shared_ui_toggle_enabled">Activé</string>
     <string name="shared_ui_toggle_disabled">Désactivé</string>
     <string name="shared_ui_new_item_placeholder">Nouvel élément</string>

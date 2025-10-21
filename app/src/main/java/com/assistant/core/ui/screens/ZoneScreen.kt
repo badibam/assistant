@@ -59,6 +59,9 @@ fun ZoneScreen(
     // State for automation creation dialog
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
 
+    // State for zone configuration screen - persiste orientation changes
+    var showZoneConfig by rememberSaveable { mutableStateOf(false) }
+
     // Derived states from IDs (recomputed after orientation change)
     val editingTool = toolInstances.find { it.id == editingToolId }
     val selectedToolInstance = toolInstances.find { it.id == selectedToolInstanceId }
@@ -259,17 +262,43 @@ fun ZoneScreen(
         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with back button, zone title and add tool button
+        // Header with back button, zone title and configure zone button
         UI.PageHeader(
             title = zone.name,
             subtitle = zone.description?.takeIf { it.isNotBlank() },
             icon = null,
             leftButton = ButtonAction.BACK,
-            rightButton = ButtonAction.ADD,
+            rightButton = ButtonAction.CONFIGURE,
             onLeftClick = onBack,
-            onRightClick = { showAvailableTools = !showAvailableTools }
+            onRightClick = { showZoneConfig = !showZoneConfig }
         )
-        
+
+        // Tools section title
+        UI.Card(type = CardType.DEFAULT) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UI.Text(
+                    text = s.shared("label_tools"),
+                    type = TextType.SUBTITLE
+                )
+
+                // Add tool button
+                UI.ActionButton(
+                    action = ButtonAction.ADD,
+                    display = ButtonDisplay.ICON,
+                    size = Size.M,
+                    onClick = {
+                        showAvailableTools = !showAvailableTools
+                    }
+                )
+            }
+        }
+
         // Available tools list (shown conditionally)
         if (showAvailableTools) {
             UI.Card(

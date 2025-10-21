@@ -267,7 +267,8 @@
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
     <string name="label_validation">Validation</string>
-    
+    <string name="label_tools">Outils</string>
+
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
     <string name="ui_toggle_disabled">Désactivé</string>
