@@ -11,7 +11,8 @@ class AIProviderRegistry(private val context: Context) {
 
     // TODO: Load providers dynamically via discovery pattern
     private val providers = listOf<AIProvider>(
-        ClaudeProvider(context),
+        ClaudeStandardProvider(context),
+        ClaudeEconomicProvider(context),
         // OpenAIProvider(),
         // DeepSeekProvider()
     )

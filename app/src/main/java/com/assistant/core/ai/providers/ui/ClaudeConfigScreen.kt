@@ -12,22 +12,34 @@ import com.assistant.core.ui.components.ToolConfigActions
 import com.assistant.core.strings.Strings
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
-import com.assistant.core.ai.providers.ClaudeProvider
+import com.assistant.core.ai.providers.ClaudeProviderCore
 import com.assistant.core.ai.providers.ClaudeModelInfo
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
- * Configuration screen for Claude AI provider
+ * Configuration screen for Claude AI provider variants
+ *
+ * Shared configuration UI for all Claude provider variants (standard, economic, etc.).
+ * Each variant passes its core instance and display name to customize the screen.
  *
  * Displays form with:
  * - API key field (required, password type)
  * - Model selection (dynamic from API)
  *
  * Validates configuration against provider schema before saving.
+ *
+ * @param core The ClaudeProviderCore instance for this variant
+ * @param displayName Human-readable name for this provider variant (e.g., "Claude", "Claude (économique)")
+ * @param config Current configuration JSON
+ * @param onSave Callback to save configuration
+ * @param onCancel Callback to cancel without saving
+ * @param onReset Callback to reset/delete configuration (nullable)
  */
 @Composable
-fun ClaudeConfigScreen(
+internal fun ClaudeConfigScreen(
+    core: ClaudeProviderCore,
+    displayName: String,
     config: String,
     onSave: (String) -> Unit,
     onCancel: () -> Unit,
@@ -35,7 +47,6 @@ fun ClaudeConfigScreen(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val provider = remember { ClaudeProvider(context) }
 
     // Coroutine scope for async operations
     val coroutineScope = rememberCoroutineScope()
@@ -78,7 +89,7 @@ fun ClaudeConfigScreen(
                 isFetchingModels = true
                 fetchModelsError = null
 
-                val result = provider.fetchAvailableModels(apiKey.trim())
+                val result = core.fetchAvailableModels(apiKey.trim())
 
                 if (result.success) {
                     availableModels = result.models
@@ -124,7 +135,9 @@ fun ClaudeConfigScreen(
             )
 
             // Get schema for validation
-            val schema = provider.getSchema("ai_provider_claude_config", context)
+            // Schema ID is variant-specific, getAllSchemaIds() returns the correct one
+            val schemaIds = core.getAllSchemaIds()
+            val schema = if (schemaIds.isNotEmpty()) core.getSchema(schemaIds.first(), context) else null
 
             if (schema == null) {
                 validationResult = ValidationResult.error(s.shared("ai_error_schema_not_found"))
@@ -166,7 +179,7 @@ fun ClaudeConfigScreen(
     ) {
         // Header
         UI.PageHeader(
-            title = "Claude (Anthropic)",
+            title = displayName,
             subtitle = s.shared("settings_ai_providers_config"),
             icon = null,
             leftButton = null,
