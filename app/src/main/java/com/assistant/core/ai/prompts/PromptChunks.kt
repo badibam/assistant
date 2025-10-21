@@ -348,35 +348,7 @@ object PromptChunks {
             return ""
         }
 
-        return """
-## AUTOMATION : Signaler la fin du travail
-
-Le flag `"completed": true` indique que TOUTE l'automation est terminée.
-
-**❌ NE PAS utiliser `"completed": true` après chaque étape intermédiaire**
-**✅ UTILISER `"completed": true` UNIQUEMENT quand ton travail complet est terminé**
-
-### Exemples d'usage INCORRECT :
-- Après avoir collecté des données → **NON**
-- Après avoir créé un outil → **NON**
-- Entre deux actions → **NON**
-
-### Exemple d'usage CORRECT :
-- Toutes les données collectées ET analysées ET rapport créé → **OUI**
-
-### Gestion des interruptions réseau/erreurs :
-Si tu rencontres des problèmes réseau ou erreurs techniques, continue de travailler normalement.
-Le système gère automatiquement les interruptions et tu reprendras exactement où tu t'es arrêté.
-
-### Exemple :
-```json
-{
-  "preText": "Analyse terminée. Toutes les tâches ont été accomplies : données collectées, rapport créé et graphiques générés.",
-  "completed": true
-}
-```
-
-Sans ce flag, l'automation continue jusqu'aux limites de boucles.
-""".trimIndent()
+        val s = Strings.`for`(context = context)
+        return s.shared("ai_chunk_automation_completion")
     }
 }
