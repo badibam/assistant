@@ -187,13 +187,33 @@ private fun extractTextContent(message: SessionMessage): String? {
 
         // System message summary (for SYSTEM → USER transformed messages)
         message.systemMessage != null -> {
-            // For system messages, include formattedData if available
-            val summary = message.systemMessage.summary
-            val data = message.systemMessage.formattedData
-            if (data != null) {
-                "$summary\n\n$data"
-            } else {
-                summary
+            val systemMsg = message.systemMessage
+            val summary = systemMsg.summary
+
+            buildString {
+                appendLine(summary)
+
+                // Include all command results with their details (like in UI)
+                if (systemMsg.commandResults.isNotEmpty()) {
+                    appendLine()
+                    systemMsg.commandResults.forEach { result ->
+                        // Show details (verbalized description) if available
+                        if (result.details != null) {
+                            append("- ${result.details}")
+                            // Add error message if command failed
+                            if (result.status == CommandStatus.FAILED && result.error != null) {
+                                append(" → Erreur: ${result.error}")
+                            }
+                            appendLine()
+                        }
+                    }
+                }
+
+                // Include formattedData if available (for DATA_ADDED queries)
+                if (systemMsg.formattedData != null) {
+                    appendLine()
+                    append(systemMsg.formattedData)
+                }
             }
         }
 
