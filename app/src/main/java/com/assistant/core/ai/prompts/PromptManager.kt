@@ -58,7 +58,7 @@ object PromptManager {
             config = PromptChunks.ChunkConfig(
                 includeDegree1 = true,
                 includeDegree2 = true,
-                includeDegree3 = false  // Disabled for token economy
+                includeDegree3 = false
             )
         )
 

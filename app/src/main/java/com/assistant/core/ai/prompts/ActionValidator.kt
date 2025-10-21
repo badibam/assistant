@@ -347,6 +347,7 @@ class ActionValidator(private val context: Context) {
      * Uses SchemaValidator with zone_config schema from ZoneSchemaProvider
      *
      * Expects params to contain:
+     * - zone_id: String (routing parameter, filtered before validation)
      * - name: String (zone name, max 60 chars)
      * - icon_name: String (optional, icon identifier)
      * - description: String (optional, max 250 chars)
@@ -363,8 +364,11 @@ class ActionValidator(private val context: Context) {
                 return ValidationResult.error("Zone config schema not found")
             }
 
+            // Filter routing parameters before validation (zone_id is not part of config schema)
+            val configParams = params.filterKeys { it != "zone_id" }
+
             // Validate via SchemaValidator
-            val validationResult = SchemaValidator.validate(schema, params, context)
+            val validationResult = SchemaValidator.validate(schema, configParams, context)
 
             if (validationResult.isValid) {
                 LogManager.aiService("Zone config validation successful", "DEBUG")
