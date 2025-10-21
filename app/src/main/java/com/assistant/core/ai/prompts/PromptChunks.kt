@@ -9,6 +9,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
 /**
@@ -66,6 +67,7 @@ object PromptChunks {
 
         // PARTIE D : SYSTÈME DE VALIDATION
         Chunk("validation_schema_principle", 1) { ctx, _ -> buildChunk("validation_schema_principle", ctx) },
+        Chunk("validation_schema_ids", 1) { ctx, _ -> runBlocking { buildSystemSchemaIds(ctx) } },
         Chunk("validation_schema_relation", 2) { ctx, _ -> buildChunk("validation_schema_relation", ctx) },
         Chunk("validation_strategy", 1) { ctx, _ -> buildChunk("validation_strategy", ctx) },
 
@@ -268,6 +270,52 @@ object PromptChunks {
     /**
      * Build tooltypes list with dynamic content from ToolTypeManager
      */
+    /**
+     * Build list of system schema IDs dynamically via SchemaService
+     */
+    private suspend fun buildSystemSchemaIds(context: Context): String {
+        val sb = StringBuilder()
+        val coordinator = Coordinator(context)
+
+        sb.appendLine("### Schémas système disponibles")
+        sb.appendLine()
+
+        // Call schemas.list to get all schema IDs
+        val result = coordinator.processUserAction("schemas.list", emptyMap())
+
+        if (result.isSuccess) {
+            @Suppress("UNCHECKED_CAST")
+            val allSchemaIds = result.data?.get("schema_ids") as? List<String> ?: emptyList()
+
+            // Filter to get only system schemas (exclude tooltype-specific ones)
+            // System schemas: zone_*, app_*, ai_*, communication_module_*
+            val systemSchemaIds = allSchemaIds.filter { schemaId ->
+                schemaId.startsWith("zone_") ||
+                schemaId.startsWith("app_") ||
+                schemaId.startsWith("ai_") ||
+                schemaId.startsWith("communication_module_")
+            }.sorted()
+
+            if (systemSchemaIds.isNotEmpty()) {
+                sb.appendLine("Les schémas système suivants sont disponibles :")
+                sb.appendLine()
+                for (schemaId in systemSchemaIds) {
+                    sb.appendLine("- `$schemaId`")
+                }
+            } else {
+                sb.appendLine("Aucun schéma système trouvé.")
+            }
+        } else {
+            sb.appendLine("Erreur lors de la récupération des schémas système.")
+            LogManager.aiPrompt("Failed to load system schemas: ${result.error}", "ERROR")
+        }
+
+        sb.appendLine()
+        sb.appendLine("**Note** : Les schémas spécifiques aux tooltypes sont listés dans la section Types d'Outils.")
+
+        return sb.toString()
+    }
+
     private fun buildTooltypesList(context: Context): String {
         val s = Strings.`for`(context = context)
         val sb = StringBuilder()
