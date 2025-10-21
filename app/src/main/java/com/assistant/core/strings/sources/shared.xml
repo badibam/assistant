@@ -641,6 +641,25 @@
     <string name="ai_provider_claude_fetch_error">Erreur: %1$s</string>
     <string name="ai_provider_claude_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
 
+    <!-- AI PROVIDERS - OpenAI specific -->
+    <string name="ai_provider_openai_api_key">Clé API OpenAI</string>
+    <string name="ai_provider_openai_model">Modèle</string>
+    <string name="ai_provider_openai_temperature">Température</string>
+    <string name="ai_provider_openai_max_output_tokens">Limite de tokens de sortie</string>
+    <string name="ai_provider_openai_help">Obtenez votre clé API sur platform.openai.com</string>
+    <string name="ai_provider_openai_schema_api_key">Clé API d\'authentification OpenAI</string>
+    <string name="ai_provider_openai_schema_model">Modèle OpenAI à utiliser</string>
+    <string name="ai_provider_openai_schema_temperature">Température d\'échantillonnage (0.0 à 2.0)</string>
+    <string name="ai_provider_openai_schema_max_output_tokens">Limite maximale de tokens pour les réponses</string>
+    <string name="ai_provider_openai_config_display_name">Configuration OpenAI</string>
+    <string name="ai_provider_openai_config_description">Configuration pour le provider OpenAI</string>
+    <string name="ai_provider_openai_fetch_models">Charger les modèles disponibles</string>
+    <string name="ai_provider_openai_fetching_models">Récupération des modèles...</string>
+    <string name="ai_provider_openai_models_loaded">%1$d modèles chargés</string>
+    <string name="ai_provider_openai_no_models">Aucun modèle disponible</string>
+    <string name="ai_provider_openai_fetch_error">Erreur: %1$s</string>
+    <string name="ai_provider_openai_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
+
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">Aucun fournisseur IA configuré. Veuillez configurer un fournisseur dans les paramètres.</string>
     <string name="ai_error_provider_not_found">Fournisseur introuvable: %1$s</string>

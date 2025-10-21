@@ -13,7 +13,8 @@ class AIProviderRegistry(private val context: Context) {
     private val providers = listOf<AIProvider>(
         ClaudeStandardProvider(context),
         ClaudeEconomicProvider(context),
-        // OpenAIProvider(),
+        OpenAIStandardProvider(context),
+        OpenAIEconomicProvider(context),
         // DeepSeekProvider()
     )
 
