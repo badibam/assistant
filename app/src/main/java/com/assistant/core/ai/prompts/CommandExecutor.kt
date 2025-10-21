@@ -209,7 +209,14 @@ class CommandExecutor(private val context: Context) {
                     // - Action commands: use service verbalization (e.g., "Création de la zone \"Santé\"")
                     // - Query commands: use generated data title (e.g., "Data from tool 'Poids' (5 records)")
                     val verbalizedDescription = if (isActionCommand) {
-                        getVerbalizedDescription(command)
+                        // Enrich params with name from result for delete operations
+                        // This allows verbalize() to access the name even after the entity is deleted
+                        val enrichedCommand = if (command.operation == "delete" && data.containsKey("name")) {
+                            command.copy(params = command.params + ("name" to data["name"]!!))
+                        } else {
+                            command
+                        }
+                        getVerbalizedDescription(enrichedCommand)
                     } else {
                         dataTitle.ifEmpty { null }
                     }

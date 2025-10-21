@@ -139,6 +139,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         return OperationResult.success(mapOf(
             "zone_id" to zoneId,
+            "name" to existingZone.name, // Include name for verbalization
             "deleted_at" to System.currentTimeMillis()
         ))
     }
@@ -215,7 +216,11 @@ class ZoneService(private val context: Context) : ExecutableService {
             }
             "delete" -> {
                 val zoneId = params.optString("zone_id")
-                val zoneName = getZoneName(zoneId, context) ?: s.shared("content_unnamed")
+                // Try to get name from params first (enriched by CommandExecutor after delete),
+                // otherwise fallback to DB lookup (which will fail if already deleted)
+                val zoneName = params.optString("name").takeIf { it.isNotBlank() }
+                    ?: getZoneName(zoneId, context)
+                    ?: s.shared("content_unnamed")
                 s.shared("action_verbalize_delete_zone").format(zoneName)
             }
             else -> s.shared("action_verbalize_unknown")

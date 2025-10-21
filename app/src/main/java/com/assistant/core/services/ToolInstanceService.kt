@@ -130,9 +130,16 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         
         val existingTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
+        // Extract name from config for verbalization
+        val toolName = try {
+            JSONObject(existingTool.config_json).optString("name", "")
+        } catch (e: Exception) {
+            ""
+        }
+
         toolInstanceDao.deleteToolInstanceById(toolInstanceId)
 
         // Notify UI of tools change in this zone
@@ -140,6 +147,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         return OperationResult.success(mapOf(
             "tool_instance_id" to toolInstanceId,
+            "name" to toolName, // Include name for verbalization
             "deleted_at" to System.currentTimeMillis()
         ))
     }
@@ -291,7 +299,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             }
             "delete" -> {
                 val toolId = params.optString("tool_instance_id")
-                val toolName = getToolName(toolId, context) ?: s.shared("content_unnamed")
+                // Try to get name from params first (enriched by CommandExecutor after delete),
+                // otherwise fallback to DB lookup (which will fail if already deleted)
+                val toolName = params.optString("name").takeIf { it.isNotBlank() }
+                    ?: getToolName(toolId, context)
+                    ?: s.shared("content_unnamed")
                 s.shared("action_verbalize_delete_tool").format(toolName)
             }
             else -> s.shared("action_verbalize_unknown")
