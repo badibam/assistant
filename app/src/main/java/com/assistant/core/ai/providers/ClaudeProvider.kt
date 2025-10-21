@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,9 +40,9 @@ data class FetchModelsResult(
 )
 
 /**
- * Claude AI Provider - Stub implementation for testing complete flow
+ * Claude AI Provider
  */
-class ClaudeProvider : AIProvider {
+class ClaudeProvider(private val context: Context) : AIProvider {
 
     companion object {
         private const val CLAUDE_API_BASE_URL = "https://api.anthropic.com"
@@ -266,6 +267,16 @@ class ClaudeProvider : AIProvider {
             val prettyJson = Json { prettyPrint = true }
             val formattedPrompt = prettyJson.encodeToString(JsonObject.serializer(), requestJson)
             LogManager.aiService("=== RAW PROMPT TO CLAUDE API ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
+
+            // Save raw prompt to file for debugging (overwrites previous)
+            // Accessible via: adb pull /data/data/com.assistant/files/last_prompt_claude.txt
+            try {
+                val debugFile = File(context.filesDir, "last_prompt_claude.txt")
+                debugFile.writeText(formattedPrompt)
+                LogManager.aiService("Raw prompt saved to: ${debugFile.absolutePath}", "DEBUG")
+            } catch (e: Exception) {
+                LogManager.aiService("Failed to save prompt to file: ${e.message}", "WARN")
+            }
 
             // Build HTTP request
             val mediaType = "application/json; charset=utf-8".toMediaType()

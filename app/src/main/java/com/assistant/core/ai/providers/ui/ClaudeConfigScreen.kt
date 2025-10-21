@@ -35,7 +35,7 @@ fun ClaudeConfigScreen(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    val provider = remember { ClaudeProvider() }
+    val provider = remember { ClaudeProvider(context) }
 
     // Coroutine scope for async operations
     val coroutineScope = rememberCoroutineScope()
