@@ -224,6 +224,20 @@ private fun ChatMode(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showStats by remember { mutableStateOf(false) }
 
+    // Load draft message on mount
+    LaunchedEffect(session.id) {
+        val draft = AIOrchestrator.getDraftMessage(session.id)
+        if (draft.isNotEmpty()) {
+            segments = draft
+            LogManager.aiUI("ChatMode loaded draft: ${draft.size} segments", "DEBUG")
+        }
+    }
+
+    // Save draft whenever segments change
+    LaunchedEffect(segments) {
+        AIOrchestrator.saveDraftMessage(session.id, segments)
+    }
+
     // Observe AIState from orchestrator
     val aiState by AIOrchestrator.currentState.collectAsState()
 
@@ -308,6 +322,7 @@ private fun ChatMode(
                             try {
                                 AIOrchestrator.sendMessage(richMessage)
                                 segments = emptyList() // Clear composer on success
+                                AIOrchestrator.clearDraftMessage(session.id) // Clear draft on success
                             } catch (e: Exception) {
                                 errorMessage = e.message ?: s.shared("ai_error_send_message")
                                 LogManager.aiUI("ChatMode sendMessage failed: ${e.message}", "ERROR", e)

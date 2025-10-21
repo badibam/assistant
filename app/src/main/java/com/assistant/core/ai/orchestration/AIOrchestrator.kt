@@ -68,6 +68,10 @@ object AIOrchestrator {
     // Session queue (managed by scheduler)
     private val _queuedSessions = kotlinx.coroutines.flow.MutableStateFlow<List<com.assistant.core.ai.scheduling.QueuedSession>>(emptyList())
 
+    // Draft message cache (in-memory only, cleared on app restart)
+    // Maps sessionId -> List<MessageSegment> for composer state preservation between screen close/reopen
+    private val draftMessage = mutableMapOf<String, List<MessageSegment>>()
+
     // ========================================================================================
     // Public Observable State
     // ========================================================================================
@@ -103,6 +107,39 @@ object AIOrchestrator {
         }
 
         return messageRepository.observeMessages(sessionId)
+    }
+
+    /**
+     * Save draft message for a session.
+     * Draft is kept in memory only and cleared on app restart.
+     *
+     * @param sessionId Session ID
+     * @param segments Message segments to save as draft
+     */
+    fun saveDraftMessage(sessionId: String, segments: List<MessageSegment>) {
+        draftMessage[sessionId] = segments
+        LogManager.aiSession("Draft saved for session $sessionId: ${segments.size} segments", "DEBUG")
+    }
+
+    /**
+     * Get draft message for a session.
+     *
+     * @param sessionId Session ID
+     * @return Draft segments, or empty list if no draft exists
+     */
+    fun getDraftMessage(sessionId: String): List<MessageSegment> {
+        return draftMessage[sessionId] ?: emptyList()
+    }
+
+    /**
+     * Clear draft message for a session.
+     * Called when message is sent successfully.
+     *
+     * @param sessionId Session ID
+     */
+    fun clearDraftMessage(sessionId: String) {
+        draftMessage.remove(sessionId)
+        LogManager.aiSession("Draft cleared for session $sessionId", "DEBUG")
     }
 
     /**
