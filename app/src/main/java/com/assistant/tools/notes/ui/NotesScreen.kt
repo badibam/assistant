@@ -261,12 +261,12 @@ fun NotesScreen(
                                 },
                                 onMoveUp = {
                                     coroutineScope.launch {
-                                        moveNoteUp(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        moveNoteUp(note, notes, coordinator, toolInstanceId) { refreshTrigger++ }
                                     }
                                 },
                                 onMoveDown = {
                                     coroutineScope.launch {
-                                        moveNoteDown(note, notes, coordinator, toolInstanceId) { notes = it }
+                                        moveNoteDown(note, notes, coordinator, toolInstanceId) { refreshTrigger++ }
                                     }
                                 },
                                 onAddAbove = {
