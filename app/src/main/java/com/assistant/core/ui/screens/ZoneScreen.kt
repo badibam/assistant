@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 fun ZoneScreen(
     zone: Zone,
     onBack: () -> Unit,
-    onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null
+    onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null,
+    onConfigureZone: ((zoneId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -58,9 +59,6 @@ fun ZoneScreen(
 
     // State for automation creation dialog
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
-
-    // State for zone configuration screen - persiste orientation changes
-    var showZoneConfig by rememberSaveable { mutableStateOf(false) }
 
     // Derived states from IDs (recomputed after orientation change)
     val editingTool = toolInstances.find { it.id == editingToolId }
@@ -270,7 +268,7 @@ fun ZoneScreen(
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
             onLeftClick = onBack,
-            onRightClick = { showZoneConfig = !showZoneConfig }
+            onRightClick = { onConfigureZone?.invoke(zone.id) }
         )
 
         // Tools section title

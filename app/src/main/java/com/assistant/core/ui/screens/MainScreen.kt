@@ -227,6 +227,9 @@ fun MainScreen() {
             },
             onNavigateToSeedEditor = { seedSessionId ->
                 selectedSeedSessionId = seedSessionId
+            },
+            onConfigureZone = { zoneId ->
+                configZoneId = zoneId
             }
         )
         return // Exit MainScreen composition when showing ZoneScreen
