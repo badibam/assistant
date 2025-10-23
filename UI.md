@@ -59,6 +59,8 @@ Row avec fillMaxWidth, padding vertical 4dp, espacement 8dp entre colonnes.
 ### Confirmation Automatique
 UI.ActionButton supporte requireConfirmation avec message personnalisable.
 
+**UI.ConfirmDialog** - Dialog modal de confirmation avec title, message, confirmText/cancelText optionnels, onConfirm et onDismiss.
+
 ## Champs de Texte et Saisie
 
 ### Extensions FieldType
@@ -93,6 +95,11 @@ Pattern LaunchedEffect pour afficher et reset automatiquement les messages d'err
 **UI.FormSelection** - Sélections avec label, options, selected, onSelect et required.
 
 **UI.FormActions** - Container standardisé pour boutons de formulaire avec ActionButton (SAVE, CANCEL, DELETE conditionnel).
+
+### Pattern State/Controller
+**RecordingController** - Logique métier expose `StateFlow<RecordingState>` observable. Actions via méthodes (start, pause, resume, validate).
+
+**RecordingDialog** - UI pure observe state et délègue actions. Cleanup via DisposableEffect.
 
 ## Cards et Conteneurs
 

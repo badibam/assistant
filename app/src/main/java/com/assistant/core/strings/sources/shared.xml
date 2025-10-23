@@ -36,6 +36,7 @@
     <string name="action_interrupt">Interrompre</string>
     <string name="action_stop">Arrêter</string>
     <string name="action_pause">Pause</string>
+    <string name="action_resume">Reprendre</string>
     <string name="action_start">Démarrer</string>
 
     <!-- AI Interface - Composer and Enrichments -->
@@ -598,6 +599,12 @@
     <string name="settings_ai_providers_description">Configurer les fournisseurs d\'intelligence artificielle</string>
     <string name="settings_ai_providers_config">Configuration du fournisseur</string>
 
+    <string name="settings_transcription">Transcription</string>
+    <string name="settings_transcription_description">Configurer la transcription audio</string>
+    <string name="settings_transcription_provider">Fournisseur de transcription</string>
+    <string name="settings_transcription_configure">Configurer le fournisseur</string>
+    <string name="settings_transcription_no_provider">Aucun fournisseur actif</string>
+
     <string name="settings_format">Format et dates</string>
     <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
 
@@ -913,6 +920,33 @@
     <string name="error_unknown_provider">Provider inconnu: %1$s</string>
     <string name="error_schema_not_found">Schéma de validation introuvable</string>
     <string name="error_invalid_json">JSON invalide: %1$s</string>
+
+    <!-- Vosk Provider Configuration -->
+    <string name="vosk_config_title">Configuration Vosk</string>
+    <string name="vosk_available_models">Modèles disponibles</string>
+    <string name="vosk_downloaded_models">Modèles téléchargés</string>
+    <string name="vosk_no_models_downloaded">Aucun modèle téléchargé</string>
+    <string name="vosk_select_default_model">Sélectionner le modèle par défaut</string>
+    <string name="vosk_default_model">Modèle par défaut</string>
+    <string name="vosk_no_default_model">Aucun modèle par défaut</string>
+    <string name="vosk_download_model">Télécharger</string>
+    <string name="vosk_delete_model">Supprimer</string>
+    <string name="vosk_downloading">Téléchargement en cours...</string>
+    <string name="vosk_download_progress">Téléchargement: %1$d%%</string>
+    <string name="vosk_download_success">Modèle téléchargé avec succès</string>
+    <string name="vosk_download_failed">Échec du téléchargement: %1$s</string>
+    <string name="vosk_delete_confirm_title">Supprimer le modèle ?</string>
+    <string name="vosk_delete_confirm_message">Cela supprimera définitivement le modèle %1$s (%2$s). Cette action est irréversible.</string>
+    <string name="vosk_delete_success">Modèle supprimé</string>
+    <string name="vosk_delete_failed">Échec de la suppression</string>
+    <string name="vosk_model_size">Taille: %1$s</string>
+    <string name="vosk_model_language">Langue: %1$s</string>
+    <string name="vosk_model_quality">Qualité: %1$s</string>
+    <string name="vosk_quality_small">Petite</string>
+    <string name="vosk_quality_medium">Moyenne</string>
+    <string name="vosk_quality_large">Grande</string>
+    <string name="vosk_select_model_first">Veuillez d\'abord télécharger et sélectionner un modèle par défaut</string>
+    <string name="vosk_help">Les modèles sont téléchargés depuis les serveurs officiels Vosk. Sélectionnez un modèle par défaut pour la transcription.</string>
 
 
 </resources>

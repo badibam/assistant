@@ -13,6 +13,9 @@ import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import org.vosk.Model
 import org.vosk.Recognizer
@@ -24,6 +27,16 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.ZipInputStream
+
+/**
+ * Download progress data
+ */
+data class DownloadProgress(
+    val modelId: String,
+    val progress: Int,  // 0-100
+    val attempt: Int,
+    val maxAttempts: Int
+)
 
 /**
  * Vosk offline speech recognition provider
@@ -53,6 +66,10 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
     // Cached model instance (heavy to load)
     private var cachedModel: Model? = null
     private var cachedModelId: String? = null
+
+    // Download progress state (observable)
+    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
+    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
 
     // ========================================================================================
     // TranscriptionProvider Implementation
@@ -113,12 +130,13 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
         onCancel: () -> Unit,
         onReset: (() -> Unit)?
     ) {
-        // TODO: Implement Vosk configuration UI
-        // Will show:
-        // - Downloaded models list
-        // - Default model selector
-        // - Model download interface
-        // - Model deletion
+        com.assistant.core.transcription.providers.vosk.ui.VoskConfigScreen(
+            provider = this,
+            config = config,
+            onSave = onSave,
+            onCancel = onCancel,
+            onReset = onReset
+        )
     }
 
     override suspend fun transcribe(
@@ -211,6 +229,7 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
             val modelDir = File(modelsDir, modelId)
             if (modelDir.exists()) {
                 LogManager.service("VoskProvider: Model already exists: $modelId", "WARN")
+                _downloadProgress.value = null  // Clear progress
                 return@withContext DownloadResult(success = true)
             }
 
@@ -218,9 +237,10 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
             val zipFile = File(modelsDir, "$modelId.zip")
 
             try {
-                downloadFile(downloadUrl, zipFile)
+                downloadFile(downloadUrl, zipFile, modelId)
 
-                // Extract ZIP
+                // Extract ZIP (emit 100% progress during extraction)
+                _downloadProgress.value = DownloadProgress(modelId, 100, 1, 1)
                 extractZip(zipFile, modelsDir)
 
                 // Delete ZIP file
@@ -231,17 +251,22 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
 
                 LogManager.service("VoskProvider: Model downloaded successfully: $modelId")
 
+                // Clear progress
+                _downloadProgress.value = null
+
                 DownloadResult(success = true)
 
             } catch (e: Exception) {
                 // Cleanup on failure
                 zipFile.delete()
                 modelDir.deleteRecursively()
+                _downloadProgress.value = null  // Clear progress
                 throw e
             }
 
         } catch (e: Exception) {
             LogManager.service("VoskProvider: Failed to download model: ${e.message}", "ERROR", e)
+            _downloadProgress.value = null  // Clear progress
             DownloadResult(
                 success = false,
                 errorMessage = e.message ?: "Download failed"
@@ -370,45 +395,87 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
     }
 
     /**
-     * Download file from URL with progress logging
+     * Download file from URL with progress logging and retry
      */
-    private fun downloadFile(urlString: String, outputFile: File) {
-        val url = URL(urlString)
-        val connection = url.openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
-        connection.connectTimeout = 30000
-        connection.readTimeout = 60000
+    private fun downloadFile(urlString: String, outputFile: File, modelId: String, maxRetries: Int = 3) {
+        var lastException: Exception? = null
 
-        try {
-            connection.connect()
+        // Try download with retries
+        repeat(maxRetries) { attempt ->
+            try {
+                val url = URL(urlString)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 120000  // 2 minutes for slow connections
+                connection.readTimeout = 120000     // 2 minutes for slow connections
+                connection.setRequestProperty("Accept-Encoding", "identity") // Disable compression for reliable download
 
-            val fileLength = connection.contentLength
-            LogManager.service("VoskProvider: Downloading ${fileLength / 1_000_000}MB...")
+                try {
+                    connection.connect()
 
-            connection.inputStream.use { input ->
-                FileOutputStream(outputFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var totalRead = 0L
-                    var read: Int
+                    val fileLength = connection.contentLength
+                    LogManager.service("VoskProvider: Downloading ${fileLength / 1_000_000}MB... (attempt ${attempt + 1}/$maxRetries)")
 
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                        totalRead += read
+                    connection.inputStream.use { input ->
+                        FileOutputStream(outputFile).use { output ->
+                            val buffer = ByteArray(16384)  // Larger buffer for better performance
+                            var totalRead = 0L
+                            var read: Int
+                            var lastEmittedProgress = 0
 
-                        // Log progress every 10MB
-                        if (totalRead % 10_000_000 == 0L) {
-                            val progress = (totalRead * 100 / fileLength).toInt()
-                            LogManager.service("VoskProvider: Download progress: $progress%")
+                            while (input.read(buffer).also { read = it } != -1) {
+                                output.write(buffer, 0, read)
+                                totalRead += read
+
+                                // Emit progress every 1%
+                                if (fileLength > 0) {
+                                    val progress = (totalRead * 100 / fileLength).toInt()
+                                    if (progress > lastEmittedProgress) {
+                                        _downloadProgress.value = DownloadProgress(
+                                            modelId = modelId,
+                                            progress = progress,
+                                            attempt = attempt + 1,
+                                            maxAttempts = maxRetries
+                                        )
+                                        lastEmittedProgress = progress
+
+                                        // Log every 5%
+                                        if (progress % 5 == 0) {
+                                            LogManager.service("VoskProvider: Download progress: $progress%")
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    LogManager.service("VoskProvider: Download complete")
+                    return // Success, exit function
+
+                } finally {
+                    connection.disconnect()
+                }
+
+            } catch (e: Exception) {
+                lastException = e
+                LogManager.service("VoskProvider: Download attempt ${attempt + 1} failed: ${e.message}", "WARN")
+
+                // Delete partial file
+                if (outputFile.exists()) {
+                    outputFile.delete()
+                }
+
+                // Wait before retry (exponential backoff)
+                if (attempt < maxRetries - 1) {
+                    val delay = (1000L * (attempt + 1))
+                    LogManager.service("VoskProvider: Retrying in ${delay}ms...")
+                    Thread.sleep(delay)
                 }
             }
-
-            LogManager.service("VoskProvider: Download complete")
-
-        } finally {
-            connection.disconnect()
         }
+
+        // All retries failed
+        throw lastException ?: Exception("Download failed after $maxRetries attempts")
     }
 
     /**

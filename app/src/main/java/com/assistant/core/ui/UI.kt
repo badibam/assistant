@@ -116,7 +116,29 @@ object UI {
         action: String? = null,
         onAction: (() -> Unit)? = null
     ) = CurrentTheme.current.Snackbar(type, message, action, onAction)
-    
+
+    /**
+     * Confirmation dialog
+     *
+     * Displays a modal dialog asking for user confirmation.
+     *
+     * @param title Dialog title
+     * @param message Dialog message
+     * @param confirmText Text for confirm button (default: "Confirmer")
+     * @param cancelText Text for cancel button (default: "Annuler")
+     * @param onConfirm Callback when user confirms
+     * @param onDismiss Callback when user cancels or dismisses
+     */
+    @Composable
+    fun ConfirmDialog(
+        title: String,
+        message: String,
+        confirmText: String? = null,
+        cancelText: String? = null,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit
+    ) = CurrentTheme.current.ConfirmDialog(title, message, confirmText, cancelText, onConfirm, onDismiss)
+
     // =====================================
     // SYSTEM
     // =====================================

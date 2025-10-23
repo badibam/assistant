@@ -60,6 +60,11 @@ fun SettingsDialog(
                 description = s.shared("settings_ai_providers_description")
             ),
             SettingsOption(
+                id = "transcription",
+                label = s.shared("settings_transcription"),
+                description = s.shared("settings_transcription_description")
+            ),
+            SettingsOption(
                 id = "format",
                 label = s.shared("settings_format"),
                 description = s.shared("settings_format_description")

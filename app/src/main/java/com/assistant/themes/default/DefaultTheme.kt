@@ -641,7 +641,61 @@ object DefaultTheme : ThemeContract {
             androidx.compose.material3.Text(message)
         }
     }
-    
+
+    @Composable
+    override fun ConfirmDialog(
+        title: String,
+        message: String,
+        confirmText: String?,
+        cancelText: String?,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit
+    ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                androidx.compose.material3.Text(
+                    text = title,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                androidx.compose.material3.Text(
+                    text = message,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = onConfirm,
+                    shape = ButtonTextShape
+                ) {
+                    androidx.compose.material3.Text(
+                        text = confirmText ?: s.shared("action_confirm"),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onDismiss,
+                    shape = ButtonTextShape
+                ) {
+                    androidx.compose.material3.Text(
+                        text = cancelText ?: s.shared("action_cancel"),
+                        style = androidx.compose.material3.MaterialTheme.typography.labelLarge
+                    )
+                }
+            },
+            containerColor = CurrentTheme.getCurrentColorScheme().surface,
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     // =====================================
     // SYSTEM
     // =====================================

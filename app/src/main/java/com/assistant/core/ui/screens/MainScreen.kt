@@ -48,6 +48,7 @@ fun MainScreen() {
     var selectedSeedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAIProviders by rememberSaveable { mutableStateOf(false) }
+    var showTranscription by rememberSaveable { mutableStateOf(false) }
     var showFormat by rememberSaveable { mutableStateOf(false) }
     var showAILimits by rememberSaveable { mutableStateOf(false) }
     var showValidation by rememberSaveable { mutableStateOf(false) }
@@ -136,6 +137,16 @@ fun MainScreen() {
             }
         )
         return // Exit MainScreen composition when showing AI Providers
+    }
+
+    // Show Transcription settings screen when requested
+    if (showTranscription) {
+        TranscriptionProvidersScreen(
+            onBack = {
+                showTranscription = false
+            }
+        )
+        return // Exit MainScreen composition when showing Transcription settings
     }
 
     // Show Format settings screen when requested
@@ -327,6 +338,7 @@ fun MainScreen() {
             onOptionSelected = { optionId ->
                 when (optionId) {
                     "ai_providers" -> showAIProviders = true
+                    "transcription" -> showTranscription = true
                     "format" -> showFormat = true
                     "ai_limits" -> showAILimits = true
                     "validation" -> showValidation = true

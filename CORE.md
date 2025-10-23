@@ -14,7 +14,7 @@ Guide technique de l'architecture système centrale.
 - app_config.get - Configuration application
 
 ### ServiceRegistry
-**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, icon_preload → IconPreloadService, backup → BackupService
+**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, icon_preload → IconPreloadService, backup → BackupService, ai_provider_config → AIProviderConfigService, transcription → TranscriptionService, transcription_provider_config → TranscriptionProviderConfigService
 
 **Services Tools** (découverte dynamique) : tracking → ToolTypeManager.getServiceForToolType()
 
@@ -245,6 +245,19 @@ LogManager.schema(), .coordination(), .tracking(), .database() etc. avec niveau 
 2. **"Tool instance ID is required"** : Vérifier tool_instance_id vs toolInstanceId
 3. **Mauvais routing** : CommandDispatcher logs automatiquement
 4. **LaunchedEffect ne se redéclenche pas** : Ajouter TOUTES les variables vérifiées aux dépendances
+
+## Système de Transcription
+
+Architecture provider-based pour transcription audio offline/online.
+
+### TranscriptionProvider Pattern
+Interface avec discovery via TranscriptionProviderRegistry. Providers implémentent `getConfigScreen()`, `downloadModel()`, `transcribe()`.
+
+### Auto-Retry Startup
+MainActivity.retryPendingTranscriptions() scan tool_data au démarrage pour relancer transcriptions pending via TranscriptionService multi-step.
+
+### Provider Config Service
+TranscriptionProviderConfigService gère configurations providers (get, set, set_active, list, delete) avec pattern identique à AIProviderConfigService.
 
 ---
 

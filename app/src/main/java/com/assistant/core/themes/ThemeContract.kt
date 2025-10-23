@@ -112,7 +112,17 @@ interface ThemeContract {
         action: String?,
         onAction: (() -> Unit)?
     )
-    
+
+    @Composable
+    fun ConfirmDialog(
+        title: String,
+        message: String,
+        confirmText: String?,
+        cancelText: String?,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit
+    )
+
     // =====================================
     // SYSTEM
     // =====================================
