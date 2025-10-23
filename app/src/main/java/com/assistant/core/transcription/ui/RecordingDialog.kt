@@ -54,6 +54,9 @@ fun RecordingDialog(
     var showCancelConfirmation by remember { mutableStateOf(false) }
     var showValidateConfirmation by remember { mutableStateOf(false) }
 
+    // Track if recording was validated (to avoid cleanup on validation)
+    var wasValidated by remember { mutableStateOf(false) }
+
     // Start recording on mount
     LaunchedEffect(Unit) {
         controller.start { success, error ->
@@ -65,10 +68,16 @@ fun RecordingDialog(
         }
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount (only if not validated)
     DisposableEffect(Unit) {
         onDispose {
-            controller.cleanup()
+            if (!wasValidated) {
+                // Recording was cancelled, cleanup and delete audio
+                controller.cleanup()
+            } else {
+                // Recording was validated, just stop timer without deleting audio
+                controller.stopTimerOnly()
+            }
         }
     }
 
@@ -260,6 +269,7 @@ fun RecordingDialog(
             message = s.shared("transcription_confirm_validate_message"),
             onConfirm = {
                 showValidateConfirmation = false
+                wasValidated = true  // Mark as validated before closing
                 controller.validate { segments ->
                     onComplete(segments)
                 }

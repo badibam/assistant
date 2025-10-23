@@ -197,6 +197,15 @@ class RecordingController(
         cancel()
     }
 
+    /**
+     * Stop timer updates only (without cancelling/deleting audio)
+     * Used when recording was validated and we just need to cleanup UI resources
+     */
+    fun stopTimerOnly() {
+        stopTimerUpdates()
+        LogManager.service("RecordingController: Timer stopped (recording was validated)")
+    }
+
     // ========================================================================================
     // Private Helper Methods
     // ========================================================================================
