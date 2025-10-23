@@ -16,7 +16,7 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.transcription.ui.TranscribableTextField
 import com.assistant.core.transcription.ui.TranscriptionStatus
-import com.assistant.core.transcription.models.TimeSegment
+import com.assistant.core.transcription.models.TranscriptionContext
 import com.assistant.tools.journal.utils.DateFormatUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -287,17 +287,20 @@ fun JournalEntryScreen(
                         label = s.tool("label_content"),
                         value = content,
                         onChange = { content = it },
-                        onRecordComplete = { segments: List<TimeSegment> ->
-                            // Audio recorded, transcription will happen asynchronously
-                            // The text will be updated via transcription system
-                            LogManager.ui("Audio recorded: ${segments.size} segments")
-                            // TODO: Trigger transcription and update content when completed
-                        },
                         audioFilePath = audioFilePath,
                         transcriptionStatus = transcriptionStatus,
                         modelName = activeTranscriptionModel,
                         enabled = true,
-                        required = true
+                        required = true,
+                        // Auto-transcription configuration
+                        autoTranscribe = true,
+                        transcriptionContext = TranscriptionContext(
+                            entryId = entryId,
+                            toolInstanceId = toolInstanceId,
+                            tooltype = "journal",
+                            fieldName = "content"
+                        ),
+                        onTranscriptionStatusChange = { transcriptionStatus = it }
                     )
                 }
             }

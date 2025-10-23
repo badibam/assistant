@@ -86,6 +86,22 @@ enum class TranscriptionStatus {
 }
 
 /**
+ * Context information for triggering a transcription
+ * Used by TranscribableTextField to auto-start transcription after recording
+ *
+ * @param entryId Tool data entry ID
+ * @param toolInstanceId Tool instance ID
+ * @param tooltype Tool type name (e.g., "journal", "tracking")
+ * @param fieldName Field name in entry data (e.g., "content", "description")
+ */
+data class TranscriptionContext(
+    val entryId: String,
+    val toolInstanceId: String,
+    val tooltype: String,
+    val fieldName: String
+)
+
+/**
  * Transcription metadata for a single field
  * Stored in tool data entry's transcription_metadata map
  *

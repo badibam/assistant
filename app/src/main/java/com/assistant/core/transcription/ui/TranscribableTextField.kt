@@ -8,9 +8,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.transcription.models.TimeSegment
+import com.assistant.core.transcription.models.TranscriptionContext
 import com.assistant.core.ui.*
+import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -25,31 +34,40 @@ import java.io.File
  * - Play audio button (if audio exists)
  * - Transcription status display
  * - Re-recording with confirmation
+ * - Automatic transcription triggering (if autoTranscribe && transcriptionContext provided)
  *
  * @param label Field label
  * @param value Current text value (nullable)
  * @param onChange Callback when text changes (manual edit)
- * @param onRecordComplete Callback when recording validated (receives TimeSegments)
  * @param audioFilePath Path to audio file (if exists)
  * @param transcriptionStatus Current transcription status
  * @param modelName Model name to display during recording
  * @param enabled Whether field is editable
  * @param required Whether field is required
+ * @param autoTranscribe If true, automatically trigger transcription after recording (default: true)
+ * @param transcriptionContext Context info for auto-transcription (required if autoTranscribe=true)
+ * @param onTranscriptionStatusChange Callback when transcription status changes
+ * @param onRecordComplete Optional callback when recording validated (receives TimeSegments) - for custom logic
  */
 @Composable
 fun TranscribableTextField(
     label: String,
     value: String?,
     onChange: (String) -> Unit,
-    onRecordComplete: (List<TimeSegment>) -> Unit,
     audioFilePath: String,
     transcriptionStatus: TranscriptionStatus? = null,
     modelName: String,
     enabled: Boolean = true,
-    required: Boolean = false
+    required: Boolean = false,
+    autoTranscribe: Boolean = true,
+    transcriptionContext: TranscriptionContext? = null,
+    onTranscriptionStatusChange: ((TranscriptionStatus?) -> Unit)? = null,
+    onRecordComplete: ((List<TimeSegment>) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val coordinator = remember { Coordinator(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Recording dialog state
     var showRecordingDialog by remember { mutableStateOf(false) }
@@ -86,6 +104,58 @@ fun TranscribableTextField(
         } else {
             // Request permission
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    // Helper function to trigger transcription automatically
+    fun triggerTranscription(segments: List<TimeSegment>) {
+        if (!autoTranscribe || transcriptionContext == null) {
+            LogManager.ui("Auto-transcription disabled or context missing")
+            return
+        }
+
+        LogManager.ui("Auto-triggering transcription: ${segments.size} segments")
+        onTranscriptionStatusChange?.invoke(TranscriptionStatus.PENDING)
+
+        coroutineScope.launch {
+            try {
+                // Convert segments to JSONArray
+                val segmentsJson = JSONArray()
+                segments.forEach { segment ->
+                    val segmentObj = JSONObject()
+                    segmentObj.put("start", segment.start.toDouble())
+                    segmentObj.put("end", segment.end.toDouble())
+                    segmentsJson.put(segmentObj)
+                }
+
+                // Extract filename from path
+                val audioFileName = File(audioFilePath).name
+
+                val params = mapOf(
+                    "entryId" to transcriptionContext.entryId,
+                    "toolInstanceId" to transcriptionContext.toolInstanceId,
+                    "tooltype" to transcriptionContext.tooltype,
+                    "fieldName" to transcriptionContext.fieldName,
+                    "audioFile" to audioFileName,
+                    "segmentsTimestamps" to segmentsJson
+                )
+
+                LogManager.ui("Starting transcription with params: $params")
+                val result = coordinator.processUserAction("transcription.start", params)
+
+                if (result?.isSuccess == true) {
+                    LogManager.ui("Transcription started successfully")
+                    // Status will be updated when transcription completes
+                } else {
+                    LogManager.ui("Transcription failed: ${result?.error}", "ERROR")
+                    onTranscriptionStatusChange?.invoke(TranscriptionStatus.FAILED)
+                    UI.Toast(context, s.shared("error_transcription_start"), Duration.LONG)
+                }
+            } catch (e: Exception) {
+                LogManager.ui("Error starting transcription: ${e.message}", "ERROR")
+                onTranscriptionStatusChange?.invoke(TranscriptionStatus.FAILED)
+                UI.Toast(context, s.shared("error_transcription_start"), Duration.LONG)
+            }
         }
     }
 
@@ -232,7 +302,12 @@ fun TranscribableTextField(
             modelName = modelName,
             onComplete = { segments ->
                 showRecordingDialog = false
-                onRecordComplete(segments)
+
+                // Trigger auto-transcription if enabled
+                triggerTranscription(segments)
+
+                // Also call custom callback if provided
+                onRecordComplete?.invoke(segments)
             },
             onDismiss = {
                 showRecordingDialog = false

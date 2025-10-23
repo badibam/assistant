@@ -907,6 +907,7 @@
     <string name="transcription_no_config">Configuration de transcription manquante</string>
 
     <!-- Transcription Errors -->
+    <string name="error_transcription_start">Impossible de démarrer la transcription</string>
     <string name="error_transcription_no_segments">Aucun segment audio à transcrire</string>
     <string name="error_transcription_audio_not_found">Fichier audio introuvable: %1$s</string>
     <string name="error_transcription_no_provider">Aucun provider de transcription actif</string>
