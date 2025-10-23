@@ -2,6 +2,7 @@ package com.assistant.core.transcription.providers
 
 import android.content.Context
 import com.assistant.core.database.AppDatabase
+import com.assistant.core.transcription.providers.vosk.VoskProvider
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +19,7 @@ import kotlinx.coroutines.withContext
 class TranscriptionProviderRegistry(private val context: Context) {
 
     private val providers: List<TranscriptionProvider> = listOf(
-        // VoskProvider will be added here when implemented
+        VoskProvider(context)
         // Future: WhisperLocalProvider, WhisperCloudProvider, etc.
     )
 

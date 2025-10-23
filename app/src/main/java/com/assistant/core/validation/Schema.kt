@@ -48,6 +48,9 @@ enum class SchemaCategory {
     /** AI provider configuration schemas */
     AI_PROVIDER,
 
+    /** Transcription provider configuration schemas */
+    TRANSCRIPTION_PROVIDER,
+
     /** Application configuration schemas */
     APP_CONFIG,
 
