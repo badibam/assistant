@@ -1,5 +1,7 @@
 package com.assistant.core.transcription.ui
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,6 +58,23 @@ fun RecordingDialog(
 
     // Track if recording was validated (to avoid cleanup on validation)
     var wasValidated by remember { mutableStateOf(false) }
+
+    // Lock screen orientation during recording to prevent rotation
+    // (rotation would destroy the dialog and lose the active recording)
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val originalOrientation = activity?.requestedOrientation
+
+        // Lock to current orientation
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+
+        onDispose {
+            // Restore original orientation when dialog closes
+            originalOrientation?.let {
+                activity.requestedOrientation = it
+            }
+        }
+    }
 
     // Start recording on mount
     LaunchedEffect(Unit) {

@@ -33,6 +33,7 @@
     <string name="journal_date_on_at">Le %1$s à %2$s</string>
     <string name="journal_delete_confirm_template">Supprimer l\'entrée \"%1$s\" ?</string>
     <string name="journal_delete_confirm_untitled">Supprimer cette entrée sans titre ?</string>
+    <string name="journal_confirm_delete_entry">Confirmer la suppression de cette entrée ?</string>
     <string name="journal_error_config_load">Erreur lors du chargement de la configuration</string>
     <string name="journal_error_entry_load">Erreur lors du chargement de l\'entrée</string>
     <string name="journal_error_entry_create">Erreur lors de la création de l\'entrée</string>

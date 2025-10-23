@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -50,21 +52,21 @@ fun JournalEntryScreen(
     val s = remember { Strings.`for`(tool = "journal", context = context) }
     val coroutineScope = rememberCoroutineScope()
 
-    // UI states
+    // UI states (temporary, don't survive rotation)
     var isLoading by remember { mutableStateOf(!isCreating) } // Don't load if creating
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
-    var isEditing by remember { mutableStateOf(isCreating) } // Start in edit mode if creating
 
-    // Entry data states
-    var title by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
-    var timestamp by remember { mutableStateOf(System.currentTimeMillis()) }
+    // Entry data states (survive rotation)
+    var isEditing by rememberSaveable { mutableStateOf(isCreating) } // Start in edit mode if creating
+    var title by rememberSaveable { mutableStateOf("") }
+    var content by rememberSaveable { mutableStateOf("") }
+    var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
 
-    // Transcription states
-    var audioFilePath by remember { mutableStateOf("") }
-    var transcriptionStatus by remember { mutableStateOf<TranscriptionStatus?>(null) }
-    var activeTranscriptionModel by remember { mutableStateOf("") }
+    // Transcription states (survive rotation where possible)
+    var audioFilePath by remember { mutableStateOf("") } // Recalculated on recomposition
+    var transcriptionStatus by remember { mutableStateOf<TranscriptionStatus?>(null) } // Complex type, reload on recomposition
+    var activeTranscriptionModel by rememberSaveable { mutableStateOf("") }
 
     // Date/time picker states
     var showDatePicker by remember { mutableStateOf(false) }
@@ -255,11 +257,10 @@ fun JournalEntryScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
+        // Header (no right button - EDIT moved to bottom actions)
         UI.PageHeader(
             title = if (isEditing) s.shared("action_edit") else title.ifBlank { s.tool("placeholder_untitled") },
             leftButton = ButtonAction.BACK,
-            rightButton = if (!isEditing) ButtonAction.EDIT else null,
             onLeftClick = {
                 if (isEditing && !isCreating) {
                     // In edit mode (not creating), Back = Cancel
@@ -268,10 +269,7 @@ fun JournalEntryScreen(
                     // In consultation mode or creating, Back = navigate back
                     onNavigateBack()
                 }
-            },
-            onRightClick = if (!isEditing) {
-                { isEditing = true }
-            } else null
+            }
         )
 
         if (isEditing) {
@@ -395,6 +393,40 @@ fun JournalEntryScreen(
                         type = TextType.BODY
                     )
                 }
+            }
+
+            // Action buttons in consultation mode (aligned right)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UI.ActionButton(
+                    action = ButtonAction.EDIT,
+                    display = ButtonDisplay.LABEL,
+                    onClick = { isEditing = true }
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                UI.ActionButton(
+                    action = ButtonAction.DELETE,
+                    display = ButtonDisplay.LABEL,
+                    requireConfirmation = true,
+                    confirmMessage = s.tool("confirm_delete_entry"),
+                    onClick = {
+                        coroutineScope.launch {
+                            val params = mapOf("id" to entryId)
+                            val result = coordinator.processUserAction("tool_data.delete", params)
+                            if (result?.isSuccess == true) {
+                                LogManager.ui("Successfully deleted journal entry: $entryId")
+                                onNavigateBack()
+                            } else {
+                                errorMessage = s.tool("error_entry_delete")
+                            }
+                        }
+                    }
+                )
             }
         }
     }

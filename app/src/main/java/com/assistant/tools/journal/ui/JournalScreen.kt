@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -50,16 +51,16 @@ fun JournalScreen(
     val s = remember { Strings.`for`(tool = "journal", context = context) }
     val coroutineScope = rememberCoroutineScope()
 
-    // State
+    // State (temporary, reloaded on recomposition)
     var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
     var entries by remember { mutableStateOf<List<JournalEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    // Navigation state for entry screen
-    var navigateToEntryId by remember { mutableStateOf<String?>(null) }
-    var navigateIsCreating by remember { mutableStateOf(false) }
+    // Navigation state for entry screen (survives rotation)
+    var navigateToEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var navigateIsCreating by rememberSaveable { mutableStateOf(false) }
 
     // Load tool instance data
     LaunchedEffect(toolInstanceId) {

@@ -112,12 +112,46 @@ UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne 16dp.
 
 ## Changements d'Orientation
 
-### Conservation d'État
-- **rememberSaveable** : Pour navigation, sélections, formulaires (survit rotation)
-- **remember** : Pour loading, données auto-rechargées
+### Règle de base : rememberSaveable pour tout état "métier"
+Tout état qui représente une donnée utilisateur, une navigation ou une sélection DOIT utiliser `rememberSaveable` pour survivre aux rotations d'écran.
+
+### Pattern de conservation d'état
+
+**rememberSaveable (survit rotation)** :
+- États de navigation : `navigateToEntryId`, `selectedScreen`, `currentTab`
+- Données de formulaire : `title`, `content`, `timestamp`, `selectedDate`
+- Sélections utilisateur : `selectedPeriod`, `isEditing`, `filterType`
+- Configuration temporaire : `showAdvancedOptions`, `expandedSectionId`
+
+**remember (réinitialisé à la rotation)** :
+- États de chargement : `isLoading`, `isSaving`, `isProcessing`
+- Messages temporaires : `errorMessage`, `successMessage`
+- Données rechargées : `entries`, `toolInstance`, `stats`
+- États UI volatils : `showDialog`, `showDatePicker`
+
+### Exemples concrets
+
+```kotlin
+// États formulaire (survie rotation)
+var title by rememberSaveable { mutableStateOf("") }
+var content by rememberSaveable { mutableStateOf("") }
+var isEditing by rememberSaveable { mutableStateOf(false) }
+var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+
+// États navigation (survie rotation)
+var navigateToDetailId by rememberSaveable { mutableStateOf<String?>(null) }
+var navigateIsCreating by rememberSaveable { mutableStateOf(false) }
+var selectedTab by rememberSaveable { mutableStateOf(0) }
+
+// États temporaires (réinitialisation rotation)
+var isLoading by remember { mutableStateOf(true) }
+var errorMessage by remember { mutableStateOf<String?>(null) }
+var entries by remember { mutableStateOf<List<Entry>>(emptyList()) }
+var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
+```
 
 ### Pattern ID pour objets complexes
-Sauvegarder l'ID plutôt que l'objet complet, puis retrouver l'objet via find().
+Types complexes non-sérialisables → sauvegarder l'ID avec `rememberSaveable`, retrouver l'objet via find() dans `LaunchedEffect`.
 
 ## Tableaux et Listes
 
@@ -200,7 +234,8 @@ data class RelativePeriod(val offset: Int, val type: PeriodType)  // Période re
 - **Box wrappers** pour layout et interactions UI.Text
 - **Validation centralisée** via SchemaValidator
 - **isLoading pattern** pour tous états async
-- **rememberSaveable** pour navigation (rotation safe)
+- **rememberSaveable** pour états métier et navigation (rotation safe)
+- **remember** pour états temporaires rechargés (isLoading, données)
 
 ### À Éviter
 - Mélanger ActionButton et UI.Button dans même écran
