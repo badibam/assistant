@@ -21,8 +21,9 @@ import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.transcription.database.TranscriptionDao
 import com.assistant.core.transcription.database.TranscriptionProviderConfigEntity
-import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.LogManager
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -68,16 +69,47 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * Room database migrations
+         *
+         * Architecture:
+         * - Migrations are explicit and manual (no discovery pattern)
+         * - Each migration handles SQL schema changes only
+         * - JSON data transformations handled by JsonTransformers (not Room)
+         * - Migrations accumulate historically (never deleted)
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Empty migration - tool_data table already exists in v2
+                // Unified architecture already in place
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add active field to zones table with default value true
+                database.execSQL("ALTER TABLE zones ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
+
+                // Add enabled field to tool_instances table with default value true
+                database.execSQL("ALTER TABLE tool_instances ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        // Future migrations will be added here:
+        // private val MIGRATION_10_11 = object : Migration(10, 11) { ... }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val migrationOrchestrator = MigrationOrchestrator(context)
-                
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "assistant_database"
                 )
-                .addMigrations(*migrationOrchestrator.getAllMigrations())
+                .addMigrations(
+                    MIGRATION_2_3,
+                    MIGRATION_3_4
+                    // Add future migrations here
+                )
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                         super.onOpen(db)
@@ -86,7 +118,7 @@ abstract class AppDatabase : RoomDatabase() {
                     }
                 })
                 .build()
-                
+
                 INSTANCE = instance
                 instance
             }

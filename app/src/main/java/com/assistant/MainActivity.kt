@@ -14,7 +14,6 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.update.UpdateManager
-import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.scheduling.SchedulerWorker
@@ -31,7 +30,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var coordinator: Coordinator
     private lateinit var updateManager: UpdateManager
-    private lateinit var migrationOrchestrator: MigrationOrchestrator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,9 +65,6 @@ class MainActivity : ComponentActivity() {
 
         // Initialize update manager
         updateManager = UpdateManager(this)
-
-        // Initialize migration orchestrator
-        migrationOrchestrator = MigrationOrchestrator(this)
 
         // Check for updates at startup
         updateManager.scheduleUpdateCheck { updateInfo ->

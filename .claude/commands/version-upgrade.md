@@ -6,16 +6,29 @@ allowed-tools: Bash, Edit, Write, Read
 
 On passe à la version $1
 
-- build release pour tester sur device réel. Si ok on continue :
-- modif versionName + versionCode dans build.gradle.kts
-- modif CURRENT_APP_VERSION dans AppVersionManager
-- commite (sans mentionner claude)
-- tag
-- push develop + tag
-- écrire notes de version qui tiennent compte de tous les changements depuis version précédente, dans un fichier, pour correction par moi
-- release (gh) avec notes de version (fichier corrigé) et apk
-- suppression fichier notes de version
-- merge dans main pour refléter cette nouvelle version.
-- push main
+**Séquence complète :**
 
-Pas d'emoji et sois précis mais simple pour les notes de version - et sans mentionner claude.
+1. **Build release** : Tester sur device réel avec `./gradlew assembleRelease`
+2. Si OK, **modifier les versions** dans `app/build.gradle.kts` :
+   - Incrémenter `versionCode`
+   - Mettre à jour `versionName` (actuel → "$1")
+3. **Commiter** (sans mentionner claude) : "Version $1"
+4. **Tag** : `git tag v$1`
+5. **Push develop + tag** : `git push origin develop --tags`
+6. **Écrire notes de version** :
+   - Analyser tous les commits depuis version précédente
+   - Créer fichier temporaire `release-notes-$1.txt`
+   - Style : précis, simple, sans emoji, sans mentionner claude
+   - Présenter pour correction avant release
+7. **Release GitHub** :
+   - Utiliser `gh release create v$1`
+   - Ajouter notes de version (fichier corrigé)
+   - Attacher APK : `app/build/outputs/apk/release/assistant-v$1.apk`
+8. **Cleanup** : Supprimer fichier notes de version temporaire
+9. **Merge main** :
+   - `git checkout main`
+   - `git merge develop`
+   - `git push origin main`
+10. **Retour develop** : `git checkout develop`
+
+**Note** : Cette commande gère uniquement la release de l'app. Pour les changements de DB, utiliser `/db-upgrade` avant.

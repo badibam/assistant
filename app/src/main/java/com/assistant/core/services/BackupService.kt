@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.SessionType
+import com.assistant.core.versioning.JsonTransformers
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -285,23 +286,22 @@ class BackupService(private val context: Context) : ExecutableService {
             val metadata = backupJson.optJSONObject("metadata")
                 ?: return OperationResult.error(s.shared("backup_invalid_file"))
 
-            // Try new field name first, fallback to old for compatibility
-            val backupDbVersion = metadata.optInt("db_schema_version",
-                metadata.optInt("db_version", -1))
-            if (backupDbVersion == -1) {
+            // Get export version for JSON transformations
+            val exportVersion = metadata.optInt("export_version", -1)
+            if (exportVersion == -1) {
                 return OperationResult.error(s.shared("backup_invalid_file"))
             }
 
-            // Check version compatibility
-            val currentDbVersion = AppDatabase.VERSION
-            if (backupDbVersion > currentDbVersion) {
+            // Check version compatibility (export_version is the app version)
+            val currentVersion = com.assistant.BuildConfig.VERSION_CODE
+            if (exportVersion > currentVersion) {
                 return OperationResult.error(s.shared("backup_version_too_recent"))
             }
 
-            // Apply transformations if needed
-            val transformedData = if (backupDbVersion < currentDbVersion) {
-                LogManager.service("Applying transformations from version $backupDbVersion to $currentDbVersion")
-                transformBackupData(backupJson, backupDbVersion, currentDbVersion)
+            // Apply JSON transformations if needed
+            val transformedData = if (exportVersion < currentVersion) {
+                LogManager.service("Applying JSON transformations from version $exportVersion to $currentVersion")
+                transformBackupData(backupJson, exportVersion, currentVersion)
             } else {
                 backupJson
             }
@@ -599,28 +599,86 @@ class BackupService(private val context: Context) : ExecutableService {
 
     /**
      * Transform backup data from old version to current version
-     * Applies sequential migrations for each version increment
+     * Applies sequential JSON transformations to all config and data fields
+     *
+     * This function calls JsonTransformers for:
+     * - Tool instance config_json (per tooltype)
+     * - Tool data entries (per tooltype)
+     * - App settings (per category)
      */
     private fun transformBackupData(
         jsonData: JSONObject,
         fromVersion: Int,
         toVersion: Int
     ): JSONObject {
-        var transformed = jsonData
+        try {
+            val data = jsonData.getJSONObject("data")
 
-        for (version in fromVersion until toVersion) {
-            transformed = when (version) {
-                // Future migrations will be added here
-                // Example:
-                // 1 -> migrateFrom1To2(transformed)
-                // 2 -> migrateFrom2To3(transformed)
-                else -> transformed // No migration needed yet
+            // Transform tool instance configurations
+            data.optJSONArray("tool_instances")?.let { array ->
+                for (i in 0 until array.length()) {
+                    val instance = array.getJSONObject(i)
+                    val tooltype = instance.getString("tool_type")
+                    val configJson = instance.getString("config_json")
+
+                    // Apply JSON transformations to config
+                    val transformedConfig = JsonTransformers.transformToolConfig(
+                        configJson,
+                        tooltype,
+                        fromVersion,
+                        toVersion
+                    )
+                    instance.put("config_json", transformedConfig)
+                }
             }
-        }
 
-        // Update metadata version to current
-        transformed.getJSONObject("metadata").put("db_version", toVersion)
-        return transformed
+            // Transform tool data entries
+            data.optJSONArray("tool_data")?.let { array ->
+                for (i in 0 until array.length()) {
+                    val entry = array.getJSONObject(i)
+                    val tooltype = entry.getString("tooltype")
+                    val dataJson = entry.getString("data")
+
+                    // Apply JSON transformations to data
+                    val transformedData = JsonTransformers.transformToolData(
+                        dataJson,
+                        tooltype,
+                        fromVersion,
+                        toVersion
+                    )
+                    entry.put("data", transformedData)
+                }
+            }
+
+            // Transform app settings
+            data.optJSONArray("app_settings_categories")?.let { array ->
+                for (i in 0 until array.length()) {
+                    val category = array.getJSONObject(i)
+                    val settingsJson = category.getString("settings")
+
+                    // Apply JSON transformations to app config
+                    val transformedSettings = JsonTransformers.transformAppConfig(
+                        settingsJson,
+                        fromVersion,
+                        toVersion
+                    )
+                    category.put("settings", transformedSettings)
+                }
+            }
+
+            // Update metadata to reflect transformed version
+            jsonData.getJSONObject("metadata").apply {
+                put("export_version", toVersion)
+                put("db_schema_version", AppDatabase.VERSION)
+            }
+
+            return jsonData
+
+        } catch (e: Exception) {
+            LogManager.service("Backup transformation failed: ${e.message}", "ERROR", e)
+            // Return original data on error (fail-safe)
+            return jsonData
+        }
     }
 
     /**

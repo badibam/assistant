@@ -85,20 +85,6 @@ Service avec tempData ConcurrentHashMap, operationId et phase dans params, Opera
 - **Re-queue automatique** : Si slot occupé → fin de queue
 - **Données temporaires** : Gérées par le service
 
-## Migrations Automatiques
-
-### Types de Migrations
-- **Database** : Schéma Room découvert automatiquement par outil
-- **Configuration** : Format JSON des outils
-- **Application** : Données globales
-
-### Pattern ToolType
-ToolType.getDatabaseMigrations() retourne List<Migration> avec objets Migration(fromVersion, toVersion) et execSQL().
-
-### Gestion Versions
-AppVersionManager.CURRENT_APP_VERSION et build.gradle versionCode/versionName.
-**Migration** : Si CURRENT_APP_VERSION > version stockée → exécution migrations
-
 ## Règles de Développement
 
 ### Service Implementation
