@@ -15,6 +15,8 @@ import com.assistant.core.transcription.models.TimeSegment
 import com.assistant.core.transcription.models.TranscriptionContext
 import com.assistant.core.ui.*
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DataChangeEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -104,6 +106,143 @@ fun TranscribableTextField(
         } else {
             // Request permission
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    // Listen for data changes (transcription completion) and auto-reload field
+    LaunchedEffect(transcriptionContext?.toolInstanceId, transcriptionContext?.entryId, transcriptionContext?.fieldName) {
+        // Only listen if auto-transcribe is enabled and context is provided
+        if (!autoTranscribe || transcriptionContext == null) {
+            return@LaunchedEffect
+        }
+
+        LogManager.ui("TranscribableTextField: Listening for data changes on field ${transcriptionContext.fieldName}")
+
+        DataChangeNotifier.changes.collect { event ->
+            // Reload if this entry's tool instance was modified
+            if (event is DataChangeEvent.ToolDataChanged &&
+                event.toolInstanceId == transcriptionContext.toolInstanceId) {
+
+                LogManager.ui("Data changed for tool instance, reloading field: ${transcriptionContext.fieldName}")
+
+                // Reload entry data
+                val params = mapOf("entry_id" to transcriptionContext.entryId)
+                val result = coordinator.processUserAction("tool_data.get_single", params)
+
+                if (result?.isSuccess == true) {
+                    val entryData = result.data?.get("entry") as? Map<*, *>
+                    if (entryData == null) {
+                        LogManager.ui("TranscribableTextField: entryData is null", "ERROR")
+                        return@collect
+                    }
+
+                    // Parse data field
+                    val dataValue = entryData["data"]
+                    val parsedData = try {
+                        when (dataValue) {
+                            is Map<*, *> -> dataValue as Map<String, Any>
+                            is String -> {
+                                val dataJson = JSONObject(dataValue)
+                                mutableMapOf<String, Any>().apply {
+                                    dataJson.keys().forEach { key -> put(key, dataJson.get(key)) }
+                                }
+                            }
+                            else -> emptyMap()
+                        }
+                    } catch (e: Exception) {
+                        LogManager.ui("Error parsing entry data during reload: ${e.message}", "ERROR")
+                        emptyMap<String, Any>()
+                    }
+
+                    // Check transcription status in metadata
+                    val transcriptionMetadata = parsedData["transcription_metadata"]
+
+                    val metadataMap = try {
+                        when (transcriptionMetadata) {
+                            is Map<*, *> -> {
+                                transcriptionMetadata as Map<String, Any>
+                            }
+                            is String -> {
+                                val metaJson = JSONObject(transcriptionMetadata)
+                                mutableMapOf<String, Any>().apply {
+                                    metaJson.keys().forEach { key ->
+                                        val value = metaJson.get(key)
+                                        // Convert nested JSONObject to Map recursively
+                                        put(key, if (value is JSONObject) {
+                                            mutableMapOf<String, Any>().apply {
+                                                value.keys().forEach { innerKey ->
+                                                    put(innerKey, value.get(innerKey))
+                                                }
+                                            }
+                                        } else {
+                                            value
+                                        })
+                                    }
+                                }
+                            }
+                            is JSONObject -> {
+                                val jsonObj = transcriptionMetadata as JSONObject
+                                mutableMapOf<String, Any>().apply {
+                                    jsonObj.keys().forEach { key ->
+                                        val value = jsonObj.get(key)
+                                        // Convert nested JSONObject to Map recursively
+                                        put(key, if (value is JSONObject) {
+                                            mutableMapOf<String, Any>().apply {
+                                                value.keys().forEach { innerKey ->
+                                                    put(innerKey, value.get(innerKey))
+                                                }
+                                            }
+                                        } else {
+                                            value
+                                        })
+                                    }
+                                }
+                            }
+                            else -> emptyMap()
+                        }
+                    } catch (e: Exception) {
+                        LogManager.ui("Error parsing transcription metadata: ${e.message}", "ERROR")
+                        emptyMap<String, Any>()
+                    }
+
+                    // Get field-specific transcription metadata
+                    val fieldMetadata = metadataMap[transcriptionContext.fieldName]
+
+                    val fieldMetadataMap = try {
+                        when (fieldMetadata) {
+                            is Map<*, *> -> fieldMetadata as Map<String, Any>
+                            is String -> {
+                                val fieldJson = JSONObject(fieldMetadata)
+                                mutableMapOf<String, Any>().apply {
+                                    fieldJson.keys().forEach { key -> put(key, fieldJson.get(key)) }
+                                }
+                            }
+                            else -> emptyMap()
+                        }
+                    } catch (e: Exception) {
+                        LogManager.ui("Error parsing field metadata: ${e.message}", "ERROR")
+                        emptyMap<String, Any>()
+                    }
+
+                    val transcriptionStatus = fieldMetadataMap["status"] as? String
+
+                    if (transcriptionStatus == "completed") {
+                        // Transcription succeeded
+                        val newContent = parsedData[transcriptionContext.fieldName] as? String ?: ""
+                        onChange(newContent)
+                        onTranscriptionStatusChange?.invoke(TranscriptionStatus.COMPLETED)
+                        LogManager.ui("Field ${transcriptionContext.fieldName} transcription completed: ${newContent.length} chars")
+                    } else if (transcriptionStatus == "failed") {
+                        // Transcription failed
+                        onTranscriptionStatusChange?.invoke(TranscriptionStatus.FAILED)
+                        val error = fieldMetadataMap["error"] as? String ?: s.shared("transcription_no_content")
+                        LogManager.ui("Transcription failed for field ${transcriptionContext.fieldName}: $error", "WARN")
+                        UI.Toast(context, error, Duration.LONG)
+                    }
+                } else {
+                    LogManager.ui("Failed to reload entry data after transcription: ${result?.error}", "ERROR")
+                }
+            }
         }
     }
 

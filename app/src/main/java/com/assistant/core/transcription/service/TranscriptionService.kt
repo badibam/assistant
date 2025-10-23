@@ -244,6 +244,18 @@ class TranscriptionService(private val context: Context) : ExecutableService {
 
             LogManager.service("Phase 2: Transcription successful, fullText length=${result.fullText.length}")
 
+            // Check if transcription produced any content
+            if (result.fullText.trim().isEmpty()) {
+                LogManager.service("Phase 2: Transcription produced empty text (0 chars), marking as failed", "WARN")
+                // Store error for phase 3
+                tempData[operationId] = mapOf(
+                    "success" to false,
+                    "error" to s.shared("transcription_no_content"),
+                    "originalContext" to context
+                )
+                return OperationResult.success(requiresContinuation = true)
+            }
+
             // Store results for phase 3
             tempData[operationId] = mapOf(
                 "success" to true,
@@ -499,7 +511,13 @@ class TranscriptionService(private val context: Context) : ExecutableService {
                         "tooltype" to pending.tooltype,
                         "fieldName" to pending.fieldName,
                         "audioFile" to pending.audioFile,
-                        "model" to pending.model
+                        "model" to pending.model,
+                        "segmentsTimestamps" to pending.segmentsTimestamps.map { segment ->
+                            mapOf(
+                                "start" to segment.start.toDouble(),
+                                "end" to segment.end.toDouble()
+                            )
+                        }
                     )
                 },
                 "count" to pendingList.size

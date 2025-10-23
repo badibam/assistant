@@ -109,7 +109,7 @@ object JournalToolType : ToolTypeContract {
      * Creates journal data schema
      * - name: Entry title (required via BaseSchemas)
      * - timestamp: Entry date/time (modifiable, required)
-     * - data.content: Text content without length limit (required but accepts "...")
+     * - data.content: Text content without length limit (optional - can be filled via transcription)
      */
     private fun createJournalDataSchema(context: Context): Schema {
         val s = Strings.`for`(tool = "journal", context = context)
@@ -136,7 +136,7 @@ object JournalToolType : ToolTypeContract {
                             "description": "${s.tool("schema_data_content")}"
                         }
                     },
-                    "required": ["content"],
+                    "required": [],
                     "additionalProperties": false
                 }
             },

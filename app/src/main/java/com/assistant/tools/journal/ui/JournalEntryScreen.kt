@@ -336,7 +336,7 @@ fun JournalEntryScreen(
                         transcriptionStatus = transcriptionStatus,
                         modelName = activeTranscriptionModel,
                         enabled = true,
-                        required = true,
+                        required = false,  // Content is optional - can be filled via transcription or typing
                         // Auto-transcription configuration
                         autoTranscribe = true,
                         transcriptionContext = TranscriptionContext(

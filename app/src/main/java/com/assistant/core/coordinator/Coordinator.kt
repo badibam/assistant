@@ -199,18 +199,17 @@ class Coordinator(context: Context) {
     private suspend fun startBackgroundProcessing(queuedOp: QueuedOperation) {
         isBackgroundSlotBusy = true
         backgroundSlot = queuedOp.copy(phase = 2)
-        
+
         // Launch background processing
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val bgResult = executeQueuedOperation(backgroundSlot!!)
                 LogManager.coordination("Background result: status=${bgResult.status}, requiresContinuation=${bgResult.requiresContinuation}")
+                // Note: executeQueuedOperation already calls handleMultiStepResult which queues phase 3
+                // No need to queue it again here - just trigger queue processing
                 if (bgResult.requiresContinuation) {
-                    // Queue final step
-                    val finalStep = queuedOp.copy(phase = 3)
-                    normalQueue.addLast(finalStep)
-                    LogManager.coordination("Phase 3 queued: ${finalStep.command.action} phase=${finalStep.phase}")
-                    
+                    LogManager.coordination("Phase 3 already queued by handleMultiStepResult, triggering processQueue")
+
                     // Process the queue to execute Phase 3
                     CoroutineScope(Dispatchers.Main).launch {
                         processQueue()

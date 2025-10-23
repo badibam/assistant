@@ -284,15 +284,14 @@ fun JournalScreen(
                     onClick = {
                         coroutineScope.launch {
                             // Create entry immediately in DB with default values
+                            // Note: content is optional and will be filled by user typing or transcription
                             val params = mapOf(
                                 "toolInstanceId" to toolInstanceId,
                                 "tooltype" to "journal",
                                 "schema_id" to "journal_data",
                                 "name" to s.tool("placeholder_untitled"),
                                 "timestamp" to System.currentTimeMillis(),
-                                "data" to JSONObject().apply {
-                                    put("content", s.tool("placeholder_content"))
-                                }
+                                "data" to JSONObject()  // Empty data object - content is optional
                             )
 
                             val result = coordinator.processUserAction("tool_data.create", params)
