@@ -1,7 +1,9 @@
 package com.assistant.core.ui.screens.settings
 
 import android.app.Activity
+import android.content.Intent
 import android.widget.Toast
+import kotlin.system.exitProcess
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -18,6 +20,17 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
+ * Restart the application
+ * Used after import/reset to reload all data with clean state
+ */
+private fun restartApp(context: android.content.Context) {
+    val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+    exitProcess(0)
+}
+
+/**
  * Data Management Settings Screen - Backup & Restore
  *
  * Features:
@@ -28,7 +41,7 @@ import java.util.*
  * Architecture:
  * - UI handles SAF (file I/O via Android intents)
  * - Service handles logic (JSON generation/parsing)
- * - App restart after import/reset via System.exit(0)
+ * - App restart after import/reset via Intent + exitProcess
  */
 @Composable
 fun DataSettingsScreen(
@@ -251,9 +264,8 @@ fun DataSettingsScreen(
                                         s.shared("backup_import_success"),
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    // Restart app
-                                    (context as? Activity)?.finishAffinity()
-                                    System.exit(0)
+                                    // Restart app with clean state
+                                    restartApp(context)
                                 } else {
                                     errorMessage = result.error ?: s.shared("backup_import_failed")
                                 }
@@ -299,9 +311,8 @@ fun DataSettingsScreen(
                                 s.shared("backup_reset_success"),
                                 Toast.LENGTH_SHORT
                             ).show()
-                            // Restart app
-                            (context as? Activity)?.finishAffinity()
-                            System.exit(0)
+                            // Restart app with clean state
+                            restartApp(context)
                         } else {
                             errorMessage = result.error ?: s.shared("backup_reset_failed")
                         }
