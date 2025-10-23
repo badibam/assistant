@@ -17,6 +17,9 @@ import com.assistant.core.utils.DateUtils
 import com.assistant.core.transcription.ui.TranscribableTextField
 import com.assistant.core.transcription.ui.TranscriptionStatus
 import com.assistant.core.transcription.models.TranscriptionContext
+import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.validation.ValidationResult
 import com.assistant.tools.journal.utils.DateFormatUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -66,6 +69,9 @@ fun JournalEntryScreen(
     // Date/time picker states
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+
+    // Validation state
+    var validationResult by remember { mutableStateOf(ValidationResult.success()) }
 
     // Load entry if not creating
     LaunchedEffect(entryId) {
@@ -121,10 +127,11 @@ fun JournalEntryScreen(
 
     // Initialize audio file path
     LaunchedEffect(entryId) {
-        // Audio files are stored in: /data/data/.../files/journal_audio/{entryId}.opus
+        // Audio files are stored in: /data/data/.../files/journal_audio/{entryId}.wav
+        // Format: WAV 16kHz mono 16-bit PCM (Vosk requirement)
         val journalAudioDir = File(context.filesDir, "journal_audio")
         journalAudioDir.mkdirs()
-        audioFilePath = File(journalAudioDir, "$entryId.opus").absolutePath
+        audioFilePath = File(journalAudioDir, "$entryId.wav").absolutePath
     }
 
     // Error message display
@@ -135,42 +142,80 @@ fun JournalEntryScreen(
         }
     }
 
+    // Validation function
+    fun validateForm() {
+        val toolType = ToolTypeManager.getToolType("journal")
+        if (toolType != null) {
+            // Build data structure like service expects
+            val entryData = mapOf(
+                "tool_instance_id" to toolInstanceId,
+                "tooltype" to "journal",
+                "name" to title,
+                "timestamp" to timestamp,
+                "data" to mapOf(
+                    "content" to content
+                )
+            )
+
+            val schema = toolType.getSchema("journal_data", context)
+            validationResult = if (schema != null) {
+                SchemaValidator.validate(schema, entryData, context)
+            } else {
+                ValidationResult.error("Journal data schema not found")
+            }
+
+            LogManager.ui("Journal validation result: isValid=${validationResult.isValid}")
+            if (!validationResult.isValid) {
+                LogManager.ui("Journal validation error: ${validationResult.errorMessage}")
+            }
+        } else {
+            validationResult = ValidationResult.error("Tool type 'journal' not found")
+        }
+    }
+
     // Save function
     val handleSave = {
-        coroutineScope.launch {
-            isSaving = true
-            try {
-                val params = mapOf(
-                    "id" to entryId,
-                    "toolInstanceId" to toolInstanceId,
-                    "schema_id" to "journal_data",
-                    "name" to title,
-                    "timestamp" to timestamp,
-                    "data" to JSONObject().apply {
-                        put("content", content)
-                        // TODO: Save transcription data if needed
-                    }
-                )
+        // Validate before saving
+        validateForm()
 
-                val result = coordinator.processUserAction("tool_data.update", params)
-                if (result?.isSuccess == true) {
-                    LogManager.ui("Successfully saved journal entry")
-                    if (isCreating) {
-                        // After first save, no longer in creating mode
-                        isEditing = false
+        if (validationResult.isValid) {
+            coroutineScope.launch {
+                isSaving = true
+                try {
+                    val params = mapOf(
+                        "id" to entryId,
+                        "toolInstanceId" to toolInstanceId,
+                        "schema_id" to "journal_data",
+                        "name" to title,
+                        "timestamp" to timestamp,
+                        "data" to JSONObject().apply {
+                            put("content", content)
+                        }
+                    )
+
+                    val result = coordinator.processUserAction("tool_data.update", params)
+                    if (result?.isSuccess == true) {
+                        LogManager.ui("Successfully saved journal entry")
+                        if (isCreating) {
+                            // After first save, no longer in creating mode
+                            isEditing = false
+                        } else {
+                            // Switch back to consultation mode
+                            isEditing = false
+                        }
                     } else {
-                        // Switch back to consultation mode
-                        isEditing = false
+                        errorMessage = s.tool("error_entry_save")
                     }
-                } else {
+                } catch (e: Exception) {
+                    LogManager.ui("Error during save: ${e.message}", "ERROR")
                     errorMessage = s.tool("error_entry_save")
+                } finally {
+                    isSaving = false
                 }
-            } catch (e: Exception) {
-                LogManager.ui("Error during save: ${e.message}", "ERROR")
-                errorMessage = s.tool("error_entry_save")
-            } finally {
-                isSaving = false
             }
+        } else {
+            // Validation failed, show error
+            errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
         }
     }
 

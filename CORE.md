@@ -259,6 +259,25 @@ MainActivity.retryPendingTranscriptions() scan tool_data au démarrage pour rela
 ### Provider Config Service
 TranscriptionProviderConfigService gère configurations providers (get, set, set_active, list, delete) avec pattern identique à AIProviderConfigService.
 
+### TranscribableTextField Pattern
+Composable UI avec auto-transcription intégrée pour réutilisabilité sans duplication.
+
+**API simplifiée** :
+```kotlin
+TranscribableTextField(
+    label, value, onChange, audioFilePath,
+    transcriptionStatus, modelName,
+    // Auto-transcription
+    autoTranscribe = true,
+    transcriptionContext = TranscriptionContext(entryId, toolInstanceId, tooltype, fieldName),
+    onTranscriptionStatusChange = { status -> ... }
+)
+```
+
+**Logique centralisée** : Gère permissions audio, enregistrement, conversion segments→JSON, appel coordinator, gestion erreurs. Tools utilisent simplement `transcriptionContext` + callback status.
+
+**TranscriptionContext** : Data class (entryId, toolInstanceId, tooltype, fieldName) passée pour déclenchement automatique post-recording.
+
 ---
 
 *L'architecture Core garantit extensibilité et cohérence sans complexité excessive.*

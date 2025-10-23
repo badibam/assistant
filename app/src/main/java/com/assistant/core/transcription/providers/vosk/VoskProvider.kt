@@ -192,13 +192,16 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
             }
 
             // Combine all segments
-            val fullText = segmentTexts.joinToString(" ").trim()
+            val rawText = segmentTexts.joinToString(" ").trim()
+
+            // Post-process: Add capitalization and punctuation (Vosk doesn't provide this)
+            val fullText = formatTranscriptionText(rawText)
 
             LogManager.service("VoskProvider: Transcription complete, total length: ${fullText.length} chars")
 
             TranscriptionResult(
                 success = true,
-                segmentsTexts = segmentTexts,
+                segmentsTexts = segmentTexts.map { formatTranscriptionText(it) },
                 fullText = fullText
             )
 
@@ -514,5 +517,32 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
         // TODO: Update provider config via coordinator
         // This should call transcription_provider_config.set with updated downloaded_models list
         LogManager.service("VoskProvider: Would update config to ${if (add) "add" else "remove"} model: $modelId")
+    }
+
+    /**
+     * Format transcription text with proper capitalization and punctuation
+     * Vosk returns raw text without punctuation, this adds basic formatting
+     *
+     * @param text Raw transcription text
+     * @return Formatted text with capital first letter and ending punctuation
+     */
+    private fun formatTranscriptionText(text: String): String {
+        if (text.isBlank()) return text
+
+        val trimmed = text.trim()
+
+        // Capitalize first letter
+        val capitalized = trimmed.replaceFirstChar { it.uppercase() }
+
+        // Add period at end if no punctuation present
+        val endsWithPunctuation = capitalized.endsWith(".") ||
+                                  capitalized.endsWith("!") ||
+                                  capitalized.endsWith("?")
+
+        return if (endsWithPunctuation) {
+            capitalized
+        } else {
+            "$capitalized."
+        }
     }
 }
