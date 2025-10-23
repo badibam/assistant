@@ -54,6 +54,17 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transcriptionDao(): TranscriptionDao
 
     companion object {
+        /**
+         * Database schema version
+         *
+         * ⚠️ MUST match @Database(version = X) annotation above (line 41)
+         * ⚠️ Change BOTH when incrementing database version
+         *
+         * This constant is needed because @Database annotation value
+         * is not accessible as a constant at runtime
+         */
+        const val VERSION = 10
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -66,7 +77,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "assistant_database"
                 )
-                .fallbackToDestructiveMigration()  // Wipe data on schema changes (v9 -> v10: Transcription system)
                 .addMigrations(*migrationOrchestrator.getAllMigrations())
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {

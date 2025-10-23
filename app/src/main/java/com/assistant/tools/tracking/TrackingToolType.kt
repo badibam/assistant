@@ -2,7 +2,6 @@ package com.assistant.tools.tracking
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.tools.ToolTypeContract
 import com.assistant.core.services.ExecutableService

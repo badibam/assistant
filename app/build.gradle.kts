@@ -16,7 +16,7 @@ android {
         applicationId = "com.assistant"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
+        versionCode = 10
         versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -92,6 +92,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"

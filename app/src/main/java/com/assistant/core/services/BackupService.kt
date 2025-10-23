@@ -34,11 +34,7 @@ class BackupService(private val context: Context) : ExecutableService {
     private val s = Strings.`for`(context = context)
     private val database = AppDatabase.getDatabase(context)
 
-    companion object {
-        // Current Room Database version from @Database annotation
-        const val CURRENT_DB_VERSION = 10
-        const val APP_VERSION = "0.2"
-    }
+    // No companion object needed - use BuildConfig and AppDatabase.VERSION directly
 
     override suspend fun execute(
         operation: String,
@@ -92,8 +88,9 @@ class BackupService(private val context: Context) : ExecutableService {
             // Build JSON structure
             val backupJson = JSONObject().apply {
                 put("metadata", JSONObject().apply {
-                    put("app_version", APP_VERSION)
-                    put("db_version", CURRENT_DB_VERSION)
+                    put("app_version", com.assistant.BuildConfig.VERSION_NAME)
+                    put("export_version", com.assistant.BuildConfig.VERSION_CODE)
+                    put("db_schema_version", AppDatabase.VERSION)
                     put("export_timestamp", System.currentTimeMillis())
                 })
 
@@ -288,20 +285,23 @@ class BackupService(private val context: Context) : ExecutableService {
             val metadata = backupJson.optJSONObject("metadata")
                 ?: return OperationResult.error(s.shared("backup_invalid_file"))
 
-            val backupDbVersion = metadata.optInt("db_version", -1)
+            // Try new field name first, fallback to old for compatibility
+            val backupDbVersion = metadata.optInt("db_schema_version",
+                metadata.optInt("db_version", -1))
             if (backupDbVersion == -1) {
                 return OperationResult.error(s.shared("backup_invalid_file"))
             }
 
             // Check version compatibility
-            if (backupDbVersion > CURRENT_DB_VERSION) {
+            val currentDbVersion = AppDatabase.VERSION
+            if (backupDbVersion > currentDbVersion) {
                 return OperationResult.error(s.shared("backup_version_too_recent"))
             }
 
             // Apply transformations if needed
-            val transformedData = if (backupDbVersion < CURRENT_DB_VERSION) {
-                LogManager.service("Applying transformations from version $backupDbVersion to $CURRENT_DB_VERSION")
-                transformBackupData(backupJson, backupDbVersion, CURRENT_DB_VERSION)
+            val transformedData = if (backupDbVersion < currentDbVersion) {
+                LogManager.service("Applying transformations from version $backupDbVersion to $currentDbVersion")
+                transformBackupData(backupJson, backupDbVersion, currentDbVersion)
             } else {
                 backupJson
             }

@@ -2,7 +2,6 @@ package com.assistant.tools.journal
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.room.migration.Migration
 import com.assistant.core.tools.ToolTypeContract
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.services.ExecutableService
