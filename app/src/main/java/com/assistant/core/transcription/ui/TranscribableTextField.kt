@@ -1,5 +1,8 @@
 package com.assistant.core.transcription.ui
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -52,9 +55,38 @@ fun TranscribableTextField(
     var showRecordingDialog by remember { mutableStateOf(false) }
     var showRerecordConfirmation by remember { mutableStateOf(false) }
 
+    // Audio permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, open recording dialog
+            showRecordingDialog = true
+        } else {
+            // Permission denied, show error message
+            UI.Toast(context, s.shared("transcription_permission_denied"), Duration.LONG)
+        }
+    }
+
     // Check if audio file exists
     val audioExists = remember(audioFilePath) {
         File(audioFilePath).exists()
+    }
+
+    // Helper function to check and request permission
+    fun requestRecordingPermission() {
+        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            // Permission already granted, open dialog directly
+            showRecordingDialog = true
+        } else {
+            // Request permission
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
     }
 
     Column(
@@ -116,8 +148,8 @@ fun TranscribableTextField(
                             // Show re-record confirmation
                             showRerecordConfirmation = true
                         } else {
-                            // Direct recording
-                            showRecordingDialog = true
+                            // Request permission and start recording
+                            requestRecordingPermission()
                         }
                     }
                 ) {
@@ -215,7 +247,7 @@ fun TranscribableTextField(
             message = s.shared("transcription_confirm_rerecord_message"),
             onConfirm = {
                 showRerecordConfirmation = false
-                showRecordingDialog = true
+                requestRecordingPermission()
             },
             onDismiss = {
                 showRerecordConfirmation = false
