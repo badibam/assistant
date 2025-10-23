@@ -165,7 +165,8 @@ fun DataSettingsScreen(
                     onClick = {
                         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
                             .format(Date())
-                        exportLauncher.launch("assistant_backup_$timestamp.json")
+                        val version = com.assistant.BuildConfig.VERSION_NAME
+                        exportLauncher.launch("assistant_backup_${timestamp}_v$version.json")
                     }
                 ) {
                     UI.Text(
