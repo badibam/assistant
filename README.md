@@ -64,26 +64,35 @@ cd assistant
 
 ## État du développement
 
-**Version 0.2** (septembre 2025)
+**Version 0.3.1** (octobre 2024)
 
-La majorité des systèmes de base sont finalisés :
+### Systèmes de base
 
-- **CommandDispatcher unifié** : Architecture `resource.operation` pour UI/IA/Scheduler/System
-- **Validation JSON Schema** : Validation centralisée avec messages traduits
-- **Internationalisation modulaire** : Système `s.shared()`/`s.tool()` avec génération automatique
+- **CommandDispatcher** : Architecture `resource.operation` unifiée pour UI/IA/Scheduler/System
+- **Validation** : JSON Schema avec messages traduits
+- **Internationalisation** : Système `s.shared()`/`s.tool()` avec génération automatique
 - **Discovery pattern** : Extension d'outils sans modification du core
-- **Interface UI cohérente** : Composants réutilisables et patterns standardisés
-- **Système de thèmes** : Ajout de thème possible (personnalisation en profondeur) + palettes
-- **Tool type Tracking** : Outil de suivi complet avec 7 types de données
+- **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés
+- **Versioning** : Migrations SQL + transformations JSON centralisées
+- **Backup/Restore** : Export/import/reset avec gestion versions
+- **Navigation données** : DataNavigator hiérarchique + ZoneScopeSelector avec périodes
+- **Transcription** : Provider pattern (offline/online) avec auto-retry
 
-## Roadmap
+### Système IA
 
-- **Prompt manager** : Génération de prompts contextuels pour requêtes IA
-- **API IA** : Couche d'abstraction pour connexion à différentes IA
-- **Grille UI** : Affichage différencié des outils dans les zones
-- **Event sourcing** : Historique automatique avec migrations de base
-- **Navigateur de données** : logique commune et spécifique IA/UI d'exploration des données via Schémas JSON + données réelles
-- **Outils supplémentaires**
+- **Architecture** : Event-driven avec machine à états et orchestrateur centralisé
+- **Sessions** : CHAT, SEED, AUTOMATION avec messages unifiés
+- **Prompts** : Multi-niveaux (documentation L1 + données utilisateur L2)
+- **Automations** : Scheduling, triggers, exécution autonome avec limites
+- **Validation** : Hiérarchie App > Zone > Tool > Session > Request
+- **Communication** : Modules MultipleChoice et Validation
+- **Providers** : Abstraction extensible (Claude supporté)
+
+### Outils
+
+- **Tracking** : Suivi avec 7 types de données (numeric, text, scale, choice, timer, audio, multi-audio)
+- **Journal** : Entrées textuelles/audio avec templates
+- **Note** : Notes individuelles avec titre et contenu
 
 
 
