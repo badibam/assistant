@@ -23,6 +23,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Filter native libraries to reduce APK size
+        // Keep only arm64-v8a (modern 64-bit ARM devices)
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
     
     signingConfigs {
