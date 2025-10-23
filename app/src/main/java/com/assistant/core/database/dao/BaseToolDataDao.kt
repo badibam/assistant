@@ -86,4 +86,11 @@ abstract class BaseToolDataDao {
     @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
     abstract suspend fun getByToolInstancePaginated(toolInstanceId: String, limit: Int, offset: Int): List<ToolDataEntity>
 
+    /**
+     * Retrieves all entries (for scanning pending transcriptions)
+     * WARNING: Can be heavy, use sparingly
+     */
+    @Query("SELECT * FROM tool_data ORDER BY timestamp DESC")
+    abstract suspend fun getAllEntries(): List<ToolDataEntity>
+
 }

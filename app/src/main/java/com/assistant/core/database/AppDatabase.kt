@@ -19,6 +19,8 @@ import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
+import com.assistant.core.transcription.database.TranscriptionDao
+import com.assistant.core.transcription.database.TranscriptionProviderConfigEntity
 import com.assistant.core.versioning.MigrationOrchestrator
 import com.assistant.core.utils.LogManager
 
@@ -31,11 +33,12 @@ import com.assistant.core.utils.LogManager
         AISessionEntity::class,
         SessionMessageEntity::class,
         AIProviderConfigEntity::class,
-        AutomationEntity::class
+        AutomationEntity::class,
+        TranscriptionProviderConfigEntity::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -48,6 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun toolDataDao(): BaseToolDataDao
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
+    abstract fun transcriptionDao(): TranscriptionDao
 
     companion object {
         @Volatile
@@ -62,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "assistant_database"
                 )
-                .fallbackToDestructiveMigration()  // Wipe data on schema changes (v8 -> v9: AI Architecture V2 - Event-Driven)
+                .fallbackToDestructiveMigration()  // Wipe data on schema changes (v9 -> v10: Transcription system)
                 .addMigrations(*migrationOrchestrator.getAllMigrations())
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {

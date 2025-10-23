@@ -865,4 +865,54 @@
     <string name="ai_automation_no_commands_guidance">Tu es en mode automation, tes réponses doivent contenir des requêtes de données ou des actions. Si tu as terminé, utilise le flag \'completed\'.</string>
     <string name="ai_completion_confirmation_required">Le flag \'completed\' signifie que TOUTE la demande initiale est terminée, pas juste une étape. Si c\'était bien ton intention, renvoie un message avec \'completed: true\'. Sinon, continue ton travail.</string>
 
+    <!-- Transcription System -->
+    <string name="transcription_recording">Enregistrement...</string>
+    <string name="transcription_paused">En pause</string>
+    <string name="transcription_processing">Transcription en cours...</string>
+    <string name="transcription_completed">Transcription terminée</string>
+    <string name="transcription_failed">Échec de la transcription</string>
+    <string name="transcription_ready">Prêt à enregistrer</string>
+
+    <string name="transcription_record">Enregistrer</string>
+    <string name="transcription_stop_recording">Arrêter l\'enregistrement</string>
+    <string name="transcription_play_audio">Écouter l\'audio</string>
+    <string name="transcription_retry">Réessayer</string>
+    <string name="transcription_end_of_sentence">Fin de phrase</string>
+    <string name="transcription_cancel_recording">Annuler l\'enregistrement</string>
+
+    <string name="transcription_dialog_title">Enregistrement audio</string>
+    <string name="transcription_duration">Durée: %1$s</string>
+    <string name="transcription_model">Modèle: %1$s</string>
+    <string name="transcription_segments">%1$d segment(s)</string>
+
+    <string name="transcription_confirm_cancel_title">Annuler l\'enregistrement ?</string>
+    <string name="transcription_confirm_cancel_message">L\'audio enregistré sera supprimé. Cette action est irréversible.</string>
+    <string name="transcription_confirm_validate_title">Terminer l\'enregistrement ?</string>
+    <string name="transcription_confirm_validate_message">L\'audio sera transcrit automatiquement.</string>
+
+    <string name="transcription_confirm_rerecord_title">Ré-enregistrer ?</string>
+    <string name="transcription_confirm_rerecord_message">Cela écrasera le texte et l\'audio existants. Cette action est irréversible.</string>
+
+    <string name="transcription_permission_required">Permission audio requise</string>
+    <string name="transcription_permission_denied">Permission refusée. Impossible d\'enregistrer de l\'audio.</string>
+    <string name="transcription_no_provider">Aucun provider de transcription configuré</string>
+    <string name="transcription_no_model">Aucun modèle de transcription sélectionné</string>
+    <string name="transcription_no_config">Configuration de transcription manquante</string>
+
+    <!-- Transcription Errors -->
+    <string name="error_transcription_no_segments">Aucun segment audio à transcrire</string>
+    <string name="error_transcription_audio_not_found">Fichier audio introuvable: %1$s</string>
+    <string name="error_transcription_no_provider">Aucun provider de transcription actif</string>
+    <string name="error_transcription_no_config">Configuration de transcription manquante</string>
+    <string name="error_transcription_no_model">Aucun modèle de transcription configuré</string>
+    <string name="error_transcription_provider_not_found">Provider de transcription introuvable: %1$s</string>
+    <string name="error_transcription_unknown">Erreur de transcription inconnue</string>
+
+    <!-- Provider Configuration -->
+    <string name="error_provider_not_configured">Provider non configuré: %1$s</string>
+    <string name="error_unknown_provider">Provider inconnu: %1$s</string>
+    <string name="error_schema_not_found">Schéma de validation introuvable</string>
+    <string name="error_invalid_json">JSON invalide: %1$s</string>
+
+
 </resources>
