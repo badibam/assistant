@@ -203,6 +203,13 @@ class AudioRecorder(private val context: Context) {
         }
 
         return try {
+            // IMPORTANT: Stop recording loop BEFORE stopping AudioRecord
+            // to avoid "Unable to retrieve AudioRecord object" errors
+            isRecording = false
+
+            // Give the recording coroutine time to finish its current iteration
+            Thread.sleep(150)
+
             // Stop AudioRecord
             audioRecord?.stop()
 
@@ -211,7 +218,7 @@ class AudioRecorder(private val context: Context) {
             recordingScope?.cancel()
 
             val file = outputFile
-            val duration = getCurrentDuration()
+            val duration = System.currentTimeMillis() - startTime - totalPauseDuration
 
             // Update WAV header with actual file size
             file?.let {
@@ -234,6 +241,10 @@ class AudioRecorder(private val context: Context) {
      */
     fun cancel() {
         try {
+            // Stop recording loop first
+            isRecording = false
+            Thread.sleep(150)
+
             audioRecord?.stop()
             recordingJob?.cancel()
             recordingScope?.cancel()

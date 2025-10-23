@@ -146,13 +146,16 @@ class RecordingController(
      * @param onComplete Callback with list of TimeSegments
      */
     fun validate(onComplete: (List<TimeSegment>) -> Unit) {
+        // IMPORTANT: Stop timer BEFORE stopping AudioRecorder
+        // to avoid "Unable to retrieve AudioRecord object" errors
         stopTimerUpdates()
+
+        // Get duration BEFORE stopping (once stopped, getCurrentDuration returns 0)
+        val totalDuration = audioRecorder.getCurrentDuration()
 
         val audioFile = audioRecorder.stop()
 
         if (audioFile != null && audioFile.exists()) {
-            val totalDuration = audioRecorder.getCurrentDuration()
-
             // Convert segment markers to TimeSegments
             val segments = buildTimeSegments(totalDuration)
 
