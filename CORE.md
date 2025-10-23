@@ -119,12 +119,21 @@ AppVersionManager.CURRENT_APP_VERSION et build.gradle versionCode/versionName.
 
 ### CommandDispatcher Extensions Pattern
 coordinator.executeWithLoading() avec operation, params, onLoading, onError et result.mapData().
-Smart cast automatique avec result.isSuccess.
+Vérification status avec result.status == CommandStatus.SUCCESS.
 
 ### Pattern de commandes
 coordinator.processUserAction(), processAICommand(), processScheduledTask() avec resource.operation
 
 ### Pattern d'utilisation du Coordinator - Référence
+
+**Imports requis** :
+```kotlin
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
+import com.assistant.core.strings.Strings
+```
+
+**Exemples** :
 ```kotlin
 // Pattern basique avec gestion d'erreur (CommandResult)
 val result = coordinator.processUserAction("resource.operation", mapOf(
@@ -138,7 +147,7 @@ if (result.status == CommandStatus.SUCCESS) {
 } else {
     // Gestion erreur
     LogManager.service("Operation failed: ${result.error}", "ERROR")
-    errorMessage = result.error ?: "Unknown error"
+    errorMessage = result.error ?: s.shared("error_operation_failed")
 }
 
 // Pattern UI avec loading/error states
@@ -150,6 +159,37 @@ coordinator.executeWithLoading(
 )?.let { result ->
     // Traitement résultat
     data = result.mapSingleData<Type>("field")
+}
+```
+
+### Pattern gestion d'erreur avec strings
+
+**Règles** :
+- JAMAIS de messages hardcodés - toujours utiliser s.shared() ou s.tool()
+- Utiliser `result.error` du service (déjà traduit) en priorité
+- Fournir un fallback traduit via s.shared() si result.error est null
+- Pour les exceptions, préfixer avec string traduit : `"${s.shared("error_key")}: ${e.message}"`
+
+**Exemple** :
+```kotlin
+try {
+    val result = coordinator.processUserAction("backup.export", emptyMap())
+
+    if (result.status == CommandStatus.SUCCESS) {
+        val data = result.data?.get("json_data") as? String
+        if (data != null) {
+            // Success handling
+            Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
+        } else {
+            errorMessage = s.shared("backup_export_no_data")
+        }
+    } else {
+        // Service error (priorité à result.error car déjà traduit)
+        errorMessage = result.error ?: s.shared("backup_export_failed")
+    }
+} catch (e: Exception) {
+    // Exception handling avec préfixe traduit
+    errorMessage = "${s.shared("backup_export_failed")}: ${e.message}"
 }
 ```
 
