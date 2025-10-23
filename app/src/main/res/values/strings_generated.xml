@@ -1,6 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
+    <!-- journal -->
+    <string name="journal_display_name">Journal</string>
+    <string name="journal_description">Entrées de journal horodatées avec support audio et organisation chronologique</string>
+    <string name="journal_schema_config_display_name">Configuration Journal</string>
+    <string name="journal_schema_config_description">Schéma de configuration pour les instances de journal</string>
+    <string name="journal_schema_data_display_name">Données Journal</string>
+    <string name="journal_schema_data_description">Schéma de validation pour les entrées de journal</string>
+    <string name="journal_schema_config_sort_order">Ordre de tri des entrées (ascending ou descending)</string>
+    <string name="journal_schema_data_name">Titre de l\'entrée de journal</string>
+    <string name="journal_schema_data_timestamp">Horodatage de l\'entrée de journal (modifiable)</string>
+    <string name="journal_schema_data_data">Données de contenu de l\'entrée</string>
+    <string name="journal_schema_data_content">Contenu texte de l\'entrée (sans limite de longueur)</string>
+    <string name="journal_field_content">Contenu</string>
+    <string name="journal_field_sort_order">Ordre de tri</string>
+    <string name="journal_config_section_order">Ordre d\'affichage</string>
+    <string name="journal_label_sort_order">Ordre de tri</string>
+    <string name="journal_sort_order_ascending">Plus anciennes en premier</string>
+    <string name="journal_sort_order_descending">Plus récentes en premier</string>
+    <string name="journal_no_entries">Aucune entrée de journal</string>
+    <string name="journal_no_entries_hint">Appuyez sur + pour créer votre première entrée</string>
+    <string name="journal_loading_entries">Chargement des entrées...</string>
+    <string name="journal_label_title">Titre</string>
+    <string name="journal_label_date_time">Date et heure</string>
+    <string name="journal_label_content">Contenu</string>
+    <string name="journal_loading_entry">Chargement de l\'entrée...</string>
+    <string name="journal_button_edit">Modifier</string>
+    <string name="journal_placeholder_untitled">Sans titre</string>
+    <string name="journal_placeholder_content">...</string>
+    <string name="journal_date_today_at">Aujourd\'hui à %1$s</string>
+    <string name="journal_date_on_at">Le %1$s à %2$s</string>
+    <string name="journal_delete_confirm_template">Supprimer l\'entrée \"%1$s\" ?</string>
+    <string name="journal_delete_confirm_untitled">Supprimer cette entrée sans titre ?</string>
+    <string name="journal_error_config_load">Erreur lors du chargement de la configuration</string>
+    <string name="journal_error_entry_load">Erreur lors du chargement de l\'entrée</string>
+    <string name="journal_error_entry_create">Erreur lors de la création de l\'entrée</string>
+    <string name="journal_error_entry_save">Erreur lors de la sauvegarde</string>
+    <string name="journal_error_entry_delete">Erreur lors de la suppression</string>
+    <string name="journal_error_validation">Erreur de validation</string>
+
     <!-- notes -->
     <string name="notes_display_name">Notes</string>
     <string name="notes_description">Prise de notes simple et rapide avec organisation flexible</string>

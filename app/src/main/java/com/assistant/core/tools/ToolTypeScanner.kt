@@ -2,6 +2,7 @@ package com.assistant.core.tools
 
 import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.tools.notes.NotesToolType
+import com.assistant.tools.journal.JournalToolType
 
 /**
  * Simple registry that lists known tool types
@@ -12,7 +13,8 @@ object ToolTypeScanner {
     fun scanForToolTypes(): Map<String, ToolTypeContract> {
         return mapOf(
             "tracking" to TrackingToolType,
-            "notes" to NotesToolType
+            "notes" to NotesToolType,
+            "journal" to JournalToolType
         )
     }
 }

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings spécifiques au tooltype journal -->
+
+    <!-- Métadonnées -->
+    <string name="display_name">Journal</string>
+    <string name="description">Entrées de journal horodatées avec support audio et organisation chronologique</string>
+
+    <!-- SCHEMAS - Display names for schema identification -->
+    <string name="schema_config_display_name">Configuration Journal</string>
+    <string name="schema_config_description">Schéma de configuration pour les instances de journal</string>
+    <string name="schema_data_display_name">Données Journal</string>
+    <string name="schema_data_description">Schéma de validation pour les entrées de journal</string>
+
+    <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
+    <string name="schema_config_sort_order">Ordre de tri des entrées (ascending ou descending)</string>
+
+    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
+    <string name="schema_data_name">Titre de l\'entrée de journal</string>
+    <string name="schema_data_timestamp">Horodatage de l\'entrée de journal (modifiable)</string>
+    <string name="schema_data_data">Données de contenu de l\'entrée</string>
+    <string name="schema_data_content">Contenu texte de l\'entrée (sans limite de longueur)</string>
+
+    <!-- VALIDATION - Noms de champs pour affichage -->
+    <string name="field_content">Contenu</string>
+    <string name="field_sort_order">Ordre de tri</string>
+
+    <!-- CONFIG SCREEN - Configuration de l\'instance -->
+    <string name="config_section_order">Ordre d\'affichage</string>
+    <string name="label_sort_order">Ordre de tri</string>
+    <string name="sort_order_ascending">Plus anciennes en premier</string>
+    <string name="sort_order_descending">Plus récentes en premier</string>
+
+    <!-- JOURNAL SCREEN - Liste des entrées -->
+    <string name="no_entries">Aucune entrée de journal</string>
+    <string name="no_entries_hint">Appuyez sur + pour créer votre première entrée</string>
+    <string name="loading_entries">Chargement des entrées...</string>
+
+    <!-- ENTRY SCREEN - Consultation/édition -->
+    <string name="label_title">Titre</string>
+    <string name="label_date_time">Date et heure</string>
+    <string name="label_content">Contenu</string>
+    <string name="loading_entry">Chargement de l\'entrée...</string>
+    <string name="button_edit">Modifier</string>
+    <string name="placeholder_untitled">Sans titre</string>
+    <string name="placeholder_content">...</string>
+
+    <!-- DATE FORMATTING - Formats spécifiques journal -->
+    <string name="date_today_at">Aujourd\'hui à %1$s</string>
+    <string name="date_on_at">Le %1$s à %2$s</string>
+
+    <!-- CONFIRMATIONS - Messages de confirmation -->
+    <string name="delete_confirm_template">Supprimer l\'entrée \"%1$s\" ?</string>
+    <string name="delete_confirm_untitled">Supprimer cette entrée sans titre ?</string>
+
+    <!-- ERROR MESSAGES - Messages d\'erreur spécifiques -->
+    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
+    <string name="error_entry_load">Erreur lors du chargement de l\'entrée</string>
+    <string name="error_entry_create">Erreur lors de la création de l\'entrée</string>
+    <string name="error_entry_save">Erreur lors de la sauvegarde</string>
+    <string name="error_entry_delete">Erreur lors de la suppression</string>
+    <string name="error_validation">Erreur de validation</string>
+
+</resources>
