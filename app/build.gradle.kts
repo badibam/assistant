@@ -23,12 +23,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        // Filter native libraries to reduce APK size
-        // Keep only arm64-v8a (modern 64-bit ARM devices)
-        ndk {
-            abiFilters += listOf("arm64-v8a")
-        }
     }
     
     signingConfigs {
@@ -63,13 +57,23 @@ android {
             applicationIdSuffix = ".debug"
             isDebuggable = true
             isMinifyEnabled = false
+
+            // Include x86_64 for emulators + arm64-v8a for devices
+            ndk {
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
         }
-        
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
             signingConfig = signingConfigs.getByName("release")
+
+            // Only arm64-v8a for release to reduce APK size
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
             
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

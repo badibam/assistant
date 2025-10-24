@@ -191,17 +191,17 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
                 }
             }
 
-            // Combine all segments
-            val rawText = segmentTexts.joinToString(" ").trim()
+            // Format each segment first (capitalization + punctuation)
+            val formattedSegments = segmentTexts.map { formatTranscriptionText(it) }
 
-            // Post-process: Add capitalization and punctuation (Vosk doesn't provide this)
-            val fullText = formatTranscriptionText(rawText)
+            // Combine all formatted segments
+            val fullText = formattedSegments.joinToString(" ").trim()
 
             LogManager.service("VoskProvider: Transcription complete, total length: ${fullText.length} chars")
 
             TranscriptionResult(
                 success = true,
-                segmentsTexts = segmentTexts.map { formatTranscriptionText(it) },
+                segmentsTexts = formattedSegments,
                 fullText = fullText
             )
 
