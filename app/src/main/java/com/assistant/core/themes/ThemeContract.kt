@@ -92,6 +92,7 @@ interface ThemeContract {
     fun Card(
         type: CardType,
         size: Size,
+        highlight: Boolean,
         content: @Composable () -> Unit
     )
     

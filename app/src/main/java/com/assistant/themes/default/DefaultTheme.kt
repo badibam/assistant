@@ -577,6 +577,7 @@ object DefaultTheme : ThemeContract {
     override fun Card(
         type: CardType,
         size: Size,
+        highlight: Boolean,
         content: @Composable () -> Unit
     ) {
         val elevation = when (size) {
@@ -584,10 +585,17 @@ object DefaultTheme : ThemeContract {
             Size.M -> CardDefaults.cardElevation(defaultElevation = 4.dp)
             Size.L, Size.XL, Size.XXL -> CardDefaults.cardElevation(defaultElevation = 8.dp)
         }
-        
+
+        val border = if (highlight) {
+            BorderStroke(2.dp, CurrentTheme.getCurrentColorScheme().primary)
+        } else {
+            null
+        }
+
         androidx.compose.material3.Card(
             elevation = elevation,
             shape = CardShape,
+            border = border,
             colors = CardDefaults.cardColors(
                 containerColor = CurrentTheme.getCurrentColorScheme().surface,
                 contentColor = CurrentTheme.getCurrentColorScheme().onSurface
@@ -1525,11 +1533,12 @@ object DefaultTheme : ThemeContract {
     ) {
         // Just wrap in a Card like the original code did - no custom styling
         // The alignment logic stays in AIFloatingChat.kt where it was before
-        Card(type = CardType.DEFAULT, size = Size.M) {
-            Box(modifier = Modifier.padding(12.dp)) {
-                content()
-            }
-        }
+        Card(
+            type = CardType.DEFAULT,
+            size = Size.M,
+            highlight = false,
+            content = { Box(modifier = Modifier.padding(12.dp)) { content() } }
+        )
     }
 
     @Composable

@@ -1,12 +1,15 @@
 package com.assistant.core.ai.ui.components
 
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
@@ -25,11 +28,93 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
+import java.util.UUID
 
 /**
- * RichComposer component following UI.* pattern
- * Simple UI with textarea + enrichment blocks list
- * But implements full inline logic for MessageSegment handling
+ * TextBlock: represents one text segment with its associated enrichments
+ * Each block is an independent unit that can be edited, deleted, or reordered
+ */
+data class TextBlock(
+    val id: String = UUID.randomUUID().toString(),
+    val text: String = "",
+    val enrichments: List<MessageSegment.EnrichmentBlock> = emptyList()
+) {
+    /**
+     * Convert this block to MessageSegments for final message composition
+     */
+    fun toSegments(): List<MessageSegment> {
+        val segments = mutableListOf<MessageSegment>()
+        if (text.isNotEmpty()) {
+            segments.add(MessageSegment.Text(text))
+        }
+        segments.addAll(enrichments)
+        return segments
+    }
+}
+
+/**
+ * Convert MessageSegments to TextBlocks for editing
+ * Groups consecutive Text and EnrichmentBlock segments into TextBlocks
+ */
+private fun segmentsToBlocks(segments: List<MessageSegment>): List<TextBlock> {
+    if (segments.isEmpty()) {
+        return listOf(TextBlock()) // At least one empty block
+    }
+
+    val blocks = mutableListOf<TextBlock>()
+    var currentText = ""
+    val currentEnrichments = mutableListOf<MessageSegment.EnrichmentBlock>()
+
+    for (segment in segments) {
+        when (segment) {
+            is MessageSegment.Text -> {
+                // Start new block if we have accumulated content
+                if (currentText.isNotEmpty() || currentEnrichments.isNotEmpty()) {
+                    blocks.add(TextBlock(
+                        text = currentText,
+                        enrichments = currentEnrichments.toList()
+                    ))
+                    currentEnrichments.clear()
+                }
+                currentText = segment.content
+            }
+            is MessageSegment.EnrichmentBlock -> {
+                currentEnrichments.add(segment)
+            }
+        }
+    }
+
+    // Add final block
+    if (currentText.isNotEmpty() || currentEnrichments.isNotEmpty()) {
+        blocks.add(TextBlock(
+            text = currentText,
+            enrichments = currentEnrichments.toList()
+        ))
+    }
+
+    // Ensure at least one block exists
+    if (blocks.isEmpty()) {
+        blocks.add(TextBlock())
+    }
+
+    return blocks
+}
+
+/**
+ * Convert TextBlocks back to MessageSegments
+ */
+private fun blocksToSegments(blocks: List<TextBlock>): List<MessageSegment> {
+    return blocks.flatMap { it.toSegments() }
+}
+
+/**
+ * RichComposer component with multi-block support
+ *
+ * Architecture:
+ * - Multiple TextBlocks (text + enrichments)
+ * - One active block at a time (focus-based + clickable)
+ * - Global enrichment buttons act on active block
+ * - Visual highlight on active block
  */
 @Composable
 fun UI.RichComposer(
@@ -42,60 +127,113 @@ fun UI.RichComposer(
     enabled: Boolean = true,
     enrichmentTypes: List<EnrichmentType> = EnrichmentType.values().toList(),
     modifier: Modifier = Modifier,
-    sessionType: SessionType = SessionType.CHAT
+    sessionType: SessionType = SessionType.CHAT,
+    statusContent: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val maxBlocksHeight = screenHeight / 3
 
-    // Extract text from segments for textarea
-    val textContent = segments.filterIsInstance<MessageSegment.Text>()
-        .joinToString("") { it.content }
+    // Convert segments to blocks for editing (initialize once, then manage locally)
+    var blocks by remember {
+        mutableStateOf(segmentsToBlocks(segments))
+    }
 
-    // Extract enrichment blocks
-    val enrichmentBlocks = segments.filterIsInstance<MessageSegment.EnrichmentBlock>()
+    // Sync from parent only when segments change externally (not from our own updates)
+    var lastSyncedSegments by remember { mutableStateOf(segments) }
+    LaunchedEffect(segments) {
+        // Only update if segments changed externally (not from our updateSegments call)
+        if (segments != lastSyncedSegments && blocksToSegments(blocks) != segments) {
+            blocks = segmentsToBlocks(segments)
+            lastSyncedSegments = segments
+        }
+    }
 
-    var showEnrichmentDialog by remember { mutableStateOf<EnrichmentType?>(null) }
+    // Track active block ID
+    var activeBlockId by remember { mutableStateOf(blocks.firstOrNull()?.id ?: "") }
+
+    // Enrichment dialog state
+    var showEnrichmentDialog by remember { mutableStateOf<EnrichmentDialogState?>(null) }
+
+    // Update parent when blocks change
+    val updateSegments = {
+        val newSegments = blocksToSegments(blocks)
+        onSegmentsChange(newSegments)
+    }
+
+    val blocksScrollState = rememberScrollState()
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        // Main textarea
-        UI.FormField(
-            label = placeholder.ifEmpty { s.shared("ai_composer_placeholder") },
-            value = textContent,
-            onChange = { newText ->
-                // Update only text segments, keep enrichments
-                val newSegments = if (newText.isEmpty()) {
-                    enrichmentBlocks
-                } else {
-                    listOf(MessageSegment.Text(newText)) + enrichmentBlocks
-                }
-                onSegmentsChange(newSegments)
-            },
-            fieldType = FieldType.TEXT_LONG
-        )
-
-        // Enrichment blocks list
-        if (enrichmentBlocks.isNotEmpty()) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                enrichmentBlocks.forEach { block ->
-                    EnrichmentBlockPreview(
-                        block = block,
-                        onEdit = { showEnrichmentDialog = block.type },
-                        onRemove = {
-                            val newSegments = segments.filter { it != block }
-                            onSegmentsChange(newSegments)
-                        }
+        // Blocks area with scroll and max height (1/3 screen)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxBlocksHeight)
+                .verticalScroll(blocksScrollState),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            blocks.forEach { block ->
+                TextBlockCard(
+                block = block,
+                isActive = (block.id == activeBlockId),
+                placeholder = if (blocks.size == 1 && block.text.isEmpty()) {
+                    placeholder.ifEmpty { s.shared("ai_composer_placeholder") }
+                } else "",
+                onActivate = { activeBlockId = block.id },
+                onTextChange = { newText ->
+                    blocks = blocks.map {
+                        if (it.id == block.id) it.copy(text = newText) else it
+                    }
+                    updateSegments()
+                },
+                onEnrichmentEdit = { enrichment ->
+                    // Open dialog for editing this enrichment
+                    showEnrichmentDialog = EnrichmentDialogState(
+                        blockId = block.id,
+                        type = enrichment.type,
+                        existingConfig = enrichment.config,
+                        existingPreview = enrichment.preview
                     )
+                },
+                onEnrichmentRemove = { enrichment ->
+                    blocks = blocks.map {
+                        if (it.id == block.id) {
+                            it.copy(enrichments = it.enrichments.filter { e -> e != enrichment })
+                        } else it
+                    }
+                    updateSegments()
+                },
+                onDeleteBlock = {
+                    // Remove this block (if not the last one)
+                    if (blocks.size > 1) {
+                        val index = blocks.indexOfFirst { it.id == block.id }
+                        blocks = blocks.filter { it.id != block.id }
+
+                        // Set active to previous block or first if deleting first
+                        activeBlockId = if (index > 0) {
+                            blocks[index - 1].id
+                        } else {
+                            blocks.firstOrNull()?.id ?: ""
+                        }
+                        updateSegments()
+                    } else {
+                        // Last block: clear it instead of deleting
+                        blocks = listOf(TextBlock())
+                        activeBlockId = blocks.first().id
+                        updateSegments()
+                    }
                 }
+            )
             }
         }
 
-        // Enrichment buttons + Send button on same line
+        // Controls row 1: Enrichment buttons + Add Text
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -108,64 +246,242 @@ fun UI.RichComposer(
                         action = getEnrichmentButtonAction(type),
                         display = ButtonDisplay.ICON,
                         size = Size.M,
-                        onClick = { showEnrichmentDialog = type }
+                        onClick = {
+                            showEnrichmentDialog = EnrichmentDialogState(
+                                blockId = activeBlockId,
+                                type = type,
+                                existingConfig = null,
+                                existingPreview = null
+                            )
+                        }
                     )
                 }
             }
 
-            // Spacer to push send button to the right
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Send button (conditionally shown and enabled)
-            if (showSendButton) {
-                UI.ActionButton(
-                    action = ButtonAction.CONFIRM, // Use CONFIRM for send action
-                    enabled = enabled,
-                    onClick = {
-                        LogManager.aiEnrichment("RichComposer Send button clicked with ${segments.size} segments")
-                        val richMessage = createRichMessage(context, segments, sessionType)
-                        LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
-                        onSend(richMessage)
-                    }
+            // Add Text button (creates new block)
+            UI.Button(
+                type = ButtonType.DEFAULT,
+                size = Size.M,
+                onClick = {
+                    val newBlock = TextBlock()
+                    blocks = blocks + newBlock
+                    activeBlockId = newBlock.id
+                    updateSegments()
+                }
+            ) {
+                UI.Text(
+                    text = "+ ${s.shared("ai_composer_add_text")}",
+                    type = TextType.BODY
                 )
+            }
+        }
+
+        // Controls row 2: Status (if provided) + Send button
+        if (showSendButton || statusContent != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Status content on the left (if provided)
+                if (statusContent != null) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        statusContent()
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                // Send button on the right
+                if (showSendButton) {
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        size = Size.M,
+                        state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED,
+                        onClick = {
+                            LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
+                            val richMessage = createRichMessage(context, blocksToSegments(blocks), sessionType)
+                            LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
+                            onSend(richMessage)
+                        }
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_send"),
+                            type = TextType.BODY
+                        )
+                    }
+                }
             }
         }
     }
 
     // Enrichment configuration dialog
-    showEnrichmentDialog?.let { type ->
+    showEnrichmentDialog?.let { dialogState ->
         EnrichmentConfigDialog(
-            type = type,
-            existingConfig = null, // TODO: Handle editing existing blocks
+            type = dialogState.type,
+            existingConfig = dialogState.existingConfig,
             onDismiss = { showEnrichmentDialog = null },
-            onConfirm = { config, preview ->
-                LogManager.aiEnrichment("RichComposer enrichment configured: type=$type, config length=${config.length}, preview='$preview'")
+            onConfirm = { config, uiPreview, promptPreview ->
+                LogManager.aiEnrichment("RichComposer enrichment configured: type=${dialogState.type}, config length=${config.length}, uiPreview='$uiPreview', promptPreview='$promptPreview'")
 
                 // Use EnrichmentProcessor to generate proper summary if preview is empty or generic
                 val enrichmentProcessor = EnrichmentProcessor(context)
-                val finalPreview = if (preview.isBlank() || preview == "${getEnrichmentIcon(type)} Configuration") {
-                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for $type")
-                    enrichmentProcessor.generateSummary(type, config)
+                val finalUiPreview = if (uiPreview.isBlank() || uiPreview == "${getEnrichmentIcon(dialogState.type)} Configuration") {
+                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate preview for ${dialogState.type}")
+                    enrichmentProcessor.generateSummary(dialogState.type, config)
                 } else {
-                    LogManager.aiEnrichment("Using provided preview for $type: '$preview'")
-                    preview
+                    LogManager.aiEnrichment("Using provided uiPreview for ${dialogState.type}: '$uiPreview'")
+                    uiPreview
                 }
 
-                val newBlock = MessageSegment.EnrichmentBlock(
-                    type = type,
+                val finalPromptPreview = if (promptPreview.isBlank() || promptPreview == "${getEnrichmentIcon(dialogState.type)} Configuration") {
+                    LogManager.aiEnrichment("Using EnrichmentProcessor to generate promptPreview for ${dialogState.type}")
+                    enrichmentProcessor.generateSummary(dialogState.type, config)
+                } else {
+                    LogManager.aiEnrichment("Using provided promptPreview for ${dialogState.type}: '$promptPreview'")
+                    promptPreview
+                }
+
+                val newEnrichment = MessageSegment.EnrichmentBlock(
+                    type = dialogState.type,
                     config = config,
-                    preview = finalPreview
+                    preview = finalUiPreview,
+                    promptPreview = finalPromptPreview
                 )
 
-                LogManager.aiEnrichment("Created EnrichmentBlock: type=$type, preview='$finalPreview', config='$config'")
+                LogManager.aiEnrichment("Created EnrichmentBlock: type=${dialogState.type}, uiPreview='$finalUiPreview', promptPreview='$finalPromptPreview'")
 
-                val newSegments = segments + newBlock
-                LogManager.aiEnrichment("Updated segments count: ${segments.size} -> ${newSegments.size}")
-                onSegmentsChange(newSegments)
+                // Add or update enrichment in the target block
+                blocks = blocks.map { block ->
+                    if (block.id == dialogState.blockId) {
+                        // If editing, replace existing; if new, add
+                        val enrichments = if (dialogState.existingConfig != null) {
+                            // Replace enrichment with same type and config
+                            block.enrichments.map { e ->
+                                if (e.type == dialogState.type && e.config == dialogState.existingConfig) {
+                                    newEnrichment
+                                } else e
+                            }
+                        } else {
+                            // Add new enrichment
+                            block.enrichments + newEnrichment
+                        }
+                        LogManager.aiEnrichment("Block ${block.id} now has ${enrichments.size} enrichments")
+                        block.copy(enrichments = enrichments)
+                    } else block
+                }
+
+                // Log all blocks state
+                LogManager.aiEnrichment("Total blocks after enrichment: ${blocks.size}, enrichments count: ${blocks.map { it.enrichments.size }}")
+
+                updateSegments()
                 showEnrichmentDialog = null
             },
             sessionType = sessionType
         )
+    }
+}
+
+/**
+ * State for enrichment dialog
+ */
+private data class EnrichmentDialogState(
+    val blockId: String,
+    val type: EnrichmentType,
+    val existingConfig: String?,
+    val existingPreview: String?
+)
+
+/**
+ * Card component for one text block
+ * Shows text field + enrichments + controls
+ */
+@Composable
+private fun TextBlockCard(
+    block: TextBlock,
+    isActive: Boolean,
+    placeholder: String,
+    onActivate: () -> Unit,
+    onTextChange: (String) -> Unit,
+    onEnrichmentEdit: (MessageSegment.EnrichmentBlock) -> Unit,
+    onEnrichmentRemove: (MessageSegment.EnrichmentBlock) -> Unit,
+    onDeleteBlock: () -> Unit
+) {
+    val s = Strings.`for`(context = LocalContext.current)
+
+    // Debug log
+    LogManager.aiEnrichment("TextBlockCard rendering: block ${block.id}, enrichments: ${block.enrichments.size}")
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onActivate() }
+    ) {
+        UI.Card(
+            type = CardType.DEFAULT,
+            highlight = isActive
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                // Text field (delete button is positioned absolute)
+                UI.FormField(
+                    label = placeholder,
+                    value = block.text,
+                    onChange = { newText ->
+                        onTextChange(newText)
+                        onActivate() // Activate on typing
+                    },
+                    fieldType = FieldType.TEXT_LONG,
+                    fieldModifier = FieldModifier(
+                        onFocusChanged = { focusState ->
+                            if (focusState.isFocused) {
+                                onActivate()
+                            }
+                        }
+                    )
+                )
+
+                // Enrichments list
+                if (block.enrichments.isNotEmpty()) {
+                    LogManager.aiEnrichment("Rendering ${block.enrichments.size} enrichments for block ${block.id}")
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        UI.Text(
+                            text = s.shared("ai_composer_enrichments_label"),
+                            type = TextType.CAPTION
+                        )
+
+                        block.enrichments.forEach { enrichment ->
+                            EnrichmentBlockPreview(
+                                block = enrichment,
+                                onEdit = { onEnrichmentEdit(enrichment) },
+                                onRemove = { onEnrichmentRemove(enrichment) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Delete button positioned absolutely at top-right
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
+        ) {
+            UI.ActionButton(
+                action = ButtonAction.DELETE,
+                display = ButtonDisplay.ICON,
+                size = Size.S,
+                onClick = onDeleteBlock
+            )
+        }
     }
 }
 
@@ -225,11 +541,12 @@ private fun EnrichmentBlockPreview(
 private fun createRichMessage(context: Context, segments: List<MessageSegment>, sessionType: SessionType = SessionType.CHAT): RichMessage {
     LogManager.aiEnrichment("RichComposer.createRichMessage() called with ${segments.size} segments, sessionType=$sessionType")
 
-    // Compute linearText by joining all content
-    val linearText = segments.joinToString(" ") { segment ->
+    // Compute linearText by joining all content with structured format
+    // Text segments and enrichments previews on separate lines with brackets
+    val linearText = segments.joinToString("\n") { segment ->
         when (segment) {
             is MessageSegment.Text -> segment.content
-            is MessageSegment.EnrichmentBlock -> segment.preview
+            is MessageSegment.EnrichmentBlock -> "[${segment.promptPreview}]"
         }
     }.trim()
 
@@ -287,7 +604,7 @@ private fun EnrichmentConfigDialog(
     type: EnrichmentType,
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, preview: String) -> Unit,
+    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
     when (type) {
@@ -318,7 +635,7 @@ private fun EnrichmentConfigDialog(
 private fun PointerEnrichmentDialog(
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, preview: String) -> Unit,
+    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit,
     sessionType: SessionType = SessionType.CHAT
 ) {
     val context = LocalContext.current
@@ -380,8 +697,8 @@ private fun PointerEnrichmentDialog(
             onConfirm = {
                 selectionResult?.let { result ->
                     val config = createPointerConfig(result, importance, timestampSelection, description, includeData)
-                    val preview = createPointerPreview(context, result, timestampSelection, importance)
-                    onConfirm(config, preview)
+                    val (uiPreview, promptPreview) = createPointerPreview(context, result, timestampSelection, importance)
+                    onConfirm(config, uiPreview, promptPreview)
                 }
             },
             onCancel = onDismiss
@@ -539,7 +856,7 @@ private fun PlaceholderEnrichmentDialog(
     type: EnrichmentType,
     existingConfig: String?,
     onDismiss: () -> Unit,
-    onConfirm: (config: String, preview: String) -> Unit
+    onConfirm: (config: String, uiPreview: String, promptPreview: String) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -550,7 +867,8 @@ private fun PlaceholderEnrichmentDialog(
     UI.Dialog(
         type = DialogType.CONFIGURE,
         onConfirm = {
-            onConfirm(config, preview)
+            // For placeholder, use same preview for UI and prompt
+            onConfirm(config, preview, preview)
         },
         onCancel = onDismiss
     ) {
@@ -665,39 +983,40 @@ private fun createPointerConfig(
 }
 
 /**
- * Create human-readable preview from POINTER enrichment data
+ * Create human-readable previews from POINTER enrichment data
+ * Returns Pair(uiPreview, promptPreview)
+ *
+ * UI: "Santé"
+ * Prompt: "Santé (id = zones/zone_123)"
  */
 private fun createPointerPreview(
     context: Context,
     selectionResult: SelectionResult,
     timestampSelection: TimestampSelection,
     importance: String
-): String {
+): Pair<String, String> {
     val s = Strings.`for`(context = context)
 
-    val baseText = when (selectionResult.selectionLevel.name) {
-        "ZONE" -> s.shared("ai_data_zone")
-        "INSTANCE" -> s.shared("ai_data_tool")
-        "FIELD" -> s.shared("ai_data_field")
-        else -> s.shared("ai_data_generic")
+    // Display name from displayChain (human-readable names)
+    val displayName = if (selectionResult.displayChain.isNotEmpty()) {
+        selectionResult.displayChain.last()
+    } else {
+        val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
+        pathParts.lastOrNull() ?: "sélection"
     }
 
-    val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
-    val displayName = pathParts.lastOrNull() ?: "sélection"
-
+    // Period text (if filtered)
     val périodeText = if (timestampSelection.isComplete) {
         " (${s.shared("ai_period_filtered")})"
     } else {
         ""
     }
 
-    // Match importance parameter (not localized - internal value)
-    val importanceIcon = when (importance) {
-        "optional" -> "⚪"
-        "essential" -> "🔴"
-        "important" -> "🔵"
-        else -> ""
-    }
+    // UI version: just the name and period
+    val uiPreview = "$displayName$périodeText"
 
-    return "$importanceIcon $baseText $displayName$périodeText"
+    // Prompt version: name + ID + period
+    val promptPreview = "$displayName (id = ${selectionResult.selectedPath})$périodeText"
+
+    return Pair(uiPreview, promptPreview)
 }

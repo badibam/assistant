@@ -96,8 +96,9 @@ object UI {
     fun Card(
         type: CardType,
         size: Size = Size.M,
+        highlight: Boolean = false,
         content: @Composable () -> Unit
-    ) = CurrentTheme.current.Card(type, size, content)
+    ) = CurrentTheme.current.Card(type, size, highlight, content)
     
     // =====================================
     // FEEDBACK SYSTEM

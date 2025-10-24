@@ -330,17 +330,18 @@ private fun ChatMode(
                         }
                     },
                     placeholder = s.shared("ai_composer_placeholder"),
-                    enabled = isComposerEnabled
+                    enabled = isComposerEnabled,
+                    statusContent = {
+                        // Status bar inline with Send button
+                        SessionStatusBar(
+                            phase = aiState.phase,
+                            sessionType = session.type,
+                            context = context
+                        )
+                    }
                 )
             }
         }
-
-        // Status bar (always visible at bottom)
-        SessionStatusBar(
-            phase = aiState.phase,
-            sessionType = session.type,
-            context = context
-        )
     }
 
     // Error display

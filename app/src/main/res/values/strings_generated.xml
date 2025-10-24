@@ -320,6 +320,7 @@
     <string name="shared_action_delete">Supprimer</string>
     <string name="shared_action_validate">Valider</string>
     <string name="shared_action_confirm">Confirmer</string>
+    <string name="shared_action_send">Envoyer</string>
     <string name="shared_action_select_icon">Choisir une icône</string>
     <string name="shared_action_create_zone">Créer Zone</string>
     <string name="shared_action_edit_zone">Modifier Zone</string>
@@ -343,6 +344,9 @@
     <string name="shared_action_resume">Reprendre</string>
     <string name="shared_action_start">Démarrer</string>
     <string name="shared_ai_composer_placeholder">Écris ton message...</string>
+    <string name="shared_ai_composer_add_text">Texte</string>
+    <string name="shared_ai_composer_active_block">Actif</string>
+    <string name="shared_ai_composer_enrichments_label">Enrichissements :</string>
     <string name="shared_ai_enrichment_config">Configuration enrichissement</string>
     <string name="shared_pointer_enrichment_selector_title">Sélectionner données</string>
     <string name="shared_pointer_enrichment_config">Configuration Pointer</string>
