@@ -63,19 +63,11 @@ fun ChatMessageBubble(
                 // Message content
                 when {
                     message.richContent != null -> {
-                        // Rich message with segments
+                        // Rich message with segments (use UI-friendly version without IDs)
                         UI.Text(
-                            text = "${message.richContent.linearText}",
+                            text = message.richContent.toDisplayText(),
                             type = TextType.BODY
                         )
-                        if (message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().isNotEmpty()) {
-                            UI.Text(
-                                text = s.shared("ai_message_enrichments_count").format(
-                                    message.richContent.segments.filterIsInstance<MessageSegment.EnrichmentBlock>().size
-                                ),
-                                type = TextType.CAPTION
-                            )
-                        }
                     }
                     message.textContent != null -> {
                         UI.Text(

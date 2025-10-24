@@ -8,9 +8,20 @@ import org.json.JSONObject
  */
 data class RichMessage(
     val segments: List<MessageSegment>,
-    val linearText: String,             // Computed at creation for AI consumption
+    val linearText: String,             // Computed at creation for AI consumption (uses promptPreview with IDs)
     val dataCommands: List<DataCommand> // Computed at creation for prompt system
 ) {
+    /**
+     * Generate UI-friendly text without IDs (uses preview instead of promptPreview)
+     */
+    fun toDisplayText(): String {
+        return segments.joinToString("\n") { segment ->
+            when (segment) {
+                is MessageSegment.Text -> segment.content
+                is MessageSegment.EnrichmentBlock -> "[${segment.preview}]"
+            }
+        }.trim()
+    }
     /**
      * Serialize RichMessage to JSON string for storage
      */
@@ -31,6 +42,7 @@ data class RichMessage(
                     segmentJson.put("enrichmentType", segment.type.name)
                     segmentJson.put("config", segment.config)
                     segmentJson.put("preview", segment.preview)
+                    segmentJson.put("promptPreview", segment.promptPreview)
                 }
             }
             segmentsArray.put(segmentJson)
@@ -76,7 +88,8 @@ data class RichMessage(
                             MessageSegment.EnrichmentBlock(
                                 type = enrichmentType,
                                 config = segmentJson.getString("config"),
-                                preview = segmentJson.getString("preview")
+                                preview = segmentJson.getString("preview"),
+                                promptPreview = segmentJson.getString("promptPreview")
                             )
                         }
                         else -> null
@@ -113,8 +126,9 @@ sealed class MessageSegment {
 
     data class EnrichmentBlock(
         val type: EnrichmentType,
-        val config: String,       // JSON configuration of the block
-        val preview: String       // Human-readable preview like "données nutrition zone Santé"
+        val config: String,          // JSON configuration of the block
+        val preview: String,         // Short preview for UI: "Zone : Santé"
+        val promptPreview: String    // Detailed preview for prompt: "Zone : Santé (id = zone_123)"
     ) : MessageSegment()
 }
 
