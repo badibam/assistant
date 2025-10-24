@@ -64,7 +64,7 @@ cd assistant
 
 ## État du développement
 
-**Version 0.3.1** (octobre 2024)
+**Version 0.3.3** (janvier 2025)
 
 ### Systèmes de base
 
@@ -72,11 +72,11 @@ cd assistant
 - **Validation** : JSON Schema avec messages traduits
 - **Internationalisation** : Système `s.shared()`/`s.tool()` avec génération automatique
 - **Discovery pattern** : Extension d'outils sans modification du core
-- **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés
+- **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés avec highlight
 - **Versioning** : Migrations SQL + transformations JSON centralisées
 - **Backup/Restore** : Export/import/reset avec gestion versions
 - **Navigation données** : DataNavigator hiérarchique + ZoneScopeSelector avec périodes
-- **Transcription** : Provider pattern (offline/online) avec auto-retry
+- **Transcription** : Provider pattern (offline/online) avec auto-retry, formatage segments Vosk
 
 ### Système IA
 
@@ -87,6 +87,7 @@ cd assistant
 - **Validation** : Hiérarchie App > Zone > Tool > Session > Request
 - **Communication** : Modules MultipleChoice et Validation
 - **Providers** : Abstraction extensible (Claude supporté)
+- **Composer** : Architecture multi-blocs avec enrichments alternés, double preview UI/Prompt
 
 ### Outils
 
