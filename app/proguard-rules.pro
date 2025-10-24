@@ -48,3 +48,37 @@
 # Gson (si utilisé pour autre chose)
 -keep class com.google.gson.** { *; }
 -dontwarn com.google.gson.**
+
+# ================================================================
+# Vosk Speech Recognition - Keep native code
+# ================================================================
+
+# Keep all Vosk classes (JNI bridge)
+-keep class org.vosk.** { *; }
+-keepclassmembers class org.vosk.** { *; }
+-keepclasseswithmembers class org.vosk.** {
+    native <methods>;
+}
+-dontwarn org.vosk.**
+
+# Keep alphacephei packages (Vosk parent)
+-keep class com.alphacephei.** { *; }
+-keepclassmembers class com.alphacephei.** { *; }
+-keepclasseswithmembers class com.alphacephei.** {
+    native <methods>;
+}
+-dontwarn com.alphacephei.**
+
+# Keep all native methods in all classes
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+
+# Prevent obfuscation of Vosk classes (JNI expects exact names)
+-keepnames class org.vosk.** { *; }
+-keepnames class com.alphacephei.** { *; }
+
+# Keep JNA (Java Native Access) - Used by Vosk for native bridge
+-keep class com.sun.jna.** { *; }
+-keepclassmembers class * extends com.sun.jna.** { public *; }
+-dontwarn com.sun.jna.**
