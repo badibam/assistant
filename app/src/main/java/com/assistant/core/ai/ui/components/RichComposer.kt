@@ -147,8 +147,9 @@ fun UI.RichComposer(
         // Only update if segments changed externally (not from our updateSegments call)
         if (segments != lastSyncedSegments && blocksToSegments(blocks) != segments) {
             blocks = segmentsToBlocks(segments)
-            lastSyncedSegments = segments
         }
+        // Always keep lastSyncedSegments in sync to avoid stale state
+        lastSyncedSegments = segments
     }
 
     // Track active block ID
@@ -169,6 +170,45 @@ fun UI.RichComposer(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+
+        // Controls row: Status (if provided) + Send button
+        // Placed at top so it stays visible when keyboard appears
+        if (showSendButton || statusContent != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Status content on the left (if provided)
+                if (statusContent != null) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        statusContent()
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                // Send button on the right
+                if (showSendButton) {
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        size = Size.M,
+                        state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED,
+                        onClick = {
+                            LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
+                            val richMessage = createRichMessage(context, blocksToSegments(blocks), sessionType)
+                            LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
+                            onSend(richMessage)
+                        }
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_send"),
+                            type = TextType.BODY
+                        )
+                    }
+                }
+            }
+        }
 
         // Blocks area with scroll and max height (1/3 screen)
         Column(
@@ -233,7 +273,7 @@ fun UI.RichComposer(
             }
         }
 
-        // Controls row 1: Enrichment buttons + Add Text
+        // Controls row: Enrichment buttons + Add Text
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -273,44 +313,6 @@ fun UI.RichComposer(
                     text = "+ ${s.shared("ai_composer_add_text")}",
                     type = TextType.BODY
                 )
-            }
-        }
-
-        // Controls row 2: Status (if provided) + Send button
-        if (showSendButton || statusContent != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Status content on the left (if provided)
-                if (statusContent != null) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        statusContent()
-                    }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-
-                // Send button on the right
-                if (showSendButton) {
-                    UI.Button(
-                        type = ButtonType.PRIMARY,
-                        size = Size.M,
-                        state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED,
-                        onClick = {
-                            LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
-                            val richMessage = createRichMessage(context, blocksToSegments(blocks), sessionType)
-                            LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
-                            onSend(richMessage)
-                        }
-                    ) {
-                        UI.Text(
-                            text = s.shared("action_send"),
-                            type = TextType.BODY
-                        )
-                    }
-                }
             }
         }
     }
@@ -436,7 +438,7 @@ private fun TextBlockCard(
                         onTextChange(newText)
                         onActivate() // Activate on typing
                     },
-                    fieldType = FieldType.TEXT_LONG,
+                    fieldType = FieldType.TEXT_UNLIMITED,
                     fieldModifier = FieldModifier(
                         onFocusChanged = { focusState ->
                             if (focusState.isFocused) {

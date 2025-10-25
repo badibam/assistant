@@ -46,6 +46,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             "management": "manual",
             "validateConfig": false,
             "validateData": false,
+            "always_send": false,
             "display_mode": "LINE"
         }
         """.trimIndent()
@@ -730,7 +731,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                         },
                         "text": {
                             "type": "string",
-                            "maxLength": ${FieldLimits.MEDIUM_LENGTH},
+                            "maxLength": ${FieldLimits.LONG_LENGTH},
                             "description": "${s.tool("schema_data_text_content")}"
                         }
                     },

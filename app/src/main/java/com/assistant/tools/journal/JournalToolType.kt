@@ -43,6 +43,7 @@ object JournalToolType : ToolTypeContract {
             "management": "manual",
             "validateConfig": false,
             "validateData": false,
+            "always_send": false,
             "sort_order": "descending"
         }
         """.trimIndent()

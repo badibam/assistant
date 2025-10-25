@@ -44,6 +44,7 @@ import java.io.File
  * @param audioFilePath Path to audio file (if exists)
  * @param transcriptionStatus Current transcription status
  * @param modelName Model name to display during recording
+ * @param fieldType Type of text field (determines max length) - default TEXT_UNLIMITED for transcribed content
  * @param enabled Whether field is editable
  * @param required Whether field is required
  * @param autoTranscribe If true, automatically trigger transcription after recording (default: true)
@@ -59,6 +60,7 @@ fun TranscribableTextField(
     audioFilePath: String,
     transcriptionStatus: TranscriptionStatus? = null,
     modelName: String,
+    fieldType: FieldType = FieldType.TEXT_UNLIMITED,
     enabled: Boolean = true,
     required: Boolean = false,
     autoTranscribe: Boolean = true,
@@ -331,7 +333,7 @@ fun TranscribableTextField(
             label = "", // Label already shown above
             value = value ?: "",
             onChange = onChange,
-            fieldType = FieldType.TEXT_MEDIUM,
+            fieldType = fieldType,
             required = required,
             state = when {
                 transcriptionStatus == TranscriptionStatus.FAILED -> ComponentState.ERROR

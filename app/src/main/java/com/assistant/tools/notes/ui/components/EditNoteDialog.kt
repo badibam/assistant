@@ -2,7 +2,10 @@ package com.assistant.tools.notes.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -135,6 +138,7 @@ fun EditNoteDialog(
             onCancel = onCancel
         ) {
             Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 UI.Text(dialogTitle, TextType.SUBTITLE)
@@ -145,7 +149,7 @@ fun EditNoteDialog(
                     value = content,
                     onChange = { content = it },
                     required = true,
-                    fieldType = FieldType.TEXT_MEDIUM,
+                    fieldType = FieldType.TEXT_LONG,
                     fieldModifier = FieldModifier.withFocus(focusRequester)
                 )
 

@@ -46,6 +46,7 @@ fun NotesConfigScreen(
     var management by remember { mutableStateOf("manual") }
     var validateConfig by remember { mutableStateOf(false) }
     var validateData by remember { mutableStateOf(false) }
+    var alwaysSend by remember { mutableStateOf(false) }
 
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
@@ -74,6 +75,7 @@ fun NotesConfigScreen(
                         management = config.optString("management", "manual")
                         validateConfig = config.optBoolean("validateConfig", false)
                         validateData = config.optBoolean("validateData", false)
+                        alwaysSend = config.optBoolean("always_send", false)
                         LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
@@ -129,6 +131,7 @@ fun NotesConfigScreen(
                     put("management", management)
                     put("validateConfig", validateConfig)
                     put("validateData", validateData)
+                    put("always_send", alwaysSend)
                 }
             }
         }
@@ -144,6 +147,7 @@ fun NotesConfigScreen(
                     "management" -> management = value as String
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
+                    "always_send" -> alwaysSend = value as Boolean
                 }
             },
             toolTypeName = "notes"
@@ -163,7 +167,8 @@ fun NotesConfigScreen(
                         "display_mode" to displayMode,
                         "management" to management,
                         "validateConfig" to validateConfig,
-                        "validateData" to validateData
+                        "validateData" to validateData,
+                        "always_send" to alwaysSend
                     )
 
                     // Use unified ValidationHelper

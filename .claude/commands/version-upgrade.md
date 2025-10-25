@@ -8,7 +8,7 @@ On passe à la version $1
 
 **Séquence complète :**
 
-1. **Build release** : Tester sur device réel avec `./gradlew assembleRelease`
+1. **Build release** : Tester sur device réel avec `./gradlew assembleRelease` timeout:10min
 2. Si OK, **modifier les versions** dans `app/build.gradle.kts` :
    - Incrémenter `versionCode`
    - Mettre à jour `versionName` (actuel → "$1")
@@ -21,15 +21,16 @@ On passe à la version $1
    - Créer fichier temporaire `release-notes-$1.txt`
    - Style : précis, simple, sans emoji, sans mentionner claude. Uniquement changements depuis dernière version.
    - Présenter pour correction avant release
-8. **Release GitHub** :
-   - Utiliser `gh release create v$1`
+8. **Build release** : à nouveau timeout:10min
+9. **Release GitHub** :
+   - Utiliser `gh release create v$1` timeout:10min
    - Ajouter notes de version (fichier corrigé)
    - Attacher APK : `app/build/outputs/apk/release/assistant-v$1.apk`
-9. **Cleanup** : Supprimer fichier notes de version temporaire
-10. **Merge main** :
+10. **Cleanup** : Supprimer fichier notes de version temporaire
+11. **Merge main** :
    - `git checkout main`
    - `git merge develop`
    - `git push origin main`
-11. **Retour develop** : `git checkout develop`
+12. **Retour develop** : `git checkout develop`
 
 **Note** : Cette commande gère uniquement la release de l'app. Pour les changements de DB, utiliser `/db-upgrade` avant.

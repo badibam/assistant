@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -340,6 +342,7 @@ fun TrackingEntryDialog(
             onCancel = onCancel
         ) {
             Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 UI.Text(dialogTitle, TextType.SUBTITLE)
@@ -386,7 +389,7 @@ fun TrackingEntryDialog(
                             value = textValue,
                             onChange = { textValue = it },
                             required = true,
-                            fieldType = FieldType.TEXT_MEDIUM
+                            fieldType = FieldType.TEXT_LONG
                         )
                     }
                     

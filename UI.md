@@ -11,6 +11,34 @@ Guide des patterns et composants UI pour maintenir cohérence et simplicité.
 ### Layout Standard
 Column avec fillMaxWidth, padding vertical 16dp et espacement automatique entre éléments.
 
+### Scroll Obligatoire pour Tous les Conteneurs
+**Règle** : Tous les conteneurs de contenu (écrans, dialogues, formulaires) DOIVENT avoir un scroll vertical sur leur Column principale.
+
+**S'applique à** : MainScreen, ZoneScreen, CreateZoneScreen, Settings, Dialogues de configuration, Formulaires multi-sections, etc.
+
+**Pattern obligatoire** :
+```kotlin
+Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .verticalScroll(rememberScrollState())
+        .padding(vertical = 16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp)
+) {
+    // Contenu scrollable
+}
+```
+
+**Imports requis** :
+```kotlin
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+```
+
+**Rationale** : Le scroll garantit que tout le contenu reste accessible sur tous les appareils, quelle que soit la taille de l'écran, la quantité de contenu affichée, ou la présence du clavier.
+
+**Exceptions** : Seuls les conteneurs avec LazyColumn/LazyRow (qui ont leur propre scroll natif) sont exemptés.
+
 ### Headers de Page
 UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies.
 
@@ -65,17 +93,52 @@ UI.ActionButton supporte requireConfirmation avec message personnalisable.
 
 ### Extensions FieldType
 - **TEXT** (60 chars) : Noms, identifiants, labels
-- **TEXT_MEDIUM** (250 chars) : Descriptions, valeurs tracking texte
-- **TEXT_LONG** (1500 chars) : Contenu libre long
-- **TEXT_UNLIMITED** : Documentation, exports
+- **TEXT_MEDIUM** (250 chars) : Descriptions courtes
+- **TEXT_LONG** (1500 chars) : Contenu textuel substantiel
+- **TEXT_UNLIMITED** : Contenu long sans limite (journaux, notes, messages IA, transcriptions)
 - **NUMERIC** : Clavier numérique
 - **EMAIL** : Clavier email, pas d'autocorrect
 - **PASSWORD** : Masqué, pas d'autocorrect
 - **SEARCH** : Autocorrect + action loupe
 
+### Limites Définies (FieldLimits.kt)
+Les constantes suivantes sont référencées dans les schémas JSON :
+- `SHORT_LENGTH = 60` : FieldType.TEXT
+- `MEDIUM_LENGTH = 250` : FieldType.TEXT_MEDIUM
+- `LONG_LENGTH = 1500` : FieldType.TEXT_LONG
+- `UNLIMITED_LENGTH = Int.MAX_VALUE` : FieldType.TEXT_UNLIMITED
+
+### Cohérence Schéma/UI - RÈGLE CRITIQUE
+
+**Principe** : La limite UI (FieldType) DOIT correspondre à la limite schéma (maxLength).
+
+**Cas d'usage** :
+- **Contenu transcrit** (Journal, etc.) : `TEXT_UNLIMITED` UI + pas de maxLength schéma
+- **Notes textuelles** : `TEXT_LONG` UI + `maxLength: LONG_LENGTH` schéma
+- **Messages IA** : `TEXT_UNLIMITED` UI (pas de schéma pour le moment)
+- **Tracking TEXT** : `TEXT_LONG` UI + `maxLength: LONG_LENGTH` schéma
+- **Noms/labels** : `TEXT` UI + `maxLength: SHORT_LENGTH` schéma
+- **Descriptions** : `TEXT_MEDIUM` UI + `maxLength: MEDIUM_LENGTH` schéma
+
+**Vérification** :
+```kotlin
+// Schéma (ToolType)
+"field": {
+    "type": "string",
+    "maxLength": ${FieldLimits.LONG_LENGTH}  // Doit correspondre
+}
+
+// UI (ConfigScreen)
+UI.FormField(
+    fieldType = FieldType.TEXT_LONG  // Doit correspondre au schéma
+)
+```
+
+**INTERDIT** : Une limite UI plus restrictive que le schéma (ex: TEXT_MEDIUM pour un schéma LONG_LENGTH).
+
 ### Autocorrection Intelligente
 - **TEXT** : Words + autocorrect
-- **TEXT_MEDIUM/LONG** : Sentences + autocorrect
+- **TEXT_MEDIUM/LONG/UNLIMITED** : Sentences + autocorrect
 - **EMAIL/PASSWORD** : Pas d'autocorrect (sécurité)
 - **NUMERIC** : Clavier numérique uniquement
 - **SEARCH** : Words + action loupe

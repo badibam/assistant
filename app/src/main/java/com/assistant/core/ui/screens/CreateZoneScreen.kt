@@ -1,6 +1,8 @@
 package com.assistant.core.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -89,10 +91,12 @@ fun CreateZoneScreen(
             UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
         }
     }
-    
-    
+
+
     Column(
-        modifier = Modifier.padding(24.dp),
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Title - centered (MainScreen pattern)

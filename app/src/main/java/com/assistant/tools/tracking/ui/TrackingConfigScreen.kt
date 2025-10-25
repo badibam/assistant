@@ -127,20 +127,27 @@ fun TrackingConfigScreen(
     
     // Single config state - source of truth
     var config by remember { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
-    
+
+    // General config states (for ToolGeneralConfigSection reactivity)
+    var alwaysSend by remember { mutableStateOf(false) }
+
     // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
-    val items by remember { derivedStateOf { 
+    val items by remember { derivedStateOf {
         val itemsArray = config.optJSONArray("items")
         itemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
     } }
-    
+
     // Track original type for data deletion detection
     var originalType by remember { mutableStateOf("") }
     var initialConfigString by remember { mutableStateOf("") }
-    
+
     // Config update helpers
     fun updateConfig(key: String, value: Any) {
+        // Update state for reactive fields
+        if (key == "always_send") {
+            alwaysSend = value as Boolean
+        }
         config.put(key, value)
         config = JSONObject(config.toString()) // Force recomposition
     }
@@ -162,10 +169,11 @@ fun TrackingConfigScreen(
     // Load config: NO FALLBACKS - CRASH IF DB FAILS
     LaunchedEffect(existingToolId) {
         LogManager.tracking("LaunchedEffect triggered - existingToolId: $existingToolId")
-        
+
         if (existingToolId == null) {
             LogManager.tracking("No existingToolId, using default config for creation")
             config = JSONObject(TrackingToolType.getDefaultConfig())
+            alwaysSend = config.optBoolean("always_send", false)
             return@LaunchedEffect
         }
         
@@ -195,8 +203,9 @@ fun TrackingConfigScreen(
         initialConfigString = configString
         originalType = newConfig.optString("type", "")
         LogManager.tracking("Original type captured: $originalType")
-        
+
         config = newConfig
+        alwaysSend = config.optBoolean("always_send", false)
     }
     
     // UI state for item dialog
@@ -640,6 +649,9 @@ fun TrackingConfigScreen(
         Spacer(modifier = Modifier.height(8.dp))
         
         // Card 1: General parameters (reusable composable)
+        // Sync alwaysSend state back to config before passing to component
+        config.put("always_send", alwaysSend)
+
         ToolGeneralConfigSection(
             config = config,
             updateConfig = ::updateConfig,

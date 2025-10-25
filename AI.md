@@ -158,8 +158,9 @@ enum class SystemMessageType {
     ACTIONS_EXECUTED,    // Résultats actions → envoyé au prompt
     LIMIT_REACHED,       // Limite atteinte → envoyé au prompt
     FORMAT_ERROR,        // Erreur de format réponse IA → envoyé au prompt pour correction
-    NETWORK_ERROR,       // Erreurs réseau/HTTP/provider → filtré du prompt (audit uniquement)
-    SESSION_TIMEOUT      // Timeout watchdog session → filtré du prompt (audit uniquement)
+    NETWORK_ERROR,       // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
+    PROVIDER_ERROR,      // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
+    SESSION_TIMEOUT      // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
 }
 ```
 
@@ -601,12 +602,12 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 **AI actions** : Générés après exécution actionCommands IA, stockés après réponse AI, type ACTIONS_EXECUTED sans formattedData.
 **Limites** : Générés quand limite atteinte, type LIMIT_REACHED avec summary, pas de renvoie auto (attend message user).
 **Format errors** : Générés quand parsing communicationModule échoue, type FORMAT_ERROR avec détails erreurs, renvoie auto à l'IA pour correction.
-**Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR) et timeout watchdog (SESSION_TIMEOUT). Filtrés du prompt IA (audit uniquement).
+**Erreurs système** : Générés pour erreurs réseau (NETWORK_ERROR), provider (PROVIDER_ERROR) et timeout watchdog (SESSION_TIMEOUT). **TOUJOURS visibles dans l'UI** pour transparence utilisateur. Filtrés du prompt IA (excludeFromPrompt=true, audit uniquement).
 
 ### Format dans prompts
 Provider décide du format d'inclusion. Généralement fusion avec messages USER consécutifs (formattedData ajouté comme content block).
 
-**Filtrage** : NETWORK_ERROR, SESSION_TIMEOUT et messages avec `excludeFromPrompt=true` exclus du contexte IA (audit et UI uniquement).
+**Filtrage** : NETWORK_ERROR, PROVIDER_ERROR, SESSION_TIMEOUT et messages avec `excludeFromPrompt=true` exclus du contexte IA (visibles UI + audit, pas dans prompt).
 
 ---
 

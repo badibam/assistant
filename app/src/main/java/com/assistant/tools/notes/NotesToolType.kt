@@ -39,7 +39,8 @@ object NotesToolType : ToolTypeContract {
             "display_mode": "EXTENDED",
             "management": "manual",
             "validateConfig": false,
-            "validateData": false
+            "validateData": false,
+            "always_send": false
         }
         """.trimIndent()
 

@@ -99,36 +99,36 @@ object DefaultTheme : ThemeContract {
     override fun getColorScheme(paletteId: String): ColorScheme {
         return when (paletteId) {
             "default_light" -> lightColorScheme(
-                primary = Color(0xFF1976D2),        // Material Blue
-                onPrimary = Color(0xFFFFFFFF),      // White
-                secondary = Color(0xFF03DAC6),      // Teal
-                onSecondary = Color(0xFF000000),    // Black
-                surface = Color(0xFFFFFFFF),        // White
-                onSurface = Color(0xFF1C1B1F),      // Dark Gray
-                surfaceVariant = Color(0xFFF3F0F4), // Very Light Gray
-                onSurfaceVariant = Color(0xFF49454F), // Medium Dark Gray
-                background = Color(0xFFFFFBFE),     // Off White
-                onBackground = Color(0xFF1C1B1F),   // Dark Gray
-                error = Color(0xFFBA1A1A),          // Red
-                onError = Color(0xFFFFFFFF),        // White
-                outline = Color(0xFF79747E),        // Medium Gray
-                outlineVariant = Color(0xFFCAC4D0)  // Light Gray
+                primary = Color(0xFF7C9DD6),        // Bleu pervenche vif mais doux
+                onPrimary = Color(0xFFFFFFFF),      // Blanc
+                secondary = Color(0xFFE89BA0),      // Rose corail vivant
+                onSecondary = Color(0xFF4A2428),    // Bordeaux foncé
+                surface = Color(0xFFFAF8F5),        // Crème très léger
+                onSurface = Color(0xFF2E2C3A),      // Gris foncé tirant vers violet
+                surfaceVariant = Color(0xFFEBE7F2), // Lavande très pâle
+                onSurfaceVariant = Color(0xFF524E5F), // Gris violet moyen
+                background = Color(0xFFFFFCF9),     // Blanc cassé chaud
+                onBackground = Color(0xFF2E2C3A),   // Gris foncé
+                error = Color(0xFFDB6B6B),          // Rouge corail vif
+                onError = Color(0xFFFFFFFF),        // Blanc
+                outline = Color(0xFFB5AEC4),        // Gris mauve
+                outlineVariant = Color(0xFFDAD5E4)  // Lavande claire
             )
             "default_dark" -> darkColorScheme(
-                primary = Color(0xFF00FF41),        // Green Matrix/terminal
-                onPrimary = Color(0xFF0D1117),      // Deep terminal black
-                secondary = Color(0xFF58A6FF),      // Code blue (GitHub)
-                onSecondary = Color(0xFF0D1117),    // Deep terminal black
-                surface = Color(0xFF161B22),        // GitHub dark gray
-                onSurface = Color(0xFFF0F6FC),      // Terminal off-white
-                surfaceVariant = Color(0xFF21262D), // GitHub medium gray
-                onSurfaceVariant = Color(0xFF8B949E), // Comment gray
-                background = Color(0xFF0D1117),     // GitHub/terminal black
-                onBackground = Color(0xFFF0F6FC),   // Terminal off-white
-                error = Color(0xFFFF6B6B),          // Soft terminal red
-                onError = Color(0xFF0D1117),        // Deep terminal black
-                outline = Color(0xFF30363D),        // Subtle GitHub border
-                outlineVariant = Color(0xFF21262D)  // More subtle border
+                primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
+                onPrimary = Color(0xFF1B2A3F),      // Bleu marine profond
+                secondary = Color(0xFFF5A3A3),      // Rose saumon lumineux
+                onSecondary = Color(0xFF3F2426),    // Bordeaux très foncé
+                surface = Color(0xFF282433),        // Violet grisé foncé
+                onSurface = Color(0xFFE8E2EE),      // Lavande très pâle
+                surfaceVariant = Color(0xFF3D3848), // Violet moyen
+                onSurfaceVariant = Color(0xFFD5CBDF), // Lavande claire
+                background = Color(0xFF1E1B26),     // Violet foncé profond
+                onBackground = Color(0xFFE8E2EE),   // Lavande très pâle
+                error = Color(0xFFE88888),          // Rouge saumon vif
+                onError = Color(0xFF2D1A1A),        // Rouge très foncé
+                outline = Color(0xFF6B6178),        // Mauve grisé
+                outlineVariant = Color(0xFF433E4D)  // Violet foncé
             )
             else -> getColorScheme("default_dark") // Default fallback
         }

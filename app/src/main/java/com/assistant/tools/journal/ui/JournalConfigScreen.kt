@@ -44,6 +44,7 @@ fun JournalConfigScreen(
     var management by remember { mutableStateOf("manual") }
     var validateConfig by remember { mutableStateOf(false) }
     var validateData by remember { mutableStateOf(false) }
+    var alwaysSend by remember { mutableStateOf(false) }
 
     // Configuration states - journal specific
     var sortOrder by remember { mutableStateOf("descending") }
@@ -75,6 +76,7 @@ fun JournalConfigScreen(
                         management = config.optString("management", "manual")
                         validateConfig = config.optBoolean("validateConfig", false)
                         validateData = config.optBoolean("validateData", false)
+                        alwaysSend = config.optBoolean("always_send", false)
                         sortOrder = config.optString("sort_order", "descending")
                         LogManager.ui("Successfully loaded journal config: name=$name, sortOrder=$sortOrder")
                     } catch (e: Exception) {
@@ -130,6 +132,7 @@ fun JournalConfigScreen(
                     put("management", management)
                     put("validateConfig", validateConfig)
                     put("validateData", validateData)
+                    put("always_send", alwaysSend)
                 }
             }
         }
@@ -146,6 +149,7 @@ fun JournalConfigScreen(
                     "management" -> management = value as String
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
+                    "always_send" -> alwaysSend = value as Boolean
                 }
             },
             toolTypeName = "journal"
@@ -200,6 +204,7 @@ fun JournalConfigScreen(
                         "management" to management,
                         "validateConfig" to validateConfig,
                         "validateData" to validateData,
+                        "always_send" to alwaysSend,
                         "sort_order" to sortOrder
                     )
 

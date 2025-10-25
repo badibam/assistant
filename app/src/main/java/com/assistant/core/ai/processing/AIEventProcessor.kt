@@ -376,50 +376,40 @@ class AIEventProcessor(
      * 7. Emit AIResponseReceived → triggers PARSING_AI_RESPONSE phase
      */
     private suspend fun callAI(state: AIState) {
-        try {
-            val sessionId = state.sessionId ?: run {
-                LogManager.aiSession("callAI: No session ID in state", "ERROR")
-                emit(AIEvent.SystemErrorOccurred("No session ID"))
-                return
-            }
+        val sessionId = state.sessionId ?: run {
+            LogManager.aiSession("callAI: No session ID in state", "ERROR")
+            emit(AIEvent.SystemErrorOccurred("No session ID"))
+            return
+        }
 
-            val s = com.assistant.core.strings.Strings.`for`(context = context)
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+        try {
 
             // 1. Verify provider before building prompt
             val providerCheckResult = com.assistant.core.ai.providers.ProviderVerifier.verifyProvider(state, context)
             if (!providerCheckResult.isValid) {
                 LogManager.aiSession("callAI: Provider check failed: ${providerCheckResult.errorMessage}", "ERROR")
 
-                if (state.sessionType == SessionType.CHAT) {
-                    // CHAT: Show toast to user
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        com.assistant.core.ui.UI.Toast(
-                            context = context,
-                            message = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
-                            duration = com.assistant.core.ui.Duration.LONG
-                        )
-                    }
-                } else {
-                    // AUTOMATION: create system message for audit
-                    val errorMessage = SessionMessage(
-                        id = java.util.UUID.randomUUID().toString(),
-                        timestamp = System.currentTimeMillis(),
-                        sender = MessageSender.SYSTEM,
-                        richContent = null,
-                        textContent = null,
-                        aiMessage = null,
-                        aiMessageJson = null,
-                        systemMessage = com.assistant.core.ai.data.SystemMessage(
-                            type = SystemMessageType.PROVIDER_ERROR,
-                            commandResults = emptyList(),
-                            summary = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
-                            formattedData = null
-                        ),
-                        executionMetadata = null,
-                        excludeFromPrompt = true // Excluded from prompt (audit only)
-                    )
-                    messageRepository.storeMessage(sessionId, errorMessage)
-                }
+                // Create system message for both CHAT and AUTOMATION (visible in UI, excluded from prompt)
+                val errorMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = com.assistant.core.ai.data.SystemMessage(
+                        type = SystemMessageType.PROVIDER_ERROR,
+                        commandResults = emptyList(),
+                        summary = providerCheckResult.errorMessage ?: s.shared("ai_error_provider_not_found"),
+                        formattedData = null
+                    ),
+                    executionMetadata = null,
+                    excludeFromPrompt = true // Excluded from prompt (audit only)
+                )
+                messageRepository.storeMessage(sessionId, errorMessage)
 
                 // Emit ProviderErrorOccurred - state machine handles CHAT vs AUTOMATION differently
                 // CHAT: returns to IDLE (session stays active)
@@ -434,6 +424,26 @@ class AIEventProcessor(
             // Check network availability
             if (!com.assistant.core.utils.NetworkUtils.isNetworkAvailable(context)) {
                 LogManager.aiSession("callAI: Network unavailable", "WARN")
+
+                // Create system message (visible in UI, excluded from prompt)
+                val networkErrorMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = com.assistant.core.ai.data.SystemMessage(
+                        type = SystemMessageType.NETWORK_ERROR,
+                        commandResults = emptyList(),
+                        summary = s.shared("ai_error_network_unavailable"),
+                        formattedData = null
+                    ),
+                    executionMetadata = null,
+                    excludeFromPrompt = true // Excluded from prompt (audit only)
+                )
+                messageRepository.storeMessage(sessionId, networkErrorMessage)
 
                 if (state.sessionType == SessionType.AUTOMATION) {
                     // AUTOMATION: infinite retry with 30s delay
@@ -502,16 +512,76 @@ class AIEventProcessor(
 
                 if (isProviderError) {
                     // Provider not configured or invalid config - permanent error
-                    // Toast will be shown in handleSessionCompletion
+                    // Create system message (visible in UI, excluded from prompt)
+                    val systemErrorMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = com.assistant.core.ai.data.SystemMessage(
+                            type = SystemMessageType.PROVIDER_ERROR,
+                            commandResults = emptyList(),
+                            summary = errorMessage,
+                            formattedData = null
+                        ),
+                        executionMetadata = null,
+                        excludeFromPrompt = true // Excluded from prompt (audit only)
+                    )
+                    messageRepository.storeMessage(sessionId, systemErrorMessage)
+
                     emit(AIEvent.ProviderErrorOccurred(errorMessage))
                 } else {
                     // Network/temporary error
+                    // Create system message (visible in UI, excluded from prompt)
+                    val networkErrorMessage = SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = null,
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = com.assistant.core.ai.data.SystemMessage(
+                            type = SystemMessageType.NETWORK_ERROR,
+                            commandResults = emptyList(),
+                            summary = errorMessage,
+                            formattedData = null
+                        ),
+                        executionMetadata = null,
+                        excludeFromPrompt = true // Excluded from prompt (audit only)
+                    )
+                    messageRepository.storeMessage(sessionId, networkErrorMessage)
+
                     emit(AIEvent.NetworkErrorOccurred(0))
                 }
             }
 
         } catch (e: Exception) {
             LogManager.aiSession("callAI failed: ${e.message}", "ERROR", e)
+
+            // Create system message (visible in UI, excluded from prompt)
+            val exceptionErrorMessage = SessionMessage(
+                id = java.util.UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                sender = MessageSender.SYSTEM,
+                richContent = null,
+                textContent = null,
+                aiMessage = null,
+                aiMessageJson = null,
+                systemMessage = com.assistant.core.ai.data.SystemMessage(
+                    type = SystemMessageType.NETWORK_ERROR,
+                    commandResults = emptyList(),
+                    summary = "${s.shared("ai_error_network_call_failed")}: ${e.message}",
+                    formattedData = null
+                ),
+                executionMetadata = null,
+                excludeFromPrompt = true // Excluded from prompt (audit only)
+            )
+            messageRepository.storeMessage(sessionId, exceptionErrorMessage)
+
             emit(AIEvent.NetworkErrorOccurred(0))
         }
     }
