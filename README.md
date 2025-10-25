@@ -64,7 +64,7 @@ cd assistant
 
 ## État du développement
 
-**Version 0.3.3** (janvier 2025)
+**Version 0.3.4** (janvier 2025)
 
 ### Systèmes de base
 
