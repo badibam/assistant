@@ -917,26 +917,26 @@ object MessageToolType : ToolTypeContract {
 5. `NotificationService` (core simple)
 6. Test : Appel manuel send() affiche notif Android
 
-### 🔄 Phase 3 : Data layer (IN PROGRESS)
+### ✅ Phase 3 : Data layer (DONE)
 7. Schémas JSON (`MessagesSchemas.kt` : messages_config, messages_data)
-8. Entity `MessageData` + DAO
-9. Migration DB (ajout table message_data)
+8. **DÉCISION FINALE** : Utilise ToolDataEntity (pas de custom entity MessageData)
+9. **Pas de migration DB nécessaire** : Table tool_data existante suffit
 
-### Phase 4 : AI protection
+### ✅ Phase 4 : AI protection (DONE)
 10. Implémentation `systemManaged` keyword stripping dans pipeline IA
 11. Test : IA ne peut pas modifier executions
 
-### Phase 5 : Business logic
+### ✅ Phase 5 : Business logic (DONE)
 12. `MessageService` (operations CRUD + get_history + mark_read + mark_archived)
 13. `MessageScheduler` (logique tick + appendExecution)
 14. Test : Tick manuel crée execution + envoie notif
 
-### Phase 6 : Tool contract
+### ✅ Phase 6 : Tool contract (DONE)
 15. `MessageToolType` (implémentation complète contrat)
 16. Enregistrement `ToolTypeScanner`
 17. Test : Instance créable, schémas accessibles
 
-### Phase 7 : UI
+### 🔄 Phase 7 : UI (IN PROGRESS)
 18. `MessagesConfigScreen` (settings globaux + default_priority)
 19. `MessagesScreen` (2 tabs : Messages reçus + Gestion messages)
 20. Dialog édition message (réutilise ScheduleConfigEditor)
@@ -947,5 +947,178 @@ object MessageToolType : ToolTypeContract {
 23. Tests end-to-end : Créer instance → créer message → attendre tick → vérifier notif + execution
 24. Tests edge cases : Schedule null, external_notifications false, priority variations, modification template
 25. Tests UI : Filtres, snapshots display, mark read/archived
+
+## 13. Décisions d'implémentation UI (Session octobre 2025)
+
+### 13.1 Architecture des données
+
+**Décision finale : Utiliser ToolDataEntity (Option 2)**
+
+- **Pas de custom entity** `MessageData` ni `MessageDao`
+- Utilise la table `tool_data` existante via `ToolDataEntity`
+- DAO : `DefaultExtendedToolDataDao` (générique)
+- **Avantages** :
+  - Aucune migration DB nécessaire
+  - Cohérent avec le pattern unifié `tool_data`
+  - Moins de code à maintenir
+  - Plus simple
+- **Note** : La section 8 du document (Entity + DAO + Migration) est **obsolète**, remplacée par cette décision
+
+### 13.2 Logique des filtres checkboxes (Tab "Messages reçus")
+
+**Décision : Option A - Inclusion stricte avec flags indépendants**
+
+```kotlin
+// Logique de filtrage des executions
+Non lus coché     → read=false AND archived=false
+Lus coché         → read=true AND archived=false
+Archivés coché    → archived=true (quel que soit read)
+
+// Exemples de combinaisons
+Non lus seul                → Seulement non lus non archivés
+Lus seul                    → Seulement lus non archivés
+Archivés seul               → Tous les archivés (lus ou non)
+Non lus + Lus               → Tout ce qui est non archivé
+Non lus + Archivés          → Non lus non archivés + tous archivés
+Lus + Archivés              → Lus non archivés + tous archivés
+Tous cochés                 → Tout affiché
+Aucun coché                 → Liste vide
+```
+
+**Rationale** :
+- "Non lus" signifie vraiment non lus ET non archivés
+- "Archivés" est un état conceptuel distinct (traité/terminé)
+- Intuitive pour l'utilisateur
+- Cohérent avec "masqués par défaut"
+
+### 13.3 Architecture MessagesScreen avec tabs
+
+**Décision : Option A - Un seul fichier avec composables internes**
+
+```kotlin
+// MessagesScreen.kt (fichier unique)
+@Composable
+fun MessagesScreen(...) {
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+
+    // TabRow pour navigation
+    TabRow(selectedTab = selectedTab) { ... }
+
+    // Contenu selon tab
+    when (selectedTab) {
+        0 -> ReceivedMessagesTab(...)  // Composable @Composable interne
+        1 -> ManageMessagesTab(...)    // Composable @Composable interne
+    }
+}
+
+@Composable
+private fun ReceivedMessagesTab(...) { /* Liste executions */ }
+
+@Composable
+private fun ManageMessagesTab(...) { /* Liste templates */ }
+```
+
+**Avantages** :
+- Plus simple pour partager l'état (toolInstanceId, configJson, etc.)
+- Cohérent avec le reste du projet (écrans simples = un fichier)
+- Les 2 tabs sont conceptuellement liés au même outil
+- Évite multiplication de fichiers
+
+**Note** : Premier pattern de tabs dans le projet, crée le précédent
+
+### 13.4 Intégration ScheduleConfigEditor dans dialog d'édition
+
+**Décision : Option A - Nested dialogs**
+
+```kotlin
+@Composable
+fun EditMessageDialog(...) {
+    var showScheduleEditor by remember { mutableStateOf(false) }
+    var scheduleConfig by remember { mutableStateOf<ScheduleConfig?>(null) }
+
+    // Dialog principal message
+    UI.FullScreenDialog(...) {
+        FormField(title)
+        FormField(content)
+        FormSelection(priority)
+
+        // Bouton configuration + summary si défini
+        UI.Button(
+            text = "Configurer planning",
+            onClick = { showScheduleEditor = true }
+        )
+        if (scheduleConfig != null) {
+            UI.Text(getScheduleSummary(scheduleConfig))
+        }
+
+        FormActions(SAVE, CANCEL)
+    }
+
+    // Dialog ScheduleConfigEditor nested (par-dessus)
+    if (showScheduleEditor) {
+        ScheduleConfigEditor(
+            existingConfig = scheduleConfig,
+            onConfirm = { config ->
+                scheduleConfig = config
+                showScheduleEditor = false
+            },
+            onDismiss = { showScheduleEditor = false }
+        )
+    }
+}
+```
+
+**Avantages** :
+- ScheduleConfigEditor est déjà un Dialog, Android supporte le nesting
+- UX fluide : utilisateur reste dans contexte "édition de message"
+- Pas de risque de perdre les données du formulaire principal
+- Pattern standard pour configuration secondaire
+
+### 13.5 Format du dialog d'édition de message
+
+**Décision : Option A - FullScreenDialog**
+
+```kotlin
+UI.FullScreenDialog(
+    isVisible = showMessageDialog,
+    onDismiss = { showMessageDialog = false }
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Formulaire complet
+        UI.FormField(...)
+        UI.FormField(...)
+        UI.FormSelection(...)
+        UI.Button("Configurer planning")
+        UI.FormActions(...)
+    }
+}
+```
+
+**Avantages** :
+- Le champ `content` peut être long (LONG_LENGTH = 1500 chars)
+- Configuration planning nécessite de l'espace
+- Cohérent avec Note qui a aussi un contenu long
+- Meilleure UX mobile pour formulaires complexes
+
+**Pattern référence** : `EditNoteDialog` (tools/notes/ui/components)
+
+### 13.6 Récapitulatif des fichiers UI à créer
+
+```
+app/src/main/java/com/assistant/tools/messages/
+├── ui/
+│   ├── MessagesConfigScreen.kt          # Configuration instance (minimal)
+│   ├── MessagesScreen.kt                # Écran principal avec 2 tabs
+│   └── MessagesDisplayComponent.kt      # Display pour ToolCard (minimal)
+└── strings.xml                          # Strings tool-specific
+```
+
+**Note** : Pas de sous-dossier `components/` car dialog intégré dans MessagesScreen.kt
 
 ---
