@@ -196,4 +196,37 @@ object JsonTransformers {
     // - transformChartConfig/Data
     // - transformListConfig/Data
     // etc.
+
+    // ============================================================
+    // Utility functions
+    // ============================================================
+
+    /**
+     * Fix SchedulePattern type serialization format (v10 → v11)
+     * Transforms old format to new format with @SerialName
+     *
+     * Old: "type":"com.assistant.core.utils.SchedulePattern.SpecificDates"
+     * New: "type":"SpecificDates"
+     *
+     * Used by:
+     * - Automation schedules (AutomationEntity.schedule column)
+     * - Messages tool data (ToolDataEntity.data column with schedule field)
+     * - Any JSON containing ScheduleConfig
+     *
+     * @param json The JSON string potentially containing SchedulePattern
+     * @return Transformed JSON string with fixed type names
+     */
+    fun fixSchedulePatternTypes(json: String): String {
+        if (!json.contains("com.assistant.core.utils.SchedulePattern")) {
+            return json // No transformation needed
+        }
+
+        return json
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.DailyMultiple\"", "\"type\":\"DailyMultiple\"")
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.WeeklySimple\"", "\"type\":\"WeeklySimple\"")
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.MonthlyRecurrent\"", "\"type\":\"MonthlyRecurrent\"")
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.WeeklyCustom\"", "\"type\":\"WeeklyCustom\"")
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.YearlyRecurrent\"", "\"type\":\"YearlyRecurrent\"")
+            .replace("\"type\":\"com.assistant.core.utils.SchedulePattern.SpecificDates\"", "\"type\":\"SpecificDates\"")
+    }
 }

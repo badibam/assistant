@@ -122,7 +122,10 @@ fun ScheduleConfigEditor(
     }
 
     // Common config fields
-    var timezone by remember { mutableStateOf(existingConfig?.timezone ?: "Europe/Paris") }
+    // Use system timezone (will be configurable via AppConfig in future)
+    var timezone by remember {
+        mutableStateOf(existingConfig?.timezone ?: java.util.TimeZone.getDefault().id)
+    }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,

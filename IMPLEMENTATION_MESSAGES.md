@@ -1,6 +1,6 @@
 # Messages Tool - Implementation Progress
 
-## Status: Service Layer Complete (Phases 1-5 completed, Phase 6-7 pending)
+## Status: UI Layer Complete (Phases 1-7 completed, Phase 8 pending)
 
 ---
 
@@ -110,27 +110,61 @@
 
 ---
 
-## 🔄 Phase 6: UI (PENDING)
+## ✅ Phase 7: UI (COMPLETED)
 
-**TODO:**
-- Create `tools/messages/ui/MessagesConfigScreen.kt`
+**Created:**
+- `tools/messages/ui/MessagesConfigScreen.kt` (230 lines)
   - ToolGeneralConfigSection (8 base fields + always_send)
-  - FormSelection for default_priority (default/high/low)
+  - FormSelection for default_priority with String-based selection
   - Toggle for external_notifications
   - Save via ValidationHelper.validateAndSave()
-- Create `tools/messages/ui/MessagesScreen.kt`
-  - **Tab 1 "Messages reçus":** Execution history list with filters (checkboxes: Non lus/Lus/Archivés, OR logic, default Non lus)
-  - **Tab 2 "Gestion messages":** Message templates CRUD with schedule configuration
-  - Integration with ScheduleConfigEditor for schedule editing
-  - Mark read/archived actions
-- Create `tools/messages/ui/MessagesDisplayComponent.kt`
-  - Minimal display for ToolCard (icon + title + unread badge)
-- Add tool-specific strings in `tools/messages/strings.xml`
-- Generate resources via gradle task
+  - Pattern: NotesConfigScreen (minimal config)
+- `tools/messages/ui/MessagesScreen.kt` (900+ lines)
+  - **First tab pattern in project** with TabRow + 2 composables
+  - **Tab 1 "Messages reçus":** Execution history with filters
+    - Checkboxes (Non lus/Lus/Archivés) with OR logic (default: Non lus only)
+    - Multiple get_history calls for filter combinations (Option A - Inclusion stricte)
+    - ExecutionCard with toggle read/archived actions
+    - LazyColumn sorted by sent_at DESC
+  - **Tab 2 "Gestion messages":** Templates CRUD
+    - TemplateCard with edit/delete actions
+    - FAB for adding new message
+    - Integration with EditMessageDialog
+  - DataChangeNotifier integration for auto-refresh
+  - Helper functions for CRUD operations
+- `tools/messages/ui/components/EditMessageDialog.kt` (310 lines)
+  - Dialog (not FullScreenDialog) with CONFIRM type
+  - Title field (TEXT, required), Content field (TEXT_LONG, optional)
+  - FormSelection priority with String-based selection
+  - Nested ScheduleConfigEditor dialog (opens on top)
+  - Triggers section (disabled, stub for future)
+  - Validation via SchemaValidator before save
+  - Pattern: EditNoteDialog (validation + nested dialogs)
+- `tools/messages/strings.xml` (90+ strings)
+  - Tool-specific strings (display_name, tabs, filters, priorities, etc.)
+  - Schema descriptions for validation
+  - Field labels and error messages
+- Generated string resources via gradle task
+
+**Key patterns implemented:**
+- **Tab navigation:** First implementation in project (TabRow + rememberSaveable state)
+- **FormSelection API:** String-based selection (not Int index)
+- **Button API:** UI.Button with content lambda, Size enum (S/M/L), ButtonType
+- **ActionButton API:** ButtonAction/ButtonDisplay enums, confirmMessage parameter
+- **TextType enum:** CAPTION instead of SMALL
+- **Nested dialogs:** ScheduleConfigEditor opens on top of EditMessageDialog
+- **Filter logic:** Multiple service calls for OR combinations (unread+read+archived)
+- **rememberSaveable:** Tab state, filter checkboxes, dialog states (rotation-safe)
+
+**Result:**
+- ✅ compileDebugKotlin: BUILD SUCCESSFUL
+- ✅ No compilation errors
+- ✅ UI layer complete and ready for testing
+- ✅ DisplayComponent skipped (display modes not yet implemented in project)
 
 ---
 
-## 🔄 Phase 7: Validation & Testing (PENDING)
+## 🔄 Phase 8: End-to-End Testing (PENDING)
 
 **TODO:**
 - Compile tests (verify no errors)
@@ -179,4 +213,4 @@
 
 ---
 
-**Next:** Phase 6 - UI implementation (ConfigScreen, Screen with 2 tabs, DisplayComponent, strings)
+**Next:** Phase 8 - End-to-end testing and ScheduleConfigEditor relocation

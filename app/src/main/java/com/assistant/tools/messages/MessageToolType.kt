@@ -140,13 +140,10 @@ object MessageToolType : ToolTypeContract {
     /**
      * Creates messages data schema
      *
-     * IMPORTANT: Does NOT extend BaseDataSchema because structure is different:
-     * - Uses "title" instead of "name"
-     * - No tool_instance_id, tooltype, timestamp (these are in MessageData entity, not JSON)
-     * - Contains executions array with systemManaged flag
-     * - Contains schedule (embedded via placeholder replacement)
+     * Uses BaseSchemas.createExtendedSchema() to combine base tool_data structure
+     * (tool_instance_id, tooltype, name, timestamp) with message-specific data.
      *
-     * Structure:
+     * Message-specific data (inside "data" field):
      * - schema_id: Validation schema ID
      * - title: Message title (SHORT_LENGTH)
      * - content: Message content (LONG_LENGTH, optional)
@@ -158,92 +155,84 @@ object MessageToolType : ToolTypeContract {
     private fun createMessagesDataSchema(context: Context): Schema {
         val s = Strings.`for`(tool = "messages", context = context)
 
-        // Template with placeholder for schedule embedding
-        val templateSchema = """
+        // Specific schema template for message data (will be wrapped in base structure)
+        val specificSchemaTemplate = """
         {
-            "type": "object",
             "properties": {
-                "schema_id": {
-                    "type": "string",
-                    "const": "messages_data",
-                    "description": "${s.shared("tools_base_schema_data_schema_id")}"
-                },
-                "title": {
+                "name": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "${s.tool("schema_data_title")}"
+                    "description": "Message title (used as name in tool_data)"
                 },
-                "content": {
-                    "type": "string",
-                    "maxLength": ${FieldLimits.LONG_LENGTH},
-                    "description": "${s.tool("schema_data_content")}"
+                "timestamp": {
+                    "type": "number",
+                    "description": "Creation timestamp"
                 },
-                "schedule": "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
-                "priority": {
-                    "type": "string",
-                    "enum": ["default", "high", "low"],
-                    "description": "${s.tool("schema_data_priority")}"
-                },
-                "triggers": {
-                    "type": "null",
-                    "description": "${s.tool("schema_data_triggers")}"
-                },
-                "executions": {
-                    "type": "array",
-                    "systemManaged": true,
-                    "description": "${s.tool("schema_data_executions")}",
-                    "default": [],
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "scheduled_time": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "description": "${s.tool("schema_data_execution_scheduled_time")}"
-                            },
-                            "sent_at": {
-                                "type": "integer",
-                                "minimum": 0,
-                                "description": "${s.tool("schema_data_execution_sent_at")}"
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["pending", "sent", "failed"],
-                                "description": "${s.tool("schema_data_execution_status")}"
-                            },
-                            "title_snapshot": {
-                                "type": "string",
-                                "description": "${s.tool("schema_data_execution_title_snapshot")}"
-                            },
-                            "content_snapshot": {
-                                "type": "string",
-                                "description": "${s.tool("schema_data_execution_content_snapshot")}"
-                            },
-                            "read": {
-                                "type": "boolean",
-                                "description": "${s.tool("schema_data_execution_read")}"
-                            },
-                            "archived": {
-                                "type": "boolean",
-                                "description": "${s.tool("schema_data_execution_archived")}"
-                            }
+                "data": {
+                    "type": "object",
+                    "description": "Message template data with executions",
+                    "properties": {
+                        "schema_id": {
+                            "type": "string",
+                            "const": "messages_data",
+                            "description": "${s.shared("tools_base_schema_data_schema_id")}"
                         },
-                        "required": ["scheduled_time", "status", "title_snapshot", "read", "archived"],
-                        "additionalProperties": false
-                    }
+                        "content": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.LONG_LENGTH},
+                            "description": "${s.tool("schema_data_content")}"
+                        },
+                        "schedule": "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
+                        "priority": {
+                            "type": "string",
+                            "enum": ["default", "high", "low"],
+                            "description": "${s.tool("schema_data_priority")}"
+                        },
+                        "triggers": {
+                            "type": "null",
+                            "description": "${s.tool("schema_data_triggers")}"
+                        },
+                        "executions": {
+                            "type": "array",
+                            "systemManaged": true,
+                            "description": "${s.tool("schema_data_executions")}",
+                            "default": [],
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "scheduled_time": {"type": "integer", "minimum": 0},
+                                    "sent_at": {"type": "integer", "minimum": 0},
+                                    "status": {"type": "string", "enum": ["pending", "sent", "failed"]},
+                                    "title_snapshot": {"type": "string"},
+                                    "content_snapshot": {"type": "string"},
+                                    "read": {"type": "boolean"},
+                                    "archived": {"type": "boolean"}
+                                },
+                                "required": ["scheduled_time", "status", "title_snapshot", "read", "archived"],
+                                "additionalProperties": false
+                            }
+                        }
+                    },
+                    "required": ["schema_id", "priority"],
+                    "additionalProperties": false
                 }
             },
-            "required": ["schema_id", "title", "priority", "triggers", "executions"],
-            "additionalProperties": false
+            "required": ["name", "timestamp", "data"]
         }
         """.trimIndent()
 
         // Embed ScheduleConfig schema at placeholder
-        val content = SchemaUtils.embedScheduleConfig(
-            templateSchema,
+        val specificSchemaWithSchedule = SchemaUtils.embedScheduleConfig(
+            specificSchemaTemplate,
             "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
             context
+        )
+
+        // Combine with base schema (tool_instance_id, tooltype)
+        val content = BaseSchemas.createExtendedSchema(
+            BaseSchemas.getBaseDataSchema(context),
+            specificSchemaWithSchedule
         )
 
         return Schema(
@@ -282,8 +271,13 @@ object MessageToolType : ToolTypeContract {
         existingToolId: String?,
         onDelete: (() -> Unit)?
     ) {
-        // TODO: Implement MessagesConfigScreen
-        // MessagesConfigScreen(...)
+        com.assistant.tools.messages.ui.MessagesConfigScreen(
+            zoneId = zoneId,
+            onSave = onSave,
+            onCancel = onCancel,
+            existingToolId = existingToolId,
+            onDelete = onDelete
+        )
     }
 
     @Composable
@@ -294,8 +288,12 @@ object MessageToolType : ToolTypeContract {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     ) {
-        // TODO: Implement MessagesScreen
-        // MessagesScreen(...)
+        com.assistant.tools.messages.ui.MessagesScreen(
+            toolInstanceId = toolInstanceId,
+            zoneName = zoneName,
+            onNavigateBack = onNavigateBack,
+            onConfigureClick = onLongClick
+        )
     }
 
     // ========================================

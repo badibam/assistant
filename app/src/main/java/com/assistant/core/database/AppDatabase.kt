@@ -39,7 +39,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -58,13 +58,13 @@ abstract class AppDatabase : RoomDatabase() {
         /**
          * Database schema version
          *
-         * ⚠️ MUST match @Database(version = X) annotation above (line 41)
+         * ⚠️ MUST match @Database(version = X) annotation above (line 42)
          * ⚠️ Change BOTH when incrementing database version
          *
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 10
+        const val VERSION = 11
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -95,8 +95,59 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Fix SchedulePattern serialization format in JSONs
+                // Old format: "type":"com.assistant.core.utils.SchedulePattern.SpecificDates"
+                // New format: "type":"SpecificDates"
+                // This migration updates all schedule JSONs in automations and tool_data
+
+                LogManager.database("MIGRATION 10->11: Fixing SchedulePattern type names in JSONs")
+
+                // 1. Update automations table (schedule column)
+                val automationCursor = database.query(
+                    "SELECT id, schedule FROM ai_automations WHERE schedule IS NOT NULL AND schedule LIKE '%com.assistant.core.utils.SchedulePattern%'"
+                )
+                var automationCount = 0
+                while (automationCursor.moveToNext()) {
+                    val id = automationCursor.getString(0)
+                    val oldSchedule = automationCursor.getString(1)
+
+                    val newSchedule = com.assistant.core.versioning.JsonTransformers.fixSchedulePatternTypes(oldSchedule)
+                    database.execSQL(
+                        "UPDATE ai_automations SET schedule = ? WHERE id = ?",
+                        arrayOf(newSchedule, id)
+                    )
+                    automationCount++
+                }
+                automationCursor.close()
+                LogManager.database("MIGRATION 10->11: Fixed $automationCount automation schedules")
+
+                // 2. Update tool_data table (data column, for Messages tool with schedule field)
+                val toolDataCursor = database.query(
+                    "SELECT id, data FROM tool_data WHERE data IS NOT NULL AND data LIKE '%com.assistant.core.utils.SchedulePattern%'"
+                )
+                var toolDataCount = 0
+                while (toolDataCursor.moveToNext()) {
+                    val id = toolDataCursor.getString(0)
+                    val oldData = toolDataCursor.getString(1)
+
+                    val newData = com.assistant.core.versioning.JsonTransformers.fixSchedulePatternTypes(oldData)
+                    database.execSQL(
+                        "UPDATE tool_data SET data = ? WHERE id = ?",
+                        arrayOf(newData, id)
+                    )
+                    toolDataCount++
+                }
+                toolDataCursor.close()
+                LogManager.database("MIGRATION 10->11: Fixed $toolDataCount tool_data entries")
+
+                LogManager.database("MIGRATION 10->11: SchedulePattern type names migration complete")
+            }
+        }
+
         // Future migrations will be added here:
-        // private val MIGRATION_10_11 = object : Migration(10, 11) { ... }
+        // private val MIGRATION_11_12 = object : Migration(11, 12) { ... }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -107,7 +158,8 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 .addMigrations(
                     MIGRATION_2_3,
-                    MIGRATION_3_4
+                    MIGRATION_3_4,
+                    MIGRATION_10_11
                     // Add future migrations here
                 )
                 .addCallback(object : RoomDatabase.Callback() {

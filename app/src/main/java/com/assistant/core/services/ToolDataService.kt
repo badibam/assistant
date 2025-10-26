@@ -147,8 +147,24 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
+        // Merge JSON data: new fields overwrite, absent fields are preserved (e.g. systemManaged fields)
+        // Protection layers: AI commands have systemManaged fields stripped, UI doesn't expose them
+        val mergedData = if (dataJson != null) {
+            val existingJson = JSONObject(existingEntity.data)
+            val newJson = JSONObject(dataJson)
+
+            // Copy all keys from newJson into existingJson (overwrite present, preserve absent)
+            newJson.keys().forEach { key ->
+                existingJson.put(key, newJson.get(key))
+            }
+
+            existingJson.toString()
+        } else {
+            existingEntity.data
+        }
+
         val updatedEntity = existingEntity.copy(
-            data = dataJson ?: existingEntity.data,
+            data = mergedData,
             timestamp = timestamp ?: existingEntity.timestamp,
             name = name ?: existingEntity.name,
             updatedAt = System.currentTimeMillis()

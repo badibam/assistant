@@ -640,12 +640,16 @@ class BackupService(private val context: Context) : ExecutableService {
                     val dataJson = entry.getString("data")
 
                     // Apply JSON transformations to data
-                    val transformedData = JsonTransformers.transformToolData(
+                    var transformedData = JsonTransformers.transformToolData(
                         dataJson,
                         tooltype,
                         fromVersion,
                         toVersion
                     )
+
+                    // Also fix SchedulePattern types if present (for Messages tool)
+                    transformedData = JsonTransformers.fixSchedulePatternTypes(transformedData)
+
                     entry.put("data", transformedData)
                 }
             }
@@ -663,6 +667,19 @@ class BackupService(private val context: Context) : ExecutableService {
                         toVersion
                     )
                     category.put("settings", transformedSettings)
+                }
+            }
+
+            // Transform automation schedules (fix SchedulePattern types for v10 → v11)
+            data.optJSONArray("automations")?.let { array ->
+                for (i in 0 until array.length()) {
+                    val automation = array.getJSONObject(i)
+                    val scheduleJson = automation.optString("schedule_json", null)
+                    if (scheduleJson != null) {
+                        // Apply SchedulePattern type fix transformation
+                        val transformedSchedule = JsonTransformers.fixSchedulePatternTypes(scheduleJson)
+                        automation.put("schedule_json", transformedSchedule)
+                    }
                 }
             }
 

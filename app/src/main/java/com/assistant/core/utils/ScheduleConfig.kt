@@ -1,15 +1,19 @@
 package com.assistant.core.utils
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 /**
  * Schedule configuration for automated executions
  * Supports 6 types of scheduling patterns
+ *
+ * Note: timezone default is system timezone.
+ * TODO: Make timezone configurable via AppConfig with system fallback
  */
 @Serializable
 data class ScheduleConfig(
     val pattern: SchedulePattern,
-    val timezone: String = "Europe/Paris",
+    val timezone: String = java.util.TimeZone.getDefault().id,
     val enabled: Boolean = true,
     val startDate: Long? = null,        // Start executing from this date (null = now)
     val endDate: Long? = null,          // Stop executing after this date (null = indefinite)
@@ -32,6 +36,7 @@ sealed class SchedulePattern {
      * @param times List of times in HH:mm format (24h)
      */
     @Serializable
+    @SerialName("DailyMultiple")
     data class DailyMultiple(
         val times: List<String>  // ["09:00", "14:00", "18:00"]
     ) : SchedulePattern()
@@ -44,6 +49,7 @@ sealed class SchedulePattern {
      * @param time Single time in HH:mm format (24h)
      */
     @Serializable
+    @SerialName("WeeklySimple")
     data class WeeklySimple(
         val daysOfWeek: List<Int>,  // 1-7
         val time: String             // "09:00"
@@ -61,6 +67,7 @@ sealed class SchedulePattern {
      * @param time Time in HH:mm format (24h)
      */
     @Serializable
+    @SerialName("MonthlyRecurrent")
     data class MonthlyRecurrent(
         val months: List<Int>,       // 1-12
         val dayOfMonth: Int,         // 1-31
@@ -74,6 +81,7 @@ sealed class SchedulePattern {
      * @param moments List of day+time combinations
      */
     @Serializable
+    @SerialName("WeeklyCustom")
     data class WeeklyCustom(
         val moments: List<WeekMoment>
     ) : SchedulePattern()
@@ -85,6 +93,7 @@ sealed class SchedulePattern {
      * @param dates List of month+day+time combinations
      */
     @Serializable
+    @SerialName("YearlyRecurrent")
     data class YearlyRecurrent(
         val dates: List<YearlyDate>
     ) : SchedulePattern()
@@ -96,6 +105,7 @@ sealed class SchedulePattern {
      * @param timestamps List of exact timestamps (UTC milliseconds)
      */
     @Serializable
+    @SerialName("SpecificDates")
     data class SpecificDates(
         val timestamps: List<Long>
     ) : SchedulePattern()

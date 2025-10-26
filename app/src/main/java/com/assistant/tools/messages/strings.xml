@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Strings spécifiques au tooltype messages -->
+
+    <!-- Métadonnées -->
+    <string name="display_name">Messages</string>
+    <string name="description">Notifications et rappels planifiés ou événementiels</string>
+
+    <!-- SCHEMAS - Display names for schema identification -->
+    <string name="schema_config_display_name"></string>
+    <string name="schema_data_display_name"></string>
+    <string name="schema_data_description">Schéma de validation pour les messages planifiés</string>
+
+    <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
+    <string name="schema_config_default_priority">Priorité par défaut pour nouveaux messages (default, high, low)</string>
+    <string name="schema_config_external_notifications">Afficher notifications système Android</string>
+
+    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
+    <string name="schema_data_title">Titre du message (affiché dans notification)</string>
+    <string name="schema_data_content">Contenu du message (optionnel)</string>
+    <string name="schema_data_schedule">Configuration du planning (null = on-demand)</string>
+    <string name="schema_data_priority">Priorité notification pour ce message (override config)</string>
+    <string name="schema_data_triggers">Déclencheurs événementiels (non implémenté)</string>
+    <string name="schema_data_executions">Historique d\'exécutions (géré automatiquement)</string>
+
+    <!-- VALIDATION - Noms de champs pour affichage -->
+    <string name="field_title">Titre</string>
+    <string name="field_content">Contenu</string>
+    <string name="field_schedule">Planning</string>
+    <string name="field_priority">Priorité</string>
+    <string name="field_default_priority">Priorité par défaut</string>
+    <string name="field_external_notifications">Notifications externes</string>
+    <string name="field_unknown">Champ non reconnu</string>
+
+    <!-- LABELS - UI labels -->
+    <string name="label_schedule">Planning</string>
+
+    <!-- CONFIG SCREEN - Configuration de l'instance -->
+    <string name="label_default_priority">Priorité par défaut</string>
+    <string name="label_external_notifications">Afficher notifications système</string>
+
+    <!-- PRIORITY - Options de priorité -->
+    <string name="priority_default">Normale</string>
+    <string name="priority_high">Haute (popup)</string>
+    <string name="priority_low">Basse (silencieuse)</string>
+
+    <!-- TABS - Onglets de l'écran principal -->
+    <string name="tab_received_messages">Messages reçus</string>
+    <string name="tab_manage_messages">Gestion messages</string>
+
+    <!-- FILTERS - Filtres messages reçus -->
+    <string name="filter_unread">Non lus</string>
+    <string name="filter_read">Lus</string>
+    <string name="filter_archived">Archivés</string>
+
+    <!-- STATUS - Badges statut execution -->
+    <string name="status_pending">En attente</string>
+    <string name="status_sent">Envoyé</string>
+    <string name="status_failed">Échec</string>
+    <string name="badge_unread">Non lu</string>
+
+    <!-- SCHEDULE - Résumés de planning -->
+    <string name="schedule_summary_on_demand">À la demande</string>
+    <string name="schedule_summary_not_configured">Pas de planning configuré</string>
+    <string name="schedule_executions_count">%1$d envois</string>
+
+    <!-- DIALOG - Édition/création de message -->
+    <string name="create_message_title">Créer un message</string>
+    <string name="edit_message_title">Modifier le message</string>
+    <string name="label_title">Titre</string>
+    <string name="label_content">Contenu (optionnel)</string>
+    <string name="label_priority">Priorité</string>
+    <string name="action_configure_schedule">Configurer planning</string>
+    <string name="label_triggers_stub">Déclencheurs événementiels (à venir)</string>
+
+    <!-- ACTIONS - Actions spécifiques -->
+    <string name="action_add_message">Ajouter un message</string>
+    <string name="action_mark_read">Marquer comme lu</string>
+    <string name="action_mark_unread">Marquer comme non lu</string>
+    <string name="action_archive">Archiver</string>
+    <string name="action_unarchive">Désarchiver</string>
+
+    <!-- EMPTY STATES - États vides -->
+    <string name="empty_received_messages">Aucun message reçu</string>
+    <string name="empty_templates">Aucun message configuré</string>
+
+    <!-- CONFIRMATIONS - Messages de confirmation -->
+    <string name="delete_message_confirm">Supprimer ce message et tout son historique ?</string>
+
+    <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
+    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
+    <string name="error_config_not_found">Impossible de charger la configuration existante</string>
+    <string name="error_load_messages">Erreur lors du chargement des messages</string>
+    <string name="error_load_executions">Erreur lors du chargement de l\'historique</string>
+    <string name="error_save">Erreur lors de la sauvegarde</string>
+    <string name="error_mark_read">Erreur lors du changement de statut</string>
+    <string name="error_delete">Erreur lors de la suppression</string>
+
+</resources>
