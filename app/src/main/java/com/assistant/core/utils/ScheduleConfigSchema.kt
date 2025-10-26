@@ -242,7 +242,7 @@ object ScheduleConfigSchema {
             id = SCHEMA_ID,
             displayName = s.shared("schedule_config_display_name"),
             description = s.shared("schedule_config_description"),
-            category = SchemaCategory.CORE,
+            category = SchemaCategory.UTILITY,
             content = content
         )
     }

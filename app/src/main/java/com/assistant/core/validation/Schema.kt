@@ -55,5 +55,8 @@ enum class SchemaCategory {
     APP_CONFIG,
 
     /** Zone configuration schemas */
-    ZONE_CONFIG
+    ZONE_CONFIG,
+
+    /** Utility schemas (reusable components like ScheduleConfig) */
+    UTILITY
 }

@@ -13,8 +13,8 @@ import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
 import com.assistant.core.validation.SchemaUtils
 import com.assistant.tools.messages.scheduler.MessageScheduler
-import com.assistant.tools.messages.ui.MessagesConfigScreen
-import com.assistant.tools.messages.ui.MessagesScreen
+// import com.assistant.tools.messages.ui.MessagesConfigScreen
+// import com.assistant.tools.messages.ui.MessagesScreen
 
 /**
  * Messages Tool Type implementation
@@ -282,13 +282,8 @@ object MessageToolType : ToolTypeContract {
         existingToolId: String?,
         onDelete: (() -> Unit)?
     ) {
-        MessagesConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            onCancel = onCancel,
-            existingToolId = existingToolId,
-            onDelete = onDelete
-        )
+        // TODO: Implement MessagesConfigScreen
+        // MessagesConfigScreen(...)
     }
 
     @Composable
@@ -299,12 +294,8 @@ object MessageToolType : ToolTypeContract {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     ) {
-        MessagesScreen(
-            toolInstanceId = toolInstanceId,
-            zoneName = zoneName,
-            onNavigateBack = onNavigateBack,
-            onConfigureClick = onLongClick
-        )
+        // TODO: Implement MessagesScreen
+        // MessagesScreen(...)
     }
 
     // ========================================
@@ -312,8 +303,7 @@ object MessageToolType : ToolTypeContract {
     // ========================================
 
     override fun getService(context: Context): ExecutableService {
-        TODO("MessageService not implemented yet")
-        // return MessageService(context)
+        return MessageService(context)
     }
 
     override fun getDao(context: Context): Any {
