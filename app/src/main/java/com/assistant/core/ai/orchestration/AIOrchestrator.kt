@@ -51,9 +51,6 @@ object AIOrchestrator {
     // Coroutine scope for async operations
     private val orchestratorScope = CoroutineScope(Dispatchers.Default)
 
-    // Heartbeat job for 1-minute tick when app is open
-    private var heartbeatJob: kotlinx.coroutines.Job? = null
-
     // Core components
     private lateinit var stateRepository: AIStateRepository
     private lateinit var messageRepository: AIMessageRepository
@@ -238,42 +235,7 @@ object AIOrchestrator {
         // Start event processor
         eventProcessor.initialize()
 
-        // Start internal heartbeat (1 minute interval for app-open reactivity)
-        // Complements WorkManager 15-minute heartbeat for app-closed scenarios
-        startHeartbeat()
-
-        LogManager.aiSession("AIOrchestrator V2 initialized with 1-minute internal heartbeat", "INFO")
-    }
-
-    /**
-     * Start internal heartbeat coroutine
-     * Ticks every 1 minute when app is open for better reactivity
-     */
-    private fun startHeartbeat() {
-        // Cancel existing heartbeat if any
-        heartbeatJob?.cancel()
-
-        heartbeatJob = orchestratorScope.launch {
-            LogManager.aiSession("AIOrchestrator: Starting 1-minute heartbeat", "INFO")
-
-            while (true) {
-                try {
-                    // Wait 1 minute
-                    kotlinx.coroutines.delay(60_000L) // 1 minute
-
-                    // Trigger tick
-                    LogManager.aiSession("AIOrchestrator: Heartbeat tick (1 min)", "DEBUG")
-                    tick()
-
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    LogManager.aiSession("AIOrchestrator: Heartbeat cancelled", "INFO")
-                    throw e // Re-throw to stop the loop
-                } catch (e: Exception) {
-                    LogManager.aiSession("AIOrchestrator: Heartbeat error: ${e.message}", "ERROR", e)
-                    // Continue despite error
-                }
-            }
-        }
+        LogManager.aiSession("AIOrchestrator V2 initialized", "INFO")
     }
 
     // ========================================================================================
@@ -633,10 +595,6 @@ object AIOrchestrator {
      * Shutdown orchestrator and cleanup resources.
      */
     fun shutdown() {
-        // Cancel internal heartbeat
-        heartbeatJob?.cancel()
-        heartbeatJob = null
-
         eventProcessor.shutdown()
         LogManager.aiSession("AIOrchestrator V2 shutdown", "INFO")
     }

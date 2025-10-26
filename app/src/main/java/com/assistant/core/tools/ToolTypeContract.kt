@@ -129,4 +129,14 @@ interface ToolTypeContract : SchemaProvider {
      * @throws Exception if enrichment fails (will cause the create operation to fail)
      */
     fun enrichData(dataJson: String, name: String?, configJson: String?): String = dataJson
+
+    /**
+     * Get scheduler instance for this tool type.
+     *
+     * Discovery pattern: CoreScheduler discovers schedulers via ToolTypeManager,
+     * tools with scheduling needs return a ToolScheduler instance.
+     *
+     * @return ToolScheduler instance if this tool requires periodic scheduling, null otherwise
+     */
+    fun getScheduler(): ToolScheduler? = null
 }

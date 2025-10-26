@@ -16,7 +16,9 @@ import com.assistant.core.themes.CurrentTheme
 import com.assistant.core.update.UpdateManager
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
-import com.assistant.core.ai.scheduling.SchedulerWorker
+import com.assistant.core.scheduling.CoreScheduler
+import com.assistant.core.scheduling.CoreSchedulerWorker
+import com.assistant.core.notifications.NotificationChannels
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -37,6 +39,9 @@ class MainActivity : ComponentActivity() {
         // Initialize app config cache
         AppConfigManager.initialize(this)
 
+        // Initialize notification channels (Android O+)
+        NotificationChannels.initialize(this)
+
         // Initialize model price manager (async, non-blocking)
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -47,7 +52,6 @@ class MainActivity : ComponentActivity() {
         }
 
         // Initialize AI orchestrator singleton (V2 - suspend function)
-        // Orchestrator includes 1-minute internal heartbeat for app-open reactivity
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 AIOrchestrator.initialize(this@MainActivity)
@@ -56,9 +60,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Schedule WorkManager for app-closed automation checks (15 min interval)
-        // Complements AIOrchestrator's 1-minute heartbeat for app-open scenarios
-        scheduleAutomationWorker()
+        // Initialize CoreScheduler with 1-minute internal heartbeat for app-open reactivity
+        CoreScheduler.initialize(this)
+
+        // Schedule WorkManager for app-closed scheduling (15 min interval)
+        // Complements CoreScheduler's 1-minute heartbeat for app-open scenarios
+        scheduleCoreSchedulerWorker()
 
         // Initialize coordinator
         coordinator = Coordinator(this)
@@ -181,32 +188,36 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Schedule periodic automation worker for when app is closed
-     * WorkManager minimum interval: 15 minutes
-     * For app-open reactivity, AIOrchestrator has internal 1-minute heartbeat
+     * Schedule CoreScheduler periodic worker for when app is closed.
+     * WorkManager minimum interval: 15 minutes.
+     * For app-open reactivity, CoreScheduler has internal 1-minute heartbeat.
+     *
+     * CoreScheduler handles:
+     * - AI automations (via AIOrchestrator)
+     * - Tool schedulers (via discovery pattern)
      */
-    private fun scheduleAutomationWorker() {
-        LogManager.service("scheduleAutomationWorker: Starting WorkManager registration", "INFO")
+    private fun scheduleCoreSchedulerWorker() {
+        LogManager.service("scheduleCoreSchedulerWorker: Starting WorkManager registration", "INFO")
 
         try {
             val intervalMinutes = 15L // Minimum allowed by WorkManager
-            LogManager.service("scheduleAutomationWorker: Creating PeriodicWorkRequest with interval=${intervalMinutes}min", "DEBUG")
+            LogManager.service("scheduleCoreSchedulerWorker: Creating PeriodicWorkRequest with interval=${intervalMinutes}min", "DEBUG")
 
-            val workRequest = PeriodicWorkRequestBuilder<SchedulerWorker>(
+            val workRequest = PeriodicWorkRequestBuilder<CoreSchedulerWorker>(
                 intervalMinutes, TimeUnit.MINUTES
             ).build()
 
-            LogManager.service("scheduleAutomationWorker: Enqueueing work request with REPLACE policy", "DEBUG")
+            LogManager.service("scheduleCoreSchedulerWorker: Enqueueing work request with REPLACE policy", "DEBUG")
 
             WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "automation_scheduler",
+                "core_scheduler",
                 ExistingPeriodicWorkPolicy.REPLACE, // Replace to update interval if changed
                 workRequest
             )
 
-            LogManager.service("scheduleAutomationWorker: SUCCESS - Automation scheduler registered (${intervalMinutes}min periodic tick for app-closed)", "INFO")
+            LogManager.service("scheduleCoreSchedulerWorker: SUCCESS - Core scheduler registered (${intervalMinutes}min periodic tick for app-closed)", "INFO")
         } catch (e: Exception) {
-            LogManager.service("scheduleAutomationWorker: FAILED - ${e.message}", "ERROR", e)
+            LogManager.service("scheduleCoreSchedulerWorker: FAILED - ${e.message}", "ERROR", e)
         }
     }
 

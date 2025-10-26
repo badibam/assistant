@@ -1074,5 +1074,14 @@
     <string name="shared_vosk_quality_large">Grande</string>
     <string name="shared_vosk_select_model_first">Veuillez d\'abord télécharger et sélectionner un modèle par défaut</string>
     <string name="shared_vosk_help">Les modèles sont téléchargés depuis les serveurs officiels Vosk. Sélectionnez un modèle par défaut pour la transcription.</string>
+    <string name="shared_notification_channel_high_name">Priorité haute</string>
+    <string name="shared_notification_channel_high_description">Notifications urgentes avec popup (messages importants, alertes)</string>
+    <string name="shared_notification_channel_default_name">Priorité normale</string>
+    <string name="shared_notification_channel_default_description">Notifications standards avec son et badge</string>
+    <string name="shared_notification_channel_low_name">Priorité basse</string>
+    <string name="shared_notification_channel_low_description">Notifications silencieuses (pas de son ni vibration)</string>
+    <string name="shared_notification_error_missing_title">Titre de notification manquant</string>
+    <string name="shared_notification_error_missing_priority">Priorité de notification manquante</string>
+    <string name="shared_notification_error_send_failed">Échec de l\'envoi de la notification</string>
 
 </resources>
