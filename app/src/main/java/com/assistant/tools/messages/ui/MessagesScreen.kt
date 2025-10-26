@@ -804,9 +804,25 @@ private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
 
         // Parse schedule (can be null, Map, or JSONObject)
         val schedule = parsedData["schedule"]?.let { scheduleValue ->
-            // TODO: Proper ScheduleConfig deserialization
-            // For now, just mark as configured or not
-            null // Placeholder, will be properly parsed when needed
+            try {
+                // Convert to JSON string if needed
+                val scheduleJsonStr = when (scheduleValue) {
+                    is String -> scheduleValue
+                    is Map<*, *> -> JSONObject(scheduleValue as Map<String, Any>).toString()
+                    is JSONObject -> scheduleValue.toString()
+                    else -> null
+                }
+
+                // Deserialize using kotlinx.serialization
+                if (scheduleJsonStr != null && scheduleJsonStr != "null") {
+                    kotlinx.serialization.json.Json.decodeFromString<ScheduleConfig>(scheduleJsonStr)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                LogManager.ui("Error parsing schedule: ${e.message}", "WARN")
+                null
+            }
         }
 
         // Count executions
@@ -907,23 +923,25 @@ private suspend fun createMessage(
         JSONObject(jsonString)
     }
 
+    val dataJson = JSONObject().apply {
+        put("schema_id", "messages_data")
+        put("title", title)
+        put("content", content)
+        put("schedule", scheduleJson ?: JSONObject.NULL)
+        put("priority", priority)
+        put("triggers", JSONObject.NULL)
+        // executions auto-initialized by service
+    }
+
     val params = mapOf(
         "toolInstanceId" to toolInstanceId,
         "tooltype" to "messages",
         "name" to title,  // Use title as name in tool_data
         "timestamp" to System.currentTimeMillis(),
-        "data" to JSONObject().apply {
-            put("schema_id", "messages_data")
-            put("title", title)
-            put("content", content)
-            put("schedule", scheduleJson ?: JSONObject.NULL)
-            put("priority", priority)
-            put("triggers", JSONObject.NULL)
-            // executions auto-initialized by service
-        }
+        "data" to dataJson  // JSONObject, not .toString()
     )
 
-    val result = coordinator.processUserAction("tool_data.create", params)
+    val result = coordinator.processUserAction("messages.create", params)
     if (result?.isSuccess == true) {
         onSuccess()
     } else {
@@ -957,20 +975,23 @@ private suspend fun updateMessage(
         JSONObject(jsonString)
     }
 
+    val dataJson = JSONObject().apply {
+        put("schema_id", "messages_data")
+        put("title", title)
+        put("content", content)
+        put("schedule", scheduleJson ?: JSONObject.NULL)
+        put("priority", priority)
+        put("triggers", JSONObject.NULL)
+        // executions preserved by service
+    }
+
     val params = mapOf(
         "id" to messageId,
         "name" to title,  // Update name in tool_data as well
-        "data" to JSONObject().apply {
-            put("schema_id", "messages_data")
-            put("content", content)
-            put("schedule", scheduleJson ?: JSONObject.NULL)
-            put("priority", priority)
-            put("triggers", JSONObject.NULL)
-            // executions preserved by service
-        }
+        "data" to dataJson  // JSONObject, not .toString()
     )
 
-    val result = coordinator.processUserAction("tool_data.update", params)
+    val result = coordinator.processUserAction("messages.update", params)
     if (result?.isSuccess == true) {
         onSuccess()
     } else {

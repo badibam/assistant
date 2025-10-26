@@ -105,22 +105,37 @@ abstract class AppDatabase : RoomDatabase() {
                 LogManager.database("MIGRATION 10->11: Fixing SchedulePattern type names in JSONs")
 
                 // 1. Update automations table (schedule column)
-                val automationCursor = database.query(
-                    "SELECT id, schedule FROM ai_automations WHERE schedule IS NOT NULL AND schedule LIKE '%com.assistant.core.utils.SchedulePattern%'"
+                // Check if table exists first (could be fresh install or renamed table)
+                val tableExistsCursor = database.query(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND (name='automations' OR name='ai_automations')"
                 )
-                var automationCount = 0
-                while (automationCursor.moveToNext()) {
-                    val id = automationCursor.getString(0)
-                    val oldSchedule = automationCursor.getString(1)
-
-                    val newSchedule = com.assistant.core.versioning.JsonTransformers.fixSchedulePatternTypes(oldSchedule)
-                    database.execSQL(
-                        "UPDATE ai_automations SET schedule = ? WHERE id = ?",
-                        arrayOf(newSchedule, id)
-                    )
-                    automationCount++
+                val tableName = if (tableExistsCursor.moveToFirst()) {
+                    tableExistsCursor.getString(0)
+                } else {
+                    null
                 }
-                automationCursor.close()
+                tableExistsCursor.close()
+
+                var automationCount = 0
+                if (tableName != null) {
+                    val automationCursor = database.query(
+                        "SELECT id, schedule FROM $tableName WHERE schedule IS NOT NULL AND schedule LIKE '%com.assistant.core.utils.SchedulePattern%'"
+                    )
+                    while (automationCursor.moveToNext()) {
+                        val id = automationCursor.getString(0)
+                        val oldSchedule = automationCursor.getString(1)
+
+                        val newSchedule = com.assistant.core.versioning.JsonTransformers.fixSchedulePatternTypes(oldSchedule)
+                        database.execSQL(
+                            "UPDATE $tableName SET schedule = ? WHERE id = ?",
+                            arrayOf(newSchedule, id)
+                        )
+                        automationCount++
+                    }
+                    automationCursor.close()
+                } else {
+                    LogManager.database("MIGRATION 10->11: No automations table found (fresh install or already migrated)")
+                }
                 LogManager.database("MIGRATION 10->11: Fixed $automationCount automation schedules")
 
                 // 2. Update tool_data table (data column, for Messages tool with schedule field)

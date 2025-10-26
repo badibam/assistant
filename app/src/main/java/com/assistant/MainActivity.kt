@@ -1,8 +1,13 @@
 package com.assistant
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,6 +38,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var coordinator: Coordinator
     private lateinit var updateManager: UpdateManager
 
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,6 +50,9 @@ class MainActivity : ComponentActivity() {
 
         // Initialize notification channels (Android O+)
         NotificationChannels.initialize(this)
+
+        // Request notification permission (Android 13+)
+        requestNotificationPermissionIfNeeded()
 
         // Initialize model price manager (async, non-blocking)
         CoroutineScope(Dispatchers.IO).launch {
@@ -196,6 +208,28 @@ class MainActivity : ComponentActivity() {
      * - AI automations (via AIOrchestrator)
      * - Tool schedulers (via discovery pattern)
      */
+    /**
+     * Request POST_NOTIFICATIONS permission for Android 13+ (API 33+)
+     *
+     * Android 13 introduced runtime permission for notifications.
+     * Without this, notifications won't be shown even if channels are created.
+     */
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+            }
+        }
+    }
+
     private fun scheduleCoreSchedulerWorker() {
         LogManager.service("scheduleCoreSchedulerWorker: Starting WorkManager registration", "INFO")
 

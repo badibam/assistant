@@ -5,7 +5,10 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.tools.ToolScheduler
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.ScheduleCalculator
+import com.assistant.core.utils.ScheduleConfig
 import com.assistant.tools.messages.MessageService
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 /**
@@ -54,8 +57,8 @@ object MessageScheduler : ToolScheduler {
             }
 
             @Suppress("UNCHECKED_CAST")
-            val instances = (instancesResult.data?.get("tools") as? List<Map<String, Any>>) ?: emptyList()
-            val messageInstances = instances.filter { it["tooltype"] == "messages" }
+            val instances = (instancesResult.data?.get("tool_instances") as? List<Map<String, Any>>) ?: emptyList()
+            val messageInstances = instances.filter { it["tool_type"] == "messages" }
 
             if (messageInstances.isEmpty()) {
                 LogManager.service("No Messages tool instances found", "DEBUG")
@@ -136,10 +139,9 @@ object MessageScheduler : ToolScheduler {
             return  // Not yet time to execute
         }
 
-        LogManager.service("Message $messageId scheduled for execution (scheduled: $nextExecutionTime, now: $now)", "INFO")
-
         // Extract message data for execution
         val title = data.optString("title", "")
+        LogManager.service("Executing scheduled message: '$title' (id=$messageId)", "INFO")
         val content = data.optString("content")
         val priority = data.optString("priority", "default")
 
@@ -203,24 +205,42 @@ object MessageScheduler : ToolScheduler {
         // For now, we update the entire message with corrected status
         updateExecutionStatus(messageId, finalStatus, coordinator)
 
-        // TODO: Calculate next execution time using ScheduleCalculator
-        // Requires parsing schedule JSON to SchedulePattern objects
-        // For MVP, set nextExecutionTime to a far future date to prevent re-triggering
-        schedule.put("nextExecutionTime", Long.MAX_VALUE)
-        data.put("schedule", schedule)
+        // Calculate next execution time using ScheduleCalculator
+        val scheduleConfig = parseScheduleConfig(schedule)
+        if (scheduleConfig != null) {
+            val nextExecution = ScheduleCalculator.calculateNextExecution(
+                pattern = scheduleConfig.pattern,
+                timezone = scheduleConfig.timezone,
+                startDate = scheduleConfig.startDate,
+                endDate = scheduleConfig.endDate,
+                fromTimestamp = now
+            )
+
+            if (nextExecution != null) {
+                schedule.put("nextExecutionTime", nextExecution)
+                LogManager.service("Message '$title' next execution: ${formatTimestamp(nextExecution)}", "INFO")
+            } else {
+                schedule.put("nextExecutionTime", JSONObject.NULL)
+                LogManager.service("Message '$title' completed (no more scheduled executions)", "INFO")
+            }
+            data.put("schedule", schedule)
+        } else {
+            // Failed to parse schedule, disable this message to prevent infinite retries
+            LogManager.service("Failed to parse schedule for message '$title', disabling", "WARN")
+            schedule.put("nextExecutionTime", JSONObject.NULL)
+            data.put("schedule", schedule)
+        }
 
         val updateResult = coordinator.processUserAction(
             "tool_data.update",
             mapOf(
                 "id" to messageId,
-                "data" to data.toString()
+                "data" to data  // JSONObject, not toString()
             )
         )
 
         if (!updateResult.isSuccess) {
             LogManager.service("Failed to update message $messageId after execution: ${updateResult.error}", "WARN")
-        } else {
-            LogManager.service("Message $messageId executed and disabled (nextExecutionTime set to MAX)", "DEBUG")
         }
     }
 
@@ -239,7 +259,7 @@ object MessageScheduler : ToolScheduler {
             // Get current message
             val getResult = coordinator.processUserAction(
                 "tool_data.get_single",
-                mapOf("id" to messageId)
+                mapOf("entry_id" to messageId)  // tool_data.get_single expects "entry_id", not "id"
             )
 
             if (!getResult.isSuccess) {
@@ -281,9 +301,36 @@ object MessageScheduler : ToolScheduler {
         }
     }
 
-    // TODO: Implement proper next execution calculation
-    // Currently simplified for MVP - messages execute once then disable
-    // Future: Parse schedule JSON to SchedulePattern and use ScheduleCalculator.calculateNextExecution()
+    /**
+     * Parse schedule JSONObject to ScheduleConfig
+     *
+     * @param scheduleJson JSONObject from message data
+     * @return ScheduleConfig object or null if parsing fails
+     */
+    private fun parseScheduleConfig(scheduleJson: JSONObject): ScheduleConfig? {
+        return try {
+            // Use kotlinx.serialization to deserialize the schedule JSON
+            Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
+        } catch (e: Exception) {
+            LogManager.service("Failed to parse schedule config: ${e.message}", "ERROR", e)
+            null
+        }
+    }
+
+    /**
+     * Format timestamp to readable date string
+     *
+     * @param timestamp Unix timestamp in milliseconds
+     * @return Formatted date string (e.g., "2025-01-15 14:30:00")
+     */
+    private fun formatTimestamp(timestamp: Long): String {
+        return try {
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+            dateFormat.format(java.util.Date(timestamp))
+        } catch (e: Exception) {
+            timestamp.toString()
+        }
+    }
 
     /**
      * Helper to convert JSONObject to Map recursively
