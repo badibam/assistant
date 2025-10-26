@@ -33,7 +33,8 @@ Interface principale implémentant SchemaProvider avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultConfig(), getAvailableOperations()
 - **Schémas** : getAllSchemaIds(), getSchema(schemaId, context) via SchemaProvider
 - **Interface utilisateur** : getConfigScreen() @Composable
-- **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations()
+- **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
+- **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
 - **Validation** : validateData() (délègue à SchemaValidator)
 
 ## Méthodologie d'Implémentation
@@ -73,6 +74,19 @@ Class implémentant ToolTypeContract avec :
 - getAllSchemaIds(), getSchema(schemaId, context)
 - getConfigScreen() @Composable
 - getService(), getDao(), getDatabaseEntities()
+
+### enrichData Pattern
+**Principe** : Enrichissement automatique des données avant persistence (appelé par ToolDataService pour toutes les entrées).
+
+```kotlin
+override fun enrichData(data: Map<String, Any>, context: Context): Map<String, Any> {
+    // Calculs, validations, enrichissements automatiques
+    // Exemple Messages : schedule config → nextExecutionTime
+    return enrichedData
+}
+```
+
+**Usage** : Unifié UI + IA, logique pré-persistence sans interception manuelle.
 
 ### Enregistrement
 Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.

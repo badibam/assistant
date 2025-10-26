@@ -14,7 +14,7 @@ Guide technique de l'architecture système centrale.
 - app_config.get - Configuration application
 
 ### ServiceRegistry
-**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, icon_preload → IconPreloadService, backup → BackupService, ai_provider_config → AIProviderConfigService, transcription → TranscriptionService, transcription_provider_config → TranscriptionProviderConfigService
+**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, icon_preload → IconPreloadService, backup → BackupService, ai_provider_config → AIProviderConfigService, transcription → TranscriptionService, transcription_provider_config → TranscriptionProviderConfigService, notifications → NotificationService
 
 **Services Tools** (découverte dynamique) : tracking → ToolTypeManager.getServiceForToolType()
 
@@ -44,6 +44,26 @@ Chaque opération reçoit automatiquement un CancellationToken unique avec créa
 **Usage services** : Les services appellent automatiquement les méthodes notify* après modifications (create/update/delete)
 
 **Usage UI** : LaunchedEffect collecte DataChangeNotifier.changes pour recharger données quand pertinent
+
+## Scheduling Centralisé
+
+### CoreScheduler
+**Principe** : Point d'entrée unique pour scheduling AI + Tools via discovery pattern.
+
+**Heartbeat** : Coroutine 1 min (app-open) + WorkManager 15 min (app-closed)
+**Triggers** : Périodiques + événementiels (CRUD automations, CRUD messages, fin session)
+
+**Découverte** : `ToolTypeManager.getAllToolTypes().forEach { toolType.getScheduler()?.checkScheduled() }`
+
+### ToolScheduler Interface
+```kotlin
+interface ToolScheduler {
+    suspend fun checkScheduled(context: Context)
+}
+```
+Intégré à `ToolTypeContract.getScheduler(): ToolScheduler?` (défaut null)
+
+**Extension outils** : Retourner scheduler dans ToolTypeContract, aucune modification core nécessaire.
 
 ## Discovery Pattern
 

@@ -124,7 +124,7 @@ data class SessionMessage(
 ```kotlin
 data class RichMessage(
     val segments: List<MessageSegment>,       // Text | EnrichmentBlock
-    val linearText: String,                   // Calculé
+    val linearText: String,                   // Calculé avec promptPreview
     val dataCommands: List<DataCommand>       // Calculé
 )
 
@@ -437,6 +437,12 @@ Event NetworkErrorOccurred:
 - **✨ CREATE** - Créer éléments (schemas pour tooltype)
 - **🔧 MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 
+### Double Preview
+**Séparation affichage UI et prompt** :
+- `preview` : Version courte pour UI ("Santé", "Tracking Poids")
+- `promptPreview` : Version détaillée avec IDs pour IA ("Santé (id = zones/zone_123)")
+- Format suppression : pastilles colorées et labels de type (Zone:, Outil:)
+
 ### EnrichmentProcessor
 ```kotlin
 class EnrichmentProcessor {
@@ -470,6 +476,7 @@ class EnrichmentProcessor {
 
 **APP_STATE** : Zones et tool instances disponibles via command dédiée (à la demande).
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
+**RichComposer UI** : Architecture multi-blocs (TextBlock = texte + enrichments), navigation focus-based avec highlight visuel.
 
 ### PromptManager.buildPromptData()
 ```kotlin

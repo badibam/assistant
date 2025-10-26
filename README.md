@@ -64,14 +64,14 @@ cd assistant
 
 ## État du développement
 
-**Version 0.3.5** (janvier 2025)
+**Version 0.3.5**
 
 ### Systèmes de base
 
 - **CommandDispatcher** : Architecture `resource.operation` unifiée pour UI/IA/Scheduler/System
 - **Validation** : JSON Schema avec messages traduits
 - **Internationalisation** : Système `s.shared()`/`s.tool()` avec génération automatique
-- **Discovery pattern** : Extension d'outils sans modification du core via enrichData()
+- **Discovery pattern** : Extension d'outils sans modification du core
 - **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés avec highlight
 - **Versioning** : Migrations SQL + transformations JSON centralisées
 - **Backup/Restore** : Export/import/reset avec gestion versions
