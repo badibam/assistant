@@ -1,6 +1,6 @@
 # Messages Tool - Implementation Progress
 
-## Status: IN PROGRESS (Phases 1-2 / 7 completed)
+## Status: IN PROGRESS (Phases 1-2 completed, Phase 3 partially done)
 
 ---
 
@@ -35,12 +35,24 @@
 
 ---
 
-## 🔄 Phase 3: Data Layer (PENDING)
+## 🔄 Phase 3: Data Layer (IN PROGRESS)
+
+**Created:**
+- `core/utils/ScheduleConfigSchema.kt` - Complete JSON Schema for ScheduleConfig validation (all 6 patterns inlined)
+- `core/validation/SchemaUtils.embedScheduleConfig()` - Utility to embed ScheduleConfig in other schemas via placeholder
+- Strings in `shared.xml` - Schedule validation descriptions (schedule_config_*, schedule_pattern, etc.)
+- `tools/messages/` - Directory structure (data, ui, scheduler folders)
 
 **TODO:**
-- Create `MessagesSchemas.kt` (messages_config, messages_data)
-- Create `MessageData.kt` entity + `MessageDao.kt`
+- Create `tools/messages/MessagesSchemas.kt` (messages_config with embedded ScheduleConfig, messages_data)
+- Create `tools/messages/data/MessageData.kt` entity
+- Create `tools/messages/data/MessageDao.kt`
 - Database migration (add message_data table)
+
+**Notes:**
+- ScheduleConfig schema uses inlined validation (no definitions) for easy reusability
+- SchemaValidator already supports JSON Schema Draft 7 features (no modifications needed)
+- Placeholder system chosen over $ref for simplicity and zero duplication
 
 ---
 
@@ -85,7 +97,8 @@
 3. **Data structure:** Config = message templates, Data = sent instances (audit trail)
 4. **Schedule reuse:** Messages reuse ScheduleConfig infrastructure (6 patterns, ScheduleCalculator, UI)
 5. **On-demand generation:** Data entries created at tick time (not pre-generated)
+6. **Schema reusability:** ScheduleConfig schema inlined (no definitions) for simple embedding via placeholder replacement
 
 ---
 
-**Next:** Phase 3 - Data layer implementation
+**Next:** Complete Phase 3 - MessagesSchemas.kt, MessageData entity, DAO, and database migration

@@ -21,164 +21,185 @@
 
 ### 1.3 Principe de fonctionnement
 
-**Deux niveaux de données** :
+**Architecture données** :
 
-1. **Config : Messages prédéfinis (templates)**
-   - Stockés dans `config.messages[]` de l'instance
-   - Définissent titre, contenu, planning
-   - Modifiables par user (UI) ou IA (commands UPDATE_TOOL)
+1. **Config : Settings globaux (minimal)**
+   - `default_priority` : Priority par défaut pour nouveaux messages
+   - `external_notifications` : Afficher notifications Android ou non
 
-2. **Data : Instances envoyées (audit trail)**
-   - Générées automatiquement par le scheduler quand scheduled_time atteint
-   - Contiennent référence au message prédéfini + timestamps + statut
-   - Ultra-légères : juste refs et flags
+2. **Data : Messages (templates) avec historique d'exécutions**
+   - Chaque data entry = un message template (titre, contenu, schedule, priority)
+   - Contient array `executions[]` avec snapshots des envois effectués
+   - Manipulable par IA via commands standard `tool_data.*`
 
 **Flow complet** :
-1. User/IA configure message prédéfini avec schedule dans config
+1. User/IA crée message template via `tool_data.create` (avec ou sans schedule)
 2. CoreScheduler tick() détecte scheduled_time atteint
-3. MessageScheduler crée data entry + envoie notification Android
-4. User voit notification → ouvre app → marque lu/archivé
-5. Historique complet dans data entries
+3. MessageScheduler append execution dans array + envoie notification Android
+4. User voit notification → ouvre app → marque lu/archivé (modifie dernière execution)
+5. Historique complet dans `executions[]` de chaque message
+
+**Avantages architecture** :
+- Manipulation IA intuitive (CREATE/UPDATE message = commands standard)
+- Cohérent avec pattern "Une Instance = Un Concept" (un message = une data entry)
+- Granularité priority (par message, pas global)
+- Audit trail intégré (snapshots immutables dans executions)
 
 ## 2. Architecture données
 
-### 2.1 Structure config (messages prédéfinis)
+### 2.1 Structure config (settings globaux)
 
 ```json
 {
   "schema_id": "messages_config",
   "data_schema_id": "messages_data",
-  "name": "Anniversaires",
-  "description": "Rappels dates importantes",
+  "name": "Rappels médicaments",
+  "description": "Notifications planning quotidien",
   "management": "USER",
   "display_mode": "LINE",
   "validateConfig": false,
   "validateData": false,
   "always_send": false,
 
-
   // Spécifique Messages
-  "priority": "high",
-  "messages": [
-    {
-      "id": "msg_anniversary_marie",
-      "title": "Anniversaire Marie",
-      "content": "Penser au cadeau !",
-      "schedule": {
-        "pattern": {
-          "type": "YearlyRecurrent",
-          "dates": [{"month": 11, "day": 25, "time": "10:00"}]
-        },
-        "timezone": "Europe/Paris",
-        "enabled": true,
-        "startDate": 1704067200000,
-        "endDate": null,
-        "nextExecutionTime": 1732528800000
-      },
-      "triggers": null,
-    },
-    {
-      "id": "msg_reality_check_1",
-      "title": "Vérification réalité",
-      "content": "Es-tu en train de rêver ?",
-      "schedule": null,
-      "triggers": null,
-    }
-  ],
+  "default_priority": "high",
   "external_notifications": true
 }
 ```
 
-
-
 **Champs spécifiques Messages** :
 
-- **`messages`** : Array d'items prédéfinis (pattern "items prédéfinis" comme Tracking choice items)
-  - Chaque item = template de notification
-  - Peut avoir schedule (planifié) ou null (on-demand : IA/user ajoutera plus tard)
-
-- **`messages[].id`** : Identifiant unique string
-  - Utilisé par data entries pour référencer le template
-  - Format libre (ex: "msg_anniversary_marie")
-
-- **`messages[].title`** : Titre message (obligatoire)
-  - Affiché dans notification Android
-  - Limite : SHORT_LENGTH (60 chars)
-
-- **`messages[].content`** : Corps du message (optionnel)
-  - Si null : notification = juste titre
-  - Limite : LONG_LENGTH (1500 chars)
-
-- **`messages[].schedule`** : Planning (nullable)
-  - Réutilise structure `ScheduleConfig` existante (voir core/utils/ScheduleConfig.kt)
-  - 6 patterns disponibles : DailyMultiple, WeeklySimple, MonthlyRecurrent, WeeklyCustom, YearlyRecurrent, SpecificDates
-  - Si null : message on-demand (pas auto-planifié)
-
-- **`messages[].triggers`** : Déclencheurs événementiels (STUB)
-  - Toujours null pour MVP
-  - Prévu pour futur : déclenchement sur événements système (ex: "quand tracking poids < 70kg")
-  - Permet cohérence future sans breaking change
-
-- **`priority`** : Niveau notification Android
+- **`default_priority`** : Priority par défaut pour nouveaux messages
   - `"default"` : Badge drawer, pas de popup
   - `"high"` : Popup heads-up (interruption visuelle)
   - `"low"` : Silencieux, pas de son/vibration
-  - Au niveau de la config (valable pour tous les messages de l'instance d'outil)
+  - Chaque message peut override cette valeur
 
 - **`external_notifications`** : Boolean global instance
   - `true` : Envoyer notifications Android
   - `false` : Messages visibles seulement dans app (pas de notifs système)
 
-**Décisions importantes** :
-
-1. **Schedule par item** (pas global) : Chaque message a son propre planning, indépendant des autres
-2. **Schedule nullable** : Permet messages on-demand que l'IA planifiera dynamiquement plus tard
-3. **Réutilisation ScheduleConfig** : Infrastructure existante automations (ScheduleCalculator, ScheduleConfigEditor UI)
-
-### 2.2 Structure data (messages envoyées)
+### 2.2 Structure data (messages templates)
 
 ```json
 {
   "schema_id": "messages_data",
-  "message_id": "msg_anniversary_marie",
-  "scheduled_time": 1732528800000,
-  "status": "sent",
-  "sent_at": 1732528805123,
-  "read": false,
-  "archived": false
+  "title": "Anniversaire Marie",
+  "content": "Penser au cadeau !",
+  "schedule": {
+    "pattern": {
+      "type": "YearlyRecurrent",
+      "dates": [{"month": 11, "day": 25, "time": "10:00"}]
+    },
+    "timezone": "Europe/Paris",
+    "startDate": 1704067200000,
+    "endDate": null,
+    "nextExecutionTime": 1732528800000
+  },
+  "priority": "high",
+  "triggers": null,
+  "executions": [
+    {
+      "scheduled_time": 1732528800000,
+      "sent_at": 1732528805123,
+      "status": "sent",
+      "title_snapshot": "Anniversaire Marie",
+      "content_snapshot": "Penser au cadeau !",
+      "read": false,
+      "archived": false
+    }
+  ]
 }
 ```
 
 **Champs data** :
 
-- **`message_id`** : Référence vers `config.messages[].id`
-  - Permet retrouver titre/contenu/priority du template
+- **`title`** : Titre message (obligatoire)
+  - Affiché dans notification Android et UI
+  - Limite : SHORT_LENGTH (60 chars)
+  - Modifiable (futures executions utiliseront nouvelle valeur)
+
+- **`content`** : Corps du message (optionnel)
+  - Si null : notification = juste titre
+  - Limite : LONG_LENGTH (1500 chars)
+  - Modifiable (futures executions utiliseront nouvelle valeur)
+
+- **`schedule`** : Planning (nullable)
+  - Réutilise structure `ScheduleConfig` existante (voir core/utils/ScheduleConfig.kt)
+  - 6 patterns disponibles : DailyMultiple, WeeklySimple, MonthlyRecurrent, WeeklyCustom, YearlyRecurrent, SpecificDates
+  - Si null : message on-demand (pas auto-planifié, peut être planifié plus tard par IA)
+
+- **`priority`** : Niveau notification Android pour CE message
+  - `"default"` | `"high"` | `"low"`
+  - Override la `default_priority` de la config
+
+- **`triggers`** : Déclencheurs événementiels (STUB)
+  - Toujours null pour MVP
+  - Prévu pour futur : déclenchement sur événements système (ex: "quand tracking poids < 70kg")
+  - Permet cohérence future sans breaking change
+
+- **`executions`** : Array d'exécutions envoyées (SYSTEM-MANAGED)
+  - **CRITIQUE** : Champ géré automatiquement par scheduler, strippé des commands IA
+  - Keyword schema : `"systemManaged": true`
+  - Contient snapshots immutables des envois effectués
+
+### 2.3 Structure execution (dans array executions)
+
+```json
+{
+  "scheduled_time": 1732528800000,
+  "sent_at": 1732528805123,
+  "status": "sent",
+  "title_snapshot": "Anniversaire Marie",
+  "content_snapshot": "Penser au cadeau !",
+  "read": false,
+  "archived": false
+}
+```
+
+**Champs execution** :
 
 - **`scheduled_time`** : Timestamp quand devait être envoyé
-  - Stocké dans `timestamp` de l'entité DB (cohérence autres tools)
   - Calculé par ScheduleCalculator selon schedule pattern
 
-- **`status`** : Lifecycle primaire (mutuellement exclusif)
-  - `"pending"` : Créé mais pas encore envoyé (rare, fenêtre courte)
-  - `"sent"` : Notification envoyée
-  
-- **`sent_at`** : Timestamp envoi effectif (null si pending/cancelled)
+- **`sent_at`** : Timestamp envoi effectif (null si pending)
   - Permet audit : différence avec scheduled_time = latence système
 
-- **`read`** : Flag action user (orthogonal au status)
+- **`status`** : Lifecycle execution
+  - `"pending"` : Créé mais pas encore traité (fenêtre courte pendant tick)
+  - `"sent"` : Notification envoyée avec succès
+  - `"failed"` : Échec technique lors de l'envoi
+
+- **`title_snapshot`** : Snapshot titre au moment de l'envoi
+  - Immutable : reflète exactement ce qui a été envoyé
+  - Permet modification template sans casser historique
+
+- **`content_snapshot`** : Snapshot contenu au moment de l'envoi
+  - Nullable (si message n'avait pas de contenu)
+  - Immutable
+
+- **`read`** : Flag action user
   - User a ouvert/consulté le message dans l'app
   - Toggleable (peut marquer non-lu après lecture)
+  - Manipulé via operation `mark_read`
 
-- **`archived`** : Flag action user (orthogonal au status)
+- **`archived`** : Flag action user
   - User a marqué message comme traité/terminé
-  - Messages archivés = masqués par défaut dans liste
+  - Messages archivés = masqués par défaut dans liste UI
+  - Manipulé via operation `mark_archived`
+
+**Rationale snapshots** :
+- User/IA peut modifier `title`/`content` du template
+- Historique reste fidèle à ce qui a été VRAIMENT affiché dans la notification
+- Pattern event sourcing standard (immutabilité audit trail)
+- Priority non snapshotée : détail technique sans valeur audit (juste quel channel Android utilisé)
 
 **Génération automatique** :
 
-Les data entries sont créées **au moment du tick** par MessageScheduler :
-1. Scan config.messages[] avec schedule.enabled = true
-2. Calcul nextExecutionTime via ScheduleCalculator
-3. Si <= now : créer data entry + envoyer notif + update nextExecutionTime
+Les executions sont créées **au moment du tick** par MessageScheduler :
+1. Scan toutes instances Messages via coordinator
+2. Pour chaque message avec schedule != null : calcul nextExecutionTime via ScheduleCalculator
+3. Si <= now : append execution (status: pending) + envoyer notif + update status (sent/failed) + update nextExecutionTime
 
 **Pas de pré-génération** : Contrairement au pattern "générer toutes les occurrences futures", on génère à la demande (comme automations). Raison : planning peut changer, messages modifiables.
 
@@ -192,7 +213,7 @@ Les data entries sont créées **au moment du tick** par MessageScheduler :
 
 **Solution** : Système de scheduling centralisé avec discovery pattern.
 
-### 3.2 CoreScheduler (nouveau)
+### 3.2 CoreScheduler
 
 **Package** : `core/scheduling/CoreScheduler.kt`
 
@@ -212,14 +233,14 @@ object CoreScheduler {
 }
 ```
 
-**Heartbeat** (à déplacer depuis AI) :
+**Heartbeat** (déplacé depuis AI) :
 - **Coroutine** : 1 minute (app ouverte)
 - **WorkManager** : 15 minutes (app fermée, background)
 - **Triggers événementiels** : CRUD automations, CRUD messages, fin de session
 
 **Décision importante** : Un seul point d'entrée tick() qui délègue, évite duplication logique WorkManager/Coroutine.
 
-### 3.3 ToolScheduler interface (nouveau)
+### 3.3 ToolScheduler interface
 
 **Package** : `core/tools/ToolScheduler.kt`
 
@@ -268,15 +289,14 @@ object MessageScheduler : ToolScheduler {
         //    coordinator.processUserAction("tools.list", mapOf("tool_type" to "messages"))
 
         // 2. Pour chaque instance:
-        //    a. Charger config via coordinator
-        //    b. Parser config.messages[]
-        //    c. Pour chaque item avec schedule != null && schedule.enabled == true:
+        //    a. Charger tous messages (data entries) via tool_data.get
+        //    b. Pour chaque message avec schedule != null:
         //       - Calculer nextExecutionTime via ScheduleCalculator.calculateNext()
         //       - Si nextExecutionTime <= System.currentTimeMillis():
-        //         * Créer data entry (status: pending) via coordinator
-        //         * Appeler NotificationService.send() avec titre/contenu/priority
-        //         * Update data entry (status: sent, sent_at: now)
-        //         * Update config schedule.nextExecutionTime
+        //         * Créer execution entry (status: pending)
+        //         * Appeler NotificationService.send() avec snapshots
+        //         * Update execution (status: sent/failed, sent_at: now)
+        //         * Update schedule.nextExecutionTime via MessageService interne
 
         // 3. Gestion erreurs: Log + continue (un échec ne bloque pas autres messages)
     }
@@ -287,15 +307,17 @@ object MessageScheduler : ToolScheduler {
 - Classe existante calculant nextExecutionTime selon pattern
 - Utilisée aussi par automations (cohérence)
 
-**Atomicité** : Génération data + envoi notif + update status = séquence complète pour chaque message.
+**Atomicité** : Création execution + envoi notif + update status = séquence complète pour chaque message.
 
-**Pas de retry** : Si envoi notif échoue, marquer status=sent quand même (pas d'état "error" pour MVP). Notif Android = best effort.
+**Pas de retry** : Si envoi notif échoue, marquer status=failed. Notif Android = best effort.
 
-## 4. NotificationService (nouveau core service)
+**Méthode interne MessageService** : `appendExecution()` pas exposée aux commands, appelée seulement par scheduler.
+
+## 4. NotificationService (core service)
 
 ### 4.1 Positionnement
 
-**Package** : `core/services/NotificationService.kt`
+**Package** : `core/notifications/NotificationService.kt`
 
 **Type** : ExecutableService simple (pas de provider pattern)
 
@@ -325,38 +347,119 @@ class NotificationService(context: Context) : ExecutableService {
 {
   "title": String,              // Requis
   "content": String?,           // Optionnel
-  "channel_id": String,         // "messages", "alerts", "system"
   "priority": String            // "default"|"high"|"low"
 }
 ```
 
 **Responsabilité** :
 - Créer notification Android avec params fournis
-- Gérer channels (création si nécessaire)
+- Router vers channel approprié selon priority (assistant_high/default/low)
 - Mapper priority → NotificationCompat.PRIORITY_*
 - Retourner success ou erreur
 
 **Pas de persistence** : Service stateless, juste façade Android API.
 
-## 5. Services et operations
+**Channels** (déjà créés en Phase 2) :
+- `assistant_high` : Notifications urgentes
+- `assistant_default` : Notifications standard
+- `assistant_low` : Notifications silencieuses
 
-### 5.1 MessageService
+## 5. Protection champs system-managed
+
+### 5.1 Keyword schema custom
+
+**Problème** : `executions` doit être modifiable par scheduler mais pas par IA.
+
+**Solution** : Keyword custom `systemManaged` dans schema.
+
+```json
+"executions": {
+  "type": "array",
+  "systemManaged": true,
+  "description": "Execution history. Managed automatically by scheduler. Do not modify directly.",
+  "items": {...}
+}
+```
+
+**Comportement** :
+- **SchemaValidator** : Ignore `systemManaged` (ne bloque pas validation)
+- **Pipeline IA** : Strip champs avec `systemManaged: true` avant passage au service
+- **Service** : Accepte ces champs (pour operations scheduler internes)
+
+### 5.2 Point de stripping dans pipeline IA
+
+**Pipeline** : DataCommand → CommandTransformer → CommandExecutor → Service
+
+**Location** : Dans `CommandTransformer` ou middleware avant `CommandExecutor`
+
+```kotlin
+// Pseudo-code
+fun transformAICommand(command: DataCommand): ExecutableCommand {
+    val toolType = ToolTypeManager.getToolType(command.tooltype)
+    val schema = toolType.getSchema(command.schema_id, context)
+
+    // Strip system-managed fields
+    val cleanedData = stripSystemManagedFields(command.params, schema)
+
+    return ExecutableCommand(...)
+}
+```
+
+**Implémentation** : À définir précisément lors de Phase 4 (voir où exactement dans le flow IA).
+
+## 6. Services et operations
+
+### 6.1 MessageService
 
 **Package** : `tools/messages/MessageService.kt`
 
 **Type** : ExecutableService (comme TrackingService, JournalService, etc.)
 
-**Operations disponibles** (user uniquement, pas IA) :
+**Operations disponibles** :
 
-**`get`** : Liste messages avec filtres
+**`create`** : Créer nouveau message template
 ```kotlin
 params: {
   toolInstanceId: String,
-  filters?: {
-    status?: "pending|sent|cancelled",
-    read?: Boolean,
-    archived?: Boolean
-  },
+  tooltype: "messages",
+  schema_id: "messages_data",
+  data: {
+    title: String,
+    content: String?,
+    schedule: ScheduleConfig?,
+    priority: String,
+    triggers: null
+    // executions: [] initialisé automatiquement
+  }
+}
+returns: {id: String}
+```
+
+**`update`** : Modifier message template
+```kotlin
+params: {
+  id: String,
+  data: {
+    title: String?,
+    content: String?,
+    schedule: ScheduleConfig?,
+    priority: String?
+    // executions: strippé par pipeline IA, conservé si présent
+  }
+}
+returns: {success: true}
+```
+
+**`delete`** : Supprimer message
+```kotlin
+params: {id: String}
+returns: {success: true}
+```
+
+**`get`** : Liste messages templates
+```kotlin
+params: {
+  toolInstanceId: String,
   limit?: Int,
   offset?: Int
 }
@@ -369,84 +472,165 @@ params: {id: String}
 returns: {entry: {...}}
 ```
 
-**`mark_read`** : Toggle flag read
+**`get_history`** : Liste executions avec filtres
 ```kotlin
-params: {id: String, read: Boolean}
+params: {
+  toolInstanceId: String,
+  filters: {
+    read?: Boolean,      // null = ignore filtre
+    archived?: Boolean   // null = ignore filtre
+  }
+}
+returns: {executions: [{messageId, execution, messageTitle}...]}
+// Retourne toutes les executions de tous les messages, avec join pour afficher titre
+```
+
+**`mark_read`** : Toggle flag read sur execution
+```kotlin
+params: {
+  message_id: String,
+  execution_index: Int,  // Index dans array executions
+  read: Boolean
+}
 returns: {success: true}
 ```
 
-**`archive`** : Marquer archivé
+**`mark_archived`** : Toggle flag archived sur execution
 ```kotlin
-params: {id: String}
-returns: {success: true}
-```
-
-**`delete`** : Supprimer data entry
-```kotlin
-params: {id: String}
+params: {
+  message_id: String,
+  execution_index: Int,
+  archived: Boolean
+}
 returns: {success: true}
 ```
 
 **`stats`** : Statistiques instance
 ```kotlin
 params: {toolInstanceId: String}
-returns: {unread: Int, archived: Int, sent: Int, pending: Int}
+returns: {
+  total_messages: Int,
+  total_executions: Int,
+  unread: Int,
+  archived: Int,
+  pending: Int,
+  sent: Int,
+  failed: Int
+}
+```
+
+**Méthode interne (pas dans execute)** :
+
+```kotlin
+internal suspend fun appendExecution(
+    messageId: String,
+    execution: ExecutionEntry
+): OperationResult {
+    // Direct DAO access
+    // Appelée uniquement par MessageScheduler
+    // Pas de command exposée aux IA/user
+}
 ```
 
 **Pattern d'appel** : `coordinator.processUserAction("messages.operation", params)`
 
-### 5.2 Manipulation messages prédéfinis (config)
+## 7. Interface utilisateur
 
-IA et user utilisent operations standard tools :
-
-- **Lecture** : `tools.get` avec `tool_instance_id`
-  - Retourne config complet incluant `messages[]`
-
-- **Modification** : `tools.update` avec `tool_instance_id` + `config` complet
-  - Modifier array messages (ajouter/éditer/supprimer items)
-  - Service valide via `messages_config` schema
-
-**Flow IA typique** :
-1. `TOOL_CONFIG` → récupère config avec messages existants
-2. Modifie JSON (ajoute item dans array ou édite schedule)
-3. `UPDATE_TOOL` → sauvegarde config complet
-
-## 6. Interface utilisateur
-
-### 6.1 Écran principal Messages
+### 7.1 Écran principal Messages
 
 **Package** : `tools/messages/ui/MessagesScreen.kt`
 
 **Déclenchement** : Click sur ToolCard Messages dans ZoneScreen
 
-**Structure** :
+**Structure** : 2 tabs horizontaux
 
-**Header** : PageHeader avec titre instance + bouton settings (→ ConfigScreen)
+---
 
-**Filtre** : FormSelection avec options
-- "Tous"
-- "Non lus" (défaut au chargement)
-- "Lus"
-- "Archivés"
+#### Tab 1 : "Messages reçus"
 
-**Liste messages** : LazyColumn avec data entries selon filtre
-- Tri : plus récents en premier (par scheduled_time DESC)
-- Affichage par entry :
-  - Date/heure (scheduled_time formaté)
-  - Titre (depuis config.messages[] via message_id)
-  - Badge status si non-sent (pending, cancelled)
-  - Badge "Non lu" si sent && !read
+**Focus** : Historique des executions (tous messages confondus)
 
-**Actions par message** :
-- Click sur entry → toggle read
-- bouton → Archiver
-- bouton → Supprimer (confirmation)
+**Filtres** : Checkboxes avec logique OR
+- ☑ Non lus (défaut coché)
+- ☐ Lus
+- ☐ Archivés
+- Logique : aucun coché = liste vide, tous cochés = tout affiché
 
-**Empty state** : "Aucun message" si liste vide selon filtre
+**Liste** : LazyColumn avec toutes executions selon filtres
+- **Tri** : `sent_at` DESC (envoi effectif le plus récent en premier)
+- **Source** : `get_history` avec filtres selon checkboxes cochées
+- **Affichage par execution** :
+  - Date/heure (sent_at formaté)
+  - Titre (title_snapshot)
+  - Badge status si non-sent (pending 🕐, failed ❌)
+  - Badge "Non lu" 🔴 si sent && !read
+
+**Actions par execution** :
+- Click sur entry → toggle read via `mark_read`
+- Bouton → Archiver via `mark_archived`
+- (Pas de suppression individuelle execution, on supprime le message template entier)
+
+**Empty state** : "Aucun message" si liste vide selon filtres
+
+---
+
+#### Tab 2 : "Gestion messages"
+
+**Focus** : Configuration messages templates
+
+**Liste** : LazyColumn avec data entries (messages templates)
+- **Tri** : Par `title` alphabétique
+- **Source** : `get` standard
+- **Affichage par template** :
+  - Titre
+  - Schedule summary ("Quotidien 08:00", "Annuel 25 nov", "On-demand" si null)
+  - Badge priority si différent du default_priority
+  - Badge nombre executions ("12 envois")
+
+**Actions par template** :
+- Bouton Éditer → Dialog édition (voir 7.2)
+- Bouton Supprimer → Confirmation puis delete (supprime aussi toutes executions)
+
+**Bouton fab** : "Ajouter message" → Dialog création
+
+---
+
+**Header global** : PageHeader avec titre instance + bouton settings (→ ConfigScreen)
 
 **Loading/Error** : Pattern standard (isLoading, errorMessage avec Toast)
 
-### 6.2 ConfigScreen
+### 7.2 Dialog édition/création message
+
+**Modal** : FullScreen dialog ou BottomSheet selon espace
+
+**Formulaire** :
+
+1. **FormField titre** (TEXT, requis)
+   - Limite : SHORT_LENGTH (60 chars)
+
+2. **FormField contenu** (TEXT_LONG, optionnel)
+   - Limite : LONG_LENGTH (1500 chars)
+
+3. **FormSelection priority**
+   - Options : Default, High, Low
+   - Défaut : `default_priority` de la config
+
+4. **Section planning** :
+   - Bouton "Configurer planning" → ouvre ScheduleConfigEditor
+   - Réutilise composable existant (core/ai/ui/automation/ScheduleConfigEditor.kt)
+   - OnConfirm : stocke ScheduleConfig dans state
+   - OnClear : set null (on-demand)
+   - Affichage summary si schedule défini
+
+5. **Section triggers** :
+   - Disabled/grayed avec label "Déclencheurs événementiels (à venir)"
+
+**Actions** :
+- FormActions avec SAVE, CANCEL
+- Validation via `messages_data` schema (sans executions)
+- Save via `create` ou `update`
+
+### 7.3 ConfigScreen
 
 **Package** : `tools/messages/ui/MessagesConfigScreen.kt`
 
@@ -456,45 +640,49 @@ IA et user utilisent operations standard tools :
 - `ToolGeneralConfigSection` (8 champs standard)
 
 **Section 2 : Champs spécifiques**
-1) notifs android
-- Toggle `external_notifications`
-- Label : "Afficher notifications système"
-2) priority
 
-**Section 3 : Messages prédéfinis**
-- Liste items config.messages[]
-- Affichage par item :
-  - Titre
-  - Schedule summary ou "On-demand"
-  - Boutons : Éditer, Supprimer
-- Bouton : "Ajouter message"
+1. **FormSelection default_priority**
+   - Options : Default, High, Low
+   - Label : "Priorité par défaut"
 
-**Dialog édition item** : Modal avec formulaire
-- FormField titre (TEXT, requis)
-- FormField contenu (TEXT_LONG, optionnel)
-- Bouton "Configurer planning" → ouvre ScheduleConfigEditor
-  - Réutilise composable existant (core/ai/ui/automation/ScheduleConfigEditor.kt)
-  - OnConfirm : stocke ScheduleConfig dans item.schedule
-  - Peut retourner null (pas de schedule = on-demand)
-- Section triggers : Disabled/grayed avec label "Pas encore implémenté"
+2. **Toggle external_notifications**
+   - Label : "Afficher notifications système"
 
 **Sauvegarde** : ValidationHelper.validateAndSave() puis tools.update via coordinator
 
-**Pattern référence** : Journal pour structure (outil simple), Tracking pour items prédéfinis array (outil complexe)
+**Pattern référence** : Journal pour structure (outil simple), Note pour config minimale
 
-## 7. Base de données
+### 7.4 DisplayComponent
 
-### 7.1 Entity
+**Package** : `tools/messages/ui/MessagesDisplayComponent.kt`
+
+**Responsabilité** : Affichage minimal dans ToolCard (ZoneScreen)
+
+**Affichage** :
+- **LINE** : Icône + Titre + Badge unread count
+- **CONDENSED/EXTENDED/SQUARE** : Icône + Titre + Liste 3 derniers messages non lus (title_snapshot)
+
+**Source** : `stats` pour unread count, `get_history` pour derniers messages
+
+## 8. Base de données
+
+### 8.1 Entity
 
 **Package** : `tools/messages/data/MessageData.kt`
 
 ```kotlin
-@Entity(tableName = "message_data")
+@Entity(
+    tableName = "message_data",
+    indices = [
+        Index(value = ["toolInstanceId"]),
+        Index(value = ["timestamp"])
+    ]
+)
 data class MessageData(
     @PrimaryKey val id: String,
     val toolInstanceId: String,
-    val timestamp: Long,           // = scheduled_time
-    val value: String,             // JSON: {message_id, status, sent_at, read, archived}
+    val timestamp: Long,           // Pas utilisé (cohérence pattern), scheduled_time dans JSON
+    val value: String,             // JSON: {title, content, schedule, priority, triggers, executions[]}
     val metadata: String?,         // Vide pour MVP, cohérence autres tools
     val createdAt: Long
 )
@@ -502,18 +690,18 @@ data class MessageData(
 
 **Index** :
 - `toolInstanceId` (queries par instance)
-- `timestamp` (tri chronologique)
+- `timestamp` (cohérence pattern, tri sur executions[].sent_at via JSON)
 
 **Pattern uniforme** : Même structure que TrackingData, JournalData, NotesData.
 
-### 7.2 DAO
+### 8.2 DAO
 
 **Package** : `tools/messages/data/MessageDao.kt`
 
 ```kotlin
 @Dao
 interface MessageDao {
-    @Query("SELECT * FROM message_data WHERE toolInstanceId = :toolInstanceId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM message_data WHERE toolInstanceId = :toolInstanceId ORDER BY createdAt DESC")
     suspend fun getByToolInstance(toolInstanceId: String): List<MessageData>
 
     @Query("SELECT * FROM message_data WHERE id = :id")
@@ -527,14 +715,40 @@ interface MessageDao {
 
     @Delete
     suspend fun delete(data: MessageData)
+
+    @Query("DELETE FROM message_data WHERE toolInstanceId = :toolInstanceId")
+    suspend fun deleteByToolInstance(toolInstanceId: String)
 }
 ```
 
 **Pattern standard** : Comme autres tools DAOs.
 
-## 8. ToolType implementation
+### 8.3 Migration DB
 
-### 8.1 MessageToolType
+**Version** : Incrémenter AppDatabase version (11 → 12)
+
+```kotlin
+private val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS message_data (
+                id TEXT PRIMARY KEY NOT NULL,
+                toolInstanceId TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                value TEXT NOT NULL,
+                metadata TEXT,
+                createdAt INTEGER NOT NULL
+            )
+        """)
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_message_data_toolInstanceId ON message_data(toolInstanceId)")
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_message_data_timestamp ON message_data(timestamp)")
+    }
+}
+```
+
+## 9. ToolType implementation
+
+### 9.1 MessageToolType
 
 **Package** : `tools/messages/MessageToolType.kt`
 
@@ -545,8 +759,8 @@ object MessageToolType : ToolTypeContract {
     // Métadonnées
     override fun getDisplayName(context: Context): String
     override fun getDescription(context: Context): String
-    override fun getSuggestedIcons(): List<String>  // notification, bell, message
-    override fun getDefaultConfig(): String         // JSON avec messages: [], external_notifications: true
+    override fun getSuggestedIcons(): List<String>  // notification, bell, message, alarm
+    override fun getDefaultConfig(): String         // JSON avec default_priority: "default", external_notifications: true
     override fun getAvailableOperations(): List<String>
 
     // Schémas (via SchemaProvider)
@@ -561,9 +775,9 @@ object MessageToolType : ToolTypeContract {
     override fun getService(): ExecutableService    // MessageService
     override fun getDao(): Any                      // MessageDao
     override fun getDatabaseEntities(): List<KClass<*>>  // [MessageData::class]
-    override fun getDatabaseMigrations(): List<Migration>
+    override fun getDatabaseMigrations(): List<Migration>  // [MIGRATION_11_12]
 
-    // Scheduling (nouveau)
+    // Scheduling
     override fun getScheduler(): ToolScheduler      // MessageScheduler
 }
 ```
@@ -573,62 +787,165 @@ object MessageToolType : ToolTypeContract {
 "messages" to MessageToolType
 ```
 
-## 9. Décisions architecturales récapitulatives
+## 10. Schémas JSON
 
-### 9.1 Choix structurels
+### 10.1 messages_config
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "schema_id": {"type": "string", "const": "messages_config"},
+    "data_schema_id": {"type": "string", "const": "messages_data"},
+    "name": {"type": "string", "maxLength": 60},
+    "description": {"type": "string", "maxLength": 250},
+    "management": {"type": "string", "enum": ["AI", "USER", "HYBRID"]},
+    "display_mode": {"type": "string", "enum": ["ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL"]},
+    "validateConfig": {"type": "boolean", "default": false},
+    "validateData": {"type": "boolean", "default": false},
+    "always_send": {"type": "boolean", "default": false},
+
+    "default_priority": {
+      "type": "string",
+      "enum": ["default", "high", "low"],
+      "default": "default"
+    },
+    "external_notifications": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": ["schema_id", "data_schema_id", "name", "default_priority", "external_notifications"]
+}
+```
+
+### 10.2 messages_data
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "schema_id": {"type": "string", "const": "messages_data"},
+    "title": {
+      "type": "string",
+      "maxLength": 60,
+      "description": "Message title (displayed in notification and UI)"
+    },
+    "content": {
+      "type": "string",
+      "maxLength": 1500,
+      "description": "Message content (optional)"
+    },
+    "schedule": {
+      "{{SCHEDULE_CONFIG_PLACEHOLDER}}": true,
+      "description": "Scheduling configuration (null = on-demand)"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["default", "high", "low"],
+      "description": "Notification priority for this message"
+    },
+    "triggers": {
+      "type": "null",
+      "description": "Event-based triggers (STUB - not implemented yet)"
+    },
+    "executions": {
+      "type": "array",
+      "systemManaged": true,
+      "description": "Execution history. Managed automatically by scheduler. Do not modify directly.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scheduled_time": {"type": "integer"},
+          "sent_at": {"type": "integer"},
+          "status": {"type": "string", "enum": ["pending", "sent", "failed"]},
+          "title_snapshot": {"type": "string"},
+          "content_snapshot": {"type": "string"},
+          "read": {"type": "boolean"},
+          "archived": {"type": "boolean"}
+        },
+        "required": ["scheduled_time", "status", "title_snapshot", "read", "archived"]
+      },
+      "default": []
+    }
+  },
+  "required": ["schema_id", "title", "priority", "triggers", "executions"]
+}
+```
+
+**Note** : `{{SCHEDULE_CONFIG_PLACEHOLDER}}` remplacé par SchemaUtils.embedScheduleConfig()
+
+## 11. Décisions architecturales récapitulatives
+
+### 11.1 Choix structurels
 
 1. **Tool vs Core** : Outil pour bénéficier zones, IA commands, extensibilité
 2. **Scheduling centralisé** : CoreScheduler découvre schedulers via interface ToolTypeContract
 3. **NotificationService core** : Réutilisable futurs tools, pas de provider (une seule impl)
-4. **Pattern items prédéfinis** : Config = templates, Data = instances (comme Tracking choice items)
+4. **Config minimal** : Juste settings globaux (default_priority, external_notifications)
+5. **Data = templates** : Messages manipulables comme données normales via tool_data.* commands
 
-### 9.2 Choix fonctionnels
+### 11.2 Choix fonctionnels
 
-5. **Schedule par item** : Chaque message son propre planning indépendant
-6. **Schedule nullable** : Permet on-demand (IA planifiera plus tard)
-7. **Réutilisation ScheduleConfig** : Infrastructure existante (6 patterns, ScheduleCalculator, UI)
-8. **Data ultra-simple** : Juste refs + timestamps + flags, générée au tick (pas pré-générée)
-9. **Status + flags** : Status lifecycle (pending/sent/cancelled) + flags user orthogonaux (read/archived)
-10. **Priority par config globale**
-11. **Triggers STUB** : Prévu mais non implémenté (cohérence future, pas de breaking change)
+6. **Schedule par message** : Chaque message son propre planning indépendant
+7. **Schedule nullable** : Permet on-demand (IA planifiera plus tard)
+8. **Réutilisation ScheduleConfig** : Infrastructure existante (6 patterns, ScheduleCalculator, UI)
+9. **Executions snapshots** : Immutables, reflètent exactement ce qui a été envoyé
+10. **Priority par message** : Override default_priority de la config
+11. **Status + flags** : Status lifecycle (pending/sent/failed) + flags user orthogonaux (read/archived)
+12. **Triggers STUB** : Prévu mais non implémenté (cohérence future, pas de breaking change)
+13. **systemManaged keyword** : Protection executions via stripping pipeline IA
 
-## 10. Ordre d'implémentation recommandé
+### 11.3 Choix UI
 
-**Méthodologie** : Lire fichier de référence d'un autre outil (simple : Note ou Journal, complexe : Tracking)
+14. **2 tabs** : "Messages reçus" (focus executions) vs "Gestion messages" (focus templates)
+15. **Filtres checkboxes OR** : Non lus + Lus + Archivés, défaut "Non lus" seul
+16. **Tri executions** : Par sent_at DESC (plus récent en premier)
+17. **Snapshot display** : Affiche title_snapshot/content_snapshot (pas valeurs actuelles template)
 
-### Phase 1 : Infrastructure scheduling
+## 12. Ordre d'implémentation recommandé
+
+**Méthodologie** : Lire fichiers de référence d'autres outils (Note pour config minimal, Tracking pour logique complexe)
+
+### ✅ Phase 1 : Infrastructure scheduling (DONE)
 1. Interface `ToolScheduler` + extension `ToolTypeContract.getScheduler()`
 2. `CoreScheduler` avec logique tick()
 3. Déplacement heartbeat depuis AI vers CoreScheduler
 4. Test : Vérifier automations fonctionnent toujours
 
-### Phase 2 : Notification service
+### ✅ Phase 2 : Notification service (DONE)
 5. `NotificationService` (core simple)
 6. Test : Appel manuel send() affiche notif Android
 
-### Phase 3 : Data layer
+### 🔄 Phase 3 : Data layer (IN PROGRESS)
 7. Schémas JSON (`MessagesSchemas.kt` : messages_config, messages_data)
 8. Entity `MessageData` + DAO
 9. Migration DB (ajout table message_data)
 
-### Phase 4 : Business logic
-10. `MessageService` (operations user)
-11. `MessageScheduler` (logique tick)
-12. Test : Tick manuel crée data + envoie notif
+### Phase 4 : AI protection
+10. Implémentation `systemManaged` keyword stripping dans pipeline IA
+11. Test : IA ne peut pas modifier executions
 
-### Phase 5 : Tool contract
-13. `MessageToolType` (implémentation complète contrat)
-14. Enregistrement `ToolTypeScanner`
-15. Test : Instance créable, schémas accessibles
+### Phase 5 : Business logic
+12. `MessageService` (operations CRUD + get_history + mark_read + mark_archived)
+13. `MessageScheduler` (logique tick + appendExecution)
+14. Test : Tick manuel crée execution + envoie notif
 
-### Phase 6 : UI
-16. `MessagesConfigScreen` (réutilise ScheduleConfigEditor)
-17. `MessagesScreen` (liste + filtres + actions)
-18. `MessagesDisplayComponent` (minimal)
-19. Strings (shared + tool)
+### Phase 6 : Tool contract
+15. `MessageToolType` (implémentation complète contrat)
+16. Enregistrement `ToolTypeScanner`
+17. Test : Instance créable, schémas accessibles
 
-### Phase 7 : Validation
-20. Tests end-to-end : Créer instance → configurer message → attendre tick → vérifier notif + data
-21. Tests edge cases : Schedule null, external_notifications false, priority variations
+### Phase 7 : UI
+18. `MessagesConfigScreen` (settings globaux + default_priority)
+19. `MessagesScreen` (2 tabs : Messages reçus + Gestion messages)
+20. Dialog édition message (réutilise ScheduleConfigEditor)
+21. `MessagesDisplayComponent` (minimal pour ToolCard)
+22. Strings (shared + tool)
+
+### Phase 8 : Validation
+23. Tests end-to-end : Créer instance → créer message → attendre tick → vérifier notif + execution
+24. Tests edge cases : Schedule null, external_notifications false, priority variations, modification template
+25. Tests UI : Filtres, snapshots display, mark read/archived
 
 ---

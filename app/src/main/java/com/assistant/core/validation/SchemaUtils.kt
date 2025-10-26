@@ -1,6 +1,8 @@
 package com.assistant.core.validation
 
+import android.content.Context
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.ScheduleConfigSchema
 import org.json.JSONObject
 
 /**
@@ -80,6 +82,109 @@ object SchemaUtils {
         } catch (e: Exception) {
             LogManager.schema("Schema merge failed: ${e.message}", "ERROR", e)
             throw ValidationException("Schema merge failed", e)
+        }
+    }
+
+    /**
+     * Strips system-managed fields from data entry based on schema
+     *
+     * Scans schema for properties marked with "systemManaged": true and removes them
+     * from the data entry. This prevents AI commands from modifying fields that should
+     * only be updated by the scheduler or system.
+     *
+     * Use case: Messages tool executions array must not be modified by AI
+     *
+     * @param dataMap Data entry to strip (will be modified in-place)
+     * @param schemaContent JSON schema content to scan for systemManaged fields
+     * @return Number of fields stripped
+     */
+    fun stripSystemManagedFields(dataMap: MutableMap<String, Any>, schemaContent: String): Int {
+        return try {
+            val schema = JSONObject(schemaContent)
+            val properties = schema.optJSONObject("properties") ?: return 0
+
+            var strippedCount = 0
+            val keysToRemove = mutableListOf<String>()
+
+            // Scan all properties for systemManaged flag
+            properties.keys().forEach { key ->
+                val property = properties.optJSONObject(key)
+                if (property != null && property.optBoolean("systemManaged", false)) {
+                    keysToRemove.add(key)
+                }
+            }
+
+            // Remove marked fields
+            keysToRemove.forEach { key ->
+                if (dataMap.containsKey(key)) {
+                    dataMap.remove(key)
+                    strippedCount++
+                    LogManager.schema("Stripped system-managed field: $key", "DEBUG")
+                }
+            }
+
+            if (strippedCount > 0) {
+                LogManager.schema("Stripped $strippedCount system-managed field(s) from AI command", "INFO")
+            }
+
+            strippedCount
+
+        } catch (e: Exception) {
+            LogManager.schema("Failed to strip system-managed fields: ${e.message}", "ERROR", e)
+            0
+        }
+    }
+
+    /**
+     * Embeds ScheduleConfig schema at placeholder location in target schema template
+     *
+     * This allows reusing the complete ScheduleConfig validation in other tool schemas
+     * without duplication. The ScheduleConfig schema content (type, properties, required)
+     * replaces the placeholder in the target template.
+     *
+     * Example usage:
+     * ```
+     * val template = """
+     * {
+     *   "properties": {
+     *     "schedule": __SCHEDULE_CONFIG__
+     *   }
+     * }
+     * """
+     * val finalSchema = embedScheduleConfig(template, "__SCHEDULE_CONFIG__", context)
+     * ```
+     *
+     * @param templateJson Target schema with placeholder
+     * @param placeholder Placeholder string to replace (e.g., "__SCHEDULE_CONFIG__")
+     * @param context Android context for string resources
+     * @return Complete schema with ScheduleConfig embedded
+     */
+    fun embedScheduleConfig(templateJson: String, placeholder: String, context: Context): String {
+        return try {
+            // Get the complete ScheduleConfig schema
+            val scheduleSchema = ScheduleConfigSchema.getSchema(context)
+            val scheduleJson = JSONObject(scheduleSchema.content)
+
+            // Extract the schema body (everything we want to embed)
+            // We want type, properties, required from the root level
+            val scheduleBody = JSONObject()
+            scheduleJson.keys().forEach { key ->
+                // Skip metadata fields, keep validation fields
+                if (key !in listOf("\$schema", "\$id", "description")) {
+                    scheduleBody.put(key, scheduleJson.get(key))
+                }
+            }
+
+            // Replace placeholder with the schedule body
+            // The placeholder must be unquoted in the template for proper JSON structure
+            val result = templateJson.replace("\"$placeholder\"", scheduleBody.toString())
+
+            LogManager.schema("Successfully embedded ScheduleConfig schema at placeholder: $placeholder")
+            result
+
+        } catch (e: Exception) {
+            LogManager.schema("Failed to embed ScheduleConfig: ${e.message}", "ERROR", e)
+            throw ValidationException("Failed to embed ScheduleConfig schema", e)
         }
     }
 }

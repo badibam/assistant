@@ -844,6 +844,26 @@
     <string name="schedule_preview_specific">%1$d dates programmées</string>
     <string name="schedule_preview_unknown">Configuration inconnue</string>
 
+    <!-- SCHEDULE CONFIG - Schema validation strings -->
+    <string name="schedule_config_display_name">Configuration horaire</string>
+    <string name="schedule_config_description">Configuration de planning avec 6 types de récurrence disponibles</string>
+    <string name="schedule_time_format">Format HH:mm (heure 24h)</string>
+    <string name="schedule_pattern">Type de récurrence du planning</string>
+    <string name="schedule_timezone">Fuseau horaire du planning</string>
+    <string name="schedule_enabled">Planning activé</string>
+    <string name="schedule_start_date">Date de début d\'exécution (timestamp milliseconds)</string>
+    <string name="schedule_end_date">Date de fin d\'exécution (timestamp milliseconds)</string>
+    <string name="schedule_next_execution">Prochaine exécution calculée (timestamp milliseconds)</string>
+    <string name="schedule_day_of_week">Jour de la semaine (1=Lundi, 7=Dimanche)</string>
+    <string name="schedule_month">Mois (1-12)</string>
+    <string name="schedule_day">Jour du mois (1-31)</string>
+    <string name="schedule_daily_times">Liste des horaires quotidiens</string>
+    <string name="schedule_days_of_week">Liste des jours de la semaine</string>
+    <string name="schedule_months">Liste des mois</string>
+    <string name="schedule_weekly_moments">Moments hebdomadaires personnalisés</string>
+    <string name="schedule_yearly_dates">Dates annuelles récurrentes</string>
+    <string name="schedule_timestamps">Liste de timestamps spécifiques</string>
+
     <!-- Days of week (full names - already exist as month_ but adding explicit day_of_week_) -->
     <string name="day_of_week_1">Lundi</string>
     <string name="day_of_week_2">Mardi</string>

@@ -5,6 +5,8 @@ import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
@@ -341,12 +343,35 @@ class AICommandProcessor(private val context: Context) {
                 return params
             }
 
+            // Get tooltype to retrieve schema for systemManaged field stripping
+            val tooltype = params["tooltype"] as? String
+
             val enrichedEntries = entries.map { entry ->
                 if (entry is Map<*, *>) {
                     @Suppress("UNCHECKED_CAST")
-                    (entry as Map<String, Any>).toMutableMap().apply {
-                        put("schema_id", dataSchemaId)
+                    val mutableEntry = (entry as Map<String, Any>).toMutableMap()
+
+                    // Add schema_id for validation
+                    mutableEntry["schema_id"] = dataSchemaId
+
+                    // Strip system-managed fields (e.g., executions array in Messages tool)
+                    // This prevents AI from modifying fields that should only be updated by scheduler
+                    if (!tooltype.isNullOrEmpty()) {
+                        try {
+                            val toolType = ToolTypeManager.getToolType(tooltype)
+                            val schema = toolType?.getSchema(dataSchemaId, context)
+                            if (schema != null) {
+                                SchemaUtils.stripSystemManagedFields(mutableEntry, schema.content)
+                            }
+                        } catch (e: Exception) {
+                            LogManager.aiService(
+                                "Failed to strip system-managed fields for tooltype $tooltype: ${e.message}",
+                                "WARN"
+                            )
+                        }
                     }
+
+                    mutableEntry
                 } else {
                     LogManager.aiService(
                         "Unexpected entry type: ${entry?.javaClass?.simpleName}",

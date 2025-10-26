@@ -969,6 +969,24 @@
     <string name="shared_schedule_preview_yearly">%1$s chaque année</string>
     <string name="shared_schedule_preview_specific">%1$d dates programmées</string>
     <string name="shared_schedule_preview_unknown">Configuration inconnue</string>
+    <string name="shared_schedule_config_display_name">Configuration horaire</string>
+    <string name="shared_schedule_config_description">Configuration de planning avec 6 types de récurrence disponibles</string>
+    <string name="shared_schedule_time_format">Format HH:mm (heure 24h)</string>
+    <string name="shared_schedule_pattern">Type de récurrence du planning</string>
+    <string name="shared_schedule_timezone">Fuseau horaire du planning</string>
+    <string name="shared_schedule_enabled">Planning activé</string>
+    <string name="shared_schedule_start_date">Date de début d\'exécution (timestamp milliseconds)</string>
+    <string name="shared_schedule_end_date">Date de fin d\'exécution (timestamp milliseconds)</string>
+    <string name="shared_schedule_next_execution">Prochaine exécution calculée (timestamp milliseconds)</string>
+    <string name="shared_schedule_day_of_week">Jour de la semaine (1=Lundi, 7=Dimanche)</string>
+    <string name="shared_schedule_month">Mois (1-12)</string>
+    <string name="shared_schedule_day">Jour du mois (1-31)</string>
+    <string name="shared_schedule_daily_times">Liste des horaires quotidiens</string>
+    <string name="shared_schedule_days_of_week">Liste des jours de la semaine</string>
+    <string name="shared_schedule_months">Liste des mois</string>
+    <string name="shared_schedule_weekly_moments">Moments hebdomadaires personnalisés</string>
+    <string name="shared_schedule_yearly_dates">Dates annuelles récurrentes</string>
+    <string name="shared_schedule_timestamps">Liste de timestamps spécifiques</string>
     <string name="shared_day_of_week_1">Lundi</string>
     <string name="shared_day_of_week_2">Mardi</string>
     <string name="shared_day_of_week_3">Mercredi</string>
