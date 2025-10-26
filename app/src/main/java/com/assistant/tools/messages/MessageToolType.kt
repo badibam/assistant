@@ -58,8 +58,7 @@ object MessageToolType : ToolTypeContract {
 
     override fun getAvailableOperations(): List<String> {
         return listOf(
-            "create", "update", "delete",
-            "get", "get_single", "get_history",
+            "get_history",
             "mark_read", "mark_archived", "stats"
         )
     }
@@ -156,6 +155,8 @@ object MessageToolType : ToolTypeContract {
         val s = Strings.`for`(tool = "messages", context = context)
 
         // Specific schema template for message data (will be wrapped in base structure)
+        // Note: "name" is stored at ToolDataEntity level, not in the data JSON
+        // The data JSON only contains: content, schedule, priority, triggers, executions
         val specificSchemaTemplate = """
         {
             "properties": {
@@ -163,7 +164,7 @@ object MessageToolType : ToolTypeContract {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "Message title (used as name in tool_data)"
+                    "description": "Message title (stored at entity level, not in data JSON)"
                 },
                 "timestamp": {
                     "type": "number",
@@ -315,6 +316,81 @@ object MessageToolType : ToolTypeContract {
     override fun getDatabaseEntities(): List<Class<*>> {
         // Messages uses unified ToolDataEntity (no custom entity)
         return listOf(ToolDataEntity::class.java)
+    }
+
+    // ========================================
+    // Data Enrichment
+    // ========================================
+
+    /**
+     * Enrich message data with calculated nextExecutionTime from schedule
+     *
+     * Called by ToolDataService before create/update operations.
+     * Calculates nextExecutionTime based on schedule pattern and adds it to the data JSON.
+     *
+     * @param dataJson The data JSON containing schedule configuration
+     * @param name The entry name (unused for messages)
+     * @param configJson The tool instance config (unused for messages)
+     * @return Enriched data JSON with nextExecutionTime calculated
+     */
+    override fun enrichData(dataJson: String, name: String?, configJson: String?): String {
+        com.assistant.core.utils.LogManager.service("MessageToolType.enrichData called for message: name=$name", "DEBUG")
+
+        return try {
+            val dataObject = org.json.JSONObject(dataJson)
+
+            // Check if schedule exists
+            val scheduleJson = dataObject.optJSONObject("schedule")
+            if (scheduleJson == null || scheduleJson.toString() == "null") {
+                return dataJson // No schedule, return as-is
+            }
+
+            // Parse schedule to ScheduleConfig
+            val scheduleConfig = try {
+                kotlinx.serialization.json.Json.decodeFromString<com.assistant.core.utils.ScheduleConfig>(scheduleJson.toString())
+            } catch (e: Exception) {
+                com.assistant.core.utils.LogManager.service(
+                    "Failed to parse schedule config during enrichment: ${e.message}",
+                    "WARN",
+                    e
+                )
+                return dataJson // Invalid schedule, return as-is (validation will catch it)
+            }
+
+            // Calculate nextExecutionTime
+            val now = System.currentTimeMillis()
+            val nextExecutionTime = com.assistant.core.utils.ScheduleCalculator.calculateNextExecution(
+                pattern = scheduleConfig.pattern,
+                timezone = scheduleConfig.timezone,
+                startDate = scheduleConfig.startDate,
+                endDate = scheduleConfig.endDate,
+                fromTimestamp = now
+            )
+
+            // Update schedule with calculated nextExecutionTime
+            if (nextExecutionTime != null) {
+                scheduleJson.put("nextExecutionTime", nextExecutionTime)
+            } else {
+                scheduleJson.put("nextExecutionTime", org.json.JSONObject.NULL)
+                com.assistant.core.utils.LogManager.service(
+                    "No future executions for schedule (end date passed or invalid pattern)",
+                    "WARN"
+                )
+            }
+
+            // Update data with modified schedule
+            dataObject.put("schedule", scheduleJson)
+
+            dataObject.toString()
+
+        } catch (e: Exception) {
+            com.assistant.core.utils.LogManager.service(
+                "Error enriching message data with nextExecutionTime: ${e.message}",
+                "ERROR",
+                e
+            )
+            dataJson // On error, return original data
+        }
     }
 
     // ========================================

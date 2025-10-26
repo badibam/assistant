@@ -518,20 +518,29 @@ private fun ManageMessagesTab(
             "limit" to 100
         )
 
+        LogManager.ui("Loading message templates for tool $toolInstanceId (refreshTrigger=$refreshTrigger)", "DEBUG")
+
         val result = coordinator.processUserAction("tool_data.get", params)
         if (result?.isSuccess == true) {
             val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
+            LogManager.ui("Received ${entriesData.size} raw entries from tool_data.get", "DEBUG")
+
             templates = entriesData.mapNotNull { entry ->
                 try {
-                    parseMessageTemplate(entry as? Map<*, *>)
+                    val parsed = parseMessageTemplate(entry as? Map<*, *>)
+                    if (parsed == null) {
+                        LogManager.ui("Failed to parse entry: ${entry}", "WARN")
+                    }
+                    parsed
                 } catch (e: Exception) {
-                    LogManager.ui("Error parsing message template: ${e.message}", "ERROR")
+                    LogManager.ui("Error parsing message template: ${e.message}", "ERROR", e)
                     null
                 }
             }.sortedBy { it.title }
 
-            LogManager.ui("Loaded ${templates.size} message templates")
+            LogManager.ui("Loaded ${templates.size} message templates", "INFO")
         } else {
+            LogManager.ui("Failed to load templates: ${result?.error}", "ERROR")
             templates = emptyList()
             onError(s.tool("error_load_messages"))
         }
@@ -785,6 +794,9 @@ private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
     try {
         val id = map["id"] as? String ?: return null
 
+        // Get title from entity-level "name" field (not from data.title)
+        val title = map["name"] as? String ?: return null
+
         // Parse data field (can be String or Map)
         val dataValue = map["data"]
         val parsedData = when (dataValue) {
@@ -797,8 +809,6 @@ private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
             }
             else -> return null
         }
-
-        val title = parsedData["title"] as? String ?: return null
         val content = parsedData["content"] as? String?
         val priority = parsedData["priority"] as? String ?: "default"
 
@@ -925,12 +935,12 @@ private suspend fun createMessage(
 
     val dataJson = JSONObject().apply {
         put("schema_id", "messages_data")
-        put("title", title)
         put("content", content)
         put("schedule", scheduleJson ?: JSONObject.NULL)
         put("priority", priority)
         put("triggers", JSONObject.NULL)
         // executions auto-initialized by service
+        // Note: title is stored at entity level as "name", not in data
     }
 
     val params = mapOf(
@@ -941,7 +951,7 @@ private suspend fun createMessage(
         "data" to dataJson  // JSONObject, not .toString()
     )
 
-    val result = coordinator.processUserAction("messages.create", params)
+    val result = coordinator.processUserAction("tool_data.create", params)
     if (result?.isSuccess == true) {
         onSuccess()
     } else {
@@ -977,12 +987,12 @@ private suspend fun updateMessage(
 
     val dataJson = JSONObject().apply {
         put("schema_id", "messages_data")
-        put("title", title)
         put("content", content)
         put("schedule", scheduleJson ?: JSONObject.NULL)
         put("priority", priority)
         put("triggers", JSONObject.NULL)
         // executions preserved by service
+        // Note: title is stored at entity level as "name", not in data
     }
 
     val params = mapOf(
@@ -991,7 +1001,7 @@ private suspend fun updateMessage(
         "data" to dataJson  // JSONObject, not .toString()
     )
 
-    val result = coordinator.processUserAction("messages.update", params)
+    val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {
         onSuccess()
     } else {

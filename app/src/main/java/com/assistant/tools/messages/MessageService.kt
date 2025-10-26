@@ -11,9 +11,6 @@ import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.LogManager
-import com.assistant.core.utils.ScheduleCalculator
-import com.assistant.core.utils.ScheduleConfig
-import kotlinx.serialization.json.Json
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -21,7 +18,6 @@ import org.json.JSONObject
  * Service for Messages tool operations
  *
  * Responsibilities:
- * - Standard CRUD operations (delegated to ToolDataService)
  * - Execution history queries (get_history with filters)
  * - Execution flag updates (mark_read, mark_archived)
  * - Statistics aggregation (including execution counts)
@@ -30,25 +26,20 @@ import org.json.JSONObject
  * Architecture:
  * - Messages use ToolDataEntity with JSON value containing template + executions array
  * - Executions are immutable snapshots (systemManaged, stripped from AI commands)
- * - Standard CRUD handled by ToolDataService for consistency
- * - Specific operations implemented directly for execution management
+ * - CRUD operations handled by ToolDataService (enrichData() calculates nextExecutionTime)
+ * - Specific operations implemented here for execution management
  */
 class MessageService(private val context: Context) : ExecutableService {
 
     private val s = Strings.`for`(tool = "messages", context = context)
     private val coordinator = Coordinator(context)
-    private val toolDataService = com.assistant.core.services.ToolDataService(context)
 
     override fun verbalize(
         operation: String,
         params: JSONObject,
         context: Context
     ): String {
-        // For CRUD operations, delegate to ToolDataService verbalization
         return when (operation) {
-            "create", "update", "delete", "get", "get_single" -> {
-                toolDataService.verbalize(operation, params, context)
-            }
             "get_history" -> s.tool("verbalize_get_history")
             "mark_read" -> s.tool("verbalize_mark_read")
             "mark_archived" -> s.tool("verbalize_mark_archived")
@@ -66,13 +57,6 @@ class MessageService(private val context: Context) : ExecutableService {
 
         return try {
             when (operation) {
-                // Standard CRUD - with schedule nextExecutionTime calculation
-                "create" -> handleCreate(params, token)
-                "update" -> handleUpdate(params, token)
-                "delete" -> delegateToToolDataService("delete", params, token)
-                "get" -> delegateToToolDataService("get", params, token)
-                "get_single" -> delegateToToolDataService("get_single", params, token)
-
                 // Messages-specific operations
                 "get_history" -> getHistory(params, token)
                 "mark_read" -> markRead(params, token)
@@ -84,136 +68,6 @@ class MessageService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.service("MessageService.execute($operation) failed: ${e.message}", "ERROR", e)
             OperationResult.error("${s.shared("service_error_operation_failed")}: ${e.message}")
-        }
-    }
-
-    // ========================================
-    // Create/Update with Schedule Handling
-    // ========================================
-
-    /**
-     * Handle create operation with automatic nextExecutionTime calculation
-     * If message has a schedule, calculates nextExecutionTime before saving
-     */
-    private suspend fun handleCreate(
-        params: JSONObject,
-        token: CancellationToken
-    ): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-
-        // Process schedule if present (calculates nextExecutionTime)
-        val processedParams = processScheduleInParams(params)
-
-        // Delegate to ToolDataService
-        return delegateToToolDataService("create", processedParams, token)
-    }
-
-    /**
-     * Handle update operation with automatic nextExecutionTime calculation
-     * If message schedule is modified, recalculates nextExecutionTime
-     */
-    private suspend fun handleUpdate(
-        params: JSONObject,
-        token: CancellationToken
-    ): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-
-        // Process schedule if present (calculates nextExecutionTime)
-        val processedParams = processScheduleInParams(params)
-
-        // Delegate to ToolDataService
-        return delegateToToolDataService("update", processedParams, token)
-    }
-
-    /**
-     * Process schedule in params: calculate and set nextExecutionTime if schedule exists
-     *
-     * @param params Original params (may contain data with schedule)
-     * @return Modified params with nextExecutionTime calculated
-     */
-    private fun processScheduleInParams(params: JSONObject): JSONObject {
-        try {
-            // Get data field (contains the message JSON)
-            val dataJson = params.optJSONObject("data") ?: return params
-
-            // Check if schedule exists
-            val scheduleJson = dataJson.optJSONObject("schedule")
-            if (scheduleJson == null || scheduleJson.toString() == "null") {
-                return params // No schedule, return as-is
-            }
-
-            // Parse schedule to ScheduleConfig
-            val scheduleConfig = try {
-                Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
-            } catch (e: Exception) {
-                LogManager.service("Failed to parse schedule config: ${e.message}", "WARN", e)
-                return params // Invalid schedule, return as-is (validation will catch it)
-            }
-
-            // Calculate nextExecutionTime
-            val now = System.currentTimeMillis()
-            val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
-                pattern = scheduleConfig.pattern,
-                timezone = scheduleConfig.timezone,
-                startDate = scheduleConfig.startDate,
-                endDate = scheduleConfig.endDate,
-                fromTimestamp = now
-            )
-
-            // Update schedule with calculated nextExecutionTime
-            if (nextExecutionTime != null) {
-                scheduleJson.put("nextExecutionTime", nextExecutionTime)
-            } else {
-                scheduleJson.put("nextExecutionTime", JSONObject.NULL)
-                LogManager.service("No future executions for schedule (end date passed or invalid pattern)", "WARN")
-            }
-
-            // Update data with modified schedule
-            // dataJson is already a reference to params["data"], so modifications are already applied
-            dataJson.put("schedule", scheduleJson)
-
-            return params
-
-        } catch (e: Exception) {
-            LogManager.service("Error processing schedule in params: ${e.message}", "ERROR", e)
-            return params // On error, return original params
-        }
-    }
-
-    /**
-     * Format timestamp to readable date string
-     */
-    private fun formatTimestamp(timestamp: Long): String {
-        return try {
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-            dateFormat.format(java.util.Date(timestamp))
-        } catch (e: Exception) {
-            timestamp.toString()
-        }
-    }
-
-    // ========================================
-    // Delegation to ToolDataService
-    // ========================================
-
-    /**
-     * Delegate standard CRUD operations to ToolDataService directly
-     * Ensures consistency with other tools and reuses validation logic
-     *
-     * Pattern: MessageService → ToolDataService (no Coordinator intermediary)
-     */
-    private suspend fun delegateToToolDataService(
-        operation: String,
-        params: JSONObject,
-        token: CancellationToken
-    ): OperationResult {
-        if (token.isCancelled) return OperationResult.cancelled()
-
-        try {
-            return toolDataService.execute(operation, params, token)
-        } catch (e: Exception) {
-            LogManager.service("MessageService delegation to ToolDataService.$operation failed: ${e.message}", "ERROR", e)
-            return OperationResult.error("${s.shared("service_error_operation_failed")}: ${e.message}")
         }
     }
 
