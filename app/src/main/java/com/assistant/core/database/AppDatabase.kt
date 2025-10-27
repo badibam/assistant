@@ -8,10 +8,12 @@ import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.dao.AppSettingsCategoryDao
+import com.assistant.core.database.dao.LogDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.database.entities.AppSettingsCategory
+import com.assistant.core.database.entities.LogEntry
 import com.assistant.core.ai.database.AIDao
 import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
@@ -35,11 +37,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SessionMessageEntity::class,
         AIProviderConfigEntity::class,
         AutomationEntity::class,
-        TranscriptionProviderConfigEntity::class
+        TranscriptionProviderConfigEntity::class,
+        LogEntry::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -53,6 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
     abstract fun transcriptionDao(): TranscriptionDao
+    abstract fun logDao(): LogDao
 
     companion object {
         /**
@@ -64,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 11
+        const val VERSION = 12
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -76,22 +80,19 @@ abstract class AppDatabase : RoomDatabase() {
          * - Migrations are explicit and manual (no discovery pattern)
          * - Each migration handles SQL schema changes only
          * - JSON data transformations handled by JsonTransformers (not Room)
-         * - Migrations accumulate historically (never deleted)
+         * - Minimum supported version: 9 (older versions require clean install)
+         *
+         * Migration history:
+         * - v9 → v10: No schema changes
+         * - v10 → v11: Fix SchedulePattern JSON serialization
+         * - v11 → v12: Add log_entries table for in-app logging
          */
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Empty migration - tool_data table already exists in v2
-                // Unified architecture already in place
-            }
-        }
 
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Add active field to zones table with default value true
-                database.execSQL("ALTER TABLE zones ADD COLUMN active INTEGER NOT NULL DEFAULT 1")
-
-                // Add enabled field to tool_instances table with default value true
-                database.execSQL("ALTER TABLE tool_instances ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1")
+                // Empty migration - no schema changes in this version
+                // Version bump only for consistency with app versioning
+                LogManager.database("MIGRATION 9->10: No schema changes")
             }
         }
 
@@ -161,8 +162,45 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 11 -> 12: Add log_entries table
+         * For in-app error logging and debugging
+         *
+         * Note: Column order MUST match exactly the field declaration order in LogEntry.kt
+         * Room is strict about column ordering
+         */
+        private val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 11->12: Creating log_entries table")
+
+                // Drop table if it exists (clean slate for migration)
+                database.execSQL("DROP TABLE IF EXISTS log_entries")
+
+                // Create table with columns in EXACT order of LogEntry.kt fields
+                // Order: id, timestamp, level, tag, message, throwableMessage
+                database.execSQL("""
+                    CREATE TABLE log_entries (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        level TEXT NOT NULL,
+                        tag TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        throwableMessage TEXT
+                    )
+                """.trimIndent())
+
+                // Create index on timestamp for efficient queries
+                database.execSQL("""
+                    CREATE INDEX index_log_entries_timestamp
+                    ON log_entries(timestamp)
+                """.trimIndent())
+
+                LogManager.database("MIGRATION 11->12: log_entries table created successfully")
+            }
+        }
+
         // Future migrations will be added here:
-        // private val MIGRATION_11_12 = object : Migration(11, 12) { ... }
+        // private val MIGRATION_12_13 = object : Migration(12, 13) { ... }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -172,10 +210,10 @@ abstract class AppDatabase : RoomDatabase() {
                     "assistant_database"
                 )
                 .addMigrations(
-                    MIGRATION_2_3,
-                    MIGRATION_3_4,
-                    MIGRATION_10_11
-                    // Add future migrations here
+                    MIGRATION_9_10,
+                    MIGRATION_10_11,
+                    MIGRATION_11_12
+                    // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {

@@ -1006,4 +1006,23 @@
     <string name="notification_error_send_failed">Échec de l\'envoi de la notification</string>
 
 
+    
+    <!-- Logs Screen -->
+    <string name="settings_logs">Logs d'erreurs</string>
+    <string name="logs_count">logs</string>
+    <string name="logs_filter_time">De</string>
+    <string name="logs_filter_level">Niveau minimum</string>
+    <string name="logs_filter_tag">Tag (vide = tous)</string>
+    <string name="logs_level_at_least">Au moins</string>
+    <string name="logs_no_logs">Aucun log trouvé</string>
+    <string name="time_minute">minute</string>
+    <string name="time_minutes">minutes</string>
+    <string name="time_hour">heure</string>
+    <string name="time_day">jour</string>
+    <string name="time_always">Toujours</string>
+    <string name="time_just_now">À l'instant</string>
+    <string name="time_minutes_ago">min</string>
+    <string name="time_hours_ago">h</string>
+    <string name="time_days_ago">j</string>
+    <string name="settings_logs_description">Consulter les logs d'erreurs pour debug</string>
 </resources>

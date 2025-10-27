@@ -88,6 +88,11 @@ fun SettingsDialog(
                 id = "data",
                 label = s.shared("settings_data"),
                 description = s.shared("settings_data_description")
+            ),
+            SettingsOption(
+                id = "logs",
+                label = s.shared("settings_logs"),
+                description = s.shared("settings_logs_description")
             )
         )
     }

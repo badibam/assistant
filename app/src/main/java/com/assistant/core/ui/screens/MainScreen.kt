@@ -56,6 +56,7 @@ fun MainScreen() {
     var showValidation by rememberSaveable { mutableStateOf(false) }
     var showUI by rememberSaveable { mutableStateOf(false) }
     var showData by rememberSaveable { mutableStateOf(false) }
+    var showLogs by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
@@ -199,6 +200,16 @@ fun MainScreen() {
             }
         )
         return // Exit MainScreen composition when showing Data settings
+    }
+
+    // Show Logs screen when requested
+    if (showLogs) {
+        LogsScreen(
+            onBack = {
+                showLogs = false
+            }
+        )
+        return // Exit MainScreen composition when showing Logs screen
     }
 
     // Show AIScreen for SEED session editing when requested
@@ -349,6 +360,7 @@ fun MainScreen() {
                     "validation" -> showValidation = true
                     "ui" -> showUI = true
                     "data" -> showData = true
+                    "logs" -> showLogs = true
                 }
                 showSettings = false
             }

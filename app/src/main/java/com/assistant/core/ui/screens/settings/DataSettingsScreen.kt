@@ -86,10 +86,14 @@ fun DataSettingsScreen(
                     if (result.status == CommandStatus.SUCCESS) {
                         val jsonData = result.data?.get("json_data") as? String
                         if (jsonData != null) {
-                            // Write to SAF uri
-                            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                                outputStream.write(jsonData.toByteArray())
+                            // Write to SAF uri with explicit error handling
+                            val outputStream = context.contentResolver.openOutputStream(uri)
+                                ?: throw Exception("Failed to open output stream (permission denied or invalid URI)")
+
+                            outputStream.use {
+                                it.write(jsonData.toByteArray())
                             }
+
                             Toast.makeText(context, s.shared("backup_export_success"), Toast.LENGTH_SHORT).show()
                         } else {
                             errorMessage = s.shared("backup_export_no_data")

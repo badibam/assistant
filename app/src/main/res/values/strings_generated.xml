@@ -1163,5 +1163,22 @@
     <string name="shared_notification_error_missing_title">Titre de notification manquant</string>
     <string name="shared_notification_error_missing_priority">Priorité de notification manquante</string>
     <string name="shared_notification_error_send_failed">Échec de l\'envoi de la notification</string>
+    <string name="shared_settings_logs">Logs d\'erreurs</string>
+    <string name="shared_logs_count">logs</string>
+    <string name="shared_logs_filter_time">De</string>
+    <string name="shared_logs_filter_level">Niveau minimum</string>
+    <string name="shared_logs_filter_tag">Tag (vide = tous)</string>
+    <string name="shared_logs_level_at_least">Au moins</string>
+    <string name="shared_logs_no_logs">Aucun log trouvé</string>
+    <string name="shared_time_minute">minute</string>
+    <string name="shared_time_minutes">minutes</string>
+    <string name="shared_time_hour">heure</string>
+    <string name="shared_time_day">jour</string>
+    <string name="shared_time_always">Toujours</string>
+    <string name="shared_time_just_now">À l\'instant</string>
+    <string name="shared_time_minutes_ago">min</string>
+    <string name="shared_time_hours_ago">h</string>
+    <string name="shared_time_days_ago">j</string>
+    <string name="shared_settings_logs_description">Consulter les logs d\'erreurs pour debug</string>
 
 </resources>

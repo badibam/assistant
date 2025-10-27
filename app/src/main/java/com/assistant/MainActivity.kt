@@ -45,6 +45,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Initialize LogManager first (for DB persistence)
+        LogManager.initialize(this)
+
         // Initialize app config cache
         AppConfigManager.initialize(this)
 
