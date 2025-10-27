@@ -64,7 +64,7 @@ cd assistant
 
 ## État du développement
 
-**Version 0.3.5**
+**Version 0.3.6**
 
 ### Systèmes de base
 
@@ -74,9 +74,10 @@ cd assistant
 - **Discovery pattern** : Extension d'outils sans modification du core
 - **UI** : Composants réutilisables, thèmes personnalisables, patterns standardisés avec highlight
 - **Versioning** : Migrations SQL + transformations JSON centralisées
-- **Backup/Restore** : Export/import/reset avec gestion versions
+- **Backup/Restore** : Export/import/reset avec gestion versions et détection erreurs
 - **Navigation données** : DataNavigator hiérarchique + ZoneScopeSelector avec périodes
 - **Transcription** : Provider pattern (offline/online) avec auto-retry, formatage segments Vosk
+- **Logging** : Système de logs in-app avec filtres (niveau, durée, tag) et purge automatique
 
 ### Système IA
 
