@@ -87,10 +87,11 @@ object MessageScheduler : ToolScheduler {
                 // 3. Check each message for scheduling
                 for (entry in entries) {
                     val messageId = entry["id"] as? String ?: continue
+                    val messageName = entry["name"] as? String ?: ""
                     val data = entry["data"] as? String ?: continue
 
                     try {
-                        processMessage(context, messageId, data, now, messageService, coordinator, instance)
+                        processMessage(context, messageId, messageName, data, now, messageService, coordinator, instance)
                     } catch (e: Exception) {
                         LogManager.service("Failed to process message $messageId: ${e.message}", "ERROR", e)
                         // Continue with other messages
@@ -110,6 +111,7 @@ object MessageScheduler : ToolScheduler {
      *
      * @param context Android context
      * @param messageId ID of message (ToolDataEntity.id)
+     * @param messageName Name/title of the message (from ToolDataEntity.name)
      * @param dataJson JSON string of message data
      * @param now Current timestamp
      * @param messageService MessageService instance for appendExecution
@@ -119,6 +121,7 @@ object MessageScheduler : ToolScheduler {
     private suspend fun processMessage(
         context: Context,
         messageId: String,
+        messageName: String,
         dataJson: String,
         now: Long,
         messageService: MessageService,
@@ -140,8 +143,8 @@ object MessageScheduler : ToolScheduler {
         }
 
         // Extract message data for execution
-        val title = data.optString("title", "")
-        LogManager.service("Executing scheduled message: '$title' (id=$messageId)", "INFO")
+        // Note: title comes from ToolDataEntity.name field, not from data JSON
+        LogManager.service("Executing scheduled message: '$messageName' (id=$messageId)", "INFO")
         val content = data.optString("content")
         val priority = data.optString("priority", "default")
 
@@ -163,7 +166,7 @@ object MessageScheduler : ToolScheduler {
             "scheduled_time" to nextExecutionTime,
             "sent_at" to now,
             "status" to "pending",  // Will be updated after notification attempt
-            "title_snapshot" to title,
+            "title_snapshot" to messageName,
             "content_snapshot" to (content.takeIf { it.isNotEmpty() } ?: ""),
             "read" to false,
             "archived" to false
@@ -182,7 +185,7 @@ object MessageScheduler : ToolScheduler {
             val notifResult = coordinator.processUserAction(
                 "notifications.send",
                 mapOf(
-                    "title" to title,
+                    "title" to messageName,
                     "content" to content,
                     "priority" to priority
                 )
@@ -218,15 +221,15 @@ object MessageScheduler : ToolScheduler {
 
             if (nextExecution != null) {
                 schedule.put("nextExecutionTime", nextExecution)
-                LogManager.service("Message '$title' next execution: ${formatTimestamp(nextExecution)}", "INFO")
+                LogManager.service("Message '$messageName' next execution: ${formatTimestamp(nextExecution)}", "INFO")
             } else {
                 schedule.put("nextExecutionTime", JSONObject.NULL)
-                LogManager.service("Message '$title' completed (no more scheduled executions)", "INFO")
+                LogManager.service("Message '$messageName' completed (no more scheduled executions)", "INFO")
             }
             data.put("schedule", schedule)
         } else {
             // Failed to parse schedule, disable this message to prevent infinite retries
-            LogManager.service("Failed to parse schedule for message '$title', disabling", "WARN")
+            LogManager.service("Failed to parse schedule for message '$messageName', disabling", "WARN")
             schedule.put("nextExecutionTime", JSONObject.NULL)
             data.put("schedule", schedule)
         }
