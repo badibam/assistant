@@ -38,6 +38,7 @@ data class SystemMessage(
             if (result.error != null) {
                 resultJson.put("error", result.error)
             }
+            resultJson.put("isActionCommand", result.isActionCommand)
             resultsArray.put(resultJson)
         }
         json.put("commandResults", resultsArray)
@@ -72,6 +73,7 @@ data class SystemMessage(
                     }
 
                     val error = resultJson.optString("error").takeIf { it.isNotEmpty() }
+                    val isActionCommand = resultJson.optBoolean("isActionCommand", false)
 
                     commandResults.add(
                         CommandResult(
@@ -79,7 +81,8 @@ data class SystemMessage(
                             status = CommandStatus.valueOf(resultJson.getString("status")),
                             details = resultJson.optString("details").takeIf { it.isNotEmpty() },
                             data = data,
-                            error = error
+                            error = error,
+                            isActionCommand = isActionCommand
                         )
                     )
                 }

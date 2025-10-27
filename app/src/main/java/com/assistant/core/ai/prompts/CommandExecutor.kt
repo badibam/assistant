@@ -194,7 +194,7 @@ class CommandExecutor(private val context: Context) {
      * Validates action commands before execution via ActionValidator.
      */
     private suspend fun executeCommand(command: ExecutableCommand): InternalCommandResult? {
-        LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}", "VERBOSE")
+        LogManager.aiPrompt("Executing ExecutableCommand: resource=${command.resource}, operation=${command.operation}, isActionCommand=${command.isActionCommand}", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
@@ -284,16 +284,18 @@ class CommandExecutor(private val context: Context) {
                     }
 
                     LogManager.aiPrompt("Command succeeded", "DEBUG")
+                    val cmdResult = com.assistant.core.ai.data.CommandResult(
+                        command = commandString,
+                        status = CommandStatus.SUCCESS,
+                        details = verbalizedDescription,
+                        data = storedData,
+                        error = null,
+                        isActionCommand = command.isActionCommand
+                    )
+                    LogManager.aiPrompt("Created CommandResult: command=$commandString, isActionCommand=${cmdResult.isActionCommand}, data=${cmdResult.data}", "DEBUG")
                     return@withContext InternalCommandResult(
                         promptResult = PromptCommandResult(dataTitle, formattedData),
-                        commandResult = com.assistant.core.ai.data.CommandResult(
-                            command = commandString,
-                            status = CommandStatus.SUCCESS,
-                            details = verbalizedDescription,
-                            data = storedData,
-                            error = null,
-                            isActionCommand = command.isActionCommand
-                        )
+                        commandResult = cmdResult
                     )
                 } else {
                     LogManager.aiPrompt("Command failed: ${result.error}", "WARN")

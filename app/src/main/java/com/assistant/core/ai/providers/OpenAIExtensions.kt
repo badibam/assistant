@@ -106,12 +106,21 @@ private fun extractTextContent(message: SessionMessage): String? {
             buildString {
                 appendLine(summary)
 
-                // Include all command results with their details
+                // Include all command results with their details (like in UI)
                 if (systemMsg.commandResults.isNotEmpty()) {
                     appendLine()
                     systemMsg.commandResults.forEach { result ->
+
                         if (result.details != null) {
                             append("- ${result.details}")
+
+                            // Add data (for action commands, like in UI)
+                            if (result.isActionCommand && result.data != null && result.data.isNotEmpty()) {
+                                val dataText = result.data.entries.joinToString(", ") { (k, v) -> "$k: $v" }
+                                append(" ($dataText)")
+                            }
+
+                            // Add error message if command failed
                             if (result.status == CommandStatus.FAILED && result.error != null) {
                                 append(" → Erreur: ${result.error}")
                             }
