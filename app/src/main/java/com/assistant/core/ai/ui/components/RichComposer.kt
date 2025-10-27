@@ -29,6 +29,7 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 import java.util.UUID
+import androidx.compose.ui.draw.alpha
 
 /**
  * TextBlock: represents one text segment with its associated enrichments
@@ -650,7 +651,20 @@ private fun PointerEnrichmentDialog(
     var importance by remember { mutableStateOf("important") }
     var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
     var description by remember { mutableStateOf("") }
-    var includeData by remember { mutableStateOf(false) }  // Toggle for real data inclusion
+
+    // INSTANCE toggles (all unchecked by default)
+    var includeSchemaConfig by remember { mutableStateOf(false) }
+    var includeSchemaData by remember { mutableStateOf(false) }
+    var includeToolConfig by remember { mutableStateOf(false) }
+    var includeDataSample by remember { mutableStateOf(false) }
+    var includeStats by remember { mutableStateOf(false) }
+    var includeData by remember { mutableStateOf(false) }
+
+    // ZONE toggles (all unchecked by default)
+    var includeZoneConfig by remember { mutableStateOf(false) }
+    var includeToolsList by remember { mutableStateOf(false) }
+    var includeToolsConfig by remember { mutableStateOf(false) }
+    var includeToolsData by remember { mutableStateOf(false) }  // TODO: will be disabled
 
     // App configuration for timestamp handling
     var dayStartHour by remember { mutableStateOf(0) }
@@ -698,7 +712,24 @@ private fun PointerEnrichmentDialog(
             type = DialogType.CONFIGURE,
             onConfirm = {
                 selectionResult?.let { result ->
-                    val config = createPointerConfig(result, importance, timestampSelection, description, includeData)
+                    val config = createPointerConfig(
+                        selectionResult = result,
+                        importance = importance,
+                        timestampSelection = timestampSelection,
+                        description = description,
+                        includeData = includeData,
+                        // INSTANCE toggles
+                        includeSchemaConfig = includeSchemaConfig,
+                        includeSchemaData = includeSchemaData,
+                        includeToolConfig = includeToolConfig,
+                        includeDataSample = includeDataSample,
+                        includeStats = includeStats,
+                        // ZONE toggles
+                        includeZoneConfig = includeZoneConfig,
+                        includeToolsList = includeToolsList,
+                        includeToolsConfig = includeToolsConfig,
+                        includeToolsData = includeToolsData
+                    )
                     val (uiPreview, promptPreview) = createPointerPreview(context, result, timestampSelection, importance)
                     onConfirm(config, uiPreview, promptPreview)
                 }
@@ -760,19 +791,73 @@ private fun PointerEnrichmentDialog(
                     }
                 )
 
-                // Include data toggle (only visible for instance selections)
+                // Data inclusion toggles (different for ZONE vs INSTANCE)
                 selectionResult?.let { result ->
-                    if (result.selectionLevel.name == "INSTANCE") {
-                        UI.ToggleField(
-                            label = s.shared("ai_enrichment_include_real_data"),
-                            checked = includeData,
-                            onCheckedChange = { checked ->
-                                includeData = checked
-                                // TODO: Recalculate token count when filters change (if toggle enabled)
-                                // Should trigger token estimation based on current timestamp filters
-                                // and show warning/confirmation if exceeding limits
+                    UI.Text(
+                        text = s.shared("ai_enrichment_data_inclusion_title"),
+                        type = TextType.SUBTITLE
+                    )
+
+                    when (result.selectionLevel.name) {
+                        "INSTANCE" -> {
+                            // INSTANCE-level toggles (6 toggles)
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_schema_config"),
+                                checked = includeSchemaConfig,
+                                onCheckedChange = { includeSchemaConfig = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_schema_data"),
+                                checked = includeSchemaData,
+                                onCheckedChange = { includeSchemaData = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_tool_config"),
+                                checked = includeToolConfig,
+                                onCheckedChange = { includeToolConfig = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_data_sample"),
+                                checked = includeDataSample,
+                                onCheckedChange = { includeDataSample = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_stats"),
+                                checked = includeStats,
+                                onCheckedChange = { includeStats = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_data"),
+                                checked = includeData,
+                                onCheckedChange = { includeData = it }
+                            )
+                        }
+                        "ZONE" -> {
+                            // ZONE-level toggles (4 toggles)
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_zone_config"),
+                                checked = includeZoneConfig,
+                                onCheckedChange = { includeZoneConfig = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_tools_list"),
+                                checked = includeToolsList,
+                                onCheckedChange = { includeToolsList = it }
+                            )
+                            UI.ToggleField(
+                                label = s.shared("ai_enrichment_include_tools_config"),
+                                checked = includeToolsConfig,
+                                onCheckedChange = { includeToolsConfig = it }
+                            )
+                            // TODO: Tools data toggle - disabled until implementation
+                            Box(modifier = androidx.compose.ui.Modifier.alpha(0.5f)) {
+                                UI.ToggleField(
+                                    label = "${s.shared("ai_enrichment_include_tools_data")} (${s.shared("label_coming_soon")})",
+                                    checked = false,
+                                    onCheckedChange = { /* Disabled - no-op */ }
+                                )
                             }
-                        )
+                        }
                     }
                 }
 
@@ -906,14 +991,44 @@ private fun createPointerConfig(
     importance: String,
     timestampSelection: TimestampSelection,
     description: String,
-    includeData: Boolean = false
+    includeData: Boolean = false,
+    // INSTANCE toggles
+    includeSchemaConfig: Boolean = false,
+    includeSchemaData: Boolean = false,
+    includeToolConfig: Boolean = false,
+    includeDataSample: Boolean = false,
+    includeStats: Boolean = false,
+    // ZONE toggles
+    includeZoneConfig: Boolean = false,
+    includeToolsList: Boolean = false,
+    includeToolsConfig: Boolean = false,
+    includeToolsData: Boolean = false
 ): String {
     return JSONObject().apply {
         put("selectedPath", selectionResult.selectedPath)
         put("selectedValues", selectionResult.selectedValues)
         put("selectionLevel", selectionResult.selectionLevel.name)
         put("importance", importance)
-        put("includeData", includeData)  // Toggle for real data inclusion
+
+        // Toggles configuration based on selection level
+        when (selectionResult.selectionLevel.name) {
+            "INSTANCE" -> {
+                // Instance-level toggles
+                put("includeSchemaConfig", includeSchemaConfig)
+                put("includeSchemaData", includeSchemaData)
+                put("includeToolConfig", includeToolConfig)
+                put("includeDataSample", includeDataSample)
+                put("includeStats", includeStats)
+                put("includeData", includeData)  // Full data toggle
+            }
+            "ZONE" -> {
+                // Zone-level toggles
+                put("includeZoneConfig", includeZoneConfig)
+                put("includeToolsList", includeToolsList)
+                put("includeToolsConfig", includeToolsConfig)
+                put("includeToolsData", includeToolsData)  // TODO: disabled for now
+            }
+        }
         if (timestampSelection.isComplete) {
             put("timestampSelection", JSONObject().apply {
                 // Store min period (start of range)

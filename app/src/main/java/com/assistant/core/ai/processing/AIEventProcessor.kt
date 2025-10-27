@@ -323,36 +323,53 @@ class AIEventProcessor(
             val processor = UserCommandProcessor(context)
             val executableCommands = processor.processCommands(allDataCommands)
 
-            // 4. Execute via CommandExecutor
+            // 4. Execute via CommandExecutor with sessionId for schema deduplication
             val executor = commandExecutor
             val result = executor.executeCommands(
                 commands = executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
-                level = "enrichments"
+                level = "enrichments",
+                sessionId = sessionId  // Enable schema deduplication
             )
 
-            // 5. Store SystemMessage with formattedData
-            val formattedData = result.promptResults.joinToString("\n\n") {
-                "# ${it.dataTitle}\n${it.formattedData}"
+            // 5. Store SystemMessage ONLY if commands were executed (even if all CACHED)
+            // Note: If all toggles unchecked, no commands generated → no SystemMessage
+            if (result.systemMessage.commandResults.isNotEmpty()) {
+                val formattedData = result.promptResults.joinToString("\n\n") {
+                    "# ${it.dataTitle}\n${it.formattedData}"
+                }
+                val systemMessageWithData = result.systemMessage.copy(
+                    formattedData = formattedData
+                )
+
+                // DEBUG: Log schema.get results being stored
+                val schemaResults = systemMessageWithData.commandResults.filter { it.command == "schemas.get" }
+                if (schemaResults.isNotEmpty()) {
+                    LogManager.aiSession("Storing ${schemaResults.size} schema.get results:", "DEBUG")
+                    schemaResults.forEach { cmdResult ->
+                        val schemaId = cmdResult.data?.get("schema_id")
+                        LogManager.aiSession("  - schema_id=$schemaId, status=${cmdResult.status}, hasData=${cmdResult.data != null}", "DEBUG")
+                    }
+                }
+
+                val systemSessionMessage = SessionMessage(
+                    id = java.util.UUID.randomUUID().toString(),
+                    timestamp = System.currentTimeMillis(),
+                    sender = MessageSender.SYSTEM,
+                    richContent = null,
+                    textContent = null,
+                    aiMessage = null,
+                    aiMessageJson = null,
+                    systemMessage = systemMessageWithData,
+                    executionMetadata = null,
+                    excludeFromPrompt = false
+                )
+
+                messageRepository.storeMessage(sessionId, systemSessionMessage)
+                LogManager.aiSession("Stored enrichments SystemMessage with ${result.systemMessage.commandResults.size} results", "DEBUG")
+            } else {
+                LogManager.aiSession("No commands executed from enrichments - skipping SystemMessage creation", "DEBUG")
             }
-            val systemMessageWithData = result.systemMessage.copy(
-                formattedData = formattedData
-            )
-
-            val systemSessionMessage = SessionMessage(
-                id = java.util.UUID.randomUUID().toString(),
-                timestamp = System.currentTimeMillis(),
-                sender = MessageSender.SYSTEM,
-                richContent = null,
-                textContent = null,
-                aiMessage = null,
-                aiMessageJson = null,
-                systemMessage = systemMessageWithData,
-                executionMetadata = null,
-                excludeFromPrompt = false
-            )
-
-            messageRepository.storeMessage(sessionId, systemSessionMessage)
 
             // 6. Emit event with CommandResults
             emit(AIEvent.EnrichmentsExecuted(result.systemMessage.commandResults))
@@ -968,12 +985,13 @@ class AIEventProcessor(
                 return
             }
 
-            // Execute via CommandExecutor
+            // Execute via CommandExecutor with sessionId for schema deduplication
             val executor = commandExecutor
             val result = executor.executeCommands(
                 commands = transformationResult.executableCommands,
                 messageType = SystemMessageType.DATA_ADDED,
-                level = "ai_data"
+                level = "ai_data",
+                sessionId = sessionId  // Enable schema deduplication
             )
 
             // Store SystemMessage with formattedData
@@ -1090,12 +1108,13 @@ class AIEventProcessor(
                         return
                     }
 
-                    // Execute via CommandExecutor
+                    // Execute via CommandExecutor with sessionId (for consistency, though actions typically don't need deduplication)
                     val executor = commandExecutor
                     val result = executor.executeCommands(
                         commands = transformationResult.executableCommands,
                         messageType = SystemMessageType.ACTIONS_EXECUTED,
-                        level = "ai_actions"
+                        level = "ai_actions",
+                        sessionId = sessionId
                     )
 
                     // Check if all succeeded

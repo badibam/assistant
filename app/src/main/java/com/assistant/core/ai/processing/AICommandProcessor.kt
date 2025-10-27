@@ -124,7 +124,8 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tool_data",
                     operation = "batch_create",
-                    params = enrichedParams
+                    params = enrichedParams,
+                    isActionCommand = true
                 )
             }
             "UPDATE_DATA" -> {
@@ -132,13 +133,15 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tool_data",
                     operation = "batch_update",
-                    params = enrichedParams
+                    params = enrichedParams,
+                    isActionCommand = true
                 )
             }
             "DELETE_DATA" -> ExecutableCommand(
                 resource = "tool_data",
                 operation = "batch_delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             // Tool instance actions
@@ -147,7 +150,8 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tools",
                     operation = "create",
-                    params = transformedParams
+                    params = transformedParams,
+                    isActionCommand = true
                 )
             }
             "UPDATE_TOOL" -> {
@@ -155,30 +159,35 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tools",
                     operation = "update",
-                    params = transformedParams
+                    params = transformedParams,
+                    isActionCommand = true
                 )
             }
             "DELETE_TOOL" -> ExecutableCommand(
                 resource = "tools",
                 operation = "delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             // Zone actions
             "CREATE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "create",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "UPDATE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "update",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "DELETE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             else -> {
@@ -201,17 +210,20 @@ class AICommandProcessor(private val context: Context) {
             "CREATE_DATA" -> ExecutableCommand(
                 resource = "tool_data",
                 operation = "batch_create",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "UPDATE_DATA" -> ExecutableCommand(
                 resource = "tool_data",
                 operation = "batch_update",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "DELETE_DATA" -> ExecutableCommand(
                 resource = "tool_data",
                 operation = "batch_delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             // Tool instance actions
@@ -220,7 +232,8 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tools",
                     operation = "create",
-                    params = transformedParams
+                    params = transformedParams,
+                    isActionCommand = true
                 )
             }
             "UPDATE_TOOL" -> {
@@ -228,30 +241,35 @@ class AICommandProcessor(private val context: Context) {
                 ExecutableCommand(
                     resource = "tools",
                     operation = "update",
-                    params = transformedParams
+                    params = transformedParams,
+                    isActionCommand = true
                 )
             }
             "DELETE_TOOL" -> ExecutableCommand(
                 resource = "tools",
                 operation = "delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             // Zone actions
             "CREATE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "create",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "UPDATE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "update",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
             "DELETE_ZONE" -> ExecutableCommand(
                 resource = "zones",
                 operation = "delete",
-                params = command.params
+                params = command.params,
+                isActionCommand = true
             )
 
             else -> {

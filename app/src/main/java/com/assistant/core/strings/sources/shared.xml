@@ -55,9 +55,27 @@
     <string name="ai_importance_essential">essentiel</string>
     <string name="ai_enrichment_include_real_data">Inclure données réelles (en plus de l\'échantillon)</string>
     <string name="ai_enrichment_description_optional">Description (optionnel)</string>
+    <string name="ai_enrichment_data_inclusion_title">Données à inclure</string>
+
+    <!-- INSTANCE-level enrichment toggles -->
+    <string name="ai_enrichment_include_schema_config">Documentation configuration de l\'outil</string>
+    <string name="ai_enrichment_include_schema_data">Documentation données de l\'outil</string>
+    <string name="ai_enrichment_include_tool_config">Configuration de l\'outil</string>
+    <string name="ai_enrichment_include_data_sample">Échantillon de données</string>
+    <string name="ai_enrichment_include_stats">Statistiques</string>
+    <string name="ai_enrichment_include_data">Données</string>
+
+    <!-- ZONE-level enrichment toggles -->
+    <string name="ai_enrichment_include_zone_config">Configuration de la zone</string>
+    <string name="ai_enrichment_include_tools_list">Liste des outils</string>
+    <string name="ai_enrichment_include_tools_config">Configuration des outils</string>
+    <string name="ai_enrichment_include_tools_data">Données des outils</string>
+
     <string name="ai_enrichment_todo_implement">TODO: Implémenter l\'interface de configuration %1$s</string>
     <string name="ai_enrichment_invalid">enrichissement invalide</string>
+    <string name="ai_schema_already_included">Schéma %1$s déjà inclus précédemment</string>
     <string name="label_preview">Aperçu</string>
+    <string name="label_coming_soon">À venir</string>
 
     <!-- AI Interface - Session Management -->
     <string name="ai_session_stop_title">Arrêter la session</string>

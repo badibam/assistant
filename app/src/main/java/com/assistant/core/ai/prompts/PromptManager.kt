@@ -69,7 +69,8 @@ object PromptManager {
         val level2Result = commandExecutor.executeCommands(
             commands = level2Executable,
             messageType = SystemMessageType.DATA_ADDED,
-            level = "L2"
+            level = "L2",
+            sessionId = sessionId  // Enable schema deduplication
         )
         val level2Content = formatLevel("Level 2: User Data", "", level2Result.promptResults)
 

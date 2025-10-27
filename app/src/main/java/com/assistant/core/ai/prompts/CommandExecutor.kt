@@ -39,8 +39,7 @@ data class CommandExecutionResult(
  * - Format results as JSON with metadata first for prompt inclusion
  * - Generate SystemMessage with aggregate results for conversation history
  * - Track success/failure status for each command
- *
- * Note: Token validation and deduplication handled by PromptManager
+ * - Deduplicate schema queries across session history and within current batch
  */
 class CommandExecutor(private val context: Context) {
 
@@ -54,14 +53,27 @@ class CommandExecutor(private val context: Context) {
      * @param commands The commands to execute
      * @param messageType Type of SystemMessage (DATA_ADDED or ACTIONS_EXECUTED)
      * @param level The level name for logging purposes
+     * @param sessionId Session ID for schema deduplication (null = no deduplication)
      * @return CommandExecutionResult with prompt data and system message
      */
     suspend fun executeCommands(
         commands: List<ExecutableCommand>,
         messageType: SystemMessageType,
-        level: String = "unknown"
+        level: String = "unknown",
+        sessionId: String? = null
     ): CommandExecutionResult {
-        LogManager.aiPrompt("CommandExecutor executing ${commands.size} commands for $level", "DEBUG")
+        LogManager.aiPrompt("CommandExecutor executing ${commands.size} commands for $level (sessionId=$sessionId)", "DEBUG")
+
+        // Load historical schemas if sessionId provided (for deduplication)
+        val historicalSchemas = if (sessionId != null) {
+            loadHistoricalSchemas(sessionId)
+        } else {
+            emptySet()
+        }
+        LogManager.aiPrompt("Loaded ${historicalSchemas.size} historical schemas for deduplication", "DEBUG")
+
+        // Track schemas executed in current batch (for intra-batch deduplication)
+        val currentBatchSchemas = mutableSetOf<String>()
 
         if (commands.isEmpty()) {
             LogManager.aiPrompt("No commands to execute, returning empty result", "DEBUG")
@@ -83,6 +95,45 @@ class CommandExecutor(private val context: Context) {
         for ((index, command) in commands.withIndex()) {
             LogManager.aiPrompt("Executing command ${index + 1}/${commands.size}: ${command.resource}.${command.operation}", "DEBUG")
 
+            // Check for schema deduplication BEFORE execution
+            if (command.resource == "schemas" && command.operation == "get" && sessionId != null) {
+                val schemaId = command.params["id"] as? String
+                if (schemaId != null) {
+                    // Check inter-message deduplication (historical)
+                    val isDuplicatedFromHistory = schemaId in historicalSchemas
+
+                    // Check intra-message deduplication (current batch)
+                    val isDuplicatedInBatch = schemaId in currentBatchSchemas
+
+                    if (isDuplicatedFromHistory || isDuplicatedInBatch) {
+                        // Schema already retrieved - create CACHED result
+                        LogManager.aiPrompt("Schema $schemaId already included - creating CACHED result", "DEBUG")
+
+                        val cachedResult = InternalCommandResult(
+                            promptResult = PromptCommandResult("", ""),  // No prompt data for cached
+                            commandResult = com.assistant.core.ai.data.CommandResult(
+                                command = "${command.resource}.${command.operation}",
+                                status = CommandStatus.CACHED,
+                                details = s.shared("ai_schema_already_included").format(schemaId),
+                                data = null,
+                                error = null,
+                                isActionCommand = false  // schemas.get is a query
+                            )
+                        )
+
+                        promptResults.add(cachedResult.promptResult)
+                        commandResults.add(cachedResult.commandResult)
+                        successCount++
+                        LogManager.aiPrompt("Command ${index + 1} cached (schema $schemaId)", "DEBUG")
+                        continue  // Skip execution, move to next command
+                    } else {
+                        // Not a duplicate - will execute normally, add to current batch tracker
+                        currentBatchSchemas.add(schemaId)
+                    }
+                }
+            }
+
+            // Execute command normally (not a duplicate or not a schema)
             val result = executeCommand(command)
 
             if (result != null) {
@@ -103,7 +154,8 @@ class CommandExecutor(private val context: Context) {
                         status = CommandStatus.FAILED,
                         details = "Execution failed",
                         data = null,
-                        error = "Internal execution error"
+                        error = "Internal execution error",
+                        isActionCommand = command.isActionCommand
                     )
                 )
                 LogManager.aiPrompt("Command ${index + 1} failed - continuing with remaining commands", "WARN")
@@ -164,7 +216,8 @@ class CommandExecutor(private val context: Context) {
                             status = CommandStatus.FAILED,
                             details = verbalizedDescription,
                             data = null,
-                            error = errorMessage
+                            error = errorMessage,
+                            isActionCommand = command.isActionCommand
                         )
                     )
                 }
@@ -179,11 +232,10 @@ class CommandExecutor(private val context: Context) {
 
                 if (result.isSuccess) {
                     val data = result.data ?: emptyMap()
-                    val isActionCommand = command.operation in listOf("create", "update", "delete", "batch_create", "batch_update", "batch_delete")
 
                     // For actions, data may be empty or minimal (just success/ID)
                     // For queries, empty data is unusual
-                    if (data.isEmpty() && !isActionCommand) {
+                    if (data.isEmpty() && !command.isActionCommand) {
                         LogManager.aiPrompt("Query succeeded but returned empty data", "WARN")
 
                         // Generate description for empty query result
@@ -203,12 +255,12 @@ class CommandExecutor(private val context: Context) {
                     }
 
                     val dataTitle = generateDataTitle(command, data)
-                    val formattedData = if (isActionCommand) "" else formatResultData(command, data)
+                    val formattedData = if (command.isActionCommand) "" else formatResultData(command, data)
 
                     // Get verbalized description for all commands
                     // - Action commands: use service verbalization (e.g., "Création de la zone \"Santé\"")
                     // - Query commands: use generated data title (e.g., "Data from tool 'Poids' (5 records)")
-                    val verbalizedDescription = if (isActionCommand) {
+                    val verbalizedDescription = if (command.isActionCommand) {
                         // Enrich params with name from result for delete operations
                         // This allows verbalize() to access the name even after the entity is deleted
                         val enrichedCommand = if (command.operation == "delete" && data.containsKey("name")) {
@@ -221,10 +273,15 @@ class CommandExecutor(private val context: Context) {
                         dataTitle.ifEmpty { null }
                     }
 
-                    // Filter result data for action commands
-                    val filteredData = if (isActionCommand) {
+                    // Store data appropriately based on command type:
+                    // - Actions: filter to minimal data (ID, name)
+                    // - Queries: filter to essential metadata (exclude large content fields like schema.content)
+                    //   Keeps only what's needed for deduplication (e.g., schema_id) to avoid DB bloat
+                    val storedData = if (command.isActionCommand) {
                         filterActionResultData(command.operation, data)
-                    } else null
+                    } else {
+                        filterQueryResultData(command.resource, data)
+                    }
 
                     LogManager.aiPrompt("Command succeeded", "DEBUG")
                     return@withContext InternalCommandResult(
@@ -233,8 +290,9 @@ class CommandExecutor(private val context: Context) {
                             command = commandString,
                             status = CommandStatus.SUCCESS,
                             details = verbalizedDescription,
-                            data = filteredData,
-                            error = null
+                            data = storedData,
+                            error = null,
+                            isActionCommand = command.isActionCommand
                         )
                     )
                 } else {
@@ -250,7 +308,8 @@ class CommandExecutor(private val context: Context) {
                             status = CommandStatus.FAILED,
                             details = verbalizedDescription,
                             data = null,
-                            error = result.error
+                            error = result.error,
+                            isActionCommand = command.isActionCommand
                         )
                     )
                 }
@@ -326,6 +385,56 @@ class CommandExecutor(private val context: Context) {
             else -> {
                 // Unknown operation: pass through without filtering
                 data
+            }
+        }
+    }
+
+    /**
+     * Filter query result data to essential metadata (avoid DB bloat)
+     *
+     * Removes large content fields while keeping identifiers needed for deduplication:
+     * - schemas: keep schema_id only (remove large 'content' JSON)
+     * - tools/zones: keep id, name, count fields
+     * - Remove large nested objects and arrays
+     */
+    private fun filterQueryResultData(resource: String, data: Map<String, Any>): Map<String, Any>? {
+        return when (resource) {
+            "schemas" -> {
+                // Schemas: keep only schema_id for deduplication, remove large 'content'
+                val filtered = mutableMapOf<String, Any>()
+                data["schema_id"]?.let { filtered["schema_id"] = it }
+                if (filtered.isEmpty()) null else filtered
+            }
+            "zones", "tools", "tool_data" -> {
+                // Tools/Zones/Data: keep IDs, names, counts - remove large objects/arrays
+                val filtered = mutableMapOf<String, Any>()
+
+                // ID fields
+                data["id"]?.let { filtered["id"] = it }
+                data["zone_id"]?.let { filtered["zone_id"] = it }
+                data["tool_instance_id"]?.let { filtered["tool_instance_id"] = it }
+
+                // Name/type fields
+                data["name"]?.let { filtered["name"] = it }
+                data["tool_type"]?.let { filtered["tool_type"] = it }
+                data["tooltype"]?.let { filtered["tooltype"] = it }
+
+                // Count fields
+                data["count"]?.let { filtered["count"] = it }
+                data["total_count"]?.let { filtered["total_count"] = it }
+
+                if (filtered.isEmpty()) null else filtered
+            }
+            else -> {
+                // Unknown resource: filter conservatively (keep scalar values only)
+                val filtered = mutableMapOf<String, Any>()
+                data.forEach { (key, value) ->
+                    // Keep only scalar values (not maps or lists)
+                    if (value !is Map<*, *> && value !is List<*> && value !is Array<*>) {
+                        filtered[key] = value
+                    }
+                }
+                if (filtered.isEmpty()) null else filtered
             }
         }
     }
@@ -644,6 +753,63 @@ class CommandExecutor(private val context: Context) {
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
             org.json.JSONObject(data).toString(2)
+        }
+    }
+
+    /**
+     * Load historical schema IDs from previous messages in the session
+     * Returns Set of schema_id that have been successfully retrieved before
+     *
+     * Scans all SystemMessages with type DATA_ADDED and extracts schema_id from
+     * CommandResults where command == "schemas.get" and status == SUCCESS
+     */
+    private suspend fun loadHistoricalSchemas(sessionId: String): Set<String> {
+        return try {
+            // Create repository locally to access message history
+            val appDatabase = com.assistant.core.database.AppDatabase.getDatabase(context)
+            val aiDao = appDatabase.aiDao()
+            val messageRepository = com.assistant.core.ai.state.AIMessageRepository(aiDao)
+
+            val messages = messageRepository.loadMessages(sessionId)
+            val schemaIds = mutableSetOf<String>()
+
+            LogManager.aiPrompt("loadHistoricalSchemas: Found ${messages.size} messages in session", "DEBUG")
+
+            for ((index, message) in messages.withIndex()) {
+                LogManager.aiPrompt("Message $index: sender=${message.sender}, hasSystemMessage=${message.systemMessage != null}", "VERBOSE")
+
+                // Only check SystemMessages with DATA_ADDED type
+                val systemMessage = message.systemMessage
+                if (systemMessage?.type == com.assistant.core.ai.data.SystemMessageType.DATA_ADDED) {
+                    LogManager.aiPrompt("Found DATA_ADDED message with ${systemMessage.commandResults.size} results", "VERBOSE")
+
+                    // Check all command results in this system message
+                    for ((cmdIndex, commandResult) in systemMessage.commandResults.withIndex()) {
+                        LogManager.aiPrompt("  Result $cmdIndex: command=${commandResult.command}, status=${commandResult.status}, hasData=${commandResult.data != null}", "VERBOSE")
+
+                        // Look for successful schema.get commands
+                        if (commandResult.command == "schemas.get" &&
+                            commandResult.status == com.assistant.core.ai.data.CommandStatus.SUCCESS) {
+                            // Extract schema_id from result data
+                            val schemaId = commandResult.data?.get("schema_id") as? String
+                            LogManager.aiPrompt("    schema.get found, schema_id=$schemaId, data keys=${commandResult.data?.keys}", "DEBUG")
+
+                            if (schemaId != null) {
+                                schemaIds.add(schemaId)
+                                LogManager.aiPrompt("Found historical schema: $schemaId", "VERBOSE")
+                            } else {
+                                LogManager.aiPrompt("    WARNING: schema_id is null! data=${ commandResult.data}", "WARN")
+                            }
+                        }
+                    }
+                }
+            }
+
+            LogManager.aiPrompt("Loaded ${schemaIds.size} historical schemas from session $sessionId", "DEBUG")
+            schemaIds
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Failed to load historical schemas: ${e.message}", "WARN", e)
+            emptySet()
         }
     }
 }

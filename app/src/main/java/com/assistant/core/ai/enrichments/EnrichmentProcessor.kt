@@ -258,9 +258,8 @@ class EnrichmentProcessor(
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
-        val includeData = config.optBoolean("includeData", false) // Toggle for real data
 
-        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel', includeData=$includeData", "VERBOSE")
+        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel'", "VERBOSE")
 
         // Extract zone and tool info from path
         val pathParts = path.split(".")
@@ -270,72 +269,125 @@ class EnrichmentProcessor(
 
         when (selectionLevel) {
             "ZONE" -> {
-                // Zone selected: ZONE_CONFIG + TOOL_INSTANCES
+                // Read ZONE-level toggles
+                val includeZoneConfig = config.optBoolean("includeZoneConfig", false)
+                val includeToolsList = config.optBoolean("includeToolsList", false)
+                val includeToolsConfig = config.optBoolean("includeToolsConfig", false)
+                // includeToolsData is TODO (disabled in UI)
+
+                LogManager.aiEnrichment("ZONE toggles: zoneConfig=$includeZoneConfig, toolsList=$includeToolsList, toolsConfig=$includeToolsConfig", "VERBOSE")
+
                 // Path format: "zones.{zoneId}"
                 val zoneId = if (pathParts.size > 1 && pathParts[0] == "zones") pathParts[1] else ""
                 if (zoneId.isNotEmpty()) {
-                    queries.add(DataCommand(
-                        id = buildQueryId("zone_config", mapOf("id" to zoneId)),
-                        type = "ZONE_CONFIG",
-                        params = mapOf("id" to zoneId),
-                        isRelative = isRelative
-                    ))
-                    queries.add(DataCommand(
-                        id = buildQueryId("tool_instances", mapOf("zone_id" to zoneId)),
-                        type = "TOOL_INSTANCES",
-                        params = mapOf("zone_id" to zoneId),
-                        isRelative = isRelative
-                    ))
+                    // ZONE_CONFIG (conditionally)
+                    if (includeZoneConfig) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("zone_config", mapOf("id" to zoneId)),
+                            type = "ZONE_CONFIG",
+                            params = mapOf("id" to zoneId),
+                            isRelative = isRelative
+                        ))
+                    }
+
+                    // TOOL_INSTANCES (conditionally, with include_config parameter)
+                    // Include if either list or config toggle is enabled
+                    if (includeToolsList || includeToolsConfig) {
+                        val toolsParams = mutableMapOf<String, Any>("zone_id" to zoneId)
+
+                        // Logic: if both toggles enabled OR only toolsConfig enabled → includeConfig=true
+                        // If only toolsList enabled → includeConfig=false
+                        val shouldIncludeConfig = includeToolsConfig
+                        toolsParams["include_config"] = shouldIncludeConfig
+
+                        queries.add(DataCommand(
+                            id = buildQueryId("tool_instances", toolsParams),
+                            type = "TOOL_INSTANCES",
+                            params = toolsParams,
+                            isRelative = isRelative
+                        ))
+                    }
                 }
             }
             "INSTANCE" -> {
-                // Instance selected: SCHEMA(config) + SCHEMA(data) + TOOL_CONFIG + TOOL_DATA_SAMPLE + TOOL_STATS + optionally TOOL_DATA
+                // Read INSTANCE-level toggles
+                val includeSchemaConfig = config.optBoolean("includeSchemaConfig", false)
+                val includeSchemaData = config.optBoolean("includeSchemaData", false)
+                val includeToolConfig = config.optBoolean("includeToolConfig", false)
+                val includeDataSample = config.optBoolean("includeDataSample", false)
+                val includeStats = config.optBoolean("includeStats", false)
+                val includeData = config.optBoolean("includeData", false)
+
+                LogManager.aiEnrichment("INSTANCE toggles: schemaConfig=$includeSchemaConfig, schemaData=$includeSchemaData, toolConfig=$includeToolConfig, dataSample=$includeDataSample, stats=$includeStats, fullData=$includeData", "VERBOSE")
+
                 // Path format: "tools.{toolInstanceId}"
                 val toolInstanceId = if (pathParts.size > 1 && pathParts[0] == "tools") pathParts[1] else ""
                 if (toolInstanceId.isNotEmpty()) {
                     val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
 
-                    // Resolve schema IDs from tool instance config (throws if fails)
-                    val (configSchemaId, dataSchemaId) = resolveSchemaIds(toolInstanceId)
+                    // Resolve schema IDs only if needed (at least one schema toggle enabled)
+                    val needsSchemaIds = includeSchemaConfig || includeSchemaData
+                    val (configSchemaId, dataSchemaId) = if (needsSchemaIds) {
+                        resolveSchemaIds(toolInstanceId)
+                    } else {
+                        Pair("", "")
+                    }
 
-                    queries.add(DataCommand(
-                        id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
-                        type = "SCHEMA",
-                        params = mapOf("id" to configSchemaId),
-                        isRelative = isRelative
-                    ))
-                    queries.add(DataCommand(
-                        id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
-                        type = "SCHEMA",
-                        params = mapOf("id" to dataSchemaId),
-                        isRelative = isRelative
-                    ))
+                    // SCHEMA (config) - conditionally
+                    if (includeSchemaConfig) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                            type = "SCHEMA",
+                            params = mapOf("id" to configSchemaId),
+                            isRelative = isRelative
+                        ))
+                    }
 
-                    queries.add(DataCommand(
-                        id = buildQueryId("tool_config", baseParams),
-                        type = "TOOL_CONFIG",
-                        params = baseParams.toMap(),
-                        isRelative = isRelative
-                    ))
+                    // SCHEMA (data) - conditionally
+                    if (includeSchemaData) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                            type = "SCHEMA",
+                            params = mapOf("id" to dataSchemaId),
+                            isRelative = isRelative
+                        ))
+                    }
 
-                    // Add temporal parameters for data queries
+                    // TOOL_CONFIG - conditionally
+                    if (includeToolConfig) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("tool_config", baseParams),
+                            type = "TOOL_CONFIG",
+                            params = baseParams.toMap(),
+                            isRelative = isRelative
+                        ))
+                    }
+
+                    // Add temporal parameters for data queries (needed by data sample, stats, and full data)
                     val dataParams = baseParams.toMutableMap()
                     addTemporalParams(dataParams, config, isRelative)
 
-                    queries.add(DataCommand(
-                        id = buildQueryId("tool_data_sample", dataParams),
-                        type = "TOOL_DATA_SAMPLE",
-                        params = dataParams.toMap(),
-                        isRelative = isRelative
-                    ))
-                    queries.add(DataCommand(
-                        id = buildQueryId("tool_stats", dataParams),
-                        type = "TOOL_STATS",
-                        params = dataParams.toMap(),
-                        isRelative = isRelative
-                    ))
+                    // TOOL_DATA_SAMPLE - conditionally
+                    if (includeDataSample) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("tool_data_sample", dataParams),
+                            type = "TOOL_DATA_SAMPLE",
+                            params = dataParams.toMap(),
+                            isRelative = isRelative
+                        ))
+                    }
 
-                    // Optional real data if toggle enabled
+                    // TOOL_STATS - conditionally
+                    if (includeStats) {
+                        queries.add(DataCommand(
+                            id = buildQueryId("tool_stats", dataParams),
+                            type = "TOOL_STATS",
+                            params = dataParams.toMap(),
+                            isRelative = isRelative
+                        ))
+                    }
+
+                    // TOOL_DATA (full data) - conditionally
                     if (includeData) {
                         queries.add(DataCommand(
                             id = buildQueryId("tool_data", dataParams),

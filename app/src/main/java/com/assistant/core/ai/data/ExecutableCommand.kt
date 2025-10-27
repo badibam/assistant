@@ -17,5 +17,6 @@ package com.assistant.core.ai.data
 data class ExecutableCommand(
     val resource: String,         // Resource name for CommandDispatcher routing ("zones", "tool_data", etc.)
     val operation: String,        // Operation name for service execution ("get", "create", "update", "delete")
-    val params: Map<String, Any>  // Resolved parameters ready for coordinator execution
+    val params: Map<String, Any>, // Resolved parameters ready for coordinator execution
+    val isActionCommand: Boolean = false  // true = action (create/update/delete), false = query (get/list/stats)
 )

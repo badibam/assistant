@@ -1,0 +1,26 @@
+Add granular enrichment toggles and schema deduplication
+
+Implement fine-grained control over enrichment data inclusion with toggle-based configuration for POINTER enrichments. Add automatic schema deduplication across session history to reduce token usage and improve performance.
+
+Features:
+- Add 6 toggles for INSTANCE-level enrichments (schemas, config, data sample, stats, full data)
+- Add 4 toggles for ZONE-level enrichments (zone config, tools list, tools config, tools data)
+- All toggles unchecked by default for explicit user control
+- Implement schema deduplication (inter-message and intra-message)
+- Add isActionCommand flag to ExecutableCommand and CommandResult for proper data handling
+- Filter query data to essential metadata (schema_id only, remove large content field)
+- Hide query data from UI (only show action data)
+- Skip SystemMessage creation when no commands generated from enrichments
+
+Technical changes:
+- RichComposer: Add toggle UI for ZONE/INSTANCE enrichments
+- EnrichmentProcessor: Generate commands conditionally based on toggle configuration
+- ToolInstanceService: Add include_config parameter for minimal vs full tools list
+- CommandExecutor: Implement loadHistoricalSchemas() and deduplication logic
+- CommandExecutor: Add filterQueryResultData() to avoid DB bloat
+- ExecutableCommand: Add isActionCommand boolean field (default false)
+- CommandResult: Add isActionCommand field for proper UI rendering
+- AICommandProcessor: Set isActionCommand=true for all action commands
+- ChatComponents: Conditionally display data based on isActionCommand
+- AIEventProcessor: Only store SystemMessage if commands were executed
+- Add i18n strings for toggles and deduplication messages

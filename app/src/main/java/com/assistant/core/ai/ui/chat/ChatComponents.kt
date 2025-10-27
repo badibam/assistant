@@ -153,16 +153,19 @@ fun ChatMessageBubble(
                                                         )
                                                     }
 
-                                                    // Data (if success)
-                                                    commandResult.data?.let { data ->
-                                                        if (data.isNotEmpty()) {
-                                                            val dataText = data.entries.joinToString(", ") { (k, v) ->
-                                                                "$k: $v"
+                                                    // Data (only for action commands)
+                                                    // Query data is filtered and not displayed (already in formattedData)
+                                                    if (commandResult.isActionCommand) {
+                                                        commandResult.data?.let { data ->
+                                                            if (data.isNotEmpty()) {
+                                                                val dataText = data.entries.joinToString(", ") { (k, v) ->
+                                                                    "$k: $v"
+                                                                }
+                                                                UI.Text(
+                                                                    text = dataText,
+                                                                    type = TextType.CAPTION
+                                                                )
                                                             }
-                                                            UI.Text(
-                                                                text = dataText,
-                                                                type = TextType.CAPTION
-                                                            )
                                                         }
                                                     }
 
