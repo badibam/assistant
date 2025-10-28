@@ -75,21 +75,39 @@ object JsonTransformers {
         fromVersion: Int,
         toVersion: Int
     ): String {
-        if (fromVersion >= toVersion) return json
+        if (fromVersion >= toVersion) {
+            LogManager.service("transformToolData: Skipping $tooltype (fromVersion=$fromVersion >= toVersion=$toVersion)", "DEBUG")
+            return json
+        }
+
+        LogManager.service("transformToolData: Starting $tooltype from v$fromVersion to v$toVersion", "INFO")
 
         try {
             var transformed = JSONObject(json)
 
             // Apply sequential transformations
             for (version in fromVersion until toVersion) {
+                LogManager.service("transformToolData: Applying v$version->v${version+1} for $tooltype", "DEBUG")
+
+                // Apply tooltype-specific transformations
                 transformed = when (tooltype) {
                     "tracking" -> transformTrackingData(transformed, version)
                     "journal" -> transformJournalData(transformed, version)
                     // Add other tooltypes as needed
                     else -> transformed // No transformation for unknown tooltypes
                 }
+
+                // Apply generic transformations (all tooltypes)
+                val beforeGeneric = transformed.toString()
+                transformed = transformGenericToolData(transformed, version)
+                val afterGeneric = transformed.toString()
+
+                if (beforeGeneric != afterGeneric) {
+                    LogManager.service("transformToolData: Generic transformation v$version->v${version+1} modified data for $tooltype", "INFO")
+                }
             }
 
+            LogManager.service("transformToolData: Completed $tooltype transformation", "DEBUG")
             return transformed.toString()
         } catch (e: Exception) {
             LogManager.service("Data transformation failed for $tooltype from v$fromVersion to v$toVersion: ${e.message}", "ERROR", e)
@@ -188,6 +206,42 @@ object JsonTransformers {
         return when (version) {
             // Future migrations will be added here
             else -> json // No migrations yet
+        }
+    }
+
+    /**
+     * Transform generic tool data (applies to ALL tooltypes)
+     * Handles cross-tooltype migrations like transcription metadata cleanup
+     */
+    private fun transformGenericToolData(json: JSONObject, version: Int): JSONObject {
+        return when (version) {
+            12 -> {
+                // v12→v13: Clean segments_texts from transcription_metadata
+                // This applies to all tools with transcribed fields (journal, tracking, notes, etc.)
+                val metadata = json.optJSONObject("transcription_metadata")
+                if (metadata != null) {
+                    LogManager.service("transformGenericToolData v12->v13: Found transcription_metadata, cleaning segments_texts", "INFO")
+                    var cleanedFieldsCount = 0
+                    val fieldNames = metadata.keys()
+                    while (fieldNames.hasNext()) {
+                        val fieldName = fieldNames.next()
+                        val fieldMetadata = metadata.optJSONObject(fieldName)
+                        // Remove segments_texts if present (duplicates full text already in field)
+                        if (fieldMetadata?.has("segments_texts") == true) {
+                            fieldMetadata.remove("segments_texts")
+                            cleanedFieldsCount++
+                            LogManager.service("transformGenericToolData v12->v13: Cleaned segments_texts from field '$fieldName'", "DEBUG")
+                        }
+                    }
+                    if (cleanedFieldsCount > 0) {
+                        LogManager.service("transformGenericToolData v12->v13: Cleaned $cleanedFieldsCount field(s)", "INFO")
+                    }
+                } else {
+                    LogManager.service("transformGenericToolData v12->v13: No transcription_metadata found", "DEBUG")
+                }
+                json
+            }
+            else -> json // No generic migrations for this version
         }
     }
 

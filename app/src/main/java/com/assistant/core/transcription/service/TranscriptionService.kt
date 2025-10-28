@@ -314,7 +314,7 @@ class TranscriptionService(private val context: Context) : ExecutableService {
             if (success) {
                 // Transcription successful
                 val fullText = results["fullText"] as String
-                val segmentsTexts = results["segmentsTexts"] as List<String>
+                // Note: segmentsTexts from results not extracted - not stored to avoid duplication
 
                 LogManager.service("Phase 3: Saving successful transcription (${fullText.length} chars)")
 
@@ -322,6 +322,7 @@ class TranscriptionService(private val context: Context) : ExecutableService {
                 currentData.put(fieldName, fullText)
 
                 // Update metadata
+                // Note: segments_texts NOT stored to avoid data duplication (fullText already in field)
                 val metadata = currentData.optJSONObject("transcription_metadata") ?: JSONObject()
                 val fieldMetadata = JSONObject().apply {
                     put("audio_file", audioFile)
@@ -336,7 +337,7 @@ class TranscriptionService(private val context: Context) : ExecutableService {
                     put("status", "completed")
                     put("model", modelId)
                     put("date", System.currentTimeMillis())
-                    put("segments_texts", JSONArray(segmentsTexts))
+                    // segments_texts intentionally NOT stored - would double data size
                 }
                 metadata.put(fieldName, fieldMetadata)
                 currentData.put("transcription_metadata", metadata)

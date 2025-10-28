@@ -111,7 +111,9 @@ data class TranscriptionContext(
  * @param model Model identifier used for transcription
  * @param date Timestamp when transcription started
  * @param error Error message if status is FAILED
- * @param segmentsTexts Transcribed text per segment (present when COMPLETED)
+ *
+ * Note: Full transcribed text is stored in the field itself, not in metadata.
+ * This avoids data duplication and keeps metadata lightweight.
  */
 data class TranscriptionMetadata(
     val audioFile: String,
@@ -119,6 +121,5 @@ data class TranscriptionMetadata(
     val status: String, // "pending", "completed", "failed"
     val model: String,
     val date: Long,
-    val error: String? = null,
-    val segmentsTexts: List<String>? = null
+    val error: String? = null
 )

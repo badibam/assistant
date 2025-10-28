@@ -286,23 +286,28 @@ class BackupService(private val context: Context) : ExecutableService {
             val metadata = backupJson.optJSONObject("metadata")
                 ?: return OperationResult.error(s.shared("backup_invalid_file"))
 
-            // Get export version for JSON transformations
+            // Get versions for validation and transformations
             val exportVersion = metadata.optInt("export_version", -1)
-            if (exportVersion == -1) {
+            val dbSchemaVersion = metadata.optInt("db_schema_version", -1)
+
+            if (exportVersion == -1 || dbSchemaVersion == -1) {
                 return OperationResult.error(s.shared("backup_invalid_file"))
             }
 
-            // Check version compatibility (export_version is the app version)
-            val currentVersion = com.assistant.BuildConfig.VERSION_CODE
-            if (exportVersion > currentVersion) {
+            // Check app version compatibility (export_version is the app version)
+            val currentAppVersion = com.assistant.BuildConfig.VERSION_CODE
+            if (exportVersion > currentAppVersion) {
                 return OperationResult.error(s.shared("backup_version_too_recent"))
             }
 
-            // Apply JSON transformations if needed
-            val transformedData = if (exportVersion < currentVersion) {
-                LogManager.service("Applying JSON transformations from version $exportVersion to $currentVersion")
-                transformBackupData(backupJson, exportVersion, currentVersion)
+            // Apply JSON transformations based on DB schema version
+            // (db_schema_version determines data structure, not app version)
+            val currentDbVersion = AppDatabase.VERSION
+            val transformedData = if (dbSchemaVersion < currentDbVersion) {
+                LogManager.service("Applying JSON transformations from DB schema v$dbSchemaVersion to v$currentDbVersion", "INFO")
+                transformBackupData(backupJson, dbSchemaVersion, currentDbVersion)
             } else {
+                LogManager.service("No JSON transformations needed (DB schema v$dbSchemaVersion)", "DEBUG")
                 backupJson
             }
 

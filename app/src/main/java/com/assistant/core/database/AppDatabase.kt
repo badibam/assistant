@@ -42,7 +42,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -68,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 12
+        const val VERSION = 13
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -199,6 +199,76 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 12 → 13: Clean segments_texts from transcription metadata
+         *
+         * Problem: segments_texts in transcription_metadata duplicates the full text
+         * already stored in the field, doubling data size unnecessarily.
+         *
+         * Solution: Remove segments_texts from all transcription_metadata in tool_data
+         */
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 12->13: Starting - Cleaning segments_texts from transcription metadata", "INFO")
+
+                // Get all tool_data entries with transcription_metadata
+                val cursor = database.query(
+                    "SELECT id, data FROM tool_data WHERE data LIKE '%transcription_metadata%'"
+                )
+
+                val totalEntries = cursor.count
+                LogManager.database("MIGRATION 12->13: Found $totalEntries entries with transcription_metadata", "INFO")
+
+                var cleanedCount = 0
+                var errorCount = 0
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val dataJson = cursor.getString(1)
+
+                    try {
+                        val dataObj = org.json.JSONObject(dataJson)
+                        val metadata = dataObj.optJSONObject("transcription_metadata")
+
+                        if (metadata != null) {
+                            // Iterate through all fields in metadata
+                            val fieldNames = metadata.keys()
+                            var modified = false
+                            var fieldsCleanedInEntry = 0
+
+                            while (fieldNames.hasNext()) {
+                                val fieldName = fieldNames.next()
+                                val fieldMetadata = metadata.optJSONObject(fieldName)
+
+                                // Remove segments_texts if present
+                                if (fieldMetadata?.has("segments_texts") == true) {
+                                    fieldMetadata.remove("segments_texts")
+                                    modified = true
+                                    fieldsCleanedInEntry++
+                                }
+                            }
+
+                            // Update DB if modified
+                            if (modified) {
+                                database.execSQL(
+                                    "UPDATE tool_data SET data = ? WHERE id = ?",
+                                    arrayOf(dataObj.toString(), id)
+                                )
+                                cleanedCount++
+                                LogManager.database("MIGRATION 12->13: Cleaned $fieldsCleanedInEntry field(s) in entry $id", "DEBUG")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        errorCount++
+                        LogManager.database("MIGRATION 12->13: Failed to clean entry $id: ${e.message}", "ERROR", e)
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 12->13: Completed - Cleaned $cleanedCount entries ($errorCount errors)", "INFO")
+            }
+        }
+
         // Future migrations will be added here:
         // private val MIGRATION_12_13 = object : Migration(12, 13) { ... }
 
@@ -212,7 +282,8 @@ abstract class AppDatabase : RoomDatabase() {
                 .addMigrations(
                     MIGRATION_9_10,
                     MIGRATION_10_11,
-                    MIGRATION_11_12
+                    MIGRATION_11_12,
+                    MIGRATION_12_13
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
