@@ -124,8 +124,8 @@ internal class ClaudeProviderCore(
                 "max_tokens": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 4096,
-                    "default": 2000,
+                    "maximum": 32000,
+                    "default": 8000,
                     "description": "${s.shared("ai_provider_claude_schema_max_tokens")}"
                 }
             },

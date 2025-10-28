@@ -56,7 +56,7 @@ internal fun OpenAIConfigScreen(
     var apiKey by remember { mutableStateOf("") }
     var selectedModel by remember { mutableStateOf("") }
     var temperature by remember { mutableStateOf("1.0") }
-    var maxOutputTokens by remember { mutableStateOf("2000") }
+    var maxOutputTokens by remember { mutableStateOf("8000") }
 
     // Track if initial config had a model (to decide auto-selection behavior)
     var hadInitialModel by remember { mutableStateOf(false) }
@@ -70,7 +70,7 @@ internal fun OpenAIConfigScreen(
             selectedModel = initialModel
             hadInitialModel = initialModel.isNotEmpty()
             temperature = configJson.optDouble("temperature", 1.0).toString()
-            maxOutputTokens = configJson.optInt("max_output_tokens", 2000).toString()
+            maxOutputTokens = configJson.optInt("max_output_tokens", 8000).toString()
         } catch (e: Exception) {
             // Invalid JSON, keep defaults
             hadInitialModel = false
@@ -142,10 +142,9 @@ internal fun OpenAIConfigScreen(
                     put("temperature", tempValue)
                 }
 
-                val maxTokensValue = maxOutputTokens.toIntOrNull()
-                if (maxTokensValue != null && maxTokensValue != 2000) {
-                    put("max_output_tokens", maxTokensValue)
-                }
+                // Always include max_output_tokens
+                val maxTokensValue = maxOutputTokens.toIntOrNull() ?: 8000
+                put("max_output_tokens", maxTokensValue)
             }
 
             // Get schema for validation

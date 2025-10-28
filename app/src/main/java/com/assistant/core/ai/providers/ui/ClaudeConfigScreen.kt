@@ -54,6 +54,7 @@ internal fun ClaudeConfigScreen(
     // Form states
     var apiKey by remember { mutableStateOf("") }
     var selectedModel by remember { mutableStateOf("") }
+    var maxTokens by remember { mutableStateOf("8000") }
 
     // Track if initial config had a model (to decide auto-selection behavior)
     var hadInitialModel by remember { mutableStateOf(false) }
@@ -66,6 +67,7 @@ internal fun ClaudeConfigScreen(
             val initialModel = configJson.optString("model", "")
             selectedModel = initialModel
             hadInitialModel = initialModel.isNotEmpty()
+            maxTokens = configJson.optInt("max_tokens", 8000).toString()
         } catch (e: Exception) {
             // Invalid JSON, keep defaults
             hadInitialModel = false
@@ -129,9 +131,8 @@ internal fun ClaudeConfigScreen(
             // Build config object
             val configData = mapOf(
                 "api_key" to apiKey.trim(),
-                "model" to selectedModel
-                // TODO: Add max_tokens configuration when implementing advanced settings
-                // For now, using schema default (2000)
+                "model" to selectedModel,
+                "max_tokens" to (maxTokens.toIntOrNull() ?: 8000)
             )
 
             // Get schema for validation
@@ -272,13 +273,17 @@ internal fun ClaudeConfigScreen(
                     )
                 }
 
-                // TODO: Add max_tokens slider when implementing advanced provider settings
-                // This will require:
-                // - Add UI.Slider component to UI system
-                // - Add configuration toggle for "Advanced settings"
-                // - Add token limit field with validation (1-4096)
-                // - Consider per-provider token limits and cost implications
-                // - Add documentation about token usage and pricing
+                // Max tokens field
+                if (availableModels.isNotEmpty()) {
+                    UI.FormField(
+                        label = s.shared("ai_provider_claude_max_tokens"),
+                        value = maxTokens,
+                        onChange = { maxTokens = it },
+                        fieldType = FieldType.NUMERIC,
+                        required = false,
+                        state = ComponentState.NORMAL
+                    )
+                }
 
                 // Help text
                 UI.Text(

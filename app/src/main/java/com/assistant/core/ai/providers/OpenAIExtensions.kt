@@ -31,7 +31,7 @@ import org.json.JSONObject
 internal fun PromptData.toOpenAIJson(config: JSONObject): JsonObject {
     val model = config.getString("model")
     val temperature = config.optDouble("temperature", 1.0)
-    val maxTokens = config.optInt("max_output_tokens", 2000)
+    val maxTokens = config.optInt("max_output_tokens", 32000)
 
     return buildJsonObject {
         put("model", model)
@@ -182,13 +182,18 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
         )
     }
 
-    // Check status
+    // Check status - reject non-completed responses (incomplete JSON is unusable)
     val status = jsonObj["status"]?.jsonPrimitive?.content
     if (status != "completed") {
+        com.assistant.core.utils.LogManager.aiService(
+            "OpenAI response status '$status'. This typically means max_output_tokens limit was reached. " +
+            "Increase max_output_tokens in provider configuration to allow longer responses.",
+            "ERROR"
+        )
         return AIResponse(
             success = false,
             content = "",
-            errorMessage = "Response status: $status",
+            errorMessage = "Response incomplete (status: $status). Increase max_output_tokens in provider config.",
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,

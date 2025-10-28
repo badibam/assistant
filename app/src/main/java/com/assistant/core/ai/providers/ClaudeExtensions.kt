@@ -38,7 +38,7 @@ internal data class FusedMessage(
  */
 internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
     val model = config.getString("model")
-    val maxTokens = config.optInt("max_tokens", 8000)
+    val maxTokens = config.optInt("max_tokens", 32000)
 
     return buildJsonObject {
         put("model", model)
