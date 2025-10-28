@@ -70,7 +70,10 @@ fun ZoneScreen(
     LaunchedEffect(zone.id) {
         coordinator.executeWithLoading(
             operation = "tools.list",
-            params = mapOf("zone_id" to zone.id),
+            params = mapOf(
+                "zone_id" to zone.id,
+                "include_config" to true
+            ),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
@@ -129,7 +132,10 @@ fun ZoneScreen(
                     if (event.zoneId == zone.id) {
                         coordinator.executeWithLoading(
                             operation = "tools.list",
-                            params = mapOf("zone_id" to zone.id),
+                            params = mapOf(
+                                "zone_id" to zone.id,
+                                "include_config" to true
+                            ),
                             onLoading = { isLoading = it },
                             onError = { error -> errorMessage = error }
                         )?.let { result ->
@@ -157,7 +163,10 @@ fun ZoneScreen(
         coroutineScope.launch {
             coordinator.executeWithLoading(
                 operation = "tools.list",
-                params = mapOf("zone_id" to zone.id),
+                params = mapOf(
+                    "zone_id" to zone.id,
+                    "include_config" to true
+                ),
                 onLoading = { isLoading = it },
                 onError = { error -> errorMessage = error }
             )?.let { result ->
