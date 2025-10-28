@@ -33,55 +33,64 @@ class AIClient(private val context: Context) {
      * Provider transforms PromptData to its specific format and handles prompt construction
      *
      * @param promptData The raw prompt data (L1-L3 + messages)
+     * @param providerId Optional provider ID to use. If null, uses active provider (for CHAT). For AUTOMATION, this should be the automation's configured provider.
      * @return AIResponse with raw JSON string (not parsed)
      */
-    suspend fun query(promptData: PromptData): AIResponse {
-        LogManager.aiService("AIClient.query() called with PromptData: ${promptData.sessionMessages.size} messages", "DEBUG")
+    suspend fun query(promptData: PromptData, providerId: String? = null): AIResponse {
+        LogManager.aiService("AIClient.query() called with PromptData: ${promptData.sessionMessages.size} messages, providerId: $providerId", "DEBUG")
 
         return withContext(Dispatchers.IO) {
             try {
-                // Get active provider ID (NO FALLBACK - must be explicitly configured)
-                val activeResult = coordinator.processUserAction("ai_provider_config.get_active")
+                // Determine which provider to use
+                val effectiveProviderId: String = if (providerId != null) {
+                    // Use specified provider (AUTOMATION case)
+                    LogManager.aiService("Using specified provider: $providerId", "DEBUG")
+                    providerId
+                } else {
+                    // Get active provider ID (CHAT case)
+                    val activeResult = coordinator.processUserAction("ai_provider_config.get_active")
 
-                if (!activeResult.isSuccess) {
-                    LogManager.aiService("Failed to get active provider: ${activeResult.error}", "ERROR")
-                    return@withContext AIResponse(
-                        success = false,
-                        content = "",
-                        errorMessage = s.shared("ai_error_no_provider_configured")
-                    )
+                    if (!activeResult.isSuccess) {
+                        LogManager.aiService("Failed to get active provider: ${activeResult.error}", "ERROR")
+                        return@withContext AIResponse(
+                            success = false,
+                            content = "",
+                            errorMessage = s.shared("ai_error_no_provider_configured")
+                        )
+                    }
+
+                    val hasActiveProvider = activeResult.data?.get("hasActiveProvider") as? Boolean ?: false
+                    if (!hasActiveProvider) {
+                        LogManager.aiService("No active AI provider configured", "ERROR")
+                        return@withContext AIResponse(
+                            success = false,
+                            content = "",
+                            errorMessage = s.shared("ai_error_no_provider_configured")
+                        )
+                    }
+
+                    val activeProviderId = activeResult.data?.get("activeProviderId") as? String
+                    if (activeProviderId.isNullOrEmpty()) {
+                        LogManager.aiService("Active provider ID is empty", "ERROR")
+                        return@withContext AIResponse(
+                            success = false,
+                            content = "",
+                            errorMessage = s.shared("ai_error_no_provider_configured")
+                        )
+                    }
+
+                    LogManager.aiService("Using active provider: $activeProviderId", "DEBUG")
+                    activeProviderId
                 }
-
-                val hasActiveProvider = activeResult.data?.get("hasActiveProvider") as? Boolean ?: false
-                if (!hasActiveProvider) {
-                    LogManager.aiService("No active AI provider configured", "ERROR")
-                    return@withContext AIResponse(
-                        success = false,
-                        content = "",
-                        errorMessage = s.shared("ai_error_no_provider_configured")
-                    )
-                }
-
-                val providerId = activeResult.data?.get("activeProviderId") as? String
-                if (providerId.isNullOrEmpty()) {
-                    LogManager.aiService("Active provider ID is empty", "ERROR")
-                    return@withContext AIResponse(
-                        success = false,
-                        content = "",
-                        errorMessage = s.shared("ai_error_no_provider_configured")
-                    )
-                }
-
-                LogManager.aiService("Using active provider: $providerId", "DEBUG")
 
                 // Get provider from registry
-                val provider = providerRegistry.getProvider(providerId)
+                val provider = providerRegistry.getProvider(effectiveProviderId)
                 if (provider == null) {
-                    LogManager.aiService("Provider not found in registry: $providerId", "ERROR")
+                    LogManager.aiService("Provider not found in registry: $effectiveProviderId", "ERROR")
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_found").format(providerId)
+                        errorMessage = s.shared("ai_error_provider_not_found").format(effectiveProviderId)
                     )
                 }
 
@@ -89,15 +98,15 @@ class AIClient(private val context: Context) {
 
                 // Get provider configuration via coordinator
                 val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
-                    "providerId" to providerId
+                    "providerId" to effectiveProviderId
                 ))
 
                 if (!configResult.isSuccess) {
-                    LogManager.aiService("Provider configuration not found: $providerId", "ERROR")
+                    LogManager.aiService("Provider configuration not found: $effectiveProviderId", "ERROR")
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_configured").format(providerId)
+                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId)
                     )
                 }
 
@@ -105,11 +114,11 @@ class AIClient(private val context: Context) {
                 val isConfigured = configResult.data?.get("isConfigured") as? Boolean ?: false
 
                 if (!isConfigured) {
-                    LogManager.aiService("Provider not configured: $providerId", "ERROR")
+                    LogManager.aiService("Provider not configured: $effectiveProviderId", "ERROR")
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_configured").format(providerId)
+                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId)
                     )
                 }
 

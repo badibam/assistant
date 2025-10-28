@@ -435,7 +435,32 @@ class AIEventProcessor(
                 return
             }
 
-            // 2. Build prompt data
+            // 2. Determine which provider to use
+            // For AUTOMATION: use session's configured providerId
+            // For CHAT: use active provider (providerId = null)
+            val providerId: String? = if (state.sessionType == SessionType.AUTOMATION) {
+                // Get session to retrieve providerId
+                val coordinator = com.assistant.core.coordinator.Coordinator(context)
+                val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
+                    "sessionId" to sessionId
+                ))
+
+                if (sessionResult.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
+                    val sessionData = sessionResult.data?.get("session") as? Map<*, *>
+                    val sessionProviderId = sessionData?.get("providerId") as? String
+                    LogManager.aiSession("callAI: AUTOMATION session using provider '$sessionProviderId'", "DEBUG")
+                    sessionProviderId
+                } else {
+                    LogManager.aiSession("callAI: Failed to get session providerId, will use active provider", "WARN")
+                    null
+                }
+            } else {
+                // CHAT: use active provider
+                LogManager.aiSession("callAI: CHAT session using active provider", "DEBUG")
+                null
+            }
+
+            // 3. Build prompt data
             val promptData = promptManager.buildPromptData(sessionId, context)
 
             // Check network availability
@@ -472,9 +497,9 @@ class AIEventProcessor(
                 return
             }
 
-            // Call AI provider
-            LogManager.aiSession("callAI: Calling AI provider", "DEBUG")
-            val response = aiClient.query(promptData)
+            // Call AI provider with determined providerId
+            LogManager.aiSession("callAI: Calling AI provider (providerId: $providerId)", "DEBUG")
+            val response = aiClient.query(promptData, providerId)
 
             // Check if session was interrupted or closed while we were waiting for response
             val currentState = stateRepository.currentState

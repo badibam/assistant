@@ -12,12 +12,12 @@ On passe à la version $1
 2. Si OK, **modifier les versions** dans `app/build.gradle.kts` :
    - Incrémenter `versionCode`
    - Mettre à jour `versionName` (actuel → "$1")
-3. **README.md** à mettre à jour : avec numéro de version actuel + état actuel de l'app , sans mettre en valeur les changements récents. Il s'agit d'une vue d'ensemble concise de toutes les fonctionnalités présentes.
+3. **README.md** à mettre à jour : avec numéro de version actuel + état actuel de l'app , sans mettre en valeur les changements récents. Il s'agit d'une vue d'ensemble concise de toutes les fonctionnalités présentes. Souvent, il n'y aura rien à changer (à part num de version). Prends du recul et décide de ce qui doit vraiment s'y trouver ou pas.
 4. **Commiter** (sans mentionner claude) : "Version $1"
 5. **Tag** : `git tag v$1`
 6. **Push develop + tag** : `git push origin develop --tags`
 7. **Écrire notes de version** :
-   - Analyser tous les commits depuis version précédente
+   - Analyser tous les commits depuis version précédente :lis les messages COMPLETS de commit
    - Créer fichier temporaire `release-notes-$1.txt`
    - Style : précis, simple, sans emoji, sans mentionner claude. Uniquement changements depuis dernière version.
    - Présenter pour correction avant release
