@@ -1,0 +1,34 @@
+**Version 0.3.8**
+
+**Fixes & Improvements**
+
+* **ZoneScreen**
+
+  * Fixed tool instance mapping errors caused by missing `include_config` parameter.
+  * Added consistent retrieval of `config_json`, `created_at`, and `updated_at` in all list calls.
+
+* **AI Providers**
+
+  * Fixed incomplete OpenAI responses caused by `max_output_tokens` limits.
+  * Increased token limits for OpenAI and Claude (max 32 000, default 8 000).
+  * Unified token configuration and ensured correct persistence in UI and schema.
+
+* **Automations**
+
+  * Fixed provider selection bug: automations now correctly use their configured provider instead of the active chat provider.
+  * Improved provider resolution logic in `AIEventProcessor` and `AIClient`.
+
+* **Database Migration (v12 → v13)**
+
+* **Transcribed Data**
+
+ * Removed redundant `segments_texts` from transcription metadata to reduce data size.
+
+* **UI and Interaction Enhancements**
+
+ * Click-to-copy in AI messages (`ChatComponents.kt`)
+ * Enrichments in RichComposer – edit/delete buttons always visible
+ * Empty user messages are not stored but still trigger AI call
+ * Keyboard closes after sending a message
+ * Module communication – display of the question along with the answer
+ * Editing and deletion of automations in automation config screen
