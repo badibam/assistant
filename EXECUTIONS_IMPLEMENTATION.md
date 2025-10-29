@@ -91,11 +91,14 @@ Suivre exactement le même pattern que `BaseSchemas.getBaseDataSchema()`.
 Champs communs à toutes les exécutions :
 - `id`, `toolInstanceId`, `tooltype`, `templateDataId`
 - `scheduledTime`, `executionTime`, `status`, `triggeredBy`
-- `snapshotData`, `executionResult`, `metadata`
+- `createdAt`, `updatedAt`, `schema_id`
+
+**IMPORTANT** : `snapshotData`, `executionResult`, `metadata` sont **spécifiques** à chaque tooltype (comme `data` dans tool_data) et NE SONT PAS dans le schéma de base.
 
 **Schémas spécifiques** : Chaque tooltype implémentant des exécutions fournit via `ToolTypeContract` :
 - `getAllSchemaIds()` retourne aussi `["messages_execution", ...]`
 - `getSchema("messages_execution", context)` retourne schéma combiné (base + spécifique)
+- `supportsExecutions()` retourne `true` pour afficher option EXECUTIONS dans ZoneScopeSelector
 
 ### Exemple Messages
 
@@ -207,34 +210,35 @@ enum class PointerContext {
 **Étapes ZoneScopeSelector** :
 1. Sélection Zone (si `allowZoneSelection`)
 2. Sélection Tool Instance (si `allowInstanceSelection`)
-3. **Sélection Contexte** (GENERIC/CONFIG/DATA/EXECUTIONS)
-4. Cases à cocher selon contexte (voir détails ci-dessous)
-5. Sélection temporelle (si contexte != CONFIG)
+3. **Sélection Contexte + Cases** (fusionnés en une seule étape UI)
+   - Radio buttons pour contexte (GENERIC/CONFIG/DATA/EXECUTIONS)
+   - Cases à cocher apparaissent dynamiquement selon contexte sélectionné
+4. Sélection temporelle (si contexte = DATA ou EXECUTIONS)
 
 ### Cases à Cocher par Contexte
 
-**Terminologie UI** : "Documentation" au lieu de "Schéma"
+**Naming code** : Toujours utiliser `_schema` (pas `_doc`). Exemples : `config_schema`, `data_schema`, `executions_schema`.
 
 **GENERIC** :
-- Aucune case à cocher (référence l'instance entière)
-- Période : "Période de référence" (sélectionnable, interprétation par IA)
+- Aucune case à cocher (référence vide, pas de query automatique)
+- Période : Optionnelle, "Période de référence" (pour contexte seulement, l'IA doit demander explicitement ce qu'elle veut)
 
 **CONFIG** :
-- □ Configuration
-- □ Documentation configuration
+- □ Configuration (valeur : `config`)
+- □ Schéma configuration (valeur : `config_schema`)
 - Pas de période temporelle
 
 **DATA** :
-- ☑ Données (cochée par défaut, modifiable)
-- □ Documentation données
+- ☑ Données (cochée par défaut, valeur : `data`)
+- □ Schéma données (valeur : `data_schema`)
 - Période : "Période des données" (filtre sur `tool_data.timestamp`)
 
-**EXECUTIONS** (uniquement si tooltype implémente executions) :
-- ☑ Exécutions (cochée par défaut, modifiable)
-- □ Documentation exécutions
+**EXECUTIONS** (uniquement si `toolType.supportsExecutions() == true`) :
+- ☑ Exécutions (cochée par défaut, valeur : `executions`)
+- □ Schéma exécutions (valeur : `executions_schema`)
 - Période : "Période d'exécution" (filtre sur `tool_executions.executionTime`)
 
-**Règle critique** : Seules les cases du contexte actif sont sauvegardées dans `SelectionResult`.
+**Règle critique** : Seules les cases du contexte actif sont sauvegardées dans `SelectionResult.selectedResources`.
 
 ### NavigationConfig Extension
 
@@ -282,10 +286,10 @@ data class TemporalFilter(
 ```
 
 **selectedResources valides par contexte** :
-- GENERIC : `[]` (vide)
-- CONFIG : `["config"]`, `["config_doc"]`, `["config", "config_doc"]`
-- DATA : `["data"]`, `["data_doc"]`, `["data", "data_doc"]`
-- EXECUTIONS : `["executions"]`, `["executions_doc"]`, `["executions", "executions_doc"]`
+- GENERIC : `[]` (vide, pas de query automatique)
+- CONFIG : `["config"]`, `["config_schema"]`, `["config", "config_schema"]`
+- DATA : `["data"]`, `["data_schema"]`, `["data", "data_schema"]`
+- EXECUTIONS : `["executions"]`, `["executions_schema"]`, `["executions", "executions_schema"]`
 
 ## 6. EnrichmentProcessor - Génération Commands
 
@@ -294,10 +298,10 @@ data class TemporalFilter(
 **Avant** : Génère `TOOL_DATA` command → récupère config + data + stats
 
 **Après** : Selon `selectedContext` dans enrichment config :
-- CONFIG → `TOOL_CONFIG` command
-- DATA → `TOOL_DATA` command
-- EXECUTIONS → `TOOL_EXECUTIONS` command (nouveau)
-- GENERIC → Plusieurs commands (CONFIG + DATA + EXECUTIONS si disponible)
+- CONFIG → `TOOL_CONFIG` command (si `selectedResources` contient `config` ou `config_schema`)
+- DATA → `TOOL_DATA` command (si `selectedResources` contient `data` ou `data_schema`)
+- EXECUTIONS → `TOOL_EXECUTIONS` command (nouveau, si `selectedResources` contient `executions` ou `executions_schema`)
+- GENERIC → **AUCUN command** automatique (l'IA doit demander explicitement ce qu'elle veut via query)
 
 ### Nouveau Command Type
 

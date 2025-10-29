@@ -17,23 +17,22 @@ import org.json.JSONObject
  * Responsibilities:
  * - Scan all Messages tool instances for scheduled messages
  * - For each message with schedule != null, check if nextExecutionTime is reached
- * - Create execution snapshot and append to executions array
+ * - Create execution record in tool_executions table
  * - Send notification via NotificationService
  * - Update schedule.nextExecutionTime for next occurrence
  *
  * Architecture:
  * - Called by CoreScheduler.tick() (1 min app-open, 15 min app-closed)
- * - Uses MessageService.appendExecution() (internal method, not exposed to commands)
+ * - Uses tool_executions.create command (unified execution history)
  * - Best effort notifications (failed = status: "failed", no retry)
- * - Atomic sequence per message: create execution → send notif → update status
+ * - Atomic sequence per message: send notif → create execution with final status
  *
  * Flow per scheduled message:
  * 1. Check if nextExecutionTime <= now
- * 2. Create execution entry (status: "pending", snapshots)
- * 3. Call NotificationService.send(title_snapshot, content_snapshot, priority)
- * 4. Update execution status ("sent" or "failed" based on notif result)
- * 5. Calculate next execution time via ScheduleCalculator
- * 6. Update schedule.nextExecutionTime in message data
+ * 2. Send notification via NotificationService
+ * 3. Create execution record (status: "completed" or "failed" based on notif result)
+ * 4. Calculate next execution time via ScheduleCalculator
+ * 5. Update schedule.nextExecutionTime in message data
  */
 object MessageScheduler : ToolScheduler {
 
@@ -110,13 +109,13 @@ object MessageScheduler : ToolScheduler {
      * Process a single message for scheduling
      *
      * @param context Android context
-     * @param messageId ID of message (ToolDataEntity.id)
+     * @param messageId ID of message (ToolDataEntity.id) - serves as templateDataId
      * @param messageName Name/title of the message (from ToolDataEntity.name)
      * @param dataJson JSON string of message data
      * @param now Current timestamp
-     * @param messageService MessageService instance for appendExecution
-     * @param coordinator Coordinator for updating message
-     * @param instance Tool instance data (for external_notifications config)
+     * @param messageService MessageService instance (unused, kept for compatibility)
+     * @param coordinator Coordinator for creating execution and updating message
+     * @param instance Tool instance data (for external_notifications config and toolInstanceId)
      */
     private suspend fun processMessage(
         context: Context,
@@ -145,8 +144,9 @@ object MessageScheduler : ToolScheduler {
         // Extract message data for execution
         // Note: title comes from ToolDataEntity.name field, not from data JSON
         LogManager.service("Executing scheduled message: '$messageName' (id=$messageId)", "INFO")
-        val content = data.optString("content")
+        val content = data.optString("content", "")
         val priority = data.optString("priority", "default")
+        val toolInstanceId = instance["id"] as? String ?: return
 
         // Get external_notifications setting from config
         val configJson = instance["config_json"] as? String
@@ -159,24 +159,6 @@ object MessageScheduler : ToolScheduler {
             }
         } else {
             true
-        }
-
-        // Create execution entry
-        val execution = mutableMapOf<String, Any>(
-            "scheduled_time" to nextExecutionTime,
-            "sent_at" to now,
-            "status" to "pending",  // Will be updated after notification attempt
-            "title_snapshot" to messageName,
-            "content_snapshot" to (content.takeIf { it.isNotEmpty() } ?: ""),
-            "read" to false,
-            "archived" to false
-        )
-
-        // Append execution to message (status: pending)
-        val appendResult = messageService.appendExecution(messageId, execution)
-        if (!appendResult.success) {
-            LogManager.service("Failed to append execution to message $messageId: ${appendResult.error}", "ERROR")
-            return
         }
 
         // Send notification if external_notifications enabled
@@ -199,14 +181,48 @@ object MessageScheduler : ToolScheduler {
             LogManager.service("External notifications disabled for instance, skipping notification", "DEBUG")
         }
 
-        // Update execution status based on notification result
-        val finalStatus = if (notificationSuccess) "sent" else "failed"
-        execution["status"] = finalStatus
+        // Determine final execution status
+        val finalStatus = if (notificationSuccess) "completed" else "failed"
 
-        // Re-append with updated status (replaces pending entry)
-        // Note: This is a simplification - in production we should update the specific execution index
-        // For now, we update the entire message with corrected status
-        updateExecutionStatus(messageId, finalStatus, coordinator)
+        // Create execution record in tool_executions table
+        val snapshotData = JSONObject().apply {
+            put("title", messageName)
+            put("content", content)
+            put("priority", priority)
+        }
+
+        val executionResult = JSONObject().apply {
+            put("read", false)
+            put("archived", false)
+            put("notification_sent", notificationSuccess)
+        }
+
+        val metadata = JSONObject().apply {
+            if (!notificationSuccess) {
+                put("error", "Notification send failed")
+            }
+        }
+
+        val createExecutionResult = coordinator.processUserAction(
+            "tool_executions.create",
+            mapOf(
+                "toolInstanceId" to toolInstanceId,
+                "tooltype" to "messages",
+                "templateDataId" to messageId,
+                "scheduledTime" to nextExecutionTime,
+                "executionTime" to now,
+                "status" to finalStatus,
+                "triggeredBy" to "SCHEDULE",
+                "snapshotData" to snapshotData,
+                "executionResult" to executionResult,
+                "metadata" to metadata
+            )
+        )
+
+        if (!createExecutionResult.isSuccess) {
+            LogManager.service("Failed to create execution record for message $messageId: ${createExecutionResult.error}", "ERROR")
+            // Continue anyway to update next execution time
+        }
 
         // Calculate next execution time using ScheduleCalculator
         val scheduleConfig = parseScheduleConfig(schedule)
@@ -244,63 +260,6 @@ object MessageScheduler : ToolScheduler {
 
         if (!updateResult.isSuccess) {
             LogManager.service("Failed to update message $messageId after execution: ${updateResult.error}", "WARN")
-        }
-    }
-
-    /**
-     * Update execution status in the last execution of a message
-     *
-     * This is a helper to update the status field of the last appended execution.
-     * Retrieves the message, modifies the last execution's status, and saves back.
-     */
-    private suspend fun updateExecutionStatus(
-        messageId: String,
-        status: String,
-        coordinator: Coordinator
-    ) {
-        try {
-            // Get current message
-            val getResult = coordinator.processUserAction(
-                "tool_data.get_single",
-                mapOf("entry_id" to messageId)  // tool_data.get_single expects "entry_id", not "id"
-            )
-
-            if (!getResult.isSuccess) {
-                LogManager.service("Failed to get message $messageId for status update: ${getResult.error}", "WARN")
-                return
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            val entry = getResult.data?.get("entry") as? Map<String, Any>
-            val dataStr = entry?.get("data") as? String ?: return
-            val data = JSONObject(dataStr)
-            val executions = data.optJSONArray("executions")
-
-            if (executions == null || executions.length() == 0) {
-                LogManager.service("No executions found in message $messageId", "WARN")
-                return
-            }
-
-            // Update last execution status
-            val lastIndex = executions.length() - 1
-            val lastExecution = executions.getJSONObject(lastIndex)
-            lastExecution.put("status", status)
-
-            // Save updated message
-            val updateResult = coordinator.processUserAction(
-                "tool_data.update",
-                mapOf(
-                    "id" to messageId,
-                    "data" to data.toString()
-                )
-            )
-
-            if (!updateResult.isSuccess) {
-                LogManager.service("Failed to update execution status for message $messageId: ${updateResult.error}", "WARN")
-            }
-
-        } catch (e: Exception) {
-            LogManager.service("Exception updating execution status for message $messageId: ${e.message}", "ERROR", e)
         }
     }
 

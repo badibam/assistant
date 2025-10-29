@@ -21,13 +21,12 @@ import org.json.JSONObject
  * - Execution history queries (get_history with filters)
  * - Execution flag updates (mark_read, mark_archived)
  * - Statistics aggregation (including execution counts)
- * - Internal scheduler operations (appendExecution - not exposed via execute)
  *
  * Architecture:
- * - Messages use ToolDataEntity with JSON value containing template + executions array
- * - Executions are immutable snapshots (systemManaged, stripped from AI commands)
+ * - Messages use ToolDataEntity for templates (config data with schedule)
+ * - Executions stored in tool_executions table (unified execution history)
  * - CRUD operations handled by ToolDataService (enrichData() calculates nextExecutionTime)
- * - Specific operations implemented here for execution management
+ * - Execution operations delegate to tool_executions service
  */
 class MessageService(private val context: Context) : ExecutableService {
 
@@ -78,18 +77,20 @@ class MessageService(private val context: Context) : ExecutableService {
     /**
      * Get execution history with filters
      *
-     * Returns all executions from all messages of the tool instance,
-     * filtered by read/archived status. Includes message title for display.
+     * Returns all executions from tool_executions table for this instance,
+     * with optional filters for read/archived status.
      *
      * Params:
      * - toolInstanceId: String (required)
      * - filters: JSONObject (optional)
      *   - read: Boolean? (null = ignore filter)
      *   - archived: Boolean? (null = ignore filter)
+     * - limit: Int (optional) - max executions to return
+     * - page: Int (optional) - page number for pagination
      *
      * Returns:
-     * - executions: Array of {messageId, messageTitle, execution: {...}}
-     *   Sorted by sent_at DESC (most recent first)
+     * - executions: Array of execution records from tool_executions
+     *   Sorted by execution_time DESC (most recent first)
      */
     private suspend fun getHistory(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -99,57 +100,53 @@ class MessageService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId"))
         }
 
-        try {
-            val dao = AppDatabase.getDatabase(context).toolDataDao()
-            val messages = dao.getByToolInstance(toolInstanceId)
+        // Extract filters
+        val filters = params.optJSONObject("filters")
+        val readFilter = filters?.opt("read") as? Boolean
+        val archivedFilter = filters?.opt("archived") as? Boolean
 
-            // Extract filters
-            val filters = params.optJSONObject("filters")
-            val readFilter = filters?.opt("read") as? Boolean
-            val archivedFilter = filters?.opt("archived") as? Boolean
+        // Delegate to tool_executions service
+        val executionsParams = JSONObject().apply {
+            put("toolInstanceId", toolInstanceId)
+            if (params.has("limit")) put("limit", params.getInt("limit"))
+            if (params.has("page")) put("page", params.getInt("page"))
+        }
 
-            // Flatten all executions from all messages with join on message title
-            val allExecutions = mutableListOf<Map<String, Any>>()
+        val result = coordinator.processUserAction("tool_executions.get", executionsParams.toMap())
 
-            for (message in messages) {
-                val data = JSONObject(message.data)
-                val messageTitle = data.optString("title", s.shared("content_unnamed"))
-                val executions = data.optJSONArray("executions") ?: continue
+        if (!result.isSuccess) {
+            return OperationResult.error(result.error ?: s.shared("service_error_operation_failed"))
+        }
 
-                for (i in 0 until executions.length()) {
-                    val execution = executions.getJSONObject(i)
+        // Get executions and apply client-side filters (read/archived from execution_result)
+        @Suppress("UNCHECKED_CAST")
+        val allExecutions = (result.data?.get("executions") as? List<Map<String, Any>>) ?: emptyList()
 
-                    // Apply filters
-                    val read = execution.optBoolean("read", false)
-                    val archived = execution.optBoolean("archived", false)
+        val filteredExecutions = allExecutions.filter { execution ->
+            @Suppress("UNCHECKED_CAST")
+            val executionResultStr = execution["executionResult"] as? String
+            if (executionResultStr != null) {
+                try {
+                    val executionResult = JSONObject(executionResultStr)
+                    val read = executionResult.optBoolean("read", false)
+                    val archived = executionResult.optBoolean("archived", false)
 
                     val matchesReadFilter = readFilter == null || read == readFilter
                     val matchesArchivedFilter = archivedFilter == null || archived == archivedFilter
 
-                    if (matchesReadFilter && matchesArchivedFilter) {
-                        allExecutions.add(mapOf(
-                            "messageId" to message.id,
-                            "messageTitle" to messageTitle,
-                            "executionIndex" to i,
-                            "execution" to execution.toMap()
-                        ))
-                    }
+                    matchesReadFilter && matchesArchivedFilter
+                } catch (e: Exception) {
+                    true // Include if can't parse
                 }
+            } else {
+                true // Include if no executionResult
             }
-
-            // Sort by sent_at DESC (most recent first)
-            val sortedExecutions = allExecutions.sortedByDescending { entry ->
-                @Suppress("UNCHECKED_CAST")
-                val execution = entry["execution"] as Map<String, Any>
-                execution["sent_at"] as? Long ?: 0L
-            }
-
-            return OperationResult.success(data = mapOf("executions" to sortedExecutions))
-
-        } catch (e: Exception) {
-            LogManager.service("MessageService.getHistory failed: ${e.message}", "ERROR", e)
-            return OperationResult.error("${s.shared("service_error_operation_failed")}: ${e.message}")
         }
+
+        return OperationResult.success(data = mapOf(
+            "executions" to filteredExecutions,
+            "pagination" to (result.data?.get("pagination") ?: mapOf<String, Any>())
+        ))
     }
 
     /**
@@ -188,8 +185,7 @@ class MessageService(private val context: Context) : ExecutableService {
      * Mark execution as read/unread
      *
      * Params:
-     * - message_id: String (required) - ID of the message (ToolDataEntity.id)
-     * - execution_index: Int (required) - Index in executions array
+     * - execution_id: String (required) - ID of the execution in tool_executions table
      * - read: Boolean (required) - New read status
      *
      * Returns:
@@ -198,23 +194,21 @@ class MessageService(private val context: Context) : ExecutableService {
     private suspend fun markRead(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val messageId = params.optString("message_id")
-        val executionIndex = params.optInt("execution_index", -1)
+        val executionId = params.optString("execution_id")
         val read = params.optBoolean("read")
 
-        if (messageId.isEmpty() || executionIndex < 0) {
-            return OperationResult.error(s.shared("service_error_missing_required_params").format("message_id, execution_index"))
+        if (executionId.isEmpty()) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("execution_id"))
         }
 
-        return updateExecutionFlag(messageId, executionIndex, "read", read)
+        return updateExecutionFlag(executionId, "read", read)
     }
 
     /**
      * Mark execution as archived/unarchived
      *
      * Params:
-     * - message_id: String (required)
-     * - execution_index: Int (required)
+     * - execution_id: String (required) - ID of the execution in tool_executions table
      * - archived: Boolean (required)
      *
      * Returns:
@@ -223,62 +217,64 @@ class MessageService(private val context: Context) : ExecutableService {
     private suspend fun markArchived(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val messageId = params.optString("message_id")
-        val executionIndex = params.optInt("execution_index", -1)
+        val executionId = params.optString("execution_id")
         val archived = params.optBoolean("archived")
 
-        if (messageId.isEmpty() || executionIndex < 0) {
-            return OperationResult.error(s.shared("service_error_missing_required_params").format("message_id, execution_index"))
+        if (executionId.isEmpty()) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("execution_id"))
         }
 
-        return updateExecutionFlag(messageId, executionIndex, "archived", archived)
+        return updateExecutionFlag(executionId, "archived", archived)
     }
 
     /**
-     * Update a flag in a specific execution entry
+     * Update a flag in a specific execution's execution_result
      *
-     * @param messageId ID of message (ToolDataEntity.id)
-     * @param executionIndex Index in executions array
+     * @param executionId ID of execution in tool_executions table
      * @param flagName Name of flag to update ("read" or "archived")
      * @param value New value for flag
      */
     private suspend fun updateExecutionFlag(
-        messageId: String,
-        executionIndex: Int,
+        executionId: String,
         flagName: String,
         value: Boolean
     ): OperationResult {
         try {
-            val dao = AppDatabase.getDatabase(context).toolDataDao()
-            val message = dao.getById(messageId)
-                ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(messageId))
+            // Get current execution
+            val getResult = coordinator.processUserAction(
+                "tool_executions.get_single",
+                mapOf("execution_id" to executionId)
+            )
 
-            val data = JSONObject(message.data)
-            val executions = data.optJSONArray("executions")
-                ?: return OperationResult.error("No executions array found in message $messageId")
-
-            if (executionIndex >= executions.length()) {
-                return OperationResult.error("Execution index $executionIndex out of bounds (length: ${executions.length()})")
+            if (!getResult.isSuccess) {
+                return OperationResult.error(getResult.error ?: s.shared("service_error_entry_not_found").format(executionId))
             }
+
+            @Suppress("UNCHECKED_CAST")
+            val execution = getResult.data?.get("execution") as? Map<String, Any>
+                ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(executionId))
+
+            // Parse execution_result JSON
+            val executionResultStr = execution["executionResult"] as? String ?: "{}"
+            val executionResult = JSONObject(executionResultStr)
 
             // Update flag
-            val execution = executions.getJSONObject(executionIndex)
-            execution.put(flagName, value)
+            executionResult.put(flagName, value)
 
-            // Save updated message
-            val updatedMessage = message.copy(
-                data = data.toString(),
-                updatedAt = System.currentTimeMillis()
+            // Update execution via tool_executions service
+            val updateResult = coordinator.processUserAction(
+                "tool_executions.update",
+                mapOf(
+                    "id" to executionId,
+                    "executionResult" to executionResult
+                )
             )
-            dao.update(updatedMessage)
 
-            // Notify UI
-            val zoneId = getZoneIdForTool(message.toolInstanceId)
-            if (zoneId != null) {
-                DataChangeNotifier.notifyToolDataChanged(message.toolInstanceId, zoneId)
+            if (!updateResult.isSuccess) {
+                return OperationResult.error(updateResult.error ?: s.shared("service_error_operation_failed"))
             }
 
-            LogManager.service("Updated execution $executionIndex flag $flagName=$value for message $messageId", "DEBUG")
+            LogManager.service("Updated execution $executionId flag $flagName=$value", "DEBUG")
             return OperationResult.success()
 
         } catch (e: Exception) {
@@ -295,12 +291,12 @@ class MessageService(private val context: Context) : ExecutableService {
      *
      * Returns:
      * - total_messages: Int - Number of message templates
-     * - total_executions: Int - Total number of executions across all messages
-     * - unread: Int - Count of unread executions
-     * - archived: Int - Count of archived executions
-     * - pending: Int - Count of pending executions
-     * - sent: Int - Count of sent executions
-     * - failed: Int - Count of failed executions
+     * - total_executions: Int - Total number of executions from tool_executions
+     * - unread: Int - Count of unread executions (from execution_result.read)
+     * - archived: Int - Count of archived executions (from execution_result.archived)
+     * - pending: Int - Count of pending executions (status = "pending")
+     * - completed: Int - Count of completed executions (status = "completed")
+     * - failed: Int - Count of failed executions (status = "failed")
      */
     private suspend fun getStats(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -311,45 +307,61 @@ class MessageService(private val context: Context) : ExecutableService {
         }
 
         try {
+            // Get message templates count
             val dao = AppDatabase.getDatabase(context).toolDataDao()
             val messages = dao.getByToolInstance(toolInstanceId)
+            val totalMessages = messages.size
 
-            var totalExecutions = 0
+            // Get execution stats from tool_executions
+            val statsResult = coordinator.processUserAction(
+                "tool_executions.stats",
+                mapOf("toolInstanceId" to toolInstanceId)
+            )
+
+            if (!statsResult.isSuccess) {
+                return OperationResult.error(statsResult.error ?: s.shared("service_error_operation_failed"))
+            }
+
+            val totalExecutions = statsResult.data?.get("total_count") as? Int ?: 0
+            val pendingCount = statsResult.data?.get("pending_count") as? Int ?: 0
+            val completedCount = statsResult.data?.get("completed_count") as? Int ?: 0
+            val failedCount = statsResult.data?.get("failed_count") as? Int ?: 0
+
+            // Calculate unread/archived by fetching all executions (TODO: optimize with dedicated query)
+            val executionsResult = coordinator.processUserAction(
+                "tool_executions.get",
+                mapOf("toolInstanceId" to toolInstanceId)
+            )
+
             var unread = 0
             var archived = 0
-            var pending = 0
-            var sent = 0
-            var failed = 0
 
-            for (message in messages) {
-                val data = JSONObject(message.data)
-                val executions = data.optJSONArray("executions") ?: continue
+            if (executionsResult.isSuccess) {
+                @Suppress("UNCHECKED_CAST")
+                val executions = (executionsResult.data?.get("executions") as? List<Map<String, Any>>) ?: emptyList()
 
-                for (i in 0 until executions.length()) {
-                    val execution = executions.getJSONObject(i)
-                    totalExecutions++
-
-                    // Count by status
-                    when (execution.optString("status")) {
-                        "pending" -> pending++
-                        "sent" -> sent++
-                        "failed" -> failed++
+                for (execution in executions) {
+                    val executionResultStr = execution["executionResult"] as? String
+                    if (executionResultStr != null) {
+                        try {
+                            val executionResult = JSONObject(executionResultStr)
+                            if (!executionResult.optBoolean("read", false)) unread++
+                            if (executionResult.optBoolean("archived", false)) archived++
+                        } catch (e: Exception) {
+                            // Skip if can't parse
+                        }
                     }
-
-                    // Count flags
-                    if (!execution.optBoolean("read", false)) unread++
-                    if (execution.optBoolean("archived", false)) archived++
                 }
             }
 
             return OperationResult.success(data = mapOf(
-                "total_messages" to messages.size,
+                "total_messages" to totalMessages,
                 "total_executions" to totalExecutions,
                 "unread" to unread,
                 "archived" to archived,
-                "pending" to pending,
-                "sent" to sent,
-                "failed" to failed
+                "pending" to pendingCount,
+                "completed" to completedCount,
+                "failed" to failedCount
             ))
 
         } catch (e: Exception) {
@@ -358,80 +370,4 @@ class MessageService(private val context: Context) : ExecutableService {
         }
     }
 
-    // ========================================
-    // Internal scheduler operations
-    // ========================================
-
-    /**
-     * Append execution to message (internal - not exposed via execute)
-     *
-     * Called only by MessageScheduler when scheduled_time is reached.
-     * Creates a new execution entry with snapshots and appends to executions array.
-     *
-     * @param messageId ID of message to append execution to
-     * @param execution Map containing execution data (scheduled_time, sent_at, status, snapshots, flags)
-     * @return OperationResult with success/error
-     */
-    suspend fun appendExecution(messageId: String, execution: Map<String, Any>): OperationResult {
-        try {
-            val dao = AppDatabase.getDatabase(context).toolDataDao()
-            val message = dao.getById(messageId)
-                ?: return OperationResult.error("Message not found: $messageId")
-
-            val data = JSONObject(message.data)
-            val executions = data.optJSONArray("executions") ?: JSONArray()
-
-            // Append new execution
-            val executionJson = JSONObject(execution)
-            executions.put(executionJson)
-
-            // Update message
-            data.put("executions", executions)
-            val updatedMessage = message.copy(
-                data = data.toString(),
-                updatedAt = System.currentTimeMillis()
-            )
-            dao.update(updatedMessage)
-
-            // Notify UI
-            val zoneId = getZoneIdForTool(message.toolInstanceId)
-            if (zoneId != null) {
-                DataChangeNotifier.notifyToolDataChanged(message.toolInstanceId, zoneId)
-            }
-
-            LogManager.service("Appended execution to message $messageId (status: ${execution["status"]})", "INFO")
-            return OperationResult.success()
-
-        } catch (e: Exception) {
-            LogManager.service("Failed to append execution to message $messageId: ${e.message}", "ERROR", e)
-            return OperationResult.error("Failed to append execution: ${e.message}")
-        }
-    }
-
-    // ========================================
-    // Helper methods
-    // ========================================
-
-    /**
-     * Get zone ID for a tool instance
-     * Used for DataChangeNotifier to trigger UI updates
-     */
-    private suspend fun getZoneIdForTool(toolInstanceId: String): String? {
-        return try {
-            val result = coordinator.processUserAction(
-                "tools.get",
-                mapOf("tool_instance_id" to toolInstanceId)
-            )
-
-            if (result.isSuccess) {
-                val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-                toolInstance?.get("zone_id") as? String
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            LogManager.service("Failed to get zone ID for tool $toolInstanceId: ${e.message}", "WARN")
-            null
-        }
-    }
 }
