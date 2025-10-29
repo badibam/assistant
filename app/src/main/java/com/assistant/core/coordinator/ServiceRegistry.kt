@@ -5,6 +5,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.ZoneService
 import com.assistant.core.services.ToolInstanceService
 import com.assistant.core.services.ToolDataService
+import com.assistant.core.services.ToolExecutionService
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
@@ -30,6 +31,7 @@ class ServiceRegistry(private val context: Context) {
         "zones" to ZoneService::class,
         "tools" to ToolInstanceService::class,
         "tool_data" to ToolDataService::class,
+        "tool_executions" to ToolExecutionService::class,
         "app_config" to AppConfigService::class,
         "icon_preload" to IconPreloadService::class,
         "backup" to BackupService::class,

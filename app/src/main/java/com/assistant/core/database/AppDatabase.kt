@@ -7,11 +7,13 @@ import android.content.Context
 import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.dao.BaseToolDataDao
+import com.assistant.core.database.dao.BaseToolExecutionDao
 import com.assistant.core.database.dao.AppSettingsCategoryDao
 import com.assistant.core.database.dao.LogDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
+import com.assistant.core.database.entities.ToolExecutionEntity
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.LogEntry
 import com.assistant.core.ai.database.AIDao
@@ -32,6 +34,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Zone::class,
         ToolInstance::class,
         ToolDataEntity::class,
+        ToolExecutionEntity::class,
         AppSettingsCategory::class,
         AISessionEntity::class,
         SessionMessageEntity::class,
@@ -42,7 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -53,6 +56,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun zoneDao(): ZoneDao
     abstract fun toolInstanceDao(): ToolInstanceDao
     abstract fun toolDataDao(): BaseToolDataDao
+    abstract fun toolExecutionDao(): BaseToolExecutionDao
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
     abstract fun transcriptionDao(): TranscriptionDao
@@ -62,13 +66,13 @@ abstract class AppDatabase : RoomDatabase() {
         /**
          * Database schema version
          *
-         * ⚠️ MUST match @Database(version = X) annotation above (line 42)
+         * ⚠️ MUST match @Database(version = X) annotation above (line 48)
          * ⚠️ Change BOTH when incrementing database version
          *
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 13
+        const val VERSION = 14
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -269,8 +273,146 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        // Future migrations will be added here:
-        // private val MIGRATION_12_13 = object : Migration(12, 13) { ... }
+        /**
+         * Migration 13 → 14: Add tool_executions table
+         *
+         * Problem: Messages tool stores execution history in JSON array within tool_data.data
+         * - Unlimited growth in JSON
+         * - Heavy impact on AI tokens (POINTER/USE enrichments send full history)
+         * - Not reusable for other tooltypes (Goals, Alerts, Questionnaires)
+         * - Difficult to query/filter/paginate
+         *
+         * Solution: Separate table tool_executions for execution history
+         * - Migrates existing Messages executions to new table
+         * - Removes executions array from Messages tool_data
+         */
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 13->14: Starting - Creating tool_executions table", "INFO")
+
+                // 1. Create tool_executions table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS tool_executions (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        tool_instance_id TEXT NOT NULL,
+                        tooltype TEXT NOT NULL,
+                        template_data_id TEXT NOT NULL,
+                        scheduled_time INTEGER,
+                        execution_time INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        snapshot_data TEXT NOT NULL,
+                        execution_result TEXT NOT NULL,
+                        triggered_by TEXT NOT NULL,
+                        metadata TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        FOREIGN KEY(tool_instance_id) REFERENCES tool_instances(id) ON DELETE CASCADE,
+                        FOREIGN KEY(template_data_id) REFERENCES tool_data(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+
+                // 2. Create indexes
+                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_tool ON tool_executions(tool_instance_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_template ON tool_executions(template_data_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_time ON tool_executions(execution_time)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_status ON tool_executions(status)")
+
+                LogManager.database("MIGRATION 13->14: tool_executions table created with indexes", "INFO")
+
+                // 3. Migrate existing Messages executions from tool_data to tool_executions
+                val cursor = database.query(
+                    "SELECT id, tool_instance_id, data FROM tool_data WHERE tooltype = 'messages' AND data LIKE '%executions%'"
+                )
+
+                var migratedCount = 0
+                var errorCount = 0
+
+                while (cursor.moveToNext()) {
+                    val templateDataId = cursor.getString(0)
+                    val toolInstanceId = cursor.getString(1)
+                    val dataJson = cursor.getString(2)
+
+                    try {
+                        val dataObj = org.json.JSONObject(dataJson)
+                        val executions = dataObj.optJSONArray("executions")
+
+                        if (executions != null && executions.length() > 0) {
+                            // Migrate each execution to tool_executions table
+                            for (i in 0 until executions.length()) {
+                                val execution = executions.getJSONObject(i)
+
+                                // Extract execution fields
+                                val executionId = java.util.UUID.randomUUID().toString()
+                                val executionTime = execution.optLong("timestamp", System.currentTimeMillis())
+                                val status = if (execution.optBoolean("read", false)) "completed" else "pending"
+
+                                // Build snapshot_data (template content at execution time)
+                                val snapshotData = org.json.JSONObject().apply {
+                                    put("title", dataObj.optString("title", ""))
+                                    put("content", dataObj.optString("content", ""))
+                                    put("priority", dataObj.optString("priority", "default"))
+                                }.toString()
+
+                                // Build execution_result
+                                val executionResult = org.json.JSONObject().apply {
+                                    put("read", execution.optBoolean("read", false))
+                                    put("archived", execution.optBoolean("archived", false))
+                                    put("notification_sent", true) // Assume sent if in history
+                                }.toString()
+
+                                // Build metadata
+                                val metadata = org.json.JSONObject().apply {
+                                    // Empty for now, can store errors or additional context later
+                                }.toString()
+
+                                // Insert into tool_executions
+                                database.execSQL(
+                                    """INSERT INTO tool_executions
+                                        (id, tool_instance_id, tooltype, template_data_id, scheduled_time, execution_time,
+                                         status, snapshot_data, execution_result, triggered_by, metadata, created_at, updated_at)
+                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                    arrayOf(
+                                        executionId,
+                                        toolInstanceId,
+                                        "messages",
+                                        templateDataId,
+                                        null, // scheduled_time unknown for historical data
+                                        executionTime,
+                                        status,
+                                        snapshotData,
+                                        executionResult,
+                                        "SCHEDULE", // Assume scheduled since Messages use scheduling
+                                        metadata,
+                                        executionTime, // created_at = execution_time (best guess)
+                                        executionTime  // updated_at = execution_time
+                                    )
+                                )
+                                migratedCount++
+                            }
+
+                            // Remove executions array from tool_data using transformer
+                            // This ensures consistency between migration and backup imports
+                            val cleanedData = com.assistant.core.versioning.JsonTransformers.transformToolData(
+                                dataObj.toString(),
+                                "messages",
+                                13,
+                                14
+                            )
+                            database.execSQL(
+                                "UPDATE tool_data SET data = ? WHERE id = ?",
+                                arrayOf(cleanedData, templateDataId)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        errorCount++
+                        LogManager.database("MIGRATION 13->14: Failed to migrate executions for template $templateDataId: ${e.message}", "ERROR", e)
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 13->14: Completed - Migrated $migratedCount executions ($errorCount errors)", "INFO")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -283,7 +425,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_9_10,
                     MIGRATION_10_11,
                     MIGRATION_11_12,
-                    MIGRATION_12_13
+                    MIGRATION_12_13,
+                    MIGRATION_13_14
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

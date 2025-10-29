@@ -93,6 +93,7 @@ object JsonTransformers {
                 transformed = when (tooltype) {
                     "tracking" -> transformTrackingData(transformed, version)
                     "journal" -> transformJournalData(transformed, version)
+                    "messages" -> transformMessagesData(transformed, version)
                     // Add other tooltypes as needed
                     else -> transformed // No transformation for unknown tooltypes
                 }
@@ -206,6 +207,26 @@ object JsonTransformers {
         return when (version) {
             // Future migrations will be added here
             else -> json // No migrations yet
+        }
+    }
+
+    /**
+     * Transform messages tool data
+     * Handles version-specific migrations for messages data JSON
+     */
+    private fun transformMessagesData(json: JSONObject, version: Int): JSONObject {
+        return when (version) {
+            13 -> {
+                // v13→v14: Remove executions array (migrated to tool_executions table)
+                // The migration handles moving data to tool_executions table
+                // This transformer just cleans up the JSON for backups/imports
+                if (json.has("executions")) {
+                    LogManager.service("transformMessagesData v13->v14: Removing executions array", "INFO")
+                    json.remove("executions")
+                }
+                json
+            }
+            else -> json // No migrations for this version
         }
     }
 
