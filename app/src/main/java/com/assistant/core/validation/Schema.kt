@@ -45,6 +45,9 @@ enum class SchemaCategory {
     /** Tool data schemas */
     TOOL_DATA,
 
+    /** Tool execution schemas */
+    TOOL_EXECUTION,
+
     /** AI provider configuration schemas */
     AI_PROVIDER,
 

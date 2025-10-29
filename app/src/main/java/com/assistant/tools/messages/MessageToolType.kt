@@ -85,13 +85,14 @@ object MessageToolType : ToolTypeContract {
     // ========================================
 
     override fun getAllSchemaIds(): List<String> {
-        return listOf("messages_config", "messages_data")
+        return listOf("messages_config", "messages_data", "messages_execution")
     }
 
     override fun getSchema(schemaId: String, context: Context): Schema? {
         return when (schemaId) {
             "messages_config" -> createMessagesConfigSchema(context)
             "messages_data" -> createMessagesDataSchema(context)
+            "messages_execution" -> createMessagesExecutionSchema(context)
             else -> null
         }
     }
@@ -193,26 +194,6 @@ object MessageToolType : ToolTypeContract {
                         "triggers": {
                             "type": "null",
                             "description": "${s.tool("schema_data_triggers")}"
-                        },
-                        "executions": {
-                            "type": "array",
-                            "systemManaged": true,
-                            "description": "${s.tool("schema_data_executions")}",
-                            "default": [],
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "scheduled_time": {"type": "integer", "minimum": 0},
-                                    "sent_at": {"type": "integer", "minimum": 0},
-                                    "status": {"type": "string", "enum": ["pending", "sent", "failed"]},
-                                    "title_snapshot": {"type": "string"},
-                                    "content_snapshot": {"type": "string"},
-                                    "read": {"type": "boolean"},
-                                    "archived": {"type": "boolean"}
-                                },
-                                "required": ["scheduled_time", "status", "title_snapshot", "read", "archived"],
-                                "additionalProperties": false
-                            }
                         }
                     },
                     "required": ["schema_id", "priority"],
@@ -241,6 +222,98 @@ object MessageToolType : ToolTypeContract {
             displayName = s.tool("schema_data_display_name"),
             description = s.tool("schema_data_description"),
             category = SchemaCategory.TOOL_DATA,
+            content = content
+        )
+    }
+
+    /**
+     * Creates messages execution schema
+     * Extends base execution schema with Messages-specific snapshot_data, execution_result, metadata
+     *
+     * snapshot_data: Template content at execution time (title, content, priority)
+     * execution_result: Execution outcome (read, archived, notification_sent)
+     * metadata: Additional context (errors, retry count, etc.)
+     */
+    private fun createMessagesExecutionSchema(context: Context): Schema {
+        val s = Strings.`for`(tool = "messages", context = context)
+
+        val specificSchema = """
+        {
+            "properties": {
+                "snapshot_data": {
+                    "type": "object",
+                    "description": "${s.tool("schema_execution_snapshot_data")}",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.SHORT_LENGTH},
+                            "description": "Message title at execution time"
+                        },
+                        "content": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.LONG_LENGTH},
+                            "description": "Message content at execution time"
+                        },
+                        "priority": {
+                            "type": "string",
+                            "enum": ["default", "high", "low"],
+                            "description": "Priority at execution time"
+                        }
+                    },
+                    "required": ["title", "priority"],
+                    "additionalProperties": false
+                },
+                "execution_result": {
+                    "type": "object",
+                    "description": "${s.tool("schema_execution_execution_result")}",
+                    "properties": {
+                        "read": {
+                            "type": "boolean",
+                            "description": "User has read the notification"
+                        },
+                        "archived": {
+                            "type": "boolean",
+                            "description": "User has archived the notification"
+                        },
+                        "notification_sent": {
+                            "type": "boolean",
+                            "description": "System notification was sent successfully"
+                        }
+                    },
+                    "required": ["read", "archived", "notification_sent"],
+                    "additionalProperties": false
+                },
+                "metadata": {
+                    "type": "object",
+                    "description": "${s.tool("schema_execution_metadata")}",
+                    "properties": {
+                        "error": {
+                            "type": "string",
+                            "description": "Error message if execution failed"
+                        },
+                        "retry_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Number of retry attempts"
+                        }
+                    },
+                    "additionalProperties": true
+                }
+            },
+            "required": ["snapshot_data", "execution_result", "metadata"]
+        }
+        """.trimIndent()
+
+        val content = BaseSchemas.createExtendedSchema(
+            BaseSchemas.getBaseExecutionSchema(context),
+            specificSchema
+        )
+
+        return Schema(
+            id = "messages_execution",
+            displayName = s.tool("schema_execution_display_name"),
+            description = s.tool("schema_execution_description"),
+            category = SchemaCategory.TOOL_EXECUTION,
             content = content
         )
     }
@@ -399,5 +472,13 @@ object MessageToolType : ToolTypeContract {
 
     override fun getScheduler(): ToolScheduler {
         return MessageScheduler
+    }
+
+    // ========================================
+    // Execution History
+    // ========================================
+
+    override fun supportsExecutions(): Boolean {
+        return true
     }
 }
