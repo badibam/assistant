@@ -246,9 +246,10 @@ object AIOrchestrator {
      * Send user message to active session.
      *
      * Flow:
-     * 1. Store USER message in repository
-     * 2. Emit UserMessageSent event
-     * 3. Event processor handles enrichments → AI call
+     * 1. Validate message is not empty (has text or enrichments)
+     * 2. Store USER message in repository
+     * 3. Emit UserMessageSent event
+     * 4. Event processor handles enrichments → AI call
      *
      * @param richMessage User message with enrichments
      */
@@ -261,7 +262,19 @@ object AIOrchestrator {
             return
         }
 
-        // Store USER message
+        // Check if message is empty (no text and no enrichments)
+        val hasText = richMessage.linearText.trim().isNotEmpty()
+        val hasEnrichments = richMessage.segments.any { it is MessageSegment.EnrichmentBlock }
+
+        if (!hasText && !hasEnrichments) {
+            // Empty message: don't store in history, but still call AI (like implicit "continue")
+            LogManager.aiSession("sendMessage: Empty message, skipping storage but continuing sequence", "INFO")
+            // Emit UserMessageSent event to trigger AI call without storing empty message
+            eventProcessor.emit(AIEvent.UserMessageSent)
+            return
+        }
+
+        // Store USER message (non-empty)
         val userMessage = SessionMessage(
             id = java.util.UUID.randomUUID().toString(),
             timestamp = System.currentTimeMillis(),

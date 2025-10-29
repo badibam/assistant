@@ -15,21 +15,31 @@ import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
 
 /**
- * CreateAutomationDialog - Create new automation
+ * CreateAutomationDialog - Create or edit automation (name + provider)
  *
- * Flow:
+ * Flow CREATE (automation == null):
  * 1. User fills name + provider
  * 2. On confirm:
  *    - Create SEED session (empty message)
  *    - Create automation linking to SEED session
  *    - Return seedSessionId for navigation to SEED editor
  *
- * Usage: ZoneScreen automation section "Add" button
+ * Flow EDIT (automation != null):
+ * 1. Pre-fill name + provider from existing automation
+ * 2. On confirm:
+ *    - Update automation name + provider
+ *    - Update SEED session provider if changed
+ *    - Return existing seedSessionId
+ *
+ * Usage:
+ * - CREATE: ZoneScreen automation section "Add" button
+ * - EDIT: AIScreen SeedMode "Configure" button
  */
 @Composable
 fun CreateAutomationDialog(
     zoneId: String,
     zoneName: String,
+    automation: Map<String, Any>? = null,  // null = CREATE mode, not null = EDIT mode
     onDismiss: () -> Unit,
     onSuccess: (seedSessionId: String) -> Unit
 ) {
@@ -38,9 +48,21 @@ fun CreateAutomationDialog(
     val scope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
 
-    // Form states
-    var name by remember { mutableStateOf("") }
-    var selectedProvider by remember { mutableStateOf<String?>(null) }
+    val isEditMode = automation != null
+
+    // Form states - initialize with existing values in EDIT mode
+    var name by remember {
+        mutableStateOf(
+            if (isEditMode) automation?.get("name") as? String ?: ""
+            else ""
+        )
+    }
+    var selectedProvider by remember {
+        mutableStateOf(
+            if (isEditMode) automation?.get("provider_id") as? String
+            else null
+        )
+    }
 
     // Available providers
     var providers by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
@@ -77,7 +99,7 @@ fun CreateAutomationDialog(
     }
 
     UI.Dialog(
-        type = DialogType.CREATE,
+        type = if (isEditMode) DialogType.EDIT else DialogType.CREATE,
         onConfirm = {
             if (name.isBlank()) {
                 errorMessage = s.shared("ai_error_param_name_required")
@@ -92,59 +114,109 @@ fun CreateAutomationDialog(
                 try {
                     isCreating = true
 
-                    // Step 1: Create SEED session
-                    val sessionName = "$name (${zoneName})"
-                    val createSessionResult = coordinator.processUserAction(
-                        "ai_sessions.create_session",
-                        mapOf(
-                            "name" to sessionName,
-                            "type" to "SEED",
-                            "providerId" to selectedProvider!!
+                    if (isEditMode) {
+                        // EDIT MODE: Update existing automation
+                        val automationId = automation?.get("id") as? String
+                        val seedSessionId = automation?.get("seed_session_id") as? String
+                        val currentProviderId = automation?.get("provider_id") as? String
+
+                        if (automationId == null || seedSessionId == null) {
+                            errorMessage = s.shared("error_automation_not_found")
+                            LogManager.aiUI("Invalid automation data for edit", "ERROR")
+                            return@launch
+                        }
+
+                        // Update automation (name + provider)
+                        val updateResult = coordinator.processUserAction(
+                            "automations.update",
+                            mapOf(
+                                "automation_id" to automationId,
+                                "name" to name,
+                                "provider_id" to selectedProvider!!
+                            )
                         )
-                    )
 
-                    if (createSessionResult.status != CommandStatus.SUCCESS) {
-                        errorMessage = createSessionResult.error ?: s.shared("ai_error_create_session").format("")
-                        LogManager.aiUI("Failed to create SEED session: ${createSessionResult.error}", "ERROR")
-                        return@launch
-                    }
+                        if (updateResult.status != CommandStatus.SUCCESS) {
+                            errorMessage = updateResult.error ?: s.shared("error_automation_update_failed")
+                            LogManager.aiUI("Failed to update automation: ${updateResult.error}", "ERROR")
+                            return@launch
+                        }
 
-                    val seedSessionId = createSessionResult.data?.get("sessionId") as? String
-                    if (seedSessionId == null) {
-                        errorMessage = s.shared("ai_error_create_session").format("No session ID returned")
-                        LogManager.aiUI("No session ID returned from create", "ERROR")
-                        return@launch
-                    }
+                        // If provider changed, update SEED session provider
+                        if (selectedProvider != currentProviderId) {
+                            val updateSessionResult = coordinator.processUserAction(
+                                "ai_sessions.update_session",
+                                mapOf(
+                                    "sessionId" to seedSessionId,
+                                    "providerId" to selectedProvider!!
+                                )
+                            )
 
-                    LogManager.aiUI("Created SEED session: $seedSessionId", "DEBUG")
+                            if (updateSessionResult.status != CommandStatus.SUCCESS) {
+                                LogManager.aiUI("Failed to update session provider: ${updateSessionResult.error}", "WARNING")
+                                // Continue anyway - automation is updated
+                            }
+                        }
 
-                    // Step 2: Create automation
-                    val createAutomationResult = coordinator.processUserAction(
-                        "automations.create",
-                        mapOf(
-                            "name" to name,
-                            "zone_id" to zoneId,
-                            "seed_session_id" to seedSessionId,
-                            "provider_id" to selectedProvider!!,
-                            "is_enabled" to true
+                        LogManager.aiUI("Updated automation: $automationId", "INFO")
+                        onSuccess(seedSessionId)
+
+                    } else {
+                        // CREATE MODE: Original logic
+                        // Step 1: Create SEED session
+                        val sessionName = "$name (${zoneName})"
+                        val createSessionResult = coordinator.processUserAction(
+                            "ai_sessions.create_session",
+                            mapOf(
+                                "name" to sessionName,
+                                "type" to "SEED",
+                                "providerId" to selectedProvider!!
+                            )
                         )
-                    )
 
-                    if (createAutomationResult.status != CommandStatus.SUCCESS) {
-                        errorMessage = createAutomationResult.error ?: s.shared("service_error_automation").format("")
-                        LogManager.aiUI("Failed to create automation: ${createAutomationResult.error}", "ERROR")
-                        // TODO: Cleanup SEED session if automation creation fails
-                        return@launch
+                        if (createSessionResult.status != CommandStatus.SUCCESS) {
+                            errorMessage = createSessionResult.error ?: s.shared("ai_error_create_session").format("")
+                            LogManager.aiUI("Failed to create SEED session: ${createSessionResult.error}", "ERROR")
+                            return@launch
+                        }
+
+                        val seedSessionId = createSessionResult.data?.get("sessionId") as? String
+                        if (seedSessionId == null) {
+                            errorMessage = s.shared("ai_error_create_session").format("No session ID returned")
+                            LogManager.aiUI("No session ID returned from create", "ERROR")
+                            return@launch
+                        }
+
+                        LogManager.aiUI("Created SEED session: $seedSessionId", "DEBUG")
+
+                        // Step 2: Create automation
+                        val createAutomationResult = coordinator.processUserAction(
+                            "automations.create",
+                            mapOf(
+                                "name" to name,
+                                "zone_id" to zoneId,
+                                "seed_session_id" to seedSessionId,
+                                "provider_id" to selectedProvider!!,
+                                "is_enabled" to true
+                            )
+                        )
+
+                        if (createAutomationResult.status != CommandStatus.SUCCESS) {
+                            errorMessage = createAutomationResult.error ?: s.shared("service_error_automation").format("")
+                            LogManager.aiUI("Failed to create automation: ${createAutomationResult.error}", "ERROR")
+                            // TODO: Cleanup SEED session if automation creation fails
+                            return@launch
+                        }
+
+                        val automationId = createAutomationResult.data?.get("automation_id") as? String
+                        LogManager.aiUI("Created automation: $automationId", "INFO")
+
+                        // Success - navigate to SEED editor
+                        onSuccess(seedSessionId)
                     }
-
-                    val automationId = createAutomationResult.data?.get("automation_id") as? String
-                    LogManager.aiUI("Created automation: $automationId", "INFO")
-
-                    // Success - navigate to SEED editor
-                    onSuccess(seedSessionId)
                 } catch (e: Exception) {
                     errorMessage = s.shared("service_error_automation").format(e.message ?: "")
-                    LogManager.aiUI("Exception creating automation: ${e.message}", "ERROR", e)
+                    LogManager.aiUI("Exception ${if (isEditMode) "updating" else "creating"} automation: ${e.message}", "ERROR", e)
                 } finally {
                     isCreating = false
                 }
@@ -159,9 +231,12 @@ fun CreateAutomationDialog(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
+            // Title (changes based on mode)
             UI.Text(
-                text = s.shared("action_create") + " " + s.shared("automation_display_name"),
+                text = if (isEditMode)
+                    s.shared("action_edit") + " " + s.shared("automation_display_name")
+                else
+                    s.shared("action_create") + " " + s.shared("automation_display_name"),
                 type = TextType.TITLE
             )
 
@@ -208,9 +283,12 @@ fun CreateAutomationDialog(
                 )
             }
 
-            // Info text
+            // Info text (changes based on mode)
             UI.Text(
-                text = "Après création, vous pourrez configurer le message et l'horaire de l'automation.",
+                text = if (isEditMode)
+                    "Modification du nom et du fournisseur de l'automation."
+                else
+                    "Après création, vous pourrez configurer le message et l'horaire de l'automation.",
                 type = TextType.CAPTION
             )
 

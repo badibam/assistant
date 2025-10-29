@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.enrichments.EnrichmentProcessor
@@ -136,6 +137,7 @@ fun UI.RichComposer(
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val maxBlocksHeight = screenHeight / 3
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     // Convert segments to blocks for editing (initialize once, then manage locally)
     var blocks by remember {
@@ -196,6 +198,9 @@ fun UI.RichComposer(
                         size = Size.M,
                         state = if (enabled) ComponentState.NORMAL else ComponentState.DISABLED,
                         onClick = {
+                            // Hide keyboard when sending message
+                            keyboardController?.hide()
+
                             LogManager.aiEnrichment("RichComposer Send button clicked with ${blocks.size} blocks")
                             val richMessage = createRichMessage(context, blocksToSegments(blocks), sessionType)
                             LogManager.aiEnrichment("Calling onSend with RichMessage: linearText='${richMessage.linearText}', ${richMessage.dataCommands.size} commands")
@@ -490,6 +495,7 @@ private fun TextBlockCard(
 
 /**
  * Preview component for enrichment blocks
+ * Layout ensures buttons stay visible even with long preview text
  */
 @Composable
 private fun EnrichmentBlockPreview(
@@ -502,10 +508,14 @@ private fun EnrichmentBlockPreview(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Text section with icon - compressible to make room for buttons
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.weight(1f, fill = false),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 UI.Text(
                     text = getEnrichmentIcon(block.type),
@@ -517,6 +527,7 @@ private fun EnrichmentBlockPreview(
                 )
             }
 
+            // Buttons section - fixed size, always visible
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {

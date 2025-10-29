@@ -610,6 +610,7 @@
     <string name="shared_message_available_tool_types">Types d\'outils disponibles</string>
     <string name="shared_message_no_tools_in_zone">Aucun outil dans cette zone</string>
     <string name="shared_error_tooltype_not_found">Type d\'outil \'%1$s\' introuvable</string>
+    <string name="shared_message_copied">Message copié</string>
     <string name="shared_confirm_action">Confirmer cette action ?</string>
     <string name="shared_confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="shared_confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
@@ -1009,6 +1010,12 @@
     <string name="shared_error_automation_not_found">Automatisation introuvable</string>
     <string name="shared_error_automation_load_failed">Échec du chargement de l\'automatisation</string>
     <string name="shared_error_param_automation_id_required">ID automatisation requis</string>
+    <string name="shared_error_automation_update_failed">Échec de la mise à jour de l\'automatisation</string>
+    <string name="shared_error_automation_delete_failed">Échec de la suppression de l\'automatisation</string>
+    <string name="shared_automation_updated_success">Automatisation mise à jour</string>
+    <string name="shared_automation_deleted_success">Automatisation supprimée</string>
+    <string name="shared_automation_delete_confirm_title">Supprimer l\'automatisation ?</string>
+    <string name="shared_automation_delete_confirm_message">Cette action est irréversible. L\'automatisation et sa session SEED seront définitivement supprimées.</string>
     <string name="shared_error_param_seed_session_required">ID session SEED requis</string>
     <string name="shared_error_param_zone_id_required">ID zone requis</string>
     <string name="shared_error_param_icon_required">Icône requise</string>

@@ -1,5 +1,9 @@
 package com.assistant.core.ai.ui.chat
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.*
@@ -24,15 +28,40 @@ import kotlinx.coroutines.launch
  * Individual message bubble - themed UI.MessageBubble
  *
  * V2: Uses aiState.waitingContext for inline validation/communication display
+ * Click on message copies content to clipboard
+ *
+ * @param previousAIMessage Optional previous AI message for displaying communication module question with response
  */
 @Composable
 fun ChatMessageBubble(
     message: SessionMessage,
     aiState: com.assistant.core.ai.domain.AIState,
-    isLastAIMessage: Boolean = false
+    isLastAIMessage: Boolean = false,
+    previousAIMessage: SessionMessage? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+
+    // Extract text content for clipboard copy
+    val textToCopy = remember(message) {
+        when {
+            message.richContent != null -> message.richContent.toDisplayText()
+            message.textContent != null -> message.textContent
+            message.aiMessage != null -> message.aiMessage.preText
+            message.systemMessage != null -> message.systemMessage.summary
+            else -> ""
+        }
+    }
+
+    // Copy to clipboard handler
+    val onMessageClick = {
+        if (textToCopy.isNotEmpty()) {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("AI Message", textToCopy)
+            clipboard.setPrimaryClip(clip)
+            UI.Toast(context, s.shared("message_copied"), Duration.SHORT)
+        }
+    }
 
     // Preserve original alignment logic
     val alignment = when (message.sender) {
@@ -46,135 +75,162 @@ fun ChatMessageBubble(
         contentAlignment = alignment
     ) {
         // Delegate to themed MessageBubble for appearance
-        UI.MessageBubble(sender = message.sender) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Sender indicator
-                UI.Text(
-                    text = when (message.sender) {
-                        MessageSender.USER -> s.shared("ai_sender_user")
-                        MessageSender.AI -> s.shared("ai_sender_ai")
-                        MessageSender.SYSTEM -> s.shared("ai_sender_system")
-                    },
-                    type = TextType.LABEL
-                )
+        // Add clickable modifier for copy functionality
+        Box(modifier = Modifier.clickable { onMessageClick() }) {
+            UI.MessageBubble(sender = message.sender) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Sender indicator
+                    UI.Text(
+                        text = when (message.sender) {
+                            MessageSender.USER -> s.shared("ai_sender_user")
+                            MessageSender.AI -> s.shared("ai_sender_ai")
+                            MessageSender.SYSTEM -> s.shared("ai_sender_system")
+                        },
+                        type = TextType.LABEL
+                    )
 
-                // Message content
-                when {
-                    message.richContent != null -> {
-                        // Rich message with segments (use UI-friendly version without IDs)
-                        UI.Text(
-                            text = message.richContent.toDisplayText(),
-                            type = TextType.BODY
-                        )
-                    }
-                    message.textContent != null -> {
-                        UI.Text(
-                            text = message.textContent,
-                            type = TextType.BODY
-                        )
-                    }
-                    message.aiMessage != null -> {
-                        // AI message with preText
-                        UI.Text(
-                            text = message.aiMessage.preText,
-                            type = TextType.BODY
-                        )
+                    // Message content
+                    when {
+                        message.richContent != null -> {
+                            // Rich message with segments (use UI-friendly version without IDs)
+                            UI.Text(
+                                text = message.richContent.toDisplayText(),
+                                type = TextType.BODY
+                            )
+                        }
+                        message.textContent != null -> {
+                            // Check if this is a communication module response
+                            val responsePrefix = s.shared("ai_module_response_prefix")
+                            val isCommunicationResponse = message.sender == MessageSender.SYSTEM &&
+                                message.textContent.startsWith(responsePrefix)
 
-                        // Communication module (inline, only on last AI message)
-                        message.aiMessage.communicationModule?.let { module ->
-                            val shouldShow = isLastAIMessage &&
-                                aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Communication
+                            // If it's a response and we have the question from previous AI message, show it
+                            if (isCommunicationResponse && previousAIMessage?.aiMessage?.communicationModule != null) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    // Show question from communication module
+                                    UI.Text(
+                                        text = previousAIMessage.aiMessage.communicationModule.toText(context),
+                                        type = TextType.BODY
+                                    )
+                                    // Show separator
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    // Show response
+                                    UI.Text(
+                                        text = message.textContent,
+                                        type = TextType.BODY
+                                    )
+                                }
+                            } else {
+                                // Normal text content
+                                UI.Text(
+                                    text = message.textContent,
+                                    type = TextType.BODY
+                                )
+                            }
+                        }
+                        message.aiMessage != null -> {
+                            // AI message with preText
+                            UI.Text(
+                                text = message.aiMessage.preText,
+                                type = TextType.BODY
+                            )
 
-                            if (shouldShow) {
+                            // Communication module (inline, only on last AI message)
+                            message.aiMessage.communicationModule?.let { module ->
+                                val shouldShow = isLastAIMessage &&
+                                    aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Communication
+
+                                if (shouldShow) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    com.assistant.core.ai.ui.components.CommunicationModuleCard(
+                                        module = module,
+                                        onResponse = { response ->
+                                            AIOrchestrator.resumeWithResponse(response)
+                                        },
+                                        onCancel = {
+                                            AIOrchestrator.cancelCommunication()
+                                        }
+                                    )
+                                }
+                            }
+
+                            // Validation UI (inline, only on last AI message)
+                            if (isLastAIMessage && aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Validation) {
+                                val validationCtx = aiState.waitingContext as com.assistant.core.ai.domain.WaitingContext.Validation
                                 Spacer(modifier = Modifier.height(8.dp))
-                                com.assistant.core.ai.ui.components.CommunicationModuleCard(
-                                    module = module,
-                                    onResponse = { response ->
-                                        AIOrchestrator.resumeWithResponse(response)
+                                com.assistant.core.ai.ui.ValidationUI(
+                                    context = validationCtx.validationContext,
+                                    onValidate = {
+                                        AIOrchestrator.resumeWithValidation(true)
                                     },
-                                    onCancel = {
-                                        AIOrchestrator.cancelCommunication()
+                                    onRefuse = {
+                                        AIOrchestrator.resumeWithValidation(false)
                                     }
                                 )
                             }
                         }
+                        message.systemMessage != null -> {
+                            // System message: show summary + command details
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Summary
+                                UI.Text(
+                                    text = message.systemMessage.summary,
+                                    type = TextType.BODY
+                                )
 
-                        // Validation UI (inline, only on last AI message)
-                        if (isLastAIMessage && aiState.waitingContext is com.assistant.core.ai.domain.WaitingContext.Validation) {
-                            val validationCtx = aiState.waitingContext as com.assistant.core.ai.domain.WaitingContext.Validation
-                            Spacer(modifier = Modifier.height(8.dp))
-                            com.assistant.core.ai.ui.ValidationUI(
-                                context = validationCtx.validationContext,
-                                onValidate = {
-                                    AIOrchestrator.resumeWithValidation(true)
-                                },
-                                onRefuse = {
-                                    AIOrchestrator.resumeWithValidation(false)
-                                }
-                            )
-                        }
-                    }
-                    message.systemMessage != null -> {
-                        // System message: show summary + command details
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Summary
-                            UI.Text(
-                                text = message.systemMessage.summary,
-                                type = TextType.BODY
-                            )
+                                // Command results details (if present)
+                                if (message.systemMessage.commandResults.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(4.dp))
 
-                            // Command results details (if present)
-                            if (message.systemMessage.commandResults.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                message.systemMessage.commandResults.forEach { commandResult ->
-                                    UI.Card(type = CardType.DEFAULT) {
-                                        Column(
-                                            modifier = Modifier.padding(8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            // Status icon + details
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.Top
+                                    message.systemMessage.commandResults.forEach { commandResult ->
+                                        UI.Card(type = CardType.DEFAULT) {
+                                            Column(
+                                                modifier = Modifier.padding(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
-                                                UI.Text(
-                                                    text = if (commandResult.status == CommandStatus.SUCCESS) "✓" else "✗",
-                                                    type = TextType.BODY
-                                                )
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    // Verbalized description
-                                                    commandResult.details?.let {
-                                                        UI.Text(
-                                                            text = it,
-                                                            type = TextType.BODY
-                                                        )
-                                                    }
+                                                // Status icon + details
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.Top
+                                                ) {
+                                                    UI.Text(
+                                                        text = if (commandResult.status == CommandStatus.SUCCESS) "✓" else "✗",
+                                                        type = TextType.BODY
+                                                    )
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        // Verbalized description
+                                                        commandResult.details?.let {
+                                                            UI.Text(
+                                                                text = it,
+                                                                type = TextType.BODY
+                                                            )
+                                                        }
 
-                                                    // Data (only for action commands)
-                                                    // Query data is filtered and not displayed (already in formattedData)
-                                                    if (commandResult.isActionCommand) {
-                                                        commandResult.data?.let { data ->
-                                                            if (data.isNotEmpty()) {
-                                                                val dataText = data.entries.joinToString(", ") { (k, v) ->
-                                                                    "$k: $v"
+                                                        // Data (only for action commands)
+                                                        // Query data is filtered and not displayed (already in formattedData)
+                                                        if (commandResult.isActionCommand) {
+                                                            commandResult.data?.let { data ->
+                                                                if (data.isNotEmpty()) {
+                                                                    val dataText = data.entries.joinToString(", ") { (k, v) ->
+                                                                        "$k: $v"
+                                                                    }
+                                                                    UI.Text(
+                                                                        text = dataText,
+                                                                        type = TextType.CAPTION
+                                                                    )
                                                                 }
-                                                                UI.Text(
-                                                                    text = dataText,
-                                                                    type = TextType.CAPTION
-                                                                )
                                                             }
                                                         }
-                                                    }
 
-                                                    // Error (if failed)
-                                                    commandResult.error?.let { error ->
-                                                        UI.Text(
-                                                            text = s.shared("ai_error_label").format(error),
-                                                            type = TextType.CAPTION
-                                                        )
+                                                        // Error (if failed)
+                                                        commandResult.error?.let { error ->
+                                                            UI.Text(
+                                                                text = s.shared("ai_error_label").format(error),
+                                                                type = TextType.CAPTION
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }

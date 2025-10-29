@@ -386,6 +386,8 @@ private fun SeedMode(
     // Dialogs
     var showScheduleEditor by remember { mutableStateOf(false) }
     var showTriggersEditor by remember { mutableStateOf(false) }
+    var showEditAutomation by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     // Load automation on mount
     LaunchedEffect(session.id) {
@@ -476,7 +478,8 @@ private fun SeedMode(
             SeedHeader(
                 session = session,
                 onClose = onClose,
-                onConfigureAutomation = { }
+                onConfigureAutomation = { },
+                onDeleteAutomation = { }
             )
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -499,7 +502,8 @@ private fun SeedMode(
             SeedHeader(
                 session = session,
                 onClose = onClose,
-                onConfigureAutomation = { }
+                onConfigureAutomation = { },
+                onDeleteAutomation = { }
             )
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -560,6 +564,109 @@ private fun SeedMode(
         }
     }
 
+    // Edit automation dialog
+    if (showEditAutomation) {
+        automation?.let { currentAutomation ->
+            com.assistant.core.ai.ui.automation.CreateAutomationDialog(
+                zoneId = currentAutomation.zoneId,
+                zoneName = "",  // Not used in EDIT mode
+                automation = mapOf(
+                    "id" to currentAutomation.id,
+                    "name" to currentAutomation.name,
+                    "provider_id" to currentAutomation.providerId,
+                    "seed_session_id" to currentAutomation.seedSessionId
+                ),
+                onDismiss = { showEditAutomation = false },
+                onSuccess = { _ ->
+                    showEditAutomation = false
+                // Reload automation data
+                scope.launch {
+                    try {
+                        val result = coordinator.processUserAction(
+                            "automations.get_by_seed_session",
+                            mapOf("seed_session_id" to session.id)
+                        )
+
+                        if (result.status == CommandStatus.SUCCESS) {
+                            @Suppress("UNCHECKED_CAST")
+                            val automationMap = result.data?.get("automation") as? Map<String, Any>
+                            if (automationMap != null) {
+                                val scheduleJson = automationMap["schedule"] as? String
+                                automation = Automation(
+                                    id = automationMap["id"] as String,
+                                    name = automationMap["name"] as String,
+                                    zoneId = automationMap["zone_id"] as String,
+                                    seedSessionId = automationMap["seed_session_id"] as String,
+                                    schedule = scheduleJson?.let {
+                                        kotlinx.serialization.json.Json.decodeFromString(it)
+                                    },
+                                    triggerIds = (automationMap["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                                    dismissOlderInstances = automationMap["dismiss_older_instances"] as? Boolean ?: false,
+                                    providerId = automationMap["provider_id"] as String,
+                                    isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
+                                    createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
+                                    lastExecutionId = automationMap["last_execution_id"] as? String,
+                                    executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                                )
+                                UI.Toast(context, s.shared("automation_updated_success"), Duration.SHORT)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        LogManager.aiUI("Failed to reload automation after edit: ${e.message}", "ERROR", e)
+                    }
+                }
+            }
+            )
+        }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        automation?.let { currentAutomation ->
+        UI.Dialog(
+            type = DialogType.CONFIRM,
+            onConfirm = {
+                showDeleteConfirmation = false
+                scope.launch {
+                    try {
+                        if (currentAutomation != null) {
+                            val result = coordinator.processUserAction(
+                                "automations.delete",
+                                mapOf("automation_id" to currentAutomation.id)
+                            )
+
+                            if (result.status == CommandStatus.SUCCESS) {
+                                UI.Toast(context, s.shared("automation_deleted_success"), Duration.SHORT)
+                                onClose()  // Return to zone screen
+                            } else {
+                                errorMessage = result.error ?: s.shared("error_automation_delete_failed")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = s.shared("error_automation_delete_failed")
+                        LogManager.aiUI("Failed to delete automation: ${e.message}", "ERROR", e)
+                    }
+                }
+            },
+            onCancel = { showDeleteConfirmation = false }
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("automation_delete_confirm_title"),
+                    type = TextType.TITLE
+                )
+                UI.Text(
+                    text = s.shared("automation_delete_confirm_message"),
+                    type = TextType.BODY
+                )
+            }
+        }
+        }
+    }
+
     // Main editor
     Column(
         modifier = Modifier.fillMaxSize()
@@ -569,7 +676,10 @@ private fun SeedMode(
             session = session,
             onClose = onClose,
             onConfigureAutomation = {
-                // TODO: Open general automation config (name, provider, etc.)
+                showEditAutomation = true
+            },
+            onDeleteAutomation = {
+                showDeleteConfirmation = true
             }
         )
 
@@ -1073,13 +1183,14 @@ private fun ChatHeader(
 }
 
 /**
- * Seed header - Automation name and config button
+ * Seed header - Automation name with edit/delete/close buttons
  */
 @Composable
 private fun SeedHeader(
     session: AISession,
     onClose: () -> Unit,
-    onConfigureAutomation: () -> Unit
+    onConfigureAutomation: () -> Unit,
+    onDeleteAutomation: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -1097,7 +1208,15 @@ private fun SeedHeader(
             )
         }
 
-        // Config button
+        // Delete button
+        UI.ActionButton(
+            action = ButtonAction.DELETE,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = onDeleteAutomation
+        )
+
+        // Config button (edit name + provider)
         UI.ActionButton(
             action = ButtonAction.CONFIGURE,
             display = ButtonDisplay.ICON,
@@ -1243,10 +1362,20 @@ fun ChatMessageList(
             }
         } else {
             itemsIndexed(messages) { index, message ->
+                // Find previous AI message with communication module for response messages
+                val previousAIMessage = if (message.sender == MessageSender.SYSTEM &&
+                    message.textContent?.startsWith(s.shared("ai_module_response_prefix")) == true) {
+                    // Look backwards for the last AI message with a communication module
+                    messages.subList(0, index).lastOrNull {
+                        it.sender == MessageSender.AI && it.aiMessage?.communicationModule != null
+                    }
+                } else null
+
                 com.assistant.core.ai.ui.chat.ChatMessageBubble(
                     message = message,
                     aiState = aiState,
-                    isLastAIMessage = index == lastAIMessageIndex
+                    isLastAIMessage = index == lastAIMessageIndex,
+                    previousAIMessage = previousAIMessage
                 )
             }
 
