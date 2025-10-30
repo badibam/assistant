@@ -23,6 +23,7 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.ScheduleConfig
+import com.assistant.core.utils.DateUtils
 import com.assistant.tools.messages.ui.components.EditMessageDialog
 import com.assistant.tools.messages.ui.components.MessageDialogData
 import kotlinx.coroutines.launch
@@ -32,18 +33,18 @@ import java.util.*
 
 /**
  * Data class for execution entries (messages received)
+ * Updated for tool_executions table format
  */
 data class ExecutionEntry(
-    val messageId: String,
-    val messageTitle: String,
-    val executionIndex: Int,
-    val scheduledTime: Long,
-    val sentAt: Long?,
-    val status: String,
-    val titleSnapshot: String,
-    val contentSnapshot: String?,
-    val read: Boolean,
-    val archived: Boolean
+    val executionId: String,           // ID from tool_executions table
+    val templateDataId: String,        // ID of the message template
+    val scheduledTime: Long,           // When it was scheduled
+    val executionTime: Long,           // When it was actually executed
+    val status: String,                // "pending", "completed", "failed"
+    val titleSnapshot: String,         // Title at execution time
+    val contentSnapshot: String?,      // Content at execution time
+    val read: Boolean,                 // Read status from executionResult
+    val archived: Boolean              // Archived status from executionResult
 )
 
 /**
@@ -305,7 +306,7 @@ private fun ReceivedMessagesTab(
         }
 
         // Remove duplicates (can happen if unread+archived both checked)
-        executions = allExecutions.distinctBy { "${it.messageId}_${it.executionIndex}" }
+        executions = allExecutions.distinctBy { it.executionId }
 
         isLoadingExecutions = false
         LogManager.ui("Loaded ${executions.size} executions with filters: unread=$filterUnread, read=$filterRead, archived=$filterArchived")
@@ -409,10 +410,13 @@ private fun ExecutionCard(
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "messages", context = context) }
 
-    // Format date/time
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()) }
-    val sentAtFormatted = remember(execution.sentAt) {
-        execution.sentAt?.let { dateFormat.format(Date(it)) } ?: s.tool("status_pending")
+    // Format date/time using app's internal system
+    val sentAtFormatted = remember(execution.executionTime) {
+        if (execution.status == "completed") {
+            DateUtils.formatTimeForDisplay(execution.executionTime)
+        } else {
+            ""
+        }
     }
 
     UI.Card(type = CardType.DEFAULT) {
@@ -434,6 +438,7 @@ private fun ExecutionCard(
                         val statusText = when (execution.status) {
                             "pending" -> s.tool("status_pending")
                             "failed" -> s.tool("status_failed")
+                            "completed" -> s.tool("status_sent")
                             else -> execution.status
                         }
                         UI.Text(statusText, TextType.CAPTION)
@@ -509,7 +514,7 @@ private fun ManageMessagesTab(
     var showMessageDialog by rememberSaveable { mutableStateOf(false) }
     var editingMessageId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // Load message templates
+    // Load message templates with execution counts
     LaunchedEffect(toolInstanceId, refreshTrigger) {
         isLoadingTemplates = true
 
@@ -525,7 +530,8 @@ private fun ManageMessagesTab(
             val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
             LogManager.ui("Received ${entriesData.size} raw entries from tool_data.get", "DEBUG")
 
-            templates = entriesData.mapNotNull { entry ->
+            // First load all templates
+            val loadedTemplates = entriesData.mapNotNull { entry ->
                 try {
                     val parsed = parseMessageTemplate(entry as? Map<*, *>)
                     if (parsed == null) {
@@ -536,9 +542,16 @@ private fun ManageMessagesTab(
                     LogManager.ui("Error parsing message template: ${e.message}", "ERROR", e)
                     null
                 }
+            }
+
+            // Then fetch execution counts for each template
+            templates = loadedTemplates.map { template ->
+                // Get execution count for this template
+                val executionCount = getExecutionCountForTemplate(coordinator, toolInstanceId, template.id)
+                template.copy(executionCount = executionCount)
             }.sortedBy { it.title }
 
-            LogManager.ui("Loaded ${templates.size} message templates", "INFO")
+            LogManager.ui("Loaded ${templates.size} message templates with execution counts", "INFO")
         } else {
             LogManager.ui("Failed to load templates: ${result?.error}", "ERROR")
             templates = emptyList()
@@ -751,32 +764,43 @@ private fun TemplateCard(
 // ============================================================================
 
 /**
- * Parse execution entries from get_history result
+ * Parse execution entries from tool_executions.get result
  */
 private fun parseExecutionEntries(data: List<*>?): List<ExecutionEntry> {
     if (data == null) return emptyList()
 
     return data.mapNotNull { item ->
         try {
-            val map = item as? Map<*, *> ?: return@mapNotNull null
-            val messageId = map["messageId"] as? String ?: return@mapNotNull null
-            val messageTitle = map["messageTitle"] as? String ?: return@mapNotNull null
-            val executionIndex = (map["executionIndex"] as? Number)?.toInt() ?: return@mapNotNull null
-            val execution = map["execution"] as? Map<*, *> ?: return@mapNotNull null
+            val execution = item as? Map<*, *> ?: return@mapNotNull null
 
-            val scheduledTime = (execution["scheduled_time"] as? Number)?.toLong() ?: return@mapNotNull null
-            val sentAt = (execution["sent_at"] as? Number)?.toLong()
+            val executionId = execution["id"] as? String ?: return@mapNotNull null
+            val templateDataId = execution["templateDataId"] as? String ?: return@mapNotNull null
+            val scheduledTime = (execution["scheduledTime"] as? Number)?.toLong() ?: return@mapNotNull null
+            val executionTime = (execution["executionTime"] as? Number)?.toLong() ?: return@mapNotNull null
             val status = execution["status"] as? String ?: "pending"
-            val titleSnapshot = execution["title_snapshot"] as? String ?: ""
-            val contentSnapshot = execution["content_snapshot"] as? String?
-            val read = execution["read"] as? Boolean ?: false
-            val archived = execution["archived"] as? Boolean ?: false
+
+            // Parse snapshotData JSON
+            val snapshotDataStr = execution["snapshotData"] as? String ?: "{}"
+            val snapshotData = JSONObject(snapshotDataStr)
+            val titleSnapshot = snapshotData.optString("title", "")
+            val contentSnapshot = snapshotData.optString("content", null)
+
+            // Parse executionResult JSON for read/archived flags
+            val executionResultStr = execution["executionResult"] as? String ?: "{}"
+            val executionResult = JSONObject(executionResultStr)
+            val read = executionResult.optBoolean("read", false)
+            val archived = executionResult.optBoolean("archived", false)
 
             ExecutionEntry(
-                messageId, messageTitle, executionIndex,
-                scheduledTime, sentAt, status,
-                titleSnapshot, contentSnapshot,
-                read, archived
+                executionId = executionId,
+                templateDataId = templateDataId,
+                scheduledTime = scheduledTime,
+                executionTime = executionTime,
+                status = status,
+                titleSnapshot = titleSnapshot,
+                contentSnapshot = contentSnapshot,
+                read = read,
+                archived = archived
             )
         } catch (e: Exception) {
             LogManager.ui("Error parsing execution entry: ${e.message}", "ERROR")
@@ -835,13 +859,9 @@ private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
             }
         }
 
-        // Count executions
-        val executionsData = parsedData["executions"]
-        val executionCount = when (executionsData) {
-            is List<*> -> executionsData.size
-            is org.json.JSONArray -> executionsData.length()
-            else -> 0
-        }
+        // Count executions - we'll need to fetch this from tool_executions service
+        // For now, set to 0 since executions are now in separate table
+        val executionCount = 0
 
         return MessageTemplate(id, title, content, schedule, priority, executionCount)
     } catch (e: Exception) {
@@ -876,8 +896,7 @@ private suspend fun toggleExecutionRead(
     onError: (String) -> Unit
 ) {
     val params = mapOf(
-        "message_id" to execution.messageId,
-        "execution_index" to execution.executionIndex,
+        "execution_id" to execution.executionId,
         "read" to !execution.read
     )
 
@@ -896,8 +915,7 @@ private suspend fun toggleExecutionArchived(
     onError: (String) -> Unit
 ) {
     val params = mapOf(
-        "message_id" to execution.messageId,
-        "execution_index" to execution.executionIndex,
+        "execution_id" to execution.executionId,
         "archived" to !execution.archived
     )
 
@@ -1007,6 +1025,31 @@ private suspend fun updateMessage(
     } else {
         onError(result?.error ?: "Failed to update message")
     }
+}
+
+/**
+ * Get execution count for a specific message template
+ */
+private suspend fun getExecutionCountForTemplate(
+    coordinator: Coordinator,
+    toolInstanceId: String,
+    templateDataId: String
+): Int {
+    try {
+        val params = mapOf(
+            "toolInstanceId" to toolInstanceId,
+            "templateDataId" to templateDataId
+        )
+        val result = coordinator.processUserAction("tool_executions.get", params)
+        if (result?.isSuccess == true) {
+            @Suppress("UNCHECKED_CAST")
+            val executions = result.data?.get("executions") as? List<Map<String, Any>> ?: emptyList()
+            return executions.size
+        }
+    } catch (e: Exception) {
+        LogManager.ui("Error getting execution count for template $templateDataId: ${e.message}", "ERROR")
+    }
+    return 0
 }
 
 /**
