@@ -88,6 +88,13 @@ override fun enrichData(data: Map<String, Any>, context: Context): Map<String, A
 
 **Usage** : Unifié UI + IA, logique pré-persistence sans interception manuelle.
 
+### supportsExecutions Pattern
+**Principe** : Outils avec historique d'exécutions (Messages, Goals, Alerts...) implémentent `supportsExecutions() = true`.
+
+**Infrastructure** : Table `tool_executions` centralise l'historique (template_data_id, execution_time, snapshot_data, execution_result). Schéma execution défini par `createXxxExecutionSchema()` (structure snapshot_data + execution_result + metadata).
+
+**UI** : EXECUTIONS context disponible dans ZoneScopeSelector pour enrichments POINTER. Service `tool_executions.*` gère CRUD historique.
+
 ### Enregistrement
 Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 
@@ -197,6 +204,8 @@ val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
 - **display_mode** : Mode d'affichage (ICON/MINIMAL/LINE/etc.)
 - **validateConfig** : Boolean - Requiert validation utilisateur avant modification configuration (default: false)
 - **validateData** : Boolean - Requiert validation utilisateur avant modification données (default: false)
+
+**IMPORTANT** : `schema_id` et `data_schema_id` sont des champs de configuration uniquement. Ne jamais les inclure dans `data.properties` des schémas data - le `schema_id` pour validation est ajouté temporairement au niveau racine par AICommandProcessor.enrichWithSchemaId() puis strippé avant persistence.
 
 ### Champ always_send (Level 2 AI)
 ```kotlin

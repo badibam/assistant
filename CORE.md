@@ -122,6 +122,7 @@ Service avec tempData ConcurrentHashMap, operationId et phase dans params, Opera
 - Event sourcing obligatoire pour modifications
 - **Validation centralisée** : SchemaValidator pour config/data
 - Schémas JSON pour validation automatique
+- **Conversion récursive** : JsonUtils.toJSONObject() convertit Map/List Kotlin → JSONObject/JSONArray récursivement (Coordinator applique avant passage aux services)
 
 ### CommandDispatcher Extensions Pattern
 coordinator.executeWithLoading() avec operation, params, onLoading, onError et result.mapData().
