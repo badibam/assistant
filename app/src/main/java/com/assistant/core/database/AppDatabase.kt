@@ -311,11 +311,12 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
 
-                // 2. Create indexes
-                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_tool ON tool_executions(tool_instance_id)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_template ON tool_executions(template_data_id)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_time ON tool_executions(execution_time)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS idx_executions_status ON tool_executions(status)")
+                // 2. Create indexes (matching Entity @Index definitions with Room naming)
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_executions_tool_instance_id ON tool_executions(tool_instance_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_executions_template_data_id ON tool_executions(template_data_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_executions_execution_time ON tool_executions(execution_time)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_executions_status ON tool_executions(status)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_executions_tool_instance_id_execution_time ON tool_executions(tool_instance_id, execution_time)")
 
                 LogManager.database("MIGRATION 13->14: tool_executions table created with indexes", "INFO")
 
