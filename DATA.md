@@ -24,7 +24,7 @@ class DataNavigator(private val context: Context) {
 
 ### ZoneScopeSelector
 
-Sélecteur hiérarchique pour navigation Zone → Tool Instance → Data Fields avec configuration flexible et gestion temporelle.
+Sélecteur hiérarchique pour enrichments POINTER : Zone → Tool Instance → Context + Resources → Period (optionnel).
 
 ```kotlin
 @Composable
@@ -35,70 +35,87 @@ fun ZoneScopeSelector(
 )
 ```
 
+**Flow de navigation** :
+1. Sélection Zone (si `allowZoneSelection`)
+2. Sélection Tool Instance (si `allowInstanceSelection`)
+3. Sélection Context + Resources (section unifiée)
+4. Sélection Period (optionnelle selon contexte)
+
+**Simplification** : Navigation limitée à ZONE et INSTANCE (pas de field-level). Contextes explicites pour désambiguïser les requêtes.
+
 #### NavigationConfig
 
 ```kotlin
 data class NavigationConfig(
-    val allowZoneSelection: Boolean = true,         // Peut-on CONFIRMER aux zones ?
-    val allowInstanceSelection: Boolean = true,     // Peut-on CONFIRMER aux instances ?
-    val allowFieldSelection: Boolean = true,        // Peut-on CONFIRMER aux champs ?
-    val allowValueSelection: Boolean = true,        // Afficher les sélecteurs de valeurs ?
-    val title: String = "",                         // Titre custom ou utilise scope_selector_title
-    val showQueryPreview: Boolean = false,          // Afficher preview SQL ?
-    val showFieldSpecificSelectors: Boolean = true  // Timestamp/Name selectors ?
+    // Level selection permissions
+    val allowZoneSelection: Boolean = true,          // Peut-on confirmer aux zones ?
+    val allowInstanceSelection: Boolean = true,      // Peut-on confirmer aux instances ?
+    val allowFieldSelection: Boolean = true,         // Peut-on confirmer aux champs ? (deprecated, non utilisé)
+    val allowValueSelection: Boolean = true,         // Naviguer vers valeurs ? (deprecated, non utilisé)
+
+    // Context-aware selection
+    val allowedContexts: List<PointerContext> = listOf(
+        PointerContext.GENERIC,
+        PointerContext.CONFIG,
+        PointerContext.DATA,
+        PointerContext.EXECUTIONS
+    ),                                               // Contextes disponibles
+    val defaultContext: PointerContext = PointerContext.GENERIC,  // Contexte par défaut
+
+    // UI configuration
+    val title: String = "",                          // Titre custom ou scope_selector_title par défaut
+    val useRelativeLabels: Boolean = false           // true pour AUTOMATION, false pour CHAT
 )
 ```
 
-#### Intégration Temporelle
+#### PointerContext
 
-**Paramètre `useOnlyRelativeLabels`** propagé vers PeriodRangeSelector :
-- **Chat context** : Labels absolus ("Semaine du 15 mars") pour navigation claire
-- **Automation context** : Labels relatifs ("il y a 3 semaines") pour cohérence
+Contexte explicite pour désambiguïser les requêtes de données :
 
-**Gestion période de fin** : Les sélections de période dans ZoneScopeSelector utilisent automatiquement les timestamps de fin appropriés via `Period.getEndTimestamp()`.
+- **GENERIC** : Référence floue, aucun command automatique, période optionnelle pour contexte IA
+- **CONFIG** : Configuration d'outils, pas de période temporelle
+- **DATA** : Données métier (tool_data), période optionnelle sur `tool_data.timestamp`
+- **EXECUTIONS** : Historique d'exécutions (tool_executions), période optionnelle sur `tool_executions.executionTime`
 
-### Cas d'usage
+**Filtrage dynamique** : EXECUTIONS visible uniquement si `toolType.supportsExecutions() == true`.
+
+#### Cas d'usage
 
 ```kotlin
+// POINTER enrichment (CHAT) - Zone et instance avec tous contextes
+NavigationConfig(
+    allowZoneSelection = true,
+    allowInstanceSelection = true,
+    allowFieldSelection = false,
+    allowedContexts = listOf(
+        PointerContext.GENERIC,
+        PointerContext.CONFIG,
+        PointerContext.DATA,
+        PointerContext.EXECUTIONS
+    ),
+    defaultContext = PointerContext.GENERIC,
+    useRelativeLabels = false
+)
+
+// POINTER enrichment (AUTOMATION) - Périodes relatives
+NavigationConfig(
+    allowZoneSelection = true,
+    allowInstanceSelection = true,
+    allowFieldSelection = false,
+    defaultContext = PointerContext.DATA,
+    useRelativeLabels = true
+)
+
 // Sélection zones seulement
 NavigationConfig(
     allowZoneSelection = true,
-    allowInstanceSelection = false,
-    allowFieldSelection = false,
-    allowValueSelection = false
+    allowInstanceSelection = false
 )
 
-// Navigation complète pour graphiques avec sélection de valeurs
-NavigationConfig(
-    allowZoneSelection = true,
-    allowInstanceSelection = true,
-    allowFieldSelection = true,
-    allowValueSelection = true,
-    showQueryPreview = true
-)
-
-// Sélection d'outils uniquement (passage obligé par zones, arrêt possible aux instances)
+// Sélection outils uniquement
 NavigationConfig(
     allowZoneSelection = false,
-    allowInstanceSelection = true,
-    allowFieldSelection = false,
-    allowValueSelection = false
-)
-
-// Doit aller jusqu'aux champs et DOIT s'arrêter là (pas de sélecteurs de valeurs)
-NavigationConfig(
-    allowZoneSelection = false,
-    allowInstanceSelection = false,
-    allowFieldSelection = true,
-    allowValueSelection = false
-)
-
-// Navigation jusqu'aux champs, PEUT continuer vers les valeurs (sélecteurs affichés)
-NavigationConfig(
-    allowZoneSelection = false,
-    allowInstanceSelection = false,
-    allowFieldSelection = true,
-    allowValueSelection = true
+    allowInstanceSelection = true
 )
 ```
 
@@ -106,19 +123,29 @@ NavigationConfig(
 
 ```kotlin
 data class SelectionResult(
-    val selectedPath: String,                       // Chemin complet sélectionné
-    val selectedValues: List<String>,               // Valeurs sélectionnées
-    val selectionLevel: SelectionLevel,             // Niveau d'arrêt
-    val fieldSpecificData: FieldSpecificData? = null // Données spécialisées
+    val selectedPath: String,                        // Chemin complet sélectionné
+    val selectionLevel: SelectionLevel,              // Niveau d'arrêt (ZONE ou INSTANCE)
+
+    // Context-aware selection
+    val selectedContext: PointerContext,             // Contexte sélectionné
+    val selectedResources: List<String>,             // Ressources cochées (ex: ["data", "data_schema"])
+
+    // Field-level selection (deprecated, non utilisé)
+    val selectedValues: List<String> = emptyList(),
+    val fieldSpecificData: FieldSpecificData? = null,
+    val displayChain: List<String> = emptyList()     // Labels lisibles pour affichage
 )
 ```
 
-**Niveaux de sélection** : ZONE, INSTANCE, FIELD
+**Niveaux de sélection** : ZONE, INSTANCE
 
-**Données spécialisées** :
-- TimestampData : Plages temporelles avec min/max timestamps
-- NameData : Sélection de noms d'entrées disponibles
-- DataValues : Valeurs de champs data génériques
+**Ressources par contexte** :
+- GENERIC : `[]` (vide, pas de query automatique)
+- CONFIG : `["config", "config_schema"]` disponibles
+- DATA : `["data", "data_schema"]` disponibles, `["data"]` coché par défaut
+- EXECUTIONS : `["executions", "executions_schema"]` disponibles, `["executions"]` coché par défaut
+
+**Périodes** : Stockées dans `timestampSelection` (non visible dans SelectionResult, géré en interne par ZoneScopeSelector)
 
 ## ═══════════════════════════════════
 ## Validation par Schema ID

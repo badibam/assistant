@@ -291,6 +291,9 @@
     <string name="label_configuration">Configuration</string>
     <string name="label_validation">Validation</string>
     <string name="label_tools">Outils</string>
+    <string name="label_zone">Zone</string>
+    <string name="label_tool">Outil</string>
+    <string name="label_item">Élément</string>
 
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
@@ -545,6 +548,39 @@
     <!-- SCOPE SELECTOR - Available entry names -->
     <string name="scope_available_entry_names">Noms d'entrées disponibles</string>
     <string name="scope_value_prefix">valeur</string>
+
+    <!-- SCOPE SELECTOR - Navigation steps -->
+    <string name="scope_current_selection">Sélection actuelle</string>
+    <string name="scope_select_zone">Sélectionner une zone</string>
+    <string name="scope_select_tool">Sélectionner un outil</string>
+    <string name="scope_select_item">Sélectionner un élément</string>
+    <string name="scope_no_options">Aucune option disponible</string>
+    <string name="scope_select_context">Sélectionner un contexte</string>
+    <string name="scope_select_resources">Ressources à inclure</string>
+
+    <!-- SCOPE SELECTOR - Context labels -->
+    <string name="label_context">Contexte</string>
+    <string name="label_context_generic">Référence générique</string>
+    <string name="label_context_config">Configuration</string>
+    <string name="label_context_data">Données</string>
+    <string name="label_context_executions">Exécutions</string>
+
+    <!-- SCOPE SELECTOR - Resource labels -->
+    <string name="label_resource_config">Configuration</string>
+    <string name="label_resource_config_schema">Schéma de configuration</string>
+    <string name="label_resource_data">Données</string>
+    <string name="label_resource_data_schema">Schéma de données</string>
+    <string name="label_resource_executions">Historique d\'exécutions</string>
+    <string name="label_resource_executions_schema">Schéma d\'exécutions</string>
+
+    <!-- SCOPE SELECTOR - Period labels (context-specific) -->
+    <string name="label_period_reference">Période de référence (optionnelle)</string>
+    <string name="label_period_data">Période des données</string>
+    <string name="label_period_execution">Période d\'exécution</string>
+
+    <!-- SCOPE SELECTOR - Error messages -->
+    <string name="error_loading_zones">Erreur lors du chargement des zones</string>
+    <string name="error_loading_options">Erreur lors du chargement des options</string>
 
     <!-- SERVICES ERROR MESSAGES - Messages d'erreur des services -->
     <string name="service_error_unknown_operation">Opération inconnue: %1$s</string>

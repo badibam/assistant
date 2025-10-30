@@ -705,14 +705,14 @@ private fun PointerEnrichmentDialog(
                 allowInstanceSelection = true,
                 allowFieldSelection = false,  // Limited to instance level only
                 allowValueSelection = false,
-                title = s.shared("pointer_enrichment_selector_title")
+                title = s.shared("pointer_enrichment_selector_title"),
+                useRelativeLabels = (sessionType == SessionType.AUTOMATION)
             ),
             onDismiss = onDismiss,
             onConfirm = { result ->
                 selectionResult = result
                 showZoneScopeSelector = false
-            },
-            useOnlyRelativeLabels = (sessionType == SessionType.AUTOMATION)
+            }
         )
     } else {
         // Additional configuration fields after selection

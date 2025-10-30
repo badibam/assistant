@@ -3,7 +3,6 @@ package com.assistant.core.ui.selectors
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -13,394 +12,195 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.assistant.core.ui.selectors.data.ZoneScopeState
-import com.assistant.core.ui.selectors.data.SelectionStep
-import com.assistant.core.ui.selectors.data.FieldSelectionType
-import com.assistant.core.ui.selectors.data.TimestampSelection
-import com.assistant.core.ui.selectors.data.NameSelection
-import com.assistant.core.ui.selectors.data.NavigationConfig
-import com.assistant.core.ui.selectors.data.SelectionResult
-import com.assistant.core.ui.selectors.data.SelectionLevel
-import com.assistant.core.ui.selectors.data.FieldSpecificData
+import com.assistant.core.ui.selectors.data.*
 import com.assistant.core.navigation.DataNavigator
-import com.assistant.core.navigation.getAvailableFields
-import com.assistant.core.navigation.getFieldChildrenFromCommonStructure
 import com.assistant.core.navigation.data.SchemaNode
 import com.assistant.core.navigation.data.NodeType
-import com.assistant.core.navigation.data.ContextualDataResult
-import com.assistant.core.navigation.data.DataResultStatus
 import com.assistant.core.strings.Strings
-import com.assistant.core.strings.StringsContext
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.ButtonAction
 import com.assistant.core.ui.TextType
-import com.assistant.core.ui.components.PeriodType
-import com.assistant.core.ui.components.Period
 import com.assistant.core.ui.components.PeriodRangeSelector
-import com.assistant.core.ui.components.SinglePeriodSelector
-import com.assistant.core.ui.components.normalizeTimestampWithConfig
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
 
-// Helper functions for SelectionLevel and validation
-private fun getCurrentSelectionLevel(selectionChain: List<SelectionStep>): SelectionLevel {
-    return when (selectionChain.lastOrNull()?.selectedNode?.type) {
-        NodeType.ZONE -> SelectionLevel.ZONE
-        NodeType.TOOL -> SelectionLevel.INSTANCE
-        NodeType.FIELD -> SelectionLevel.FIELD
-        else -> SelectionLevel.ZONE
-    }
-}
-
 /**
- * Build human-readable display chain from selection steps
- */
-private fun buildDisplayChain(selectionChain: List<SelectionStep>): List<String> {
-    return selectionChain.map { step ->
-        "${step.label}: ${step.selectedValue}"
-    }
-}
-
-private fun getFieldSpecificData(state: ZoneScopeState): FieldSpecificData? {
-    return when (state.fieldSpecificType) {
-        FieldSelectionType.TIMESTAMP -> {
-            val minTimestamp = state.timestampSelection.minCustomDateTime ?: state.timestampSelection.minPeriod?.timestamp
-            val maxTimestamp = state.timestampSelection.maxCustomDateTime ?: state.timestampSelection.maxPeriod?.timestamp
-            FieldSpecificData.TimestampData(
-                minTimestamp = minTimestamp,
-                maxTimestamp = maxTimestamp
-            )
-        }
-        FieldSelectionType.NAME -> {
-            FieldSpecificData.NameData(
-                selectedNames = state.nameSelection.selectedNames,
-                availableNames = state.nameSelection.availableNames
-            )
-        }
-        FieldSelectionType.NONE -> {
-            if (state.selectedValues.isNotEmpty()) {
-                FieldSpecificData.DataValues(state.selectedValues)
-            } else null
-        }
-    }
-}
-
-
-
-/**
- * Creates current period with normalization according to configuration
- */
-private fun createCurrentPeriod(type: PeriodType): Period {
-    val now = System.currentTimeMillis()
-    val normalizedTimestamp = normalizeTimestampWithConfig(now, type)
-    return Period(normalizedTimestamp, type)
-}
-
-/**
- * Zone scope selector - Hierarchical navigation through zones, tool instances, and data fields
- * Configurable navigation depth and field-specific selection capabilities
+ * Zone Scope Selector - Simplified for POINTER enrichments
+ *
+ * Navigation flow:
+ * 1. Zone selection (if allowZoneSelection)
+ * 2. Tool instance selection (if allowInstanceSelection)
+ * 3. Context + Resources selection (unified UI section)
+ * 4. Period selection (optional, shown based on context)
+ *
+ * Contexts:
+ * - GENERIC: No automatic queries, optional reference period
+ * - CONFIG: Configuration + schemas, no period
+ * - DATA: Data + schemas, optional period on tool_data.timestamp
+ * - EXECUTIONS: Executions + schemas, optional period on tool_executions.executionTime
  */
 @Composable
 fun ZoneScopeSelector(
     config: NavigationConfig,
     onDismiss: () -> Unit,
-    onConfirm: (SelectionResult) -> Unit,
-    useOnlyRelativeLabels: Boolean = false
+    onConfirm: (SelectionResult) -> Unit
 ) {
     val context = LocalContext.current
+    val s = Strings.`for`(context = context)
     val scope = rememberCoroutineScope()
-    val navigator = remember { DataNavigator(context) }
     val coordinator = remember { Coordinator(context) }
-    val s = remember { Strings.`for`(context = context) }
+    val dataNavigator = remember { DataNavigator(context) }
 
-    var state by remember { mutableStateOf(ZoneScopeState()) }
+    // State management
+    var state by remember { mutableStateOf(ZoneScopeState(selectedContext = config.defaultContext)) }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // App config state
-    var dayStartHour by remember { mutableStateOf<Int?>(null) }
-    var weekStartDay by remember { mutableStateOf<String?>(null) }
-    var isConfigLoading by remember { mutableStateOf(true) }
-
-    // Load app config and initial data
+    // Load initial zones on mount
     LaunchedEffect(Unit) {
         isLoading = true
         try {
-            // Load app config first
-            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
-            if (configResult.isSuccess) {
-                val config = configResult.data?.get("settings") as? Map<String, Any>
-                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()
-                weekStartDay = config?.get("week_start_day") as? String
-            }
+            val rootNodes = dataNavigator.getRootNodes()
+            val zoneNodes = rootNodes.filter { it.type == NodeType.ZONE }
 
-            // Load initial data (zones)
-            val rootNodes = navigator.getRootNodes()
             state = state.copy(
-                optionsByLevel = mapOf(0 to rootNodes),
-                currentOptions = rootNodes,
-                currentLevel = 0
+                currentOptions = zoneNodes,
+                currentLevel = 0,
+                optionsByLevel = mapOf(0 to zoneNodes)
             )
+
+            LogManager.ui("ZoneScopeSelector: Loaded ${zoneNodes.size} zones", "DEBUG")
         } catch (e: Exception) {
-            LogManager.coordination("Error loading initial data in ZoneScopeSelector: ${e.message}", "ERROR", e)
+            LogManager.ui("ZoneScopeSelector: Failed to load zones: ${e.message}", "ERROR", e)
+            errorMessage = s.shared("error_loading_zones")
         } finally {
             isLoading = false
-            isConfigLoading = false
         }
     }
 
-    // Show loading state while config is being loaded
-    if (isConfigLoading || dayStartHour == null || weekStartDay == null) {
-        Dialog(onDismissRequest = onDismiss) {
-            Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    UI.Text(text = s.shared("scope_loading_config"), type = TextType.BODY)
-                }
-            }
+    // Error toast
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            UI.Toast(context, msg)
+            errorMessage = null
         }
-        return
     }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(0.9f) // Limit dialog height to 90% of screen
-            .padding(16.dp)
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.medium,
+            tonalElevation = 6.dp
         ) {
-            val scrollState = rememberScrollState()
-
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(scrollState),
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-
                 // Header
                 UI.Text(
                     text = if (config.title.isNotEmpty()) config.title else s.shared("scope_selector_title"),
-                    type = TextType.TITLE
+                    type = TextType.TITLE,
+                    fillMaxWidth = true
                 )
 
-                // Section 1: Metadata Selector (Conditional Dropdowns)
-                MetadataSelectorSection(
-                    state = state,
-                    isLoading = isLoading,
-                    onSelectionChange = { selectedNode ->
-                        scope.launch {
-                            try {
-                                isLoading = true
+                // Loading indicator
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.LoadingIndicator()
+                    }
+                } else {
+                    // Selection breadcrumb
+                    if (state.selectionChain.isNotEmpty()) {
+                        SelectionBreadcrumb(state.selectionChain)
+                    }
 
-                                // Determine the level of the selected node to reset appropriately
-                                val selectedLevel = when (selectedNode.type) {
-                                    NodeType.ZONE -> 0
-                                    NodeType.TOOL -> 1
-                                    NodeType.FIELD -> 2
-                                }
-
-                                // Reset chain to the selected level and add new selection
-                                val newStep = SelectionStep(
-                                    label = getSelectionLabel(selectedNode.type, selectedLevel),
-                                    selectedValue = selectedNode.displayName,
-                                    selectedNode = selectedNode
-                                )
-                                val newChain = state.selectionChain.take(selectedLevel) + newStep
-
-                                // Load next level options if node has children AND navigation config allows it
-                                val nextOptions = if (selectedNode.hasChildren) {
-                                    when (selectedNode.type) {
-                                        NodeType.ZONE -> {
-                                            // Only load instances if instance or field selection is allowed
-                                            // (need to navigate through instances to reach fields)
-                                            if (!config.allowInstanceSelection && !config.allowFieldSelection) {
-                                                emptyList() // Stop navigation at zone level
-                                            } else {
-                                                navigator.getChildren(selectedNode.path)
-                                            }
-                                        }
-                                        NodeType.TOOL -> {
-                                            // Only load fields if field selection is allowed
-                                            if (!config.allowFieldSelection) {
-                                                emptyList() // Stop navigation at instance level
-                                            } else if (selectedNode.path == "tools.all") {
-                                                emptyList() // Skip loading fields for "all tools" selection
-                                            } else {
-                                                // Use the new common structure approach
-                                                try {
-                                                    navigator.getAvailableFields(selectedNode.path.substringAfter("tools."), context)
-                                                } catch (e: Exception) {
-                                                    LogManager.coordination("Error loading available fields for ${selectedNode.path}: ${e.message}", "ERROR", e)
-                                                    emptyList()
-                                                }
-                                            }
-                                        }
-                                        NodeType.FIELD -> {
-                                            // Skip loading sub-fields for "all fields" selection
-                                            if (selectedNode.path == "fields.all") {
-                                                emptyList()
-                                            } else {
-                                                // Fields can have sub-fields (nested structure)
-                                                try {
-                                                    navigator.getFieldChildrenFromCommonStructure(selectedNode.path, context)
-                                                } catch (e: Exception) {
-                                                    LogManager.coordination("Error loading field children for ${selectedNode.path}: ${e.message}", "ERROR", e)
-                                                    emptyList()
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    emptyList()
-                                }
-
-                                val isComplete = !selectedNode.hasChildren || nextOptions.isEmpty()
-
-                                // Update optionsByLevel - keep options up to current level, add next level
-                                val newOptionsByLevel = state.optionsByLevel.toMutableMap()
-
-                                // Remove deeper levels than current selection
-                                newOptionsByLevel.keys.filter { it > selectedLevel }.forEach { key ->
-                                    newOptionsByLevel.remove(key)
-                                }
-
-                                // Add next level options if available
-                                if (nextOptions.isNotEmpty()) {
-                                    newOptionsByLevel[selectedLevel + 1] = nextOptions
-                                }
-
-                                // Determine field-specific selection type
-                                val fieldSpecificType = if (isComplete && selectedNode.type == NodeType.FIELD) {
-                                    when {
-                                        selectedNode.path == "fields.all" -> FieldSelectionType.NONE // All fields = no specific type
-                                        selectedNode.path.endsWith(".timestamp") -> FieldSelectionType.TIMESTAMP
-                                        selectedNode.path.endsWith(".name") -> FieldSelectionType.NAME
-                                        else -> FieldSelectionType.NONE // data.* fields
-                                    }
-                                } else {
-                                    FieldSelectionType.NONE
-                                }
-
-                                state = state.copy(
-                                    selectionChain = newChain,
-                                    selectedPath = selectedNode.path,
-                                    currentOptions = nextOptions,
-                                    currentLevel = selectedLevel,
-                                    isComplete = isComplete,
-                                    optionsByLevel = newOptionsByLevel,
-                                    fieldSpecificType = fieldSpecificType,
-                                    // Reset values when changing selection
-                                    selectedValues = emptyList(),
-                                    availableValues = emptyList(),
-                                    // Reset field-specific selections
-                                    timestampSelection = TimestampSelection(),
-                                    nameSelection = NameSelection()
-                                )
-
-                                // Load contextual values for data.* fields when field is complete and value selection is allowed
-                                if (config.allowValueSelection && isComplete && fieldSpecificType == FieldSelectionType.NONE &&
-                                    selectedNode.path != "tools.all" && selectedNode.path != "fields.all") {
-                                    val contextualData = navigator.getDistinctValues(selectedNode.path)
-                                    state = state.copy(
-                                        availableValues = contextualData.data.map { it.toString() },
-                                        contextualDataStatus = contextualData.status
+                    // Current navigation level (Zone or Tool Instance)
+                    if (state.currentLevel < 2) {
+                        NavigationLevelSection(
+                            state = state,
+                            config = config,
+                            onSelect = { selectedNode ->
+                                scope.launch {
+                                    handleLevelSelection(
+                                        state = state,
+                                        selectedNode = selectedNode,
+                                        config = config,
+                                        dataNavigator = dataNavigator,
+                                        context = context,
+                                        onStateUpdate = { newState -> state = newState },
+                                        onError = { msg -> errorMessage = msg }
                                     )
                                 }
-
-                            } catch (e: Exception) {
-                                LogManager.coordination("Error in selection change: ${e.message}", "ERROR", e)
-                            } finally {
-                                isLoading = false
                             }
-                        }
-                    },
-                    s = s
-                )
+                        )
+                    }
 
-                // Section 2: Field-specific value selector (only if allowValueSelection is true)
-                if (config.allowValueSelection && state.isComplete && state.selectionChain.lastOrNull()?.selectedNode?.type == NodeType.FIELD) {
-                    when (state.fieldSpecificType) {
-                        FieldSelectionType.TIMESTAMP -> {
-                            PeriodRangeSelector(
-                                startPeriodType = state.timestampSelection.minPeriodType,
-                                startPeriod = state.timestampSelection.minPeriod,
-                                startCustomDate = state.timestampSelection.minCustomDateTime,
-                                endPeriodType = state.timestampSelection.maxPeriodType,
-                                endPeriod = state.timestampSelection.maxPeriod,
-                                endCustomDate = state.timestampSelection.maxCustomDateTime,
-                                onStartTypeChange = { newType ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minPeriodType = newType))
-                                },
-                                onStartPeriodChange = { newPeriod ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minPeriod = newPeriod))
-                                },
-                                onStartCustomDateChange = { newDate ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(minCustomDateTime = newDate))
-                                },
-                                onEndTypeChange = { newType ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxPeriodType = newType))
-                                },
-                                onEndPeriodChange = { newPeriod ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxPeriod = newPeriod))
-                                },
-                                onEndCustomDateChange = { newDate ->
-                                    state = state.copy(timestampSelection = state.timestampSelection.copy(maxCustomDateTime = newDate))
-                                },
-                                useOnlyRelativeLabels = useOnlyRelativeLabels
-                            )
-                        }
-                        FieldSelectionType.NAME -> {
-                            NameSelectorSection(
-                                nameSelection = state.nameSelection,
-                                onNameSelectionChange = { newNameSelection ->
-                                    state = state.copy(nameSelection = newNameSelection)
-                                },
-                                s = s,
-                                selectionChain = state.selectionChain,
-                                coordinator = coordinator
-                            )
-                        }
-                        FieldSelectionType.NONE -> {
-                            // Default data fields - original behavior
-                            ValueSelectorSection(
-                                availableValues = state.availableValues,
-                                selectedValues = state.selectedValues,
-                                contextualDataStatus = state.contextualDataStatus,
-                                onSelectionChange = { selectedValues ->
-                                    state = state.copy(selectedValues = selectedValues)
-                                },
-                                s = s
-                            )
-                        }
+                    // Context + Resources selection (shown after tool instance selected)
+                    if (state.selectionChain.size >= 2 || (state.selectionChain.size == 1 && config.allowZoneSelection && !config.allowInstanceSelection)) {
+                        ContextResourcesSection(
+                            state = state,
+                            config = config,
+                            onContextChange = { newContext ->
+                                state = state.copy(
+                                    selectedContext = newContext,
+                                    selectedResources = getDefaultResourcesForContext(newContext)
+                                )
+                            },
+                            onResourceToggle = { resource ->
+                                val newResources = if (state.selectedResources.contains(resource)) {
+                                    state.selectedResources - resource
+                                } else {
+                                    state.selectedResources + resource
+                                }
+                                state = state.copy(selectedResources = newResources)
+                            }
+                        )
+                    }
+
+                    // Period selection (optional, context-dependent)
+                    if (shouldShowPeriodSelector(state, config)) {
+                        PeriodSelectionSection(
+                            state = state,
+                            config = config,
+                            onTimestampSelectionChange = { newSelection ->
+                                state = state.copy(timestampSelection = newSelection)
+                            }
+                        )
                     }
                 }
 
                 // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     UI.ActionButton(
                         action = ButtonAction.CANCEL,
                         onClick = onDismiss
                     )
 
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    val canConfirm = canConfirmSelection(state, config)
                     UI.ActionButton(
                         action = ButtonAction.CONFIRM,
-                        enabled = config.isValidSelection(getCurrentSelectionLevel(state.selectionChain)),
                         onClick = {
-                            val result = SelectionResult(
-                                selectedPath = state.selectedPath,
-                                selectedValues = state.selectedValues,
-                                selectionLevel = getCurrentSelectionLevel(state.selectionChain),
-                                fieldSpecificData = getFieldSpecificData(state),
-                                displayChain = buildDisplayChain(state.selectionChain)
-                            )
+                            val result = buildSelectionResult(state, config)
                             onConfirm(result)
-                        }
+                        },
+                        enabled = canConfirm && !isLoading
                     )
                 }
             }
@@ -408,527 +208,455 @@ fun ZoneScopeSelector(
     }
 }
 
-@Composable
-private fun MetadataSelectorSection(
-    state: ZoneScopeState,
-    isLoading: Boolean,
-    onSelectionChange: (SchemaNode) -> Unit,
-    s: com.assistant.core.strings.StringsContext
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        UI.Text(
-            text = s.shared("scope_navigation_selection"),
-            type = TextType.SUBTITLE
-        )
-
-        // Dynamic selectors for each available level
-        state.optionsByLevel.keys.sorted().forEach { level ->
-            val options = state.optionsByLevel[level] ?: emptyList()
-            if (options.isNotEmpty()) {
-                val label = getLevelLabel(level, options.firstOrNull()?.type)
-                val selectedValue = state.selectionChain.getOrNull(level)?.selectedValue ?: ""
-
-                // Add "All" option for tools and fields levels
-                val allOptions = when (level) {
-                    1 -> listOf(s.shared("scope_all_instances")) + options.map { it.displayName }
-                    2 -> listOf(s.shared("scope_all_fields")) + options.map { it.displayName }
-                    else -> options.map { it.displayName }
-                }
-
-                // Set default selection to "All" option for tools and fields
-                val effectiveSelected = if (selectedValue.isEmpty() && (level == 1 || level == 2)) {
-                    when (level) {
-                        1 -> s.shared("scope_all_instances")
-                        2 -> s.shared("scope_all_fields")
-                        else -> selectedValue
-                    }
-                } else {
-                    selectedValue
-                }
-
-                UI.FormSelection(
-                    label = label,
-                    options = allOptions,
-                    selected = effectiveSelected,
-                    onSelect = { selectedOption ->
-                        // Handle "All" selections
-                        if (selectedOption == s.shared("scope_all_instances") || selectedOption == s.shared("scope_all_fields")) {
-                            // Create a virtual node for "All" selection
-                            val allNode = SchemaNode(
-                                path = when (level) {
-                                    1 -> "tools.all"
-                                    2 -> "fields.all"
-                                    else -> "all"
-                                },
-                                displayName = selectedOption,
-                                type = when (level) {
-                                    1 -> NodeType.TOOL
-                                    2 -> NodeType.FIELD
-                                    else -> NodeType.ZONE
-                                },
-                                hasChildren = false
-                            )
-                            onSelectionChange(allNode)
-                        } else {
-                            // Handle regular node selection
-                            val selectedNode = options.find { it.displayName == selectedOption }
-                            if (selectedNode != null) {
-                                onSelectionChange(selectedNode)
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
-        if (isLoading) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                Box(modifier = Modifier.padding(start = 8.dp)) {
-                    UI.Text(
-                        text = s.shared("scope_loading"),
-                        type = TextType.LABEL
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ValueSelectorSection(
-    availableValues: List<String>,
-    selectedValues: List<String>,
-    contextualDataStatus: DataResultStatus,
-    onSelectionChange: (List<String>) -> Unit,
-    s: com.assistant.core.strings.StringsContext
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        UI.Text(
-            text = s.shared("scope_available_values"),
-            type = TextType.SUBTITLE
-        )
-
-        when (contextualDataStatus) {
-            DataResultStatus.OK -> {
-                // Use regular Column since parent is already scrollable
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    availableValues.take(10).forEach { value ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = value in selectedValues,
-                                onCheckedChange = { checked ->
-                                    val newSelection = if (checked) {
-                                        selectedValues + value
-                                    } else {
-                                        selectedValues - value
-                                    }
-                                    onSelectionChange(newSelection)
-                                }
-                            )
-                            Box(modifier = Modifier.padding(start = 8.dp).weight(1f)) {
-                                UI.Text(
-                                    text = if (value.length > 50) "${value.take(47)}..." else value,
-                                    type = TextType.BODY
-                                )
-                            }
-                        }
-                    }
-
-                    if (availableValues.size > 10) {
-                        UI.Text(
-                            text = String.format(s.shared("scope_more_values"), availableValues.size - 10),
-                            type = TextType.LABEL
-                        )
-                    }
-                }
-            }
-            DataResultStatus.ERROR -> {
-                UI.Text(
-                    text = s.shared("scope_error_loading_values"),
-                    type = TextType.BODY
-                )
-            }
-            else -> {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-}
-
-// Helper functions
-
-private fun getSelectionLabel(nodeType: NodeType, level: Int): String {
-    return when (nodeType) {
-        NodeType.ZONE -> "Zone" // Keep hardcoded for now - used internally
-        NodeType.TOOL -> "Outil" // Keep hardcoded for now - used internally
-        NodeType.FIELD -> if (level <= 2) "Champ" else "Sous-champ ${level - 1}" // Keep hardcoded for now - used internally
-    }
-}
-
-private fun getLevelLabel(level: Int, nodeType: NodeType?): String {
-    return when {
-        level == 0 -> "Zone" // Keep hardcoded for now - used internally
-        level == 1 -> "Outil" // Keep hardcoded for now - used internally
-        level == 2 -> "Champ" // Keep hardcoded for now - used internally
-        nodeType == NodeType.FIELD -> "Sous-champ ${level - 1}" // Keep hardcoded for now - used internally
-        else -> "Niveau ${level + 1}" // Keep hardcoded for now - used internally
-    }
-}
-
-private fun getNextSelectionLabel(currentNodeType: NodeType): String {
-    return when (currentNodeType) {
-        NodeType.ZONE -> "Outil" // Keep hardcoded for now - used internally
-        NodeType.TOOL -> "Champ" // Keep hardcoded for now - used internally
-        NodeType.FIELD -> "Sous-champ" // Keep hardcoded for now - used internally
-    }
-}
-
-private fun buildQueryDescription(
-    selectionChain: List<SelectionStep>,
-    selectedValues: List<String>,
-    fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
-    timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection(),
-    s: StringsContext
-): String {
-    if (selectionChain.isEmpty()) return s.shared("scope_no_selection_simple")
-
-    // Use zone name and tool instance name instead of generic path
-    val zoneName = selectionChain.find { it.selectedNode.type == NodeType.ZONE }?.selectedValue
-    val toolInstanceName = selectionChain.find { it.selectedNode.type == NodeType.TOOL }?.selectedValue
-    val fieldPath = selectionChain.filter { it.selectedNode.type == NodeType.FIELD }
-        .joinToString(" → ") { it.selectedValue }
-
-    val path = listOfNotNull(zoneName, toolInstanceName, fieldPath.takeIf { it.isNotEmpty() })
-        .joinToString(" → ")
-
-    // Extract zone_id and tool_instance_id for AI anchoring
-    val zoneStep = selectionChain.find { it.selectedNode.type == NodeType.ZONE }
-    val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
-
-    val zoneId = zoneStep?.selectedNode?.path?.substringAfter("zones.")?.substringBefore(".")
-    val toolInstanceId = toolStep?.selectedNode?.path?.let { path ->
-        when {
-            path == "tools.all" -> "all"
-            else -> path.substringAfter("tools.").substringBefore(".")
-        }
-    }
-
-    // Adapt description based on selection level
-    return when {
-        // Zone only
-        zoneName != null && toolInstanceName == null ->
-            "Focus sur la zone '$zoneName' (zone_id: $zoneId)"
-
-        // Zone + Tool
-        zoneName != null && toolInstanceName != null && fieldPath.isEmpty() -> {
-            if (toolInstanceId == "all") {
-                "Focus sur tous les outils de la zone '$zoneName'"
-            } else {
-                "Focus sur l'outil '$toolInstanceName' (tool_instance_id: $toolInstanceId, zone: $zoneName)"
-            }
-        }
-
-        // Zone + Tool + Field(s)
-        fieldPath.isNotEmpty() -> {
-            val valuesPart = when (fieldSpecificType) {
-                FieldSelectionType.TIMESTAMP -> {
-                    when {
-                        timestampSelection.isComplete -> {
-                            val minDesc = formatTimestampForDescription(timestampSelection.minPeriodType, timestampSelection.minPeriod, timestampSelection.minCustomDateTime, s)
-                            val maxDesc = formatTimestampForDescription(timestampSelection.maxPeriodType, timestampSelection.maxPeriod, timestampSelection.maxCustomDateTime, s)
-                            "période du $minDesc au $maxDesc"
-                        }
-                        timestampSelection.minPeriodType != null || timestampSelection.maxPeriodType != null -> {
-                            s.shared("scope_temporal_partial")
-                        }
-                        else -> s.shared("scope_temporal_all")
-                    }
-                }
-                FieldSelectionType.NAME -> {
-                    when {
-                        nameSelection.selectedNames.isNotEmpty() -> {
-                            if (nameSelection.selectedNames.size <= 3) {
-                                val truncatedNames = nameSelection.selectedNames.map { name ->
-                                    if (name.length > 20) "${name.take(17)}..." else name
-                                }
-                                "noms: ${truncatedNames.joinToString(", ")}"
-                            } else {
-                                s.shared("scope_names_selected").format(nameSelection.selectedNames.size)
-                            }
-                        }
-                        nameSelection.availableNames.isNotEmpty() -> s.shared("scope_names_all_available")
-                        else -> s.shared("scope_names_all")
-                    }
-                }
-                FieldSelectionType.NONE -> {
-                    when {
-                        selectedValues.isEmpty() -> s.shared("scope_values_all")
-                        selectedValues.size == 1 -> {
-                            val value = selectedValues.first()
-                            s.shared("scope_value_single").format(if (value.length > 30) "${value.take(27)}..." else value)
-                        }
-                        selectedValues.size <= 3 -> {
-                            val truncatedValues = selectedValues.map { value ->
-                                if (value.length > 20) "${value.take(17)}..." else value
-                            }
-                            s.shared("scope_values_truncated").format(truncatedValues.joinToString(", "))
-                        }
-                        else -> s.shared("scope_values_count").format(selectedValues.size)
-                    }
-                }
-            }
-            if (toolInstanceId == "all") {
-                "Focus sur '$path' pour $valuesPart (tous les outils)"
-            } else {
-                "Focus sur '$path' pour $valuesPart (tool_instance_id: $toolInstanceId)"
-            }
-        }
-
-        else -> "Focus sur '$path'"
-    }
-}
-
-private fun formatTimestampForDescription(periodType: PeriodType?, period: Period?, customDateTime: Long?, s: StringsContext): String {
-    return when {
-        period != null -> {
-            // Use existing period system to format
-            when (periodType) {
-                PeriodType.DAY -> "jour du ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(period.timestamp))}"
-                PeriodType.WEEK -> "semaine du ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(period.timestamp))}"
-                PeriodType.MONTH -> "mois ${java.text.SimpleDateFormat("MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(period.timestamp))}"
-                PeriodType.YEAR -> "année ${java.text.SimpleDateFormat("yyyy", java.util.Locale.getDefault()).format(java.util.Date(period.timestamp))}"
-                else -> java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(period.timestamp))
-            }
-        }
-        customDateTime != null -> {
-            java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(customDateTime))
-        }
-        periodType != null -> {
-            when (periodType) {
-                PeriodType.DAY -> s.shared("scope_period_day_selected")
-                PeriodType.WEEK -> s.shared("scope_period_week_selected")
-                PeriodType.MONTH -> s.shared("scope_period_month_selected")
-                PeriodType.YEAR -> s.shared("scope_period_year_selected")
-                else -> s.shared("scope_period_generic_selected")
-            }
-        }
-        else -> s.shared("scope_undefined")
-    }
-}
-
-private fun buildSqlQuery(
-    selectionChain: List<SelectionStep>,
-    selectedValues: List<String>,
-    fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
-    timestampSelection: TimestampSelection = TimestampSelection(),
-    nameSelection: NameSelection = NameSelection(),
-    s: StringsContext
-): String {
-    if (selectionChain.isEmpty()) return s.shared("scope_no_selection_prefix")
-
-    val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
-    val fieldStep = selectionChain.lastOrNull { it.selectedNode.type == NodeType.FIELD } // Last field in chain
-
-    if (toolStep == null) return s.shared("scope_tool_not_selected")
-
-    // Use unified table structure
-    val tableName = "tool_data"
-
-    // Extract tool instance ID from path (e.g., "tools.instance_123" -> "instance_123")
-    val toolInstanceId = toolStep.selectedNode.path.let { path ->
-        when {
-            path == "tools.all" -> "all"
-            else -> path.substringAfter("tools.").substringBefore(".")
-        }
-    }
-
-    val (fieldName, isJsonField) = if (fieldStep != null) {
-        val fieldPath = fieldStep.selectedNode.path
-        when {
-            fieldPath.endsWith(".name") -> Pair("name", false)
-            fieldPath.endsWith(".timestamp") -> Pair("timestamp", false)
-            fieldPath.contains(".data.") -> {
-                // Extract JSON field path (e.g., "tools.weight_tracker.data.quantity" -> "quantity")
-                val jsonFieldPath = fieldPath.substringAfter(".data.")
-                Pair(jsonFieldPath, true)
-            }
-            else -> Pair("*", false)
-        }
-    } else {
-        Pair("*", false)
-    }
-
-    val whereConditions = mutableListOf<String>()
-
-    // Filter by tool instance (skip for "all" tools)
-    if (toolInstanceId != "all") {
-        whereConditions.add("tool_instance_id = '$toolInstanceId'")
-    }
-
-    // Add field-specific filters
-    if (fieldStep != null) {
-        when (fieldSpecificType) {
-            FieldSelectionType.TIMESTAMP -> {
-                // Add timestamp range conditions
-                if (timestampSelection.minPeriod != null || timestampSelection.minCustomDateTime != null) {
-                    val minTimestamp = timestampSelection.minCustomDateTime ?: timestampSelection.minPeriod?.timestamp ?: 0
-                    whereConditions.add("timestamp >= $minTimestamp")
-                }
-                if (timestampSelection.maxPeriod != null || timestampSelection.maxCustomDateTime != null) {
-                    val maxTimestamp = timestampSelection.maxCustomDateTime ?: timestampSelection.maxPeriod?.timestamp ?: Long.MAX_VALUE
-                    whereConditions.add("timestamp <= $maxTimestamp")
-                }
-            }
-            FieldSelectionType.NAME -> {
-                // Add name filter
-                if (nameSelection.selectedNames.isNotEmpty()) {
-                    whereConditions.add("name IN (${nameSelection.selectedNames.joinToString(", ") { "'$it'" }})")
-                }
-            }
-            FieldSelectionType.NONE -> {
-                // Original data field logic
-                if (selectedValues.isNotEmpty()) {
-                    val valueCondition = if (isJsonField) {
-                        "JSON_EXTRACT(data, '$.$fieldName') IN (${selectedValues.joinToString(", ") { "'$it'" }})"
-                    } else {
-                        "$fieldName IN (${selectedValues.joinToString(", ") { "'$it'" }})"
-                    }
-                    whereConditions.add(valueCondition)
-                }
-            }
-        }
-    }
-
-    val whereClause = if (whereConditions.isNotEmpty()) {
-        "WHERE ${whereConditions.joinToString(" AND ")}"
-    } else {
-        ""
-    }
-
-    // Select clause based on field type
-    val selectClause = when {
-        fieldName == "*" -> "SELECT *"
-        isJsonField -> "SELECT JSON_EXTRACT(data, '$.$fieldName') as $fieldName"
-        else -> "SELECT $fieldName"
-    }
-
-    return "$selectClause FROM $tableName $whereClause".trim()
-}
+// ================================================================================================
+// UI Sections
+// ================================================================================================
 
 /**
- * Component for timestamp field selection (date range)
- */
-
-
-/**
- * Component for name field selection
+ * Breadcrumb showing current selection path
  */
 @Composable
-private fun NameSelectorSection(
-    nameSelection: NameSelection,
-    onNameSelectionChange: (NameSelection) -> Unit,
-    s: com.assistant.core.strings.StringsContext,
-    selectionChain: List<SelectionStep>,
-    coordinator: Coordinator
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun SelectionBreadcrumb(chain: List<SelectionStep>) {
+    val context = LocalContext.current
+    val s = Strings.`for`(context = context)
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
         UI.Text(
-            text = s.shared("scope_name_selection"),
+            text = s.shared("scope_current_selection"),
             type = TextType.SUBTITLE
         )
 
-        // Load available names from tool data via coordinator
-        LaunchedEffect(selectionChain) {
-            try {
-                // Extract tool instance ID from selection chain
-                val toolStep = selectionChain.find { it.selectedNode.type == NodeType.TOOL }
-                val toolInstanceId = toolStep?.selectedNode?.path?.let { path ->
-                    when {
-                        path == "tools.all" -> null // Skip loading for "all tools"
-                        else -> path.substringAfter("tools.").substringBefore(".")
-                    }
-                }
-
-                if (toolInstanceId != null) {
-                    // Load tool data to get available names
-                    val result = coordinator.processUserAction(
-                        "tool_data.get",
-                        mapOf("toolInstanceId" to toolInstanceId)
-                    )
-
-                    if (result.isSuccess) {
-                        val entries = result.data?.get("entries") as? List<Map<String, Any>> ?: emptyList()
-                        val names = entries.mapNotNull { entry ->
-                            (entry["name"] as? String)?.takeIf { it.isNotBlank() }
-                        }.distinct().sorted()
-
-                        onNameSelectionChange(nameSelection.copy(availableNames = names))
-                    } else {
-                        LogManager.coordination("Failed to load names for tool $toolInstanceId: ${result.error}", "ERROR")
-                        onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
-                    }
-                } else {
-                    // No specific tool selected or "all tools" - clear names
-                    onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
-                }
-            } catch (e: Exception) {
-                LogManager.coordination("Error loading available names: ${e.message}", "ERROR", e)
-                onNameSelectionChange(nameSelection.copy(availableNames = emptyList()))
-            }
-        }
-
-        if (nameSelection.availableNames.isNotEmpty()) {
+        chain.forEach { step ->
             UI.Text(
-                text = s.shared("scope_available_entry_names"),
-                type = TextType.LABEL
-            )
-
-            // Show available names with checkboxes
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                nameSelection.availableNames.take(10).forEach { name ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = name in nameSelection.selectedNames,
-                            onCheckedChange = { checked ->
-                                val newSelection = if (checked) {
-                                    nameSelection.selectedNames + name
-                                } else {
-                                    nameSelection.selectedNames - name
-                                }
-                                onNameSelectionChange(nameSelection.copy(selectedNames = newSelection))
-                            }
-                        )
-                        Box(modifier = Modifier.padding(start = 8.dp).weight(1f)) {
-                            UI.Text(
-                                text = if (name.length > 50) "${name.take(47)}..." else name,
-                                type = TextType.BODY
-                            )
-                        }
-                    }
-                }
-
-                if (nameSelection.availableNames.size > 10) {
-                    UI.Text(
-                        text = String.format(s.shared("scope_more_names"), nameSelection.availableNames.size - 10),
-                        type = TextType.CAPTION
-                    )
-                }
-            }
-        } else {
-            UI.Text(
-                text = s.shared("scope_loading_names"),
+                text = "${step.label}: ${step.selectedValue}",
                 type = TextType.BODY
             )
         }
+    }
+}
+
+/**
+ * Navigation level section (Zone or Tool Instance selection)
+ */
+@Composable
+private fun NavigationLevelSection(
+    state: ZoneScopeState,
+    config: NavigationConfig,
+    onSelect: (SchemaNode) -> Unit
+) {
+    val context = LocalContext.current
+    val s = Strings.`for`(context = context)
+
+    val levelLabel = when (state.currentLevel) {
+        0 -> s.shared("scope_select_zone")
+        1 -> s.shared("scope_select_tool")
+        else -> s.shared("scope_select_item")
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        UI.Text(
+            text = levelLabel,
+            type = TextType.SUBTITLE
+        )
+
+        if (state.currentOptions.isEmpty()) {
+            UI.Text(
+                text = s.shared("scope_no_options"),
+                type = TextType.BODY
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(state.currentOptions) { node ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                UI.Text(
+                                    text = node.displayName,
+                                    type = TextType.BODY
+                                )
+                            }
+
+                            UI.ActionButton(
+                                action = ButtonAction.SELECT,
+                                onClick = { onSelect(node) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Context + Resources unified section
+ */
+@Composable
+private fun ContextResourcesSection(
+    state: ZoneScopeState,
+    config: NavigationConfig,
+    onContextChange: (PointerContext) -> Unit,
+    onResourceToggle: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val s = Strings.`for`(context = context)
+
+    // Filter allowed contexts based on tool type
+    val allowedContexts = remember(state.selectionChain) {
+        filterAllowedContexts(state, config, context)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        UI.Text(
+            text = s.shared("scope_select_context"),
+            type = TextType.SUBTITLE
+        )
+
+        // Context selector (FormSelection for radio-like behavior)
+        val contextOptions = allowedContexts.map { getContextLabel(it, s) }
+        val selectedContextLabel = getContextLabel(state.selectedContext, s)
+
+        UI.FormSelection(
+            label = s.shared("label_context"),
+            options = contextOptions,
+            selected = selectedContextLabel,
+            onSelect = { selectedLabel ->
+                val newContext = allowedContexts.find { getContextLabel(it, s) == selectedLabel }
+                newContext?.let { onContextChange(it) }
+            },
+            required = true
+        )
+
+        // Resources toggles (dynamic based on selected context)
+        val availableResources = getAvailableResourcesForContext(state.selectedContext)
+
+        if (availableResources.isNotEmpty()) {
+            UI.Text(
+                text = s.shared("scope_select_resources"),
+                type = TextType.BODY
+            )
+
+            availableResources.forEach { resource ->
+                UI.ToggleField(
+                    label = getResourceLabel(resource, s),
+                    checked = state.selectedResources.contains(resource),
+                    onCheckedChange = { onResourceToggle(resource) },
+                    required = false
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Period selection section (optional)
+ */
+@Composable
+private fun PeriodSelectionSection(
+    state: ZoneScopeState,
+    config: NavigationConfig,
+    onTimestampSelectionChange: (TimestampSelection) -> Unit
+) {
+    val context = LocalContext.current
+    val s = Strings.`for`(context = context)
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        UI.Text(
+            text = getPeriodSectionLabel(state.selectedContext, s),
+            type = TextType.SUBTITLE
+        )
+
+        PeriodRangeSelector(
+            startPeriodType = state.timestampSelection.minPeriodType,
+            endPeriodType = state.timestampSelection.maxPeriodType,
+            startPeriod = state.timestampSelection.minPeriod,
+            endPeriod = state.timestampSelection.maxPeriod,
+            startCustomDate = state.timestampSelection.minCustomDateTime,
+            endCustomDate = state.timestampSelection.maxCustomDateTime,
+            startRelativePeriod = state.timestampSelection.minRelativePeriod,
+            endRelativePeriod = state.timestampSelection.maxRelativePeriod,
+            onStartTypeChange = { type ->
+                onTimestampSelectionChange(state.timestampSelection.copy(minPeriodType = type))
+            },
+            onEndTypeChange = { type ->
+                onTimestampSelectionChange(state.timestampSelection.copy(maxPeriodType = type))
+            },
+            onStartPeriodChange = { period ->
+                onTimestampSelectionChange(state.timestampSelection.copy(minPeriod = period))
+            },
+            onEndPeriodChange = { period ->
+                onTimestampSelectionChange(state.timestampSelection.copy(maxPeriod = period))
+            },
+            onStartCustomDateChange = { dateTime ->
+                onTimestampSelectionChange(state.timestampSelection.copy(minCustomDateTime = dateTime))
+            },
+            onEndCustomDateChange = { dateTime ->
+                onTimestampSelectionChange(state.timestampSelection.copy(maxCustomDateTime = dateTime))
+            },
+            onStartRelativePeriodChange = { relative ->
+                onTimestampSelectionChange(state.timestampSelection.copy(minRelativePeriod = relative))
+            },
+            onEndRelativePeriodChange = { relative ->
+                onTimestampSelectionChange(state.timestampSelection.copy(maxRelativePeriod = relative))
+            },
+            useOnlyRelativeLabels = config.useRelativeLabels, // Use relative labels for AUTOMATION
+            returnRelative = config.useRelativeLabels // Return relative periods for AUTOMATION
+        )
+    }
+}
+
+// ================================================================================================
+// Business Logic
+// ================================================================================================
+
+/**
+ * Handle selection at current navigation level (Zone or Tool Instance)
+ */
+private suspend fun handleLevelSelection(
+    state: ZoneScopeState,
+    selectedNode: SchemaNode,
+    config: NavigationConfig,
+    dataNavigator: DataNavigator,
+    context: android.content.Context,
+    onStateUpdate: (ZoneScopeState) -> Unit,
+    onError: (String) -> Unit
+) {
+    val s = Strings.`for`(context = context)
+
+    LogManager.ui("ZoneScopeSelector: Level ${state.currentLevel} selected: ${selectedNode.displayName}", "DEBUG")
+
+    // Update selection chain
+    val newChain = state.selectionChain + SelectionStep(
+        label = when (selectedNode.type) {
+            NodeType.ZONE -> s.shared("label_zone")
+            NodeType.TOOL -> s.shared("label_tool")
+            else -> s.shared("label_item")
+        },
+        selectedValue = selectedNode.displayName,
+        selectedNode = selectedNode
+    )
+
+    // Build path - node.path already contains the full path
+    val newPath = selectedNode.path
+
+    // Check if we should stop here or continue navigation
+    val currentLevel = getCurrentSelectionLevel(newChain)
+    val canConfirmHere = config.isValidSelection(currentLevel)
+    val shouldContinue = config.shouldNavigateToNextLevel(currentLevel, hasChildren = true)
+
+    if (!shouldContinue || (canConfirmHere && state.currentLevel == 1)) {
+        // Stop navigation, proceed to context/resources selection
+        onStateUpdate(state.copy(
+            selectionChain = newChain,
+            selectedPath = newPath,
+            currentLevel = state.currentLevel + 1
+        ))
+        return
+    }
+
+    // Load next level options
+    try {
+        val children = dataNavigator.getChildren(newPath)
+        val nextLevelOptions = children.filter {
+            when (state.currentLevel + 1) {
+                1 -> it.type == NodeType.TOOL  // After zone, show tools
+                else -> false
+            }
+        }
+
+        val newLevel = state.currentLevel + 1
+        onStateUpdate(state.copy(
+            selectionChain = newChain,
+            selectedPath = newPath,
+            currentOptions = nextLevelOptions,
+            currentLevel = newLevel,
+            optionsByLevel = state.optionsByLevel + (newLevel to nextLevelOptions)
+        ))
+
+        LogManager.ui("ZoneScopeSelector: Loaded ${nextLevelOptions.size} options for level $newLevel", "DEBUG")
+    } catch (e: Exception) {
+        LogManager.ui("ZoneScopeSelector: Failed to load next level: ${e.message}", "ERROR", e)
+        onError(s.shared("error_loading_options"))
+    }
+}
+
+/**
+ * Get current selection level from chain
+ */
+private fun getCurrentSelectionLevel(chain: List<SelectionStep>): SelectionLevel {
+    return when (chain.lastOrNull()?.selectedNode?.type) {
+        NodeType.ZONE -> SelectionLevel.ZONE
+        NodeType.TOOL -> SelectionLevel.INSTANCE
+        else -> SelectionLevel.ZONE
+    }
+}
+
+/**
+ * Filter allowed contexts based on tool type support for executions
+ */
+private fun filterAllowedContexts(
+    state: ZoneScopeState,
+    config: NavigationConfig,
+    context: android.content.Context
+): List<PointerContext> {
+    val toolNode = state.selectionChain.lastOrNull { it.selectedNode.type == NodeType.TOOL }
+
+    return if (toolNode != null) {
+        // Extract tooltype from node's toolType field
+        val tooltype = toolNode.selectedNode.toolType
+
+        if (tooltype != null) {
+            val toolType = ToolTypeManager.getToolType(tooltype)
+            val supportsExecutions = toolType?.supportsExecutions() == true
+
+            // Filter out EXECUTIONS if tool doesn't support it
+            if (supportsExecutions) {
+                config.allowedContexts
+            } else {
+                config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
+            }
+        } else {
+            // No tooltype available, show all except EXECUTIONS to be safe
+            config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
+        }
+    } else {
+        // No tool selected yet, show all contexts
+        config.allowedContexts
+    }
+}
+
+/**
+ * Get available resources for a given context
+ */
+private fun getAvailableResourcesForContext(context: PointerContext): List<String> {
+    return when (context) {
+        PointerContext.GENERIC -> emptyList() // No resources for GENERIC
+        PointerContext.CONFIG -> listOf("config", "config_schema")
+        PointerContext.DATA -> listOf("data", "data_schema")
+        PointerContext.EXECUTIONS -> listOf("executions", "executions_schema")
+    }
+}
+
+/**
+ * Get default selected resources for a given context
+ */
+private fun getDefaultResourcesForContext(context: PointerContext): List<String> {
+    return when (context) {
+        PointerContext.GENERIC -> emptyList() // No default for GENERIC
+        PointerContext.CONFIG -> emptyList() // No default selection
+        PointerContext.DATA -> listOf("data") // Data checked by default
+        PointerContext.EXECUTIONS -> listOf("executions") // Executions checked by default
+    }
+}
+
+/**
+ * Should show period selector based on context
+ */
+private fun shouldShowPeriodSelector(state: ZoneScopeState, config: NavigationConfig): Boolean {
+    // Show for DATA, EXECUTIONS (always), and GENERIC (if user wants to specify reference period)
+    return when (state.selectedContext) {
+        PointerContext.DATA, PointerContext.EXECUTIONS -> true
+        PointerContext.GENERIC -> true // Optional reference period
+        PointerContext.CONFIG -> false // No period for configs
+    }
+}
+
+/**
+ * Check if current selection can be confirmed
+ */
+private fun canConfirmSelection(state: ZoneScopeState, config: NavigationConfig): Boolean {
+    // Must have completed navigation to required level
+    val hasRequiredNavigation = when {
+        config.allowInstanceSelection -> state.selectionChain.size >= 2
+        config.allowZoneSelection -> state.selectionChain.size >= 1
+        else -> false
+    }
+
+    if (!hasRequiredNavigation) return false
+
+    // GENERIC context has no resource requirements
+    if (state.selectedContext == PointerContext.GENERIC) return true
+
+    // Other contexts require at least one resource selected
+    return state.selectedResources.isNotEmpty()
+}
+
+/**
+ * Build final SelectionResult from current state
+ */
+private fun buildSelectionResult(state: ZoneScopeState, config: NavigationConfig): SelectionResult {
+    val displayChain = state.selectionChain.map { step ->
+        "${step.label}: ${step.selectedValue}"
+    }
+
+    val currentLevel = getCurrentSelectionLevel(state.selectionChain)
+
+    return SelectionResult(
+        selectedPath = state.selectedPath,
+        selectionLevel = currentLevel,
+        selectedContext = state.selectedContext,
+        selectedResources = state.selectedResources,
+        selectedValues = emptyList(), // Not used for POINTER (no field-level selection)
+        fieldSpecificData = null, // Not used for POINTER
+        displayChain = displayChain
+    )
+}
+
+// ================================================================================================
+// String Helpers
+// ================================================================================================
+
+private fun getContextLabel(context: PointerContext, s: com.assistant.core.strings.StringsContext): String {
+    return when (context) {
+        PointerContext.GENERIC -> s.shared("label_context_generic")
+        PointerContext.CONFIG -> s.shared("label_context_config")
+        PointerContext.DATA -> s.shared("label_context_data")
+        PointerContext.EXECUTIONS -> s.shared("label_context_executions")
+    }
+}
+
+private fun getResourceLabel(resource: String, s: com.assistant.core.strings.StringsContext): String {
+    return when (resource) {
+        "config" -> s.shared("label_resource_config")
+        "config_schema" -> s.shared("label_resource_config_schema")
+        "data" -> s.shared("label_resource_data")
+        "data_schema" -> s.shared("label_resource_data_schema")
+        "executions" -> s.shared("label_resource_executions")
+        "executions_schema" -> s.shared("label_resource_executions_schema")
+        else -> resource
+    }
+}
+
+private fun getPeriodSectionLabel(context: PointerContext, s: com.assistant.core.strings.StringsContext): String {
+    return when (context) {
+        PointerContext.GENERIC -> s.shared("label_period_reference")
+        PointerContext.DATA -> s.shared("label_period_data")
+        PointerContext.EXECUTIONS -> s.shared("label_period_execution")
+        PointerContext.CONFIG -> "" // Not shown
     }
 }

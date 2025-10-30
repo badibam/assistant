@@ -8,31 +8,29 @@ import com.assistant.core.ui.components.RelativePeriod
 
 /**
  * State for zone scope navigation and selection
+ * Simplified for POINTER enrichments (ZONE → INSTANCE → CONTEXT → RESOURCES → PERIOD)
  */
 data class ZoneScopeState(
-    // Navigation state
+    // Navigation state (ZONE and INSTANCE levels only)
     val selectionChain: List<SelectionStep> = emptyList(),
     val selectedPath: String = "",
     val currentOptions: List<SchemaNode> = emptyList(),
     val currentLevel: Int = 0,
-    val isComplete: Boolean = false,
 
     // Options available at each level for allowing changes (flexible depth)
     val optionsByLevel: Map<Int, List<SchemaNode>> = emptyMap(),
 
-    // Value selection state
-    val availableValues: List<String> = emptyList(),
-    val selectedValues: List<String> = emptyList(),
-    val contextualDataStatus: DataResultStatus = DataResultStatus.OK,
+    // Context selection (GENERIC, CONFIG, DATA, EXECUTIONS)
+    val selectedContext: PointerContext = PointerContext.GENERIC,
 
-    // Field-specific selection state
-    val fieldSpecificType: FieldSelectionType = FieldSelectionType.NONE,
+    // Resources selection (context-specific checkable items)
+    val selectedResources: List<String> = emptyList(),
 
-    // Timestamp field selection (date range)
+    // Period selection (for DATA and EXECUTIONS contexts, optional for GENERIC)
     val timestampSelection: TimestampSelection = TimestampSelection(),
 
-    // Name field selection
-    val nameSelection: NameSelection = NameSelection()
+    // Completion state
+    val isComplete: Boolean = false
 )
 
 /**
@@ -45,17 +43,13 @@ data class SelectionStep(
 )
 
 /**
- * Types de sélection spécifique aux champs
- */
-enum class FieldSelectionType {
-    NONE,        // Pas de sélection spécifique (champs data.*)
-    TIMESTAMP,   // Sélection de plage temporelle
-    NAME         // Sélection de noms d'entrées
-}
-
-/**
- * Sélection pour champ timestamp (plage temporelle)
+ * Period selection for temporal filtering (date range)
  * Supports both absolute periods (CHAT) and relative periods (AUTOMATION)
+ *
+ * Used for:
+ * - DATA context: filters tool_data.timestamp
+ * - EXECUTIONS context: filters tool_executions.executionTime
+ * - GENERIC context: reference period for AI (optional)
  */
 data class TimestampSelection(
     // Date minimum - absolute mode (CHAT)
@@ -76,15 +70,4 @@ data class TimestampSelection(
         get() = (minPeriodType != null || maxPeriodType != null) &&
                 (minPeriod != null || minCustomDateTime != null || maxPeriod != null || maxCustomDateTime != null ||
                  minRelativePeriod != null || maxRelativePeriod != null)
-}
-
-/**
- * Sélection pour champ name (noms d'entrées)
- */
-data class NameSelection(
-    val availableNames: List<String> = emptyList(),  // Noms d'entrées disponibles
-    val selectedNames: List<String> = emptyList()    // Noms sélectionnés
-) {
-    val isComplete: Boolean
-        get() = true // Always complete - can select 0 or more names
 }
