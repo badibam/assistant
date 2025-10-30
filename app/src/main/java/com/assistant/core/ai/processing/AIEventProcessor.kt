@@ -44,16 +44,37 @@ class AIEventProcessor(
     private val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var networkRetryJob: Job? = null
     private var sessionClosureJob: Job? = null
+    private var initialized = false
+    private var stateCollectorJob: Job? = null
 
     /**
      * Initialize processor and start listening to state changes.
+     *
+     * Protected against multiple calls: if already initialized, this is a no-op.
+     * This prevents duplicate event handlers when MainActivity.onCreate() is called
+     * multiple times (e.g., during configuration changes or activity recreation).
      */
     fun initialize() {
-        processingScope.launch {
+        if (initialized) {
+            com.assistant.core.utils.LogManager.aiSession(
+                "AIEventProcessor.initialize() called but already initialized, ignoring",
+                "DEBUG"
+            )
+            return
+        }
+
+        com.assistant.core.utils.LogManager.aiSession(
+            "AIEventProcessor.initialize() starting event loop",
+            "INFO"
+        )
+
+        stateCollectorJob = processingScope.launch {
             stateRepository.state.collect { state ->
                 handleStateChange(state)
             }
         }
+
+        initialized = true
     }
 
     /**
@@ -1543,10 +1564,21 @@ class AIEventProcessor(
 
     /**
      * Shutdown processor and cancel all jobs.
+     *
+     * After shutdown, initialize() can be called again to restart the processor.
      */
     fun shutdown() {
+        com.assistant.core.utils.LogManager.aiSession(
+            "AIEventProcessor.shutdown() called, canceling all jobs",
+            "INFO"
+        )
+
         networkRetryJob?.cancel()
         sessionClosureJob?.cancel()
+        stateCollectorJob?.cancel()
         processingScope.cancel()
+
+        // Allow reinitialization after shutdown
+        initialized = false
     }
 }

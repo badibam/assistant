@@ -389,6 +389,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val createdIds = mutableListOf<String>()
         var successCount = 0
         var failureCount = 0
+        val failures = mutableListOf<String>() // Track individual failure messages
 
         // Process each entry
         for (i in 0 until entriesArray.length()) {
@@ -415,12 +416,16 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     successCount++
                     com.assistant.core.utils.LogManager.service("Batch entry $i created successfully", "DEBUG")
                 } else {
+                    val error = "Entry $i: ${result.error ?: "unknown error"}"
+                    failures.add(error)
                     failureCount++
-                    com.assistant.core.utils.LogManager.service("Batch entry $i failed: ${result.error}", "WARN")
+                    com.assistant.core.utils.LogManager.service("Batch create failed for entry $i: ${result.error}", "WARN")
                 }
             } catch (e: Exception) {
+                val error = "Entry $i: ${e.message}"
+                failures.add(error)
                 failureCount++
-                com.assistant.core.utils.LogManager.service("Batch entry $i exception: ${e.message}", "ERROR", e)
+                com.assistant.core.utils.LogManager.service("Batch create exception for entry $i: ${e.message}", "ERROR", e)
             }
         }
 
@@ -429,7 +434,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            return OperationResult.error("All batch entries failed: $failureCount failed")
+            val detailedError = if (failures.isNotEmpty()) {
+                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
+            } else {
+                "All batch entries failed: $failureCount failed"
+            }
+            return OperationResult.error(detailedError)
         }
 
         // Log warning if partial failures occurred
@@ -466,14 +476,29 @@ class ToolDataService(private val context: Context) : ExecutableService {
         var failureCount = 0
 
         // Process each entry
+        val failures = mutableListOf<String>() // Track individual failure messages
+
         for (i in 0 until entriesArray.length()) {
             if (token.isCancelled) return OperationResult.cancelled()
 
             try {
                 val entryJson = entriesArray.getJSONObject(i)
+
+                // Debug: log raw entry JSON
+                com.assistant.core.utils.LogManager.service(
+                    "Batch update entry $i JSON: $entryJson",
+                    "DEBUG"
+                )
+
                 val entryId = entryJson.optString("id")
 
                 if (entryId.isEmpty()) {
+                    val error = "Entry $i: missing id (raw value: ${entryJson.opt("id")})"
+                    failures.add(error)
+                    com.assistant.core.utils.LogManager.service(
+                        "Batch update failed for entry $i: missing id, raw value=${entryJson.opt("id")}",
+                        "WARN"
+                    )
                     failureCount++
                     continue
                 }
@@ -492,9 +517,22 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     successCount++
                 } else {
+                    val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
+                    failures.add(error)
+                    com.assistant.core.utils.LogManager.service(
+                        "Batch update failed for entry $i (id=$entryId): ${result.error}",
+                        "WARN"
+                    )
                     failureCount++
                 }
             } catch (e: Exception) {
+                val error = "Entry $i: ${e.message}"
+                failures.add(error)
+                com.assistant.core.utils.LogManager.service(
+                    "Batch update exception for entry $i: ${e.message}",
+                    "ERROR",
+                    e
+                )
                 failureCount++
             }
         }
@@ -504,7 +542,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            return OperationResult.error("All batch entries failed: $failureCount failed")
+            val detailedError = if (failures.isNotEmpty()) {
+                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
+            } else {
+                "All batch entries failed: $failureCount failed"
+            }
+            return OperationResult.error(detailedError)
         }
 
         // Log warning if partial failures occurred
@@ -537,6 +580,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         var successCount = 0
         var failureCount = 0
+        val failures = mutableListOf<String>() // Track individual failure messages
 
         // Process each ID
         for (i in 0 until idsArray.length()) {
@@ -546,6 +590,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val entryId = idsArray.getString(i)
 
                 if (entryId.isEmpty()) {
+                    val error = "Entry $i: missing id"
+                    failures.add(error)
+                    com.assistant.core.utils.LogManager.service(
+                        "Batch delete failed for entry $i: missing id",
+                        "WARN"
+                    )
                     failureCount++
                     continue
                 }
@@ -561,9 +611,22 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     successCount++
                 } else {
+                    val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
+                    failures.add(error)
+                    com.assistant.core.utils.LogManager.service(
+                        "Batch delete failed for entry $i (id=$entryId): ${result.error}",
+                        "WARN"
+                    )
                     failureCount++
                 }
             } catch (e: Exception) {
+                val error = "Entry $i: ${e.message}"
+                failures.add(error)
+                com.assistant.core.utils.LogManager.service(
+                    "Batch delete exception for entry $i: ${e.message}",
+                    "ERROR",
+                    e
+                )
                 failureCount++
             }
         }
@@ -573,7 +636,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // MAJOR: Return error if ALL entries failed (AI must know about total failure)
         // Return success with visible counts if partial success (AI can parse failed_count)
         if (successCount == 0 && failureCount > 0) {
-            return OperationResult.error("All batch entries failed: $failureCount failed")
+            val detailedError = if (failures.isNotEmpty()) {
+                "All batch entries failed ($failureCount): ${failures.joinToString("; ")}"
+            } else {
+                "All batch entries failed: $failureCount failed"
+            }
+            return OperationResult.error(detailedError)
         }
 
         // Log warning if partial failures occurred

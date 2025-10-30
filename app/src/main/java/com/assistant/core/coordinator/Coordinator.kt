@@ -238,11 +238,55 @@ class Coordinator(context: Context) {
         tokens[opId] = token
         
         return try {
+            // DEBUG: Log before conversion
+            if (command.params.containsKey("entries")) {
+                val entriesBeforeConversion = command.params["entries"]
+                LogManager.coordination(
+                    "TRACE: Coordinator BEFORE JsonUtils.toJSONObject - entries=$entriesBeforeConversion",
+                    "DEBUG"
+                )
+                if (entriesBeforeConversion is List<*> && entriesBeforeConversion.isNotEmpty()) {
+                    val firstEntry = entriesBeforeConversion[0]
+                    LogManager.coordination(
+                        "TRACE: Coordinator BEFORE conversion - first entry=$firstEntry",
+                        "DEBUG"
+                    )
+                    if (firstEntry is Map<*, *>) {
+                        LogManager.coordination(
+                            "TRACE: Coordinator BEFORE conversion - first entry.id=${firstEntry["id"]}",
+                            "DEBUG"
+                        )
+                    }
+                }
+            }
+
             // Convert params Map to JSONObject with recursive conversion of nested structures
             // This ensures nested Maps/Lists are properly converted to JSONObject/JSONArray
             // (e.g., entries[].data becomes JSONObject instead of remaining as Map)
             val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params).apply {
                 put("phase", phase)
+            }
+
+            // DEBUG: Log after conversion
+            if (params.has("entries")) {
+                val entriesAfterConversion = params.optJSONArray("entries")
+                LogManager.coordination(
+                    "TRACE: Coordinator AFTER JsonUtils.toJSONObject - entries=$entriesAfterConversion",
+                    "DEBUG"
+                )
+                if (entriesAfterConversion != null && entriesAfterConversion.length() > 0) {
+                    val firstEntry = entriesAfterConversion.optJSONObject(0)
+                    LogManager.coordination(
+                        "TRACE: Coordinator AFTER conversion - first entry=$firstEntry",
+                        "DEBUG"
+                    )
+                    if (firstEntry != null) {
+                        LogManager.coordination(
+                            "TRACE: Coordinator AFTER conversion - first entry.id=${firstEntry.opt("id")} (type=${firstEntry.opt("id")?.javaClass?.simpleName})",
+                            "DEBUG"
+                        )
+                    }
+                }
             }
 
             LogManager.coordination("Calling service.execute with params: $params", "VERBOSE")

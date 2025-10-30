@@ -113,7 +113,6 @@ object BaseSchemas {
             "properties": {
                 "id": {
                     "type": "string",
-                    "systemManaged": true,
                     "description": "${s.shared("tools_base_schema_data_id")}"
                 },
                 "tool_instance_id": {

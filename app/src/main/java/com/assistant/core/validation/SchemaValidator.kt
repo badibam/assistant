@@ -26,20 +26,34 @@ object SchemaValidator {
      * @param schema Complete Schema object with content and metadata
      * @param data Data to validate as key-value map
      * @param context Android context for string resource access
+     * @param partialValidation If true, ignores 'required' fields that are missing (for partial updates)
      * @return ValidationResult with success/error status and user-friendly messages
      */
-    fun validate(schema: Schema, data: Map<String, Any>, context: Context): ValidationResult {
-        LogManager.schema("Schema validation start for schema: ${schema.id}")
+    fun validate(
+        schema: Schema,
+        data: Map<String, Any>,
+        context: Context,
+        partialValidation: Boolean = false
+    ): ValidationResult {
+        LogManager.schema("Schema validation start for schema: ${schema.id}, partialValidation=$partialValidation")
 
         return try {
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
 
+            // For partial validation, modify schema to make 'required' fields optional
+            // This allows updates to only specify the fields they want to change
+            val schemaContent = if (partialValidation) {
+                removeRequiredConstraint(schema.content)
+            } else {
+                schema.content
+            }
+
             LogManager.schema("=== Schema being validated ===")
             LogManager.schema("Schema ID: ${schema.id}")
-            LogManager.schema("Schema content: ${schema.content}")
+            LogManager.schema("Schema content (partial=$partialValidation): $schemaContent")
             LogManager.schema("=== End schema ===")
 
-            val jsonSchema = getOrCompileSchema(schema.content)
+            val jsonSchema = getOrCompileSchema(schemaContent)
             val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
             val dataNode = objectMapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(cleanData)
 
@@ -158,6 +172,53 @@ object SchemaValidator {
         }
     }
     
+    /**
+     * Remove 'required' constraints from schema for partial validation
+     * Recursively processes nested objects to remove all 'required' arrays
+     *
+     * This allows partial updates where only modified fields are provided
+     * while still validating the types/formats of fields that ARE provided
+     */
+    private fun removeRequiredConstraint(schemaJson: String): String {
+        return try {
+            LogManager.schema("removeRequiredConstraint - BEFORE: $schemaJson", "DEBUG")
+            val schemaObject = JSONObject(schemaJson)
+            removeRequiredFromObject(schemaObject)
+            val result = schemaObject.toString()
+            LogManager.schema("removeRequiredConstraint - AFTER: $result", "DEBUG")
+            result
+        } catch (e: Exception) {
+            LogManager.schema("Failed to remove required constraint: ${e.message}", "WARN", e)
+            schemaJson // Return original on error
+        }
+    }
+
+    /**
+     * Recursively remove 'required' arrays from a JSONObject and its nested objects
+     */
+    private fun removeRequiredFromObject(obj: JSONObject) {
+        // Remove 'required' array at this level
+        if (obj.has("required")) {
+            obj.remove("required")
+        }
+
+        // Recursively process nested objects
+        obj.keys().forEach { key ->
+            val value = obj.opt(key)
+            when (value) {
+                is JSONObject -> removeRequiredFromObject(value)
+                is org.json.JSONArray -> {
+                    for (i in 0 until value.length()) {
+                        val item = value.opt(i)
+                        if (item is JSONObject) {
+                            removeRequiredFromObject(item)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Gets or compiles schema with optional caching
      */

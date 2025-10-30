@@ -54,19 +54,29 @@ object JsonNormalizer {
         return when {
             value == null -> null
 
+            // JSONObject.NULL is a special singleton representing null in JSON
+            // It's not actually null but equals JSONObject.NULL
+            value == JSONObject.NULL -> null
+
             // JSON types - convert to Kotlin
             // Handle JSONObject and its anonymous subclasses (JSONObject$1, etc.)
             // Don't cast directly - use reflection-based approach
             value.javaClass.name.startsWith("org.json.JSONObject") -> {
+                // Check if the stringified value is just "null" (can happen with nested nulls)
+                val stringified = value.toString()
+                if (stringified == "null") {
+                    return null
+                }
+
                 // Reconstruct a new JSONObject from the anonymous subclass
                 // This avoids ClassCastException with JSONObject$1
-                val sourceObj = JSONObject(value.toString())
-                val map = mutableMapOf<String, Any>()
+                val sourceObj = JSONObject(stringified)
+                val map = mutableMapOf<String, Any?>()
                 sourceObj.keys().forEach { key ->
                     val normalized = normalizeValue(sourceObj.get(key))
-                    if (normalized != null) {
-                        map[key] = normalized
-                    }
+                    // Keep null values in the map (don't filter them out)
+                    // Filtering nulls was causing fields to disappear from batch operations
+                    map[key] = normalized
                 }
                 map
             }
@@ -82,19 +92,20 @@ object JsonNormalizer {
             // Already Kotlin types - recurse in case of nested structures
             value is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
-                val typedMap = value as Map<String, Any>
-                val result = mutableMapOf<String, Any>()
+                val typedMap = value as Map<String, Any?>
+                val result = mutableMapOf<String, Any?>()
                 typedMap.forEach { (k, v) ->
                     val normalized = normalizeValue(v)
-                    if (normalized != null) {
-                        result[k] = normalized
-                    }
+                    // Keep null values in the map (don't filter them out)
+                    // Filtering nulls was causing fields to disappear from batch operations
+                    result[k] = normalized
                 }
                 result
             }
 
             value is List<*> -> {
-                value.mapNotNull { item ->
+                // Keep nulls in lists (use map instead of mapNotNull)
+                value.map { item ->
                     normalizeValue(item)
                 }
             }

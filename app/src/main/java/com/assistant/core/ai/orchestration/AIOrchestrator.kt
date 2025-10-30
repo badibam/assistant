@@ -69,6 +69,9 @@ object AIOrchestrator {
     // Maps sessionId -> List<MessageSegment> for composer state preservation between screen close/reopen
     private val draftMessage = mutableMapOf<String, List<MessageSegment>>()
 
+    // Initialization flag to prevent multiple initializations
+    private var initialized = false
+
     // ========================================================================================
     // Public Observable State
     // ========================================================================================
@@ -197,15 +200,24 @@ object AIOrchestrator {
     /**
      * Initialize orchestrator with context.
      * Must be called at app startup before any usage.
+     *
+     * Protected against multiple calls: if already initialized, this is a no-op.
+     * This prevents duplicate initialization when MainActivity.onCreate() is called
+     * multiple times (e.g., during configuration changes or activity recreation).
      */
     suspend fun initialize(context: Context) {
+        if (initialized) {
+            LogManager.aiSession("AIOrchestrator.initialize() called but already initialized, ignoring", "DEBUG")
+            return
+        }
+
+        LogManager.aiSession("AIOrchestrator V2 initializing...", "INFO")
+
         this.context = context.applicationContext
         this.coordinator = Coordinator(this.context)
 
         val appDatabase = AppDatabase.getDatabase(this.context)
         this.aiDao = appDatabase.aiDao()
-
-        LogManager.aiSession("AIOrchestrator V2 initializing...")
 
         // Initialize components
         stateRepository = AIStateRepository(this.context, aiDao)
@@ -235,6 +247,7 @@ object AIOrchestrator {
         // Start event processor
         eventProcessor.initialize()
 
+        initialized = true
         LogManager.aiSession("AIOrchestrator V2 initialized", "INFO")
     }
 
@@ -606,9 +619,12 @@ object AIOrchestrator {
 
     /**
      * Shutdown orchestrator and cleanup resources.
+     *
+     * After shutdown, initialize() can be called again to restart the orchestrator.
      */
     fun shutdown() {
-        eventProcessor.shutdown()
         LogManager.aiSession("AIOrchestrator V2 shutdown", "INFO")
+        eventProcessor.shutdown()
+        initialized = false
     }
 }

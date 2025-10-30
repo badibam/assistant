@@ -201,8 +201,55 @@ data class AIMessage(
             paramsJson.keys().forEach { key ->
                 rawParams[key] = paramsJson.get(key)
             }
+
+            // DEBUG: Log entries array BEFORE normalization
+            if (rawParams.containsKey("entries")) {
+                val entriesRaw = rawParams["entries"]
+                com.assistant.core.utils.LogManager.aiService(
+                    "TRACE: parseParams BEFORE normalize - entries type=${entriesRaw?.javaClass?.simpleName}, value=$entriesRaw",
+                    "DEBUG"
+                )
+                if (entriesRaw is org.json.JSONArray && entriesRaw.length() > 0) {
+                    val firstEntry = entriesRaw.get(0)
+                    com.assistant.core.utils.LogManager.aiService(
+                        "TRACE: parseParams BEFORE normalize - first entry=$firstEntry",
+                        "DEBUG"
+                    )
+                    if (firstEntry is org.json.JSONObject) {
+                        com.assistant.core.utils.LogManager.aiService(
+                            "TRACE: parseParams BEFORE normalize - first entry.id=${firstEntry.opt("id")}",
+                            "DEBUG"
+                        )
+                    }
+                }
+            }
+
             // Normalize all JSON types to Kotlin equivalents
-            return JsonNormalizer.normalizeParams(rawParams)
+            val normalized = JsonNormalizer.normalizeParams(rawParams)
+
+            // DEBUG: Log entries array AFTER normalization
+            if (normalized.containsKey("entries")) {
+                val entriesNormalized = normalized["entries"]
+                com.assistant.core.utils.LogManager.aiService(
+                    "TRACE: parseParams AFTER normalize - entries type=${entriesNormalized?.javaClass?.simpleName}, value=$entriesNormalized",
+                    "DEBUG"
+                )
+                if (entriesNormalized is List<*> && entriesNormalized.isNotEmpty()) {
+                    val firstEntry = entriesNormalized[0]
+                    com.assistant.core.utils.LogManager.aiService(
+                        "TRACE: parseParams AFTER normalize - first entry=$firstEntry",
+                        "DEBUG"
+                    )
+                    if (firstEntry is Map<*, *>) {
+                        com.assistant.core.utils.LogManager.aiService(
+                            "TRACE: parseParams AFTER normalize - first entry.id=${firstEntry["id"]}",
+                            "DEBUG"
+                        )
+                    }
+                }
+            }
+
+            return normalized
         }
 
         /**

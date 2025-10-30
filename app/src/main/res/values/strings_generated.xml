@@ -1097,6 +1097,7 @@
     <string name="shared_schedule_time_format">Format HH:mm (heure 24h)</string>
     <string name="shared_schedule_pattern">Type de récurrence du planning</string>
     <string name="shared_schedule_timezone">Fuseau horaire du planning</string>
+    <string name="shared_schedule_day_of_month">Jour du mois (1-31) pour récurrence mensuelle</string>
     <string name="shared_schedule_enabled">Planning activé</string>
     <string name="shared_schedule_start_date">Date de début d\'exécution (timestamp milliseconds)</string>
     <string name="shared_schedule_end_date">Date de fin d\'exécution (timestamp milliseconds)</string>

@@ -193,7 +193,7 @@ class ActionValidator(private val context: Context) {
                         return ValidationResult.error("Schema not found: $schemaId")
                     }
 
-                    validateBatchToolData(params, schema, schemaId, toolTypeName)
+                    validateBatchToolData(params, schema, schemaId, toolTypeName, operation)
                 }
                 "create", "update" -> {
                     // For single operations, schema_id is at params level
@@ -210,7 +210,7 @@ class ActionValidator(private val context: Context) {
                         return ValidationResult.error("Schema not found: $schemaId")
                     }
 
-                    validateSingleToolData(params, schema, schemaId, toolTypeName)
+                    validateSingleToolData(params, schema, schemaId, toolTypeName, operation)
                 }
                 else -> ValidationResult.success() // Shouldn't reach here
             }
@@ -223,12 +223,14 @@ class ActionValidator(private val context: Context) {
 
     /**
      * Validate single tool data entry
+     * @param operation The operation being performed (create, update, etc.)
      */
     private fun validateSingleToolData(
         params: Map<String, Any>,
         schema: com.assistant.core.validation.Schema,
         schemaId: String,
-        toolTypeName: String
+        toolTypeName: String,
+        operation: String
     ): ValidationResult {
         val dataObj = params["data"]
         val dataMap = when (dataObj) {
@@ -256,7 +258,9 @@ class ActionValidator(private val context: Context) {
         // Keep data as nested object (required by schema)
         fullDataMap["data"] = dataMap
 
-        val validationResult = SchemaValidator.validate(schema, fullDataMap, context)
+        // Use partial validation for updates (only validate fields that are present)
+        val partialValidation = operation == "update"
+        val validationResult = SchemaValidator.validate(schema, fullDataMap, context, partialValidation)
 
         if (validationResult.isValid) {
             LogManager.aiService("Tool data validation successful for $toolTypeName", "DEBUG")
@@ -272,12 +276,14 @@ class ActionValidator(private val context: Context) {
 
     /**
      * Validate batch tool data entries
+     * @param operation The operation being performed (batch_create, batch_update, etc.)
      */
     private fun validateBatchToolData(
         params: Map<String, Any>,
         schema: com.assistant.core.validation.Schema,
         schemaId: String,
-        toolTypeName: String
+        toolTypeName: String,
+        operation: String
     ): ValidationResult {
         val entries = params["entries"] as? List<*>
         if (entries.isNullOrEmpty()) {
@@ -326,7 +332,9 @@ class ActionValidator(private val context: Context) {
             // Keep data as nested object (required by schema)
             fullDataMap["data"] = dataMap
 
-            val validationResult = SchemaValidator.validate(schema, fullDataMap, context)
+            // Use partial validation for batch_update (only validate fields that are present)
+            val partialValidation = operation == "batch_update"
+            val validationResult = SchemaValidator.validate(schema, fullDataMap, context, partialValidation)
 
             if (!validationResult.isValid) {
                 LogManager.aiService(
