@@ -41,12 +41,6 @@ object PointerEnrichmentSchema {
                 "required": true,
                 "note": "${s.shared("pointer_schema_selection_level_note")}"
             },
-            "importance": {
-                "type": "string",
-                "description": "${s.shared("pointer_schema_importance")}",
-                "enum": ["optionnel", "important", "essentiel"],
-                "default": "important"
-            },
             "includeData": {
                 "type": "boolean",
                 "description": "${s.shared("pointer_schema_include_data")}",
@@ -74,11 +68,6 @@ object PointerEnrichmentSchema {
                 "${s.shared("pointer_schema_usage_capability_3")}",
                 "${s.shared("pointer_schema_usage_capability_4")}"
             ]
-        },
-        "importance_levels": {
-            "optionnel": "${s.shared("pointer_schema_importance_optional")}",
-            "important": "${s.shared("pointer_schema_importance_important")}",
-            "essentiel": "${s.shared("pointer_schema_importance_essential")}"
         },
         "commands": {
             "description": "${s.shared("pointer_schema_commands_description")}",

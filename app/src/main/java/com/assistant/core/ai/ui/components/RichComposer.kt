@@ -646,6 +646,7 @@ private fun EnrichmentConfigDialog(
 
 /**
  * Specific dialog for POINTER enrichment with ZoneScopeSelector
+ * Simplified: ZoneScopeSelector directly confirms without additional parameters
  */
 @Composable
 private fun PointerEnrichmentDialog(
@@ -657,239 +658,27 @@ private fun PointerEnrichmentDialog(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    var showZoneScopeSelector by remember { mutableStateOf(true) }
-    var selectionResult by remember { mutableStateOf<SelectionResult?>(null) }
-
-    // Additional fields (context and resources are managed by ZoneScopeSelector)
-    var importance by remember { mutableStateOf("important") }
-    var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
-    var description by remember { mutableStateOf("") }
-
-    // App configuration for timestamp handling
-    var dayStartHour by remember { mutableStateOf(0) }
-    var weekStartDay by remember { mutableStateOf("monday") }
-
-    // Load app configuration
-    LaunchedEffect(Unit) {
-        try {
-            val coordinator = Coordinator(context)
-            val configResult = coordinator.processUserAction("app_config.get", emptyMap())
-            if (configResult.isSuccess) {
-                val config = configResult.data?.get("settings") as? Map<String, Any>
-                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
-                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
-            }
-        } catch (e: Exception) {
-            // Use defaults if config loading fails
-            dayStartHour = 0
-            weekStartDay = "monday"
+    // Show ZoneScopeSelector directly, confirm on selection
+    ZoneScopeSelector(
+        config = NavigationConfig(
+            allowZoneSelection = true,
+            allowInstanceSelection = true,
+            allowFieldSelection = false,  // Limited to instance level only
+            allowValueSelection = false,
+            title = s.shared("pointer_enrichment_selector_title"),
+            useRelativeLabels = (sessionType == SessionType.AUTOMATION)
+        ),
+        onDismiss = onDismiss,
+        onConfirm = { result ->
+            // Create config directly from selection result (no additional parameters)
+            val config = createPointerConfig(
+                selectionResult = result,
+                description = ""  // Optional description removed from UI
+            )
+            val (uiPreview, promptPreview) = createPointerPreview(context, result)
+            onConfirm(config, uiPreview, promptPreview)
         }
-    }
-
-    if (showZoneScopeSelector) {
-        ZoneScopeSelector(
-            config = NavigationConfig(
-                allowZoneSelection = true,
-                allowInstanceSelection = true,
-                allowFieldSelection = false,  // Limited to instance level only
-                allowValueSelection = false,
-                title = s.shared("pointer_enrichment_selector_title"),
-                useRelativeLabels = (sessionType == SessionType.AUTOMATION)
-            ),
-            onDismiss = onDismiss,
-            onConfirm = { result ->
-                selectionResult = result
-                showZoneScopeSelector = false
-            }
-        )
-    } else {
-        // Additional configuration fields after selection
-        val useRelativeLabels = (sessionType == SessionType.AUTOMATION)
-        val scrollState = rememberScrollState()
-
-        UI.Dialog(
-            type = DialogType.CONFIGURE,
-            onConfirm = {
-                selectionResult?.let { result ->
-                    val config = createPointerConfig(
-                        selectionResult = result,
-                        importance = importance,
-                        timestampSelection = timestampSelection,
-                        description = description
-                    )
-                    val (uiPreview, promptPreview) = createPointerPreview(context, result, timestampSelection, importance)
-                    onConfirm(config, uiPreview, promptPreview)
-                }
-            },
-            onCancel = onDismiss
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                UI.Text(
-                    text = s.shared("pointer_enrichment_config"),
-                    type = TextType.TITLE
-                )
-
-                // Show selected path with human-readable labels and change button
-                selectionResult?.let { result ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            UI.Text(
-                                text = if (result.displayChain.isNotEmpty()) {
-                                    "${s.shared("ai_enrichment_selection_label")} ${result.displayChain.joinToString(" → ")}"
-                                } else {
-                                    "${s.shared("ai_enrichment_selection_label")} ${result.selectedPath}"
-                                },
-                                type = TextType.BODY
-                            )
-                        }
-                        UI.ActionButton(
-                            action = ButtonAction.EDIT,
-                            display = ButtonDisplay.ICON,
-                            onClick = {
-                                showZoneScopeSelector = true
-                            }
-                        )
-                    }
-                }
-
-                // Importance selector
-                val importanceOptions = listOf("optional", "important", "essential")
-                val importanceLabels = listOf(
-                    s.shared("ai_importance_optional"),
-                    s.shared("ai_importance_important"),
-                    s.shared("ai_importance_essential")
-                )
-
-                UI.FormSelection(
-                    label = s.shared("ai_enrichment_importance"),
-                    options = importanceLabels,
-                    selected = importanceLabels[importanceOptions.indexOf(importance)],
-                    onSelect = { selectedLabel ->
-                        importance = importanceOptions[importanceLabels.indexOf(selectedLabel)]
-                    }
-                )
-
-                // Data inclusion toggles (different for ZONE vs INSTANCE)
-                // Display selected context and resources (read-only, set by ZoneScopeSelector)
-                selectionResult?.let { result ->
-                    UI.Text(
-                        text = s.shared("ai_enrichment_selection_summary"),
-                        type = TextType.SUBTITLE
-                    )
-
-                    // Context display
-                    val contextLabel = when (result.selectedContext) {
-                        PointerContext.GENERIC -> s.shared("label_context_generic")
-                        PointerContext.CONFIG -> s.shared("label_context_config")
-                        PointerContext.DATA -> s.shared("label_context_data")
-                        PointerContext.EXECUTIONS -> s.shared("label_context_executions")
-                    }
-                    UI.Text(
-                        text = "${s.shared("scope_select_context")}: $contextLabel",
-                        type = TextType.BODY
-                    )
-
-                    // Resources display
-                    if (result.selectedResources.isNotEmpty()) {
-                        val resourcesLabel = result.selectedResources.joinToString(", ") { resource ->
-                            when (resource) {
-                                "config" -> s.shared("label_resource_config")
-                                "config_schema" -> s.shared("label_resource_config_schema")
-                                "data" -> s.shared("label_resource_data")
-                                "data_schema" -> s.shared("label_resource_data_schema")
-                                "executions" -> s.shared("label_resource_executions")
-                                "executions_schema" -> s.shared("label_resource_executions_schema")
-                                else -> resource
-                            }
-                        }
-                        UI.Text(
-                            text = "${s.shared("scope_select_resources")}: $resourcesLabel",
-                            type = TextType.BODY
-                        )
-                    }
-                }
-
-                // Timestamp selection section
-                PeriodRangeSelector(
-                    startPeriodType = timestampSelection.minPeriodType,
-                    startPeriod = timestampSelection.minPeriod,
-                    startCustomDate = timestampSelection.minCustomDateTime,
-                    endPeriodType = timestampSelection.maxPeriodType,
-                    endPeriod = timestampSelection.maxPeriod,
-                    endCustomDate = timestampSelection.maxCustomDateTime,
-                    onStartTypeChange = { newType ->
-                        // Clear custom date when switching to period type, clear period/relativePeriod when switching to custom
-                        timestampSelection = if (newType != null) {
-                            timestampSelection.copy(minPeriodType = newType, minCustomDateTime = null)
-                        } else {
-                            timestampSelection.copy(minPeriodType = null, minPeriod = null, minRelativePeriod = null)
-                        }
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onStartPeriodChange = { newPeriod ->
-                        timestampSelection = timestampSelection.copy(minPeriod = newPeriod, minRelativePeriod = null)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onStartCustomDateChange = { newDate ->
-                        timestampSelection = timestampSelection.copy(minCustomDateTime = newDate)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onEndTypeChange = { newType ->
-                        // Clear custom date when switching to period type, clear period/relativePeriod when switching to custom
-                        timestampSelection = if (newType != null) {
-                            timestampSelection.copy(maxPeriodType = newType, maxCustomDateTime = null)
-                        } else {
-                            timestampSelection.copy(maxPeriodType = null, maxPeriod = null, maxRelativePeriod = null)
-                        }
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onEndPeriodChange = { newPeriod ->
-                        timestampSelection = timestampSelection.copy(maxPeriod = newPeriod, maxRelativePeriod = null)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onEndCustomDateChange = { newDate ->
-                        timestampSelection = timestampSelection.copy(maxCustomDateTime = newDate)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    useOnlyRelativeLabels = useRelativeLabels,
-                    returnRelative = (sessionType == SessionType.AUTOMATION),
-                    startRelativePeriod = timestampSelection.minRelativePeriod,
-                    endRelativePeriod = timestampSelection.maxRelativePeriod,
-                    onStartRelativePeriodChange = { newRelativePeriod ->
-                        timestampSelection = timestampSelection.copy(minRelativePeriod = newRelativePeriod, minPeriod = null)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    },
-                    onEndRelativePeriodChange = { newRelativePeriod ->
-                        timestampSelection = timestampSelection.copy(maxRelativePeriod = newRelativePeriod, maxPeriod = null)
-                        // TODO: Recalculate token count when filters change (if includeData toggle enabled)
-                    }
-                )
-
-                // Description field
-                UI.FormField(
-                    label = s.shared("ai_enrichment_description_optional"),
-                    value = description,
-                    onChange = { description = it },
-                    fieldType = FieldType.TEXT_MEDIUM
-                )
-
-                // Button to go back to selector
-                UI.ActionButton(
-                    action = ButtonAction.BACK,
-                    onClick = { showZoneScopeSelector = true }
-                )
-            }
-        }
-    }
+    )
 }
 
 /**
@@ -941,29 +730,25 @@ private fun PlaceholderEnrichmentDialog(
 }
 
 /**
- * Create JSON config from POINTER enrichment data
- */
-/**
  * Create JSON configuration for POINTER enrichment
  * Uses context-aware selection with selectedContext and selectedResources
+ * Period selection comes from SelectionResult.timestampSelection
  */
 private fun createPointerConfig(
     selectionResult: SelectionResult,
-    importance: String,
-    timestampSelection: TimestampSelection,
     description: String
 ): String {
     return JSONObject().apply {
         // Core selection data
         put("selectedPath", selectionResult.selectedPath)
         put("selectionLevel", selectionResult.selectionLevel.name)
-        put("importance", importance)
 
-        // Context-aware selection (new)
+        // Context-aware selection
         put("selectedContext", selectionResult.selectedContext.name)
         put("selectedResources", JSONArray(selectionResult.selectedResources))
 
-        // Period selection
+        // Period selection (from ZoneScopeSelector)
+        val timestampSelection = selectionResult.timestampSelection
         if (timestampSelection.isComplete) {
             put("timestampSelection", JSONObject().apply {
                 // Store min period (start of range)
@@ -1043,9 +828,7 @@ private fun createPointerConfig(
  */
 private fun createPointerPreview(
     context: Context,
-    selectionResult: SelectionResult,
-    timestampSelection: TimestampSelection,
-    importance: String
+    selectionResult: SelectionResult
 ): Pair<String, String> {
     val s = Strings.`for`(context = context)
 
@@ -1057,18 +840,24 @@ private fun createPointerPreview(
         pathParts.lastOrNull() ?: "sélection"
     }
 
-    // Period text (if filtered)
-    val périodeText = if (timestampSelection.isComplete) {
+    // Period text (if filtered) - from SelectionResult.timestampSelection
+    val périodeText = if (selectionResult.timestampSelection.isComplete) {
         " (${s.shared("ai_period_filtered")})"
     } else {
         ""
     }
 
+    // Extract clean ID from path (remove resource type prefix)
+    // Example: "tools.7d8cd430-efff-4721-a403-172922ba2892" → "7d8cd430-efff-4721-a403-172922ba2892"
+    // Example: "zones.zone_abc" → "zone_abc"
+    val pathParts = selectionResult.selectedPath.split(".").filter { it.isNotBlank() }
+    val cleanId = pathParts.lastOrNull() ?: selectionResult.selectedPath
+
     // UI version: just the name and period
     val uiPreview = "$displayName$périodeText"
 
-    // Prompt version: name + ID + period
-    val promptPreview = "$displayName (id = ${selectionResult.selectedPath})$périodeText"
+    // Prompt version: name + clean ID + period
+    val promptPreview = "$displayName (id = $cleanId)$périodeText"
 
     return Pair(uiPreview, promptPreview)
 }

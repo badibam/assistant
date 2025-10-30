@@ -17,7 +17,7 @@ import org.json.JSONObject
  * Core logic:
  * - All enrichments generate textual summaries for AI orientation
  * - Only specific types generate DataCommands for Level 4 prompt inclusion:
- *   * 🔍 POINTER: Query if importance != 'optionnelle'
+ *   * 🔍 POINTER: Always generates query
  *   * 📝 USE: Query for tool instance config
  *   * 🔧 MODIFY_CONFIG: Query for tool instance config
  *   * ✨ CREATE: No query (just orientation)
@@ -61,16 +61,8 @@ class EnrichmentProcessor(
         LogManager.aiEnrichment("EnrichmentProcessor.shouldGenerateQuery() called with type=$type", "DEBUG")
 
         return try {
-            val configJson = JSONObject(config)
-
             val shouldGenerate = when (type) {
-                EnrichmentType.POINTER -> {
-                    val importance = configJson.optString("importance", "important")
-                    val result = importance != "optionnelle"
-                    LogManager.aiEnrichment("POINTER enrichment importance='$importance', shouldGenerate=$result", "DEBUG")
-                    result
-                }
-                EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG -> {
+                EnrichmentType.POINTER, EnrichmentType.USE, EnrichmentType.MODIFY_CONFIG -> {
                     LogManager.aiEnrichment("$type enrichment always generates query", "DEBUG")
                     true
                 }

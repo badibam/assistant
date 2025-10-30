@@ -264,11 +264,15 @@ class AIEventProcessor(
      *
      * Flow:
      * 1. Load messages and find last USER message
-     * 2. Extract RichMessage and regenerate DataCommands from EnrichmentBlocks
-     * 3. Transform commands via UserCommandProcessor
-     * 4. Execute via CommandExecutor
-     * 5. Store SystemMessage with results
-     * 6. Emit EnrichmentsExecuted event with CommandResults
+     * 2. Check if enrichments already executed (SystemMessage follows USER message)
+     * 3. Extract RichMessage and regenerate DataCommands from EnrichmentBlocks
+     * 4. Transform commands via UserCommandProcessor
+     * 5. Execute via CommandExecutor
+     * 6. Store SystemMessage with results
+     * 7. Emit EnrichmentsExecuted event with CommandResults
+     *
+     * Note: When user sends empty message (implicit "continue"), we skip enrichments
+     * because they were already executed for the previous USER message.
      */
     private suspend fun executeEnrichments(state: AIState) {
         try {
@@ -288,6 +292,18 @@ class AIEventProcessor(
                 return
             }
 
+            // 2. Check if enrichments already executed for this USER message
+            // If there's already a SYSTEM message after this USER message, enrichments were executed
+            val lastUserMessageIndex = messages.indexOfLast { it.id == lastUserMessage.id }
+            val hasSystemMessageAfter = messages.drop(lastUserMessageIndex + 1)
+                .any { it.sender == MessageSender.SYSTEM }
+
+            if (hasSystemMessageAfter) {
+                LogManager.aiSession("executeEnrichments: Enrichments already executed for last USER message (implicit continue), skipping", "DEBUG")
+                emit(AIEvent.EnrichmentsExecuted(emptyList()))
+                return
+            }
+
             val richContent = lastUserMessage.richContent
             if (richContent == null) {
                 LogManager.aiSession("executeEnrichments: USER message has no richContent", "DEBUG")
@@ -295,7 +311,7 @@ class AIEventProcessor(
                 return
             }
 
-            // 2. Regenerate DataCommands from EnrichmentBlocks
+            // 3. Regenerate DataCommands from EnrichmentBlocks
             val enrichmentProcessor = com.assistant.core.ai.enrichments.EnrichmentProcessor(context, coordinator)
             val isRelative = state.sessionType == SessionType.AUTOMATION
             val allDataCommands = mutableListOf<com.assistant.core.ai.data.DataCommand>()
@@ -319,11 +335,11 @@ class AIEventProcessor(
 
             LogManager.aiSession("executeEnrichments: Generated ${allDataCommands.size} commands from enrichments", "DEBUG")
 
-            // 3. Transform commands via UserCommandProcessor
+            // 4. Transform commands via UserCommandProcessor
             val processor = UserCommandProcessor(context)
             val executableCommands = processor.processCommands(allDataCommands)
 
-            // 4. Execute via CommandExecutor with sessionId for schema deduplication
+            // 5. Execute via CommandExecutor with sessionId for schema deduplication
             val executor = commandExecutor
             val result = executor.executeCommands(
                 commands = executableCommands,
@@ -332,7 +348,7 @@ class AIEventProcessor(
                 sessionId = sessionId  // Enable schema deduplication
             )
 
-            // 5. Store SystemMessage ONLY if commands were executed (even if all CACHED)
+            // 6. Store SystemMessage ONLY if commands were executed (even if all CACHED)
             // Note: If all toggles unchecked, no commands generated → no SystemMessage
             if (result.systemMessage.commandResults.isNotEmpty()) {
                 val formattedData = result.promptResults.joinToString("\n\n") {
@@ -371,7 +387,7 @@ class AIEventProcessor(
                 LogManager.aiSession("No commands executed from enrichments - skipping SystemMessage creation", "DEBUG")
             }
 
-            // 6. Emit event with CommandResults
+            // 7. Emit event with CommandResults
             emit(AIEvent.EnrichmentsExecuted(result.systemMessage.commandResults))
 
         } catch (e: Exception) {

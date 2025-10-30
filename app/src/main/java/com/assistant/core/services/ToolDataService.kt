@@ -238,17 +238,32 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val endTime = if (params.has("endTime")) params.optLong("endTime") else null
 
         val dao = getToolDataDao()
-        
-        val (entries, totalCount) = if (startTime != null && endTime != null) {
-            // Time range filtering with pagination
-            val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)
-            val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
-            Pair(data, count)
-        } else {
-            // Simple pagination (all entries)
-            val count = dao.countByToolInstance(toolInstanceId)
-            val data = dao.getByToolInstancePaginated(toolInstanceId, limit, offset)
-            Pair(data, count)
+
+        val (entries, totalCount) = when {
+            // Both startTime and endTime specified
+            startTime != null && endTime != null -> {
+                val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)
+                val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, endTime, limit, offset)
+                Pair(data, count)
+            }
+            // Only startTime specified (from timestamp >= startTime)
+            startTime != null -> {
+                val count = dao.countByTimeRange(toolInstanceId, startTime, Long.MAX_VALUE)
+                val data = dao.getByTimeRangePaginated(toolInstanceId, startTime, Long.MAX_VALUE, limit, offset)
+                Pair(data, count)
+            }
+            // Only endTime specified (from timestamp <= endTime)
+            endTime != null -> {
+                val count = dao.countByTimeRange(toolInstanceId, 0, endTime)
+                val data = dao.getByTimeRangePaginated(toolInstanceId, 0, endTime, limit, offset)
+                Pair(data, count)
+            }
+            // No time filtering
+            else -> {
+                val count = dao.countByToolInstance(toolInstanceId)
+                val data = dao.getByToolInstancePaginated(toolInstanceId, limit, offset)
+                Pair(data, count)
+            }
         }
         
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1

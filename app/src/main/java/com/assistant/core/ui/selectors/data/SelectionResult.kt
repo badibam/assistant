@@ -11,6 +11,9 @@ data class SelectionResult(
     val selectedContext: PointerContext = PointerContext.DATA,  // Selected context (GENERIC, CONFIG, DATA, EXECUTIONS)
     val selectedResources: List<String> = emptyList(),          // Resources checked: ["data", "data_schema"] or ["executions", "executions_schema"] etc.
 
+    // Period selection (from ZoneScopeSelector)
+    val timestampSelection: TimestampSelection = TimestampSelection(),  // Period range selected for temporal filtering
+
     // Field-level selection (existing)
     val selectedValues: List<String> = emptyList(), // Selected values for the path
     val fieldSpecificData: FieldSpecificData? = null, // Additional data for specific field types

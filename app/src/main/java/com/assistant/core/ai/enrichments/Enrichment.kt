@@ -24,7 +24,6 @@ sealed class Enrichment {
         val selectedPath: String,                    // Chemin sélectionné via ZoneScopeSelector
         val selectedValues: List<String> = emptyList(), // Valeurs spécifiques sélectionnées
         val selectionLevel: String,                  // ZONE, INSTANCE, FIELD
-        val importance: String = "important",        // optionnel, important, essentiel
         val période: String? = null,                 // Filtre temporel optionnel
         val description: String? = null              // Description optionnelle
     ) : Enrichment() {

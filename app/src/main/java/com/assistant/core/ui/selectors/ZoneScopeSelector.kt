@@ -700,6 +700,7 @@ private fun buildSelectionResult(state: ZoneScopeState, config: NavigationConfig
         selectionLevel = currentLevel,
         selectedContext = state.selectedContext,
         selectedResources = state.selectedResources,
+        timestampSelection = state.timestampSelection,  // Pass period selection from ZoneScopeSelector
         selectedValues = emptyList(), // Not used for POINTER (no field-level selection)
         fieldSpecificData = null, // Not used for POINTER
         displayChain = displayChain
