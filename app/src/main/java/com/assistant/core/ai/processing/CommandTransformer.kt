@@ -56,6 +56,7 @@ object CommandTransformer {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
                     "TOOL_DATA" -> transformToolDataCommand(command)
+                    "TOOL_EXECUTIONS" -> transformToolExecutionsCommand(command)
                     "TOOL_STATS" -> transformToolStatsCommand(command)
                     "TOOL_DATA_SAMPLE" -> transformToolDataSampleCommand(command)
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
@@ -166,6 +167,37 @@ object CommandTransformer {
 
         return ExecutableCommand(
             resource = "tool_data",
+            operation = "get",
+            params = params
+        )
+    }
+
+    private fun transformToolExecutionsCommand(command: DataCommand): ExecutableCommand? {
+        LogManager.aiPrompt("transformToolExecutionsCommand() - routing to tool_executions.get", "VERBOSE")
+
+        val toolInstanceId = command.params["id"] as? String
+        if (toolInstanceId.isNullOrEmpty()) {
+            LogManager.aiPrompt("TOOL_EXECUTIONS command missing id parameter", "WARN")
+            return null
+        }
+
+        val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
+
+        // Apply temporal parameter resolution (filters on execution_time)
+        applyTemporalParameters(params, command)
+
+        // Add pagination if specified
+        command.params["limit"]?.let { params["limit"] = it }
+        command.params["page"]?.let { params["page"] = it }
+
+        // Add status filter if specified
+        command.params["status"]?.let { params["status"] = it }
+
+        // Add templateDataId filter if specified
+        command.params["templateDataId"]?.let { params["templateDataId"] = it }
+
+        return ExecutableCommand(
+            resource = "tool_executions",
             operation = "get",
             params = params
         )

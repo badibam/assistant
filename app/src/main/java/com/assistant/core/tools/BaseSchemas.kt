@@ -68,6 +68,10 @@ object BaseSchemas {
                     "type": "string",
                     "description": "${s.shared("tools_base_schema_config_data_schema_id")}"
                 },
+                "execution_schema_id": {
+                    "type": "string",
+                    "description": "${s.shared("tools_base_schema_config_execution_schema_id")}"
+                },
                 "always_send": {
                     "type": "boolean",
                     "default": false,
@@ -179,7 +183,7 @@ object BaseSchemas {
                 },
                 "triggered_by": {
                     "type": "string",
-                    "enum": ["SCHEDULE", "MANUAL", "THRESHOLD", "EVENT"],
+                    "enum": ["SCHEDULE", "MANUAL", "EVENT"],
                     "description": "${s.shared("tools_base_schema_execution_triggered_by")}"
                 },
                 "created_at": {
@@ -308,6 +312,7 @@ object BaseSchemas {
             "validateData" -> s.shared("tools_config_label_validate_data")
             "schema_id" -> s.shared("tools_config_label_schema_id")
             "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
+            "execution_schema_id" -> s.shared("tools_config_label_execution_schema_id")
             else -> null
         }
     }

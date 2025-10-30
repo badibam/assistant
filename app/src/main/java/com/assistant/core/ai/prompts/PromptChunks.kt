@@ -59,7 +59,7 @@ object PromptChunks {
         Chunk("response_examples", 3) { ctx, _ -> buildChunk("response_examples", ctx) },
 
         // PARTIE C : COMMANDES DISPONIBLES
-        Chunk("commands_queries_signatures", 1) { ctx, _ -> buildChunk("commands_queries_signatures", ctx) },
+        Chunk("commands_queries_signatures", 1) { ctx, _ -> buildCommandsQueriesSignatures(ctx) },
         Chunk("commands_actions_signatures", 1) { ctx, _ -> buildChunk("commands_actions_signatures", ctx) },
         Chunk("commands_response_format", 2) { ctx, _ -> buildChunk("commands_response_format", ctx) },
         Chunk("commands_queries_examples", 3) { ctx, _ -> buildChunk("commands_queries_examples", ctx) },
@@ -314,6 +314,31 @@ object PromptChunks {
         sb.appendLine("**Note** : Les schémas spécifiques aux tooltypes sont listés dans la section Types d'Outils.")
 
         return sb.toString()
+    }
+
+    /**
+     * Build commands queries signatures with dynamic tooltypes with executions list
+     */
+    private suspend fun buildCommandsQueriesSignatures(context: Context): String {
+        // Load base chunk from XML
+        var content = buildChunk("commands_queries_signatures", context)
+
+        // Generate list of tooltypes supporting executions
+        val allToolTypes = ToolTypeManager.getAllToolTypes()
+        val tooltypesWithExecutions = allToolTypes
+            .filter { (_, toolType) -> toolType.supportsExecutions() }
+            .map { (name, _) -> name }
+
+        // Replace placeholder with dynamic list
+        val tooltypesListStr = if (tooltypesWithExecutions.isNotEmpty()) {
+            tooltypesWithExecutions.joinToString(", ")
+        } else {
+            "(aucun actuellement)"
+        }
+
+        content = content.replace("{TOOLTYPES_WITH_EXECUTIONS}", tooltypesListStr)
+
+        return content
     }
 
     private fun buildTooltypesList(context: Context): String {

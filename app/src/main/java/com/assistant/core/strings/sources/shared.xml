@@ -56,6 +56,7 @@
     <string name="ai_enrichment_include_real_data">Inclure données réelles (en plus de l\'échantillon)</string>
     <string name="ai_enrichment_description_optional">Description (optionnel)</string>
     <string name="ai_enrichment_data_inclusion_title">Données à inclure</string>
+    <string name="ai_enrichment_selection_summary">Résumé de la sélection</string>
 
     <!-- INSTANCE-level enrichment toggles -->
     <string name="ai_enrichment_include_schema_config">Documentation configuration de l\'outil</string>
@@ -410,6 +411,7 @@
     <string name="tools_config_label_data_validation">Validation données par IA</string>
     <string name="tools_config_label_schema_id">Identifiant de schéma</string>
     <string name="tools_config_label_data_schema_id">Identifiant de schéma de données</string>
+    <string name="tools_config_label_execution_schema_id">Identifiant de schéma d\'exécutions</string>
     <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
     <string name="tools_config_label_validate_config">Validation config</string>
     <string name="tools_config_label_validate_data">Validation données</string>
@@ -462,6 +464,7 @@
     <string name="tools_base_schema_config_data_validation"></string>
     <string name="tools_base_schema_config_schema_id"></string>
     <string name="tools_base_schema_config_data_schema_id"></string>
+    <string name="tools_base_schema_config_execution_schema_id">Identifiant du schéma d\'exécutions (optionnel, uniquement pour tooltypes supportant les exécutions)</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
     <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
@@ -476,6 +479,19 @@
     <string name="tools_base_schema_data_updated_at"></string>
     <string name="tools_base_schema_data_schema_id"></string>
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
+
+    <!-- Tools BASE SCHEMA EXECUTION - Descriptions communes pour validation des exécutions -->
+    <string name="tools_base_schema_execution_id"></string>
+    <string name="tools_base_schema_execution_tool_instance_id"></string>
+    <string name="tools_base_schema_execution_tooltype"></string>
+    <string name="tools_base_schema_execution_template_data_id">ID du template (tool_data) utilisé pour cette exécution</string>
+    <string name="tools_base_schema_execution_scheduled_time">Timestamp planifié (null si non planifié)</string>
+    <string name="tools_base_schema_execution_execution_time">Timestamp réel d\'exécution</string>
+    <string name="tools_base_schema_execution_status">Statut de l\'exécution (pending, completed, failed, cancelled)</string>
+    <string name="tools_base_schema_execution_triggered_by">Source du déclenchement (SCHEDULE, MANUAL, EVENT)</string>
+    <string name="tools_base_schema_execution_created_at"></string>
+    <string name="tools_base_schema_execution_updated_at"></string>
+    <string name="tools_base_schema_execution_schema_id"></string>
 
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
     <string name="zone_config_schema_display_name"></string>

@@ -217,7 +217,7 @@ Structure : {{SCHEMA:communication_module_validation}}
 Les commandes de requête te permettent d\'explorer les données sans les modifier.
 
 ### TOOL_DATA
-Récupère les données d\'un outil spécifique.
+Récupère les données d\'un outil spécifique (templates/configurations dans tool_data).
 
 **Paramètres** :
 - `id` (string, **requis**) : tool_instance_id
@@ -226,6 +226,27 @@ Récupère les données d\'un outil spécifique.
   - `end` (number) : timestamp fin
 - `limit` (number, optionnel) : Nombre maximum d\'entrées
 - `offset` (number, optionnel) : Décalage pour pagination
+
+### TOOL_EXECUTIONS
+Récupère l\'historique d\'exécutions d\'un outil (uniquement pour les tooltypes supportant les exécutions).
+
+**Concept** : Certains tooltypes séparent template/config (stockés dans tool_data) et historique d\'exécutions (stockés dans tool_executions). Par exemple, un message planifié est un template (tool_data) qui génère plusieurs exécutions (tool_executions) au fil du temps.
+
+**Paramètres** :
+- `id` (string, **requis**) : tool_instance_id
+- `period` (object, optionnel) : Filtre temporel sur execution_time
+  - `start` (number) : timestamp début
+  - `end` (number) : timestamp fin
+- `status` (string, optionnel) : Filtrer par statut (pending, completed, failed, cancelled)
+- `templateDataId` (string, optionnel) : Filtrer par template spécifique
+- `limit` (number, optionnel) : Nombre maximum d\'entrées
+- `offset` (number, optionnel) : Décalage pour pagination
+
+**Retour** : Chaque exécution contient snapshot_data (état du template au moment de l\'exécution), execution_result (résultat spécifique au tooltype), execution_time, status, etc.
+
+**Usage** : Utilise cette commande pour consulter l\'historique des exécutions passées.
+
+**Tooltypes supportant les exécutions** : {TOOLTYPES_WITH_EXECUTIONS}
 
 ### TOOL_CONFIG
 Récupère la configuration d\'un outil.

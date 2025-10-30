@@ -23,6 +23,7 @@ import com.assistant.core.ui.selectors.data.NavigationConfig
 import com.assistant.core.ui.selectors.data.SelectionResult
 import com.assistant.core.ui.selectors.data.FieldSpecificData
 import com.assistant.core.ui.selectors.data.TimestampSelection
+import com.assistant.core.ui.selectors.data.PointerContext
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.Period
 import com.assistant.core.coordinator.Coordinator
@@ -658,24 +659,10 @@ private fun PointerEnrichmentDialog(
     var showZoneScopeSelector by remember { mutableStateOf(true) }
     var selectionResult by remember { mutableStateOf<SelectionResult?>(null) }
 
-    // Additional fields
+    // Additional fields (context and resources are managed by ZoneScopeSelector)
     var importance by remember { mutableStateOf("important") }
     var timestampSelection by remember { mutableStateOf(TimestampSelection()) }
     var description by remember { mutableStateOf("") }
-
-    // INSTANCE toggles (all unchecked by default)
-    var includeSchemaConfig by remember { mutableStateOf(false) }
-    var includeSchemaData by remember { mutableStateOf(false) }
-    var includeToolConfig by remember { mutableStateOf(false) }
-    var includeDataSample by remember { mutableStateOf(false) }
-    var includeStats by remember { mutableStateOf(false) }
-    var includeData by remember { mutableStateOf(false) }
-
-    // ZONE toggles (all unchecked by default)
-    var includeZoneConfig by remember { mutableStateOf(false) }
-    var includeToolsList by remember { mutableStateOf(false) }
-    var includeToolsConfig by remember { mutableStateOf(false) }
-    var includeToolsData by remember { mutableStateOf(false) }  // TODO: will be disabled
 
     // App configuration for timestamp handling
     var dayStartHour by remember { mutableStateOf(0) }
@@ -727,19 +714,7 @@ private fun PointerEnrichmentDialog(
                         selectionResult = result,
                         importance = importance,
                         timestampSelection = timestampSelection,
-                        description = description,
-                        includeData = includeData,
-                        // INSTANCE toggles
-                        includeSchemaConfig = includeSchemaConfig,
-                        includeSchemaData = includeSchemaData,
-                        includeToolConfig = includeToolConfig,
-                        includeDataSample = includeDataSample,
-                        includeStats = includeStats,
-                        // ZONE toggles
-                        includeZoneConfig = includeZoneConfig,
-                        includeToolsList = includeToolsList,
-                        includeToolsConfig = includeToolsConfig,
-                        includeToolsData = includeToolsData
+                        description = description
                     )
                     val (uiPreview, promptPreview) = createPointerPreview(context, result, timestampSelection, importance)
                     onConfirm(config, uiPreview, promptPreview)
@@ -803,72 +778,42 @@ private fun PointerEnrichmentDialog(
                 )
 
                 // Data inclusion toggles (different for ZONE vs INSTANCE)
+                // Display selected context and resources (read-only, set by ZoneScopeSelector)
                 selectionResult?.let { result ->
                     UI.Text(
-                        text = s.shared("ai_enrichment_data_inclusion_title"),
+                        text = s.shared("ai_enrichment_selection_summary"),
                         type = TextType.SUBTITLE
                     )
 
-                    when (result.selectionLevel.name) {
-                        "INSTANCE" -> {
-                            // INSTANCE-level toggles (6 toggles)
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_schema_config"),
-                                checked = includeSchemaConfig,
-                                onCheckedChange = { includeSchemaConfig = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_schema_data"),
-                                checked = includeSchemaData,
-                                onCheckedChange = { includeSchemaData = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_tool_config"),
-                                checked = includeToolConfig,
-                                onCheckedChange = { includeToolConfig = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_data_sample"),
-                                checked = includeDataSample,
-                                onCheckedChange = { includeDataSample = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_stats"),
-                                checked = includeStats,
-                                onCheckedChange = { includeStats = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_data"),
-                                checked = includeData,
-                                onCheckedChange = { includeData = it }
-                            )
-                        }
-                        "ZONE" -> {
-                            // ZONE-level toggles (4 toggles)
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_zone_config"),
-                                checked = includeZoneConfig,
-                                onCheckedChange = { includeZoneConfig = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_tools_list"),
-                                checked = includeToolsList,
-                                onCheckedChange = { includeToolsList = it }
-                            )
-                            UI.ToggleField(
-                                label = s.shared("ai_enrichment_include_tools_config"),
-                                checked = includeToolsConfig,
-                                onCheckedChange = { includeToolsConfig = it }
-                            )
-                            // TODO: Tools data toggle - disabled until implementation
-                            Box(modifier = androidx.compose.ui.Modifier.alpha(0.5f)) {
-                                UI.ToggleField(
-                                    label = "${s.shared("ai_enrichment_include_tools_data")} (${s.shared("label_coming_soon")})",
-                                    checked = false,
-                                    onCheckedChange = { /* Disabled - no-op */ }
-                                )
+                    // Context display
+                    val contextLabel = when (result.selectedContext) {
+                        PointerContext.GENERIC -> s.shared("label_context_generic")
+                        PointerContext.CONFIG -> s.shared("label_context_config")
+                        PointerContext.DATA -> s.shared("label_context_data")
+                        PointerContext.EXECUTIONS -> s.shared("label_context_executions")
+                    }
+                    UI.Text(
+                        text = "${s.shared("scope_select_context")}: $contextLabel",
+                        type = TextType.BODY
+                    )
+
+                    // Resources display
+                    if (result.selectedResources.isNotEmpty()) {
+                        val resourcesLabel = result.selectedResources.joinToString(", ") { resource ->
+                            when (resource) {
+                                "config" -> s.shared("label_resource_config")
+                                "config_schema" -> s.shared("label_resource_config_schema")
+                                "data" -> s.shared("label_resource_data")
+                                "data_schema" -> s.shared("label_resource_data_schema")
+                                "executions" -> s.shared("label_resource_executions")
+                                "executions_schema" -> s.shared("label_resource_executions_schema")
+                                else -> resource
                             }
                         }
+                        UI.Text(
+                            text = "${s.shared("scope_select_resources")}: $resourcesLabel",
+                            type = TextType.BODY
+                        )
                     }
                 }
 
@@ -997,49 +942,27 @@ private fun PlaceholderEnrichmentDialog(
 /**
  * Create JSON config from POINTER enrichment data
  */
+/**
+ * Create JSON configuration for POINTER enrichment
+ * Uses context-aware selection with selectedContext and selectedResources
+ */
 private fun createPointerConfig(
     selectionResult: SelectionResult,
     importance: String,
     timestampSelection: TimestampSelection,
-    description: String,
-    includeData: Boolean = false,
-    // INSTANCE toggles
-    includeSchemaConfig: Boolean = false,
-    includeSchemaData: Boolean = false,
-    includeToolConfig: Boolean = false,
-    includeDataSample: Boolean = false,
-    includeStats: Boolean = false,
-    // ZONE toggles
-    includeZoneConfig: Boolean = false,
-    includeToolsList: Boolean = false,
-    includeToolsConfig: Boolean = false,
-    includeToolsData: Boolean = false
+    description: String
 ): String {
     return JSONObject().apply {
+        // Core selection data
         put("selectedPath", selectionResult.selectedPath)
-        put("selectedValues", selectionResult.selectedValues)
         put("selectionLevel", selectionResult.selectionLevel.name)
         put("importance", importance)
 
-        // Toggles configuration based on selection level
-        when (selectionResult.selectionLevel.name) {
-            "INSTANCE" -> {
-                // Instance-level toggles
-                put("includeSchemaConfig", includeSchemaConfig)
-                put("includeSchemaData", includeSchemaData)
-                put("includeToolConfig", includeToolConfig)
-                put("includeDataSample", includeDataSample)
-                put("includeStats", includeStats)
-                put("includeData", includeData)  // Full data toggle
-            }
-            "ZONE" -> {
-                // Zone-level toggles
-                put("includeZoneConfig", includeZoneConfig)
-                put("includeToolsList", includeToolsList)
-                put("includeToolsConfig", includeToolsConfig)
-                put("includeToolsData", includeToolsData)  // TODO: disabled for now
-            }
-        }
+        // Context-aware selection (new)
+        put("selectedContext", selectionResult.selectedContext.name)
+        put("selectedResources", selectionResult.selectedResources)
+
+        // Period selection
         if (timestampSelection.isComplete) {
             put("timestampSelection", JSONObject().apply {
                 // Store min period (start of range)

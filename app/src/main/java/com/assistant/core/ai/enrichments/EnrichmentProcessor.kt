@@ -246,10 +246,57 @@ class EnrichmentProcessor(
         return Pair(configSchemaId, dataSchemaId)
     }
 
+    /**
+     * Resolve execution schema ID from tool instance config
+     * Returns empty string if not available (tooltype doesn't support executions)
+     */
+    private suspend fun resolveExecutionSchemaId(toolInstanceId: String): String {
+        if (coordinator == null) {
+            LogManager.aiEnrichment("Cannot resolve execution schema ID: coordinator not available", "WARN")
+            return ""
+        }
+
+        val result = coordinator.processUserAction("tools.get", mapOf(
+            "tool_instance_id" to toolInstanceId
+        ))
+
+        if (!result.isSuccess) {
+            LogManager.aiEnrichment("Failed to fetch tool instance $toolInstanceId for execution schema ID: ${result.error}", "WARN")
+            return ""
+        }
+
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        if (toolInstance == null) {
+            LogManager.aiEnrichment("Tool instance $toolInstanceId not found in response", "WARN")
+            return ""
+        }
+
+        val configJson = toolInstance["config_json"] as? String
+        if (configJson.isNullOrBlank()) {
+            LogManager.aiEnrichment("Tool instance $toolInstanceId has no config_json", "WARN")
+            return ""
+        }
+
+        val config = JSONObject(configJson)
+        val executionSchemaId = config.optString("execution_schema_id", "")
+
+        LogManager.aiEnrichment("Resolved execution schema ID for $toolInstanceId: '$executionSchemaId'", "DEBUG")
+        return executionSchemaId
+    }
+
     // ========================================================================================
     // Query Generation
     // ========================================================================================
 
+    /**
+     * Generate DataCommands for POINTER enrichment based on context-aware selection
+     *
+     * Logic:
+     * - GENERIC context: No automatic commands (AI must request explicitly)
+     * - CONFIG context: Generate commands for config/config_schema resources
+     * - DATA context: Generate commands for data/data_schema resources + temporal filters
+     * - EXECUTIONS context: Generate commands for executions/executions_schema resources + temporal filters
+     */
     private suspend fun generatePointerQueries(
         config: JSONObject,
         isRelative: Boolean
@@ -258,149 +305,173 @@ class EnrichmentProcessor(
 
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
+        val contextName = config.optString("selectedContext", "GENERIC")
+        val resourcesArray = config.optJSONArray("selectedResources")
+        val selectedResources = mutableListOf<String>()
+        if (resourcesArray != null) {
+            for (i in 0 until resourcesArray.length()) {
+                selectedResources.add(resourcesArray.getString(i))
+            }
+        }
 
-        LogManager.aiEnrichment("POINTER queries config: path='$path', selectionLevel='$selectionLevel'", "VERBOSE")
+        LogManager.aiEnrichment("POINTER config: path='$path', level='$selectionLevel', context='$contextName', resources=$selectedResources", "VERBOSE")
 
-        // Extract zone and tool info from path
-        val pathParts = path.split(".")
-        LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}", "VERBOSE")
+        // Parse context enum
+        val context = try {
+            com.assistant.core.ui.selectors.data.PointerContext.valueOf(contextName)
+        } catch (e: Exception) {
+            LogManager.aiEnrichment("Invalid context '$contextName', defaulting to GENERIC", "WARN")
+            com.assistant.core.ui.selectors.data.PointerContext.GENERIC
+        }
+
+        // GENERIC context: no automatic commands
+        if (context == com.assistant.core.ui.selectors.data.PointerContext.GENERIC) {
+            LogManager.aiEnrichment("GENERIC context: skipping automatic command generation", "DEBUG")
+            return emptyList()
+        }
 
         val queries = mutableListOf<DataCommand>()
 
+        // Extract IDs from path
+        val pathParts = path.split(".")
+        LogManager.aiEnrichment("Path parts: ${pathParts.joinToString(", ")}", "VERBOSE")
+
         when (selectionLevel) {
             "ZONE" -> {
-                // Read ZONE-level toggles
-                val includeZoneConfig = config.optBoolean("includeZoneConfig", false)
-                val includeToolsList = config.optBoolean("includeToolsList", false)
-                val includeToolsConfig = config.optBoolean("includeToolsConfig", false)
-                // includeToolsData is TODO (disabled in UI)
-
-                LogManager.aiEnrichment("ZONE toggles: zoneConfig=$includeZoneConfig, toolsList=$includeToolsList, toolsConfig=$includeToolsConfig", "VERBOSE")
-
                 // Path format: "zones.{zoneId}"
                 val zoneId = if (pathParts.size > 1 && pathParts[0] == "zones") pathParts[1] else ""
-                if (zoneId.isNotEmpty()) {
-                    // ZONE_CONFIG (conditionally)
-                    if (includeZoneConfig) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("zone_config", mapOf("id" to zoneId)),
-                            type = "ZONE_CONFIG",
-                            params = mapOf("id" to zoneId),
-                            isRelative = isRelative
-                        ))
+                if (zoneId.isEmpty()) {
+                    LogManager.aiEnrichment("Empty zone ID in path", "WARN")
+                    return emptyList()
+                }
+
+                // Generate commands based on context (only CONFIG makes sense for ZONE level)
+                when (context) {
+                    com.assistant.core.ui.selectors.data.PointerContext.CONFIG -> {
+                        if ("config" in selectedResources) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("zone_config", mapOf("id" to zoneId)),
+                                type = "ZONE_CONFIG",
+                                params = mapOf("id" to zoneId),
+                                isRelative = isRelative
+                            ))
+                        }
+                        // Note: config_schema for zones not implemented yet
                     }
-
-                    // TOOL_INSTANCES (conditionally, with include_config parameter)
-                    // Include if either list or config toggle is enabled
-                    if (includeToolsList || includeToolsConfig) {
-                        val toolsParams = mutableMapOf<String, Any>("zone_id" to zoneId)
-
-                        // Logic: if both toggles enabled OR only toolsConfig enabled → includeConfig=true
-                        // If only toolsList enabled → includeConfig=false
-                        val shouldIncludeConfig = includeToolsConfig
-                        toolsParams["include_config"] = shouldIncludeConfig
-
-                        queries.add(DataCommand(
-                            id = buildQueryId("tool_instances", toolsParams),
-                            type = "TOOL_INSTANCES",
-                            params = toolsParams,
-                            isRelative = isRelative
-                        ))
+                    else -> {
+                        LogManager.aiEnrichment("Context $context not supported for ZONE level", "WARN")
                     }
                 }
             }
             "INSTANCE" -> {
-                // Read INSTANCE-level toggles
-                val includeSchemaConfig = config.optBoolean("includeSchemaConfig", false)
-                val includeSchemaData = config.optBoolean("includeSchemaData", false)
-                val includeToolConfig = config.optBoolean("includeToolConfig", false)
-                val includeDataSample = config.optBoolean("includeDataSample", false)
-                val includeStats = config.optBoolean("includeStats", false)
-                val includeData = config.optBoolean("includeData", false)
-
-                LogManager.aiEnrichment("INSTANCE toggles: schemaConfig=$includeSchemaConfig, schemaData=$includeSchemaData, toolConfig=$includeToolConfig, dataSample=$includeDataSample, stats=$includeStats, fullData=$includeData", "VERBOSE")
-
                 // Path format: "tools.{toolInstanceId}"
                 val toolInstanceId = if (pathParts.size > 1 && pathParts[0] == "tools") pathParts[1] else ""
-                if (toolInstanceId.isNotEmpty()) {
-                    val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
+                if (toolInstanceId.isEmpty()) {
+                    LogManager.aiEnrichment("Empty tool instance ID in path", "WARN")
+                    return emptyList()
+                }
 
-                    // Resolve schema IDs only if needed (at least one schema toggle enabled)
-                    val needsSchemaIds = includeSchemaConfig || includeSchemaData
-                    val (configSchemaId, dataSchemaId) = if (needsSchemaIds) {
-                        resolveSchemaIds(toolInstanceId)
-                    } else {
-                        Pair("", "")
+                val baseParams = mutableMapOf<String, Any>("id" to toolInstanceId)
+
+                // Generate commands based on context and selected resources
+                when (context) {
+                    com.assistant.core.ui.selectors.data.PointerContext.CONFIG -> {
+                        // Resolve schema IDs if needed
+                        val needsSchemaId = "config_schema" in selectedResources
+                        val configSchemaId = if (needsSchemaId) {
+                            resolveSchemaIds(toolInstanceId).first
+                        } else ""
+
+                        // Config resource
+                        if ("config" in selectedResources) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("tool_config", baseParams),
+                                type = "TOOL_CONFIG",
+                                params = baseParams.toMap(),
+                                isRelative = isRelative
+                            ))
+                        }
+
+                        // Config schema resource
+                        if ("config_schema" in selectedResources && configSchemaId.isNotEmpty()) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
+                                type = "SCHEMA",
+                                params = mapOf("id" to configSchemaId),
+                                isRelative = isRelative
+                            ))
+                        }
                     }
+                    com.assistant.core.ui.selectors.data.PointerContext.DATA -> {
+                        // Resolve schema IDs if needed
+                        val needsSchemaId = "data_schema" in selectedResources
+                        val dataSchemaId = if (needsSchemaId) {
+                            resolveSchemaIds(toolInstanceId).second
+                        } else ""
 
-                    // SCHEMA (config) - conditionally
-                    if (includeSchemaConfig) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("schema_config", mapOf("id" to configSchemaId)),
-                            type = "SCHEMA",
-                            params = mapOf("id" to configSchemaId),
-                            isRelative = isRelative
-                        ))
+                        // Add temporal parameters for DATA context
+                        val dataParams = baseParams.toMutableMap()
+                        addTemporalParams(dataParams, config, isRelative)
+
+                        // Data resource
+                        if ("data" in selectedResources) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("tool_data", dataParams),
+                                type = "TOOL_DATA",
+                                params = dataParams.toMap(),
+                                isRelative = isRelative
+                            ))
+                        }
+
+                        // Data schema resource
+                        if ("data_schema" in selectedResources && dataSchemaId.isNotEmpty()) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                                type = "SCHEMA",
+                                params = mapOf("id" to dataSchemaId),
+                                isRelative = isRelative
+                            ))
+                        }
                     }
+                    com.assistant.core.ui.selectors.data.PointerContext.EXECUTIONS -> {
+                        // Resolve execution schema ID if needed
+                        val needsSchemaId = "executions_schema" in selectedResources
+                        val executionSchemaId = if (needsSchemaId) {
+                            resolveExecutionSchemaId(toolInstanceId)
+                        } else ""
 
-                    // SCHEMA (data) - conditionally
-                    if (includeSchemaData) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
-                            type = "SCHEMA",
-                            params = mapOf("id" to dataSchemaId),
-                            isRelative = isRelative
-                        ))
+                        // Add temporal parameters for EXECUTIONS context
+                        val executionParams = baseParams.toMutableMap()
+                        addTemporalParams(executionParams, config, isRelative)
+
+                        // Executions resource
+                        if ("executions" in selectedResources) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("tool_executions", executionParams),
+                                type = "TOOL_EXECUTIONS",
+                                params = executionParams.toMap(),
+                                isRelative = isRelative
+                            ))
+                        }
+
+                        // Executions schema resource
+                        if ("executions_schema" in selectedResources && executionSchemaId.isNotEmpty()) {
+                            queries.add(DataCommand(
+                                id = buildQueryId("schema_execution", mapOf("id" to executionSchemaId)),
+                                type = "SCHEMA",
+                                params = mapOf("id" to executionSchemaId),
+                                isRelative = isRelative
+                            ))
+                        }
                     }
-
-                    // TOOL_CONFIG - conditionally
-                    if (includeToolConfig) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("tool_config", baseParams),
-                            type = "TOOL_CONFIG",
-                            params = baseParams.toMap(),
-                            isRelative = isRelative
-                        ))
-                    }
-
-                    // Add temporal parameters for data queries (needed by data sample, stats, and full data)
-                    val dataParams = baseParams.toMutableMap()
-                    addTemporalParams(dataParams, config, isRelative)
-
-                    // TOOL_DATA_SAMPLE - conditionally
-                    if (includeDataSample) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("tool_data_sample", dataParams),
-                            type = "TOOL_DATA_SAMPLE",
-                            params = dataParams.toMap(),
-                            isRelative = isRelative
-                        ))
-                    }
-
-                    // TOOL_STATS - conditionally
-                    if (includeStats) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("tool_stats", dataParams),
-                            type = "TOOL_STATS",
-                            params = dataParams.toMap(),
-                            isRelative = isRelative
-                        ))
-                    }
-
-                    // TOOL_DATA (full data) - conditionally
-                    if (includeData) {
-                        queries.add(DataCommand(
-                            id = buildQueryId("tool_data", dataParams),
-                            type = "TOOL_DATA",
-                            params = dataParams.toMap(),
-                            isRelative = isRelative
-                        ))
+                    com.assistant.core.ui.selectors.data.PointerContext.GENERIC -> {
+                        // Already handled above (returns empty)
                     }
                 }
             }
         }
 
-        LogManager.aiEnrichment("Generated ${queries.size} POINTER queries for selectionLevel=$selectionLevel", "DEBUG")
+        LogManager.aiEnrichment("Generated ${queries.size} POINTER queries for context=$context, level=$selectionLevel", "DEBUG")
         return queries
     }
 

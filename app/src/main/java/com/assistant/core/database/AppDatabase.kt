@@ -319,7 +319,38 @@ abstract class AppDatabase : RoomDatabase() {
 
                 LogManager.database("MIGRATION 13->14: tool_executions table created with indexes", "INFO")
 
-                // 3. Migrate existing Messages executions from tool_data to tool_executions
+                // 3. Update Messages tool instances config to add execution_schema_id
+                val configCursor = database.query(
+                    "SELECT id, config_json FROM tool_instances WHERE tooltype = 'messages'"
+                )
+
+                var configUpdateCount = 0
+                while (configCursor.moveToNext()) {
+                    val instanceId = configCursor.getString(0)
+                    val configJson = configCursor.getString(1)
+
+                    try {
+                        val configObj = org.json.JSONObject(configJson)
+
+                        // Add execution_schema_id if not already present
+                        if (!configObj.has("execution_schema_id")) {
+                            configObj.put("execution_schema_id", "messages_execution")
+
+                            database.execSQL(
+                                "UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf(configObj.toString(), instanceId)
+                            )
+                            configUpdateCount++
+                        }
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 13->14: Failed to update config for instance $instanceId: ${e.message}", "ERROR", e)
+                    }
+                }
+                configCursor.close()
+
+                LogManager.database("MIGRATION 13->14: Updated $configUpdateCount Messages instance configs with execution_schema_id", "INFO")
+
+                // 4. Migrate existing Messages executions from tool_data to tool_executions
                 val cursor = database.query(
                     "SELECT id, tool_instance_id, data FROM tool_data WHERE tooltype = 'messages' AND data LIKE '%executions%'"
                 )
