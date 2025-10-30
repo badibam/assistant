@@ -29,6 +29,7 @@ import com.assistant.core.ui.components.Period
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.utils.LogManager
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 import androidx.compose.ui.draw.alpha
@@ -960,7 +961,7 @@ private fun createPointerConfig(
 
         // Context-aware selection (new)
         put("selectedContext", selectionResult.selectedContext.name)
-        put("selectedResources", selectionResult.selectedResources)
+        put("selectedResources", JSONArray(selectionResult.selectedResources))
 
         // Period selection
         if (timestampSelection.isComplete) {
