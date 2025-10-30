@@ -321,7 +321,7 @@ abstract class AppDatabase : RoomDatabase() {
 
                 // 3. Update Messages tool instances config to add execution_schema_id
                 val configCursor = database.query(
-                    "SELECT id, config_json FROM tool_instances WHERE tooltype = 'messages'"
+                    "SELECT id, config_json FROM tool_instances WHERE tool_type = 'messages'"
                 )
 
                 var configUpdateCount = 0
