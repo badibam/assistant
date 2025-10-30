@@ -68,4 +68,18 @@ interface LogDao {
      */
     @Query("SELECT COUNT(*) FROM log_entries")
     suspend fun getLogCount(): Int
+
+    /**
+     * Get timestamp of the Nth most recent log (for efficient purging)
+     * Uses LIMIT with OFFSET to find the cutoff timestamp without loading all logs
+     *
+     * @param offset Number of logs to skip (e.g., 300 to get the 301st log)
+     * @return Timestamp of the Nth log, or null if fewer logs exist
+     */
+    @Query("""
+        SELECT timestamp FROM log_entries
+        ORDER BY timestamp DESC
+        LIMIT 1 OFFSET :offset
+    """)
+    suspend fun getTimestampAtOffset(offset: Int): Long?
 }

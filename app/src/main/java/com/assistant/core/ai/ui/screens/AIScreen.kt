@@ -1317,13 +1317,6 @@ fun ChatMessageList(
         }
     }.collectAsState(initial = emptyList())
 
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-        }
-    }
-
     // Determine if loading spinner should show (for all session types)
     val showLoadingSpinner = aiState.phase in listOf(
         Phase.CALLING_AI,
@@ -1342,6 +1335,29 @@ fun ChatMessageList(
 
     // Find last AI message index for inline validation/communication display
     val lastAIMessageIndex = messages.indexOfLast { it.sender == MessageSender.AI }
+
+    // Auto-scroll when new messages arrive
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    // Auto-scroll when spinner/interrupt button appears
+    LaunchedEffect(showLoadingSpinner, showInterruptButton) {
+        if ((showLoadingSpinner || showInterruptButton) && messages.isNotEmpty()) {
+            // Calculate total items: messages + spinner (if shown) + interrupt button (if shown)
+            val totalItems = messages.size + (if (showLoadingSpinner) 1 else 0) + (if (showInterruptButton) 1 else 0)
+            listState.animateScrollToItem(totalItems - 1)
+        }
+    }
+
+    // Auto-scroll when communication module or validation appears
+    LaunchedEffect(aiState.waitingContext) {
+        if (aiState.waitingContext != null && lastAIMessageIndex >= 0) {
+            listState.animateScrollToItem(lastAIMessageIndex)
+        }
+    }
 
     LazyColumn(
         state = listState,

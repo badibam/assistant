@@ -48,6 +48,15 @@ class MainActivity : ComponentActivity() {
         // Initialize LogManager first (for DB persistence)
         LogManager.initialize(this)
 
+        // Purge old logs at startup to prevent DB bloat and CursorWindow overflow
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                LogManager.manualPurge()
+            } catch (e: Exception) {
+                println("LogManager: Startup purge failed: ${e.message}")
+            }
+        }
+
         // Initialize app config cache
         AppConfigManager.initialize(this)
 

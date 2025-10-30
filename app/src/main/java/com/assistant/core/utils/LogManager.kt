@@ -25,15 +25,34 @@ object LogManager {
 
     /**
      * Maximum number of logs to keep in database
+     * Reduced to prevent CursorWindow overflow and memory saturation
      * When this limit is exceeded, oldest logs are purged
      */
-    private const val MAX_LOG_COUNT = 1000
+    private const val MAX_LOG_COUNT = 300
+
+    /**
+     * Maximum message length (chars)
+     * Prevents individual log entries from becoming too large
+     */
+    private const val MAX_MESSAGE_LENGTH = 3000
+
+    /**
+     * Maximum throwable message length (chars)
+     * Stack traces can be very long, limit them to prevent DB bloat
+     */
+    private const val MAX_THROWABLE_LENGTH = 5000
+
+    /**
+     * Purge threshold - start purging when we reach this many logs
+     * Set lower than MAX_LOG_COUNT to delete in batches efficiently
+     */
+    private const val PURGE_THRESHOLD = 250
 
     /**
      * Check purge every N insertions (probabilistic to reduce DB queries)
-     * 1 in 10 chance = check ~10% of the time
+     * More aggressive than before (1 in 5 instead of 1 in 10)
      */
-    private const val PURGE_CHECK_PROBABILITY = 10
+    private const val PURGE_CHECK_PROBABILITY = 5
 
     private var insertionCounter = 0
 
@@ -136,7 +155,8 @@ object LogManager {
      * Non-blocking (uses GlobalScope for fire-and-forget)
      *
      * Features:
-     * - Inserts log to database
+     * - Inserts log to database with size limits to prevent overflow
+     * - Truncates messages and stack traces to prevent CursorWindow overflow
      * - Probabilistic purge check (1 in N chance) to limit DB queries
      * - Keeps only MAX_LOG_COUNT most recent logs
      *
@@ -151,12 +171,28 @@ object LogManager {
         GlobalScope.launch {
             try {
                 val database = AppDatabase.getDatabase(ctx)
+
+                // Truncate message if too long to prevent CursorWindow overflow
+                val truncatedMessage = if (message.length > MAX_MESSAGE_LENGTH) {
+                    message.take(MAX_MESSAGE_LENGTH) + "\n[... truncated ${message.length - MAX_MESSAGE_LENGTH} chars]"
+                } else {
+                    message
+                }
+
+                // Truncate throwable stack trace if too long
+                val throwableStr = throwable?.stackTraceToString()
+                val truncatedThrowable = if (throwableStr != null && throwableStr.length > MAX_THROWABLE_LENGTH) {
+                    throwableStr.take(MAX_THROWABLE_LENGTH) + "\n[... truncated ${throwableStr.length - MAX_THROWABLE_LENGTH} chars]"
+                } else {
+                    throwableStr
+                }
+
                 val logEntry = LogEntry(
                     timestamp = System.currentTimeMillis(),
                     level = level.uppercase(),
                     tag = tag,
-                    message = message,
-                    throwableMessage = throwable?.stackTraceToString()
+                    message = truncatedMessage,
+                    throwableMessage = truncatedThrowable
                 )
                 database.logDao().insertLog(logEntry)
 
@@ -174,25 +210,46 @@ object LogManager {
     }
 
     /**
-     * Purge old logs if count exceeds MAX_LOG_COUNT
-     * Keeps only the MAX_LOG_COUNT most recent logs
+     * Purge old logs if count exceeds threshold
+     * Uses efficient SQL query to find cutoff timestamp without loading all logs
+     * This prevents CursorWindow overflow when there are many large log entries
      */
     private suspend fun purgeOldLogsIfNeeded(database: AppDatabase) {
         try {
             val count = database.logDao().getLogCount()
-            if (count > MAX_LOG_COUNT) {
-                // Calculate cutoff timestamp
-                // Keep MAX_LOG_COUNT most recent, delete older ones
-                val logsToKeep = database.logDao().getAllLogs().take(MAX_LOG_COUNT)
-                if (logsToKeep.isNotEmpty()) {
-                    val oldestToKeep = logsToKeep.last()
-                    database.logDao().deleteLogsOlderThan(oldestToKeep.timestamp)
-                    println("LogManager: Purged old logs. Kept $MAX_LOG_COUNT most recent logs.")
+            if (count > PURGE_THRESHOLD) {
+                // Find the timestamp of the PURGE_THRESHOLD-th most recent log
+                // This is our cutoff point - delete everything older
+                // Uses OFFSET query to avoid loading all logs into memory
+                val cutoffTimestamp = database.logDao().getTimestampAtOffset(PURGE_THRESHOLD - 1)
+
+                if (cutoffTimestamp != null) {
+                    // Delete all logs older than the cutoff
+                    database.logDao().deleteLogsOlderThan(cutoffTimestamp)
+                    val remaining = database.logDao().getLogCount()
+                    println("LogManager: Purged old logs. Deleted ${count - remaining} entries. Kept $remaining logs.")
+                } else {
+                    println("LogManager: Purge skipped - could not determine cutoff timestamp")
                 }
             }
         } catch (e: Exception) {
-            // Silent failure
+            // Silent failure - don't log errors from logging system to avoid infinite loop
             println("LogManager: Failed to purge old logs: ${e.message}")
+        }
+    }
+
+    /**
+     * Manually purge old logs
+     * Can be called from UI or at app startup
+     * Public function to allow external cleanup
+     */
+    suspend fun manualPurge() {
+        val ctx = context ?: return
+        try {
+            val database = AppDatabase.getDatabase(ctx)
+            purgeOldLogsIfNeeded(database)
+        } catch (e: Exception) {
+            println("LogManager: Manual purge failed: ${e.message}")
         }
     }
 }
