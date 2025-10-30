@@ -16,8 +16,8 @@ android {
         applicationId = "com.assistant"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "0.3.11"
+        versionCode = 22
+        versionName = "0.3.12"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
