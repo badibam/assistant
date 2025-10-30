@@ -83,7 +83,14 @@ class AICommandProcessor(private val context: Context) {
 
         for ((index, command) in commands.withIndex()) {
             try {
-                val executableCommand = transformActionCommand(command)
+                // FIRST: Strip root-level system-managed fields from data entries
+                val cleanedCommand = stripRootLevelSystemManagedFields(command)
+
+                // SECOND: Inject tooltype by deducing from toolInstanceId (single source of truth)
+                val enrichedCommand = injectTooltypeIfNeeded(cleanedCommand)
+
+                // THIRD: Transform to executable command
+                val executableCommand = transformActionCommand(enrichedCommand)
                 if (executableCommand == null) {
                     errors.add("Command[$index] (${command.type}): transformation returned null")
                 } else {
@@ -285,6 +292,9 @@ class AICommandProcessor(private val context: Context) {
      * AI doesn't need to specify schema_id - we automatically fetch it from the
      * tool instance's data_schema_id configuration field.
      *
+     * Note: SystemManaged fields are stripped by stripSystemManagedFromCommand()
+     * before this enrichment step.
+     *
      * @param params Original params from AI command
      * @return Enriched params with schema_id added to each entry
      */
@@ -361,9 +371,8 @@ class AICommandProcessor(private val context: Context) {
                 return params
             }
 
-            // Get tooltype to retrieve schema for systemManaged field stripping
-            val tooltype = params["tooltype"] as? String
-
+            // Add schema_id to each entry for validation
+            // Note: SystemManaged fields already stripped by stripRootLevelSystemManagedFields()
             val enrichedEntries = entries.map { entry ->
                 if (entry is Map<*, *>) {
                     @Suppress("UNCHECKED_CAST")
@@ -371,23 +380,6 @@ class AICommandProcessor(private val context: Context) {
 
                     // Add schema_id for validation
                     mutableEntry["schema_id"] = dataSchemaId
-
-                    // Strip system-managed fields (e.g., executions array in Messages tool)
-                    // This prevents AI from modifying fields that should only be updated by scheduler
-                    if (!tooltype.isNullOrEmpty()) {
-                        try {
-                            val toolType = ToolTypeManager.getToolType(tooltype)
-                            val schema = toolType?.getSchema(dataSchemaId, context)
-                            if (schema != null) {
-                                SchemaUtils.stripSystemManagedFields(mutableEntry, schema.content)
-                            }
-                        } catch (e: Exception) {
-                            LogManager.aiService(
-                                "Failed to strip system-managed fields for tooltype $tooltype: ${e.message}",
-                                "WARN"
-                            )
-                        }
-                    }
 
                     mutableEntry
                 } else {
@@ -416,6 +408,100 @@ class AICommandProcessor(private val context: Context) {
             )
             return params
         }
+    }
+
+    /**
+     * Strip root-level system-managed fields from data entries
+     *
+     * System-managed fields (id, created_at, updated_at, schema_id, tooltype) are:
+     * - Marked with "systemManaged": true in BaseDataSchema
+     * - Only present at the ROOT LEVEL of each entry
+     * - Never present in nested objects (e.g., entry.data.schema_id is a DIFFERENT field for variant selection)
+     *
+     * This function strips ONLY at entry root level, NEVER recursively into nested objects.
+     * This is critical because nested objects like entry.data contain business logic fields
+     * that should never be stripped (e.g., data.schema_id for variant selection in Messages tool).
+     *
+     * Called BEFORE injectTooltypeIfNeeded() so that even if AI provides tooltype, it's stripped
+     * and then correctly re-injected from the database (single source of truth).
+     *
+     * @param command DataCommand from AI with potential systemManaged fields
+     * @return Cleaned DataCommand with root-level systemManaged fields removed
+     */
+    private fun stripRootLevelSystemManagedFields(command: DataCommand): DataCommand {
+        // Only strip for CREATE_DATA and UPDATE_DATA commands
+        if (command.type != "CREATE_DATA" && command.type != "UPDATE_DATA") {
+            return command
+        }
+
+        val entries = command.params["entries"] as? List<*> ?: return command
+
+        // System-managed fields from BaseDataSchema (only at entry root level)
+        // Note: tooltype is stripped here and re-injected by injectTooltypeIfNeeded()
+        val rootSystemManagedFields = setOf("id", "created_at", "updated_at", "schema_id", "tooltype")
+
+        val cleanedEntries = entries.map { entry ->
+            if (entry is Map<*, *>) {
+                @Suppress("UNCHECKED_CAST")
+                val mutableEntry = (entry as Map<String, Any>).toMutableMap()
+
+                // Strip only at root level - do NOT recurse into nested objects
+                rootSystemManagedFields.forEach { field ->
+                    if (mutableEntry.containsKey(field)) {
+                        mutableEntry.remove(field)
+                        LogManager.aiService("Stripped root-level systemManaged field: $field", "DEBUG")
+                    }
+                }
+
+                mutableEntry
+            } else {
+                entry
+            }
+        }
+
+        return command.copy(params = command.params.toMutableMap().apply {
+            put("entries", cleanedEntries)
+        })
+    }
+
+    /**
+     * Inject tooltype into command params by deducing from toolInstanceId
+     *
+     * AI should never provide tooltype - it's automatically deduced from the tool instance.
+     * This ensures AI cannot spoof tooltype and provides single source of truth.
+     *
+     * Called AFTER stripRootLevelSystemManagedFields(), so even if AI provided tooltype,
+     * it's been removed and we inject the correct one from the database.
+     *
+     * @param command DataCommand potentially missing tooltype
+     * @return Command with tooltype injected at root level
+     */
+    private suspend fun injectTooltypeIfNeeded(command: DataCommand): DataCommand {
+        val toolInstanceId = command.params["toolInstanceId"] as? String
+            ?: return command
+
+        // Fetch tool instance to get tooltype
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to toolInstanceId)
+        )
+
+        if (!result.isSuccess) {
+            return command
+        }
+
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        val tooltype = toolInstance?.get("tool_type") as? String  // Note: DB column is "tool_type" not "tooltype"
+            ?: return command
+
+        // Inject tooltype at root level
+        val enrichedParams = command.params.toMutableMap()
+        enrichedParams["tooltype"] = tooltype
+
+        LogManager.aiService("Injected tooltype '$tooltype' from tool instance $toolInstanceId", "DEBUG")
+
+        return command.copy(params = enrichedParams)
     }
 
     /**

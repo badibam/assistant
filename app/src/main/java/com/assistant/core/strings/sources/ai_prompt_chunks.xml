@@ -658,6 +658,23 @@ User: "Crée un suivi de poids quotidien"
 
 Cette approche garantit que tes actions seront toujours acceptées par le système.]]></string>
 
+    <!-- D.4 Champs System-Managed [DEGRÉ 1] -->
+    <string name="ai_chunk_validation_system_managed"><![CDATA[## Champs Gérés par le Système
+
+**RÈGLE CRITIQUE** : Certains champs sont automatiquement gérés par le système et **ne doivent JAMAIS être inclus** dans tes commandes.
+
+### Identification
+
+Dans les schémas JSON, ces champs sont marqués `"systemManaged": true`.
+
+### Application
+
+- **NE fournis JAMAIS** ces champs dans tes paramètres d\'actions
+- Le système les génère automatiquement lors de la création/modification
+- Exemples : `id`, `created_at`, `updated_at`, `schema_id`
+
+Le système ignore automatiquement ces champs s\'ils sont présents dans tes commandes.]]></string>
+
     <!-- ================================================================ -->
     <!-- PARTIE E : GESTION TEMPORELLE                                    -->
     <!-- ================================================================ -->

@@ -70,6 +70,7 @@ object PromptChunks {
         Chunk("validation_schema_ids", 1) { ctx, _ -> runBlocking { buildSystemSchemaIds(ctx) } },
         Chunk("validation_schema_relation", 2) { ctx, _ -> buildChunk("validation_schema_relation", ctx) },
         Chunk("validation_strategy", 1) { ctx, _ -> buildChunk("validation_strategy", ctx) },
+        Chunk("validation_system_managed", 1) { ctx, _ -> buildChunk("validation_system_managed", ctx) },
 
         // PARTIE E : GESTION TEMPORELLE
         Chunk("temporal_formats", 1) { ctx, _ -> buildChunk("temporal_formats", ctx) },

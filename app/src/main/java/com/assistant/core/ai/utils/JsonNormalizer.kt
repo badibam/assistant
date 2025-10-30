@@ -51,14 +51,16 @@ object JsonNormalizer {
      * @return Normalized value with JSON types converted to Kotlin
      */
     private fun normalizeValue(value: Any?): Any? {
-        return when (value) {
-            null -> null
+        return when {
+            value == null -> null
 
             // JSON types - convert to Kotlin
-            is JSONObject -> {
+            // Check class name to catch JSONObject$1 and other anonymous subclasses
+            value is JSONObject || value.javaClass.name.startsWith("org.json.JSONObject") -> {
+                val jsonObj = value as JSONObject
                 val map = mutableMapOf<String, Any>()
-                value.keys().forEach { key ->
-                    val normalized = normalizeValue(value.get(key))
+                jsonObj.keys().forEach { key ->
+                    val normalized = normalizeValue(jsonObj.get(key))
                     if (normalized != null) {
                         map[key] = normalized
                     }
@@ -66,14 +68,15 @@ object JsonNormalizer {
                 map
             }
 
-            is JSONArray -> {
-                (0 until value.length()).mapNotNull { i ->
-                    normalizeValue(value.get(i))
+            value is JSONArray || value.javaClass.name.startsWith("org.json.JSONArray") -> {
+                val jsonArray = value as JSONArray
+                (0 until jsonArray.length()).mapNotNull { i ->
+                    normalizeValue(jsonArray.get(i))
                 }
             }
 
             // Already Kotlin types - recurse in case of nested structures
-            is Map<*, *> -> {
+            value is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
                 val typedMap = value as Map<String, Any>
                 val result = mutableMapOf<String, Any>()
@@ -86,26 +89,26 @@ object JsonNormalizer {
                 result
             }
 
-            is List<*> -> {
+            value is List<*> -> {
                 value.mapNotNull { item ->
                     normalizeValue(item)
                 }
             }
 
             // Primitives - keep as-is
-            is String, is Int, is Long, is Double, is Boolean -> value
+            value is String || value is Int || value is Long || value is Double || value is Boolean -> value
 
             // Numbers might come as different types from JSON
-            is Number -> when {
+            value is Number -> when {
                 value.toString().contains(".") -> value.toDouble()
                 else -> value.toLong()
             }
 
-            // Unknown type - keep as-is with warning
+            // Unknown type - log with full class name and keep as-is
             else -> {
                 android.util.Log.w(
                     "JsonNormalizer",
-                    "Unknown value type during normalization: ${value::class.java.simpleName}"
+                    "Unknown value type during normalization: ${value.javaClass.name} (${value.javaClass.simpleName})"
                 )
                 value
             }

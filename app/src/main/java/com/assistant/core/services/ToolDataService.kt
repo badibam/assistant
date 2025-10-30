@@ -51,7 +51,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val toolInstanceId = params.optString("toolInstanceId")
         val tooltype = params.optString("tooltype")
         val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
-        val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else null
+        // timestamp is optional: defaults to current time if omitted, but can be specified for retroactive entries
+        val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else System.currentTimeMillis()
         val name = params.optString("name", null)
         val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
