@@ -483,20 +483,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
             try {
                 val entryJson = entriesArray.getJSONObject(i)
-
-                // Debug: log raw entry JSON
-                com.assistant.core.utils.LogManager.service(
-                    "Batch update entry $i JSON: $entryJson",
-                    "DEBUG"
-                )
-
                 val entryId = entryJson.optString("id")
 
                 if (entryId.isEmpty()) {
-                    val error = "Entry $i: missing id (raw value: ${entryJson.opt("id")})"
+                    val error = "Entry $i: missing id"
                     failures.add(error)
                     com.assistant.core.utils.LogManager.service(
-                        "Batch update failed for entry $i: missing id, raw value=${entryJson.opt("id")}",
+                        "Batch update failed for entry $i: missing id",
                         "WARN"
                     )
                     failureCount++

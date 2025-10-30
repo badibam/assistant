@@ -181,12 +181,9 @@ object SchemaValidator {
      */
     private fun removeRequiredConstraint(schemaJson: String): String {
         return try {
-            LogManager.schema("removeRequiredConstraint - BEFORE: $schemaJson", "DEBUG")
             val schemaObject = JSONObject(schemaJson)
             removeRequiredFromObject(schemaObject)
-            val result = schemaObject.toString()
-            LogManager.schema("removeRequiredConstraint - AFTER: $result", "DEBUG")
-            result
+            schemaObject.toString()
         } catch (e: Exception) {
             LogManager.schema("Failed to remove required constraint: ${e.message}", "WARN", e)
             schemaJson // Return original on error

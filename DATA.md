@@ -221,6 +221,25 @@ BaseSchemas définit les champs communs incluant les identifiants de schémas :
 
 **Données** : `schema_id`, `tool_instance_id`, `tooltype`, `name`, `timestamp`, `created_at`, etc.
 
+### Validation Partielle (Updates)
+
+**Principe** : UPDATEs peuvent fournir uniquement les champs modifiés. Mode `partialValidation` ignore les contraintes `required`.
+
+**UI vs IA** :
+- **UI** : Charge entrée complète → envoie toutes données → `partialValidation = false`
+- **IA** : Envoie uniquement champs modifiés → `partialValidation = true`
+
+**Implémentation** :
+```kotlin
+// ActionValidator détecte automatiquement
+val partialValidation = operation in listOf("update", "batch_update")
+SchemaValidator.validate(schema, data, context, partialValidation)
+```
+
+Mode partial retire `required` arrays du schéma (récursivement), valide types/formats des champs présents. Service merge avec données existantes.
+
+**Champ `id`** : NOT systemManaged (nécessaire pour identifier l'entrée). Strippé manuellement pour CREATE_DATA uniquement.
+
 ### ValidationHelper
 
 API centralisée pour validation de configuration avec extraction automatique du schema_id :

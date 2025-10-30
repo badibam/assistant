@@ -325,9 +325,12 @@ Met à jour des données en batch.
 - `toolInstanceId` (string, **requis**)
 - `tooltype` (string, **requis**)
 - `entries` (array, **requis**) : Liste des entrées à modifier
-  - Chaque entrée : `{ id, data }` (id **requis**)
+  - Chaque entrée : `{ id, data?, name?, timestamp? }`
+  - `id` est **requis** pour identifier l\'entrée à modifier
+  - Les autres champs sont **optionnels** (update partiel)
 
 **Notes** :
+- **UPDATE PARTIEL** : Seuls les champs fournis sont modifiés. Les champs absents conservent leurs valeurs existantes
 - Le `schema_id` est automatiquement déduit de la configuration de la tool instance
 - **VALEURS LITTÉRALES UNIQUEMENT** : `data` contient uniquement des valeurs JSON (strings, numbers, booleans, arrays, objects). Jamais de code exécutable
 
@@ -508,7 +511,7 @@ Retourne tous les outils configurés dans la zone Santé.]]></string>
 ```
 Crée 2 entrées de poids. Le schema_id est automatiquement déduit de la config de l\'outil.
 
-### Exemple 2 : Mettre à jour des données
+### Exemple 2 : Mettre à jour des données (update partiel)
 ```json
 {
   "type": "UPDATE_DATA",
@@ -524,7 +527,7 @@ Crée 2 entrées de poids. Le schema_id est automatiquement déduit de la config
   }
 }
 ```
-Modifie la valeur d\'une entrée existante.
+**Update partiel** : Modifie uniquement la valeur. Les autres champs (name, timestamp, autres champs data) conservent leurs valeurs existantes. Seuls les champs fournis sont mis à jour.
 
 ### Exemple 3 : Supprimer des données
 ```json
