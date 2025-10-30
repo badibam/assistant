@@ -146,15 +146,16 @@ fun ZoneScopeSelector(
                         )
                     }
 
-                    // Context + Resources selection (shown after tool instance selected)
-                    if (state.selectionChain.size >= 2 || (state.selectionChain.size == 1 && config.allowZoneSelection && !config.allowInstanceSelection)) {
+                    // Context + Resources selection (shown after first selection)
+                    if (state.selectionChain.isNotEmpty()) {
                         ContextResourcesSection(
                             state = state,
                             config = config,
                             onContextChange = { newContext ->
+                                val currentLevel = getCurrentSelectionLevel(state.selectionChain)
                                 state = state.copy(
                                     selectedContext = newContext,
-                                    selectedResources = getDefaultResourcesForContext(newContext)
+                                    selectedResources = getDefaultResourcesForContext(newContext, currentLevel)
                                 )
                             },
                             onResourceToggle = { resource ->
@@ -168,8 +169,8 @@ fun ZoneScopeSelector(
                         )
                     }
 
-                    // Period selection (optional, context-dependent)
-                    if (shouldShowPeriodSelector(state, config)) {
+                    // Period selection (optional, shown after first selection and context-dependent)
+                    if (state.selectionChain.isNotEmpty() && shouldShowPeriodSelector(state, config)) {
                         PeriodSelectionSection(
                             state = state,
                             config = config,
@@ -507,45 +508,52 @@ private suspend fun handleLevelSelection(
 
     // Build path - node.path already contains the full path
     val newPath = selectedNode.path
+    val newLevel = state.currentLevel + 1
 
-    // Check if we should stop here or continue navigation
+    // Check if we should load next level
     val currentLevel = getCurrentSelectionLevel(newChain)
-    val canConfirmHere = config.isValidSelection(currentLevel)
     val shouldContinue = config.shouldNavigateToNextLevel(currentLevel, hasChildren = true)
 
-    if (!shouldContinue || (canConfirmHere && state.currentLevel == 1)) {
-        // Stop navigation, proceed to context/resources selection
-        onStateUpdate(state.copy(
-            selectionChain = newChain,
-            selectedPath = newPath,
-            currentLevel = state.currentLevel + 1
-        ))
-        return
+    // Initialize default resources for first selection (zone level)
+    val defaultResources = if (state.selectionChain.isEmpty()) {
+        getDefaultResourcesForContext(state.selectedContext, currentLevel)
+    } else {
+        state.selectedResources
     }
 
-    // Load next level options
-    try {
-        val children = dataNavigator.getChildren(newPath)
-        val nextLevelOptions = children.filter {
-            when (state.currentLevel + 1) {
-                1 -> it.type == NodeType.TOOL  // After zone, show tools
-                else -> false
+    if (shouldContinue && newLevel < 2) {
+        // Load next level options
+        try {
+            val children = dataNavigator.getChildren(newPath)
+            val nextLevelOptions = children.filter {
+                when (newLevel) {
+                    1 -> it.type == NodeType.TOOL  // After zone, show tools
+                    else -> false
+                }
             }
-        }
 
-        val newLevel = state.currentLevel + 1
+            onStateUpdate(state.copy(
+                selectionChain = newChain,
+                selectedPath = newPath,
+                currentOptions = nextLevelOptions,
+                currentLevel = newLevel,
+                selectedResources = defaultResources,
+                optionsByLevel = state.optionsByLevel + (newLevel to nextLevelOptions)
+            ))
+
+            LogManager.ui("ZoneScopeSelector: Loaded ${nextLevelOptions.size} options for level $newLevel", "DEBUG")
+        } catch (e: Exception) {
+            LogManager.ui("ZoneScopeSelector: Failed to load next level: ${e.message}", "ERROR", e)
+            onError(s.shared("error_loading_options"))
+        }
+    } else {
+        // Just update selection, don't load next level
         onStateUpdate(state.copy(
             selectionChain = newChain,
             selectedPath = newPath,
-            currentOptions = nextLevelOptions,
             currentLevel = newLevel,
-            optionsByLevel = state.optionsByLevel + (newLevel to nextLevelOptions)
+            selectedResources = defaultResources
         ))
-
-        LogManager.ui("ZoneScopeSelector: Loaded ${nextLevelOptions.size} options for level $newLevel", "DEBUG")
-    } catch (e: Exception) {
-        LogManager.ui("ZoneScopeSelector: Failed to load next level: ${e.message}", "ERROR", e)
-        onError(s.shared("error_loading_options"))
     }
 }
 
@@ -561,36 +569,55 @@ private fun getCurrentSelectionLevel(chain: List<SelectionStep>): SelectionLevel
 }
 
 /**
- * Filter allowed contexts based on tool type support for executions
+ * Filter allowed contexts based on selection level and tool type support
  */
 private fun filterAllowedContexts(
     state: ZoneScopeState,
     config: NavigationConfig,
     context: android.content.Context
 ): List<PointerContext> {
-    val toolNode = state.selectionChain.lastOrNull { it.selectedNode.type == NodeType.TOOL }
-
-    return if (toolNode != null) {
-        // Extract tooltype from node's toolType field
-        val tooltype = toolNode.selectedNode.toolType
-
-        if (tooltype != null) {
-            val toolType = ToolTypeManager.getToolType(tooltype)
-            val supportsExecutions = toolType?.supportsExecutions() == true
-
-            // Filter out EXECUTIONS if tool doesn't support it
-            if (supportsExecutions) {
-                config.allowedContexts
-            } else {
-                config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
-            }
-        } else {
-            // No tooltype available, show all except EXECUTIONS to be safe
-            config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
-        }
+    val currentLevel = if (state.selectionChain.isNotEmpty()) {
+        getCurrentSelectionLevel(state.selectionChain)
     } else {
-        // No tool selected yet, show all contexts
-        config.allowedContexts
+        null
+    }
+
+    return when (currentLevel) {
+        SelectionLevel.ZONE -> {
+            // Zone level: only GENERIC and CONFIG
+            // DATA and EXECUTIONS are instance-specific
+            config.allowedContexts.filter {
+                it == PointerContext.GENERIC || it == PointerContext.CONFIG
+            }
+        }
+        SelectionLevel.INSTANCE -> {
+            // Instance level: filter based on tool type support for executions
+            val toolNode = state.selectionChain.lastOrNull { it.selectedNode.type == NodeType.TOOL }
+
+            if (toolNode != null) {
+                val tooltype = toolNode.selectedNode.toolType
+
+                if (tooltype != null) {
+                    val toolType = ToolTypeManager.getToolType(tooltype)
+                    val supportsExecutions = toolType?.supportsExecutions() == true
+
+                    if (supportsExecutions) {
+                        config.allowedContexts
+                    } else {
+                        config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
+                    }
+                } else {
+                    // No tooltype available, show all except EXECUTIONS to be safe
+                    config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
+                }
+            } else {
+                config.allowedContexts
+            }
+        }
+        else -> {
+            // No selection yet, show all contexts
+            config.allowedContexts
+        }
     }
 }
 
@@ -607,12 +634,18 @@ private fun getAvailableResourcesForContext(context: PointerContext): List<Strin
 }
 
 /**
- * Get default selected resources for a given context
+ * Get default selected resources for a given context and selection level
  */
-private fun getDefaultResourcesForContext(context: PointerContext): List<String> {
+private fun getDefaultResourcesForContext(context: PointerContext, level: SelectionLevel): List<String> {
     return when (context) {
         PointerContext.GENERIC -> emptyList() // No default for GENERIC
-        PointerContext.CONFIG -> emptyList() // No default selection
+        PointerContext.CONFIG -> {
+            when (level) {
+                SelectionLevel.ZONE -> listOf("config") // Zone config checked by default
+                SelectionLevel.INSTANCE -> listOf("config") // Tool config checked by default
+                else -> emptyList()
+            }
+        }
         PointerContext.DATA -> listOf("data") // Data checked by default
         PointerContext.EXECUTIONS -> listOf("executions") // Executions checked by default
     }
@@ -634,14 +667,16 @@ private fun shouldShowPeriodSelector(state: ZoneScopeState, config: NavigationCo
  * Check if current selection can be confirmed
  */
 private fun canConfirmSelection(state: ZoneScopeState, config: NavigationConfig): Boolean {
-    // Must have completed navigation to required level
-    val hasRequiredNavigation = when {
-        config.allowInstanceSelection -> state.selectionChain.size >= 2
-        config.allowZoneSelection -> state.selectionChain.size >= 1
-        else -> false
-    }
+    // Must have at least one selection
+    if (state.selectionChain.isEmpty()) return false
 
-    if (!hasRequiredNavigation) return false
+    // Get current selection level
+    val currentLevel = getCurrentSelectionLevel(state.selectionChain)
+
+    // Check if we can confirm at this level
+    val canConfirmAtThisLevel = config.isValidSelection(currentLevel)
+
+    if (!canConfirmAtThisLevel) return false
 
     // GENERIC context has no resource requirements
     if (state.selectedContext == PointerContext.GENERIC) return true

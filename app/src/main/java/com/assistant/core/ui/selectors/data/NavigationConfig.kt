@@ -41,7 +41,7 @@ data class NavigationConfig(
         if (!hasChildren) return false
 
         return when (currentLevel) {
-            SelectionLevel.ZONE -> true // Always allow zone → instance
+            SelectionLevel.ZONE -> allowInstanceSelection // Continue to instance only if allowed
             SelectionLevel.INSTANCE -> allowFieldSelection
             SelectionLevel.FIELD -> allowValueSelection // Only show value selectors if allowed
         }
