@@ -55,12 +55,15 @@ object JsonNormalizer {
             value == null -> null
 
             // JSON types - convert to Kotlin
-            // Check class name to catch JSONObject$1 and other anonymous subclasses
-            value is JSONObject || value.javaClass.name.startsWith("org.json.JSONObject") -> {
-                val jsonObj = value as JSONObject
+            // Handle JSONObject and its anonymous subclasses (JSONObject$1, etc.)
+            // Don't cast directly - use reflection-based approach
+            value.javaClass.name.startsWith("org.json.JSONObject") -> {
+                // Reconstruct a new JSONObject from the anonymous subclass
+                // This avoids ClassCastException with JSONObject$1
+                val sourceObj = JSONObject(value.toString())
                 val map = mutableMapOf<String, Any>()
-                jsonObj.keys().forEach { key ->
-                    val normalized = normalizeValue(jsonObj.get(key))
+                sourceObj.keys().forEach { key ->
+                    val normalized = normalizeValue(sourceObj.get(key))
                     if (normalized != null) {
                         map[key] = normalized
                     }
@@ -68,10 +71,11 @@ object JsonNormalizer {
                 map
             }
 
-            value is JSONArray || value.javaClass.name.startsWith("org.json.JSONArray") -> {
-                val jsonArray = value as JSONArray
-                (0 until jsonArray.length()).mapNotNull { i ->
-                    normalizeValue(jsonArray.get(i))
+            value.javaClass.name.startsWith("org.json.JSONArray") -> {
+                // Reconstruct a new JSONArray from the anonymous subclass
+                val sourceArray = JSONArray(value.toString())
+                (0 until sourceArray.length()).mapNotNull { i ->
+                    normalizeValue(sourceArray.get(i))
                 }
             }
 

@@ -45,7 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 14
+        const val VERSION = 15
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -446,6 +446,66 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 14 → 15: Remove schema_id from Messages data.properties
+         *
+         * Problem: Messages tool had schema_id in data.properties, inconsistent with other tooltypes
+         * - Tracking, Journal, Note tools don't have schema_id in data.properties
+         * - schema_id should only exist at entry root level (systemManaged, added by enrichWithSchemaId)
+         * - Having it in data.properties is confusing and redundant
+         *
+         * Solution: Remove schema_id from data object for all Messages entries
+         * - Uses JsonTransformers.transformToolData() for consistent transformation
+         * - Only affects Messages tooltype entries
+         */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 14->15: Starting - Removing schema_id from Messages data.properties", "INFO")
+
+                // Get all Messages tool_data entries
+                val cursor = database.query(
+                    "SELECT id, data FROM tool_data WHERE tooltype = 'messages'"
+                )
+
+                val totalEntries = cursor.count
+                LogManager.database("MIGRATION 14->15: Found $totalEntries Messages entries", "INFO")
+
+                var cleanedCount = 0
+                var errorCount = 0
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val dataJson = cursor.getString(1)
+
+                    try {
+                        // Use JsonTransformers to apply transformation v14->v15
+                        val transformedJson = com.assistant.core.versioning.JsonTransformers.transformToolData(
+                            json = dataJson,
+                            tooltype = "messages",
+                            fromVersion = 14,
+                            toVersion = 15
+                        )
+
+                        // Update only if transformation actually changed the data
+                        if (transformedJson != dataJson) {
+                            database.execSQL(
+                                "UPDATE tool_data SET data = ? WHERE id = ?",
+                                arrayOf(transformedJson, id)
+                            )
+                            cleanedCount++
+                            LogManager.database("MIGRATION 14->15: Cleaned schema_id from entry $id", "DEBUG")
+                        }
+                    } catch (e: Exception) {
+                        errorCount++
+                        LogManager.database("MIGRATION 14->15: Failed to clean entry $id: ${e.message}", "ERROR", e)
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 14->15: Completed - Cleaned $cleanedCount entries ($errorCount errors)", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -458,7 +518,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_10_11,
                     MIGRATION_11_12,
                     MIGRATION_12_13,
-                    MIGRATION_13_14
+                    MIGRATION_13_14,
+                    MIGRATION_14_15
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

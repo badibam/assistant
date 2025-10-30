@@ -223,11 +223,10 @@ class CommandExecutor(private val context: Context) {
                 }
 
                 val paramsMap = command.params
-                val paramsJson = org.json.JSONObject()
-                paramsMap.forEach { (key, value) -> paramsJson.put(key, value) }
 
-                LogManager.aiPrompt("Calling coordinator: $commandString with params: $paramsJson", "VERBOSE")
+                LogManager.aiPrompt("Calling coordinator: $commandString with ${paramsMap.size} params", "VERBOSE")
 
+                // Note: Coordinator.executeServiceOperation() handles recursive Map→JSON conversion
                 val result = coordinator.processUserAction(commandString, paramsMap)
 
                 if (result.isSuccess) {

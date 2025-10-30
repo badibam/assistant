@@ -238,19 +238,13 @@ class Coordinator(context: Context) {
         tokens[opId] = token
         
         return try {
-            val params = JSONObject().apply {
-                command.params.forEach { (key, value) ->
-                    // Convert value to JSON-compatible type
-                    val jsonValue = when (value) {
-                        is List<*> -> org.json.JSONArray(value)
-                        is Map<*, *> -> JSONObject(value as Map<*, *>)
-                        else -> value
-                    }
-                    put(key, jsonValue)
-                }
+            // Convert params Map to JSONObject with recursive conversion of nested structures
+            // This ensures nested Maps/Lists are properly converted to JSONObject/JSONArray
+            // (e.g., entries[].data becomes JSONObject instead of remaining as Map)
+            val params = com.assistant.core.utils.JsonUtils.toJSONObject(command.params).apply {
                 put("phase", phase)
             }
-            
+
             LogManager.coordination("Calling service.execute with params: $params", "VERBOSE")
             val result = service.execute(operation, params, token)
             LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")

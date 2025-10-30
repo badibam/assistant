@@ -226,6 +226,17 @@ object JsonTransformers {
                 }
                 json
             }
+            14 -> {
+                // v14→v15: Remove schema_id from data.properties for consistency with other tooltypes
+                // schema_id should only exist at entry root level (systemManaged), not in data object
+                val dataObject = json.optJSONObject("data")
+                if (dataObject != null && dataObject.has("schema_id")) {
+                    LogManager.service("transformMessagesData v14->v15: Removing schema_id from data object", "INFO")
+                    dataObject.remove("schema_id")
+                    json.put("data", dataObject)
+                }
+                json
+            }
             else -> json // No migrations for this version
         }
     }

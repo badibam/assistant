@@ -169,17 +169,12 @@ object MessageToolType : ToolTypeContract {
                 },
                 "timestamp": {
                     "type": "number",
-                    "description": "Creation timestamp"
+                    "description": "Creation timestamp (optional, defaults to current time)"
                 },
                 "data": {
                     "type": "object",
                     "description": "Message template data with executions",
                     "properties": {
-                        "schema_id": {
-                            "type": "string",
-                            "const": "messages_data",
-                            "description": "${s.shared("tools_base_schema_data_schema_id")}"
-                        },
                         "content": {
                             "type": "string",
                             "maxLength": ${FieldLimits.LONG_LENGTH},
@@ -196,11 +191,11 @@ object MessageToolType : ToolTypeContract {
                             "description": "${s.tool("schema_data_triggers")}"
                         }
                     },
-                    "required": ["schema_id", "priority"],
+                    "required": ["priority"],
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "timestamp", "data"]
+            "required": ["name", "data"]
         }
         """.trimIndent()
 
