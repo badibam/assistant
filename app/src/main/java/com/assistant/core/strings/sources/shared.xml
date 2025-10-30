@@ -115,6 +115,10 @@
     <string name="ai_module_cancelled">Module de communication annulé par l\'utilisateur</string>
     <string name="ai_module_response_prefix">Réponse :</string>
     <string name="ai_module_select_option">Sélectionnez une option</string>
+    <string name="ai_module_free_text_label">Réponse libre</string>
+    <string name="ai_module_free_text_placeholder">Précision ou une autre réponse</string>
+    <string name="ai_module_precision_prefix">Précision :</string>
+    <string name="ai_module_other_response_prefix">Autre réponse :</string>
 
     <!-- AI Interaction - System Messages for Cancellations -->
     <string name="ai_system_communication_no_response">Aucune réponse fournie au module de communication</string>

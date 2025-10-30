@@ -91,8 +91,9 @@ private fun MultipleChoiceModule(
         else -> emptyList()
     }
 
-    // Local state for selected option
+    // Local state for selected option and free text
     var selectedOption by remember { mutableStateOf<String?>(null) }
+    var freeText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -128,6 +129,15 @@ private fun MultipleChoiceModule(
             }
         }
 
+        // Free text field (always visible)
+        UI.FormField(
+            label = s.shared("ai_module_free_text_label"),
+            value = freeText,
+            onChange = { freeText = it },
+            fieldType = FieldType.TEXT_MEDIUM,
+            required = false
+        )
+
         // Action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -144,15 +154,33 @@ private fun MultipleChoiceModule(
                 )
             }
 
-            // Confirm button (enabled only if option selected)
+            // Confirm button (enabled if option selected OR free text provided)
             Box(modifier = Modifier.weight(1f)) {
                 UI.ActionButton(
                     action = ButtonAction.CONFIRM,
                     display = ButtonDisplay.LABEL,
                     size = Size.M,
-                    enabled = selectedOption != null,
+                    enabled = selectedOption != null || freeText.isNotBlank(),
                     onClick = {
-                        selectedOption?.let { onResponse(it) }
+                        // Build response based on selections:
+                        // 1. Option only → "[option]"
+                        // 2. Option + text → "[option]. Précision : [text]"
+                        // 3. Text only → "Autre réponse : [text]"
+                        val response = when {
+                            selectedOption != null && freeText.isNotBlank() -> {
+                                "$selectedOption. ${s.shared("ai_module_precision_prefix")} $freeText"
+                            }
+                            selectedOption != null -> {
+                                selectedOption!!
+                            }
+                            freeText.isNotBlank() -> {
+                                "${s.shared("ai_module_other_response_prefix")} $freeText"
+                            }
+                            else -> ""
+                        }
+                        if (response.isNotEmpty()) {
+                            onResponse(response)
+                        }
                     }
                 )
             }
