@@ -1157,4 +1157,43 @@
     <string name="time_hours_ago">h</string>
     <string name="time_days_ago">j</string>
     <string name="settings_logs_description">Consulter les logs d'erreurs pour debug</string>
+
+    <!-- AI Data Headers (CommandExecutor prompt formatting) -->
+    <string name="ai_data_header_trusted">DONNÉES FIABLES</string>
+    <string name="ai_data_header_tool">Outil \'%1$s\'</string>
+    <string name="ai_data_header_executions">Exécutions de l\'outil \'%1$s\'</string>
+    <string name="ai_data_result_count">Nombre de résultats : %1$d enregistrements</string>
+    <string name="ai_data_result_count_executions">Nombre de résultats : %1$d exécutions</string>
+    <string name="ai_data_period_range">Période : %1$s à %2$s</string>
+    <string name="ai_data_period_from">Période : à partir de %1$s</string>
+    <string name="ai_data_period_until">Période : jusqu\'à %1$s</string>
+    <string name="ai_data_period_all_time">Période : TOUT TEMPS (aucun filtre)</string>
+    <string name="ai_data_limit">Limite : %1$d</string>
+    <string name="ai_data_offset">Décalage : %1$d</string>
+    <string name="ai_data_status_filter">Filtre statut : %1$s</string>
+    <string name="ai_data_template_filter">Filtre template : %1$s</string>
+    <string name="ai_data_exact_query">Requête exacte : { \"type\": \"%1$s\", \"params\": %2$s }</string>
+    <string name="ai_data_fields_tool_data">Champs inclus : id, timestamp, data, name (si présent)</string>
+    <string name="ai_data_fields_executions">Champs inclus : id, template_data_id, execution_time, status, snapshot_data, execution_result</string>
+    <string name="ai_data_no_results_warning">⚠️ AUCUNE DONNÉE TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>
+    <string name="ai_data_no_results_executions_warning">⚠️ AUCUNE EXÉCUTION TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>
+    <string name="ai_data_complete_dataset">✓ Jeu de données complet pour les critères spécifiés - Utiliser directement, NE PAS refaire la requête.</string>
+
+    <!-- AI Enrichment - POINTER inline summaries -->
+    <string name="ai_enrichment_pointer_zone">Zone</string>
+    <string name="ai_enrichment_pointer_tool">Outil</string>
+    <string name="ai_enrichment_pointer_generic">Données</string>
+    <string name="ai_enrichment_pointer_context_config">configuration</string>
+    <string name="ai_enrichment_pointer_context_data">données</string>
+    <string name="ai_enrichment_pointer_context_executions">exécutions</string>
+    <string name="ai_enrichment_pointer_period_range">%1$s à %2$s</string>
+    <string name="ai_enrichment_pointer_period_from">à partir de %1$s</string>
+    <string name="ai_enrichment_pointer_period_until">jusqu\'à %1$s</string>
+    <string name="ai_enrichment_pointer_relative_ago">il y a %1$d %2$s</string>
+    <string name="ai_enrichment_pointer_relative_future">dans %1$d %2$s</string>
+    <string name="period_now">maintenant</string>
+    <string name="period_days">jours</string>
+    <string name="period_weeks">semaines</string>
+    <string name="period_months">mois</string>
+    <string name="period_years">ans</string>
 </resources>

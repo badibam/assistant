@@ -21,6 +21,7 @@ import com.assistant.core.ui.selectors.ZoneScopeSelector
 import com.assistant.core.ui.components.PeriodRangeSelector
 import com.assistant.core.ui.selectors.data.NavigationConfig
 import com.assistant.core.ui.selectors.data.SelectionResult
+import com.assistant.core.ui.selectors.data.SelectionLevel
 import com.assistant.core.ui.selectors.data.FieldSpecificData
 import com.assistant.core.ui.selectors.data.TimestampSelection
 import com.assistant.core.ui.selectors.data.PointerContext
@@ -825,8 +826,7 @@ private fun createPointerConfig(
  * Create human-readable previews from POINTER enrichment data
  * Returns Pair(uiPreview, promptPreview)
  *
- * UI: "Santé"
- * Prompt: "Santé (id = zones/zone_123)"
+ * Includes context (DATA, CONFIG, EXECUTIONS) and detailed period information
  */
 private fun createPointerPreview(
     context: Context,
@@ -839,27 +839,42 @@ private fun createPointerPreview(
         selectionResult.displayChain.last()
     } else {
         val pathParts = selectionResult.selectedPath.split("/").filter { it.isNotBlank() }
-        pathParts.lastOrNull() ?: "sélection"
+        pathParts.lastOrNull() ?: s.shared("content_unnamed")
     }
 
-    // Period text (if filtered) - from SelectionResult.timestampSelection
-    val périodeText = if (selectionResult.timestampSelection.isComplete) {
-        " (${s.shared("ai_period_filtered")})"
-    } else {
-        ""
+    // Build UI preview parts
+    val uiParts = mutableListOf<String>()
+
+    // 1. Selection level prefix
+    when (selectionResult.selectionLevel) {
+        SelectionLevel.ZONE -> uiParts.add("${s.shared("ai_enrichment_pointer_zone")}: $displayName")
+        SelectionLevel.INSTANCE -> uiParts.add("${s.shared("ai_enrichment_pointer_tool")}: $displayName")
+        else -> uiParts.add(displayName)
     }
 
-    // Extract clean ID from path (remove resource type prefix)
-    // Example: "tools.7d8cd430-efff-4721-a403-172922ba2892" → "7d8cd430-efff-4721-a403-172922ba2892"
-    // Example: "zones.zone_abc" → "zone_abc"
+    // 2. Context
+    when (selectionResult.selectedContext) {
+        PointerContext.CONFIG -> uiParts.add(s.shared("ai_enrichment_pointer_context_config"))
+        PointerContext.DATA -> uiParts.add(s.shared("ai_enrichment_pointer_context_data"))
+        PointerContext.EXECUTIONS -> uiParts.add(s.shared("ai_enrichment_pointer_context_executions"))
+        else -> {} // GENERIC: no context label
+    }
+
+    // 3. Period (if specified)
+    if (selectionResult.timestampSelection.isComplete) {
+        // TODO: Use centralized period formatting when available
+        uiParts.add(s.shared("ai_period_filtered"))
+    }
+
+    // Build prompt preview with ID
     val pathParts = selectionResult.selectedPath.split(".").filter { it.isNotBlank() }
     val cleanId = pathParts.lastOrNull() ?: selectionResult.selectedPath
 
-    // UI version: just the name and period
-    val uiPreview = "$displayName$périodeText"
+    val promptParts = uiParts.toMutableList()
+    promptParts.add("(id = $cleanId)")
 
-    // Prompt version: name + clean ID + period
-    val promptPreview = "$displayName (id = $cleanId)$périodeText"
-
-    return Pair(uiPreview, promptPreview)
+    return Pair(
+        uiParts.joinToString(", "),
+        promptParts.joinToString(" ")
+    )
 }

@@ -214,28 +214,8 @@ Les commandes de requête te permettent d\'explorer les données sans les modifi
 
 ### Utilisation des données intégrées
 
-**PRINCIPE FONDAMENTAL** : L\'utilisateur peut intégrer des données au prompt via des enrichments POINTER.
-Ces données sont **déjà disponibles** dans ton contexte sous forme de SystemMessages précédents.
-
-**RÈGLES D\'UTILISATION** :
-
-1. **TOUJOURS analyser le contexte AVANT de faire une query**
-   - Lis attentivement les SystemMessages précédents pour identifier les données déjà chargées
-   - Vérifie si les données nécessaires à ta tâche sont déjà présentes
-
-2. **NE redemande des données QUE si nécessaire**
-   - Données absentes du contexte actuel
-   - Données présentes mais filtrées différemment (autre période, autres champs)
-   - Données mises à jour depuis le dernier chargement
-
-3. **FAIS CONFIANCE aux données intégrées par l\'utilisateur**
-   - Ces données proviennent de requêtes explicites de l\'utilisateur
-   - Elles sont complètes et fiables pour la période/contexte spécifié
-   - Ne les redemande pas "par sécurité" : utilise-les directement
-
-**Exemple** :
-Si l\'utilisateur a intégré "Données de l\'outil \'Poids\', période du 2024-01-01 au 2024-01-31 (15 entrées)",
-tu peux directement analyser ces 15 entrées SANS refaire une query TOOL_DATA.
+**PRIORITÉ** : Tiens compte des données déjà intégrées au prompt (enrichments POINTER de l\'utilisateur).
+Ne redemande des données que si elles sont nécessaires pour ta tâche ET absentes du contexte actuel.
 
 ### TOOL_DATA
 

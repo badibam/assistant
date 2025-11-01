@@ -130,29 +130,156 @@ class EnrichmentProcessor(
     private fun generatePointerSummary(config: JSONObject): String {
         val path = config.optString("selectedPath", "")
         val selectionLevel = config.optString("selectionLevel", "")
-        val fieldSpecificData = config.optJSONObject("fieldSpecificData")
+        val contextName = config.optString("selectedContext", "GENERIC")
+        val resourcesArray = config.optJSONArray("selectedResources")
+        val selectedResources = mutableListOf<String>()
+        if (resourcesArray != null) {
+            for (i in 0 until resourcesArray.length()) {
+                selectedResources.add(resourcesArray.getString(i))
+            }
+        }
 
-        // Extract context from path
+        // Extract zone/tool from path
         val pathParts = path.split(".")
-        val zoneContext = if (pathParts.size > 1) pathParts[1] else ""
-        val toolContext = if (pathParts.size > 2) pathParts[2] else ""
+        val zoneName = if (pathParts.size > 1) pathParts[1] else s.shared("content_unnamed")
+        val toolName = if (pathParts.size > 2) pathParts[2] else s.shared("content_unnamed")
 
-        // Build base description
-        val baseDescription = when (selectionLevel) {
-            "ZONE" -> "${s.shared("ai_data_zone")} $zoneContext"
-            "INSTANCE" -> "${s.shared("ai_data_tool")} $toolContext zone $zoneContext"
-            "FIELD" -> "${s.shared("ai_data_field")} $toolContext zone $zoneContext"
-            else -> s.shared("ai_data_generic")
+        // Build comprehensive summary with context
+        val parts = mutableListOf<String>()
+
+        // 1. Base selection (Zone or Tool)
+        when (selectionLevel) {
+            "ZONE" -> {
+                parts.add("${s.shared("ai_enrichment_pointer_zone")} '$zoneName'")
+            }
+            "INSTANCE" -> {
+                parts.add("${s.shared("ai_enrichment_pointer_tool")} '$toolName'")
+            }
+            else -> {
+                parts.add(s.shared("ai_enrichment_pointer_generic"))
+            }
         }
 
-        // Add temporal context if available
-        return if (fieldSpecificData?.has("timestampData") == true) {
-            val timestampData = fieldSpecificData.getJSONObject("timestampData")
-            val periodDescription = formatPeriodDescription(timestampData)
-            "$baseDescription $periodDescription"
+        // 2. Context specification
+        when (contextName) {
+            "CONFIG" -> parts.add(s.shared("ai_enrichment_pointer_context_config"))
+            "DATA" -> parts.add(s.shared("ai_enrichment_pointer_context_data"))
+            "EXECUTIONS" -> parts.add(s.shared("ai_enrichment_pointer_context_executions"))
+            // GENERIC: no context specification
+        }
+
+        // 3. Period (if present and relevant)
+        val timestampSelection = config.optJSONObject("timestampSelection")
+        if (timestampSelection != null && (contextName == "DATA" || contextName == "EXECUTIONS")) {
+            val periodDesc = formatPointerPeriodDescription(timestampSelection)
+            if (periodDesc.isNotEmpty()) {
+                parts.add(periodDesc)
+            }
+        }
+
+        // 4. Resources (if multiple or non-default)
+        if (selectedResources.size > 1) {
+            val resourcesDesc = selectedResources.joinToString(", ")
+            parts.add("($resourcesDesc)")
+        }
+
+        return parts.joinToString(", ")
+    }
+
+    /**
+     * Format period description for POINTER inline summary
+     * Handles both absolute periods (CHAT) and relative periods (AUTOMATION)
+     */
+    private fun formatPointerPeriodDescription(timestampSelection: JSONObject): String {
+        // Check for relative periods first (AUTOMATION)
+        val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
+        val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
+
+        if (minRelativePeriod != null || maxRelativePeriod != null) {
+            // Relative period mode (AUTOMATION)
+            val startDesc = if (minRelativePeriod != null) {
+                val offset = minRelativePeriod.getInt("offset")
+                val type = minRelativePeriod.getString("type")
+                formatRelativePeriodLabel(offset, type)
+            } else null
+
+            val endDesc = if (maxRelativePeriod != null) {
+                val offset = maxRelativePeriod.getInt("offset")
+                val type = maxRelativePeriod.getString("type")
+                formatRelativePeriodLabel(offset, type)
+            } else null
+
+            return when {
+                startDesc != null && endDesc != null -> s.shared("ai_enrichment_pointer_period_range").format(startDesc, endDesc)
+                startDesc != null -> s.shared("ai_enrichment_pointer_period_from").format(startDesc)
+                endDesc != null -> s.shared("ai_enrichment_pointer_period_until").format(endDesc)
+                else -> ""
+            }
+        }
+
+        // Check for absolute periods or custom dates (CHAT)
+        val minPeriod = timestampSelection.optJSONObject("minPeriod")
+        val maxPeriod = timestampSelection.optJSONObject("maxPeriod")
+        val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
+        val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
+
+        val startDate = when {
+            minCustomDateTime != null -> formatTimestamp(minCustomDateTime)
+            minPeriod != null -> {
+                val timestamp = minPeriod.getLong("timestamp")
+                formatTimestamp(timestamp)
+            }
+            else -> null
+        }
+
+        val endDate = when {
+            maxCustomDateTime != null -> formatTimestamp(maxCustomDateTime)
+            maxPeriod != null -> {
+                val timestamp = maxPeriod.getLong("timestamp")
+                formatTimestamp(timestamp)
+            }
+            else -> null
+        }
+
+        return when {
+            startDate != null && endDate != null -> s.shared("ai_enrichment_pointer_period_range").format(startDate, endDate)
+            startDate != null -> s.shared("ai_enrichment_pointer_period_from").format(startDate)
+            endDate != null -> s.shared("ai_enrichment_pointer_period_until").format(endDate)
+            else -> ""
+        }
+    }
+
+    /**
+     * Format relative period label for inline display
+     * Example: "il y a 2 semaines"
+     */
+    private fun formatRelativePeriodLabel(offset: Int, type: String): String {
+        val absOffset = kotlin.math.abs(offset)
+        val unitStr = when (type) {
+            "DAY" -> if (absOffset == 1) s.shared("time_day") else s.shared("period_days")
+            "WEEK" -> if (absOffset == 1) s.shared("period_week") else s.shared("period_weeks")
+            "MONTH" -> if (absOffset == 1) s.shared("period_month") else s.shared("period_months")
+            "YEAR" -> if (absOffset == 1) s.shared("period_year") else s.shared("period_years")
+            else -> type.lowercase()
+        }
+
+        return if (offset == 0) {
+            s.shared("period_now")
+        } else if (offset < 0) {
+            // Negative offset = in the past
+            s.shared("ai_enrichment_pointer_relative_ago").format(absOffset, unitStr)
         } else {
-            baseDescription
+            // Positive offset = in the future
+            s.shared("ai_enrichment_pointer_relative_future").format(absOffset, unitStr)
         }
+    }
+
+    /**
+     * Format timestamp for inline display
+     */
+    private fun formatTimestamp(timestamp: Long): String {
+        return java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
+            .format(java.util.Date(timestamp))
     }
 
     private fun generateUseSummary(config: JSONObject): String {

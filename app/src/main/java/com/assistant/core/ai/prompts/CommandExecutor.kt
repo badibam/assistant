@@ -496,6 +496,9 @@ class CommandExecutor(private val context: Context) {
      * Generate title/header for data section in prompt
      * Creates descriptive title with context (tool name, filters, period, etc.)
      * Returns empty string for action commands
+     *
+     * IMPORTANT: Always indicates result count (even if 0) and exact query parameters
+     * for AI to trust the data and avoid redundant queries
      */
     private suspend fun generateDataTitle(command: ExecutableCommand, data: Map<String, Any>): String {
         // No title needed for action commands
@@ -528,27 +531,165 @@ class CommandExecutor(private val context: Context) {
                     val count = data["count"] as? Int
                         ?: (data["entries"] as? List<*>)?.size
                         ?: 0
-                    val parts = mutableListOf("Data from tool '$toolName'")
 
-                    // Add period info if present
+                    // Build comprehensive header with ALL query details
+                    val headerParts = mutableListOf<String>()
+
+                    // Main title with result count (ALWAYS shown, even if 0)
+                    headerParts.add("=== ${s.shared("ai_data_header_trusted")}: ${s.shared("ai_data_header_tool").format(toolName)} ===")
+                    headerParts.add(s.shared("ai_data_result_count").format(count))
+
+                    // Period info if present
                     val startTime = command.params["startTime"] as? Long
                     val endTime = command.params["endTime"] as? Long
                     if (startTime != null && endTime != null) {
-                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
                             .format(java.util.Date(startTime))
-                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
                             .format(java.util.Date(endTime))
-                        parts.add("period: $startDate to $endDate")
+                        headerParts.add(s.shared("ai_data_period_range").format(startDate, endDate))
+                    } else if (startTime != null) {
+                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(startTime))
+                        headerParts.add(s.shared("ai_data_period_from").format(startDate))
+                    } else if (endTime != null) {
+                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(endTime))
+                        headerParts.add(s.shared("ai_data_period_until").format(endDate))
+                    } else {
+                        headerParts.add(s.shared("ai_data_period_all_time"))
                     }
 
-                    // Add limit if present
                     val limit = command.params["limit"] as? Int
                     if (limit != null) {
-                        parts.add("limit: $limit")
+                        headerParts.add(s.shared("ai_data_limit").format(limit))
                     }
 
-                    parts.add("($count records)")
-                    parts.joinToString(", ")
+                    val offset = command.params["offset"] as? Int
+                    if (offset != null) {
+                        headerParts.add(s.shared("ai_data_offset").format(offset))
+                    }
+
+                    // Build exact query as AI would write it (TOOL_DATA format)
+                    val aiQueryParams = mutableMapOf<String, Any>()
+                    aiQueryParams["id"] = toolInstanceId ?: "unknown"
+                    if (startTime != null || endTime != null) {
+                        val period = mutableMapOf<String, Any>()
+                        if (startTime != null) period["start"] = startTime
+                        if (endTime != null) period["end"] = endTime
+                        aiQueryParams["period"] = period
+                    }
+                    if (limit != null) aiQueryParams["limit"] = limit
+                    if (offset != null) aiQueryParams["offset"] = offset
+
+                    val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
+                    headerParts.add(s.shared("ai_data_exact_query").format("TOOL_DATA", aiQueryJson))
+
+                    // Fields included (standard fields for tool_data)
+                    headerParts.add(s.shared("ai_data_fields_tool_data"))
+
+                    // Confidence message
+                    if (count == 0) {
+                        headerParts.add(s.shared("ai_data_no_results_warning"))
+                    } else {
+                        headerParts.add(s.shared("ai_data_complete_dataset"))
+                    }
+
+                    headerParts.joinToString("\n")
+                }
+                "tool_executions" -> {
+                    // Resolve tool instance name from ID in command params
+                    val toolInstanceId = command.params["toolInstanceId"] as? String
+                        ?: command.params["id"] as? String
+
+                    val toolName = if (toolInstanceId != null) {
+                        resolveToolInstanceName(toolInstanceId)
+                    } else {
+                        "unknown tool"
+                    }
+
+                    val count = data["count"] as? Int
+                        ?: (data["executions"] as? List<*>)?.size
+                        ?: 0
+
+                    // Build comprehensive header with ALL query details
+                    val headerParts = mutableListOf<String>()
+
+                    // Main title with result count (ALWAYS shown, even if 0)
+                    headerParts.add("=== ${s.shared("ai_data_header_trusted")}: ${s.shared("ai_data_header_executions").format(toolName)} ===")
+                    headerParts.add(s.shared("ai_data_result_count_executions").format(count))
+
+                    // Period info if present (on execution_time field)
+                    val startTime = command.params["startTime"] as? Long
+                    val endTime = command.params["endTime"] as? Long
+                    if (startTime != null && endTime != null) {
+                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(startTime))
+                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(endTime))
+                        headerParts.add(s.shared("ai_data_period_range").format(startDate, endDate))
+                    } else if (startTime != null) {
+                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(startTime))
+                        headerParts.add(s.shared("ai_data_period_from").format(startDate))
+                    } else if (endTime != null) {
+                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                            .format(java.util.Date(endTime))
+                        headerParts.add(s.shared("ai_data_period_until").format(endDate))
+                    } else {
+                        headerParts.add(s.shared("ai_data_period_all_time"))
+                    }
+
+                    // Status filter if present
+                    val status = command.params["status"] as? String
+                    if (status != null) {
+                        headerParts.add(s.shared("ai_data_status_filter").format(status))
+                    }
+
+                    // Template filter if present
+                    val templateDataId = command.params["templateDataId"] as? String
+                    if (templateDataId != null) {
+                        headerParts.add(s.shared("ai_data_template_filter").format(templateDataId))
+                    }
+
+                    val limit = command.params["limit"] as? Int
+                    if (limit != null) {
+                        headerParts.add(s.shared("ai_data_limit").format(limit))
+                    }
+
+                    val offset = command.params["offset"] as? Int
+                    if (offset != null) {
+                        headerParts.add(s.shared("ai_data_offset").format(offset))
+                    }
+
+                    // Build exact query as AI would write it (TOOL_EXECUTIONS format)
+                    val aiQueryParams = mutableMapOf<String, Any>()
+                    aiQueryParams["id"] = toolInstanceId ?: "unknown"
+                    if (startTime != null || endTime != null) {
+                        val period = mutableMapOf<String, Any>()
+                        if (startTime != null) period["start"] = startTime
+                        if (endTime != null) period["end"] = endTime
+                        aiQueryParams["period"] = period
+                    }
+                    if (status != null) aiQueryParams["status"] = status
+                    if (templateDataId != null) aiQueryParams["templateDataId"] = templateDataId
+                    if (limit != null) aiQueryParams["limit"] = limit
+                    if (offset != null) aiQueryParams["offset"] = offset
+
+                    val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
+                    headerParts.add(s.shared("ai_data_exact_query").format("TOOL_EXECUTIONS", aiQueryJson))
+
+                    // Fields included
+                    headerParts.add(s.shared("ai_data_fields_executions"))
+
+                    // Confidence message
+                    if (count == 0) {
+                        headerParts.add(s.shared("ai_data_no_results_executions_warning"))
+                    } else {
+                        headerParts.add(s.shared("ai_data_complete_dataset"))
+                    }
+
+                    headerParts.joinToString("\n")
                 }
                 "schemas" -> {
                     val schemaId = data["schema_id"] as? String ?: "unknown"
