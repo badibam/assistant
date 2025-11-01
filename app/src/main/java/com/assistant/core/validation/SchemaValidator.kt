@@ -106,16 +106,24 @@ object SchemaValidator {
     
     /**
      * Filters a single value recursively
+     *
+     * CRITICAL: Empty strings are NOT filtered (they are valid values to intentionally clear a field)
+     * Only null values are filtered for partial updates
+     * Empty Maps/Lists are filtered only if all their contents were filtered out
      */
     private fun filterEmptyValue(value: Any?): Any? {
         return when (value) {
             null -> null
-            is String -> if (value.trim().isEmpty()) null else value
+            // DO NOT filter empty strings - they represent intentional clearing of a field
+            // This is different from null/absent field (partial update = keep existing value)
+            is String -> value
             is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
                 val originalMap = value as Map<String, Any>
                 val filteredMap = filterEmptyValues(originalMap)
-                if (filteredMap.isEmpty()) null else filteredMap
+                // Keep the map even if empty - it may be required by schema
+                // The schema validation will catch if it shouldn't be empty
+                filteredMap
             }
             is List<*> -> {
                 val filteredList = value.mapNotNull { filterEmptyValue(it) }

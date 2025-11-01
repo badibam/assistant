@@ -149,15 +149,21 @@ fun JournalEntryScreen(
         val toolType = ToolTypeManager.getToolType("journal")
         if (toolType != null) {
             // Build data structure like service expects
+            // Note: schema_id must be at root level for validation (per ActionValidator pattern)
+            // CRITICAL: data field is required by schema, and content must be present (even if empty)
+            // to prevent SchemaValidator from filtering out the entire data map when it's empty
             val entryData = mapOf(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "journal",
+                "schema_id" to "journal_data",  // Required for validation
                 "name" to title,
                 "timestamp" to timestamp,
                 "data" to mapOf(
-                    "content" to content
+                    "content" to content  // Always include content, even if empty string
                 )
             )
+
+            LogManager.ui("Journal validation - entryData: $entryData")
 
             val schema = toolType.getSchema("journal_data", context)
             validationResult = if (schema != null) {
