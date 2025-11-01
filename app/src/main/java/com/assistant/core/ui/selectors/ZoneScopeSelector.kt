@@ -392,86 +392,134 @@ private fun PeriodSelectionSection(
             type = TextType.SUBTITLE
         )
 
-        PeriodRangeSelector(
-            startPeriodType = state.timestampSelection.minPeriodType,
-            endPeriodType = state.timestampSelection.maxPeriodType,
-            startPeriod = state.timestampSelection.minPeriod,
-            endPeriod = state.timestampSelection.maxPeriod,
-            startCustomDate = state.timestampSelection.minCustomDateTime,
-            endCustomDate = state.timestampSelection.maxCustomDateTime,
-            startRelativePeriod = state.timestampSelection.minRelativePeriod,
-            endRelativePeriod = state.timestampSelection.maxRelativePeriod,
-            onStartTypeChange = { type ->
-                // When type changes, PeriodRangeSelector will automatically call onStartPeriodChange
-                // We just need to update the type
-                onTimestampSelectionChange(state.timestampSelection.copy(minPeriodType = type))
-            },
-            onEndTypeChange = { type ->
-                // When type changes, PeriodRangeSelector will automatically call onEndPeriodChange
-                // We just need to update the type
-                onTimestampSelectionChange(state.timestampSelection.copy(maxPeriodType = type))
-            },
-            onStartPeriodChange = { period ->
-                // Update both period and ensure type is consistent
-                val newType = period?.type ?: state.timestampSelection.minPeriodType
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    minPeriodType = newType,
-                    minPeriod = period,
-                    minCustomDateTime = null, // Clear custom date when using period
-                    minRelativePeriod = null // Clear relative period when using absolute
-                ))
-            },
-            onEndPeriodChange = { period ->
-                // Update both period and ensure type is consistent
-                val newType = period?.type ?: state.timestampSelection.maxPeriodType
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    maxPeriodType = newType,
-                    maxPeriod = period,
-                    maxCustomDateTime = null, // Clear custom date when using period
-                    maxRelativePeriod = null // Clear relative period when using absolute
-                ))
-            },
-            onStartCustomDateChange = { dateTime ->
-                // When using custom date, clear period fields
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    minPeriodType = null, // Custom mode
-                    minPeriod = null,
-                    minCustomDateTime = dateTime,
-                    minRelativePeriod = null
-                ))
-            },
-            onEndCustomDateChange = { dateTime ->
-                // When using custom date, clear period fields
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    maxPeriodType = null, // Custom mode
-                    maxPeriod = null,
-                    maxCustomDateTime = dateTime,
-                    maxRelativePeriod = null
-                ))
-            },
-            onStartRelativePeriodChange = { relative ->
-                // Update relative period and ensure type is consistent
-                val newType = relative?.type ?: state.timestampSelection.minPeriodType
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    minPeriodType = newType,
-                    minPeriod = null, // Clear absolute period when using relative
-                    minCustomDateTime = null, // Clear custom date when using relative
-                    minRelativePeriod = relative
-                ))
-            },
-            onEndRelativePeriodChange = { relative ->
-                // Update relative period and ensure type is consistent
-                val newType = relative?.type ?: state.timestampSelection.maxPeriodType
-                onTimestampSelectionChange(state.timestampSelection.copy(
-                    maxPeriodType = newType,
-                    maxPeriod = null, // Clear absolute period when using relative
-                    maxCustomDateTime = null, // Clear custom date when using relative
-                    maxRelativePeriod = relative
-                ))
-            },
-            useOnlyRelativeLabels = config.useRelativeLabels, // Use relative labels for AUTOMATION
-            returnRelative = config.useRelativeLabels // Return relative periods for AUTOMATION
-        )
+        // Use dedicated component based on mode
+        if (config.useRelativeLabels) {
+            // AUTOMATION mode: use RelativePeriodRangeSelector
+            // Works directly with RelativePeriod, displays truly relative labels
+            com.assistant.core.ui.components.RelativePeriodRangeSelector(
+                startPeriodType = state.timestampSelection.minPeriodType,
+                endPeriodType = state.timestampSelection.maxPeriodType,
+                startRelativePeriod = state.timestampSelection.minRelativePeriod,
+                endRelativePeriod = state.timestampSelection.maxRelativePeriod,
+                startCustomDate = state.timestampSelection.minCustomDateTime,
+                endCustomDate = state.timestampSelection.maxCustomDateTime,
+                onStartTypeChange = { type ->
+                    // Type change: setup default values and clear incompatible fields
+                    if (type != null) {
+                        // Relative mode: create default RelativePeriod and clear custom date
+                        val defaultRelativePeriod = com.assistant.core.ui.components.RelativePeriod.now(type)
+                        onTimestampSelectionChange(state.timestampSelection.copy(
+                            minPeriodType = type,
+                            minRelativePeriod = defaultRelativePeriod,
+                            minCustomDateTime = null
+                        ))
+                    } else {
+                        // Custom date mode: clear relative period
+                        onTimestampSelectionChange(state.timestampSelection.copy(
+                            minPeriodType = null,
+                            minRelativePeriod = null
+                            // minCustomDateTime will be set when user picks date
+                        ))
+                    }
+                },
+                onEndTypeChange = { type ->
+                    // Type change: setup default values and clear incompatible fields
+                    if (type != null) {
+                        // Relative mode: create default RelativePeriod and clear custom date
+                        val defaultRelativePeriod = com.assistant.core.ui.components.RelativePeriod.now(type)
+                        onTimestampSelectionChange(state.timestampSelection.copy(
+                            maxPeriodType = type,
+                            maxRelativePeriod = defaultRelativePeriod,
+                            maxCustomDateTime = null
+                        ))
+                    } else {
+                        // Custom date mode: clear relative period
+                        onTimestampSelectionChange(state.timestampSelection.copy(
+                            maxPeriodType = null,
+                            maxRelativePeriod = null
+                            // maxCustomDateTime will be set when user picks date
+                        ))
+                    }
+                },
+                onStartRelativePeriodChange = { relative ->
+                    // Just update the relative period (no mode change)
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        minRelativePeriod = relative
+                    ))
+                },
+                onEndRelativePeriodChange = { relative ->
+                    // Just update the relative period (no mode change)
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        maxRelativePeriod = relative
+                    ))
+                },
+                onStartCustomDateChange = { dateTime ->
+                    // Just update the custom date (no mode change)
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        minCustomDateTime = dateTime
+                    ))
+                },
+                onEndCustomDateChange = { dateTime ->
+                    // Just update the custom date (no mode change)
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        maxCustomDateTime = dateTime
+                    ))
+                }
+            )
+        } else {
+            // CHAT mode: use PeriodRangeSelector
+            // Works with absolute Period, displays absolute dates
+            com.assistant.core.ui.components.PeriodRangeSelector(
+                startPeriodType = state.timestampSelection.minPeriodType,
+                endPeriodType = state.timestampSelection.maxPeriodType,
+                startPeriod = state.timestampSelection.minPeriod,
+                endPeriod = state.timestampSelection.maxPeriod,
+                startCustomDate = state.timestampSelection.minCustomDateTime,
+                endCustomDate = state.timestampSelection.maxCustomDateTime,
+                startRelativePeriod = null, // Not used in CHAT mode
+                endRelativePeriod = null,
+                onStartTypeChange = { type ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(minPeriodType = type))
+                },
+                onEndTypeChange = { type ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(maxPeriodType = type))
+                },
+                onStartPeriodChange = { period ->
+                    val newType = period?.type ?: state.timestampSelection.minPeriodType
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        minPeriodType = newType,
+                        minPeriod = period,
+                        minCustomDateTime = null // Clear custom date when using period
+                    ))
+                },
+                onEndPeriodChange = { period ->
+                    val newType = period?.type ?: state.timestampSelection.maxPeriodType
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        maxPeriodType = newType,
+                        maxPeriod = period,
+                        maxCustomDateTime = null // Clear custom date when using period
+                    ))
+                },
+                onStartCustomDateChange = { dateTime ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        minPeriodType = null, // Custom mode
+                        minPeriod = null,
+                        minCustomDateTime = dateTime
+                    ))
+                },
+                onEndCustomDateChange = { dateTime ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        maxPeriodType = null, // Custom mode
+                        maxPeriod = null,
+                        maxCustomDateTime = dateTime
+                    ))
+                },
+                useOnlyRelativeLabels = false,
+                returnRelative = false,
+                onStartRelativePeriodChange = null, // Not used in CHAT mode
+                onEndRelativePeriodChange = null
+            )
+        }
     }
 }
 

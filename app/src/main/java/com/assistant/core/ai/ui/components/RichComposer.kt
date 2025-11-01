@@ -666,7 +666,9 @@ private fun PointerEnrichmentDialog(
             allowFieldSelection = false,  // Limited to instance level only
             allowValueSelection = false,
             title = s.shared("pointer_enrichment_selector_title"),
-            useRelativeLabels = (sessionType == SessionType.AUTOMATION)
+            // SEED uses relative periods (template executed later)
+            // CHAT uses absolute periods (immediate execution)
+            useRelativeLabels = (sessionType == SessionType.SEED)
         ),
         onDismiss = onDismiss,
         onConfirm = { result ->

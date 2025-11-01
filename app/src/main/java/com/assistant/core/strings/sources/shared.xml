@@ -385,6 +385,52 @@
     <string name="period_years_from_now_singular">Dans %d an</string>
     <string name="period_years_from_now_plural">Dans %d ans</string>
 
+    <!-- Period types for selectors -->
+    <string name="period_type_custom">Date personnalisée</string>
+    <string name="period_type_hour">Heure</string>
+    <string name="period_type_day">Jour</string>
+    <string name="period_type_week">Semaine</string>
+    <string name="period_type_month">Mois</string>
+    <string name="period_type_year">Année</string>
+
+    <!-- Relative period labels - Current period (offset = 0) -->
+    <string name="period_relative_current_hour">L\'heure en cours</string>
+    <string name="period_relative_current_day">Le jour-même</string>
+    <string name="period_relative_current_week">La semaine en cours</string>
+    <string name="period_relative_current_month">Le mois en cours</string>
+    <string name="period_relative_current_year">L\'année en cours</string>
+
+    <!-- Relative period labels - One before (offset = -1) -->
+    <string name="period_relative_one_hour_before">1 heure avant</string>
+    <string name="period_relative_one_day_before">La veille</string>
+    <string name="period_relative_one_week_before">La semaine précédente</string>
+    <string name="period_relative_one_month_before">Le mois précédent</string>
+    <string name="period_relative_one_year_before">L\'année précédente</string>
+
+    <!-- Relative period labels - One after (offset = 1) -->
+    <string name="period_relative_one_hour_after">1 heure après</string>
+    <string name="period_relative_one_day_after">Le lendemain</string>
+    <string name="period_relative_one_week_after">La semaine suivante</string>
+    <string name="period_relative_one_month_after">Le mois suivant</string>
+    <string name="period_relative_one_year_after">L\'année suivante</string>
+
+    <!-- Relative period labels - Multiple before (offset < -1) -->
+    <string name="period_relative_hours_before">%d heures avant</string>
+    <string name="period_relative_days_before">%d jours avant</string>
+    <string name="period_relative_weeks_before">%d semaines avant</string>
+    <string name="period_relative_months_before">%d mois avant</string>
+    <string name="period_relative_years_before">%d années avant</string>
+
+    <!-- Relative period labels - Multiple after (offset > 1) -->
+    <string name="period_relative_hours_after">%d heures après</string>
+    <string name="period_relative_days_after">%d jours après</string>
+    <string name="period_relative_weeks_after">%d semaines après</string>
+    <string name="period_relative_months_after">%d mois après</string>
+    <string name="period_relative_years_after">%d années après</string>
+
+    <!-- Actions -->
+    <string name="action_select_date">Sélectionner une date</string>
+
     <!-- Mois -->
     <string name="month_january">Janvier</string>
     <string name="month_february">Février</string>
@@ -597,6 +643,7 @@
     <string name="label_period_reference">Période de référence (optionnelle)</string>
     <string name="label_period_data">Période des données</string>
     <string name="label_period_execution">Période d\'exécution</string>
+    <string name="label_period_type">Type de période</string>
 
     <!-- SCOPE SELECTOR - Error messages -->
     <string name="error_loading_zones">Erreur lors du chargement des zones</string>

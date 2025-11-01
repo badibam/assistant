@@ -720,6 +720,127 @@ private fun getWeekStart(timestamp: Long, weekStartDay: String): Long {
 }
 
 /**
+ * Single relative period selector with navigation arrows (◀▶)
+ * Works directly with RelativePeriod for AUTOMATION contexts
+ * Displays truly relative labels ("Le jour-même", "La veille", "Il y a 2 jours")
+ *
+ * @param relativePeriod Current relative period (offset + type)
+ * @param onRelativePeriodChange Callback when period changes via navigation
+ */
+@Composable
+fun SingleRelativePeriodSelector(
+    relativePeriod: RelativePeriod,
+    onRelativePeriodChange: (RelativePeriod) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    // Generate truly relative label
+    val label = remember(relativePeriod) {
+        generateRelativePeriodLabel(relativePeriod, s)
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Previous button (go further back in time)
+        UI.ActionButton(
+            action = ButtonAction.LEFT,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = {
+                // Decrease offset (go more negative = further in past)
+                val newOffset = relativePeriod.offset - 1
+                onRelativePeriodChange(RelativePeriod(newOffset, relativePeriod.type))
+            }
+        )
+
+        // Label in center (non-clickable for now - could add date picker later)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            UI.Text(
+                text = label,
+                type = TextType.BODY
+            )
+        }
+
+        // Next button (go closer to now)
+        UI.ActionButton(
+            action = ButtonAction.RIGHT,
+            display = ButtonDisplay.ICON,
+            size = Size.M,
+            onClick = {
+                // Increase offset (go less negative = closer to now)
+                val newOffset = relativePeriod.offset + 1
+                onRelativePeriodChange(RelativePeriod(newOffset, relativePeriod.type))
+            }
+        )
+    }
+}
+
+/**
+ * Generate truly relative label for RelativePeriod
+ * Examples: "Le jour-même", "La veille", "Le lendemain", "2 jours avant", "3 semaines après"
+ */
+private fun generateRelativePeriodLabel(relativePeriod: RelativePeriod, s: com.assistant.core.strings.StringsContext): String {
+    val offset = relativePeriod.offset
+    val type = relativePeriod.type
+
+    return when {
+        // Current period (offset = 0)
+        offset == 0 -> when (type) {
+            PeriodType.HOUR -> s.shared("period_relative_current_hour")    // "L'heure en cours"
+            PeriodType.DAY -> s.shared("period_relative_current_day")       // "Le jour-même"
+            PeriodType.WEEK -> s.shared("period_relative_current_week")     // "La semaine en cours"
+            PeriodType.MONTH -> s.shared("period_relative_current_month")   // "Le mois en cours"
+            PeriodType.YEAR -> s.shared("period_relative_current_year")     // "L'année en cours"
+        }
+        // Previous period (offset = -1)
+        offset == -1 -> when (type) {
+            PeriodType.HOUR -> s.shared("period_relative_one_hour_before")     // "1 heure avant"
+            PeriodType.DAY -> s.shared("period_relative_one_day_before")        // "La veille"
+            PeriodType.WEEK -> s.shared("period_relative_one_week_before")      // "La semaine précédente"
+            PeriodType.MONTH -> s.shared("period_relative_one_month_before")    // "Le mois précédent"
+            PeriodType.YEAR -> s.shared("period_relative_one_year_before")      // "L'année précédente"
+        }
+        // Next period (offset = 1)
+        offset == 1 -> when (type) {
+            PeriodType.HOUR -> s.shared("period_relative_one_hour_after")      // "1 heure après"
+            PeriodType.DAY -> s.shared("period_relative_one_day_after")         // "Le lendemain"
+            PeriodType.WEEK -> s.shared("period_relative_one_week_after")       // "La semaine suivante"
+            PeriodType.MONTH -> s.shared("period_relative_one_month_after")     // "Le mois suivant"
+            PeriodType.YEAR -> s.shared("period_relative_one_year_after")       // "L'année suivante"
+        }
+        // Past periods (offset < -1)
+        offset < -1 -> {
+            val absOffset = -offset
+            when (type) {
+                PeriodType.HOUR -> String.format(s.shared("period_relative_hours_before"), absOffset)    // "X heures avant"
+                PeriodType.DAY -> String.format(s.shared("period_relative_days_before"), absOffset)       // "X jours avant"
+                PeriodType.WEEK -> String.format(s.shared("period_relative_weeks_before"), absOffset)     // "X semaines avant"
+                PeriodType.MONTH -> String.format(s.shared("period_relative_months_before"), absOffset)   // "X mois avant"
+                PeriodType.YEAR -> String.format(s.shared("period_relative_years_before"), absOffset)     // "X années avant"
+            }
+        }
+        // Future periods (offset > 1)
+        else -> {
+            when (type) {
+                PeriodType.HOUR -> String.format(s.shared("period_relative_hours_after"), offset)     // "X heures après"
+                PeriodType.DAY -> String.format(s.shared("period_relative_days_after"), offset)        // "X jours après"
+                PeriodType.WEEK -> String.format(s.shared("period_relative_weeks_after"), offset)      // "X semaines après"
+                PeriodType.MONTH -> String.format(s.shared("period_relative_months_after"), offset)    // "X mois après"
+                PeriodType.YEAR -> String.format(s.shared("period_relative_years_after"), offset)      // "X années après"
+            }
+        }
+    }
+}
+
+/**
  * Simple date range picker with two DatePickers (start/end)
  * No navigation arrows, just direct date selection
  */
@@ -814,6 +935,190 @@ fun CustomDateRangePicker(
             onDateSelected = { dateString ->
                 val timestamp = DateUtils.parseDateForFilter(dateString)
                 onEndDateChange(timestamp)
+            },
+            onDismiss = { showEndDatePicker = false }
+        )
+    }
+}
+
+/**
+ * Relative period range selector for AUTOMATION contexts
+ * Works directly with RelativePeriod (offset + type) for relative periods
+ * Also supports absolute custom dates for fixed reference points
+ *
+ * @param startPeriodType Type of start period (HOUR, DAY, WEEK, MONTH, YEAR, or null for custom)
+ * @param endPeriodType Type of end period
+ * @param startRelativePeriod Current start relative period (when type is not null)
+ * @param endRelativePeriod Current end relative period (when type is not null)
+ * @param startCustomDate Custom absolute date for start (mutually exclusive with relativePeriod)
+ * @param endCustomDate Custom absolute date for end (mutually exclusive with relativePeriod)
+ * @param onStartTypeChange Callback when start type changes
+ * @param onEndTypeChange Callback when end type changes
+ * @param onStartRelativePeriodChange Callback when start relative period changes
+ * @param onEndRelativePeriodChange Callback when end relative period changes
+ * @param onStartCustomDateChange Callback when start custom date changes
+ * @param onEndCustomDateChange Callback when end custom date changes
+ */
+@Composable
+fun RelativePeriodRangeSelector(
+    startPeriodType: PeriodType?,
+    endPeriodType: PeriodType?,
+    startRelativePeriod: RelativePeriod?,
+    endRelativePeriod: RelativePeriod?,
+    startCustomDate: Long?,
+    endCustomDate: Long?,
+    onStartTypeChange: (PeriodType?) -> Unit,
+    onEndTypeChange: (PeriodType?) -> Unit,
+    onStartRelativePeriodChange: (RelativePeriod?) -> Unit,
+    onEndRelativePeriodChange: (RelativePeriod?) -> Unit,
+    onStartCustomDateChange: (Long?) -> Unit,
+    onEndCustomDateChange: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    // State for date pickers
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Start section
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            UI.Text(
+                text = s.shared("range_start") + ":",
+                type = TextType.SUBTITLE
+            )
+
+            // Start type dropdown (includes "Date personnalisée" option with null value)
+            val startTypeOptions = mapOf(
+                s.shared("period_type_custom") to null,  // "Date personnalisée"
+                s.shared("period_type_hour") to PeriodType.HOUR,
+                s.shared("period_type_day") to PeriodType.DAY,
+                s.shared("period_type_week") to PeriodType.WEEK,
+                s.shared("period_type_month") to PeriodType.MONTH,
+                s.shared("period_type_year") to PeriodType.YEAR
+            )
+            val startSelectedLabel = startTypeOptions.entries.find { it.value == startPeriodType }?.key
+                ?: s.shared("period_type_custom")
+
+            UI.FormSelection(
+                label = s.shared("label_period_type"),
+                options = startTypeOptions.keys.toList(),
+                selected = startSelectedLabel,
+                onSelect = { selectedLabel ->
+                    // Convert label back to type
+                    val newType = startTypeOptions[selectedLabel]
+                    onStartTypeChange(newType)
+                }
+            )
+
+            // Start relative period selector OR custom date button
+            if (startPeriodType != null && startRelativePeriod != null) {
+                // Relative period mode
+                SingleRelativePeriodSelector(
+                    relativePeriod = startRelativePeriod,
+                    onRelativePeriodChange = { newRelativePeriod ->
+                        onStartRelativePeriodChange(newRelativePeriod)
+                    }
+                )
+            } else if (startPeriodType == null) {
+                // Custom date mode
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showStartDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = startCustomDate?.let {
+                            DateUtils.formatDateForDisplay(it)
+                        } ?: s.shared("action_select_date"),
+                        type = TextType.BODY
+                    )
+                }
+            }
+        }
+
+        // End section
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            UI.Text(
+                text = s.shared("range_end") + ":",
+                type = TextType.SUBTITLE
+            )
+
+            // End type dropdown (includes "Date personnalisée" option with null value)
+            val endTypeOptions = mapOf(
+                s.shared("period_type_custom") to null,  // "Date personnalisée"
+                s.shared("period_type_hour") to PeriodType.HOUR,
+                s.shared("period_type_day") to PeriodType.DAY,
+                s.shared("period_type_week") to PeriodType.WEEK,
+                s.shared("period_type_month") to PeriodType.MONTH,
+                s.shared("period_type_year") to PeriodType.YEAR
+            )
+            val endSelectedLabel = endTypeOptions.entries.find { it.value == endPeriodType }?.key
+                ?: s.shared("period_type_custom")
+
+            UI.FormSelection(
+                label = s.shared("label_period_type"),
+                options = endTypeOptions.keys.toList(),
+                selected = endSelectedLabel,
+                onSelect = { selectedLabel ->
+                    // Convert label back to type
+                    val newType = endTypeOptions[selectedLabel]
+                    onEndTypeChange(newType)
+                }
+            )
+
+            // End relative period selector OR custom date button
+            if (endPeriodType != null && endRelativePeriod != null) {
+                // Relative period mode
+                SingleRelativePeriodSelector(
+                    relativePeriod = endRelativePeriod,
+                    onRelativePeriodChange = { newRelativePeriod ->
+                        onEndRelativePeriodChange(newRelativePeriod)
+                    }
+                )
+            } else if (endPeriodType == null) {
+                // Custom date mode
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showEndDatePicker = true }
+                ) {
+                    UI.Text(
+                        text = endCustomDate?.let {
+                            DateUtils.formatDateForDisplay(it)
+                        } ?: s.shared("action_select_date"),
+                        type = TextType.BODY
+                    )
+                }
+            }
+        }
+    }
+
+    // Date pickers
+    if (showStartDatePicker) {
+        UI.DatePicker(
+            selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+            onDateSelected = { dateString ->
+                val timestamp = DateUtils.parseDateForFilter(dateString)
+                onStartCustomDateChange(timestamp)
+                showStartDatePicker = false
+            },
+            onDismiss = { showStartDatePicker = false }
+        )
+    }
+
+    if (showEndDatePicker) {
+        UI.DatePicker(
+            selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+            onDateSelected = { dateString ->
+                val timestamp = DateUtils.parseDateForFilter(dateString)
+                onEndCustomDateChange(timestamp)
+                showEndDatePicker = false
             },
             onDismiss = { showEndDatePicker = false }
         )

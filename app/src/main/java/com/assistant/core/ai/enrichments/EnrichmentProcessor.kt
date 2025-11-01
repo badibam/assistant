@@ -576,34 +576,60 @@ class EnrichmentProcessor(
         configJson: JSONObject?,
         isRelative: Boolean
     ) {
+        LogManager.aiEnrichment("addTemporalParams() - CALLED with isRelative=$isRelative, configJson=$configJson", "DEBUG")
+
         val timestampSelection = configJson?.optJSONObject("timestampSelection")
         if (timestampSelection == null) {
-            LogManager.aiEnrichment("No timestampSelection found in config", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - No timestampSelection found in config, RETURNING", "DEBUG")
             return
         }
 
-        LogManager.aiEnrichment("Found timestampSelection: $timestampSelection", "VERBOSE")
+        LogManager.aiEnrichment("addTemporalParams() - Found timestampSelection: $timestampSelection", "DEBUG")
 
         if (isRelative) {
-            // AUTOMATION mode: use relative periods
+            LogManager.aiEnrichment("addTemporalParams() - RELATIVE mode (AUTOMATION)", "DEBUG")
+
+            // AUTOMATION mode: can use relative periods OR absolute custom dates
+            // They are mutually exclusive per side (start/end) but can be mixed
             val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
             val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
+            val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
+            val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
 
-            if (minRelativePeriod != null || maxRelativePeriod != null) {
-                // Encode relative periods for UserCommandProcessor to resolve later
-                val periodStart = minRelativePeriod?.let {
-                    "${it.getInt("offset")}_${it.getString("type")}"
-                } ?: "0_DAY"
+            LogManager.aiEnrichment("addTemporalParams() - minRelativePeriod=$minRelativePeriod", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - maxRelativePeriod=$maxRelativePeriod", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - minCustomDateTime=$minCustomDateTime", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - maxCustomDateTime=$maxCustomDateTime", "DEBUG")
 
-                val periodEnd = maxRelativePeriod?.let {
-                    "${it.getInt("offset")}_${it.getString("type")}"
-                } ?: "0_DAY"
-
+            // Handle start time
+            if (minRelativePeriod != null) {
+                // Relative start: encode as "offset_TYPE" for CommandTransformer
+                val periodStart = "${minRelativePeriod.getInt("offset")}_${minRelativePeriod.getString("type")}"
                 params["period_start"] = periodStart
+                LogManager.aiEnrichment("addTemporalParams() - Added relative period_start: $periodStart", "DEBUG")
+            } else if (minCustomDateTime != null) {
+                // Absolute start: use directly as timestamp
+                params["startTime"] = minCustomDateTime
+                LogManager.aiEnrichment("addTemporalParams() - Added absolute startTime: $minCustomDateTime", "DEBUG")
+            }
+
+            // Handle end time
+            if (maxRelativePeriod != null) {
+                // Relative end: encode as "offset_TYPE" for CommandTransformer
+                val periodEnd = "${maxRelativePeriod.getInt("offset")}_${maxRelativePeriod.getString("type")}"
                 params["period_end"] = periodEnd
-                LogManager.aiEnrichment("Added relative period parameters: start=$periodStart, end=$periodEnd", "DEBUG")
+                LogManager.aiEnrichment("addTemporalParams() - Added relative period_end: $periodEnd", "DEBUG")
+            } else if (maxCustomDateTime != null) {
+                // Absolute end: use directly as timestamp
+                params["endTime"] = maxCustomDateTime
+                LogManager.aiEnrichment("addTemporalParams() - Added absolute endTime: $maxCustomDateTime", "DEBUG")
+            }
+
+            if (params.isEmpty()) {
+                LogManager.aiEnrichment("addTemporalParams() - No temporal parameters found", "WARN")
             }
         } else {
+            LogManager.aiEnrichment("addTemporalParams() - ABSOLUTE mode (CHAT)", "DEBUG")
             // CHAT mode: calculate absolute timestamps
             // Min timestamp (start of range)
             val startTs = when {
