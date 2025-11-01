@@ -952,7 +952,6 @@ private suspend fun createMessage(
     }
 
     val dataJson = JSONObject().apply {
-        put("schema_id", "messages_data")
         put("content", content)
         put("schedule", scheduleJson ?: JSONObject.NULL)
         put("priority", priority)
@@ -964,6 +963,7 @@ private suspend fun createMessage(
     val params = mapOf(
         "toolInstanceId" to toolInstanceId,
         "tooltype" to "messages",
+        "schema_id" to "messages_data",  // Schema ID at params level, not in data
         "name" to title,  // Use title as name in tool_data
         "timestamp" to System.currentTimeMillis(),
         "data" to dataJson  // JSONObject, not .toString()
@@ -1004,7 +1004,6 @@ private suspend fun updateMessage(
     }
 
     val dataJson = JSONObject().apply {
-        put("schema_id", "messages_data")
         put("content", content)
         put("schedule", scheduleJson ?: JSONObject.NULL)
         put("priority", priority)
@@ -1015,6 +1014,7 @@ private suspend fun updateMessage(
 
     val params = mapOf(
         "id" to messageId,
+        "schema_id" to "messages_data",  // Schema ID at params level, not in data
         "name" to title,  // Update name in tool_data as well
         "data" to dataJson  // JSONObject, not .toString()
     )

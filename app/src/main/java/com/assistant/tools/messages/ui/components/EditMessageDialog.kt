@@ -102,10 +102,10 @@ fun EditMessageDialog(
             val messageData = mapOf(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "messages",
+                "schema_id" to "messages_data",  // Schema ID at params level, not in data
                 "name" to title.trim(),  // Title goes in name field
                 "timestamp" to System.currentTimeMillis(),
                 "data" to mapOf(
-                    "schema_id" to "messages_data",
                     "content" to content.trim().takeIf { it.isNotEmpty() },
                     "schedule" to scheduleMap,
                     "priority" to priority,
