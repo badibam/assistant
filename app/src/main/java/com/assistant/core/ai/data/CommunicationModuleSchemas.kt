@@ -32,14 +32,14 @@ object CommunicationModuleSchemas {
                 displayName = s.shared("ai_schema_communication_multiple_choice_name"),
                 description = s.shared("ai_schema_communication_multiple_choice_desc"),
                 category = com.assistant.core.validation.SchemaCategory.AI_PROVIDER,
-                content = getMultipleChoiceSchema()
+                content = getMultipleChoiceSchema(context)
             )
             "Validation" -> Schema(
                 id = schemaId,
                 displayName = s.shared("ai_schema_communication_validation_name"),
                 description = s.shared("ai_schema_communication_validation_desc"),
                 category = com.assistant.core.validation.SchemaCategory.AI_PROVIDER,
-                content = getValidationSchema()
+                content = getValidationSchema(context)
             )
             else -> null
         }
@@ -49,7 +49,9 @@ object CommunicationModuleSchemas {
      * Schema for MultipleChoice module
      * Required: question (string), options (array of strings, min 2 items)
      */
-    private fun getMultipleChoiceSchema(): String = """
+    private fun getMultipleChoiceSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return """
         {
           "type": "object",
           "required": ["question", "options"],
@@ -57,7 +59,7 @@ object CommunicationModuleSchemas {
             "question": {
               "type": "string",
               "minLength": 1,
-              "description": "The question to ask the user"
+              "description": "${s.shared("ai_schema_communication_multiple_choice_question_desc")}"
             },
             "options": {
               "type": "array",
@@ -66,18 +68,21 @@ object CommunicationModuleSchemas {
                 "minLength": 1
               },
               "minItems": 2,
-              "description": "List of options for the user to choose from (minimum 2)"
+              "description": "${s.shared("ai_schema_communication_multiple_choice_options_desc")}"
             }
           },
           "additionalProperties": false
         }
     """.trimIndent()
+    }
 
     /**
      * Schema for Validation module
      * Required: message (string)
      */
-    private fun getValidationSchema(): String = """
+    private fun getValidationSchema(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return """
         {
           "type": "object",
           "required": ["message"],
@@ -85,10 +90,11 @@ object CommunicationModuleSchemas {
             "message": {
               "type": "string",
               "minLength": 1,
-              "description": "The validation message/question to show the user"
+              "description": "${s.shared("ai_schema_communication_validation_message_desc")}"
             }
           },
           "additionalProperties": false
         }
     """.trimIndent()
+    }
 }

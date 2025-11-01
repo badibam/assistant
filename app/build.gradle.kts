@@ -339,34 +339,47 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
 /**
  * Nettoie et échappe correctement une string XML pour Android
  * Gère les apostrophes, guillemets, et placeholders de manière robuste
+ * PRESERVE line breaks in CDATA sections (AI prompts need markdown formatting)
  */
 fun cleanAndEscapeXmlString(value: String): String {
-    var result = value
-        // 1. Nettoyer les espaces et retours à la ligne inutiles
-        .replace(Regex("\\s+"), " ")
-        .trim()
-    
+    // Check if this is a CDATA section (AI prompts)
+    val isCDATA = value.startsWith("<![CDATA[") && value.endsWith("]]>")
+
+    var result = if (isCDATA) {
+        // For CDATA: preserve line breaks by replacing with placeholder
+        // Android resources collapse whitespace even in CDATA, so we use a placeholder
+        value.trim().replace("\n", "###NEWLINE###")
+    } else {
+        // For normal strings: collapse whitespace as before
+        value.replace(Regex("\\s+"), " ").trim()
+    }
+
     // 2. Gestion spéciale des apostrophes - ne pas doubler l'échappement
     if (!result.contains("\\'")) {
         // Échapper les apostrophes seulement si pas déjà échappées
         result = result.replace("'", "\\'")
     }
-    
-    // 3. Gestion spéciale des guillemets - ne pas doubler l'échappement  
+
+    // 3. Gestion spéciale des guillemets - ne pas doubler l'échappement
     if (!result.contains("\\\"")) {
         // Échapper les guillemets seulement si pas déjà échappés
         result = result.replace("\"", "\\\"")
     }
-    
+
     // 4. Corriger les placeholders pour Android format uniquement s'ils ne sont pas déjà au bon format
     if (!result.contains("%1\$")) {
         result = result.replace("%s", "%1\$s")
                        .replace("%d", "%1\$d")
     }
-    
+
     // 5. Validation finale - enlever les caractères de contrôle invisibles qui peuvent causer des erreurs Unicode
-    result = result.replace(Regex("[\\u0000-\\u001F\\u007F-\\u009F]"), "")
-    
+    // PRESERVE newlines (\n) and tabs (\t) for CDATA
+    if (isCDATA) {
+        result = result.replace(Regex("[\\u0000-\\u0008\\u000B-\\u000C\\u000E-\\u001F\\u007F-\\u009F]"), "")
+    } else {
+        result = result.replace(Regex("[\\u0000-\\u001F\\u007F-\\u009F]"), "")
+    }
+
     return result
 }
 

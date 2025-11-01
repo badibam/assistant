@@ -875,14 +875,17 @@
     <string name="ai_schema_field_data_commands_desc">Commandes de requête de données (mutuellement exclusif avec actionCommands et communicationModule)</string>
     <string name="ai_schema_field_action_commands_desc">Commandes d\'actions à exécuter (mutuellement exclusif avec dataCommands et communicationModule)</string>
     <string name="ai_schema_field_posttext_desc">Texte à afficher après l\'exécution réussie des actions (uniquement avec actionCommands)</string>
-    <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour continuer avec les résultats système. Utile pour séquences multi-étapes avec feedback intermédiaire. Compte dans les limites de boucles autonomes.</string>
+    <string name="ai_schema_field_keep_control_desc">Garde la main après succès des actions pour enchaîner d\'autres actions. Dans ce cas, tu verras quand même le retour des commandes du message actuel (succès, échecs, id des objets créés, etc.) Utile pour séquences multi-étapes avec feedback système intermédiaire.</string>
     <string name="ai_schema_field_communication_module_desc">Module de communication pour interaction avec l\'utilisateur (mutuellement exclusif avec dataCommands et actionCommands)</string>
 
     <!-- communication_module schemas -->
     <string name="ai_schema_communication_multiple_choice_name">Module de choix multiple</string>
     <string name="ai_schema_communication_multiple_choice_desc">Schéma pour module de communication à choix multiples</string>
+    <string name="ai_schema_communication_multiple_choice_question_desc">La question à poser à l\'utilisateur</string>
+    <string name="ai_schema_communication_multiple_choice_options_desc">Liste d\'options parmi lesquelles l\'utilisateur peut choisir (minimum 2)</string>
     <string name="ai_schema_communication_validation_name">Module de validation</string>
     <string name="ai_schema_communication_validation_desc">Schéma pour module de communication de validation</string>
+    <string name="ai_schema_communication_validation_message_desc">Le message/question de validation à afficher à l\'utilisateur</string>
 
     <!-- AUTOMATIONS - General -->
     <string name="automation_display_name">Automatisation</string>

@@ -269,6 +269,9 @@ internal class ClaudeProviderCore(
             val configJson = JSONObject(config)
             val apiKey = configJson.getString("api_key")
 
+            // Log raw Level 1 content BEFORE JSON serialization (preserves line breaks for readability)
+            LogManager.aiService("=== LEVEL 1 CONTENT (RAW, WITH LINE BREAKS) ===\n${promptData.level1Content}\n=== END LEVEL 1 ===", "VERBOSE")
+
             // Transform PromptData to Claude JSON via extension
             val requestJson = promptData.toClaudeJson(configJson)
             val requestBody = requestJson.toString()
@@ -278,14 +281,20 @@ internal class ClaudeProviderCore(
             // Log raw prompt for debugging (VERBOSE level) - formatted for maximum readability
             val prettyJson = Json { prettyPrint = true }
             val formattedPrompt = prettyJson.encodeToString(JsonObject.serializer(), requestJson)
-            LogManager.aiService("=== RAW PROMPT TO CLAUDE API ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
+            LogManager.aiService("=== RAW PROMPT TO CLAUDE API (JSON with \\n escaped) ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
 
-            // Save raw prompt to file for debugging (overwrites previous)
-            // Accessible via: adb pull /data/data/com.assistant/files/last_prompt_claude_<variant>.txt
+            // Save prompts to files for debugging (overwrites previous)
+            // Accessible via: adb pull /data/data/com.assistant/files/last_prompt_*
             try {
-                val debugFile = File(context.filesDir, "last_prompt_claude_${variantId}.txt")
-                debugFile.writeText(formattedPrompt)
-                LogManager.aiService("Raw prompt saved to: ${debugFile.absolutePath}", "DEBUG")
+                // Save Level 1 content with REAL line breaks (human-readable)
+                val level1File = File(context.filesDir, "last_prompt_level1_${variantId}.txt")
+                level1File.writeText(promptData.level1Content)
+                LogManager.aiService("Level 1 content (with real line breaks) saved to: ${level1File.absolutePath}", "DEBUG")
+
+                // Save full JSON (with escaped \n)
+                val jsonFile = File(context.filesDir, "last_prompt_json_${variantId}.txt")
+                jsonFile.writeText(formattedPrompt)
+                LogManager.aiService("Full JSON prompt saved to: ${jsonFile.absolutePath}", "DEBUG")
             } catch (e: Exception) {
                 LogManager.aiService("Failed to save prompt to file: ${e.message}", "WARN")
             }

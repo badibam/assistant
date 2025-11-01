@@ -43,17 +43,23 @@ object StringsManager {
     /**
      * Retrieves string from Android resources.
      * Handles error cases with appropriate fallback.
+     *
+     * Uses getText() instead of getString() to preserve formatting (line breaks)
+     * in CDATA sections (critical for AI prompt chunks with markdown).
      */
     private fun getStringResource(resourceKey: String, context: Context): String {
         try {
             val resourceId = context.resources.getIdentifier(
-                resourceKey, 
-                "string", 
+                resourceKey,
+                "string",
                 context.packageName
             )
-            
+
             if (resourceId != 0) {
-                return context.getString(resourceId)
+                // Use getText() to preserve line breaks in CDATA sections
+                // Convert placeholder back to real newlines (workaround for Android whitespace collapsing)
+                return context.resources.getText(resourceId).toString()
+                    .replace("###NEWLINE###", "\n")
             } else {
                 LogManager.service("String resource not found: $resourceKey", "WARN")
                 return "[$resourceKey]" // Debug fallback

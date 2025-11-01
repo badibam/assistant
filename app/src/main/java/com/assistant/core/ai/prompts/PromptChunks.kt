@@ -48,7 +48,6 @@ object PromptChunks {
         // PARTIE A : INTRODUCTION & CONFIGURATION
         Chunk("intro_role", 1) { ctx, _ -> buildIntroRole(ctx) },
         Chunk("session_types", 1) { ctx, sessionType -> buildSessionTypes(ctx, sessionType) },
-        Chunk("config_limits", 2) { ctx, sessionType -> buildConfigLimits(ctx, sessionType) },
         Chunk("automation_completion", 1) { ctx, sessionType -> buildAutomationCompletion(ctx, sessionType) },
 
         // PARTIE B : FORMAT DE RÉPONSE IA
@@ -238,34 +237,6 @@ object PromptChunks {
 - **DOIT** utiliser `"completed": true` pour terminer
 - `preText` reste obligatoire, `postText` optionnel
 """.trimIndent()
-    }
-
-    /**
-     * Build config limits chunk with dynamic values based on SessionType
-     */
-    private fun buildConfigLimits(context: Context, sessionType: SessionType): String {
-        val s = Strings.`for`(context = context)
-        val aiLimits = AppConfigManager.getAILimits()
-
-        val (mode, roundtrips) = when (sessionType) {
-            SessionType.CHAT -> listOf(
-                "CHAT",
-                aiLimits.chatMaxAutonomousRoundtrips
-            )
-            SessionType.AUTOMATION -> listOf(
-                "AUTOMATION",
-                aiLimits.automationMaxAutonomousRoundtrips
-            )
-            SessionType.SEED -> {
-                // SEED sessions are never executed, should never generate prompts
-                throw IllegalStateException("Cannot build config limits for SEED session type")
-            }
-        }
-
-        return String.format(
-            s.shared("ai_chunk_config_limits"),
-            mode, roundtrips
-        )
     }
 
     /**
