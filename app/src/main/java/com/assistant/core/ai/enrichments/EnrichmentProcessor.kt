@@ -217,13 +217,16 @@ class EnrichmentProcessor(
             }
         }
 
-        // Check for absolute periods or custom dates (CHAT)
+        // Check for absolute periods, custom dates, or NOW markers (CHAT)
         val minPeriod = timestampSelection.optJSONObject("minPeriod")
         val maxPeriod = timestampSelection.optJSONObject("maxPeriod")
         val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
         val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
+        val minIsNow = timestampSelection.optBoolean("minIsNow", false)
+        val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
 
         val startDate = when {
+            minIsNow -> s.shared("period_now_label")  // "Maintenant"
             minCustomDateTime != null -> formatTimestamp(minCustomDateTime)
             minPeriod != null -> {
                 val timestamp = minPeriod.getLong("timestamp")
@@ -233,6 +236,7 @@ class EnrichmentProcessor(
         }
 
         val endDate = when {
+            maxIsNow -> s.shared("period_now_label")  // "Maintenant"
             maxCustomDateTime != null -> formatTimestamp(maxCustomDateTime)
             maxPeriod != null -> {
                 val timestamp = maxPeriod.getLong("timestamp")
@@ -716,40 +720,60 @@ class EnrichmentProcessor(
         if (isRelative) {
             LogManager.aiEnrichment("addTemporalParams() - RELATIVE mode (AUTOMATION)", "DEBUG")
 
-            // AUTOMATION mode: can use relative periods OR absolute custom dates
+            // AUTOMATION mode: can use relative periods, NOW marker, OR absolute custom dates
             // They are mutually exclusive per side (start/end) but can be mixed
             val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
             val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
             val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
             val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
+            val minIsNow = timestampSelection.optBoolean("minIsNow", false)
+            val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
 
             LogManager.aiEnrichment("addTemporalParams() - minRelativePeriod=$minRelativePeriod", "DEBUG")
             LogManager.aiEnrichment("addTemporalParams() - maxRelativePeriod=$maxRelativePeriod", "DEBUG")
             LogManager.aiEnrichment("addTemporalParams() - minCustomDateTime=$minCustomDateTime", "DEBUG")
             LogManager.aiEnrichment("addTemporalParams() - maxCustomDateTime=$maxCustomDateTime", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - minIsNow=$minIsNow", "DEBUG")
+            LogManager.aiEnrichment("addTemporalParams() - maxIsNow=$maxIsNow", "DEBUG")
 
             // Handle start time
-            if (minRelativePeriod != null) {
-                // Relative start: encode as "offset_TYPE" for CommandTransformer
-                val periodStart = "${minRelativePeriod.getInt("offset")}_${minRelativePeriod.getString("type")}"
-                params["period_start"] = periodStart
-                LogManager.aiEnrichment("addTemporalParams() - Added relative period_start: $periodStart", "DEBUG")
-            } else if (minCustomDateTime != null) {
-                // Absolute start: use directly as timestamp
-                params["startTime"] = minCustomDateTime
-                LogManager.aiEnrichment("addTemporalParams() - Added absolute startTime: $minCustomDateTime", "DEBUG")
+            when {
+                minIsNow -> {
+                    // NOW marker: use "NOW" string for CommandTransformer
+                    params["period_start"] = "NOW"
+                    LogManager.aiEnrichment("addTemporalParams() - Added NOW period_start", "DEBUG")
+                }
+                minRelativePeriod != null -> {
+                    // Relative start: encode as "offset_TYPE" for CommandTransformer
+                    val periodStart = "${minRelativePeriod.getInt("offset")}_${minRelativePeriod.getString("type")}"
+                    params["period_start"] = periodStart
+                    LogManager.aiEnrichment("addTemporalParams() - Added relative period_start: $periodStart", "DEBUG")
+                }
+                minCustomDateTime != null -> {
+                    // Absolute start: use directly as timestamp
+                    params["startTime"] = minCustomDateTime
+                    LogManager.aiEnrichment("addTemporalParams() - Added absolute startTime: $minCustomDateTime", "DEBUG")
+                }
             }
 
             // Handle end time
-            if (maxRelativePeriod != null) {
-                // Relative end: encode as "offset_TYPE" for CommandTransformer
-                val periodEnd = "${maxRelativePeriod.getInt("offset")}_${maxRelativePeriod.getString("type")}"
-                params["period_end"] = periodEnd
-                LogManager.aiEnrichment("addTemporalParams() - Added relative period_end: $periodEnd", "DEBUG")
-            } else if (maxCustomDateTime != null) {
-                // Absolute end: use directly as timestamp
-                params["endTime"] = maxCustomDateTime
-                LogManager.aiEnrichment("addTemporalParams() - Added absolute endTime: $maxCustomDateTime", "DEBUG")
+            when {
+                maxIsNow -> {
+                    // NOW marker: use "NOW" string for CommandTransformer
+                    params["period_end"] = "NOW"
+                    LogManager.aiEnrichment("addTemporalParams() - Added NOW period_end", "DEBUG")
+                }
+                maxRelativePeriod != null -> {
+                    // Relative end: encode as "offset_TYPE" for CommandTransformer
+                    val periodEnd = "${maxRelativePeriod.getInt("offset")}_${maxRelativePeriod.getString("type")}"
+                    params["period_end"] = periodEnd
+                    LogManager.aiEnrichment("addTemporalParams() - Added relative period_end: $periodEnd", "DEBUG")
+                }
+                maxCustomDateTime != null -> {
+                    // Absolute end: use directly as timestamp
+                    params["endTime"] = maxCustomDateTime
+                    LogManager.aiEnrichment("addTemporalParams() - Added absolute endTime: $maxCustomDateTime", "DEBUG")
+                }
             }
 
             if (params.isEmpty()) {
@@ -757,9 +781,18 @@ class EnrichmentProcessor(
             }
         } else {
             LogManager.aiEnrichment("addTemporalParams() - ABSOLUTE mode (CHAT)", "DEBUG")
-            // CHAT mode: calculate absolute timestamps
+            // CHAT mode: can use periods, custom dates, OR NOW marker
+            val minIsNow = timestampSelection.optBoolean("minIsNow", false)
+            val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
+
             // Min timestamp (start of range)
             val startTs = when {
+                minIsNow -> {
+                    // NOW marker: generate "NOW" in period_start for CommandTransformer
+                    params["period_start"] = "NOW"
+                    LogManager.aiEnrichment("addTemporalParams() - Added NOW period_start", "DEBUG")
+                    null // Don't add to startTime (CommandTransformer will resolve)
+                }
                 timestampSelection.has("minCustomDateTime") ->
                     timestampSelection.getLong("minCustomDateTime")
                 timestampSelection.has("minPeriod") -> {
@@ -771,6 +804,12 @@ class EnrichmentProcessor(
 
             // Max timestamp (end of range - must calculate end of max period)
             val endTs = when {
+                maxIsNow -> {
+                    // NOW marker: generate "NOW" in period_end for CommandTransformer
+                    params["period_end"] = "NOW"
+                    LogManager.aiEnrichment("addTemporalParams() - Added NOW period_end", "DEBUG")
+                    null // Don't add to endTime (CommandTransformer will resolve)
+                }
                 timestampSelection.has("maxCustomDateTime") ->
                     timestampSelection.getLong("maxCustomDateTime")
                 timestampSelection.has("maxPeriod") -> {

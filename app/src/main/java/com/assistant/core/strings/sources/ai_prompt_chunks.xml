@@ -793,89 +793,73 @@ Le système ignore automatiquement ces champs s\'ils sont présents dans tes com
     <!-- E.1 Formats Période [DEGRÉ 1] -->
     <string name="ai_chunk_temporal_formats"><![CDATA[## Gestion des Périodes Temporelles
 
-### Format timestamps
+### Formats disponibles
 
-Tous les timestamps sont en millisecondes (format Unix).
-Utilise la commande `CURRENT_DATETIME` pour obtenir le timestamp actuel si nécessaire.
+Trois formats pour filtrer temporellement les queries :
 
-### Filtres temporels dans les queries
+**1. Périodes relatives (recommandé)** - Format offset_TYPE
+- `"-1_DAY"` = hier, `"0_WEEK"` = cette semaine, `"-7_DAY"` = il y a 7 jours
+- Types : HOUR, DAY, WEEK, MONTH, YEAR
+- Se décale automatiquement, prend en compte config utilisateur
 
-Les paramètres `period` acceptent :
+**2. Marqueur NOW** - Timestamp exact actuel
+- `"NOW"` = instant précis (pas une période)
+- Usage : combiner avec période relative pour "jusqu'à maintenant"
 
-- `start` (number) : Timestamp de début en millisecondes
-- `end` (number) : Timestamp de fin en millisecondes
+**3. Timestamps absolus** - Long en millisecondes
+- Pour dates fixes uniquement
 
-**Exemple** :
+### Paramètres temporels
 
-```json
-{
-  "period": {
-    "start": 1704067200000,
-    "end": 1706745600000
-  }
-}
-```
+- `period_start` et `period_end` sont **optionnels et indépendants**
+- On peut utiliser uniquement start, uniquement end, ou les deux
+- On peut **mixer les formats** (start relatif + end NOW)
+- Pour période complète : **même valeur** (ex: start="-1_DAY" et end="-1_DAY" = hier complet)]]></string>
 
-### Périodes relatives (AUTOMATION uniquement)
 
-En mode AUTOMATION, les périodes relatives sont résolues automatiquement au moment de l\'exécution.
-Tu n\'as pas à gérer ce mécanisme directement.]]></string>
+    <!-- E.2 Exemples Périodes [DEGRÉ 2] -->
 
-    <!-- E.2 Exemples Timestamps [DEGRÉ 2] -->
-    <string name="ai_chunk_temporal_examples"><![CDATA[## Exemples de Périodes
+    <string name="ai_chunk_temporal_examples"><![CDATA[## Exemples de Périodes Temporelles
 
-### Récupérer le timestamp actuel
-
-```json
-{
-  "type": "CURRENT_DATETIME",
-  "params": {}
-}
-```
-
-Retourne :
-
-```json
-{
-  "timestamp": 1704067200000,
-  "formatted": "2024-01-01 00:00:00"
-}
-```
-
-### Utiliser un timestamp pour créer des données
-
-```json
-{
-  "type": "CREATE_DATA",
-  "params": {
-    "toolInstanceId": "journal_id",
-    "tooltype": "journal",
-    "entries": [
-      {
-        "timestamp": 1704067200000,
-        "data": { "content": "Première entrée du journal" }
-      }
-    ]
-  }
-}
-```
-
-### Filtrer des données sur une période
+### Exemple 1 : Semaine dernière complète (période relative)
 
 ```json
 {
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
-    "period": {
-      "start": 1704067200000,
-      "end": 1706745600000
-    }
+    "period_start": "-1_WEEK",
+    "period_end": "-1_WEEK"
   }
 }
 ```
 
-Retourne toutes les entrées entre ces deux timestamps.]]></string>
+### Exemple 2 : 7 derniers jours jusqu'à maintenant (relatif + NOW)
+
+```json
+{
+  "type": "TOOL_DATA",
+  "params": {
+    "id": "tracking_weight_123",
+    "period_start": "-7_DAY",
+    "period_end": "NOW"
+  }
+}
+```
+
+### Exemple 3 : Depuis le début du mois (période seule)
+
+```json
+{
+  "type": "TOOL_DATA",
+  "params": {
+    "id": "tracking_weight_123",
+    "period_start": "0_MONTH"
+  }
+}
+```
+
+**Note** : `period_end` est omis = jusqu'à la dernière donnée disponible.]]></string>
 
     <!-- ================================================================ -->
     <!-- PARTIE F : GESTION DES ERREURS                                   -->

@@ -1134,15 +1134,19 @@ fun PeriodRangeSelector(
     startPeriodType: PeriodType?,
     startPeriod: Period?,
     startCustomDate: Long?,
+    startIsNow: Boolean = false,
     endPeriodType: PeriodType?,
     endPeriod: Period?,
     endCustomDate: Long?,
+    endIsNow: Boolean = false,
     onStartTypeChange: (PeriodType?) -> Unit,
     onStartPeriodChange: (Period?) -> Unit,
     onStartCustomDateChange: (Long?) -> Unit,
+    onStartIsNowChange: (Boolean) -> Unit = {},
     onEndTypeChange: (PeriodType?) -> Unit,
     onEndPeriodChange: (Period?) -> Unit,
     onEndCustomDateChange: (Long?) -> Unit,
+    onEndIsNowChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
     useOnlyRelativeLabels: Boolean = false,
     returnRelative: Boolean = false,
@@ -1209,93 +1213,134 @@ fun PeriodRangeSelector(
                     s.shared("period_week"),
                     s.shared("period_month"),
                     s.shared("period_year"),
+                    s.shared("period_now"),
                     s.shared("period_custom")
                 ),
-                selected = when(startPeriodType) {
-                    PeriodType.HOUR -> s.shared("period_hour")
-                    PeriodType.DAY -> s.shared("period_day")
-                    PeriodType.WEEK -> s.shared("period_week")
-                    PeriodType.MONTH -> s.shared("period_month")
-                    PeriodType.YEAR -> s.shared("period_year")
-                    null -> s.shared("period_custom")
+                selected = when {
+                    startIsNow -> s.shared("period_now")
+                    startPeriodType == PeriodType.HOUR -> s.shared("period_hour")
+                    startPeriodType == PeriodType.DAY -> s.shared("period_day")
+                    startPeriodType == PeriodType.WEEK -> s.shared("period_week")
+                    startPeriodType == PeriodType.MONTH -> s.shared("period_month")
+                    startPeriodType == PeriodType.YEAR -> s.shared("period_year")
+                    else -> s.shared("period_custom")
                 },
                 onSelect = { selection ->
-                    val newType = when(selection) {
-                        s.shared("period_hour") -> PeriodType.HOUR
-                        s.shared("period_day") -> PeriodType.DAY
-                        s.shared("period_week") -> PeriodType.WEEK
-                        s.shared("period_month") -> PeriodType.MONTH
-                        s.shared("period_year") -> PeriodType.YEAR
-                        else -> null // Custom
-                    }
-                    onStartTypeChange(newType)
-
-                    // Create default period when type changes (like TrackingHistory does)
-                    if (newType != null && !isConfigLoading) {
-                        if (returnRelative) {
-                            // Create relative period (offset 0 = current period)
-                            val newRelativePeriod = RelativePeriod.now(newType)
-                            onStartRelativePeriodChange?.invoke(newRelativePeriod)
-                        } else {
-                            // Create absolute period
-                            val now = System.currentTimeMillis()
-                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
-                            val newPeriod = Period(normalizedTimestamp, newType)
-                            onStartPeriodChange(newPeriod)
-                        }
-                    } else {
-                        if (returnRelative) {
-                            onStartRelativePeriodChange?.invoke(null)
-                        } else {
+                    when (selection) {
+                        s.shared("period_now") -> {
+                            // NOW selected: clear period type and set isNow flag
+                            onStartTypeChange(null)
                             onStartPeriodChange(null)
+                            onStartCustomDateChange(null)
+                            onStartIsNowChange(true)
+                            if (returnRelative) {
+                                onStartRelativePeriodChange?.invoke(null)
+                            }
+                        }
+                        s.shared("period_custom") -> {
+                            // Custom selected: clear period type and isNow flag
+                            onStartTypeChange(null)
+                            onStartPeriodChange(null)
+                            onStartIsNowChange(false)
+                            if (returnRelative) {
+                                onStartRelativePeriodChange?.invoke(null)
+                            }
+                        }
+                        else -> {
+                            // Period type selected
+                            val newType = when(selection) {
+                                s.shared("period_hour") -> PeriodType.HOUR
+                                s.shared("period_day") -> PeriodType.DAY
+                                s.shared("period_week") -> PeriodType.WEEK
+                                s.shared("period_month") -> PeriodType.MONTH
+                                s.shared("period_year") -> PeriodType.YEAR
+                                else -> null
+                            }
+
+                            onStartTypeChange(newType)
+                            onStartIsNowChange(false)
+
+                            // Create default period when type changes
+                            if (newType != null && !isConfigLoading) {
+                                if (returnRelative) {
+                                    val newRelativePeriod = RelativePeriod.now(newType)
+                                    onStartRelativePeriodChange?.invoke(newRelativePeriod)
+                                } else {
+                                    val now = System.currentTimeMillis()
+                                    val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
+                                    val newPeriod = Period(normalizedTimestamp, newType)
+                                    onStartPeriodChange(newPeriod)
+                                }
+                            } else {
+                                if (returnRelative) {
+                                    onStartRelativePeriodChange?.invoke(null)
+                                } else {
+                                    onStartPeriodChange(null)
+                                }
+                            }
                         }
                     }
                 }
             )
 
-            // Start period selector or custom date
-            if (startPeriodType != null && startPeriod != null) {
-                SinglePeriodSelector(
-                    period = startPeriod,
-                    onPeriodChange = { period ->
-                        if (returnRelative) {
-                            // Convert Period to RelativePeriod when user navigates
-                            val offset = calculatePeriodOffset(period.timestamp, period.type)
-                            val relativePeriod = RelativePeriod(offset, period.type)
-                            onStartRelativePeriodChange?.invoke(relativePeriod)
-                        } else {
-                            onStartPeriodChange(period)
-                        }
-                    },
-                    showDatePicker = true,
-                    useOnlyRelativeLabels = useOnlyRelativeLabels
-                )
-            } else {
-                // Custom date picker - simplified
-                var showDatePicker by remember { mutableStateOf(false) }
-
-                UI.Button(
-                    type = ButtonType.DEFAULT,
-                    size = Size.M,
-                    onClick = { showDatePicker = true }
-                ) {
-                    UI.Text(
-                        text = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
-                        type = TextType.BODY,
-                        fillMaxWidth = true,
-                        textAlign = TextAlign.Center
+            // Start period selector, NOW label, or custom date
+            when {
+                startIsNow -> {
+                    // NOW: display static label
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.Text(
+                            text = s.shared("period_now_label"),
+                            type = TextType.BODY
+                        )
+                    }
+                }
+                startPeriodType != null && startPeriod != null -> {
+                    // Period type: display selector with navigation
+                    SinglePeriodSelector(
+                        period = startPeriod,
+                        onPeriodChange = { period ->
+                            if (returnRelative) {
+                                val offset = calculatePeriodOffset(period.timestamp, period.type)
+                                val relativePeriod = RelativePeriod(offset, period.type)
+                                onStartRelativePeriodChange?.invoke(relativePeriod)
+                            } else {
+                                onStartPeriodChange(period)
+                            }
+                        },
+                        showDatePicker = true,
+                        useOnlyRelativeLabels = useOnlyRelativeLabels
                     )
                 }
+                else -> {
+                    // Custom date picker
+                    var showDatePicker by remember { mutableStateOf(false) }
 
-                if (showDatePicker) {
-                    UI.DatePicker(
-                        selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
-                        onDateSelected = { dateString ->
-                            val timestamp = DateUtils.parseDateForFilter(dateString)
-                            onStartCustomDateChange(timestamp)
-                        },
-                        onDismiss = { showDatePicker = false }
-                    )
+                    UI.Button(
+                        type = ButtonType.DEFAULT,
+                        size = Size.M,
+                        onClick = { showDatePicker = true }
+                    ) {
+                        UI.Text(
+                            text = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                            type = TextType.BODY,
+                            fillMaxWidth = true,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    if (showDatePicker) {
+                        UI.DatePicker(
+                            selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+                            onDateSelected = { dateString ->
+                                val timestamp = DateUtils.parseDateForFilter(dateString)
+                                onStartCustomDateChange(timestamp)
+                            },
+                            onDismiss = { showDatePicker = false }
+                        )
+                    }
                 }
             }
         }
@@ -1316,93 +1361,134 @@ fun PeriodRangeSelector(
                     s.shared("period_week"),
                     s.shared("period_month"),
                     s.shared("period_year"),
+                    s.shared("period_now"),
                     s.shared("period_custom")
                 ),
-                selected = when(endPeriodType) {
-                    PeriodType.HOUR -> s.shared("period_hour")
-                    PeriodType.DAY -> s.shared("period_day")
-                    PeriodType.WEEK -> s.shared("period_week")
-                    PeriodType.MONTH -> s.shared("period_month")
-                    PeriodType.YEAR -> s.shared("period_year")
-                    null -> s.shared("period_custom")
+                selected = when {
+                    endIsNow -> s.shared("period_now")
+                    endPeriodType == PeriodType.HOUR -> s.shared("period_hour")
+                    endPeriodType == PeriodType.DAY -> s.shared("period_day")
+                    endPeriodType == PeriodType.WEEK -> s.shared("period_week")
+                    endPeriodType == PeriodType.MONTH -> s.shared("period_month")
+                    endPeriodType == PeriodType.YEAR -> s.shared("period_year")
+                    else -> s.shared("period_custom")
                 },
                 onSelect = { selection ->
-                    val newType = when(selection) {
-                        s.shared("period_hour") -> PeriodType.HOUR
-                        s.shared("period_day") -> PeriodType.DAY
-                        s.shared("period_week") -> PeriodType.WEEK
-                        s.shared("period_month") -> PeriodType.MONTH
-                        s.shared("period_year") -> PeriodType.YEAR
-                        else -> null // Custom
-                    }
-                    onEndTypeChange(newType)
-
-                    // Create default period when type changes (like TrackingHistory does)
-                    if (newType != null && !isConfigLoading) {
-                        if (returnRelative) {
-                            // Create relative period (offset 0 = current period)
-                            val newRelativePeriod = RelativePeriod.now(newType)
-                            onEndRelativePeriodChange?.invoke(newRelativePeriod)
-                        } else {
-                            // Create absolute period
-                            val now = System.currentTimeMillis()
-                            val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
-                            val newPeriod = Period(normalizedTimestamp, newType)
-                            onEndPeriodChange(newPeriod)
-                        }
-                    } else {
-                        if (returnRelative) {
-                            onEndRelativePeriodChange?.invoke(null)
-                        } else {
+                    when (selection) {
+                        s.shared("period_now") -> {
+                            // NOW selected: clear period type and set isNow flag
+                            onEndTypeChange(null)
                             onEndPeriodChange(null)
+                            onEndCustomDateChange(null)
+                            onEndIsNowChange(true)
+                            if (returnRelative) {
+                                onEndRelativePeriodChange?.invoke(null)
+                            }
+                        }
+                        s.shared("period_custom") -> {
+                            // Custom selected: clear period type and isNow flag
+                            onEndTypeChange(null)
+                            onEndPeriodChange(null)
+                            onEndIsNowChange(false)
+                            if (returnRelative) {
+                                onEndRelativePeriodChange?.invoke(null)
+                            }
+                        }
+                        else -> {
+                            // Period type selected
+                            val newType = when(selection) {
+                                s.shared("period_hour") -> PeriodType.HOUR
+                                s.shared("period_day") -> PeriodType.DAY
+                                s.shared("period_week") -> PeriodType.WEEK
+                                s.shared("period_month") -> PeriodType.MONTH
+                                s.shared("period_year") -> PeriodType.YEAR
+                                else -> null
+                            }
+
+                            onEndTypeChange(newType)
+                            onEndIsNowChange(false)
+
+                            // Create default period when type changes
+                            if (newType != null && !isConfigLoading) {
+                                if (returnRelative) {
+                                    val newRelativePeriod = RelativePeriod.now(newType)
+                                    onEndRelativePeriodChange?.invoke(newRelativePeriod)
+                                } else {
+                                    val now = System.currentTimeMillis()
+                                    val normalizedTimestamp = normalizeTimestampWithConfig(now, newType)
+                                    val newPeriod = Period(normalizedTimestamp, newType)
+                                    onEndPeriodChange(newPeriod)
+                                }
+                            } else {
+                                if (returnRelative) {
+                                    onEndRelativePeriodChange?.invoke(null)
+                                } else {
+                                    onEndPeriodChange(null)
+                                }
+                            }
                         }
                     }
                 }
             )
 
-            // End period selector or custom date
-            if (endPeriodType != null && endPeriod != null) {
-                SinglePeriodSelector(
-                    period = endPeriod,
-                    onPeriodChange = { period ->
-                        if (returnRelative) {
-                            // Convert Period to RelativePeriod when user navigates
-                            val offset = calculatePeriodOffset(period.timestamp, period.type)
-                            val relativePeriod = RelativePeriod(offset, period.type)
-                            onEndRelativePeriodChange?.invoke(relativePeriod)
-                        } else {
-                            onEndPeriodChange(period)
-                        }
-                    },
-                    showDatePicker = true,
-                    useOnlyRelativeLabels = useOnlyRelativeLabels
-                )
-            } else {
-                // Custom date picker - simplified
-                var showDatePicker by remember { mutableStateOf(false) }
-
-                UI.Button(
-                    type = ButtonType.DEFAULT,
-                    size = Size.M,
-                    onClick = { showDatePicker = true }
-                ) {
-                    UI.Text(
-                        text = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
-                        type = TextType.BODY,
-                        fillMaxWidth = true,
-                        textAlign = TextAlign.Center
+            // End period selector, NOW label, or custom date
+            when {
+                endIsNow -> {
+                    // NOW: display static label
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        UI.Text(
+                            text = s.shared("period_now_label"),
+                            type = TextType.BODY
+                        )
+                    }
+                }
+                endPeriodType != null && endPeriod != null -> {
+                    // Period type: display selector with navigation
+                    SinglePeriodSelector(
+                        period = endPeriod,
+                        onPeriodChange = { period ->
+                            if (returnRelative) {
+                                val offset = calculatePeriodOffset(period.timestamp, period.type)
+                                val relativePeriod = RelativePeriod(offset, period.type)
+                                onEndRelativePeriodChange?.invoke(relativePeriod)
+                            } else {
+                                onEndPeriodChange(period)
+                            }
+                        },
+                        showDatePicker = true,
+                        useOnlyRelativeLabels = useOnlyRelativeLabels
                     )
                 }
+                else -> {
+                    // Custom date picker
+                    var showDatePicker by remember { mutableStateOf(false) }
 
-                if (showDatePicker) {
-                    UI.DatePicker(
-                        selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
-                        onDateSelected = { dateString ->
-                            val timestamp = DateUtils.parseDateForFilter(dateString)
-                            onEndCustomDateChange(timestamp)
-                        },
-                        onDismiss = { showDatePicker = false }
-                    )
+                    UI.Button(
+                        type = ButtonType.DEFAULT,
+                        size = Size.M,
+                        onClick = { showDatePicker = true }
+                    ) {
+                        UI.Text(
+                            text = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: s.shared("select_date"),
+                            type = TextType.BODY,
+                            fillMaxWidth = true,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    if (showDatePicker) {
+                        UI.DatePicker(
+                            selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
+                            onDateSelected = { dateString ->
+                                val timestamp = DateUtils.parseDateForFilter(dateString)
+                                onEndCustomDateChange(timestamp)
+                            },
+                            onDismiss = { showDatePicker = false }
+                        )
+                    }
                 }
             }
         }

@@ -475,7 +475,9 @@ private fun PeriodSelectionSection(
                 startPeriod = state.timestampSelection.minPeriod,
                 endPeriod = state.timestampSelection.maxPeriod,
                 startCustomDate = state.timestampSelection.minCustomDateTime,
+                startIsNow = state.timestampSelection.minIsNow,
                 endCustomDate = state.timestampSelection.maxCustomDateTime,
+                endIsNow = state.timestampSelection.maxIsNow,
                 startRelativePeriod = null, // Not used in CHAT mode
                 endRelativePeriod = null,
                 onStartTypeChange = { type ->
@@ -512,6 +514,22 @@ private fun PeriodSelectionSection(
                         maxPeriodType = null, // Custom mode
                         maxPeriod = null,
                         maxCustomDateTime = dateTime
+                    ))
+                },
+                onStartIsNowChange = { isNow ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        minIsNow = isNow,
+                        minPeriodType = null,
+                        minPeriod = null,
+                        minCustomDateTime = null
+                    ))
+                },
+                onEndIsNowChange = { isNow ->
+                    onTimestampSelectionChange(state.timestampSelection.copy(
+                        maxIsNow = isNow,
+                        maxPeriodType = null,
+                        maxPeriod = null,
+                        maxCustomDateTime = null
                     ))
                 },
                 useOnlyRelativeLabels = false,

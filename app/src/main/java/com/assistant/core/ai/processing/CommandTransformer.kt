@@ -295,58 +295,83 @@ object CommandTransformer {
 
     /**
      * Apply temporal parameters to command params
-     * Handles both relative periods (period_start/period_end) and absolute timestamps (startTime/endTime)
+     * Handles relative periods (period_start/period_end), absolute timestamps (startTime/endTime), and NOW marker
      *
      * For relative periods:
      * - Format: "offset_PeriodType" (e.g., "-7_DAY" = 7 days ago, "0_WEEK" = current week)
      * - Automatically applies user's dayStartHour and weekStartDay configuration
      * - AI doesn't need to handle timezones or calendar calculations
      *
+     * For NOW marker:
+     * - String "NOW" in period_start or period_end
+     * - Resolves to current timestamp (System.currentTimeMillis())
+     * - Universal instant, no period normalization
+     *
      * For absolute timestamps:
      * - Direct Long values in milliseconds
-     * - Used only when explicitly provided (not recommended for AI)
+     * - Used only when explicitly provided (less common)
      */
     private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand) {
         LogManager.aiPrompt("applyTemporalParameters() - CALLED with command.isRelative=${command.isRelative}, command.params=${command.params}", "DEBUG")
 
-        // Handle start time - can be relative OR absolute
+        // Handle start time - can be relative, NOW, OR absolute
         val periodStart = command.params["period_start"] as? String
         val startTimeAbsolute = command.params["startTime"]
 
         if (periodStart != null) {
-            // Relative start period: resolve to absolute timestamp
-            LogManager.aiPrompt("applyTemporalParameters() - Found relative period_start: $periodStart", "DEBUG")
-            val (offset, type) = periodStart.split("_")
-            val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
-                offset = offset.toInt(),
-                type = com.assistant.core.ui.components.PeriodType.valueOf(type)
-            )
-            val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
-            val startTime = resolvedPeriod.timestamp
-            params["startTime"] = startTime
-            LogManager.aiPrompt("applyTemporalParameters() - Resolved period_start to startTime=$startTime", "DEBUG")
+            when {
+                periodStart == "NOW" -> {
+                    // NOW marker: use current timestamp
+                    val nowTimestamp = System.currentTimeMillis()
+                    params["startTime"] = nowTimestamp
+                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_start=NOW to startTime=$nowTimestamp", "DEBUG")
+                }
+                else -> {
+                    // Relative start period: resolve to absolute timestamp
+                    LogManager.aiPrompt("applyTemporalParameters() - Found relative period_start: $periodStart", "DEBUG")
+                    val (offset, type) = periodStart.split("_")
+                    val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
+                        offset = offset.toInt(),
+                        type = com.assistant.core.ui.components.PeriodType.valueOf(type)
+                    )
+                    val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
+                    val startTime = resolvedPeriod.timestamp
+                    params["startTime"] = startTime
+                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_start to startTime=$startTime", "DEBUG")
+                }
+            }
         } else if (startTimeAbsolute != null) {
             // Absolute start timestamp: use directly
             params["startTime"] = startTimeAbsolute
             LogManager.aiPrompt("applyTemporalParameters() - Using absolute startTime=$startTimeAbsolute", "DEBUG")
         }
 
-        // Handle end time - can be relative OR absolute
+        // Handle end time - can be relative, NOW, OR absolute
         val periodEnd = command.params["period_end"] as? String
         val endTimeAbsolute = command.params["endTime"]
 
         if (periodEnd != null) {
-            // Relative end period: resolve to absolute timestamp
-            LogManager.aiPrompt("applyTemporalParameters() - Found relative period_end: $periodEnd", "DEBUG")
-            val (offset, type) = periodEnd.split("_")
-            val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
-                offset = offset.toInt(),
-                type = com.assistant.core.ui.components.PeriodType.valueOf(type)
-            )
-            val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
-            val endTime = com.assistant.core.ui.components.getPeriodEndTimestamp(resolvedPeriod)
-            params["endTime"] = endTime
-            LogManager.aiPrompt("applyTemporalParameters() - Resolved period_end to endTime=$endTime", "DEBUG")
+            when {
+                periodEnd == "NOW" -> {
+                    // NOW marker: use current timestamp
+                    val nowTimestamp = System.currentTimeMillis()
+                    params["endTime"] = nowTimestamp
+                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_end=NOW to endTime=$nowTimestamp", "DEBUG")
+                }
+                else -> {
+                    // Relative end period: resolve to absolute timestamp
+                    LogManager.aiPrompt("applyTemporalParameters() - Found relative period_end: $periodEnd", "DEBUG")
+                    val (offset, type) = periodEnd.split("_")
+                    val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
+                        offset = offset.toInt(),
+                        type = com.assistant.core.ui.components.PeriodType.valueOf(type)
+                    )
+                    val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
+                    val endTime = com.assistant.core.ui.components.getPeriodEndTimestamp(resolvedPeriod)
+                    params["endTime"] = endTime
+                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_end to endTime=$endTime", "DEBUG")
+                }
+            }
         } else if (endTimeAbsolute != null) {
             // Absolute end timestamp: use directly
             params["endTime"] = endTimeAbsolute

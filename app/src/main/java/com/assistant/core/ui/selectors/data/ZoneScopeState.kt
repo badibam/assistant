@@ -56,18 +56,21 @@ data class TimestampSelection(
     val minPeriodType: PeriodType? = null,          // jour, semaine, mois, année, personnalisée
     val minPeriod: Period? = null,                  // période absolue sélectionnée pour min
     val minCustomDateTime: Long? = null,            // date/heure personnalisée pour min (always absolute)
+    val minIsNow: Boolean = false,                  // "NOW" marker for min (universal instant timestamp)
 
     // Date maximum - absolute mode (CHAT)
     val maxPeriodType: PeriodType? = null,          // jour, semaine, mois, année, personnalisée
     val maxPeriod: Period? = null,                  // période absolue sélectionnée pour max
     val maxCustomDateTime: Long? = null,            // date/heure personnalisée pour max (always absolute)
+    val maxIsNow: Boolean = false,                  // "NOW" marker for max (universal instant timestamp)
 
     // Relative mode (AUTOMATION) - mutually exclusive with Period fields
     val minRelativePeriod: RelativePeriod? = null,  // période relative pour min
     val maxRelativePeriod: RelativePeriod? = null   // période relative pour max
 ) {
     val isComplete: Boolean
-        get() = (minPeriodType != null || maxPeriodType != null) &&
-                (minPeriod != null || minCustomDateTime != null || maxPeriod != null || maxCustomDateTime != null ||
+        get() = (minPeriodType != null || maxPeriodType != null || minIsNow || maxIsNow) &&
+                (minPeriod != null || minCustomDateTime != null || minIsNow ||
+                 maxPeriod != null || maxCustomDateTime != null || maxIsNow ||
                  minRelativePeriod != null || maxRelativePeriod != null)
 }

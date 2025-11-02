@@ -42,9 +42,7 @@ allowed-tools: Bash, Edit, Write, Read, Grep
 
 5. **Si changement JSON** : Ajouter transformation dans `JsonTransformers.kt` (pour imports backup)
 
-6. **Test** : `./gradlew compileDebugKotlin` puis test sur device
-
-7. **Commit** : "DB upgrade vX → vY: [description]"
+6. **EXPORT** : Gérer sérialisation de l'export dans dans backupservice
 
 ## Rappels :
 

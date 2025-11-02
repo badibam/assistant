@@ -344,6 +344,8 @@
     <string name="period_week">Semaine</string>
     <string name="period_month">Mois</string>
     <string name="period_year">Année</string>
+    <string name="period_now">Maintenant</string>
+    <string name="period_now_label">Maintenant</string>
     <string name="period_this_hour">Cette heure-ci</string>
     <string name="period_hours_ago_singular">Il y a %d heure</string>
     <string name="period_hours_ago_plural">Il y a %d heures</string>
@@ -1198,7 +1200,6 @@
     <string name="ai_enrichment_pointer_period_until">jusqu\'à %1$s</string>
     <string name="ai_enrichment_pointer_relative_ago">il y a %1$d %2$s</string>
     <string name="ai_enrichment_pointer_relative_future">dans %1$d %2$s</string>
-    <string name="period_now">maintenant</string>
     <string name="period_days">jours</string>
     <string name="period_weeks">semaines</string>
     <string name="period_months">mois</string>
