@@ -684,6 +684,13 @@
 
     <!-- AI PROMPT SYSTEM - Messages internes du système de prompts -->
     <string name="ai_prompt_duplicate_ignored">Ignorée (duplication)</string>
+    <string name="ai_prompt_level2_intro">Les données ci-dessous sont configurées par l\'utilisateur pour être systématiquement incluses dans les sessions IA. Ces données reflètent des spécificités ou des préférences de l\'utilisateur et doivent être prises en compte dans toutes tes réponses.</string>
+    <string name="ai_prompt_level3_title">Snapshot de l\'état de l\'application</string>
+    <string name="ai_prompt_level3_snapshot_time">Snapshot pris au début de la session : **%1$s**</string>
+    <string name="ai_prompt_level3_snapshot_note">Note : Il s\'agit d\'un snapshot qui a pu évoluer depuis le début de la session.</string>
+    <string name="ai_prompt_level3_zones_title">Zones</string>
+    <string name="ai_prompt_level3_tools_title">Instances d\'outils</string>
+    <string name="ai_prompt_current_datetime">Date et heure actuelles : %1$s (timestamp: %2$d)</string>
 
     <!-- AI TOKEN STATUS - Affichage statut tokens (TokenCalculator) -->
     <string name="ai_token_exceeded">Dépassement: %1$d tokens (limite: %2$d) - %3$s%%</string>

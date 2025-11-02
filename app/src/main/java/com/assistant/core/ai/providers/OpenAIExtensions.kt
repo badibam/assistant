@@ -22,13 +22,15 @@ import org.json.JSONObject
  * OpenAI format uses structured messages array similar to Claude:
  * - input: array of {role, content} objects
  * - Roles: "system", "user", "assistant"
- * - L1 and L2 content placed as initial system messages
+ * - L1, L2, L3 content placed as initial system messages
  * - Session messages transformed with proper role mapping
+ * - Current datetime appended at the end
  *
  * @param config Provider configuration (api_key, model, temperature, etc.)
+ * @param context Android context for i18n strings
  * @return JsonObject ready for OpenAI API /v1/responses endpoint
  */
-internal fun PromptData.toOpenAIJson(config: JSONObject): JsonObject {
+internal fun PromptData.toOpenAIJson(config: JSONObject, context: android.content.Context): JsonObject {
     val model = config.getString("model")
     val temperature = config.optDouble("temperature", 1.0)
     val maxTokens = config.optInt("max_output_tokens", 32000)
@@ -51,6 +53,14 @@ internal fun PromptData.toOpenAIJson(config: JSONObject): JsonObject {
                 addJsonObject {
                     put("role", "system")
                     put("content", level2Content)
+                }
+            }
+
+            // Add L3 as system message if not empty
+            if (level3Content.isNotBlank()) {
+                addJsonObject {
+                    put("role", "system")
+                    put("content", level3Content)
                 }
             }
 
@@ -78,6 +88,21 @@ internal fun PromptData.toOpenAIJson(config: JSONObject): JsonObject {
                         put("content", content)
                     }
                 }
+            }
+
+            // Add current datetime as final message
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val now = System.currentTimeMillis()
+
+            // Use app's configured locale
+            val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
+            val dateStr = dateFormat.format(java.util.Date(now))
+            val datetimeText = s.shared("ai_prompt_current_datetime").format(dateStr, now)
+
+            addJsonObject {
+                put("role", "user")
+                put("content", datetimeText)
             }
         }
     }

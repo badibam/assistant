@@ -213,11 +213,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     private suspend fun handleListAll(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
+        // Read include_config parameter (default false for minimal version)
+        val includeConfig = params.optBoolean("include_config", false)
+
         val toolInstances = toolInstanceDao.getAllToolInstances()
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceData = toolInstances.map { tool ->
-            // Extract name and description from config JSON (not the full config)
+            // Always extract name and description for display
             var name = ""
             var description = ""
             try {
@@ -228,17 +231,24 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 // Keep empty strings
             }
 
-            mapOf(
+            // Build result map - minimal version
+            val resultMap = mutableMapOf(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
                 "name" to name,
                 "description" to description,
                 "tool_type" to tool.tool_type,
-                "config_json" to tool.config_json,
-                "order_index" to tool.order_index,
-                "created_at" to tool.created_at,
-                "updated_at" to tool.updated_at
+                "order_index" to tool.order_index
             )
+
+            // Conditionally add config_json and timestamps based on include_config parameter
+            if (includeConfig) {
+                resultMap["config_json"] = tool.config_json
+                resultMap["created_at"] = tool.created_at
+                resultMap["updated_at"] = tool.updated_at
+            }
+
+            resultMap
         }
 
         return OperationResult.success(mapOf(

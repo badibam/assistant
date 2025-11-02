@@ -521,9 +521,9 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                LogManager.database("MIGRATION 15->16: Starting - Adding updatedAt column to automations", "INFO")
+                LogManager.database("MIGRATION 15->16: Starting - Adding updatedAt to automations + appStateSnapshot to ai_sessions", "INFO")
 
-                // 1. Add updatedAt column with default value 0
+                // 1. Add updatedAt column to automations with default value 0
                 database.execSQL("""
                     ALTER TABLE automations
                     ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0
@@ -538,11 +538,19 @@ abstract class AppDatabase : RoomDatabase() {
                     WHERE updatedAt = 0
                 """)
 
-                val cursor = database.query("SELECT COUNT(*) FROM automations")
-                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
-                cursor.close()
+                val cursorAutomations = database.query("SELECT COUNT(*) FROM automations")
+                val automationsCount = if (cursorAutomations.moveToFirst()) cursorAutomations.getInt(0) else 0
+                cursorAutomations.close()
 
-                LogManager.database("MIGRATION 15->16: Completed - Updated $count automations with updatedAt = now", "INFO")
+                LogManager.database("MIGRATION 15->16: Updated $automationsCount automations with updatedAt = now", "INFO")
+
+                // 3. Add appStateSnapshot column to ai_sessions (nullable, default NULL)
+                database.execSQL("""
+                    ALTER TABLE ai_sessions
+                    ADD COLUMN appStateSnapshot TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 15->16: Completed - Added appStateSnapshot column to ai_sessions", "INFO")
             }
         }
 

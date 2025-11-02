@@ -64,7 +64,15 @@ data class AISessionEntity(
     val lastActivity: Long,
     val isActive: Boolean,
     val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
-    val tokensUsed: Int? = null             // Total tokens consumed by this session (for monitoring)
+    val tokensUsed: Int? = null,            // Total tokens consumed by this session (for monitoring)
+
+    /**
+     * APP_STATE snapshot JSON taken at first user message
+     * Used for cache stability - includes zones + tool instances (minimal, without config_json)
+     * Format: {"timestamp": Long, "zones": [...], "tool_instances": [...]}
+     * null = not yet captured (before first message)
+     */
+    val appStateSnapshot: String? = null
 )
 
 /**

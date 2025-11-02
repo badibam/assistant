@@ -5,10 +5,11 @@ package com.assistant.core.ai.data
  * Contains system prompt levels and session messages
  * Provider transforms this according to its specific API requirements
  *
- * Note: Level 3 has been removed - AI now uses APP_STATE command when needed
+ * Level 3 contains APP_STATE snapshot taken at first user message for cache stability
  */
 data class PromptData(
     val level1Content: String,     // System documentation (with AI limits)
     val level2Content: String,     // User data (always_send tools)
+    val level3Content: String,     // APP_STATE snapshot (zones + tool instances, frozen at first message)
     val sessionMessages: List<SessionMessage>  // Raw messages for history
 )

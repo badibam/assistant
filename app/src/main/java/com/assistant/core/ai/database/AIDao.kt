@@ -43,6 +43,9 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET tokensUsed = :tokensUsed WHERE id = :sessionId")
     suspend fun updateSessionTokens(sessionId: String, tokensUsed: Int)
 
+    @Query("UPDATE ai_sessions SET appStateSnapshot = :snapshot WHERE id = :sessionId")
+    suspend fun updateAppStateSnapshot(sessionId: String, snapshot: String)
+
     @Delete
     suspend fun deleteSession(session: AISessionEntity)
 

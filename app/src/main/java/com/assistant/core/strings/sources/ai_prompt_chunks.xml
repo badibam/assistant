@@ -250,7 +250,7 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
 - `limit` (number, optionnel) : Nombre maximum d\'entrées
 - `offset` (number, optionnel) : Décalage pour pagination
 
-**Optimisation** : N\'inclus que les champs nécessaires à ta tâche. Exemple pour supprimer toutes les entrées d\'une période : inclure uniquement `id`.
+**Optimisation** : N\'inclus que les champs strictement nécessaires à ta tâche. Exemple : pour compter des entrées sur une période → `id` uniquement, pour lister des titres → `id` + champ titre, etc.
 
 ### TOOL_EXECUTIONS
 
@@ -380,6 +380,7 @@ Met à jour des données en batch.
 **Notes** :
 
 - **UPDATE PARTIEL** : Seuls les champs fournis sont modifiés. Les champs absents conservent leurs valeurs existantes
+- **OPTIMISATION** : N\'inclus que les champs strictement nécessaires à modifier. Exemples : si update de contenu → ne pas inclure `timestamp`, si correction orthographique → ne pas inclure `timestamp` ni autres métadonnées
 - Le `schema_id` est automatiquement déduit de la configuration de la tool instance
 - **VALEURS LITTÉRALES UNIQUEMENT** : `data` contient uniquement des valeurs JSON (strings, numbers, booleans, arrays, objects). Jamais de code exécutable
 
@@ -392,8 +393,6 @@ Supprime des données en batch.
 - `toolInstanceId` (string, **requis**)
 - `tooltype` (string, **requis**)
 - `ids` (array, **requis**) : Liste des IDs à supprimer
-
-**Optimisation** : N\'inclus que les champs strictement nécessaires. Exemple : pour supprimer toutes les entrées d\'une période, récupère d\'abord les IDs avec TOOL_DATA (champs id uniquement), puis supprime-les.
 
 ### CREATE_TOOL
 

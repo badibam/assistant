@@ -279,4 +279,26 @@ class AIStateRepository(
             "INFO"
         )
     }
+
+    /**
+     * Store APP_STATE snapshot for the active session.
+     * Called once on first user message to capture initial state for cache stability.
+     *
+     * @param snapshot JSON string containing zones + tool instances snapshot
+     */
+    suspend fun storeAppStateSnapshot(snapshot: String) {
+        val sessionId = currentState.sessionId
+        if (sessionId == null) {
+            LogManager.aiSession("storeAppStateSnapshot: No active session", "WARN")
+            return
+        }
+
+        // Update DB directly (snapshot is not part of AIState memory model)
+        aiDao.updateAppStateSnapshot(sessionId, snapshot)
+
+        LogManager.aiSession(
+            "APP_STATE snapshot stored for session $sessionId (${snapshot.length} chars)",
+            "INFO"
+        )
+    }
 }

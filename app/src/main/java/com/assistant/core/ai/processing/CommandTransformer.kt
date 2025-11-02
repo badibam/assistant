@@ -97,9 +97,15 @@ object CommandTransformer {
     /**
      * Transform APP_STATE command to multiple executable commands
      * Returns zones + tool instances for complete application structure
+     *
+     * By default, returns minimal tool instance data (without config_json) to save tokens.
+     * Use include_config parameter to include full configuration.
      */
     private fun transformAppStateCommand(command: DataCommand): List<ExecutableCommand> {
         LogManager.aiPrompt("transformAppStateCommand() - generating zones.list + tools.list_all", "VERBOSE")
+
+        // Read include_config parameter (default false for minimal snapshot)
+        val includeConfig = command.params["include_config"] as? Boolean ?: false
 
         return listOf(
             ExecutableCommand(
@@ -110,7 +116,7 @@ object CommandTransformer {
             ExecutableCommand(
                 resource = "tools",
                 operation = "list_all",
-                params = emptyMap()
+                params = mapOf("include_config" to includeConfig)
             )
         )
     }

@@ -14,7 +14,7 @@ import com.assistant.core.utils.LogManager
  * Singleton PromptManager implementing 3-level prompt system
  * Level 1: System documentation (very stable, includes AI limits)
  * Level 2: User data (stable, always_send tools)
- * Level 3: Application state (moderately stable, zones + tool instances)
+ * Level 3: Application state snapshot (frozen at first message for cache stability)
  *
  * Level 4 has been REMOVED - enrichments are now stored as separate SystemMessages
  * and fused by the provider during prompt construction.
@@ -23,7 +23,7 @@ object PromptManager {
 
     /**
      * Build prompt data for AI session
-     * Generates L1-L3 (always fresh, never stored) and loads session messages
+     * Generates L1-L2 (always fresh) + L3 (snapshot, cached after first message)
      *
      * @param sessionId The session ID to load messages from
      * @return PromptData ready for provider transformation
@@ -35,7 +35,7 @@ object PromptManager {
         val commandExecutor = CommandExecutor(context)
         val userCommandProcessor = UserCommandProcessor(context)
 
-        // 1. Load session to determine type
+        // 1. Load session to determine type and get snapshot
         val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
         if (!sessionResult.isSuccess) {
             LogManager.aiPrompt("Failed to load session: ${sessionResult.error}", "ERROR")
@@ -47,6 +47,7 @@ object PromptManager {
 
         val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
         val sessionType = SessionType.valueOf(sessionTypeStr)
+        val existingSnapshot = sessionData["appStateSnapshot"] as? String
 
         // 2. Build Level 1 (DOC + limits) using PromptChunks
         LogManager.aiPrompt("Building Level 1 (DOC)", "DEBUG")
@@ -72,9 +73,34 @@ object PromptManager {
             level = "L2",
             sessionId = sessionId  // Enable schema deduplication
         )
-        val level2Content = formatLevel("Level 2: User Data", "", level2Result.promptResults)
 
-        // Note: Level 3 has been removed - AI will use APP_STATE command when needed
+        // Include intro only if L2 has data
+        val s = Strings.`for`(context = context)
+        val level2Intro = if (level2Result.promptResults.isNotEmpty()) {
+            s.shared("ai_prompt_level2_intro")
+        } else {
+            ""
+        }
+        val level2Content = formatLevel("Level 2: User Data", level2Intro, level2Result.promptResults)
+
+        // 4. Build/Load Level 3 (APP_STATE snapshot)
+        val level3Content = if (existingSnapshot != null) {
+            // Use existing snapshot (cached for this session)
+            LogManager.aiPrompt("Using existing APP_STATE snapshot (${existingSnapshot.length} chars)", "DEBUG")
+            formatSnapshotContent(existingSnapshot, context)
+        } else {
+            // First message: generate and store snapshot
+            LogManager.aiPrompt("Generating APP_STATE snapshot (first message)", "INFO")
+            val snapshot = generateAppStateSnapshot(context)
+
+            // Store in DB via AIStateRepository
+            val database = com.assistant.core.database.AppDatabase.getDatabase(context)
+            val aiDao = database.aiDao()
+            aiDao.updateAppStateSnapshot(sessionId, snapshot)
+
+            LogManager.aiPrompt("APP_STATE snapshot generated and stored (${snapshot.length} chars)", "INFO")
+            formatSnapshotContent(snapshot, context)
+        }
 
         // 5. Load session messages (raw, provider will transform them)
         val messagesData = sessionResult.data?.get("messages") as? List<*> ?: emptyList<Any>()
@@ -97,11 +123,12 @@ object PromptManager {
             LogManager.aiPrompt("Filtered $filtered messages from prompt", "DEBUG")
         }
 
-        LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, ${sessionMessages.size} messages", "INFO")
+        LogManager.aiPrompt("Prompt data built: L1=${estimateTokens(level1Content)} tokens, L2=${estimateTokens(level2Content)} tokens, L3=${estimateTokens(level3Content)} tokens, ${sessionMessages.size} messages", "INFO")
 
         return PromptData(
             level1Content = level1Content,
             level2Content = level2Content,
+            level3Content = level3Content,
             sessionMessages = sessionMessages
         )
     }
@@ -348,6 +375,82 @@ object PromptManager {
         return commands
     }
 
+    /**
+     * Generate APP_STATE snapshot (zones + tool instances)
+     * Called once on first message to capture initial state
+     *
+     * @return JSON string containing snapshot with timestamp
+     */
+    private suspend fun generateAppStateSnapshot(context: Context): String {
+        val coordinator = Coordinator(context)
+        val timestamp = System.currentTimeMillis()
+
+        // Execute APP_STATE command (uses include_config: false by default)
+        val appStateCommand = DataCommand(
+            id = "app_state_snapshot",
+            type = "APP_STATE",
+            params = mapOf("include_config" to false),
+            isRelative = false
+        )
+
+        val userCommandProcessor = UserCommandProcessor(context)
+        val executable = userCommandProcessor.processCommands(listOf(appStateCommand))
+
+        // Execute commands to get zones + tool instances
+        val result = coordinator.processUserAction(executable[0].resource + "." + executable[0].operation, executable[0].params)
+        val zonesData = result.data?.get("zones") ?: emptyList<Any>()
+
+        val result2 = coordinator.processUserAction(executable[1].resource + "." + executable[1].operation, executable[1].params)
+        val toolInstancesData = result2.data?.get("tool_instances") ?: emptyList<Any>()
+
+        // Build snapshot JSON
+        val snapshot = org.json.JSONObject().apply {
+            put("timestamp", timestamp)
+            put("zones", org.json.JSONArray(zonesData))
+            put("tool_instances", org.json.JSONArray(toolInstancesData))
+        }
+
+        return snapshot.toString()
+    }
+
+    /**
+     * Format snapshot JSON into readable prompt content with timestamp header
+     *
+     * @param snapshot JSON string containing snapshot data
+     * @return Formatted content for prompt
+     */
+    private fun formatSnapshotContent(snapshot: String, context: Context): String {
+        val s = Strings.`for`(context = context)
+        val snapshotObj = org.json.JSONObject(snapshot)
+        val timestamp = snapshotObj.getLong("timestamp")
+        val zones = snapshotObj.getJSONArray("zones")
+        val toolInstances = snapshotObj.getJSONArray("tool_instances")
+
+        // Format timestamp as readable date (use app's configured locale)
+        val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
+        val dateStr = dateFormat.format(java.util.Date(timestamp))
+
+        val sb = StringBuilder()
+        sb.appendLine("## ${s.shared("ai_prompt_level3_title")}")
+        sb.appendLine()
+        sb.appendLine(s.shared("ai_prompt_level3_snapshot_time").format(dateStr))
+        sb.appendLine(s.shared("ai_prompt_level3_snapshot_note"))
+        sb.appendLine()
+        sb.appendLine("### ${s.shared("ai_prompt_level3_zones_title")}")
+        sb.appendLine()
+        sb.appendLine("```json")
+        sb.appendLine(zones.toString(2))
+        sb.appendLine("```")
+        sb.appendLine()
+        sb.appendLine("### ${s.shared("ai_prompt_level3_tools_title")}")
+        sb.appendLine()
+        sb.appendLine("```json")
+        sb.appendLine(toolInstances.toString(2))
+        sb.appendLine("```")
+
+        return sb.toString()
+    }
 
     // === Utilities ===
 

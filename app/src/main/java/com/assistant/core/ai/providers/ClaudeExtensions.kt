@@ -27,16 +27,16 @@ internal data class FusedMessage(
  * Transform PromptData to Claude Messages API JSON format
  *
  * Applies Claude-specific formatting:
- * - System array with L1, L2 (each with cache_control breakpoint)
+ * - System array with L1, L2, L3 (each with cache_control breakpoint)
  * - Messages array with fused USER messages (multi-block for consecutive users)
- * - Cache_control on last block of last message (3rd breakpoint)
- *
- * Note: Level 3 has been removed - AI now uses APP_STATE command when needed
+ * - Current datetime appended at the end (always fresh, never cached)
+ * - Cache_control on last block of last history message (4th breakpoint)
  *
  * @param config Provider configuration (api_key, model, max_tokens, etc.)
+ * @param context Android context for i18n strings
  * @return JsonObject ready for Claude API /v1/messages endpoint
  */
-internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
+internal fun PromptData.toClaudeJson(config: JSONObject, context: android.content.Context): JsonObject {
     val model = config.getString("model")
     val maxTokens = config.optInt("max_tokens", 32000)
 
@@ -44,7 +44,7 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
 
-        // System array with 2 cache breakpoints (L1, L2)
+        // System array with 3 cache breakpoints (L1, L2, L3)
         putJsonArray("system") {
             // L1: System Documentation
             addJsonObject {
@@ -59,6 +59,15 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
             addJsonObject {
                 put("type", "text")
                 put("text", level2Content)
+                putJsonObject("cache_control") {
+                    put("type", "ephemeral")
+                }
+            }
+
+            // L3: APP_STATE Snapshot (frozen at first message)
+            addJsonObject {
+                put("type", "text")
+                put("text", level3Content)
                 putJsonObject("cache_control") {
                     put("type", "ephemeral")
                 }
@@ -103,6 +112,21 @@ internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject {
                         }
                     }
                 }
+            }
+
+            // Add current datetime as final message (always fresh, no cache)
+            val s = com.assistant.core.strings.Strings.`for`(context = context)
+            val now = System.currentTimeMillis()
+
+            // Use app's configured locale
+            val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
+            val dateStr = dateFormat.format(java.util.Date(now))
+            val datetimeText = s.shared("ai_prompt_current_datetime").format(dateStr, now)
+
+            addJsonObject {
+                put("role", "user")
+                put("content", datetimeText)
             }
         }
     }

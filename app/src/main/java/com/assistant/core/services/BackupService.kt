@@ -179,6 +179,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 if (session.tokensUsed != null) {
                                     put("tokens_used", session.tokensUsed)
                                 }
+                                if (session.appStateSnapshot != null) {
+                                    put("app_state_snapshot", session.appStateSnapshot)
+                                }
                             })
                         }
                     })
@@ -529,7 +532,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         lastActivity = item.getLong("last_activity"),
                         isActive = item.getBoolean("is_active"),
                         endReason = item.optString("end_reason", null),
-                        tokensUsed = if (item.has("tokens_used")) item.getInt("tokens_used") else null
+                        tokensUsed = if (item.has("tokens_used")) item.getInt("tokens_used") else null,
+                        appStateSnapshot = item.optString("app_state_snapshot", null)
                     )
                 )
             }
