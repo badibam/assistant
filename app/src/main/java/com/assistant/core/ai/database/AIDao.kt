@@ -129,8 +129,8 @@ interface AIDao {
     @Query("DELETE FROM automations WHERE id = :id")
     suspend fun deleteAutomationById(id: String)
 
-    @Query("UPDATE automations SET isEnabled = :enabled WHERE id = :id")
-    suspend fun setAutomationEnabled(id: String, enabled: Boolean)
+    @Query("UPDATE automations SET isEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setAutomationEnabled(id: String, enabled: Boolean, updatedAt: Long)
 
     @Query("UPDATE automations SET lastExecutionId = :executionId WHERE id = :id")
     suspend fun updateAutomationLastExecution(id: String, executionId: String)

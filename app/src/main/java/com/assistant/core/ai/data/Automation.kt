@@ -19,6 +19,7 @@ data class Automation(
     val providerId: String,                 // AI provider to use for execution
     val isEnabled: Boolean,
     val createdAt: Long,
+    val updatedAt: Long,                    // Last modification timestamp (used to skip missed executions after disable)
     val lastExecutionId: String?,           // ID of most recent execution session
     val executionHistory: List<String>      // IDs of execution sessions (newest first)
 )

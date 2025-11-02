@@ -116,6 +116,7 @@ fun ZoneScreen(
                     providerId = map["provider_id"] as String,
                     isEnabled = map["is_enabled"] as? Boolean ?: true,
                     createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                    updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
                     lastExecutionId = map["last_execution_id"] as? String,
                     executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                 )
@@ -487,6 +488,7 @@ fun ZoneScreen(
                                                 providerId = map["provider_id"] as String,
                                                 isEnabled = map["is_enabled"] as? Boolean ?: true,
                                                 createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                                                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
                                                 lastExecutionId = map["last_execution_id"] as? String,
                                                 executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                                             )
@@ -540,6 +542,7 @@ fun ZoneScreen(
                                 providerId = map["provider_id"] as String,
                                 isEnabled = map["is_enabled"] as? Boolean ?: true,
                                 createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
                                 lastExecutionId = map["last_execution_id"] as? String,
                                 executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                             )

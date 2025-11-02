@@ -27,6 +27,7 @@ data class AutomationEntity(
     val providerId: String,
     val isEnabled: Boolean,
     val createdAt: Long,
+    val updatedAt: Long,                    // Last modification timestamp (config change, enable/disable)
     val lastExecutionId: String?,
     val executionHistoryJson: String        // JSON array of execution session IDs
 )

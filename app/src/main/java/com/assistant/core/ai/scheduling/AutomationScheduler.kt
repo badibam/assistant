@@ -124,14 +124,22 @@ class AutomationScheduler(private val context: Context) {
                 val lastCompletedSession = aiDao.getLastCompletedAutomationSession(automation.id)
 
                 // Calculate next execution time
-                // Priority: last completed execution > schedule startDate > now
-                val fromTimestamp = lastCompletedSession?.scheduledExecutionTime
-                    ?: schedule.startDate
-                    ?: System.currentTimeMillis()
+                // Reference time = max(lastExecutionTime, updatedAt) to skip executions that occurred before config/schedule changes
+                // Priority: max(last completed execution, updatedAt) > schedule startDate > now
+                val lastExecutionTime = lastCompletedSession?.scheduledExecutionTime ?: 0L
+                val referenceTime = maxOf(lastExecutionTime, automation.updatedAt)
+
+                val fromTimestamp = if (referenceTime > 0) {
+                    referenceTime
+                } else {
+                    schedule.startDate ?: System.currentTimeMillis()
+                }
 
                 LogManager.aiSession(
                     "AutomationScheduler: Calculating next execution for automation ${automation.id} " +
                     "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
+                    "updatedAt=${formatTimestamp(automation.updatedAt)}, " +
+                    "referenceTime=${formatTimestamp(referenceTime)}, " +
                     "startDate=${schedule.startDate?.let { formatTimestamp(it) }}, " +
                     "fromTimestamp=${formatTimestamp(fromTimestamp)})",
                     "DEBUG"

@@ -417,6 +417,7 @@ private fun SeedMode(
                         providerId = automationMap["provider_id"] as String,
                         isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
                         createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
+                        updatedAt = (automationMap["updated_at"] as? Number)?.toLong() ?: 0L,
                         lastExecutionId = automationMap["last_execution_id"] as? String,
                         executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                     )
@@ -605,6 +606,7 @@ private fun SeedMode(
                                     providerId = automationMap["provider_id"] as String,
                                     isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
                                     createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
+                                    updatedAt = (automationMap["updated_at"] as? Number)?.toLong() ?: 0L,
                                     lastExecutionId = automationMap["last_execution_id"] as? String,
                                     executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                                 )

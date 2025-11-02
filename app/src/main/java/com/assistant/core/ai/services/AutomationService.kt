@@ -128,6 +128,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             providerId = providerId,
             isEnabled = params.optBoolean("is_enabled", true),
             createdAt = now,
+            updatedAt = now,
             lastExecutionId = null,
             executionHistoryJson = json.encodeToString(emptyList<String>())
         )
@@ -194,7 +195,8 @@ class AutomationService(private val context: Context) : ExecutableService {
             name = name,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
-            dismissOlderInstances = dismissOlderInstances
+            dismissOlderInstances = dismissOlderInstances,
+            updatedAt = System.currentTimeMillis()
         )
 
         dao.updateAutomation(updatedEntity)
@@ -331,7 +333,7 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        dao.setAutomationEnabled(automationId, enabled)
+        dao.setAutomationEnabled(automationId, enabled, System.currentTimeMillis())
 
         LogManager.service("Successfully set automation $automationId enabled=$enabled", "INFO")
 
@@ -392,6 +394,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             providerId = entity.providerId,
             isEnabled = entity.isEnabled,
             createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
             lastExecutionId = entity.lastExecutionId,
             executionHistory = json.decodeFromString<List<String>>(entity.executionHistoryJson)
         )
@@ -412,6 +415,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             "provider_id" to automation.providerId,
             "is_enabled" to automation.isEnabled,
             "created_at" to automation.createdAt,
+            "updated_at" to automation.updatedAt,
             "last_execution_id" to automation.lastExecutionId,
             "execution_history" to automation.executionHistory
         )

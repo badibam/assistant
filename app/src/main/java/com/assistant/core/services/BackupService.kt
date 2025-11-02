@@ -235,6 +235,7 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("provider_id", automation.providerId)
                                 put("is_enabled", automation.isEnabled)
                                 put("created_at", automation.createdAt)
+                                put("updated_at", automation.updatedAt)
                                 put("last_execution_id", automation.lastExecutionId)
                                 put("execution_history_json", automation.executionHistoryJson)
                             })
@@ -576,6 +577,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         providerId = item.getString("provider_id"),
                         isEnabled = item.getBoolean("is_enabled"),
                         createdAt = item.getLong("created_at"),
+                        updatedAt = System.currentTimeMillis(), // Always now on import - prevents executing missed periods
                         lastExecutionId = item.optString("last_execution_id", null),
                         executionHistoryJson = item.optString("execution_history_json", "[]")
                     )

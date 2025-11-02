@@ -45,7 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 15
+        const val VERSION = 16
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -506,6 +506,46 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 15 → 16: Add updatedAt column to automations table
+         *
+         * Problem: AutomationScheduler uses lastExecutionTime to calculate next execution
+         * - When automation is disabled then re-enabled, it may execute for all missed periods
+         * - No way to track when automation config/schedule was last modified
+         *
+         * Solution: Add updatedAt timestamp to track last modification
+         * - Set on create, update, enable, disable operations
+         * - AutomationScheduler uses max(lastExecutionTime, updatedAt) as reference
+         * - Skips executions that would have occurred before last modification
+         * - For existing automations at migration time: set to now (safe default)
+         */
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 15->16: Starting - Adding updatedAt column to automations", "INFO")
+
+                // 1. Add updatedAt column with default value 0
+                database.execSQL("""
+                    ALTER TABLE automations
+                    ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0
+                """)
+
+                // 2. Set updatedAt = now for existing automations
+                // Rationale: Safer to start fresh from migration time than risk executing missed periods
+                val now = System.currentTimeMillis()
+                database.execSQL("""
+                    UPDATE automations
+                    SET updatedAt = $now
+                    WHERE updatedAt = 0
+                """)
+
+                val cursor = database.query("SELECT COUNT(*) FROM automations")
+                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                cursor.close()
+
+                LogManager.database("MIGRATION 15->16: Completed - Updated $count automations with updatedAt = now", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -519,7 +559,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_11_12,
                     MIGRATION_12_13,
                     MIGRATION_13_14,
-                    MIGRATION_14_15
+                    MIGRATION_14_15,
+                    MIGRATION_15_16
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
