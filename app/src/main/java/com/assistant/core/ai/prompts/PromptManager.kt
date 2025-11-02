@@ -398,16 +398,32 @@ object PromptManager {
 
         // Execute commands to get zones + tool instances
         val result = coordinator.processUserAction(executable[0].resource + "." + executable[0].operation, executable[0].params)
-        val zonesData = result.data?.get("zones") ?: emptyList<Any>()
+        val zonesData = result.data?.get("zones") as? List<*> ?: emptyList<Any>()
 
         val result2 = coordinator.processUserAction(executable[1].resource + "." + executable[1].operation, executable[1].params)
-        val toolInstancesData = result2.data?.get("tool_instances") ?: emptyList<Any>()
+        val toolInstancesData = result2.data?.get("tool_instances") as? List<*> ?: emptyList<Any>()
 
-        // Build snapshot JSON
+        // Build snapshot JSON - convert Kotlin collections to JSONArray manually
+        val zonesArray = org.json.JSONArray()
+        zonesData.forEach { zone ->
+            if (zone is Map<*, *>) {
+                @Suppress("UNCHECKED_CAST")
+                zonesArray.put(com.assistant.core.utils.JsonUtils.toJSONObject(zone as Map<String, Any?>))
+            }
+        }
+
+        val toolInstancesArray = org.json.JSONArray()
+        toolInstancesData.forEach { toolInstance ->
+            if (toolInstance is Map<*, *>) {
+                @Suppress("UNCHECKED_CAST")
+                toolInstancesArray.put(com.assistant.core.utils.JsonUtils.toJSONObject(toolInstance as Map<String, Any?>))
+            }
+        }
+
         val snapshot = org.json.JSONObject().apply {
             put("timestamp", timestamp)
-            put("zones", org.json.JSONArray(zonesData))
-            put("tool_instances", org.json.JSONArray(toolInstancesData))
+            put("zones", zonesArray)
+            put("tool_instances", toolInstancesArray)
         }
 
         return snapshot.toString()

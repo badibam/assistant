@@ -773,6 +773,10 @@ private fun createPointerConfig(
                 }
                 // Custom date (always absolute)
                 timestampSelection.minCustomDateTime?.let { put("minCustomDateTime", it) }
+                // NOW marker
+                if (timestampSelection.minIsNow) {
+                    put("minIsNow", true)
+                }
 
                 // Store max period (end of range)
                 timestampSelection.maxPeriodType?.let { put("maxPeriodType", it.name) }
@@ -793,6 +797,10 @@ private fun createPointerConfig(
                 }
                 // Custom date (always absolute)
                 timestampSelection.maxCustomDateTime?.let { put("maxCustomDateTime", it) }
+                // NOW marker
+                if (timestampSelection.maxIsNow) {
+                    put("maxIsNow", true)
+                }
             })
         }
         if (description.isNotBlank()) put("description", description)
