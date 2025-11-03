@@ -413,7 +413,7 @@ fun TranscribableTextField(
             // Retry button (if failed)
             if (transcriptionStatus == TranscriptionStatus.FAILED) {
                 UI.Button(
-                    type = ButtonType.SECONDARY,
+                    type = ButtonType.DANGER,
                     size = Size.S,
                     state = ComponentState.NORMAL,
                     onClick = {

@@ -133,9 +133,9 @@ enum class DialogType {
  * Simplified button types
  */
 enum class ButtonType {
-    PRIMARY,    // Primary button (e.g., save)
-    SECONDARY,  // Secondary button (e.g., cancel)
-    DEFAULT     // Neutral button (all buttons with icons)
+    PRIMARY,    // Primary button (e.g., save, create, confirm)
+    DANGER,     // Destructive actions (e.g., delete, stop)
+    DEFAULT     // Neutral button (e.g., cancel, back)
 }
 
 /**

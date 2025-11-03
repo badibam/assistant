@@ -101,8 +101,10 @@ object DefaultTheme : ThemeContract {
             "default_light" -> lightColorScheme(
                 primary = Color(0xFF7C9DD6),        // Bleu pervenche vif mais doux
                 onPrimary = Color(0xFFFFFFFF),      // Blanc
-                secondary = Color(0xFFE89BA0),      // Rose corail vivant
-                onSecondary = Color(0xFF4A2428),    // Bordeaux foncé
+                secondary = Color(0xFFB08BBE),      // Mauve moyen (accent décoratif)
+                onSecondary = Color(0xFF2E2438),    // Violet très foncé
+                tertiary = Color(0xFFF5A47A),       // Orange doux (warning)
+                onTertiary = Color(0xFF4A2E1A),     // Brun foncé
                 surface = Color(0xFFFAF8F5),        // Crème très léger
                 onSurface = Color(0xFF2E2C3A),      // Gris foncé tirant vers violet
                 surfaceVariant = Color(0xFFEBE7F2), // Lavande très pâle
@@ -117,8 +119,10 @@ object DefaultTheme : ThemeContract {
             "default_dark" -> darkColorScheme(
                 primary = Color(0xFF9BB8E8),        // Bleu ciel doux mais vif
                 onPrimary = Color(0xFF1B2A3F),      // Bleu marine profond
-                secondary = Color(0xFFF5A3A3),      // Rose saumon lumineux
-                onSecondary = Color(0xFF3F2426),    // Bordeaux très foncé
+                secondary = Color(0xFFC9A8D8),      // Mauve lumineux (accent décoratif)
+                onSecondary = Color(0xFF2E1F3A),    // Violet très foncé
+                tertiary = Color(0xFFFFB88C),       // Orange lumineux (warning)
+                onTertiary = Color(0xFF3F2A1A),     // Brun très foncé
                 surface = Color(0xFF282433),        // Violet grisé foncé
                 onSurface = Color(0xFFE8E2EE),      // Lavande très pâle
                 surfaceVariant = Color(0xFF3D3848), // Violet moyen
@@ -165,18 +169,18 @@ object DefaultTheme : ThemeContract {
     private fun getButtonConfig(size: Size, type: ButtonType): ButtonConfig {
         val (containerColor, contentColor, border) = when (type) {
             ButtonType.PRIMARY -> Triple(
-                CurrentTheme.getCurrentColorScheme().primary, 
-                CurrentTheme.getCurrentColorScheme().onPrimary, 
+                CurrentTheme.getCurrentColorScheme().primary,
+                CurrentTheme.getCurrentColorScheme().onPrimary,
                 null
             )
-            ButtonType.SECONDARY -> Triple(
-                CurrentTheme.getCurrentColorScheme().errorContainer, 
-                CurrentTheme.getCurrentColorScheme().onErrorContainer, 
+            ButtonType.DANGER -> Triple(
+                CurrentTheme.getCurrentColorScheme().errorContainer,
+                CurrentTheme.getCurrentColorScheme().onErrorContainer,
                 null
             )
             ButtonType.DEFAULT -> Triple(
-                CurrentTheme.getCurrentColorScheme().surfaceVariant, 
-                CurrentTheme.getCurrentColorScheme().onSurfaceVariant, 
+                CurrentTheme.getCurrentColorScheme().surfaceVariant,
+                CurrentTheme.getCurrentColorScheme().onSurfaceVariant,
                 null
             )
         }
@@ -351,8 +355,8 @@ object DefaultTheme : ThemeContract {
             // PRIMARY: Actions critiques/importantes
             ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START -> ButtonType.PRIMARY
 
-            // SECONDARY: Actions destructives/dangereuses avec confirmation
-            ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.SECONDARY
+            // DANGER: Actions destructives/dangereuses avec confirmation
+            ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
             ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME -> ButtonType.DEFAULT
@@ -641,8 +645,8 @@ object DefaultTheme : ThemeContract {
             } else null,
             containerColor = when (type) {
                 FeedbackType.SUCCESS -> CurrentTheme.getCurrentColorScheme().primary
-                FeedbackType.ERROR -> CurrentTheme.getCurrentColorScheme().onErrorContainer
-                FeedbackType.WARNING -> CurrentTheme.getCurrentColorScheme().secondary
+                FeedbackType.ERROR -> CurrentTheme.getCurrentColorScheme().error
+                FeedbackType.WARNING -> CurrentTheme.getCurrentColorScheme().tertiary
                 FeedbackType.INFO -> CurrentTheme.getCurrentColorScheme().surfaceVariant
             }
         ) {

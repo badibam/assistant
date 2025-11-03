@@ -157,7 +157,7 @@ fun AutomationCard(
                 if (queuedAutomationSession != null) {
                     val scope = rememberCoroutineScope()
                     UI.Button(
-                        type = ButtonType.SECONDARY,
+                        type = ButtonType.DANGER,
                         size = Size.S,
                         onClick = {
                             scope.launch {

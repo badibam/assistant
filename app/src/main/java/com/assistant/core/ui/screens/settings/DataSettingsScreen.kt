@@ -225,7 +225,7 @@ fun DataSettingsScreen(
                     type = TextType.SUBTITLE
                 )
                 UI.Button(
-                    type = ButtonType.SECONDARY,
+                    type = ButtonType.DANGER,
                     size = Size.M,
                     state = if (isLoading) ComponentState.DISABLED else ComponentState.NORMAL,
                     onClick = {
