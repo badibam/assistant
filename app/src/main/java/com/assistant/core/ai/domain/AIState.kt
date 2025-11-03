@@ -24,6 +24,9 @@ data class AIState(
     /** Type of current session (CHAT, AUTOMATION, SEED), null if IDLE */
     val sessionType: SessionType?,
 
+    /** Automation ID (only for AUTOMATION sessions), null otherwise */
+    val automationId: String? = null,
+
     /**
      * End reason when phase == COMPLETED.
      * Used to persist reason in DB before clearing state.

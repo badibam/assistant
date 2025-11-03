@@ -359,7 +359,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
-            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME -> ButtonType.DEFAULT
+            ButtonAction.CANCEL, ButtonAction.BACK, ButtonAction.REFRESH, ButtonAction.RESET, ButtonAction.UP, ButtonAction.DOWN, ButtonAction.LEFT, ButtonAction.RIGHT, ButtonAction.INTERRUPT, ButtonAction.PAUSE, ButtonAction.RESUME, ButtonAction.VIEW -> ButtonType.DEFAULT
         }
     }
     
@@ -392,6 +392,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.PAUSE -> s.shared("action_pause")
             ButtonAction.RESUME -> s.shared("action_resume")
             ButtonAction.START -> s.shared("action_start")
+            ButtonAction.VIEW -> s.shared("action_view")
         }
     }
 
@@ -421,6 +422,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.PAUSE -> "⏸"     // Pause symbol
             ButtonAction.RESUME -> "▶"    // Play symbol
             ButtonAction.START -> "▶"     // Play symbol
+            ButtonAction.VIEW -> "👁"      // Eye symbol
         }
     }
     

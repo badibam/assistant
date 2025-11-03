@@ -39,6 +39,7 @@
     <string name="action_pause">Pause</string>
     <string name="action_resume">Reprendre</string>
     <string name="action_start">Démarrer</string>
+    <string name="action_view">Voir</string>
 
     <!-- AI Interface - Composer and Enrichments -->
     <string name="ai_composer_placeholder">Écris ton message...</string>
@@ -253,6 +254,16 @@
     <string name="ai_phase_preparing_continuation">Préparation continuation...</string>
     <string name="ai_phase_awaiting_closure">⏱ Fermeture dans 5s...</string>
     <string name="ai_phase_closed">Session terminée</string>
+
+    <!-- AI Session End Reasons -->
+    <string name="ai_end_reason_completed">Terminé</string>
+    <string name="ai_end_reason_limit_reached">Limite atteinte</string>
+    <string name="ai_end_reason_timeout">Délai dépassé</string>
+    <string name="ai_end_reason_error">Erreur</string>
+    <string name="ai_end_reason_cancelled">Annulé</string>
+    <string name="ai_end_reason_interrupted">Interrompu</string>
+    <string name="ai_end_reason_network_error">Erreur réseau</string>
+    <string name="ai_end_reason_suspended">Suspendu</string>
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">Round IA interrompu</string>
