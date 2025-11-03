@@ -1,5 +1,22 @@
 # AutomationScreen - Décisions d'implémentation
 
+## État d'avancement (mis à jour : 2025-01-03)
+
+### ✅ COMPLÉTÉ
+- **Section 1** : Corrections système préalables (couleurs, ButtonType, ButtonAction.VIEW, AIState.automationId, strings i18n)
+- **Section 2.4** : DataChangeNotifier - AISessionsChanged event
+- **Section 2.5** : Services backend (AISessionService.list_sessions_for_automation, AutomationScheduler.getNextExecutionForAutomation)
+- **Section 5** : Helpers (FormatUtils, PhaseUtils, AIFormatUtils)
+- **Section 8** : Migration DB (tokensJson + costJson, update incrémentale, SessionCostCalculator modernisé)
+
+### 🚧 EN COURS / À FAIRE
+- **Section 2.1-2.3** : UI AutomationScreen (filtres, liste, pagination)
+- **Section 3** : UI ExecutionDetailScreen (messages read-only)
+- ExecutionCard composable
+- Navigation ButtonAction.VIEW dans AutomationCard
+
+---
+
 ## 1. Corrections système préalables (COMPLÉTÉES)
 
 ### 1.1 Système de couleurs Material Theme
@@ -395,17 +412,74 @@ fun calculateSessionCost(tokensUsedJson: String): Double
 
 ## 7. Checklist implémentation
 
-- [ ] Ajouter DataChangeEvent.AISessionsChanged
-- [ ] Implémenter AISessionService.list_sessions_for_automation
-- [ ] Implémenter AutomationScheduler.getNextExecutionForAutomation
-- [ ] Créer FormatUtils helpers
-- [ ] Créer PhaseUtils extensions
+**Backend/Infrastructure (✅ COMPLÉTÉ):**
+- [x] Ajouter DataChangeEvent.AISessionsChanged
+- [x] Implémenter AISessionService.list_sessions_for_automation
+- [x] Implémenter AutomationScheduler.getNextExecutionForAutomation
+- [x] Créer FormatUtils helpers (core/utils)
+- [x] Créer AIFormatUtils helpers (core/ai/utils)
+- [x] Créer PhaseUtils extensions (core/ai/utils)
+- [x] Migration DB: tokensJson + costJson (v16 → v17)
+- [x] Update incrémentale tokens/cost dans AIEventProcessor
+- [x] Moderniser SessionCostCalculator (utilise tokensJson/costJson)
+- [x] Tests compilation backend
+
+**UI (🚧 À FAIRE):**
 - [ ] Créer ExecutionCard composable
 - [ ] Implémenter AutomationScreen (filtres + liste + pagination)
 - [ ] Implémenter ExecutionDetailScreen (messages read-only)
 - [ ] Ajouter ButtonAction.VIEW dans AutomationCard
-- [ ] Tests compilation
+- [ ] Tests compilation UI
 - [ ] Tests UI (filtres, navigation, temps réel)
+
+## 8. Migration DB: tokensJson + costJson (✅ COMPLÉTÉE)
+
+### 8.1 Problème
+`tokensUsed: Int?` ne capture pas la réalité des tokens:
+- Pas de distinction entre uncached input, cache write, cache read, output
+- Impossible de calculer les coûts précis
+- Recalcul depuis messages à chaque affichage (lent)
+
+### 8.2 Solution
+**Migration v16 → v17:**
+- DROP `tokensUsed: Int?`
+- ADD `tokensJson: String?` - Token breakdown (toujours disponible depuis API)
+- ADD `costJson: String?` - Cost breakdown (si prix modèle disponible)
+
+**Structure tokensJson:**
+```json
+{
+  "totalUncachedInputTokens": 15234,
+  "totalCacheWriteTokens": 8932,
+  "totalCacheReadTokens": 45231,
+  "totalOutputTokens": 2341
+}
+```
+
+**Structure costJson:**
+```json
+{
+  "modelId": "claude-sonnet-3-5-20240620",
+  "inputCost": 0.0457,
+  "cacheWriteCost": 0.0268,
+  "cacheReadCost": 0.0045,
+  "outputCost": 0.0351,
+  "totalCost": 0.1121
+}
+```
+
+### 8.3 Update incrémentale
+**AIEventProcessor.updateSessionTokensAndCost():**
+- Appelé après chaque réponse AI (même si parsing échoue - tokens comptés quand même)
+- Charge tokens actuels depuis DB
+- Additionne nouveaux tokens
+- Calcule coûts via ModelPriceManager (si prix disponible)
+- Sauvegarde tokensJson + costJson
+
+**Avantages:**
+- Affichage instantané (pas de recalcul)
+- Historique coût préservé (même si prix changent plus tard)
+- 100% des tokens capturés (même erreurs format)
 
 ---
 

@@ -49,6 +49,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "get_active_session" -> getActiveSession(params, token)
                 "stop_active_session" -> stopActiveSession(params, token)
                 "list_sessions" -> listSessions(params, token)
+                "list_sessions_for_automation" -> listSessionsForAutomation(params, token)
                 "update_session" -> updateSession(params, token)
                 "delete_session" -> deleteSession(params, token)
                 "set_active_session" -> setActiveSession(params, token)
@@ -241,6 +242,80 @@ class AISessionService(private val context: Context) : ExecutableService {
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to list sessions: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_list_sessions").format(e.message ?: ""))
+        }
+    }
+
+    private suspend fun listSessionsForAutomation(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val automationId = params.optString("automationId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_automation_id_required"))
+        val limit = params.optInt("limit", 10)
+        val page = params.optInt("page", 1)
+        val startTime = if (params.has("startTime")) params.getLong("startTime") else null
+        val endTime = if (params.has("endTime")) params.getLong("endTime") else null
+
+        LogManager.aiSession("Listing sessions for automation: automationId=$automationId, limit=$limit, page=$page, startTime=$startTime, endTime=$endTime", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Calculate offset for pagination (page 1 = offset 0)
+            val offset = (page - 1) * limit
+
+            // Get paginated sessions
+            val sessionEntities = dao.getSessionsForAutomationPaginated(
+                automationId = automationId,
+                limit = limit,
+                offset = offset,
+                startTime = startTime,
+                endTime = endTime
+            )
+
+            // Get total count for pagination
+            val totalEntries = dao.countSessionsForAutomation(
+                automationId = automationId,
+                startTime = startTime,
+                endTime = endTime
+            )
+
+            val totalPages = if (totalEntries == 0) 0 else ((totalEntries - 1) / limit) + 1
+
+            LogManager.aiSession("Found ${sessionEntities.size} sessions for automation $automationId (total: $totalEntries, page: $page/$totalPages)", "DEBUG")
+
+            // Map sessions to result format including all necessary fields for ExecutionCard
+            val sessions = sessionEntities.map { session ->
+                mapOf(
+                    "id" to session.id,
+                    "name" to session.name,
+                    "type" to session.type.name,
+                    "automationId" to session.automationId,
+                    "scheduledExecutionTime" to session.scheduledExecutionTime,
+                    "providerId" to session.providerId,
+                    "providerSessionId" to session.providerSessionId,
+                    "createdAt" to session.createdAt,
+                    "lastActivity" to session.lastActivity,
+                    "isActive" to session.isActive,
+                    "phase" to session.phase,
+                    "endReason" to session.endReason,
+                    "totalRoundtrips" to session.totalRoundtrips,
+                    "tokensJson" to session.tokensJson,
+                    "costJson" to session.costJson
+                )
+            }
+
+            return OperationResult.success(mapOf(
+                "sessions" to sessions,
+                "pagination" to mapOf(
+                    "currentPage" to page,
+                    "totalPages" to totalPages,
+                    "totalEntries" to totalEntries
+                )
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to list sessions for automation: ${e.message}", "ERROR", e)
             return OperationResult.error(s.shared("ai_error_list_sessions").format(e.message ?: ""))
         }
     }
@@ -687,43 +762,11 @@ class AISessionService(private val context: Context) : ExecutableService {
             val session = database.aiDao().getSession(sessionId)
                 ?: return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
 
-            // Get all messages for session
-            val messages = database.aiDao().getMessagesForSession(sessionId)
-
-            // Get provider configuration to extract model ID
-            val coordinator = Coordinator(context)
-            val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
-                "providerId" to session.providerId
-            ))
-
-            if (!configResult.isSuccess) {
-                LogManager.aiSession("Failed to get provider config for ${session.providerId}: ${configResult.error}", "ERROR")
-                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
-            }
-
-            val providerConfigJson = configResult.data?.get("config") as? String
-            if (providerConfigJson.isNullOrEmpty()) {
-                LogManager.aiSession("Provider config is empty for ${session.providerId}", "ERROR")
-                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
-            }
-
-            // Extract model ID from config JSON
-            val configJson = JSONObject(providerConfigJson)
-            val modelId = configJson.optString("model").takeIf { it.isNotEmpty() }
-            if (modelId == null) {
-                LogManager.aiSession("Model ID not found in provider config for ${session.providerId}", "ERROR")
-                return OperationResult.error(s.shared("error_model_id_extraction_failed"))
-            }
-
-            // Calculate cost using SessionCostCalculator
-            val cost = SessionCostCalculator.calculateSessionCost(
-                messages = messages,
-                providerId = session.providerId,
-                modelId = modelId
-            )
+            // Calculate cost using stored tokens/cost (fast path)
+            val cost = SessionCostCalculator.calculateSessionCost(session)
 
             if (cost == null) {
-                LogManager.aiSession("Cost calculation failed for session $sessionId", "ERROR")
+                LogManager.aiSession("Cost calculation failed for session $sessionId (tokensJson not available)", "ERROR")
                 return OperationResult.error(s.shared("error_cost_calculation_failed"))
             }
 

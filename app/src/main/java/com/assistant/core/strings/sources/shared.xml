@@ -191,6 +191,7 @@
     <string name="ai_error_param_provider_id_required">Paramètre obligatoire: providerId</string>
     <string name="ai_error_param_session_id_required">Paramètre obligatoire: sessionId</string>
     <string name="ai_error_param_sender_required">Paramètre obligatoire: sender</string>
+    <string name="ai_error_param_automation_id_required">Paramètre obligatoire: automationId</string>
     <string name="ai_error_invalid_sender">Expéditeur invalide: %1$s</string>
 
     <!-- AI Errors - Messages -->
@@ -290,6 +291,17 @@
     <string name="error_model_prices_fetch_failed">Échec du téléchargement des prix des modèles</string>
     <string name="error_model_price_not_found">Prix du modèle introuvable</string>
     <string name="error_model_id_extraction_failed">Échec de l\'extraction de l\'ID du modèle</string>
+
+    <!-- Time formatting - Relative time -->
+    <string name="time_now">maintenant</string>
+    <string name="time_in_seconds">dans %1$ds</string>
+    <string name="time_in_minutes">dans %1$d min</string>
+    <string name="time_in_hours">dans %1$dh</string>
+    <string name="time_in_days">dans %1$d jours</string>
+    <string name="time_ago_seconds">il y a %1$ds</string>
+    <string name="time_ago_minutes">il y a %1$d min</string>
+    <string name="time_ago_hours">il y a %1$dh</string>
+    <string name="time_ago_days">il y a %1$d jours</string>
 
     <!-- Labels de formulaire -->
     <string name="label_zone_name">Nom de la zone</string>

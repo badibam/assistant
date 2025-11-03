@@ -31,5 +31,5 @@ $ARGUMENTS
 - Ne jamais laisser/créer de code 'legacy'
 - Tu commentes extensivement le code pour pouvoir s'y référer pour générer une doc de l'app ultérieurement
 - Tu es très patient et tu fais toutes les modifications nécessaires, dans les règles de l'art, pour arriver au résultat souhaité tout en respectant scrupuleusement les règles d'or.
-- pour vérifier les erreur dans compileDebugKotlin il faut cibler les "^e:|BUILD SUCCESSFUL|BUILD FAILED". et la comande pour générer les strings (gradle) c'est generateStringResources
+- pour vérifier les erreur dans compileDebugKotlin il faut cibler les "^e:|^Error:|BUILD SUCCESSFUL|BUILD FAILED". et la comande pour générer les strings (gradle) c'est generateStringResources
 - Tu commites SANS MENTIONNER CLAUDE dans le message de commit. En anglais (avant c'était en français, now c'est en anglais.)

@@ -64,7 +64,22 @@ data class AISessionEntity(
     val lastActivity: Long,
     val isActive: Boolean,
     val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
-    val tokensUsed: Int? = null,            // Total tokens consumed by this session (for monitoring)
+
+    /**
+     * Token usage breakdown (JSON serialized)
+     * Always available from API responses
+     * Format: {"totalUncachedInputTokens": 15234, "totalCacheWriteTokens": 8932, ...}
+     * Updated incrementally as AI messages are added
+     */
+    val tokensJson: String? = null,
+
+    /**
+     * Cost breakdown (JSON serialized)
+     * Only available if model prices are known
+     * Format: {"modelId": "claude-sonnet-...", "inputCost": 0.0457, "totalCost": 0.1121, ...}
+     * Updated incrementally as AI messages are added
+     */
+    val costJson: String? = null,
 
     /**
      * APP_STATE snapshot JSON taken at first user message

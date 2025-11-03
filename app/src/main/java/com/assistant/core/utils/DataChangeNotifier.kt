@@ -79,6 +79,17 @@ object DataChangeNotifier {
         LogManager.coordination("DataChangeNotifier: app config changed", "DEBUG")
         _changes.tryEmit(DataChangeEvent.AppConfigChanged)
     }
+
+    /**
+     * Notify that AI sessions have changed (created, updated, completed)
+     * Triggers AutomationScreen reload for the specific automation or all automations
+     *
+     * @param automationId ID of the automation whose sessions changed, or null for all automations
+     */
+    fun notifyAISessionsChanged(automationId: String? = null) {
+        LogManager.coordination("DataChangeNotifier: AI sessions changed for automation ${automationId ?: "all"}", "DEBUG")
+        _changes.tryEmit(DataChangeEvent.AISessionsChanged(automationId))
+    }
 }
 
 /**
@@ -108,4 +119,10 @@ sealed class DataChangeEvent {
      * App configuration has changed
      */
     object AppConfigChanged : DataChangeEvent()
+
+    /**
+     * AI sessions have changed (created, updated, completed)
+     * @param automationId ID of the automation whose sessions changed, or null for all automations
+     */
+    data class AISessionsChanged(val automationId: String?) : DataChangeEvent()
 }

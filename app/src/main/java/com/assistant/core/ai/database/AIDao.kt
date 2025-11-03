@@ -40,8 +40,8 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET endReason = :endReason WHERE id = :sessionId")
     suspend fun updateSessionEndReason(sessionId: String, endReason: String?)
 
-    @Query("UPDATE ai_sessions SET tokensUsed = :tokensUsed WHERE id = :sessionId")
-    suspend fun updateSessionTokens(sessionId: String, tokensUsed: Int)
+    @Query("UPDATE ai_sessions SET tokensJson = :tokensJson, costJson = :costJson WHERE id = :sessionId")
+    suspend fun updateSessionTokensAndCost(sessionId: String, tokensJson: String?, costJson: String?)
 
     @Query("UPDATE ai_sessions SET appStateSnapshot = :snapshot WHERE id = :sessionId")
     suspend fun updateAppStateSnapshot(sessionId: String, snapshot: String)
@@ -170,4 +170,43 @@ interface AIDao {
         LIMIT 1
     """)
     suspend fun getLastCompletedAutomationSession(automationId: String): AISessionEntity?
+
+    /**
+     * Get sessions for automation with pagination and optional time filtering
+     * Returns sessions ordered by scheduledExecutionTime DESC (most recent first)
+     * Used by AutomationScreen to display execution history
+     */
+    @Query("""
+        SELECT * FROM ai_sessions
+        WHERE automationId = :automationId
+          AND type = 'AUTOMATION'
+          AND (:startTime IS NULL OR createdAt >= :startTime)
+          AND (:endTime IS NULL OR createdAt <= :endTime)
+        ORDER BY scheduledExecutionTime DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun getSessionsForAutomationPaginated(
+        automationId: String,
+        limit: Int,
+        offset: Int,
+        startTime: Long?,
+        endTime: Long?
+    ): List<AISessionEntity>
+
+    /**
+     * Count sessions for automation with optional time filtering
+     * Used by AutomationScreen for pagination calculation
+     */
+    @Query("""
+        SELECT COUNT(*) FROM ai_sessions
+        WHERE automationId = :automationId
+          AND type = 'AUTOMATION'
+          AND (:startTime IS NULL OR createdAt >= :startTime)
+          AND (:endTime IS NULL OR createdAt <= :endTime)
+    """)
+    suspend fun countSessionsForAutomation(
+        automationId: String,
+        startTime: Long?,
+        endTime: Long?
+    ): Int
 }

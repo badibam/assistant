@@ -1,9 +1,13 @@
 package com.assistant.core.ai.utils
 
 import android.content.Context
+import com.assistant.core.ai.data.SessionCostBreakdown
+import com.assistant.core.ai.data.SessionTokens
+import com.assistant.core.ai.database.AISessionEntity
 import com.assistant.core.ai.database.SessionMessageEntity
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import org.json.JSONObject
 
 /**
  * Session cost calculation data
@@ -19,24 +23,6 @@ data class SessionCost(
     val cacheReadCost: Double?,
     val outputCost: Double?,
     val totalCost: Double?,                 // null if price unavailable
-    val priceAvailable: Boolean
-)
-
-/**
- * Message cost calculation data (same structure as SessionCost but for a single message)
- */
-data class MessageCost(
-    val messageId: String,
-    val modelId: String,
-    val inputTokens: Int,                   // Uncached input tokens (from API)
-    val cacheWriteTokens: Int,              // Cache write tokens
-    val cacheReadTokens: Int,               // Cache read tokens
-    val outputTokens: Int,                  // Output tokens
-    val inputCost: Double?,
-    val cacheWriteCost: Double?,
-    val cacheReadCost: Double?,
-    val outputCost: Double?,
-    val totalCost: Double?,
     val priceAvailable: Boolean
 )
 
@@ -60,43 +46,70 @@ data class MessageCost(
 object SessionCostCalculator {
 
     /**
-     * Calculate total cost for a session
+     * Calculate total cost for a session using stored tokensJson and costJson
      *
-     * @param messages List of session messages (AI messages have token data, USER/SYSTEM have zeros)
-     * @param providerId Provider identifier (e.g., "claude", "openai")
-     * @param modelId Provider-specific model ID
-     * @return SessionCost with totals and costs, or null if critical error
+     * **Fast path**: Uses pre-calculated data from AISessionEntity if available (tokensJson + costJson).
+     * This avoids reloading messages and recalculating costs for every display.
+     *
+     * **Fallback**: If tokensJson is null (old sessions before migration), returns null.
+     * In this case, caller should use the messages-based overload to calculate from scratch.
+     *
+     * @param session AISessionEntity with tokensJson and costJson fields
+     * @return SessionCost if tokens available, null if needs fallback calculation
      */
-    fun calculateSessionCost(
-        messages: List<SessionMessageEntity>,
-        providerId: String,
-        modelId: String
-    ): SessionCost? {
+    fun calculateSessionCost(session: AISessionEntity): SessionCost? {
         try {
-            LogManager.aiService("SessionCostCalculator.calculateSessionCost() - Calculating for provider=$providerId, model=$modelId, messages=${messages.size}")
+            // Fast path: use stored tokens and costs
+            val tokensJson = session.tokensJson
+            val costJson = session.costJson
 
-            // Sum token usage across all AI messages
-            // Note: inputTokens from API are already uncached (API total = uncached + cache_write + cache_read)
-            val totalUncachedInputTokens = messages.sumOf { it.inputTokens }
-            val totalCacheWriteTokens = messages.sumOf { it.cacheWriteTokens }
-            val totalCacheReadTokens = messages.sumOf { it.cacheReadTokens }
-            val totalOutputTokens = messages.sumOf { it.outputTokens }
+            if (tokensJson == null) {
+                LogManager.aiService("SessionCostCalculator.calculateSessionCost(AISessionEntity) - No tokensJson, needs fallback", "DEBUG")
+                return null // Caller should use messages-based overload
+            }
 
-            LogManager.aiService("SessionCostCalculator - Token totals: uncachedInput=$totalUncachedInputTokens, cacheWrite=$totalCacheWriteTokens, cacheRead=$totalCacheReadTokens, output=$totalOutputTokens", "DEBUG")
+            // Parse tokens
+            val tokens = SessionTokens.fromJson(tokensJson)
 
-            // Get model pricing
-            val modelPrice = ModelPriceManager.getModelPrice(providerId, modelId)
+            // Parse costs if available
+            val costBreakdown = SessionCostBreakdown.fromJson(costJson)
 
-            LogManager.aiService("SessionCostCalculator - ModelPrice: inputCost=${modelPrice?.inputCostPerToken}, cacheWriteCost=${modelPrice?.cacheWriteCostPerToken}, cacheReadCost=${modelPrice?.cacheReadCostPerToken}, outputCost=${modelPrice?.outputCostPerToken}", "DEBUG")
+            if (costBreakdown != null) {
+                // Full cost data available
+                LogManager.aiService(
+                    "SessionCostCalculator.calculateSessionCost(AISessionEntity) - Using stored data: " +
+                    "tokens=${tokens.totalUncachedInputTokens + tokens.totalCacheWriteTokens + tokens.totalCacheReadTokens + tokens.totalOutputTokens}, " +
+                    "cost=\$${String.format("%.3f", costBreakdown.totalCost)}",
+                    "DEBUG"
+                )
 
-            if (modelPrice == null) {
-                LogManager.aiService("SessionCostCalculator - Model price not available for $providerId/$modelId", "WARN")
                 return SessionCost(
-                    modelId = modelId,
-                    totalUncachedInputTokens = totalUncachedInputTokens,
-                    totalCacheWriteTokens = totalCacheWriteTokens,
-                    totalCacheReadTokens = totalCacheReadTokens,
-                    totalOutputTokens = totalOutputTokens,
+                    modelId = costBreakdown.modelId,
+                    totalUncachedInputTokens = tokens.totalUncachedInputTokens,
+                    totalCacheWriteTokens = tokens.totalCacheWriteTokens,
+                    totalCacheReadTokens = tokens.totalCacheReadTokens,
+                    totalOutputTokens = tokens.totalOutputTokens,
+                    inputCost = costBreakdown.inputCost,
+                    cacheWriteCost = costBreakdown.cacheWriteCost,
+                    cacheReadCost = costBreakdown.cacheReadCost,
+                    outputCost = costBreakdown.outputCost,
+                    totalCost = costBreakdown.totalCost,
+                    priceAvailable = true
+                )
+            } else {
+                // Only tokens available, no cost (price was unavailable at time of calculation)
+                LogManager.aiService(
+                    "SessionCostCalculator.calculateSessionCost(AISessionEntity) - Using stored tokens only (no cost): " +
+                    "tokens=${tokens.totalUncachedInputTokens + tokens.totalCacheWriteTokens + tokens.totalCacheReadTokens + tokens.totalOutputTokens}",
+                    "DEBUG"
+                )
+
+                return SessionCost(
+                    modelId = "", // Unknown without costJson
+                    totalUncachedInputTokens = tokens.totalUncachedInputTokens,
+                    totalCacheWriteTokens = tokens.totalCacheWriteTokens,
+                    totalCacheReadTokens = tokens.totalCacheReadTokens,
+                    totalOutputTokens = tokens.totalOutputTokens,
                     inputCost = null,
                     cacheWriteCost = null,
                     cacheReadCost = null,
@@ -106,134 +119,9 @@ object SessionCostCalculator {
                 )
             }
 
-            // Calculate costs (inputTokens already uncached from API)
-            val inputCost = calculateCost(totalUncachedInputTokens, modelPrice.inputCostPerToken)
-            val cacheWriteCost = if (modelPrice.cacheWriteCostPerToken != null) {
-                calculateCost(totalCacheWriteTokens, modelPrice.cacheWriteCostPerToken)
-            } else {
-                // Fallback: if provider doesn't have separate cache write price, use input price
-                calculateCost(totalCacheWriteTokens, modelPrice.inputCostPerToken)
-            }
-            val cacheReadCost = if (modelPrice.cacheReadCostPerToken != null) {
-                calculateCost(totalCacheReadTokens, modelPrice.cacheReadCostPerToken)
-            } else {
-                // Cache read usually free or very cheap, default to 0 if not specified
-                0.0
-            }
-            val outputCost = calculateCost(totalOutputTokens, modelPrice.outputCostPerToken)
-
-            val totalCost = inputCost + cacheWriteCost + cacheReadCost + outputCost
-
-            LogManager.aiService("SessionCostCalculator - Total cost: \$${String.format("%.3f", totalCost)} (input=\$${String.format("%.3f", inputCost)}, cacheWrite=\$${String.format("%.3f", cacheWriteCost)}, cacheRead=\$${String.format("%.3f", cacheReadCost)}, output=\$${String.format("%.3f", outputCost)})")
-
-            return SessionCost(
-                modelId = modelId,
-                totalUncachedInputTokens = totalUncachedInputTokens,
-                totalCacheWriteTokens = totalCacheWriteTokens,
-                totalCacheReadTokens = totalCacheReadTokens,
-                totalOutputTokens = totalOutputTokens,
-                inputCost = inputCost,
-                cacheWriteCost = cacheWriteCost,
-                cacheReadCost = cacheReadCost,
-                outputCost = outputCost,
-                totalCost = totalCost,
-                priceAvailable = true
-            )
-
         } catch (e: Exception) {
-            LogManager.aiService("SessionCostCalculator - Error calculating session cost: ${e.message}", "ERROR", e)
+            LogManager.aiService("SessionCostCalculator.calculateSessionCost(AISessionEntity) - Error: ${e.message}", "ERROR", e)
             return null
         }
-    }
-
-    /**
-     * Calculate cost for a single message
-     *
-     * @param message Session message entity (typically an AI message with token data)
-     * @param providerId Provider identifier
-     * @param modelId Provider-specific model ID
-     * @return MessageCost or null if critical error
-     */
-    fun calculateMessageCost(
-        message: SessionMessageEntity,
-        providerId: String,
-        modelId: String
-    ): MessageCost? {
-        try {
-            LogManager.aiService("SessionCostCalculator.calculateMessageCost() - Calculating for message ${message.id}")
-
-            // Get model pricing
-            val modelPrice = ModelPriceManager.getModelPrice(providerId, modelId)
-
-            if (modelPrice == null) {
-                LogManager.aiService("SessionCostCalculator - Model price not available for $providerId/$modelId", "WARN")
-                return MessageCost(
-                    messageId = message.id,
-                    modelId = modelId,
-                    inputTokens = message.inputTokens,
-                    cacheWriteTokens = message.cacheWriteTokens,
-                    cacheReadTokens = message.cacheReadTokens,
-                    outputTokens = message.outputTokens,
-                    inputCost = null,
-                    cacheWriteCost = null,
-                    cacheReadCost = null,
-                    outputCost = null,
-                    totalCost = null,
-                    priceAvailable = false
-                )
-            }
-
-            // Calculate costs (inputTokens already uncached from API)
-            val inputCost = calculateCost(message.inputTokens, modelPrice.inputCostPerToken)
-            val cacheWriteCost = if (modelPrice.cacheWriteCostPerToken != null) {
-                calculateCost(message.cacheWriteTokens, modelPrice.cacheWriteCostPerToken)
-            } else {
-                calculateCost(message.cacheWriteTokens, modelPrice.inputCostPerToken)
-            }
-            val cacheReadCost = if (modelPrice.cacheReadCostPerToken != null) {
-                calculateCost(message.cacheReadTokens, modelPrice.cacheReadCostPerToken)
-            } else {
-                0.0
-            }
-            val outputCost = calculateCost(message.outputTokens, modelPrice.outputCostPerToken)
-
-            val totalCost = inputCost + cacheWriteCost + cacheReadCost + outputCost
-
-            return MessageCost(
-                messageId = message.id,
-                modelId = modelId,
-                inputTokens = message.inputTokens,
-                cacheWriteTokens = message.cacheWriteTokens,
-                cacheReadTokens = message.cacheReadTokens,
-                outputTokens = message.outputTokens,
-                inputCost = inputCost,
-                cacheWriteCost = cacheWriteCost,
-                cacheReadCost = cacheReadCost,
-                outputCost = outputCost,
-                totalCost = totalCost,
-                priceAvailable = true
-            )
-
-        } catch (e: Exception) {
-            LogManager.aiService("SessionCostCalculator - Error calculating message cost: ${e.message}", "ERROR", e)
-            return null
-        }
-    }
-
-    // ========================================================================================
-    // Private Implementation
-    // ========================================================================================
-
-    /**
-     * Calculate cost from token count and cost per token
-     *
-     * @param tokens Number of tokens
-     * @param costPerToken Cost per token (LiteLLM prices are per token, need to divide by 1M for total)
-     * @return Cost in USD
-     */
-    private fun calculateCost(tokens: Int, costPerToken: Double): Double {
-        // LiteLLM pricing is already per-token (e.g., 3e-06 for Claude Sonnet input)
-        // So we just multiply: tokens × costPerToken
-        return tokens * costPerToken
     }
 }

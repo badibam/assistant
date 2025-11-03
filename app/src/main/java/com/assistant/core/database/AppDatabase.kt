@@ -45,7 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 16,
+    version = 17,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 16
+        const val VERSION = 17
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -554,6 +554,107 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 16 → 17: Replace tokensUsed with tokensJson and costJson in ai_sessions
+         *
+         * Problem: tokensUsed: Int? doesn't capture token breakdown (uncached input, cache write, cache read, output)
+         * - Cannot display detailed token usage
+         * - Cannot calculate accurate costs
+         * - Requires recalculation from messages every time
+         *
+         * Solution: Store comprehensive token and cost breakdowns
+         * - tokensJson: Always available (from API responses)
+         * - costJson: Calculated when model prices available
+         * - Incremental updates when messages added
+         */
+        private val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 16->17: Starting - Replacing tokensUsed with tokensJson and costJson", "INFO")
+
+                // 1. Add new columns (nullable, will be populated incrementally as sessions run)
+                database.execSQL("""
+                    ALTER TABLE ai_sessions
+                    ADD COLUMN tokensJson TEXT DEFAULT NULL
+                """)
+
+                database.execSQL("""
+                    ALTER TABLE ai_sessions
+                    ADD COLUMN costJson TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 16->17: Added tokensJson and costJson columns", "INFO")
+
+                // 2. Drop old tokensUsed column
+                // SQLite doesn't support DROP COLUMN directly before version 3.35.0
+                // Use table recreation pattern for compatibility
+
+                // Create new table with correct schema
+                database.execSQL("""
+                    CREATE TABLE ai_sessions_new (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        name TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        requireValidation INTEGER NOT NULL DEFAULT 0,
+                        phase TEXT NOT NULL DEFAULT 'IDLE',
+                        waitingContextJson TEXT DEFAULT NULL,
+                        totalRoundtrips INTEGER NOT NULL DEFAULT 0,
+                        lastEventTime INTEGER NOT NULL DEFAULT 0,
+                        lastUserInteractionTime INTEGER NOT NULL DEFAULT 0,
+                        automationId TEXT DEFAULT NULL,
+                        scheduledExecutionTime INTEGER DEFAULT NULL,
+                        providerId TEXT NOT NULL,
+                        providerSessionId TEXT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        lastActivity INTEGER NOT NULL,
+                        isActive INTEGER NOT NULL,
+                        endReason TEXT DEFAULT NULL,
+                        appStateSnapshot TEXT DEFAULT NULL,
+                        tokensJson TEXT DEFAULT NULL,
+                        costJson TEXT DEFAULT NULL
+                    )
+                """)
+
+                // Copy data from old table to new table (excluding tokensUsed)
+                database.execSQL("""
+                    INSERT INTO ai_sessions_new (
+                        id, name, type, requireValidation, phase, waitingContextJson,
+                        totalRoundtrips, lastEventTime, lastUserInteractionTime,
+                        automationId, scheduledExecutionTime, providerId, providerSessionId,
+                        createdAt, lastActivity, isActive, endReason, appStateSnapshot,
+                        tokensJson, costJson
+                    )
+                    SELECT
+                        id, name, type, requireValidation, phase, waitingContextJson,
+                        totalRoundtrips, lastEventTime, lastUserInteractionTime,
+                        automationId, scheduledExecutionTime, providerId, providerSessionId,
+                        createdAt, lastActivity, isActive, endReason, appStateSnapshot,
+                        NULL, NULL
+                    FROM ai_sessions
+                """)
+
+                // Drop old table
+                database.execSQL("DROP TABLE ai_sessions")
+
+                // Rename new table
+                database.execSQL("ALTER TABLE ai_sessions_new RENAME TO ai_sessions")
+
+                // Recreate indexes
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_isActive ON ai_sessions(isActive)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_type ON ai_sessions(type)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_lastActivity ON ai_sessions(lastActivity)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_automationId ON ai_sessions(automationId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_endReason ON ai_sessions(endReason)")
+
+                val cursorSessions = database.query("SELECT COUNT(*) FROM ai_sessions")
+                val sessionsCount = if (cursorSessions.moveToFirst()) cursorSessions.getInt(0) else 0
+                cursorSessions.close()
+
+                LogManager.database("MIGRATION 16->17: Migrated $sessionsCount sessions (tokensUsed removed, tokensJson and costJson added)", "INFO")
+                LogManager.database("MIGRATION 16->17: Completed - Token and cost data will be populated incrementally as sessions execute", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -568,7 +669,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_12_13,
                     MIGRATION_13_14,
                     MIGRATION_14_15,
-                    MIGRATION_15_16
+                    MIGRATION_15_16,
+                    MIGRATION_16_17
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

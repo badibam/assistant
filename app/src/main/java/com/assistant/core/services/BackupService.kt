@@ -176,8 +176,11 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("last_activity", session.lastActivity)
                                 put("is_active", session.isActive)
                                 put("end_reason", session.endReason)
-                                if (session.tokensUsed != null) {
-                                    put("tokens_used", session.tokensUsed)
+                                if (session.tokensJson != null) {
+                                    put("tokens_json", session.tokensJson)
+                                }
+                                if (session.costJson != null) {
+                                    put("cost_json", session.costJson)
                                 }
                                 if (session.appStateSnapshot != null) {
                                     put("app_state_snapshot", session.appStateSnapshot)
@@ -532,7 +535,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         lastActivity = item.getLong("last_activity"),
                         isActive = item.getBoolean("is_active"),
                         endReason = item.optString("end_reason", null),
-                        tokensUsed = if (item.has("tokens_used")) item.getInt("tokens_used") else null,
+                        tokensJson = item.optString("tokens_json", null),
+                        costJson = item.optString("cost_json", null),
                         appStateSnapshot = item.optString("app_state_snapshot", null)
                     )
                 )
