@@ -109,8 +109,8 @@ fun EditMessageDialog(
                     "content" to content.trim().takeIf { it.isNotEmpty() },
                     "schedule" to scheduleMap,
                     "priority" to priority,
-                    "triggers" to null,
-                    "executions" to emptyList<Map<String, Any>>()  // Required by schema
+                    "triggers" to null
+                    // Note: executions removed - not part of data schema (stored in separate tool_executions table)
                 )
             )
 

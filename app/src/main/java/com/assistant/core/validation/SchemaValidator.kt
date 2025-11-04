@@ -90,10 +90,14 @@ object SchemaValidator {
     
     
     /**
-     * Filters out empty values (empty strings, null values) from data before validation
+     * Filters out empty values from data before validation
      * Recursively handles nested structures to prevent type mismatch errors
+     *
+     * IMPORTANT: This filters out null values (removes them from the Map)
+     * This is appropriate for CREATE operations where null = "don't specify this field"
+     * For UPDATE operations with partial validation, nulls are already handled differently
      */
-    private fun filterEmptyValues(data: Map<String, Any>): Map<String, Any> {
+    private fun filterEmptyValues(data: Map<String, Any?>): Map<String, Any> {
         return data.mapNotNull { (key, value) ->
             val filteredValue = filterEmptyValue(value)
             if (filteredValue != null) {
@@ -119,7 +123,7 @@ object SchemaValidator {
             is String -> value
             is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
-                val originalMap = value as Map<String, Any>
+                val originalMap = value as Map<String, Any?>
                 val filteredMap = filterEmptyValues(originalMap)
                 // Keep the map even if empty - it may be required by schema
                 // The schema validation will catch if it shouldn't be empty
@@ -136,32 +140,51 @@ object SchemaValidator {
     /**
      * Converts Android JSONObjects to Maps for Jackson compatibility
      * Recursively handles nested structures
+     *
+     * IMPORTANT: Preserves null values - schemas may explicitly allow null for certain fields
      */
-    private fun convertJsonObjectsToMaps(data: Map<String, Any>): Map<String, Any> {
+    private fun convertJsonObjectsToMaps(data: Map<String, Any?>): Map<String, Any?> {
         return data.mapValues { (_, value) ->
-            convertAnyJsonObjectToMap(value) ?: ""
+            convertAnyJsonObjectToMap(value)  // Returns null for null values, no fallback to ""
         }
     }
     
     /**
      * Recursively converts any JSONObject, JSONArray, or nested structures
+     *
+     * IMPORTANT: Preserves null values - schemas may explicitly allow null for certain fields
      */
     private fun convertAnyJsonObjectToMap(value: Any?): Any? {
         return when (value) {
+            // Explicit null handling - preserve null values
+            null -> null
+
+            // Convert JSONObject.NULL to Kotlin null
+            org.json.JSONObject.NULL -> null
+
             is org.json.JSONObject -> {
-                val map = mutableMapOf<String, Any>()
+                val map = mutableMapOf<String, Any?>()
                 value.keys().forEach { key ->
-                    val convertedValue = convertAnyJsonObjectToMap(value.get(key))
-                    if (convertedValue != null) {
-                        map[key] = convertedValue
+                    val rawValue = value.get(key)
+                    // Recursively convert, preserving null values
+                    val convertedValue = if (rawValue == org.json.JSONObject.NULL) {
+                        null
+                    } else {
+                        convertAnyJsonObjectToMap(rawValue)
                     }
+                    map[key] = convertedValue  // Add even if null - schema may allow it
                 }
                 map
             }
             is org.json.JSONArray -> {
-                val list = mutableListOf<Any>()
+                val list = mutableListOf<Any?>()
                 for (i in 0 until value.length()) {
-                    val convertedValue = convertAnyJsonObjectToMap(value.get(i))
+                    val rawValue = value.get(i)
+                    val convertedValue = if (rawValue == org.json.JSONObject.NULL) {
+                        null
+                    } else {
+                        convertAnyJsonObjectToMap(rawValue)
+                    }
                     if (convertedValue != null) {
                         list.add(convertedValue)
                     }
@@ -170,11 +193,12 @@ object SchemaValidator {
             }
             is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
-                val originalMap = value as Map<String, Any>
-                originalMap.mapValues { (_, v) -> convertAnyJsonObjectToMap(v) ?: "" }
+                val originalMap = value as Map<String, Any?>
+                // Preserve null values in nested Maps - no fallback to ""
+                originalMap.mapValues { (_, v) -> convertAnyJsonObjectToMap(v) }
             }
             is List<*> -> {
-                value.mapNotNull { convertAnyJsonObjectToMap(it) }
+                value.map { convertAnyJsonObjectToMap(it) }
             }
             else -> value
         }
