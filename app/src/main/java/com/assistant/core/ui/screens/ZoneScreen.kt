@@ -33,6 +33,7 @@ fun ZoneScreen(
     zone: Zone,
     onBack: () -> Unit,
     onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null,
+    onNavigateToAutomationHistory: ((automationId: String) -> Unit)? = null,
     onConfigureZone: ((zoneId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -453,6 +454,10 @@ fun ZoneScreen(
                                 errorMessage = s.shared("message_error").format(e.message ?: "")
                             }
                         }
+                    },
+                    onView = {
+                        // Navigate to automation execution history
+                        onNavigateToAutomationHistory?.invoke(automation.id)
                     },
                     onToggleEnabled = { enabled ->
                         // Toggle automation enabled status

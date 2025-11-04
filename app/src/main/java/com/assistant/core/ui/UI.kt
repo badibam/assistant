@@ -99,7 +99,20 @@ object UI {
         highlight: Boolean = false,
         content: @Composable () -> Unit
     ) = CurrentTheme.current.Card(type, size, highlight, content)
-    
+
+    /**
+     * StatusIndicator - Colored circular indicator for status display
+     * Used to show status (success/warning/error) with themed colors
+     *
+     * @param color The color of the indicator (from MaterialTheme.colorScheme)
+     * @param size The diameter of the circular indicator (default 8dp)
+     */
+    @Composable
+    fun StatusIndicator(
+        color: androidx.compose.ui.graphics.Color,
+        size: Dp = 8.dp
+    ) = CurrentTheme.current.StatusIndicator(color, size)
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

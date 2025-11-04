@@ -48,6 +48,8 @@ fun MainScreen() {
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedSeedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedAutomationId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedExecutionSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var showAIProviders by rememberSaveable { mutableStateOf(false) }
     var showTranscription by rememberSaveable { mutableStateOf(false) }
@@ -223,6 +225,31 @@ fun MainScreen() {
         return // Exit MainScreen composition when showing SEED editor
     }
 
+    // Show ExecutionDetailScreen when an execution is selected
+    selectedExecutionSessionId?.let { sessionId ->
+        com.assistant.core.ai.ui.automation.ExecutionDetailScreen(
+            sessionId = sessionId,
+            onNavigateBack = {
+                selectedExecutionSessionId = null
+            }
+        )
+        return // Exit MainScreen composition when showing execution detail
+    }
+
+    // Show AutomationScreen when an automation is selected
+    selectedAutomationId?.let { automationId ->
+        com.assistant.core.ai.ui.automation.AutomationScreen(
+            automationId = automationId,
+            onNavigateBack = {
+                selectedAutomationId = null
+            },
+            onNavigateToExecution = { sessionId ->
+                selectedExecutionSessionId = sessionId
+            }
+        )
+        return // Exit MainScreen composition when showing automation history
+    }
+
     // Show CreateZoneScreen in edit mode when zone config is requested
     configZone?.let { zone ->
         CreateZoneScreen(
@@ -251,6 +278,9 @@ fun MainScreen() {
             },
             onNavigateToSeedEditor = { seedSessionId ->
                 selectedSeedSessionId = seedSessionId
+            },
+            onNavigateToAutomationHistory = { automationId ->
+                selectedAutomationId = automationId
             },
             onConfigureZone = { zoneId ->
                 configZoneId = zoneId

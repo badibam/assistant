@@ -95,7 +95,13 @@ interface ThemeContract {
         highlight: Boolean,
         content: @Composable () -> Unit
     )
-    
+
+    @Composable
+    fun StatusIndicator(
+        color: androidx.compose.ui.graphics.Color,
+        size: Dp
+    )
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

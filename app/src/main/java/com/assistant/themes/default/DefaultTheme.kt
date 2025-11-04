@@ -609,7 +609,19 @@ object DefaultTheme : ThemeContract {
             content = { content() }
         )
     }
-    
+
+    @Composable
+    override fun StatusIndicator(
+        color: Color,
+        size: Dp
+    ) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .background(color = color, shape = CircleShape)
+        )
+    }
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

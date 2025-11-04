@@ -24,7 +24,7 @@ import java.util.*
  * - Trigger type (manual/schedule/triggers/hybrid)
  * - Next execution time (if scheduled)
  * - Queued status badge (if in queue)
- * - Actions: Test + Edit + Toggle enabled + Cancel (if queued)
+ * - Actions: Test + View + Edit + Toggle enabled + Cancel (if queued)
  *
  * Usage: In ZoneScreen automation section
  */
@@ -33,6 +33,7 @@ fun AutomationCard(
     automation: Automation,
     onEdit: () -> Unit,
     onTest: () -> Unit,
+    onView: () -> Unit,
     onToggleEnabled: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -179,6 +180,14 @@ fun AutomationCard(
                         onClick = onTest
                     )
                 }
+
+                // View button (executions history)
+                UI.ActionButton(
+                    action = ButtonAction.VIEW,
+                    display = ButtonDisplay.ICON,
+                    size = Size.S,
+                    onClick = onView
+                )
 
                 // Edit button
                 UI.ActionButton(

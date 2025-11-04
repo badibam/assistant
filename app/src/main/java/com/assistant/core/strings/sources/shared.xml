@@ -945,6 +945,17 @@
     <string name="automation_next_execution">Prochain : %1$s</string>
     <string name="ai_status_completed">Terminé</string>
 
+    <!-- AUTOMATIONS - Execution card labels -->
+    <string name="automation_scheduled_label">Prévue</string>
+    <string name="automation_manual_execution">Exécution manuelle</string>
+    <string name="automation_started_label">Lancée</string>
+    <string name="automation_duration_label">Durée</string>
+    <string name="automation_roundtrips_label">%1$d roundtrips</string>
+    <string name="automation_tokens_label">tokens</string>
+    <string name="automation_next_execution_title">Prochaine exécution</string>
+    <string name="automation_no_executions">Aucune exécution trouvée</string>
+    <string name="automation_execution_detail_title">Détail de l\'exécution</string>
+
     <!-- AUTOMATIONS - Schedule patterns (short labels for buttons) -->
     <string name="automation_schedule_daily">Quotidien %1$s</string>
     <string name="automation_schedule_weekly">%1$s %2$s</string>

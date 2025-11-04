@@ -1109,6 +1109,15 @@
     <string name="shared_automation_status_triggered">Selon déclencheurs</string>
     <string name="shared_automation_next_execution">Prochain : %1$s</string>
     <string name="shared_ai_status_completed">Terminé</string>
+    <string name="shared_automation_scheduled_label">Prévue</string>
+    <string name="shared_automation_manual_execution">Exécution manuelle</string>
+    <string name="shared_automation_started_label">Lancée</string>
+    <string name="shared_automation_duration_label">Durée</string>
+    <string name="shared_automation_roundtrips_label">%1$d roundtrips</string>
+    <string name="shared_automation_tokens_label">tokens</string>
+    <string name="shared_automation_next_execution_title">Prochaine exécution</string>
+    <string name="shared_automation_no_executions">Aucune exécution trouvée</string>
+    <string name="shared_automation_execution_detail_title">Détail de l\'exécution</string>
     <string name="shared_automation_schedule_daily">Quotidien %1$s</string>
     <string name="shared_automation_schedule_weekly">%1$s %2$s</string>
     <string name="shared_automation_schedule_monthly">Le %1$d de %2$s %3$s</string>
