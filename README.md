@@ -64,7 +64,7 @@ cd assistant
 
 ## État du développement
 
-**Version 0.3.13**
+**Version 0.3.14**
 
 ### Systèmes de base
 
