@@ -17,6 +17,7 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.strings.Strings
 import org.json.JSONObject
 import org.json.JSONArray
@@ -405,6 +406,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     }
                 }
                 setZoneGroups(groups)
+                DataChangeNotifier.notifyAppConfigChanged()
                 LogManager.service("Zone groups updated: $groups")
                 OperationResult.success(mapOf("zone_groups" to groups))
             }

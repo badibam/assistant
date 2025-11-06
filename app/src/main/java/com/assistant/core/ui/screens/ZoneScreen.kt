@@ -401,6 +401,7 @@ fun ZoneScreen(
             UngroupedSection(
                     toolInstances = ungroupedTools,
                     automations = ungroupedAutomations,
+                    hasConfiguredGroups = zoneToolGroups.isNotEmpty(),
                     showAvailableToolsForGroup = showAvailableToolsForGroup,
                     onToggleToolsList = { showAvailableToolsForGroup = if (showAvailableToolsForGroup == "") null else "" },
                     onSelectToolType = { toolTypeId ->
@@ -669,6 +670,7 @@ private fun GroupSection(
 private fun UngroupedSection(
     toolInstances: List<ToolInstance>,
     automations: List<com.assistant.core.ai.data.Automation>,
+    hasConfiguredGroups: Boolean,
     showAvailableToolsForGroup: String?,
     onToggleToolsList: () -> Unit,
     onSelectToolType: (String) -> Unit,
@@ -682,6 +684,14 @@ private fun UngroupedSection(
     context: android.content.Context
 ) {
     val s = remember { Strings.`for`(context = context) }
+
+    // Determine section label
+    val sectionLabel = if (hasConfiguredGroups) {
+        s.shared("label_ungrouped")
+    } else {
+        s.shared("label_tools_and_automations")
+    }
+
     // Section header
     UI.Card(type = CardType.DEFAULT) {
         Row(
@@ -692,7 +702,7 @@ private fun UngroupedSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             UI.Text(
-                text = s.shared("label_ungrouped"),
+                text = sectionLabel,
                 type = TextType.SUBTITLE
             )
 

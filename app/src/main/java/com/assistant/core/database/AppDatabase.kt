@@ -686,7 +686,15 @@ abstract class AppDatabase : RoomDatabase() {
 
                 LogManager.database("MIGRATION 17->18: Added tool_groups column to zones", "INFO")
 
-                // 2. Add group column to automations (nullable string linking to zone's tool_groups)
+                // 2. Add group column to zones (nullable string linking to zone_groups in app_config)
+                database.execSQL("""
+                    ALTER TABLE zones
+                    ADD COLUMN `group` TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 17->18: Added group column to zones", "INFO")
+
+                // 3. Add group column to automations (nullable string linking to zone's tool_groups)
                 database.execSQL("""
                     ALTER TABLE automations
                     ADD COLUMN `group` TEXT DEFAULT NULL

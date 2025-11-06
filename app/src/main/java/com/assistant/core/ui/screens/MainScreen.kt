@@ -38,13 +38,15 @@ fun MainScreen() {
     val s = remember { Strings.`for`(context = context) }
     val coordinator = remember { Coordinator(context) }
     val coroutineScope = rememberCoroutineScope()
-    // Load zones via command pattern
+    // Load zones and zone_groups via command pattern
     var zones by remember { mutableStateOf<List<Zone>>(emptyList()) }
+    var zoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
     // Navigation states - persistent across orientation changes
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
+    var showMainScreenConfig by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedSeedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -65,8 +67,9 @@ fun MainScreen() {
     val selectedZone = zones.find { it.id == selectedZoneId }
     val configZone = zones.find { it.id == configZoneId }
     
-    // Load zones on first composition
+    // Load zones and zone_groups on first composition
     LaunchedEffect(Unit) {
+        // Load zones
         coordinator.executeWithLoading(
             operation = "zones.list",
             onLoading = { isLoading = it },
@@ -80,13 +83,25 @@ fun MainScreen() {
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
                     updated_at = (map["updated_at"] as Number).toLong(),
-                    tool_groups = map["tool_groups"] as? String
+                    tool_groups = map["tool_groups"] as? String,
+                    group = map["group"] as? String
                 )
             }
         }
+
+        // Load zone_groups
+        coordinator.executeWithLoading(
+            operation = "app_config.get_zone_groups",
+            params = emptyMap(),
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
+        )?.let { result ->
+            zoneGroups = (result.data?.get("zone_groups") as? List<*>)
+                ?.filterIsInstance<String>() ?: emptyList()
+        }
     }
 
-    // Observe data changes and reload zones automatically
+    // Observe data changes and reload zones and zone_groups automatically
     LaunchedEffect(Unit) {
         DataChangeNotifier.changes.collect { event ->
             when (event) {
@@ -104,9 +119,22 @@ fun MainScreen() {
                                 order_index = (map["order_index"] as Number).toInt(),
                                 created_at = (map["created_at"] as Number).toLong(),
                                 updated_at = (map["updated_at"] as Number).toLong(),
-                                tool_groups = map["tool_groups"] as? String
+                                tool_groups = map["tool_groups"] as? String,
+                                group = map["group"] as? String
                             )
                         }
+                    }
+                }
+                is DataChangeEvent.AppConfigChanged -> {
+                    // Reload zone_groups when app config changes
+                    coordinator.executeWithLoading(
+                        operation = "app_config.get_zone_groups",
+                        params = emptyMap(),
+                        onLoading = { isLoading = it },
+                        onError = { error -> errorMessage = error }
+                    )?.let { result ->
+                        zoneGroups = (result.data?.get("zone_groups") as? List<*>)
+                            ?.filterIsInstance<String>() ?: emptyList()
                     }
                 }
                 else -> {} // Ignore other events
@@ -129,13 +157,25 @@ fun MainScreen() {
                         description = map["description"] as? String,
                         order_index = (map["order_index"] as Number).toInt(),
                         created_at = (map["created_at"] as Number).toLong(),
-                        updated_at = (map["updated_at"] as Number).toLong()
+                        updated_at = (map["updated_at"] as Number).toLong(),
+                        tool_groups = map["tool_groups"] as? String,
+                        group = map["group"] as? String
                     )
                 }
             }
         }
     }
-    
+
+    // Show MainScreenConfigScreen when requested
+    if (showMainScreenConfig) {
+        MainScreenConfigScreen(
+            onBack = {
+                showMainScreenConfig = false
+            }
+        )
+        return // Exit MainScreen composition when showing config
+    }
+
     // Show AI Providers screen when requested
     if (showAIProviders) {
         AIProvidersScreen(
@@ -312,41 +352,54 @@ fun MainScreen() {
                     .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            // Header with configure and add zone buttons
+            // Header with Settings and Config buttons
             UI.PageHeader(
                 title = s.shared("app_name"),
                 subtitle = null,
                 icon = null,
                 leftButton = ButtonAction.CONFIGURE,
-                rightButton = ButtonAction.ADD,
+                rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = { showSettings = true },
-                onRightClick = { showCreateZone = true }
+                onRightClick = { showMainScreenConfig = true }
             )
-            
-            // Zones section
-            
-            if (zones.isEmpty()) {
-                // Show placeholder when no zones
+
+            // Display zones by group sections
+            if (isLoading) {
                 UI.Text(
-                    text = s.shared("message_no_zones_created"),
+                    text = s.shared("message_loading"),
                     type = TextType.BODY,
                     fillMaxWidth = true,
                     textAlign = TextAlign.Center
                 )
-
             } else {
-                // Show zones list using UI.ZoneCard
-                zones.forEach { zone ->
-                    UI.ZoneCard(
-                        zone = zone,
-                        onClick = {
-                            selectedZoneId = zone.id
+                // For each defined group, display its section (always shown, even if empty)
+                zoneGroups.forEach { groupName ->
+                    ZoneGroupSection(
+                        groupName = groupName,
+                        zones = zones,
+                        onZoneClick = { zone -> selectedZoneId = zone.id },
+                        onZoneLongClick = { zone -> configZoneId = zone.id },
+                        onAddZone = {
+                            // TODO: Pass preSelectedGroup to CreateZoneScreen
+                            showCreateZone = true
                         },
-                        onLongClick = {
-                            configZoneId = zone.id
-                        }
+                        context = context
                     )
                 }
+
+                // "Ungrouped" section (always shown, even if empty)
+                ZoneGroupSection(
+                    groupName = null, // null = ungrouped
+                    zones = zones,
+                    hasConfiguredGroups = zoneGroups.isNotEmpty(),
+                    onZoneClick = { zone -> selectedZoneId = zone.id },
+                    onZoneLongClick = { zone -> configZoneId = zone.id },
+                    onAddZone = {
+                        // TODO: Pass preSelectedGroup = null to CreateZoneScreen
+                        showCreateZone = true
+                    },
+                    context = context
+                )
             }
         } // Close Column
 
@@ -397,6 +450,92 @@ fun MainScreen() {
         LaunchedEffect(message) {
             UI.Toast(context, message, Duration.LONG)
             errorMessage = null
+        }
+    }
+}
+
+/**
+ * Zone group section component
+ * Displays zones belonging to a specific group (or ungrouped zones if groupName is null)
+ * with a header and an add button
+ */
+@Composable
+private fun ZoneGroupSection(
+    groupName: String?,
+    zones: List<Zone>,
+    hasConfiguredGroups: Boolean = true,
+    onZoneClick: (Zone) -> Unit,
+    onZoneLongClick: (Zone) -> Unit,
+    onAddZone: () -> Unit,
+    context: android.content.Context
+) {
+    val s = remember { Strings.`for`(context = context) }
+
+    // Filter zones for this group
+    val groupZones = zones.filter { zone ->
+        zone.group == groupName
+    }
+
+    // Determine section label
+    val sectionLabel = when {
+        groupName != null -> groupName
+        hasConfiguredGroups -> s.shared("label_ungrouped")
+        else -> s.shared("label_zones")
+    }
+
+    // Section header with add button
+    UI.Card(type = CardType.DEFAULT) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(
+                text = sectionLabel,
+                type = TextType.SUBTITLE
+            )
+
+            // Add button
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onAddZone
+            )
+        }
+    }
+
+    // Display zones or empty message
+    if (groupZones.isEmpty()) {
+        UI.Card(type = CardType.DEFAULT) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                UI.Text(
+                    text = if (groupName != null) {
+                        s.shared("message_no_zones_in_group")
+                    } else {
+                        s.shared("message_no_ungrouped_zones")
+                    },
+                    type = TextType.CAPTION,
+                    fillMaxWidth = true,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    } else {
+        // Display zone cards
+        groupZones.forEach { zone ->
+            UI.ZoneCard(
+                zone = zone,
+                onClick = { onZoneClick(zone) },
+                onLongClick = { onZoneLongClick(zone) }
+            )
         }
     }
 }

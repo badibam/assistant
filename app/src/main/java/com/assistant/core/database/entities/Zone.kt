@@ -21,5 +21,12 @@ data class Zone(
      * Example: ["Santé", "Productivité", "Loisirs"]
      * Tool instances and automations can be assigned to these groups
      */
-    val tool_groups: String? = null
+    val tool_groups: String? = null,
+
+    /**
+     * Zone group assignment (links to zone_groups in app_config)
+     * Allows organizing zones into groups on MainScreen
+     * Example: "Santé", "Productivité", null (ungrouped)
+     */
+    val group: String? = null
 )

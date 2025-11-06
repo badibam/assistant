@@ -122,6 +122,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 if (zone.tool_groups != null) {
                                     put("tool_groups", zone.tool_groups)
                                 }
+                                if (zone.group != null) {
+                                    put("group", zone.group)
+                                }
                             })
                         }
                     })
@@ -457,7 +460,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         order_index = item.getInt("order_index"),
                         created_at = item.getLong("created_at"),
                         updated_at = item.getLong("updated_at"),
-                        tool_groups = item.optString("tool_groups", null)
+                        tool_groups = item.optString("tool_groups", null),
+                        group = item.optString("group", null)
                     )
                 )
             }
