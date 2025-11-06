@@ -14,5 +14,12 @@ data class Zone(
     val active: Boolean = true,
     val order_index: Int = 0,
     val created_at: Long = System.currentTimeMillis(),
-    val updated_at: Long = System.currentTimeMillis()
+    val updated_at: Long = System.currentTimeMillis(),
+
+    /**
+     * Tool groups defined at zone level (JSON array of group names)
+     * Example: ["Santé", "Productivité", "Loisirs"]
+     * Tool instances and automations can be assigned to these groups
+     */
+    val tool_groups: String? = null
 )

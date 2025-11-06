@@ -29,5 +29,12 @@ data class AutomationEntity(
     val createdAt: Long,
     val updatedAt: Long,                    // Last modification timestamp (config change, enable/disable)
     val lastExecutionId: String?,
-    val executionHistoryJson: String        // JSON array of execution session IDs
+    val executionHistoryJson: String,       // JSON array of execution session IDs
+
+    /**
+     * Group assignment for this automation (nullable string)
+     * Links to zone's tool_groups array
+     * null = ungrouped automation
+     */
+    val group: String? = null
 )

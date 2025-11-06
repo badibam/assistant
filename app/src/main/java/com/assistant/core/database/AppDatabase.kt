@@ -45,7 +45,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 17,
+    version = 18,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 17
+        const val VERSION = 18
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -655,6 +655,57 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 17 → 18: Add groups system for zones and tools
+         *
+         * Problem: No organizational structure for tools and automations within zones
+         * - Users need to group related tools/automations together
+         * - Similar need at app level for grouping zones
+         *
+         * Solution: Two-level groups system
+         * - Zone level: tool_groups (JSON array) for organizing tools and automations
+         * - App level: zone_groups (in app_config JSON) for organizing zones
+         * - Tool instances: group field (in config JSON via BaseSchemas)
+         * - Automations: group column (nullable string)
+         *
+         * Implementation:
+         * 1. Add tool_groups column to zones table (JSON array of group names)
+         * 2. Add group column to automations table (nullable string reference)
+         * 3. zone_groups will be added to app_config JSON by AppConfigService (no ALTER needed)
+         * 4. Tool instances group field already handled by config JSON (no ALTER needed)
+         */
+        private val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 17->18: Starting - Adding groups system", "INFO")
+
+                // 1. Add tool_groups column to zones (JSON array of group names)
+                database.execSQL("""
+                    ALTER TABLE zones
+                    ADD COLUMN tool_groups TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 17->18: Added tool_groups column to zones", "INFO")
+
+                // 2. Add group column to automations (nullable string linking to zone's tool_groups)
+                database.execSQL("""
+                    ALTER TABLE automations
+                    ADD COLUMN `group` TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 17->18: Added group column to automations", "INFO")
+
+                // Count affected records for logging
+                val zonesCount = database.query("SELECT COUNT(*) FROM zones").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
+                val automationsCount = database.query("SELECT COUNT(*) FROM automations").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
+
+                LogManager.database("MIGRATION 17->18: Completed - $zonesCount zones and $automationsCount automations ready for groups", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -670,7 +721,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_13_14,
                     MIGRATION_14_15,
                     MIGRATION_15_16,
-                    MIGRATION_16_17
+                    MIGRATION_16_17,
+                    MIGRATION_17_18
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

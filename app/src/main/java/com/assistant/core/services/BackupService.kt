@@ -119,6 +119,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("order_index", zone.order_index)
                                 put("created_at", zone.created_at)
                                 put("updated_at", zone.updated_at)
+                                if (zone.tool_groups != null) {
+                                    put("tool_groups", zone.tool_groups)
+                                }
                             })
                         }
                     })
@@ -244,6 +247,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("updated_at", automation.updatedAt)
                                 put("last_execution_id", automation.lastExecutionId)
                                 put("execution_history_json", automation.executionHistoryJson)
+                                if (automation.group != null) {
+                                    put("group", automation.group)
+                                }
                             })
                         }
                     })
@@ -450,7 +456,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         active = item.optBoolean("active", true),
                         order_index = item.getInt("order_index"),
                         created_at = item.getLong("created_at"),
-                        updated_at = item.getLong("updated_at")
+                        updated_at = item.getLong("updated_at"),
+                        tool_groups = item.optString("tool_groups", null)
                     )
                 )
             }
@@ -587,7 +594,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         createdAt = item.getLong("created_at"),
                         updatedAt = System.currentTimeMillis(), // Always now on import - prevents executing missed periods
                         lastExecutionId = item.optString("last_execution_id", null),
-                        executionHistoryJson = item.optString("execution_history_json", "[]")
+                        executionHistoryJson = item.optString("execution_history_json", "[]"),
+                        group = item.optString("group", null)
                     )
                 )
             }

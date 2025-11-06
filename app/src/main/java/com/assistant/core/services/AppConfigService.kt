@@ -10,6 +10,7 @@ import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultFormatSettings
 import com.assistant.core.database.entities.DefaultAILimitsSettings
 import com.assistant.core.database.entities.DefaultValidationSettings
+import com.assistant.core.database.entities.DefaultMainScreenSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
@@ -18,6 +19,7 @@ import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Centralized service for application configuration management
@@ -57,6 +59,23 @@ class AppConfigService(private val context: Context) : ExecutableService {
 
     suspend fun setLocaleOverride(locale: String?) {
         updateFormatSetting("locale_override", locale)
+    }
+
+    /**
+     * Main screen configuration
+     */
+    suspend fun getZoneGroups(): List<String> {
+        val settings = getMainScreenSettings()
+        val groupsJson = settings.optJSONArray("zone_groups")
+        return if (groupsJson != null) {
+            (0 until groupsJson.length()).map { groupsJson.getString(it) }
+        } else {
+            emptyList()
+        }
+    }
+
+    suspend fun setZoneGroups(groups: List<String>) {
+        updateMainScreenSetting("zone_groups", JSONArray(groups))
     }
 
     /**
@@ -253,6 +272,48 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Main screen settings management with automatic defaults creation
+     */
+    private suspend fun getMainScreenSettings(): JSONObject {
+        LogManager.service("Getting main screen settings from database")
+        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.MAIN_SCREEN)
+        return if (settingsJson != null) {
+            try {
+                LogManager.service("Found existing main screen settings: $settingsJson")
+                JSONObject(settingsJson)
+            } catch (e: Exception) {
+                LogManager.service("Error parsing main screen settings JSON: ${e.message}", "ERROR", e)
+                createDefaultMainScreenSettings()
+            }
+        } else {
+            LogManager.service("No main screen settings found, creating defaults")
+            createDefaultMainScreenSettings()
+        }
+    }
+
+    private suspend fun createDefaultMainScreenSettings(): JSONObject {
+        LogManager.service("Creating default main screen settings")
+        val defaultSettings = JSONObject(DefaultMainScreenSettings.JSON.trimIndent())
+        settingsDao.insertOrUpdateSettings(
+            AppSettingsCategory(
+                category = AppSettingCategories.MAIN_SCREEN,
+                settings = defaultSettings.toString()
+            )
+        )
+        LogManager.service("Default main screen settings inserted: $defaultSettings")
+        return defaultSettings
+    }
+
+    private suspend fun updateMainScreenSetting(key: String, value: Any?) {
+        val settings = getMainScreenSettings()
+        settings.put(key, value)
+
+        // No validation schema for main screen settings yet - simple storage
+        settingsDao.updateSettings(AppSettingCategories.MAIN_SCREEN, settings.toString())
+        LogManager.service("Updated main screen setting: $key = $value")
+    }
+
+    /**
      * Generic utilities
      */
     suspend fun getCategorySettings(category: String): JSONObject? {
@@ -260,6 +321,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
             AppSettingCategories.FORMAT -> getFormatSettings()
             AppSettingCategories.AI_LIMITS -> getAILimitsSettings()
             AppSettingCategories.VALIDATION_CONFIG -> getValidationSettings()
+            AppSettingCategories.MAIN_SCREEN -> getMainScreenSettings()
             else -> {
                 // Generic fallback for unknown categories - no auto-creation
                 val settingsJson = settingsDao.getSettingsJsonForCategory(category)
@@ -284,6 +346,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
             }
             AppSettingCategories.VALIDATION_CONFIG -> {
                 settingsDao.updateSettings(category, DefaultValidationSettings.JSON.trimIndent())
+            }
+            AppSettingCategories.MAIN_SCREEN -> {
+                settingsDao.updateSettings(category, DefaultMainScreenSettings.JSON.trimIndent())
             }
             // Future categories handled here
         }
@@ -323,6 +388,25 @@ class AppConfigService(private val context: Context) : ExecutableService {
                     "timestamp" to currentTimestamp,
                     "formatted" to humanReadable
                 ))
+            }
+            "get_zone_groups" -> {
+                val groups = getZoneGroups()
+                LogManager.service("Zone groups retrieved: $groups")
+                OperationResult.success(mapOf("zone_groups" to groups))
+            }
+            "set_zone_groups" -> {
+                val groupsParam = params.opt("zone_groups")
+                val groups = when (groupsParam) {
+                    is JSONArray -> (0 until groupsParam.length()).map { groupsParam.getString(it) }
+                    is List<*> -> groupsParam.filterIsInstance<String>()
+                    else -> {
+                        LogManager.service("Invalid zone_groups parameter type", "ERROR")
+                        return OperationResult.error(s.shared("service_error_invalid_zone_groups"))
+                    }
+                }
+                setZoneGroups(groups)
+                LogManager.service("Zone groups updated: $groups")
+                OperationResult.success(mapOf("zone_groups" to groups))
             }
             else -> {
                 LogManager.service("Unknown operation: $operation", "WARN")

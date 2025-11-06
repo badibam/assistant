@@ -22,6 +22,7 @@ object AppSettingCategories {
     const val FORMAT = "format"
     const val AI_LIMITS = "ai_limits"
     const val VALIDATION_CONFIG = "validation_config"
+    const val MAIN_SCREEN = "main_screen"
 
     // Future categories:
     // const val UI = "ui"
@@ -84,6 +85,17 @@ object DefaultValidationSettings {
         "validateZoneConfigChanges": false,
         "validateToolConfigChanges": false,
         "validateToolDataChanges": false
+    }
+    """
+}
+
+/**
+ * Default main screen configuration
+ */
+object DefaultMainScreenSettings {
+    const val JSON = """
+    {
+        "zone_groups": []
     }
     """
 }

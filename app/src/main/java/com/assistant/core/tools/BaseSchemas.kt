@@ -81,6 +81,11 @@ object BaseSchemas {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("tools_base_schema_config_always_send")}"
+                },
+                "group": {
+                    "type": "string",
+                    "maxLength": ${FieldLimits.SHORT_LENGTH},
+                    "description": "${s.shared("tools_base_schema_config_group")}"
                 }
             },
             "required": ["name", "management", "display_mode"],

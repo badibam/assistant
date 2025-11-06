@@ -1352,5 +1352,21 @@
     <string name="shared_period_weeks">semaines</string>
     <string name="shared_period_months">mois</string>
     <string name="shared_period_years">ans</string>
+    <string name="shared_label_group">Groupe</string>
+    <string name="shared_label_tool_groups">Groupes d\'outils</string>
+    <string name="shared_label_zone_groups">Groupes de zones</string>
+    <string name="shared_label_ungrouped">Hors groupe</string>
+    <string name="shared_label_zones">Zones</string>
+    <string name="shared_dialog_edit_group">Modifier le groupe</string>
+    <string name="shared_dialog_create_group">Créer un groupe</string>
+    <string name="shared_label_group_name">Nom du groupe</string>
+    <string name="shared_message_no_tool_groups">Aucun groupe d\'outils défini</string>
+    <string name="shared_message_no_zone_groups">Aucun groupe de zones défini</string>
+    <string name="shared_dialog_add_tool_or_automation_title">Que voulez-vous ajouter ?</string>
+    <string name="shared_action_add_tool">Créer un outil</string>
+    <string name="shared_action_add_automation">Créer une automation</string>
+    <string name="shared_tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
+    <string name="shared_zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="shared_service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>
 
 </resources>

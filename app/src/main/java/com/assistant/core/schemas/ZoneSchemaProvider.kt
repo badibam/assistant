@@ -34,6 +34,7 @@ object ZoneSchemaProvider : SchemaProvider {
             "validateZoneConfigChanges" -> s.shared("label_validate_zone_config_changes")
             "validateToolConfigChanges" -> s.shared("label_validate_tool_config_changes")
             "validateToolDataChanges" -> s.shared("label_validate_tool_data_changes")
+            "tool_groups" -> s.shared("label_tool_groups")
             else -> s.shared("label_field_generic")
         }
     }
@@ -81,6 +82,16 @@ object ZoneSchemaProvider : SchemaProvider {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("zone_schema_validate_tool_data_changes")}"
+                },
+                "tool_groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": ${FieldLimits.SHORT_LENGTH}
+                    },
+                    "uniqueItems": true,
+                    "description": "${s.shared("zone_schema_tool_groups")}"
                 }
             },
             "required": ["name"],

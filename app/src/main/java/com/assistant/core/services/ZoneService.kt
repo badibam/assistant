@@ -11,6 +11,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Zone Service - Core service for zone operations
@@ -48,28 +49,41 @@ class ZoneService(private val context: Context) : ExecutableService {
      */
     private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val name = params.optString("name")
         if (name.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_name_required"))
         }
-        
+
         val description = params.optString("description").takeIf { it.isNotBlank() }
-        
+
+        // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
+        val toolGroupsJson = if (params.has("tool_groups")) {
+            val toolGroupsValue = params.opt("tool_groups")
+            when (toolGroupsValue) {
+                is JSONArray -> toolGroupsValue.toString()
+                is String -> toolGroupsValue
+                else -> null
+            }
+        } else {
+            null
+        }
+
         // Get current max order_index for proper ordering
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         // For now, use simple ordering - could be enhanced later
         val orderIndex = System.currentTimeMillis().toInt() % 1000
-        
+
         val newZone = Zone(
             name = name,
             description = description,
-            order_index = orderIndex
+            order_index = orderIndex,
+            tool_groups = toolGroupsJson
         )
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         zoneDao.insertZone(newZone)
 
         // Notify UI of zones change
@@ -87,23 +101,38 @@ class ZoneService(private val context: Context) : ExecutableService {
      */
     private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val zoneId = params.optString("zone_id")
         if (zoneId.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_required"))
         }
-        
+
         val existingZone = zoneDao.getZoneById(zoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
-        
+
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
+        // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
+        val toolGroupsJson = if (params.has("tool_groups")) {
+            val toolGroupsValue = params.opt("tool_groups")
+            // Allow explicit null to clear tool_groups
+            when {
+                toolGroupsValue == null || toolGroupsValue == JSONObject.NULL -> null
+                toolGroupsValue is JSONArray -> toolGroupsValue.toString()
+                toolGroupsValue is String -> toolGroupsValue
+                else -> existingZone.tool_groups
+            }
+        } else {
+            existingZone.tool_groups // Keep existing value if not provided
+        }
+
         val updatedZone = existingZone.copy(
             name = params.optString("name").takeIf { it.isNotBlank() } ?: existingZone.name,
             description = params.optString("description").takeIf { it.isNotBlank() } ?: existingZone.description,
+            tool_groups = toolGroupsJson,
             updated_at = System.currentTimeMillis()
         )
-        
+
         zoneDao.updateZone(updatedZone)
 
         // Notify UI of zones change
@@ -157,17 +186,22 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val zone = zoneDao.getZoneById(zoneId)
             ?: return OperationResult.error(s.shared("service_error_zone_not_found"))
-        
-        return OperationResult.success(mapOf(
-            "zone" to mapOf(
-                "id" to zone.id,
-                "name" to zone.name,
-                "description" to zone.description,
-                "order_index" to zone.order_index,
-                "created_at" to zone.created_at,
-                "updated_at" to zone.updated_at
-            )
-        ))
+
+        val zoneMap = mutableMapOf<String, Any?>(
+            "id" to zone.id,
+            "name" to zone.name,
+            "description" to zone.description,
+            "order_index" to zone.order_index,
+            "created_at" to zone.created_at,
+            "updated_at" to zone.updated_at
+        )
+
+        // Add tool_groups if present
+        if (zone.tool_groups != null) {
+            zoneMap["tool_groups"] = zone.tool_groups
+        }
+
+        return OperationResult.success(mapOf("zone" to zoneMap))
     }
     
     
@@ -179,9 +213,9 @@ class ZoneService(private val context: Context) : ExecutableService {
         
         val zones = zoneDao.getAllZones()
         if (token.isCancelled) return OperationResult.cancelled()
-        
+
         val zoneData = zones.map { zone ->
-            mapOf(
+            val zoneMap = mutableMapOf<String, Any?>(
                 "id" to zone.id,
                 "name" to zone.name,
                 "description" to zone.description,
@@ -189,8 +223,15 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "created_at" to zone.created_at,
                 "updated_at" to zone.updated_at
             )
+
+            // Add tool_groups if present
+            if (zone.tool_groups != null) {
+                zoneMap["tool_groups"] = zone.tool_groups
+            }
+
+            zoneMap
         }
-        
+
         return OperationResult.success(mapOf(
             "zones" to zoneData,
             "count" to zoneData.size
