@@ -16,11 +16,23 @@
 - **ToolGeneralConfigSection** : 9ème champ "group" avec GroupSelector
 - **Config screens** : Tous mis à jour (tracking, journal, notes, messages) avec paramètre zoneId
 
-### ⏳ EN COURS - UI Affichage
-- ZoneScreen : Affichage groupé + boutons "+"
+### ✅ COMPLÉTÉ - ZoneScreen Affichage Groupé (commit actuel)
+- **ButtonType** : Ajout SECONDARY et TERTIARY avec couleurs thème
+- **ZoneScreen** : Sections par groupe + section "Hors groupe" toujours visible
+- **Bouton "+" par section** : Liste avec Automatisation (SECONDARY) + outils (PRIMARY)
+- **Affichage vide** : Messages "Aucun élément dans ce groupe"
+- **MainScreen** : Chargement tool_groups dans zones list
+- **AutomationService** : Gestion field group (create/update)
+- **CreateAutomationDialog** : GroupSelector avec preSelectedGroup
+- **ToolTypeContract** : Paramètre initialGroup dans getConfigScreen()
+- **Tool config screens** : State group + derivedState config + chargement/sauvegarde
+- **ToolGeneralConfigSection** : LaunchedEffect pour initialisation initialGroup
+- **CreateZoneScreen** : Conversion JSONArray.toString() avant envoi
+
+### ⏳ TODO - Reste à implémenter
 - MainScreen : Config button + zones groupées
 - MainScreenConfigScreen : Gestion zone_groups
-- Automation screens : Group selection
+- Automation screens : Group selection integration
 
 ---
 
@@ -33,7 +45,9 @@
 
 ### UI
 4. **Section unique "Hors groupe"** : Une section pour outils ET automations hors groupe (pas deux séparées)
-5. **Bouton + unifié** : Chaque section a un "+" qui ouvre dialog "Outil ou Automation?" puis navigation avec groupe pré-rempli
+5. **Bouton + unifié dans liste** : Chaque section a un "+" qui ouvre liste avec Automatisation (SECONDARY) + tous les outils (PRIMARY)
+6. **initialGroup via contrat** : Ajout paramètre initialGroup à ToolTypeContract.getConfigScreen() (pas de valeur par défaut car @Composable)
+7. **Group state dans config screens** : Chaque config screen gère state group + l'ajoute au derivedStateOf config JSONObject
 
 ---
 
@@ -86,17 +100,20 @@ ALTER TABLE automations ADD COLUMN `group` TEXT DEFAULT NULL;
 
 ## UI TODO Détaillé
 
-### ZoneScreen (⏳)
+### ZoneScreen (✅ COMPLÉTÉ)
 **Structure:**
 1. Pour chaque groupe (ordre tool_groups) :
    - Header groupe + bouton "+"
-   - Grid tools du groupe + automations inline
-2. Section "Hors groupe" :
+   - Liste outils du groupe + automations
+   - Message vide si rien dans le groupe
+2. Section "Hors groupe" (toujours visible) :
    - Tools + automations sans groupe + bouton "+"
+   - Message vide si aucun élément
 
 **Bouton "+" :**
-- Dialog avec 2 options : "Créer un outil" / "Créer une automation"
-- Navigation avec groupe pré-rempli dans les params
+- Toggle liste avec Automatisation (SECONDARY, premier) + tous les outils (PRIMARY)
+- Pré-sélection groupe via initialGroup/preSelectedGroup
+- Fermeture liste après sélection
 
 ### MainScreen (⏳)
 - Ajouter bouton config (engrenage) dans header → MainScreenConfigScreen
