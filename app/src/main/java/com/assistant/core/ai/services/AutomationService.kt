@@ -117,6 +117,9 @@ class AutomationService(private val context: Context) : ExecutableService {
         val automationId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
+        // Parse optional group
+        val group = params.optString("group").takeIf { it.isNotEmpty() }
+
         val entity = AutomationEntity(
             id = automationId,
             name = name,
@@ -127,6 +130,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             dismissOlderInstances = params.optBoolean("dismiss_older_instances", false),
             providerId = providerId,
             isEnabled = params.optBoolean("is_enabled", true),
+            group = group,
             createdAt = now,
             updatedAt = now,
             lastExecutionId = null,
@@ -191,11 +195,19 @@ class AutomationService(private val context: Context) : ExecutableService {
         else
             entity.dismissOlderInstances
 
+        // Parse optional group (allow updating)
+        val group = if (params.has("group")) {
+            params.optString("group").takeIf { it.isNotEmpty() }
+        } else {
+            entity.group // Keep existing if not provided
+        }
+
         val updatedEntity = entity.copy(
             name = name,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
             dismissOlderInstances = dismissOlderInstances,
+            group = group,
             updatedAt = System.currentTimeMillis()
         )
 

@@ -339,6 +339,7 @@
     <string name="message_no_zones_created">Aucune zone créée</string>
     <string name="message_available_tool_types">Types d'outils disponibles</string>
     <string name="message_no_tools_in_zone">Aucun outil dans cette zone</string>
+    <string name="message_no_items_in_group">Aucun élément dans ce groupe</string>
     <string name="error_tooltype_not_found">Type d'outil '%1$s' introuvable</string>
     <string name="message_copied">Message copié</string>
 

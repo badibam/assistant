@@ -22,6 +22,7 @@ import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
+import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
 
 /**
@@ -51,17 +52,18 @@ fun ZoneScreen(
     var isLoadingAutomations by remember { mutableStateOf(true) }
     
     // State for showing/hiding available tools list - persiste orientation changes
-    var showAvailableTools by rememberSaveable { mutableStateOf(false) }
-    
-    // State for tool configuration screen - persiste orientation changes  
+    var showAvailableToolsForGroup by rememberSaveable { mutableStateOf<String?>(null) } // null = hidden, "" = ungrouped, "groupName" = specific group
+
+    // State for tool configuration screen - persiste orientation changes
     var showingConfigFor by rememberSaveable { mutableStateOf<String?>(null) }
     var editingToolId by rememberSaveable { mutableStateOf<String?>(null) }
-    
+
     // State for tool usage screen - persiste orientation changes
     var selectedToolInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // State for automation creation dialog
+    // State for automation creation dialog - with pre-selected group
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
+    var preSelectedGroup by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Derived states from IDs (recomputed after orientation change)
     val editingTool = toolInstances.find { it.id == editingToolId }
@@ -116,6 +118,7 @@ fun ZoneScreen(
                     dismissOlderInstances = map["dismiss_older_instances"] as? Boolean ?: false,
                     providerId = map["provider_id"] as String,
                     isEnabled = map["is_enabled"] as? Boolean ?: true,
+                    group = map["group"] as? String,
                     createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
                     updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
                     lastExecutionId = map["last_execution_id"] as? String,
@@ -199,6 +202,7 @@ fun ZoneScreen(
                     ))
                     editingToolId = null
                     showingConfigFor = null
+                    preSelectedGroup = null
                     reloadToolInstances()
                 } catch (e: Exception) {
                     errorMessage = "Update tool error: ${e.message}"
@@ -214,6 +218,7 @@ fun ZoneScreen(
                         "config_json" to config
                     ))
                     showingConfigFor = null
+                    preSelectedGroup = null
                     reloadToolInstances()
                 } catch (e: Exception) {
                     errorMessage = "Create tool error: ${e.message}"
@@ -225,8 +230,28 @@ fun ZoneScreen(
     val onCancelConfig = {
         showingConfigFor = null
         editingToolId = null
+        preSelectedGroup = null
     }
     
+    // Parse zone tool_groups from config
+    val zoneToolGroups = remember(zone.tool_groups) {
+        LogManager.ui("Parsing tool_groups for zone ${zone.id}: tool_groups = '${zone.tool_groups}'", "DEBUG")
+        try {
+            zone.tool_groups?.let {
+                org.json.JSONArray(it).let { jsonArray ->
+                    val groups = (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                    LogManager.ui("Parsed ${groups.size} groups: $groups", "DEBUG")
+                    groups
+                }
+            } ?: emptyList<String>().also {
+                LogManager.ui("tool_groups is null, returning empty list", "DEBUG")
+            }
+        } catch (e: Exception) {
+            LogManager.ui("Error parsing tool_groups: ${e.message}", "ERROR", e)
+            emptyList()
+        }
+    }
+
     // Show configuration screen if requested
     showingConfigFor?.let { toolTypeId ->
         ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
@@ -241,13 +266,15 @@ fun ZoneScreen(
                             coordinator.processUserAction("tools.delete", mapOf("tool_instance_id" to tool.id))
                             editingToolId = null
                             showingConfigFor = null
+                            preSelectedGroup = null
                             reloadToolInstances()
                         } catch (e: Exception) {
                             errorMessage = "Delete tool error: ${e.message}"
                         }
                     }
                 }
-            }
+            },
+            initialGroup = preSelectedGroup
         )
         return // Exit ZoneScreen composition when showing config
     }
@@ -287,158 +314,40 @@ fun ZoneScreen(
             onRightClick = { onConfigureZone?.invoke(zone.id) }
         )
 
-        // Tools section title
-        UI.Card(type = CardType.DEFAULT) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                UI.Text(
-                    text = s.shared("label_tools"),
-                    type = TextType.SUBTITLE
-                )
-
-                // Add tool button
-                UI.ActionButton(
-                    action = ButtonAction.ADD,
-                    display = ButtonDisplay.ICON,
-                    size = Size.M,
-                    onClick = {
-                        showAvailableTools = !showAvailableTools
-                    }
-                )
-            }
-        }
-
-        // Available tools list (shown conditionally)
-        if (showAvailableTools) {
-            UI.Card(
-                type = CardType.DEFAULT
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    UI.Text(
-                        text = s.shared("message_available_tool_types"),
-                        type = TextType.BODY,
-                        fillMaxWidth = true,
-                        textAlign = TextAlign.Center
-
-                    )
-                    
-                    // List all available tool types - centered
-                    ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            UI.Button(
-                                type = ButtonType.PRIMARY,
-                                onClick = {
-                                    showingConfigFor = toolTypeId
-                                    showAvailableTools = false
-                                }
-                            ) {
-                                UI.Text(
-                                    text = toolType.getDisplayName(context),
-                                    type = TextType.LABEL
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        if (isLoading) {
-            UI.Text(
-                text = s.shared("message_loading_tools"),
-                type = TextType.BODY
-            )
-        } else if (toolInstances.isEmpty()) {
-            // No tools placeholder
-            UI.Text(
-                text = s.shared("message_no_tools_in_zone"),
-                type = TextType.BODY,
-                fillMaxWidth = true,
-                textAlign = TextAlign.Center
-            )
-        } else {
-            // Show tools using UI.ToolCard
-            toolInstances.forEach { toolInstance ->
-                UI.ToolCard(
-                    tool = toolInstance,
-                    displayMode = DisplayMode.LINE,
-                    context = context,
-                    onClick = {
-                        selectedToolInstanceId = toolInstance.id
-                    },
-                    onLongClick = {
-                        editingToolId = toolInstance.id
-                        showingConfigFor = toolInstance.tool_type
-                    }
-                )
-            }
-        }
-
-        // Automations section separator
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Automations section title
-        UI.Card(type = CardType.DEFAULT) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                UI.Text(
-                    text = s.shared("automation_display_name") + "s",
-                    type = TextType.SUBTITLE
-                )
-
-                // Add automation button
-                UI.ActionButton(
-                    action = ButtonAction.ADD,
-                    display = ButtonDisplay.ICON,
-                    size = Size.M,
-                    onClick = {
-                        showCreateAutomationDialog = true
-                    }
-                )
-            }
-        }
-
-        // Automations list
-        if (isLoadingAutomations) {
+        // Display sections by group
+        if (isLoading || isLoadingAutomations) {
             UI.Text(
                 text = s.shared("message_loading"),
                 type = TextType.BODY,
                 fillMaxWidth = true,
                 textAlign = TextAlign.Center
             )
-        } else if (automations.isEmpty()) {
-            UI.Text(
-                text = s.shared("automation_none_configured"),
-                type = TextType.CAPTION,
-                fillMaxWidth = true,
-                textAlign = TextAlign.Center
-            )
         } else {
-            automations.forEach { automation ->
-                com.assistant.core.ai.ui.automation.AutomationCard(
-                    automation = automation,
-                    onEdit = {
-                        // Navigate to SEED session editor
-                        onNavigateToSeedEditor?.invoke(automation.seedSessionId)
+            // For each defined group, display its section (always shown, even if empty)
+            zoneToolGroups.forEach { groupName ->
+                GroupSection(
+                    groupName = groupName,
+                    toolInstances = toolInstances,
+                    automations = automations,
+                    showAvailableToolsForGroup = showAvailableToolsForGroup,
+                    onToggleToolsList = { showAvailableToolsForGroup = if (showAvailableToolsForGroup == groupName) null else groupName },
+                    onSelectToolType = { toolTypeId ->
+                        showingConfigFor = toolTypeId
+                        preSelectedGroup = groupName
+                        showAvailableToolsForGroup = null
                     },
-                    onTest = {
-                        // Manual execution
+                    onCreateAutomation = {
+                        preSelectedGroup = groupName
+                        showCreateAutomationDialog = true
+                        showAvailableToolsForGroup = null
+                    },
+                    onToolClick = { toolId -> selectedToolInstanceId = toolId },
+                    onToolLongClick = { tool ->
+                        editingToolId = tool.id
+                        showingConfigFor = tool.tool_type
+                    },
+                    onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
+                    onAutomationTest = { automation ->
                         coroutineScope.launch {
                             try {
                                 val result = coordinator.processUserAction(
@@ -455,12 +364,8 @@ fun ZoneScreen(
                             }
                         }
                     },
-                    onView = {
-                        // Navigate to automation execution history
-                        onNavigateToAutomationHistory?.invoke(automation.id)
-                    },
-                    onToggleEnabled = { enabled ->
-                        // Toggle automation enabled status
+                    onAutomationView = { automation -> onNavigateToAutomationHistory?.invoke(automation.id) },
+                    onAutomationToggle = { automation, enabled ->
                         coroutineScope.launch {
                             try {
                                 val operation = if (enabled) "automations.enable" else "automations.disable"
@@ -468,37 +373,61 @@ fun ZoneScreen(
                                     operation,
                                     mapOf("automation_id" to automation.id)
                                 )
+                                if (result.status != CommandStatus.SUCCESS) {
+                                    errorMessage = result.error
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = s.shared("message_error").format(e.message ?: "")
+                            }
+                        }
+                    },
+                    context = context
+                )
+            }
+
+            // Ungrouped section (tools and automations without group)
+            val ungroupedTools = toolInstances.filter { tool ->
+                val config = try {
+                    org.json.JSONObject(tool.config_json)
+                } catch (e: Exception) {
+                    null
+                }
+                val group = config?.optString("group")?.takeIf { it.isNotEmpty() }
+                group == null
+            }
+            val ungroupedAutomations = automations.filter { it.group == null || it.group.isEmpty() }
+
+            // Always show ungrouped section (even if empty) to allow adding tools/automations
+            UngroupedSection(
+                    toolInstances = ungroupedTools,
+                    automations = ungroupedAutomations,
+                    showAvailableToolsForGroup = showAvailableToolsForGroup,
+                    onToggleToolsList = { showAvailableToolsForGroup = if (showAvailableToolsForGroup == "") null else "" },
+                    onSelectToolType = { toolTypeId ->
+                        showingConfigFor = toolTypeId
+                        preSelectedGroup = null // No group for ungrouped section
+                        showAvailableToolsForGroup = null
+                    },
+                    onCreateAutomation = {
+                        preSelectedGroup = null
+                        showCreateAutomationDialog = true
+                        showAvailableToolsForGroup = null
+                    },
+                    onToolClick = { toolId -> selectedToolInstanceId = toolId },
+                    onToolLongClick = { tool ->
+                        editingToolId = tool.id
+                        showingConfigFor = tool.tool_type
+                    },
+                    onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
+                    onAutomationTest = { automation ->
+                        coroutineScope.launch {
+                            try {
+                                val result = coordinator.processUserAction(
+                                    "automations.execute_manual",
+                                    mapOf("automation_id" to automation.id)
+                                )
                                 if (result.status == CommandStatus.SUCCESS) {
-                                    // Reload automations to reflect change
-                                    coordinator.executeWithLoading(
-                                        operation = "automations.list",
-                                        params = mapOf("zone_id" to zone.id),
-                                        onLoading = { isLoadingAutomations = it },
-                                        onError = { error -> errorMessage = error }
-                                    )?.let { result ->
-                                        @Suppress("UNCHECKED_CAST")
-                                        val automationsList = result.data?.get("automations") as? List<Map<String, Any>> ?: emptyList()
-                                        automations = automationsList.map { map ->
-                                            val scheduleJson = map["schedule"] as? String
-                                            com.assistant.core.ai.data.Automation(
-                                                id = map["id"] as String,
-                                                name = map["name"] as String,
-                                                zoneId = map["zone_id"] as String,
-                                                seedSessionId = map["seed_session_id"] as String,
-                                                schedule = scheduleJson?.let {
-                                                    kotlinx.serialization.json.Json.decodeFromString(it)
-                                                },
-                                                triggerIds = (map["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                                                dismissOlderInstances = map["dismiss_older_instances"] as? Boolean ?: false,
-                                                providerId = map["provider_id"] as String,
-                                                isEnabled = map["is_enabled"] as? Boolean ?: true,
-                                                createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
-                                                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
-                                                lastExecutionId = map["last_execution_id"] as? String,
-                                                executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                                            )
-                                        }
-                                    }
+                                    errorMessage = s.shared("automation_execution_triggered")
                                 } else {
                                     errorMessage = result.error
                                 }
@@ -506,9 +435,26 @@ fun ZoneScreen(
                                 errorMessage = s.shared("message_error").format(e.message ?: "")
                             }
                         }
-                    }
+                    },
+                    onAutomationView = { automation -> onNavigateToAutomationHistory?.invoke(automation.id) },
+                    onAutomationToggle = { automation, enabled ->
+                        coroutineScope.launch {
+                            try {
+                                val operation = if (enabled) "automations.enable" else "automations.disable"
+                                val result = coordinator.processUserAction(
+                                    operation,
+                                    mapOf("automation_id" to automation.id)
+                                )
+                                if (result.status != CommandStatus.SUCCESS) {
+                                    errorMessage = result.error
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = s.shared("message_error").format(e.message ?: "")
+                            }
+                        }
+                    },
+                    context = context
                 )
-            }
         }
     }
 
@@ -517,11 +463,14 @@ fun ZoneScreen(
         com.assistant.core.ai.ui.automation.CreateAutomationDialog(
             zoneId = zone.id,
             zoneName = zone.name,
+            preSelectedGroup = preSelectedGroup,
             onDismiss = {
                 showCreateAutomationDialog = false
+                preSelectedGroup = null
             },
             onSuccess = { seedSessionId ->
                 showCreateAutomationDialog = false
+                preSelectedGroup = null
                 // Reload automations to show the new one
                 coroutineScope.launch {
                     coordinator.executeWithLoading(
@@ -546,6 +495,7 @@ fun ZoneScreen(
                                 dismissOlderInstances = map["dismiss_older_instances"] as? Boolean ?: false,
                                 providerId = map["provider_id"] as String,
                                 isEnabled = map["is_enabled"] as? Boolean ?: true,
+                                group = map["group"] as? String,
                                 createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
                                 updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
                                 lastExecutionId = map["last_execution_id"] as? String,
@@ -566,5 +516,276 @@ fun ZoneScreen(
             UI.Toast(context, message, Duration.LONG)
             errorMessage = null
         }
+    }
+}
+
+/**
+ * Display a group section with its tools and automations
+ */
+@Composable
+private fun GroupSection(
+    groupName: String,
+    toolInstances: List<ToolInstance>,
+    automations: List<com.assistant.core.ai.data.Automation>,
+    showAvailableToolsForGroup: String?,
+    onToggleToolsList: () -> Unit,
+    onSelectToolType: (String) -> Unit,
+    onCreateAutomation: () -> Unit,
+    onToolClick: (String) -> Unit,
+    onToolLongClick: (ToolInstance) -> Unit,
+    onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationView: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationToggle: (com.assistant.core.ai.data.Automation, Boolean) -> Unit,
+    context: android.content.Context
+) {
+    val s = remember { Strings.`for`(context = context) }
+    // Filter tools and automations for this group
+    val groupTools = toolInstances.filter { tool ->
+        val config = try {
+            org.json.JSONObject(tool.config_json)
+        } catch (e: Exception) {
+            null
+        }
+        config?.optString("group") == groupName
+    }
+    val groupAutomations = automations.filter { it.group == groupName }
+
+    // Section header
+    UI.Card(type = CardType.DEFAULT) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(
+                text = groupName,
+                type = TextType.SUBTITLE
+            )
+
+            // Add button
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onToggleToolsList
+            )
+        }
+    }
+
+    // Available tools/automations list (shown conditionally)
+    if (showAvailableToolsForGroup == groupName) {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("message_available_tool_types"),
+                    type = TextType.BODY,
+                    fillMaxWidth = true,
+                    textAlign = TextAlign.Center
+                )
+
+                // Automation button (SECONDARY, first)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onCreateAutomation
+                    ) {
+                        UI.Text(
+                            text = s.shared("automation_display_name"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // List all available tool types (PRIMARY)
+                ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        UI.Button(
+                            type = ButtonType.PRIMARY,
+                            onClick = { onSelectToolType(toolTypeId) }
+                        ) {
+                            UI.Text(
+                                text = toolType.getDisplayName(context),
+                                type = TextType.LABEL
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Display tools in this group
+    groupTools.forEach { tool ->
+        UI.ToolCard(
+            tool = tool,
+            displayMode = DisplayMode.LINE,
+            context = context,
+            onClick = { onToolClick(tool.id) },
+            onLongClick = { onToolLongClick(tool) }
+        )
+    }
+
+    // Display automations in this group
+    groupAutomations.forEach { automation ->
+        com.assistant.core.ai.ui.automation.AutomationCard(
+            automation = automation,
+            onEdit = { onAutomationEdit(automation) },
+            onTest = { onAutomationTest(automation) },
+            onView = { onAutomationView(automation) },
+            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) }
+        )
+    }
+
+    // Empty state if no tools/automations in this group (only when list is not showing)
+    if (groupTools.isEmpty() && groupAutomations.isEmpty() && showAvailableToolsForGroup != groupName) {
+        UI.Text(
+            text = s.shared("message_no_items_in_group"),
+            type = TextType.CAPTION,
+            fillMaxWidth = true,
+            textAlign = TextAlign.Center
+        )
+    }
+
+    // Spacer after each group
+    Spacer(modifier = Modifier.height(24.dp))
+}
+
+/**
+ * Display the ungrouped section with tools and automations without a group
+ */
+@Composable
+private fun UngroupedSection(
+    toolInstances: List<ToolInstance>,
+    automations: List<com.assistant.core.ai.data.Automation>,
+    showAvailableToolsForGroup: String?,
+    onToggleToolsList: () -> Unit,
+    onSelectToolType: (String) -> Unit,
+    onCreateAutomation: () -> Unit,
+    onToolClick: (String) -> Unit,
+    onToolLongClick: (ToolInstance) -> Unit,
+    onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationView: (com.assistant.core.ai.data.Automation) -> Unit,
+    onAutomationToggle: (com.assistant.core.ai.data.Automation, Boolean) -> Unit,
+    context: android.content.Context
+) {
+    val s = remember { Strings.`for`(context = context) }
+    // Section header
+    UI.Card(type = CardType.DEFAULT) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UI.Text(
+                text = s.shared("label_ungrouped"),
+                type = TextType.SUBTITLE
+            )
+
+            // Add button
+            UI.ActionButton(
+                action = ButtonAction.ADD,
+                display = ButtonDisplay.ICON,
+                size = Size.M,
+                onClick = onToggleToolsList
+            )
+        }
+    }
+
+    // Available tools/automations list (shown conditionally)
+    if (showAvailableToolsForGroup == "") {
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                UI.Text(
+                    text = s.shared("message_available_tool_types"),
+                    type = TextType.BODY,
+                    fillMaxWidth = true,
+                    textAlign = TextAlign.Center
+                )
+
+                // Automation button (SECONDARY, first)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onCreateAutomation
+                    ) {
+                        UI.Text(
+                            text = s.shared("automation_display_name"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // List all available tool types (PRIMARY)
+                ToolTypeManager.getAllToolTypes().forEach { (toolTypeId, toolType) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        UI.Button(
+                            type = ButtonType.PRIMARY,
+                            onClick = { onSelectToolType(toolTypeId) }
+                        ) {
+                            UI.Text(
+                                text = toolType.getDisplayName(context),
+                                type = TextType.LABEL
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Display ungrouped tools
+    toolInstances.forEach { tool ->
+        UI.ToolCard(
+            tool = tool,
+            displayMode = DisplayMode.LINE,
+            context = context,
+            onClick = { onToolClick(tool.id) },
+            onLongClick = { onToolLongClick(tool) }
+        )
+    }
+
+    // Display ungrouped automations
+    automations.forEach { automation ->
+        com.assistant.core.ai.ui.automation.AutomationCard(
+            automation = automation,
+            onEdit = { onAutomationEdit(automation) },
+            onTest = { onAutomationTest(automation) },
+            onView = { onAutomationView(automation) },
+            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) }
+        )
+    }
+
+    // Empty state (only when list is not showing)
+    if (toolInstances.isEmpty() && automations.isEmpty() && showAvailableToolsForGroup != "") {
+        UI.Text(
+            text = s.shared("message_no_items_in_group"),
+            type = TextType.CAPTION,
+            fillMaxWidth = true,
+            textAlign = TextAlign.Center
+        )
     }
 }

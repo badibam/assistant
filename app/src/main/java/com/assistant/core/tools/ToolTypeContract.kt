@@ -60,6 +60,7 @@ interface ToolTypeContract : SchemaProvider {
      * @param onCancel Called when configuration is cancelled
      * @param existingToolId Optional existing tool ID for editing mode
      * @param onDelete Optional delete callback for editing mode
+     * @param initialGroup Optional pre-selected group for new tool creation
      */
     @Composable
     fun getConfigScreen(
@@ -67,7 +68,8 @@ interface ToolTypeContract : SchemaProvider {
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
         existingToolId: String?,
-        onDelete: (() -> Unit)?
+        onDelete: (() -> Unit)?,
+        initialGroup: String?
     )
     
     /**

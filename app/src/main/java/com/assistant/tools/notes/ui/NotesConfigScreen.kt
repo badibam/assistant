@@ -29,7 +29,8 @@ fun NotesConfigScreen(
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
     existingToolId: String? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    initialGroup: String? = null
 ) {
     LogManager.ui("NotesConfigScreen opened - existingToolId=$existingToolId")
 
@@ -47,6 +48,7 @@ fun NotesConfigScreen(
     var validateConfig by remember { mutableStateOf(false) }
     var validateData by remember { mutableStateOf(false) }
     var alwaysSend by remember { mutableStateOf(false) }
+    var group by remember { mutableStateOf<String?>(null) }
 
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
@@ -76,6 +78,7 @@ fun NotesConfigScreen(
                         validateConfig = config.optBoolean("validateConfig", false)
                         validateData = config.optBoolean("validateData", false)
                         alwaysSend = config.optBoolean("always_send", false)
+                        group = config.optString("group").takeIf { it.isNotEmpty() }
                         LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
@@ -132,6 +135,7 @@ fun NotesConfigScreen(
                     put("validateConfig", validateConfig)
                     put("validateData", validateData)
                     put("always_send", alwaysSend)
+                    group?.let { put("group", it) }
                 }
             }
         }
@@ -148,11 +152,12 @@ fun NotesConfigScreen(
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
-                    "group" -> config.put("group", value)
+                    "group" -> group = value as? String
                 }
             },
             toolTypeName = "notes",
-            zoneId = zoneId
+            zoneId = zoneId,
+            initialGroup = initialGroup
         )
 
         // Form actions - using standard ToolConfigActions
@@ -160,7 +165,7 @@ fun NotesConfigScreen(
             coroutineScope.launch {
                 isSaving = true
                 try {
-                    val configData = mapOf(
+                    val configData = mutableMapOf<String, Any>(
                         "schema_id" to "notes_config",  // Add schema_id for validation
                         "data_schema_id" to "notes_data", // Add data_schema_id for runtime
                         "name" to name,
@@ -172,6 +177,8 @@ fun NotesConfigScreen(
                         "validateData" to validateData,
                         "always_send" to alwaysSend
                     )
+                    // Add group if present
+                    group?.let { configData["group"] = it }
 
                     // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(

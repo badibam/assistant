@@ -89,7 +89,8 @@ fun TrackingConfigScreen(
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
     existingToolId: String? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    initialGroup: String? = null
 ) {
     // VALDEBUG: Screen startup debug
     LogManager.tracking("TrackingConfigScreen opened - existingToolId=$existingToolId")
@@ -656,7 +657,8 @@ fun TrackingConfigScreen(
             config = config,
             updateConfig = ::updateConfig,
             toolTypeName = "tracking",
-            zoneId = zoneId
+            zoneId = zoneId,
+            initialGroup = initialGroup
         )
         
         // Card 2: Tracking-specific parameters

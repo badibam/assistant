@@ -338,14 +338,16 @@ object MessageToolType : ToolTypeContract {
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
         existingToolId: String?,
-        onDelete: (() -> Unit)?
+        onDelete: (() -> Unit)?,
+        initialGroup: String?
     ) {
         com.assistant.tools.messages.ui.MessagesConfigScreen(
             zoneId = zoneId,
             onSave = onSave,
             onCancel = onCancel,
             existingToolId = existingToolId,
-            onDelete = onDelete
+            onDelete = onDelete,
+            initialGroup = initialGroup
         )
     }
 

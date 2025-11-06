@@ -33,7 +33,8 @@ fun MessagesConfigScreen(
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
     existingToolId: String? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    initialGroup: String? = null
 ) {
     LogManager.ui("MessagesConfigScreen opened - existingToolId=$existingToolId")
 
@@ -51,6 +52,7 @@ fun MessagesConfigScreen(
     var validateConfig by remember { mutableStateOf(false) }
     var validateData by remember { mutableStateOf(false) }
     var alwaysSend by remember { mutableStateOf(false) }
+    var group by remember { mutableStateOf<String?>(null) }
 
     // Messages-specific configuration states
     var defaultPriority by remember { mutableStateOf("default") }
@@ -85,6 +87,7 @@ fun MessagesConfigScreen(
                         validateConfig = config.optBoolean("validateConfig", false)
                         validateData = config.optBoolean("validateData", false)
                         alwaysSend = config.optBoolean("always_send", false)
+                        group = config.optString("group").takeIf { it.isNotEmpty() }
 
                         // Load Messages-specific config
                         defaultPriority = config.optString("default_priority", "default")
@@ -145,6 +148,7 @@ fun MessagesConfigScreen(
                     put("validateConfig", validateConfig)
                     put("validateData", validateData)
                     put("always_send", alwaysSend)
+                    group?.let { put("group", it) }
                 }
             }
         }
@@ -162,11 +166,12 @@ fun MessagesConfigScreen(
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
-                    "group" -> config.put("group", value)
+                    "group" -> group = value as? String
                 }
             },
             toolTypeName = "messages",
-            zoneId = zoneId
+            zoneId = zoneId,
+            initialGroup = initialGroup
         )
 
         // Messages-specific configuration section
@@ -218,7 +223,7 @@ fun MessagesConfigScreen(
                 isSaving = true
                 try {
                     // Build complete configuration with schema IDs
-                    val configData = mapOf(
+                    val configData = mutableMapOf<String, Any>(
                         "schema_id" to "messages_config",
                         "data_schema_id" to "messages_data",
                         "name" to name,
@@ -232,6 +237,8 @@ fun MessagesConfigScreen(
                         "default_priority" to defaultPriority,
                         "external_notifications" to externalNotifications
                     )
+                    // Add group if present
+                    group?.let { configData["group"] = it }
 
                     // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(

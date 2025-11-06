@@ -173,6 +173,16 @@ object DefaultTheme : ThemeContract {
                 CurrentTheme.getCurrentColorScheme().onPrimary,
                 null
             )
+            ButtonType.SECONDARY -> Triple(
+                CurrentTheme.getCurrentColorScheme().secondary,
+                CurrentTheme.getCurrentColorScheme().onSecondary,
+                null
+            )
+            ButtonType.TERTIARY -> Triple(
+                CurrentTheme.getCurrentColorScheme().tertiary,
+                CurrentTheme.getCurrentColorScheme().onTertiary,
+                null
+            )
             ButtonType.DANGER -> Triple(
                 CurrentTheme.getCurrentColorScheme().errorContainer,
                 CurrentTheme.getCurrentColorScheme().onErrorContainer,

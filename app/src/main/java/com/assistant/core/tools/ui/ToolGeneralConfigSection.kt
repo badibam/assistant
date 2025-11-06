@@ -29,7 +29,8 @@ fun ToolGeneralConfigSection(
     config: JSONObject,
     updateConfig: (String, Any) -> Unit,
     toolTypeName: String,
-    zoneId: String
+    zoneId: String,
+    initialGroup: String? = null  // Pre-selected group for new tool creation
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -58,6 +59,13 @@ fun ToolGeneralConfigSection(
             } else {
                 availableGroups = emptyList()
             }
+        }
+    }
+
+    // Initialize group with initialGroup if config doesn't have one (only once on first composition)
+    LaunchedEffect(initialGroup) {
+        if (initialGroup != null && config.optString("group", "").isBlank()) {
+            updateConfig("group", initialGroup)
         }
     }
 

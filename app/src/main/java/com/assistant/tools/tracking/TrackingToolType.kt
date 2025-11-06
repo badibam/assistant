@@ -778,11 +778,13 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         onSave: (config: String) -> Unit,
         onCancel: () -> Unit,
         existingToolId: String?,
-        onDelete: (() -> Unit)?
+        onDelete: (() -> Unit)?,
+        initialGroup: String?
     ) {
         TrackingConfigScreen(
             zoneId = zoneId,
             onSave = onSave,
+            initialGroup = initialGroup,
             onCancel = onCancel,
             existingToolId = existingToolId,
             onDelete = onDelete

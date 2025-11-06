@@ -79,7 +79,8 @@ fun MainScreen() {
                     description = map["description"] as? String,
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
-                    updated_at = (map["updated_at"] as Number).toLong()
+                    updated_at = (map["updated_at"] as Number).toLong(),
+                    tool_groups = map["tool_groups"] as? String
                 )
             }
         }
@@ -102,7 +103,8 @@ fun MainScreen() {
                                 description = map["description"] as? String,
                                 order_index = (map["order_index"] as Number).toInt(),
                                 created_at = (map["created_at"] as Number).toLong(),
-                                updated_at = (map["updated_at"] as Number).toLong()
+                                updated_at = (map["updated_at"] as Number).toLong(),
+                                tool_groups = map["tool_groups"] as? String
                             )
                         }
                     }

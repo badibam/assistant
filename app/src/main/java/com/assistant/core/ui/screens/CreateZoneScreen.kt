@@ -92,7 +92,7 @@ fun CreateZoneScreen(
 
                             // Add tool_groups to update params
                             if (toolGroups.isNotEmpty()) {
-                                updateParams["tool_groups"] = JSONArray(toolGroups)
+                                updateParams["tool_groups"] = JSONArray(toolGroups).toString()
                             } else {
                                 // Explicitly set to null to clear tool_groups
                                 updateParams["tool_groups"] = org.json.JSONObject.NULL
@@ -109,7 +109,7 @@ fun CreateZoneScreen(
 
                             // Add tool_groups to create params
                             if (toolGroups.isNotEmpty()) {
-                                createParams["tool_groups"] = JSONArray(toolGroups)
+                                createParams["tool_groups"] = JSONArray(toolGroups).toString()
                             }
 
                             val result = coordinator.processUserAction("zones.create", createParams)

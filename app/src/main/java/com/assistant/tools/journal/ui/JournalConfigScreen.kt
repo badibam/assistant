@@ -27,7 +27,8 @@ fun JournalConfigScreen(
     onSave: (config: String) -> Unit,
     onCancel: () -> Unit,
     existingToolId: String? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    initialGroup: String? = null
 ) {
     LogManager.ui("JournalConfigScreen opened - existingToolId=$existingToolId")
 
@@ -45,6 +46,7 @@ fun JournalConfigScreen(
     var validateConfig by remember { mutableStateOf(false) }
     var validateData by remember { mutableStateOf(false) }
     var alwaysSend by remember { mutableStateOf(false) }
+    var group by remember { mutableStateOf<String?>(null) }
 
     // Configuration states - journal specific
     var sortOrder by remember { mutableStateOf("descending") }
@@ -77,6 +79,7 @@ fun JournalConfigScreen(
                         validateConfig = config.optBoolean("validateConfig", false)
                         validateData = config.optBoolean("validateData", false)
                         alwaysSend = config.optBoolean("always_send", false)
+                        group = config.optString("group").takeIf { it.isNotEmpty() }
                         sortOrder = config.optString("sort_order", "descending")
                         LogManager.ui("Successfully loaded journal config: name=$name, sortOrder=$sortOrder")
                     } catch (e: Exception) {
@@ -133,6 +136,7 @@ fun JournalConfigScreen(
                     put("validateConfig", validateConfig)
                     put("validateData", validateData)
                     put("always_send", alwaysSend)
+                    group?.let { put("group", it) }
                 }
             }
         }
@@ -150,11 +154,12 @@ fun JournalConfigScreen(
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
-                    "group" -> config.put("group", value)
+                    "group" -> group = value as? String
                 }
             },
             toolTypeName = "journal",
-            zoneId = zoneId
+            zoneId = zoneId,
+            initialGroup = initialGroup
         )
 
         // Journal-specific configuration section
@@ -196,7 +201,7 @@ fun JournalConfigScreen(
             coroutineScope.launch {
                 isSaving = true
                 try {
-                    val configData = mapOf(
+                    val configData = mutableMapOf<String, Any>(
                         "schema_id" to "journal_config",  // Add schema_id for validation
                         "data_schema_id" to "journal_data", // Add data_schema_id for runtime
                         "name" to name,
@@ -209,6 +214,8 @@ fun JournalConfigScreen(
                         "always_send" to alwaysSend,
                         "sort_order" to sortOrder
                     )
+                    // Add group if present
+                    group?.let { configData["group"] = it }
 
                     // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(

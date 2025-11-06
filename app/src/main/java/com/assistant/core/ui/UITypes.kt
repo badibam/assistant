@@ -133,7 +133,9 @@ enum class DialogType {
  * Simplified button types
  */
 enum class ButtonType {
-    PRIMARY,    // Primary button (e.g., save, create, confirm)
+    PRIMARY,    // Primary button (e.g., save, create, confirm) - uses primary color
+    SECONDARY,  // Secondary button (e.g., alternative actions) - uses secondary color
+    TERTIARY,   // Tertiary button (e.g., less important actions) - uses tertiary color
     DANGER,     // Destructive actions (e.g., delete, stop)
     DEFAULT     // Neutral button (e.g., cancel, back)
 }

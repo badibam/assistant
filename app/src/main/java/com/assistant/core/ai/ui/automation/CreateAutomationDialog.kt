@@ -40,6 +40,7 @@ fun CreateAutomationDialog(
     zoneId: String,
     zoneName: String,
     automation: Map<String, Any>? = null,  // null = CREATE mode, not null = EDIT mode
+    preSelectedGroup: String? = null,      // Pre-selected group (can be changed by user)
     onDismiss: () -> Unit,
     onSuccess: (seedSessionId: String) -> Unit
 ) {
@@ -62,6 +63,36 @@ fun CreateAutomationDialog(
             if (isEditMode) automation?.get("provider_id") as? String
             else null
         )
+    }
+    var selectedGroup by remember {
+        mutableStateOf(
+            if (isEditMode) automation?.get("group") as? String
+            else preSelectedGroup
+        )
+    }
+
+    // Load zone tool_groups
+    var zoneToolGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(zoneId) {
+        try {
+            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            if (result.status == CommandStatus.SUCCESS) {
+                val zoneData = result.data?.get("zone") as? Map<*, *>
+                val toolGroupsJson = zoneData?.get("tool_groups") as? String
+                zoneToolGroups = if (toolGroupsJson != null) {
+                    try {
+                        val jsonArray = org.json.JSONArray(toolGroupsJson)
+                        (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            LogManager.aiUI("Failed to load zone tool_groups: ${e.message}", "ERROR", e)
+        }
     }
 
     // Available providers
@@ -126,15 +157,18 @@ fun CreateAutomationDialog(
                             return@launch
                         }
 
-                        // Update automation (name + provider)
-                        val updateResult = coordinator.processUserAction(
-                            "automations.update",
-                            mapOf(
-                                "automation_id" to automationId,
-                                "name" to name,
-                                "provider_id" to selectedProvider!!
-                            )
+                        // Update automation (name + provider + group)
+                        val updateParams = mutableMapOf<String, Any>(
+                            "automation_id" to automationId,
+                            "name" to name,
+                            "provider_id" to selectedProvider!!
                         )
+                        // Add group if present (empty string means explicitly ungrouped)
+                        if (selectedGroup != null) {
+                            updateParams["group"] = selectedGroup!!
+                        }
+
+                        val updateResult = coordinator.processUserAction("automations.update", updateParams)
 
                         if (updateResult.status != CommandStatus.SUCCESS) {
                             errorMessage = updateResult.error ?: s.shared("error_automation_update_failed")
@@ -190,16 +224,19 @@ fun CreateAutomationDialog(
                         LogManager.aiUI("Created SEED session: $seedSessionId", "DEBUG")
 
                         // Step 2: Create automation
-                        val createAutomationResult = coordinator.processUserAction(
-                            "automations.create",
-                            mapOf(
-                                "name" to name,
-                                "zone_id" to zoneId,
-                                "seed_session_id" to seedSessionId,
-                                "provider_id" to selectedProvider!!,
-                                "is_enabled" to true
-                            )
+                        val createParams = mutableMapOf<String, Any>(
+                            "name" to name,
+                            "zone_id" to zoneId,
+                            "seed_session_id" to seedSessionId,
+                            "provider_id" to selectedProvider!!,
+                            "is_enabled" to true
                         )
+                        // Add group if present (empty string means explicitly ungrouped)
+                        if (selectedGroup != null) {
+                            createParams["group"] = selectedGroup!!
+                        }
+
+                        val createAutomationResult = coordinator.processUserAction("automations.create", createParams)
 
                         if (createAutomationResult.status != CommandStatus.SUCCESS) {
                             errorMessage = createAutomationResult.error ?: s.shared("service_error_automation").format("")
@@ -282,6 +319,14 @@ fun CreateAutomationDialog(
                     required = true
                 )
             }
+
+            // Group selection
+            com.assistant.core.ui.components.GroupSelector(
+                availableGroups = zoneToolGroups,
+                selectedGroup = selectedGroup,
+                onGroupSelected = { selectedGroup = it },
+                label = s.shared("label_group")
+            )
 
             // Info text (changes based on mode)
             UI.Text(

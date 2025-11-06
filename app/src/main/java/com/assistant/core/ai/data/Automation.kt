@@ -18,6 +18,7 @@ data class Automation(
     val dismissOlderInstances: Boolean = false,  // Skip older instances if newer exists in queue
     val providerId: String,                 // AI provider to use for execution
     val isEnabled: Boolean,
+    val group: String? = null,              // Group within zone (null = ungrouped)
     val createdAt: Long,
     val updatedAt: Long,                    // Last modification timestamp (used to skip missed executions after disable)
     val lastExecutionId: String?,           // ID of most recent execution session
