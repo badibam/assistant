@@ -295,22 +295,9 @@ fun MainScreen() {
             onCancel = {
                 showCreateZone = false
             },
-            onCreate = { name, description, color ->
-                coroutineScope.launch {
-                    try {
-                        val result = coordinator.processUserAction(
-                            "zones.create",
-                            mapOf(
-                                "name" to name,
-                                "description" to (description ?: ""),
-                                "color" to (color ?: "")
-                            )
-                        )
-                        showCreateZone = false
-                        reloadZones()
-                    } catch (e: Exception) {
-                    }
-                }
+            onCreate = {
+                showCreateZone = false
+                reloadZones()
             }
         )
     } else {

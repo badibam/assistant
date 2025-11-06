@@ -148,9 +148,11 @@ fun NotesConfigScreen(
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
+                    "group" -> config.put("group", value)
                 }
             },
-            toolTypeName = "notes"
+            toolTypeName = "notes",
+            zoneId = zoneId
         )
 
         // Form actions - using standard ToolConfigActions

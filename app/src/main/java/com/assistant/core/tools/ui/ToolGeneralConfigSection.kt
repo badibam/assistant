@@ -7,32 +7,60 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.ui.components.IconSelector
+import com.assistant.core.ui.components.GroupSelector
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.commands.CommandStatus
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Reusable general settings section for all tool types
  * Extracted from TrackingConfigScreen for generalization
- * 
+ *
  * @param config Complete JSON configuration of the tool
  * @param updateConfig Callback to update configuration
  * @param toolTypeName Tool type name to retrieve suggested icons
+ * @param zoneId Zone ID to fetch available tool groups
  */
 @Composable
 fun ToolGeneralConfigSection(
     config: JSONObject,
     updateConfig: (String, Any) -> Unit,
-    toolTypeName: String
+    toolTypeName: String,
+    zoneId: String
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    
+    val coordinator = remember { Coordinator(context) }
+
     // Retrieve suggested icons from ToolType
     val suggestedIcons = remember(toolTypeName) {
         ToolTypeManager.getToolType(toolTypeName)?.getSuggestedIcons() ?: emptyList()
     }
-    
+
+    // Load available tool groups from zone
+    var availableGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(zoneId) {
+        val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+        if (result.status == CommandStatus.SUCCESS) {
+            val zone = result.data?.get("zone") as? Map<*, *>
+            val toolGroupsJson = zone?.get("tool_groups") as? String
+            if (toolGroupsJson != null) {
+                try {
+                    val jsonArray = JSONArray(toolGroupsJson)
+                    availableGroups = (0 until jsonArray.length()).map { jsonArray.getString(it) }
+                } catch (e: Exception) {
+                    availableGroups = emptyList()
+                }
+            } else {
+                availableGroups = emptyList()
+            }
+        }
+    }
+
     // Extract values from config
     val name = config.optString("name", "")
     val description = config.optString("description", "")
@@ -42,6 +70,7 @@ fun ToolGeneralConfigSection(
     val validateConfig = config.optBoolean("validateConfig", false)
     val validateData = config.optBoolean("validateData", false)
     val alwaysSend = config.optBoolean("always_send", false)
+    val group = config.optString("group", "").takeIf { it.isNotBlank() }
 
     UI.Card(type = CardType.DEFAULT) {
         Column(
@@ -159,6 +188,21 @@ fun ToolGeneralConfigSection(
                 trueLabel = s.shared("tools_config_option_yes"),
                 falseLabel = s.shared("tools_config_option_no"),
                 required = false
+            )
+
+            // 9. Group selection (optional)
+            GroupSelector(
+                availableGroups = availableGroups,
+                selectedGroup = group,
+                onGroupSelected = { newGroup ->
+                    if (newGroup != null) {
+                        updateConfig("group", newGroup)
+                    } else {
+                        // Remove group field from config
+                        config.remove("group")
+                    }
+                },
+                label = s.shared("label_group")
             )
         }
     }

@@ -655,7 +655,8 @@ fun TrackingConfigScreen(
         ToolGeneralConfigSection(
             config = config,
             updateConfig = ::updateConfig,
-            toolTypeName = "tracking"
+            toolTypeName = "tracking",
+            zoneId = zoneId
         )
         
         // Card 2: Tracking-specific parameters

@@ -12,10 +12,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
+import com.assistant.core.ui.components.GroupListEditor
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 
 /**
  * Screen for creating/editing a zone
@@ -25,7 +27,7 @@ import kotlinx.coroutines.launch
 fun CreateZoneScreen(
     existingZone: Zone? = null,
     onCancel: () -> Unit = {},
-    onCreate: ((String, String?, String?) -> Unit)? = null,
+    onCreate: (() -> Unit)? = null,
     onUpdate: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
@@ -39,16 +41,34 @@ fun CreateZoneScreen(
     var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
     var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
+    // Parse tool_groups from existing zone
+    val initialToolGroups = remember(existingZone) {
+        existingZone?.tool_groups?.let { jsonString ->
+            try {
+                val jsonArray = JSONArray(jsonString)
+                (0 until jsonArray.length()).map { jsonArray.getString(it) }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } ?: emptyList()
+    }
+    var toolGroups by remember(initialToolGroups) { mutableStateOf(initialToolGroups) }
+
     val isEditing = existingZone != null
     
     // Handle save logic
     val handleSave = {
         // Validation via SchemaValidator avant sauvegarde
-        val zoneData = mapOf(
+        val zoneData = mutableMapOf<String, Any>(
             "name" to name.trim(),
             "description" to description.trim()
         )
+
+        // Add tool_groups if not empty
+        if (toolGroups.isNotEmpty()) {
+            zoneData["tool_groups"] = JSONArray(toolGroups)
+        }
         
         try {
             val schema = com.assistant.core.schemas.ZoneSchemaProvider.getSchema("zone_config", context)
@@ -60,26 +80,44 @@ fun CreateZoneScreen(
             
             if (validation.isValid) {
                 // Validation successful, proceed to save
-                if (isEditing) {
-                // Handle update
                 coroutineScope.launch {
                     try {
-                        val result = coordinator.processUserAction(
-                            "zones.update",
-                            mapOf(
+                        if (isEditing) {
+                            // Handle update
+                            val updateParams = mutableMapOf<String, Any>(
                                 "zone_id" to existingZone!!.id,
                                 "name" to name.trim(),
                                 "description" to (description.takeIf { it.isNotBlank() } ?: "")
                             )
-                        )
-                        onUpdate?.invoke()
+
+                            // Add tool_groups to update params
+                            if (toolGroups.isNotEmpty()) {
+                                updateParams["tool_groups"] = JSONArray(toolGroups)
+                            } else {
+                                // Explicitly set to null to clear tool_groups
+                                updateParams["tool_groups"] = org.json.JSONObject.NULL
+                            }
+
+                            val result = coordinator.processUserAction("zones.update", updateParams)
+                            onUpdate?.invoke()
+                        } else {
+                            // Handle create
+                            val createParams = mutableMapOf<String, Any>(
+                                "name" to name.trim(),
+                                "description" to (description.takeIf { it.isNotBlank() } ?: "")
+                            )
+
+                            // Add tool_groups to create params
+                            if (toolGroups.isNotEmpty()) {
+                                createParams["tool_groups"] = JSONArray(toolGroups)
+                            }
+
+                            val result = coordinator.processUserAction("zones.create", createParams)
+                            onCreate?.invoke()
+                        }
                     } catch (e: Exception) {
-                        errorMessage = "Update error: ${e.message}"
+                        errorMessage = "Operation error: ${e.message}"
                     }
-                }
-                } else {
-                    // Handle create
-                    onCreate?.invoke(name.trim(), description.takeIf { it.isNotBlank() }, null)
                 }
             } else {
                 // Validation failed, show error via Toast
@@ -126,7 +164,14 @@ fun CreateZoneScreen(
             fieldType = FieldType.TEXT_MEDIUM,
             required = false
         )
-        
+
+        // Tool groups editor
+        GroupListEditor(
+            groups = toolGroups,
+            onGroupsChange = { toolGroups = it },
+            label = s.shared("label_tool_groups")
+        )
+
         // Actions
         UI.FormActions {
             UI.ActionButton(

@@ -162,9 +162,11 @@ fun MessagesConfigScreen(
                     "validateConfig" -> validateConfig = value as Boolean
                     "validateData" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
+                    "group" -> config.put("group", value)
                 }
             },
-            toolTypeName = "messages"
+            toolTypeName = "messages",
+            zoneId = zoneId
         )
 
         // Messages-specific configuration section
