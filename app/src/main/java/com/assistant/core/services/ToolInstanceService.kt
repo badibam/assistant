@@ -9,6 +9,7 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -88,6 +89,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         val toolInstanceId = params.optString("tool_instance_id")
         val configJson = params.optString("config_json")
+        val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
 
         if (toolInstanceId.isBlank()) {
             return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
@@ -98,8 +100,12 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
+        // Store old zone_id for notification
+        val oldZoneId = existingTool.zone_id
+
         val updatedTool = existingTool.copy(
             config_json = configJson.takeIf { it.isNotBlank() } ?: existingTool.config_json,
+            zone_id = newZoneId ?: existingTool.zone_id, // Update zone if provided
             updated_at = System.currentTimeMillis()
         )
 
@@ -107,11 +113,20 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         toolInstanceDao.updateToolInstance(updatedTool)
 
-        // Notify UI of tools change in this zone
-        DataChangeNotifier.notifyToolsChanged(updatedTool.zone_id)
+        // Notify UI of tools change in affected zones
+        if (newZoneId != null && newZoneId != oldZoneId) {
+            // Tool moved to different zone - notify both old and new zones
+            DataChangeNotifier.notifyToolsChanged(oldZoneId)
+            DataChangeNotifier.notifyToolsChanged(newZoneId)
+            LogManager.service("Tool $toolInstanceId moved from zone $oldZoneId to $newZoneId", "DEBUG")
+        } else {
+            // Only config changed - notify current zone
+            DataChangeNotifier.notifyToolsChanged(updatedTool.zone_id)
+        }
 
         return OperationResult.success(mapOf(
             "tool_instance_id" to updatedTool.id,
+            "zone_id" to updatedTool.zone_id,
             "updated_at" to updatedTool.updated_at
         ))
     }

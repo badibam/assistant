@@ -23,6 +23,7 @@ import org.json.JSONArray
  * @param updateConfig Callback to update configuration
  * @param toolTypeName Tool type name to retrieve suggested icons
  * @param zoneId Zone ID to fetch available tool groups
+ * @param onZoneChange Callback when zone is changed (zone_id is not in config, handled separately)
  */
 @Composable
 fun ToolGeneralConfigSection(
@@ -30,7 +31,9 @@ fun ToolGeneralConfigSection(
     updateConfig: (String, Any) -> Unit,
     toolTypeName: String,
     zoneId: String,
-    initialGroup: String? = null  // Pre-selected group for new tool creation
+    onZoneChange: ((String) -> Unit)? = null,
+    initialGroup: String? = null,  // Pre-selected group for new tool creation
+    isEditing: Boolean = false  // Whether editing existing tool (zone change only available when editing)
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -41,10 +44,26 @@ fun ToolGeneralConfigSection(
         ToolTypeManager.getToolType(toolTypeName)?.getSuggestedIcons() ?: emptyList()
     }
 
-    // Load available tool groups from zone
+    // Load available tool groups from zone AND all zones for zone selection
     var availableGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+    var availableZones by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) } // Pair(id, name)
+
+    LaunchedEffect(Unit) {
+        // Load all zones for zone selection
+        val zonesResult = coordinator.processUserAction("zones.list", emptyMap())
+        if (zonesResult.status == CommandStatus.SUCCESS) {
+            val zones = zonesResult.data?.get("zones") as? List<*>
+            availableZones = zones?.mapNotNull { zoneMap ->
+                val map = zoneMap as? Map<*, *>
+                val id = map?.get("id") as? String
+                val name = map?.get("name") as? String
+                if (id != null && name != null) Pair(id, name) else null
+            } ?: emptyList()
+        }
+    }
 
     LaunchedEffect(zoneId) {
+        // Load available tool groups from current zone
         val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
         if (result.status == CommandStatus.SUCCESS) {
             val zone = result.data?.get("zone") as? Map<*, *>
@@ -212,6 +231,23 @@ fun ToolGeneralConfigSection(
                 },
                 label = s.shared("label_group")
             )
+
+            // 10. Zone selection (optional - only shown if callback provided AND editing existing tool)
+            if (onZoneChange != null && availableZones.isNotEmpty() && isEditing) {
+                val currentZoneName = availableZones.find { it.first == zoneId }?.second ?: ""
+                UI.FormSelection(
+                    label = s.shared("label_zone"),
+                    options = availableZones.map { it.second },
+                    selected = currentZoneName,
+                    onSelect = { selectedZoneName ->
+                        val selectedZoneId = availableZones.find { it.second == selectedZoneName }?.first
+                        if (selectedZoneId != null) {
+                            onZoneChange(selectedZoneId)
+                        }
+                    },
+                    required = false
+                )
+            }
         }
     }
 }

@@ -58,6 +58,10 @@ fun MessagesConfigScreen(
     var defaultPriority by remember { mutableStateOf("default") }
     var externalNotifications by remember { mutableStateOf(true) }
 
+    // Zone change tracking
+    val isEditing = existingToolId != null
+    var currentZoneId by remember { mutableStateOf(zoneId) }
+
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -170,8 +174,10 @@ fun MessagesConfigScreen(
                 }
             },
             toolTypeName = "messages",
-            zoneId = zoneId,
-            initialGroup = initialGroup
+            zoneId = currentZoneId,
+            onZoneChange = { newZoneId -> currentZoneId = newZoneId },
+            initialGroup = initialGroup,
+            isEditing = isEditing
         )
 
         // Messages-specific configuration section
@@ -247,8 +253,30 @@ fun MessagesConfigScreen(
                         context = context,
                         schemaType = "config",
                         onSuccess = { configJson ->
-                            LogManager.ui("Messages config validation success")
-                            onSave(configJson)
+                            LogManager.ui("Messages config validation success - checking zone change")
+
+                            // If zone changed and we're editing, update zone_id FIRST
+                            if (isEditing && currentZoneId != zoneId && existingToolId != null) {
+                                LogManager.ui("Zone changed detected - updating from $zoneId to $currentZoneId BEFORE config save", "DEBUG")
+                                coroutineScope.launch {
+                                    val zoneUpdateResult = coordinator.processUserAction(
+                                        "tools.update",
+                                        mapOf(
+                                            "tool_instance_id" to existingToolId,
+                                            "zone_id" to currentZoneId
+                                        )
+                                    )
+                                    if (zoneUpdateResult.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
+                                        LogManager.ui("Failed to update zone: ${zoneUpdateResult.error}", "ERROR")
+                                    } else {
+                                        LogManager.ui("Zone updated successfully to $currentZoneId, now saving config", "DEBUG")
+                                    }
+                                    onSave(configJson)
+                                }
+                            } else {
+                                LogManager.ui("No zone change - saving config normally", "DEBUG")
+                                onSave(configJson)
+                            }
                         },
                         onError = { error ->
                             LogManager.ui("Messages config validation failed: $error", "ERROR")

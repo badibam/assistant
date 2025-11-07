@@ -18,6 +18,7 @@ import com.assistant.tools.tracking.TrackingToolType
 import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapSingleData
+import com.assistant.core.commands.CommandStatus
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.validation.SchemaValidator
@@ -131,6 +132,7 @@ fun TrackingConfigScreen(
 
     // General config states (for ToolGeneralConfigSection reactivity)
     var alwaysSend by remember { mutableStateOf(false) }
+    var currentZoneId by remember { mutableStateOf(zoneId) }
 
     // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
@@ -373,13 +375,41 @@ fun TrackingConfigScreen(
             cleanConfig.get(key)
         }
         
-        // Use unified ValidationHelper
+        // Use unified ValidationHelper with zone change handling
         UI.ValidationHelper.validateAndSave(
             toolTypeName = "tracking",
             configData = configMap,
             context = context,
             schemaType = "config",
-            onSuccess = onSave
+            onSuccess = { configJson ->
+                LogManager.tracking("ValidationHelper success - checking zone change", "DEBUG")
+
+                // If zone changed and we're editing, update zone_id FIRST before calling onSave
+                if (isEditing && currentZoneId != zoneId && existingToolId != null) {
+                    LogManager.tracking("Zone changed detected - updating from $zoneId to $currentZoneId BEFORE config save", "DEBUG")
+                    scope.launch {
+                        // Update zone first
+                        val zoneUpdateResult = coordinator.processUserAction(
+                            "tools.update",
+                            mapOf(
+                                "tool_instance_id" to existingToolId,
+                                "zone_id" to currentZoneId
+                            )
+                        )
+                        if (zoneUpdateResult.status != CommandStatus.SUCCESS) {
+                            LogManager.tracking("Failed to update zone: ${zoneUpdateResult.error}", "ERROR")
+                        } else {
+                            LogManager.tracking("Zone updated successfully to $currentZoneId, now saving config", "DEBUG")
+                        }
+
+                        // Then save config (which will also do a tools.update but with the new zone already set)
+                        onSave(configJson)
+                    }
+                } else {
+                    LogManager.tracking("No zone change - saving config normally", "DEBUG")
+                    onSave(configJson)
+                }
+            }
         )
     }
     
@@ -430,7 +460,31 @@ fun TrackingConfigScreen(
                     }
                     
                     if (validation.isValid) {
+                        LogManager.tracking("About to save - isEditing: $isEditing, currentZoneId: $currentZoneId, originalZoneId: $zoneId", "DEBUG")
+
                         onSave(cleanConfig.toString())
+
+                        // If zone changed and we're editing, update zone_id separately
+                        if (isEditing && currentZoneId != zoneId && existingToolId != null) {
+                            LogManager.tracking("Zone changed detected - updating from $zoneId to $currentZoneId for tool $existingToolId", "DEBUG")
+                            scope.launch {
+                                val result = coordinator.processUserAction(
+                                    "tools.update",
+                                    mapOf(
+                                        "tool_instance_id" to existingToolId,
+                                        "zone_id" to currentZoneId
+                                    )
+                                )
+                                if (result.status != CommandStatus.SUCCESS) {
+                                    LogManager.tracking("Failed to update zone: ${result.error}", "ERROR")
+                                    errorMessage = result.error ?: s.shared("tools_config_error_zone_update")
+                                } else {
+                                    LogManager.tracking("Zone updated successfully to $currentZoneId - result: ${result.data}", "DEBUG")
+                                }
+                            }
+                        } else {
+                            LogManager.tracking("Zone NOT changed - isEditing: $isEditing, zonesEqual: ${currentZoneId == zoneId}, existingToolId: $existingToolId", "DEBUG")
+                        }
                     } else {
                         LogManager.tracking("Validation failed: ${validation.errorMessage}", "ERROR")
                         errorMessage = validation.errorMessage ?: s.shared("tools_config_error_validation")
@@ -657,8 +711,10 @@ fun TrackingConfigScreen(
             config = config,
             updateConfig = ::updateConfig,
             toolTypeName = "tracking",
-            zoneId = zoneId,
-            initialGroup = initialGroup
+            zoneId = currentZoneId,
+            onZoneChange = { newZoneId -> currentZoneId = newZoneId },
+            initialGroup = initialGroup,
+            isEditing = isEditing
         )
         
         // Card 2: Tracking-specific parameters
