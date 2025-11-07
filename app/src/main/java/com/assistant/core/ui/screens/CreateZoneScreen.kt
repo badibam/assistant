@@ -26,6 +26,7 @@ import org.json.JSONArray
 @Composable
 fun CreateZoneScreen(
     existingZone: Zone? = null,
+    preSelectedGroup: String? = null,
     onCancel: () -> Unit = {},
     onCreate: (() -> Unit)? = null,
     onUpdate: (() -> Unit)? = null,
@@ -55,6 +56,23 @@ fun CreateZoneScreen(
     }
     var toolGroups by remember(initialToolGroups) { mutableStateOf(initialToolGroups) }
 
+    // Parse zone group from existing zone, or use preselected group for new zones
+    val initialZoneGroup = remember(existingZone, preSelectedGroup) {
+        existingZone?.group ?: preSelectedGroup
+    }
+    var zoneGroup by remember(initialZoneGroup) { mutableStateOf(initialZoneGroup) }
+
+    // Load available zone_groups from app_config
+    var availableZoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        val result = coordinator.processUserAction("app_config.get_zone_groups", emptyMap())
+        if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
+            availableZoneGroups = (result.data?.get("zone_groups") as? List<*>)
+                ?.filterIsInstance<String>() ?: emptyList()
+        }
+    }
+
     val isEditing = existingZone != null
     
     // Handle save logic
@@ -69,6 +87,9 @@ fun CreateZoneScreen(
         if (toolGroups.isNotEmpty()) {
             zoneData["tool_groups"] = JSONArray(toolGroups)
         }
+
+        // Add group only if selected (null = no group, field not included in validation)
+        zoneGroup?.let { zoneData["group"] = it }
         
         try {
             val schema = com.assistant.core.schemas.ZoneSchemaProvider.getSchema("zone_config", context)
@@ -98,6 +119,16 @@ fun CreateZoneScreen(
                                 updateParams["tool_groups"] = org.json.JSONObject.NULL
                             }
 
+                            // Add group to update params (explicit null to clear group)
+                            val groupToUpdate = zoneGroup
+                            if (groupToUpdate != null) {
+                                updateParams["group"] = groupToUpdate
+                            } else {
+                                updateParams["group"] = org.json.JSONObject.NULL
+                            }
+
+                            com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Updating zone with params: $updateParams", "DEBUG")
+
                             val result = coordinator.processUserAction("zones.update", updateParams)
                             onUpdate?.invoke()
                         } else {
@@ -111,6 +142,11 @@ fun CreateZoneScreen(
                             if (toolGroups.isNotEmpty()) {
                                 createParams["tool_groups"] = JSONArray(toolGroups).toString()
                             }
+
+                            // Add group to create params
+                            zoneGroup?.let { createParams["group"] = it }
+
+                            com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Creating zone with params: $createParams", "DEBUG")
 
                             val result = coordinator.processUserAction("zones.create", createParams)
                             onCreate?.invoke()
@@ -163,6 +199,17 @@ fun CreateZoneScreen(
             onChange = { description = it },
             fieldType = FieldType.TEXT_MEDIUM,
             required = false
+        )
+
+        // Zone group selector
+        com.assistant.core.ui.components.GroupSelector(
+            availableGroups = availableZoneGroups,
+            selectedGroup = zoneGroup,
+            onGroupSelected = { newGroup ->
+                com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Zone group changed to: '$newGroup'", "DEBUG")
+                zoneGroup = newGroup
+            },
+            label = s.shared("label_group")
         )
 
         // Tool groups editor

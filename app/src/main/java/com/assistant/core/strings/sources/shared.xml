@@ -1263,6 +1263,7 @@
     <!-- Groups - Schemas descriptions -->
     <string name="tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
     <string name="zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
 
     <!-- Groups - Service errors -->
     <string name="service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>

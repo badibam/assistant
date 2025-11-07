@@ -1373,6 +1373,7 @@
     <string name="shared_action_add_automation">Créer une automation</string>
     <string name="shared_tools_base_schema_config_group">Groupe d\'organisation de l\'outil</string>
     <string name="shared_zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
+    <string name="shared_zone_schema_group">Groupe d\'organisation de la zone</string>
     <string name="shared_service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>
 
 </resources>

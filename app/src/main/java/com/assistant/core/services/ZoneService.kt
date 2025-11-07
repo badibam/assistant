@@ -69,6 +69,11 @@ class ZoneService(private val context: Context) : ExecutableService {
             null
         }
 
+        // Parse group if provided (zone group assignment for MainScreen organization)
+        val group = params.optString("group").takeIf { it.isNotBlank() }
+
+        com.assistant.core.utils.LogManager.service("ZoneService.handleCreate - params has group: ${params.has("group")}, group value: '$group'", "DEBUG")
+
         // Get current max order_index for proper ordering
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -79,8 +84,11 @@ class ZoneService(private val context: Context) : ExecutableService {
             name = name,
             description = description,
             order_index = orderIndex,
-            tool_groups = toolGroupsJson
+            tool_groups = toolGroupsJson,
+            group = group
         )
+
+        com.assistant.core.utils.LogManager.service("ZoneService.handleCreate - Created zone with group: '${newZone.group}'", "DEBUG")
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -126,12 +134,29 @@ class ZoneService(private val context: Context) : ExecutableService {
             existingZone.tool_groups // Keep existing value if not provided
         }
 
+        // Parse group if provided (zone group assignment for MainScreen organization)
+        val group = if (params.has("group")) {
+            val groupValue = params.opt("group")
+            when {
+                groupValue == null || groupValue == JSONObject.NULL -> null
+                groupValue is String && groupValue.isNotBlank() -> groupValue
+                else -> existingZone.group
+            }
+        } else {
+            existingZone.group // Keep existing value if not provided
+        }
+
+        com.assistant.core.utils.LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
+
         val updatedZone = existingZone.copy(
             name = params.optString("name").takeIf { it.isNotBlank() } ?: existingZone.name,
             description = params.optString("description").takeIf { it.isNotBlank() } ?: existingZone.description,
             tool_groups = toolGroupsJson,
+            group = group,
             updated_at = System.currentTimeMillis()
         )
+
+        com.assistant.core.utils.LogManager.service("ZoneService.handleUpdate - Updated zone with group: '${updatedZone.group}'", "DEBUG")
 
         zoneDao.updateZone(updatedZone)
 
@@ -201,6 +226,11 @@ class ZoneService(private val context: Context) : ExecutableService {
             zoneMap["tool_groups"] = zone.tool_groups
         }
 
+        // Add group if present
+        if (zone.group != null) {
+            zoneMap["group"] = zone.group
+        }
+
         return OperationResult.success(mapOf("zone" to zoneMap))
     }
     
@@ -227,6 +257,11 @@ class ZoneService(private val context: Context) : ExecutableService {
             // Add tool_groups if present
             if (zone.tool_groups != null) {
                 zoneMap["tool_groups"] = zone.tool_groups
+            }
+
+            // Add group if present
+            if (zone.group != null) {
+                zoneMap["group"] = zone.group
             }
 
             zoneMap

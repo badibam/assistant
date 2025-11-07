@@ -222,11 +222,12 @@ fun ToolGeneralConfigSection(
                 availableGroups = availableGroups,
                 selectedGroup = group,
                 onGroupSelected = { newGroup ->
+                    com.assistant.core.utils.LogManager.ui("ToolGeneralConfigSection - Group changed to: '$newGroup'", "DEBUG")
                     if (newGroup != null) {
                         updateConfig("group", newGroup)
                     } else {
-                        // Remove group field from config
-                        config.remove("group")
+                        // Set to empty string to represent "no group" (JSON doesn't store null well in optString)
+                        updateConfig("group", "")
                     }
                 },
                 label = s.shared("label_group")

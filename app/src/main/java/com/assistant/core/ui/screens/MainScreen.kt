@@ -46,6 +46,7 @@ fun MainScreen() {
 
     // Navigation states - persistent across orientation changes
     var showCreateZone by rememberSaveable { mutableStateOf(false) }
+    var preSelectedZoneGroup by rememberSaveable { mutableStateOf<String?>(null) }
     var showMainScreenConfig by rememberSaveable { mutableStateOf(false) }
     var selectedZoneId by rememberSaveable { mutableStateOf<String?>(null) }
     var configZoneId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -85,7 +86,9 @@ fun MainScreen() {
                     updated_at = (map["updated_at"] as Number).toLong(),
                     tool_groups = map["tool_groups"] as? String,
                     group = map["group"] as? String
-                )
+                ).also { zone ->
+                    com.assistant.core.utils.LogManager.ui("MainScreen - Loaded zone '${zone.name}' with group: '${zone.group}'", "DEBUG")
+                }
             }
         }
 
@@ -334,11 +337,14 @@ fun MainScreen() {
     // Show CreateZoneScreen when requested
     if (showCreateZone) {
         CreateZoneScreen(
+            preSelectedGroup = preSelectedZoneGroup,
             onCancel = {
                 showCreateZone = false
+                preSelectedZoneGroup = null
             },
             onCreate = {
                 showCreateZone = false
+                preSelectedZoneGroup = null
                 reloadZones()
             }
         )
@@ -380,7 +386,7 @@ fun MainScreen() {
                         onZoneClick = { zone -> selectedZoneId = zone.id },
                         onZoneLongClick = { zone -> configZoneId = zone.id },
                         onAddZone = {
-                            // TODO: Pass preSelectedGroup to CreateZoneScreen
+                            preSelectedZoneGroup = groupName
                             showCreateZone = true
                         },
                         context = context
@@ -388,14 +394,16 @@ fun MainScreen() {
                 }
 
                 // "Ungrouped" section (always shown, even if empty)
+                // Includes zones with null group OR zones with group not in zoneGroups list
                 ZoneGroupSection(
                     groupName = null, // null = ungrouped
                     zones = zones,
                     hasConfiguredGroups = zoneGroups.isNotEmpty(),
+                    configuredGroups = zoneGroups, // Pass list to filter orphaned zones
                     onZoneClick = { zone -> selectedZoneId = zone.id },
                     onZoneLongClick = { zone -> configZoneId = zone.id },
                     onAddZone = {
-                        // TODO: Pass preSelectedGroup = null to CreateZoneScreen
+                        preSelectedZoneGroup = null
                         showCreateZone = true
                     },
                     context = context
@@ -464,6 +472,7 @@ private fun ZoneGroupSection(
     groupName: String?,
     zones: List<Zone>,
     hasConfiguredGroups: Boolean = true,
+    configuredGroups: List<String> = emptyList(),
     onZoneClick: (Zone) -> Unit,
     onZoneLongClick: (Zone) -> Unit,
     onAddZone: () -> Unit,
@@ -473,7 +482,15 @@ private fun ZoneGroupSection(
 
     // Filter zones for this group
     val groupZones = zones.filter { zone ->
-        zone.group == groupName
+        val matches = if (groupName != null) {
+            // Match specific group
+            zone.group == groupName
+        } else {
+            // Ungrouped section: null group OR orphaned groups (not in configured list)
+            zone.group == null || (zone.group?.isNotBlank() == true && zone.group !in configuredGroups)
+        }
+        com.assistant.core.utils.LogManager.ui("ZoneGroupSection - Zone '${zone.name}' (group='${zone.group}') matches groupName='$groupName': $matches", "DEBUG")
+        matches
     }
 
     // Determine section label

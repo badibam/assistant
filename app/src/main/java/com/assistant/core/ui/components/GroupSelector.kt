@@ -48,13 +48,17 @@ fun GroupSelector(
     // Find current selection label
     val selectedLabel = selectedGroup ?: noGroupLabel
 
+    com.assistant.core.utils.LogManager.ui("GroupSelector - selectedGroup: '$selectedGroup', selectedLabel: '$selectedLabel', noGroupLabel: '$noGroupLabel'", "DEBUG")
+
     UI.FormSelection(
         label = label,
         options = options,
         selected = selectedLabel,
-        onSelect = { selectedLabel ->
+        onSelect = { selectedLabelClicked ->
+            com.assistant.core.utils.LogManager.ui("GroupSelector - User selected: '$selectedLabelClicked', noGroupLabel: '$noGroupLabel'", "DEBUG")
             // If selected label is "No group" -> null, else actual group name
-            val newGroup = if (selectedLabel == noGroupLabel) null else selectedLabel
+            val newGroup = if (selectedLabelClicked == noGroupLabel) null else selectedLabelClicked
+            com.assistant.core.utils.LogManager.ui("GroupSelector - Calling onGroupSelected with: '$newGroup'", "DEBUG")
             onGroupSelected(newGroup)
         },
         required = false
