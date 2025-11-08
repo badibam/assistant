@@ -196,7 +196,7 @@ fun ZoneScreen(
             // Update existing tool
             coroutineScope.launch {
                 try {
-                    val result = coordinator.processUserAction("tools.update", mapOf(
+                    coordinator.processUserAction("tools.update", mapOf(
                         "tool_instance_id" to tool.id,
                         "config_json" to config
                     ))
@@ -212,7 +212,7 @@ fun ZoneScreen(
             // Create new tool
             coroutineScope.launch {
                 try {
-                    val result = coordinator.processUserAction("tools.create", mapOf(
+                    coordinator.processUserAction("tools.create", mapOf(
                         "zone_id" to zone.id,
                         "tool_type" to toolTypeId,
                         "config_json" to config
@@ -385,7 +385,31 @@ fun ZoneScreen(
                 )
             }
 
-            // Ungrouped section (tools and automations without group)
+            // Collect all tool and automation groups that exist in the data
+            val existingToolGroups = toolInstances.mapNotNull { tool ->
+                val config = try {
+                    org.json.JSONObject(tool.config_json)
+                } catch (e: Exception) {
+                    null
+                }
+                config?.optString("group")?.takeIf { it.isNotEmpty() }
+            }.distinct()
+
+            val existingAutomationGroups = automations.mapNotNull { it.group?.takeIf { group -> group.isNotEmpty() } }.distinct()
+            val allExistingGroups = (existingToolGroups + existingAutomationGroups).distinct()
+
+            // Find groups that exist in data but are not configured in the zone (orphaned items)
+            val orphanedGroups = allExistingGroups.filter { group -> group !in zoneToolGroups }
+
+            // Log for debugging
+            LogManager.ui("Zone ${zone.id} group analysis:", "DEBUG")
+            LogManager.ui("  Configured groups: $zoneToolGroups", "DEBUG")
+            LogManager.ui("  Existing tool groups: $existingToolGroups", "DEBUG")
+            LogManager.ui("  Existing automation groups: $existingAutomationGroups", "DEBUG")
+            LogManager.ui("  Orphaned groups (exist in data but not configured): $orphanedGroups", "DEBUG")
+            LogManager.ui("  Total tools: ${toolInstances.size}, Total automations: ${automations.size}", "DEBUG")
+
+            // Ungrouped section: items with no group OR items with orphaned groups
             val ungroupedTools = toolInstances.filter { tool ->
                 val config = try {
                     org.json.JSONObject(tool.config_json)
@@ -393,9 +417,14 @@ fun ZoneScreen(
                     null
                 }
                 val group = config?.optString("group")?.takeIf { it.isNotEmpty() }
-                group == null
+                group == null || group in orphanedGroups
             }
-            val ungroupedAutomations = automations.filter { it.group == null || it.group.isEmpty() }
+            val ungroupedAutomations = automations.filter {
+                val group = it.group
+                group == null || group.isEmpty() || group in orphanedGroups
+            }
+
+            LogManager.ui("  Ungrouped tools: ${ungroupedTools.size}, Ungrouped automations: ${ungroupedAutomations.size}", "DEBUG")
 
             // Always show ungrouped section (even if empty) to allow adding tools/automations
             UngroupedSection(
