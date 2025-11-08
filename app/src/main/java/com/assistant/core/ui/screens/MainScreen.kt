@@ -500,8 +500,8 @@ private fun ZoneGroupSection(
         else -> s.shared("label_zones")
     }
 
-    // Section header with add button
-    UI.Card(type = CardType.DEFAULT) {
+    // Section header with add button - use SECTION_HEADER for subtle contrast with surfaceVariant
+    UI.Card(type = CardType.SECTION_HEADER) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -581,8 +581,8 @@ private fun GroupSection(
     }
     val groupAutomations = automations.filter { it.group == groupName }
 
-    // Section header
-    UI.Card(type = CardType.DEFAULT) {
+    // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
+    UI.Card(type = CardType.SECTION_HEADER) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -721,8 +721,8 @@ private fun UngroupedSection(
         s.shared("label_tools_and_automations")
     }
 
-    // Section header
-    UI.Card(type = CardType.DEFAULT) {
+    // Section header - use SECTION_HEADER for subtle contrast with surfaceVariant
+    UI.Card(type = CardType.SECTION_HEADER) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

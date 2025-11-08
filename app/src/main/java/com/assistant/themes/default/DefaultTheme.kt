@@ -608,14 +608,22 @@ object DefaultTheme : ThemeContract {
             null
         }
 
+        val colors = when (type) {
+            CardType.SECTION_HEADER -> CardDefaults.cardColors(
+                containerColor = CurrentTheme.getCurrentColorScheme().surfaceVariant,
+                contentColor = CurrentTheme.getCurrentColorScheme().onSurfaceVariant
+            )
+            CardType.DEFAULT -> CardDefaults.cardColors(
+                containerColor = CurrentTheme.getCurrentColorScheme().surface,
+                contentColor = CurrentTheme.getCurrentColorScheme().onSurface
+            )
+        }
+
         androidx.compose.material3.Card(
             elevation = elevation,
             shape = CardShape,
             border = border,
-            colors = CardDefaults.cardColors(
-                containerColor = CurrentTheme.getCurrentColorScheme().surface,
-                contentColor = CurrentTheme.getCurrentColorScheme().onSurface
-            ),
+            colors = colors,
             content = { content() }
         )
     }

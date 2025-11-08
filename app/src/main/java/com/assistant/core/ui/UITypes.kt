@@ -169,6 +169,7 @@ enum class TextType {
  * Card types
  */
 enum class CardType {
-    DEFAULT
+    DEFAULT,
+    SECTION_HEADER  // For group/section headers - uses surfaceVariant for subtle contrast
     // Types to be added as needed
 }
