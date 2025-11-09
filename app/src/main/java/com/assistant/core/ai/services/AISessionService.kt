@@ -54,6 +54,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "delete_session" -> deleteSession(params, token)
                 "set_active_session" -> setActiveSession(params, token)
 
+                // History operations
+                "list" -> listChatSessions(params, token)
+                "rename" -> renameSession(params, token)
+                "delete" -> deleteChatSession(params, token)
+
                 // Message operations
                 "create_message" -> createMessage(params, token)
                 "get_message" -> getMessage(params, token)
@@ -912,6 +917,183 @@ class AISessionService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             LogManager.aiSession("Failed to clear seedId for $sessionId: ${e.message}", "ERROR", e)
             return@withContext OperationResult.error("Failed to clear seedId")
+        }
+    }
+
+    /**
+     * List CHAT sessions with search and pagination (for History feature)
+     * Same pattern as list_sessions_for_automation
+     */
+    private suspend fun listChatSessions(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val search = params.optString("search").takeIf { it.isNotEmpty() }
+        val limit = params.optInt("limit", 20)
+        val page = params.optInt("page", 1)
+        val startTime = if (params.has("startTime")) params.getLong("startTime") else null
+        val endTime = if (params.has("endTime")) params.getLong("endTime") else null
+
+        LogManager.aiSession("Listing CHAT sessions: search=$search, page=$page, limit=$limit, startTime=$startTime, endTime=$endTime", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Calculate offset for pagination (page 1 = offset 0)
+            val offset = (page - 1) * limit
+
+            // Get sessions and count
+            val sessionEntities = dao.getChatSessionsWithSearch(
+                search = search,
+                startTime = startTime,
+                endTime = endTime,
+                limit = limit,
+                offset = offset
+            )
+
+            val total = dao.countChatSessionsWithSearch(
+                search = search,
+                startTime = startTime,
+                endTime = endTime
+            )
+
+            val totalPages = if (total == 0) 0 else ((total - 1) / limit) + 1
+
+            LogManager.aiSession("Found ${sessionEntities.size} CHAT sessions (total: $total, page: $page/$totalPages)", "DEBUG")
+
+            // Build session list with preview and message count
+            val sessions = sessionEntities.map { session ->
+                // Get message count
+                val messageCount = dao.getMessageCountForSession(session.id)
+
+                // Get first user message for preview
+                val firstMessage = dao.getFirstUserMessage(session.id)
+                val preview = if (firstMessage?.richContentJson != null) {
+                    try {
+                        val richMessageJson = JSONObject(firstMessage.richContentJson)
+                        val linearText = richMessageJson.optString("linearText", "")
+                        // Truncate to 60 chars
+                        if (linearText.length > 60) {
+                            linearText.substring(0, 60) + "..."
+                        } else {
+                            linearText
+                        }
+                    } catch (e: Exception) {
+                        LogManager.aiSession("Failed to parse richContentJson for preview: ${e.message}", "WARN")
+                        ""
+                    }
+                } else {
+                    ""
+                }
+
+                mapOf(
+                    "id" to session.id,
+                    "name" to session.name,
+                    "createdAt" to session.createdAt,
+                    "lastActivity" to session.lastActivity,
+                    "messageCount" to messageCount,
+                    "firstUserMessage" to preview
+                )
+            }
+
+            return OperationResult.success(mapOf(
+                "sessions" to sessions,
+                "pagination" to mapOf(
+                    "currentPage" to page,
+                    "totalPages" to totalPages,
+                    "totalEntries" to total
+                )
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to list CHAT sessions: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_list_sessions").format(e.message ?: ""))
+        }
+    }
+
+    /**
+     * Rename a session
+     */
+    private suspend fun renameSession(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+        val name = params.optString("name").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_name_required"))
+
+        // Validate name length (max 60 chars as per FieldType.TEXT)
+        if (name.length > 60) {
+            return OperationResult.error(s.shared("error_validation_maxlength").format("60"))
+        }
+
+        LogManager.aiSession("Renaming session $sessionId to: $name", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Check session exists
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            // Update name
+            dao.updateSessionName(sessionId, name)
+
+            LogManager.aiSession("Successfully renamed session $sessionId to: $name", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "name" to name
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to rename session: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_update_session").format(e.message ?: ""))
+        }
+    }
+
+    /**
+     * Delete a CHAT session (for History feature)
+     * Uses CASCADE DELETE via FK constraints to automatically delete associated messages
+     */
+    private suspend fun deleteChatSession(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
+
+        LogManager.aiSession("Deleting CHAT session: $sessionId", "DEBUG")
+
+        try {
+            val database = AppDatabase.getDatabase(context)
+            val dao = database.aiDao()
+
+            // Check session exists and is CHAT type
+            val session = dao.getSession(sessionId)
+            if (session == null) {
+                LogManager.aiSession("Session not found: $sessionId", "WARN")
+                return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
+            }
+
+            if (session.type != SessionType.CHAT) {
+                LogManager.aiSession("Cannot delete non-CHAT session: $sessionId (type: ${session.type})", "WARN")
+                return OperationResult.error("Cannot delete non-CHAT session")
+            }
+
+            // Delete session (CASCADE DELETE will handle messages automatically)
+            dao.deleteSessionById(sessionId)
+
+            LogManager.aiSession("Successfully deleted CHAT session: $sessionId", "INFO")
+
+            return OperationResult.success(mapOf(
+                "sessionId" to sessionId,
+                "deleted" to true
+            ))
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to delete CHAT session: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("ai_error_delete_session").format(e.message ?: ""))
         }
     }
 

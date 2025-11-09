@@ -55,6 +55,11 @@ fun SettingsDialog(
     val options = remember {
         listOf(
             SettingsOption(
+                id = "history",
+                label = s.shared("settings_history"),
+                description = s.shared("settings_history_description")
+            ),
+            SettingsOption(
                 id = "ai_providers",
                 label = s.shared("settings_ai_providers"),
                 description = s.shared("settings_ai_providers_description")

@@ -1,4 +1,4 @@
-package com.assistant.core.ai.ui.automation
+package com.assistant.core.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,47 +8,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.core.ai.data.SessionType
-import com.assistant.core.ai.data.SessionTokens
-import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.orchestration.AIOrchestrator
-import com.assistant.core.ai.scheduling.AutomationScheduler
-import com.assistant.core.ai.scheduling.NextExecution
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.ui.components.*
-import com.assistant.core.utils.AppConfigManager
-import com.assistant.core.utils.DataChangeNotifier
-import com.assistant.core.utils.DataChangeEvent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /**
- * AutomationScreen - Display automation execution history
+ * HistoryScreen - Display CHAT session history
  *
  * Shows:
- * - Automation name in header
- * - Next execution card (if scheduled and enabled)
- * - Filters: period type + limit + refresh
- * - Period selector (if not ALL)
- * - List of ExecutionCard with pagination
- * - Real-time updates via DataChangeNotifier and AIOrchestrator.currentState
+ * - Search bar (text search in session names and message content)
+ * - Period filters (ALL, DAY, WEEK, MONTH, YEAR)
+ * - List of SessionCard with pagination
+ * - Actions: Resume, Rename, Delete
  *
  * Navigation:
- * - BACK button returns to previous screen
- * - VIEW button on ExecutionCard navigates to detail screen
+ * - BACK button returns to MainScreen
+ * - RESUME button opens AIFloatingChat with selected session
  *
- * Usage: Accessed from AutomationCard VIEW button in ZoneScreen
+ * Usage: Accessed from MainScreen menu
  */
 @Composable
-fun AutomationScreen(
-    automationId: String,
+fun HistoryScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToExecution: (sessionId: String) -> Unit
+    onResumeSession: (sessionId: String) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -59,22 +50,26 @@ fun AutomationScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Automation metadata (simple data, not full Automation object)
-    var automationName by remember { mutableStateOf<String?>(null) }
-    var isEnabled by remember { mutableStateOf(false) }
-    var nextExecution by remember { mutableStateOf<NextExecution?>(null) }
-
-    // Execution list
-    var sessions by remember { mutableStateOf<List<ExecutionSummary>>(emptyList()) }
+    // Session list
+    var sessions by remember { mutableStateOf<List<SessionSummary>>(emptyList()) }
     var currentPage by remember { mutableStateOf(1) }
     var totalPages by remember { mutableStateOf(1) }
     var totalEntries by remember { mutableStateOf(0) }
 
     // Filters
+    var searchQuery by remember { mutableStateOf("") }
     var periodFilter by remember { mutableStateOf(PeriodFilterType.ALL) }
     var currentPeriod by remember { mutableStateOf<Period?>(null) }
-    var entriesLimit by remember { mutableStateOf(25) }
-    var refreshTrigger by remember { mutableStateOf(0) }
+    var entriesLimit by remember { mutableStateOf(20) }
+
+    // Search debounce
+    var searchJob by remember { mutableStateOf<Job?>(null) }
+
+    // Dialog states
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var selectedSessionId by remember { mutableStateOf<String?>(null) }
+    var selectedSessionName by remember { mutableStateOf("") }
 
     // Helper to create Period for current time
     fun createCurrentPeriod(periodType: PeriodType): Period {
@@ -92,45 +87,7 @@ fun AutomationScreen(
         currentPeriod = createCurrentPeriod(PeriodType.DAY)
     }
 
-    // Load automation metadata and next execution
-    suspend fun loadAutomationMetadata() {
-        // Load automation
-        val result = withContext(Dispatchers.IO) {
-            coordinator.processUserAction("automations.get", mapOf("automation_id" to automationId))
-        }
-
-        // Update states (automatically on Main thread from LaunchedEffect)
-        if (result.status == CommandStatus.SUCCESS) {
-            val data = result.data
-            if (data != null) {
-                // Service returns data under "automation" key
-                @Suppress("UNCHECKED_CAST")
-                val automation = data["automation"] as? Map<String, Any>
-                if (automation != null) {
-                    automationName = automation["name"] as? String
-                    isEnabled = automation["is_enabled"] as? Boolean ?: false
-
-                    // Load next execution if enabled
-                    if (isEnabled) {
-                        nextExecution = withContext(Dispatchers.IO) {
-                            val scheduler = AutomationScheduler(context)
-                            scheduler.getNextExecutionForAutomation(automationId)
-                        }
-                    } else {
-                        nextExecution = null
-                    }
-                } else {
-                    errorMessage = s.shared("error_automation_load_failed")
-                }
-            } else {
-                errorMessage = s.shared("error_automation_load_failed")
-            }
-        } else {
-            errorMessage = result.error ?: s.shared("error_automation_load_failed")
-        }
-    }
-
-    // Load execution sessions
+    // Load sessions
     suspend fun loadSessions() {
         isLoading = true
         errorMessage = null
@@ -147,15 +104,15 @@ fun AutomationScreen(
 
             // Build params
             val params = mutableMapOf<String, Any>(
-                "automationId" to automationId,
                 "limit" to entriesLimit,
                 "page" to currentPage
             )
+            if (searchQuery.isNotEmpty()) params["search"] = searchQuery
             if (startTime != null) params["startTime"] = startTime
             if (endTime != null) params["endTime"] = endTime
 
             // Call service
-            val result = coordinator.processUserAction("ai_sessions.list_sessions_for_automation", params)
+            val result = coordinator.processUserAction("ai_sessions.list", params)
 
             if (result.status == CommandStatus.SUCCESS) {
                 val data = result.data
@@ -165,66 +122,13 @@ fun AutomationScreen(
                     val sessionsList = data["sessions"] as? List<Map<String, Any>> ?: emptyList()
 
                     sessions = sessionsList.map { sessionMap ->
-                        // Parse tokens JSON
-                        val tokensJson = sessionMap["tokensJson"] as? String
-                        val tokens = if (tokensJson != null) {
-                            try {
-                                val json = JSONObject(tokensJson)
-                                SessionTokens(
-                                    totalUncachedInputTokens = json.optInt("totalUncachedInputTokens", 0),
-                                    totalCacheWriteTokens = json.optInt("totalCacheWriteTokens", 0),
-                                    totalCacheReadTokens = json.optInt("totalCacheReadTokens", 0),
-                                    totalOutputTokens = json.optInt("totalOutputTokens", 0)
-                                )
-                            } catch (e: Exception) {
-                                SessionTokens(0, 0, 0, 0)
-                            }
-                        } else {
-                            SessionTokens(0, 0, 0, 0)
-                        }
-
-                        // Parse cost JSON
-                        val costJson = sessionMap["costJson"] as? String
-                        val cost = if (costJson != null) {
-                            try {
-                                val json = JSONObject(costJson)
-                                json.optDouble("totalCost", 0.0)
-                            } catch (e: Exception) {
-                                null
-                            }
-                        } else {
-                            null
-                        }
-
-                        // Parse phase
-                        val phaseStr = sessionMap["phase"] as? String ?: "IDLE"
-                        val phase = try {
-                            Phase.valueOf(phaseStr)
-                        } catch (e: Exception) {
-                            Phase.IDLE
-                        }
-
-                        // Calculate duration
-                        val createdAtValue = sessionMap["createdAt"] as? Long ?: 0L
-                        val lastActivity = sessionMap["lastActivity"] as? Long ?: createdAtValue
-                        val duration = lastActivity - createdAtValue
-
-                        // Calculate total tokens
-                        val totalTokens = tokens.totalUncachedInputTokens +
-                                        tokens.totalCacheWriteTokens +
-                                        tokens.totalCacheReadTokens +
-                                        tokens.totalOutputTokens
-
-                        ExecutionSummary(
-                            sessionId = sessionMap["id"] as String,
-                            scheduledExecutionTime = sessionMap["scheduledExecutionTime"] as? Long,
-                            createdAt = createdAtValue,
-                            phase = phase,
-                            endReason = sessionMap["endReason"] as? String,
-                            duration = duration,
-                            totalRoundtrips = sessionMap["totalRoundtrips"] as? Int ?: 0,
-                            totalTokens = totalTokens,
-                            cost = cost
+                        SessionSummary(
+                            id = sessionMap["id"] as String,
+                            name = sessionMap["name"] as String,
+                            createdAt = sessionMap["createdAt"] as? Long ?: 0L,
+                            lastActivity = sessionMap["lastActivity"] as? Long ?: 0L,
+                            messageCount = sessionMap["messageCount"] as? Int ?: 0,
+                            firstUserMessage = sessionMap["firstUserMessage"] as? String ?: ""
                         )
                     }
 
@@ -254,38 +158,27 @@ fun AutomationScreen(
     }
 
     // Reset page when filters change
-    LaunchedEffect(periodFilter, currentPeriod, entriesLimit) {
+    LaunchedEffect(periodFilter, currentPeriod, entriesLimit, searchQuery) {
         currentPage = 1
     }
 
-    // Load automation metadata on first load
-    LaunchedEffect(automationId) {
-        loadAutomationMetadata()
-    }
-
     // Load sessions when filters/pagination change
-    LaunchedEffect(automationId, periodFilter, currentPeriod, entriesLimit, currentPage, refreshTrigger) {
+    LaunchedEffect(periodFilter, currentPeriod, entriesLimit, currentPage) {
         if (currentPeriod != null || periodFilter == PeriodFilterType.ALL) {
             loadSessions()
         }
     }
 
-    // Real-time updates - Listen to DataChangeNotifier for session changes
-    LaunchedEffect(automationId) {
-        DataChangeNotifier.changes.collect { event ->
-            when (event) {
-                is DataChangeEvent.AISessionsChanged -> {
-                    if (event.automationId == null || event.automationId == automationId) {
-                        refreshTrigger++
-                    }
-                }
-                else -> {} // Ignore other events
+    // Search debounce - reload sessions after 300ms of no typing
+    LaunchedEffect(searchQuery) {
+        searchJob?.cancel()
+        searchJob = scope.launch {
+            delay(300)
+            if (currentPeriod != null || periodFilter == PeriodFilterType.ALL) {
+                loadSessions()
             }
         }
     }
-
-    // Real-time updates - Observe current AI state for active session highlighting
-    val aiState by AIOrchestrator.currentState.collectAsState()
 
     // Show error toast
     LaunchedEffect(errorMessage) {
@@ -305,30 +198,19 @@ fun AutomationScreen(
     ) {
         // Header
         UI.PageHeader(
-            title = automationName ?: s.shared("tools_loading"),
+            title = s.shared("history_title"),
             leftButton = ButtonAction.BACK,
             onLeftClick = onNavigateBack
         )
 
-        // Next execution card
-        if (nextExecution != null) {
-            UI.Card(type = CardType.DEFAULT) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    UI.Text(
-                        text = s.shared("automation_next_execution_title"),
-                        type = TextType.SUBTITLE
-                    )
-                    UI.Text(
-                        text = nextExecution!!.message,
-                        type = TextType.BODY
-                    )
-                }
-            }
+        // Search bar
+        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            UI.FormField(
+                label = s.shared("history_search_placeholder"),
+                value = searchQuery,
+                onChange = { searchQuery = it },
+                fieldType = FieldType.SEARCH
+            )
         }
 
         // Filters row
@@ -343,7 +225,6 @@ fun AutomationScreen(
                     label = "",
                     options = listOf(
                         s.shared("period_all"),
-                        s.shared("period_hour"),
                         s.shared("period_day"),
                         s.shared("period_week"),
                         s.shared("period_month"),
@@ -351,16 +232,15 @@ fun AutomationScreen(
                     ),
                     selected = when (periodFilter) {
                         PeriodFilterType.ALL -> s.shared("period_all")
-                        PeriodFilterType.HOUR -> s.shared("period_hour")
                         PeriodFilterType.DAY -> s.shared("period_day")
                         PeriodFilterType.WEEK -> s.shared("period_week")
                         PeriodFilterType.MONTH -> s.shared("period_month")
                         PeriodFilterType.YEAR -> s.shared("period_year")
+                        else -> s.shared("period_all")
                     },
                     onSelect = { selection ->
                         periodFilter = when (selection) {
                             s.shared("period_all") -> PeriodFilterType.ALL
-                            s.shared("period_hour") -> PeriodFilterType.HOUR
                             s.shared("period_day") -> PeriodFilterType.DAY
                             s.shared("period_week") -> PeriodFilterType.WEEK
                             s.shared("period_month") -> PeriodFilterType.MONTH
@@ -370,12 +250,11 @@ fun AutomationScreen(
                         // Update current period when filter changes
                         if (periodFilter != PeriodFilterType.ALL) {
                             currentPeriod = when (periodFilter) {
-                                PeriodFilterType.HOUR -> createCurrentPeriod(PeriodType.HOUR)
                                 PeriodFilterType.DAY -> createCurrentPeriod(PeriodType.DAY)
                                 PeriodFilterType.WEEK -> createCurrentPeriod(PeriodType.WEEK)
                                 PeriodFilterType.MONTH -> createCurrentPeriod(PeriodType.MONTH)
                                 PeriodFilterType.YEAR -> createCurrentPeriod(PeriodType.YEAR)
-                                PeriodFilterType.ALL -> createCurrentPeriod(PeriodType.DAY) // Fallback
+                                else -> createCurrentPeriod(PeriodType.DAY)
                             }
                         }
                         // Force reload when period type changes
@@ -388,7 +267,7 @@ fun AutomationScreen(
             Box(modifier = Modifier.weight(1f)) {
                 UI.FormSelection(
                     label = "",
-                    options = listOf("10", "25", "100", "250", "1000"),
+                    options = listOf("10", "20", "50", "100"),
                     selected = entriesLimit.toString(),
                     onSelect = { selection ->
                         entriesLimit = selection.toInt()
@@ -418,7 +297,7 @@ fun AutomationScreen(
                 period = currentPeriod!!,
                 onPeriodChange = { newPeriod ->
                     currentPeriod = newPeriod
-                    // Force reload even if period value is the same (user navigated away and back)
+                    // Force reload even if period value is the same
                     scope.launch { loadSessions() }
                 }
             )
@@ -440,36 +319,47 @@ fun AutomationScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                UI.CenteredText(s.shared("automation_no_executions"), TextType.BODY)
+                UI.CenteredText(s.shared("history_empty"), TextType.BODY)
             }
         }
 
-        // Execution list
+        // Session list
         if (sessions.isNotEmpty()) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 sessions.forEach { session ->
-                    // Check if this session is currently active
-                    val isActive = aiState.sessionType == SessionType.AUTOMATION &&
-                                   aiState.sessionId == session.sessionId
-
-                    // If active, use live phase from aiState for real-time updates
-                    val livePhase = if (isActive) aiState.phase else null
-
-                    ExecutionCard(
-                        sessionId = session.sessionId,
-                        scheduledExecutionTime = session.scheduledExecutionTime,
+                    SessionCard(
+                        sessionId = session.id,
+                        name = session.name,
                         createdAt = session.createdAt,
-                        phase = session.phase,
-                        endReason = session.endReason,
-                        duration = session.duration,
-                        totalRoundtrips = session.totalRoundtrips,
-                        totalTokens = session.totalTokens,
-                        cost = session.cost,
-                        livePhase = livePhase,
-                        onViewClick = { onNavigateToExecution(session.sessionId) }
+                        messageCount = session.messageCount,
+                        firstUserMessage = session.firstUserMessage,
+                        onResumeClick = {
+                            scope.launch {
+                                // Resume session via AIOrchestrator
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        AIOrchestrator.resumeChatSession(session.id)
+                                    }
+                                    // Navigate to chat
+                                    onResumeSession(session.id)
+                                } catch (e: Exception) {
+                                    errorMessage = e.message ?: s.shared("error_resume_session")
+                                }
+                            }
+                        },
+                        onRenameClick = {
+                            selectedSessionId = session.id
+                            selectedSessionName = session.name
+                            showRenameDialog = true
+                        },
+                        onDeleteClick = {
+                            selectedSessionId = session.id
+                            selectedSessionName = session.name
+                            showDeleteDialog = true
+                        }
                     )
                 }
 
@@ -484,19 +374,141 @@ fun AutomationScreen(
             }
         }
     }
+
+    // Rename Dialog
+    if (showRenameDialog && selectedSessionId != null) {
+        var newName by remember { mutableStateOf(selectedSessionName) }
+        var renameError by remember { mutableStateOf<String?>(null) }
+
+        UI.Dialog(
+            type = DialogType.INFO,
+            onConfirm = { },
+            onCancel = {
+                showRenameDialog = false
+                selectedSessionId = null
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Title
+                UI.Text(
+                    text = s.shared("history_rename_title"),
+                    type = TextType.SUBTITLE,
+                    fillMaxWidth = true
+                )
+
+                // Name field
+                UI.FormField(
+                    label = s.shared("history_rename_label"),
+                    value = newName,
+                    onChange = { newName = it },
+                    fieldType = FieldType.TEXT
+                )
+
+                // Error message
+                if (renameError != null) {
+                    UI.Text(
+                        text = renameError!!,
+                        type = TextType.ERROR,
+                        fillMaxWidth = true
+                    )
+                }
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.ActionButton(
+                        action = ButtonAction.CANCEL,
+                        display = ButtonDisplay.LABEL,
+                        size = Size.M,
+                        onClick = {
+                            showRenameDialog = false
+                            selectedSessionId = null
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    UI.ActionButton(
+                        action = ButtonAction.SAVE,
+                        display = ButtonDisplay.LABEL,
+                        size = Size.M,
+                        onClick = {
+                            scope.launch {
+                                if (newName.isEmpty()) {
+                                    renameError = s.shared("error_validation_required")
+                                    return@launch
+                                }
+
+                                val result = withContext(Dispatchers.IO) {
+                                    coordinator.processUserAction("ai_sessions.rename", mapOf(
+                                        "sessionId" to selectedSessionId!!,
+                                        "name" to newName
+                                    ))
+                                }
+
+                                if (result.status == CommandStatus.SUCCESS) {
+                                    showRenameDialog = false
+                                    selectedSessionId = null
+                                    loadSessions() // Reload to show updated name
+                                } else {
+                                    renameError = result.error ?: s.shared("error_rename_failed")
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // Delete Dialog
+    if (showDeleteDialog && selectedSessionId != null) {
+        UI.ConfirmDialog(
+            title = s.shared("action_delete"),
+            message = s.shared("history_delete_confirm").format(selectedSessionName),
+            confirmText = s.shared("action_delete"),
+            cancelText = s.shared("action_cancel"),
+            onConfirm = {
+                scope.launch {
+                    val result = withContext(Dispatchers.IO) {
+                        coordinator.processUserAction("ai_sessions.delete", mapOf(
+                            "sessionId" to selectedSessionId!!
+                        ))
+                    }
+
+                    if (result.status == CommandStatus.SUCCESS) {
+                        showDeleteDialog = false
+                        selectedSessionId = null
+                        loadSessions() // Reload to update list
+                    } else {
+                        errorMessage = result.error ?: s.shared("error_delete_failed")
+                    }
+                }
+            },
+            onDismiss = {
+                showDeleteDialog = false
+                selectedSessionId = null
+            }
+        )
+    }
 }
 
 /**
- * Data class for execution summary display
+ * Data class for session summary display
  */
-data class ExecutionSummary(
-    val sessionId: String,
-    val scheduledExecutionTime: Long?,
+data class SessionSummary(
+    val id: String,
+    val name: String,
     val createdAt: Long,
-    val phase: Phase,
-    val endReason: String?,
-    val duration: Long,
-    val totalRoundtrips: Int,
-    val totalTokens: Int,
-    val cost: Double?
+    val lastActivity: Long,
+    val messageCount: Int,
+    val firstUserMessage: String
 )

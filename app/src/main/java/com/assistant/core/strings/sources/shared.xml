@@ -1267,4 +1267,15 @@
 
     <!-- Groups - Service errors -->
     <string name="service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>
+
+    <!-- History -->
+    <string name="history_title">Historique des discussions</string>
+    <string name="history_search_placeholder">Rechercher...</string>
+    <string name="history_empty">Aucune discussion</string>
+    <string name="history_rename_title">Renommer la discussion</string>
+    <string name="history_rename_label">Nouveau nom</string>
+    <string name="history_delete_confirm">Cette action est irréversible. Supprimer la discussion \'%1$s\' ?</string>
+    <string name="history_session_messages">%1$d messages</string>
+    <string name="settings_history">Historique des discussions</string>
+    <string name="settings_history_description">Consulter, renommer et reprendre vos discussions passées</string>
 </resources>

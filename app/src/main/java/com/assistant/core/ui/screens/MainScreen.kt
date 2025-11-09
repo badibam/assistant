@@ -63,6 +63,7 @@ fun MainScreen() {
     var showData by rememberSaveable { mutableStateOf(false) }
     var showLogs by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
+    var showHistory by rememberSaveable { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
     val selectedZone = zones.find { it.id == selectedZoneId }
@@ -177,6 +178,20 @@ fun MainScreen() {
             }
         )
         return // Exit MainScreen composition when showing config
+    }
+
+    // Show History screen when requested
+    if (showHistory) {
+        HistoryScreen(
+            onNavigateBack = {
+                showHistory = false
+            },
+            onResumeSession = { sessionId ->
+                showHistory = false
+                showAIChat = true
+            }
+        )
+        return // Exit MainScreen composition when showing History
     }
 
     // Show AI Providers screen when requested
@@ -441,6 +456,7 @@ fun MainScreen() {
             onDismiss = { showSettings = false },
             onOptionSelected = { optionId ->
                 when (optionId) {
+                    "history" -> showHistory = true
                     "ai_providers" -> showAIProviders = true
                     "transcription" -> showTranscription = true
                     "format" -> showFormat = true

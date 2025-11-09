@@ -1375,5 +1375,14 @@
     <string name="shared_zone_schema_tool_groups">Liste des groupes d\'outils disponibles dans cette zone</string>
     <string name="shared_zone_schema_group">Groupe d\'organisation de la zone</string>
     <string name="shared_service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>
+    <string name="shared_history_title">Historique des discussions</string>
+    <string name="shared_history_search_placeholder">Rechercher...</string>
+    <string name="shared_history_empty">Aucune discussion</string>
+    <string name="shared_history_rename_title">Renommer la discussion</string>
+    <string name="shared_history_rename_label">Nouveau nom</string>
+    <string name="shared_history_delete_confirm">Cette action est irréversible. Supprimer la discussion \'%1$s\' ?</string>
+    <string name="shared_history_session_messages">%1$d messages</string>
+    <string name="shared_settings_history">Historique des discussions</string>
+    <string name="shared_settings_history_description">Consulter, renommer et reprendre vos discussions passées</string>
 
 </resources>

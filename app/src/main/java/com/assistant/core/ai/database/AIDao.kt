@@ -138,6 +138,84 @@ interface AIDao {
     @Query("UPDATE automations SET lastExecutionId = :executionId WHERE id = :id")
     suspend fun updateAutomationLastExecution(id: String, executionId: String)
 
+    // === History Queries ===
+
+    /**
+     * List CHAT sessions with search and pagination
+     * Search in session name and message content (LIKE NOCASE)
+     * Filter by period (optional) and only completed sessions (endReason IS NOT NULL)
+     */
+    @Query("""
+        SELECT DISTINCT s.* FROM ai_sessions s
+        LEFT JOIN session_messages m ON m.sessionId = s.id
+        WHERE s.type = 'CHAT'
+          AND s.endReason IS NOT NULL
+          AND (:search IS NULL OR :search = '' OR
+               s.name LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.richContentJson LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.textContent LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.aiMessageJson LIKE '%' || :search || '%' COLLATE NOCASE)
+          AND (:startTime IS NULL OR s.createdAt >= :startTime)
+          AND (:endTime IS NULL OR s.createdAt <= :endTime)
+        ORDER BY s.createdAt DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun getChatSessionsWithSearch(
+        search: String?,
+        startTime: Long?,
+        endTime: Long?,
+        limit: Int,
+        offset: Int
+    ): List<AISessionEntity>
+
+    /**
+     * Count CHAT sessions matching search and period criteria
+     * Used for pagination calculation
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT s.id) FROM ai_sessions s
+        LEFT JOIN session_messages m ON m.sessionId = s.id
+        WHERE s.type = 'CHAT'
+          AND s.endReason IS NOT NULL
+          AND (:search IS NULL OR :search = '' OR
+               s.name LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.richContentJson LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.textContent LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.aiMessageJson LIKE '%' || :search || '%' COLLATE NOCASE)
+          AND (:startTime IS NULL OR s.createdAt >= :startTime)
+          AND (:endTime IS NULL OR s.createdAt <= :endTime)
+    """)
+    suspend fun countChatSessionsWithSearch(
+        search: String?,
+        startTime: Long?,
+        endTime: Long?
+    ): Int
+
+    /**
+     * Get first user message for a session (for preview)
+     * Returns the first message with sender = 'USER'
+     */
+    @Query("""
+        SELECT * FROM session_messages
+        WHERE sessionId = :sessionId AND sender = 'USER'
+        ORDER BY timestamp ASC
+        LIMIT 1
+    """)
+    suspend fun getFirstUserMessage(sessionId: String): SessionMessageEntity?
+
+    /**
+     * Update session name (for rename operation)
+     */
+    @Query("UPDATE ai_sessions SET name = :name WHERE id = :sessionId")
+    suspend fun updateSessionName(sessionId: String, name: String)
+
+    /**
+     * Delete session by ID
+     * Messages are deleted automatically via ON DELETE CASCADE FK constraint
+     */
+    @Query("DELETE FROM ai_sessions WHERE id = :sessionId")
+    suspend fun deleteSessionById(sessionId: String)
+
     // === Automation Scheduling Queries ===
 
     /**
