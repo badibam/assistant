@@ -499,6 +499,84 @@ object AIOrchestrator {
     }
 
     /**
+     * Resume an existing CHAT session (for history feature).
+     *
+     * Behavior:
+     * - Validates session exists and is CHAT type
+     * - Same eviction logic as startNewChatSession (suspend AUTOMATION, cancel CHAT)
+     * - Reactivates the session by clearing endReason and requesting activation
+     *
+     * Flow:
+     * 1. Load and validate session from DB
+     * 2. Request activation via scheduler
+     * 3. Handle activation result (enqueue if slot occupied, activate if free)
+     *
+     * @param sessionId ID of the CHAT session to resume
+     */
+    suspend fun resumeChatSession(sessionId: String) {
+        LogManager.aiSession("resumeChatSession called (sessionId=$sessionId)", "INFO")
+
+        // Step 1: Load and validate session
+        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+        if (result.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
+            LogManager.aiSession("resumeChatSession: Session not found: $sessionId", "ERROR")
+            return
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val sessionData = result.data?.get("session") as? Map<String, Any>
+        if (sessionData == null) {
+            LogManager.aiSession("resumeChatSession: Invalid session data for $sessionId", "ERROR")
+            return
+        }
+
+        val sessionType = sessionData["type"] as? String
+        if (sessionType != SessionType.CHAT.name) {
+            LogManager.aiSession("resumeChatSession: Session $sessionId is not CHAT (type=$sessionType)", "ERROR")
+            return
+        }
+
+        val currentState = stateRepository.state.value
+
+        // Step 2: Request activation via scheduler (same as startNewChatSession)
+        val activationResult = sessionScheduler.requestSession(
+            sessionId = sessionId,
+            sessionType = SessionType.CHAT,
+            trigger = ExecutionTrigger.MANUAL,
+            currentState = currentState
+        )
+
+        // Step 3: Handle activation result (identical to startNewChatSession)
+        when (activationResult) {
+            is com.assistant.core.ai.scheduling.ActivationResult.ActivateImmediate -> {
+                // Slot free - activate immediately
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId, SessionType.CHAT))
+                LogManager.aiSession("resumeChatSession: No active session, CHAT resumed directly", "INFO")
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.EvictAndActivate -> {
+                // Enqueue resumed session first (will be auto-activated when slot free)
+                enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, priority = 1)
+                // Then evict current session - processNextSessionActivation() will activate queued session
+                eventProcessor.emit(AIEvent.SessionCompleted(activationResult.evictionReason))
+                LogManager.aiSession("resumeChatSession: Current session evicted, CHAT enqueued for resume", "INFO")
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
+                // AUTOMATION active - enqueue and auto-suspend
+                enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, activationResult.priority)
+
+                // Auto-suspend AUTOMATION (same behavior as startNewChatSession)
+                if (currentState.sessionType == SessionType.AUTOMATION) {
+                    eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
+                    LogManager.aiSession("resumeChatSession: AUTOMATION auto-suspended, CHAT enqueued for resume", "INFO")
+                }
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Skip -> {
+                LogManager.aiSession("resumeChatSession: Session activation skipped: ${activationResult.reason}", "WARN")
+            }
+        }
+    }
+
+    /**
      * Load messages from a SEED session for pre-filling chat composer.
      *
      * @param seedId ID of the SEED session
