@@ -141,6 +141,21 @@ interface AIDao {
     // === Automation Scheduling Queries ===
 
     /**
+     * Get ALL incomplete automation sessions (for any automation, enabled or disabled)
+     * Returns sessions with endReason IN (null, 'NETWORK_ERROR', 'SUSPENDED') that are not active
+     * Used by scheduler to detect all sessions to resume (crash, network timeout, suspended by CHAT)
+     * Ordered by scheduledExecutionTime ASC (oldest first)
+     */
+    @Query("""
+        SELECT * FROM ai_sessions
+        WHERE type = 'AUTOMATION'
+          AND (endReason IS NULL OR endReason IN ('NETWORK_ERROR', 'SUSPENDED'))
+          AND isActive = 0
+        ORDER BY scheduledExecutionTime ASC
+    """)
+    suspend fun getAllIncompleteAutomationSessions(): List<AISessionEntity>
+
+    /**
      * Get incomplete automation session for a specific automation
      * Returns sessions with endReason IN (null, 'NETWORK_ERROR', 'SUSPENDED') that are not active
      * Used by scheduler to detect sessions to resume (crash, network timeout)

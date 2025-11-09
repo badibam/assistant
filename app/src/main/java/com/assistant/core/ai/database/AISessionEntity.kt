@@ -57,6 +57,7 @@ data class AISessionEntity(
     // ==================== Session Metadata ====================
 
     val automationId: String?,              // null for CHAT/SEED, automation ID for AUTOMATION
+    val seedId: String? = null,             // null except for CHAT created from automation button (ID of SEED to pre-fill)
     val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
     val providerId: String,                 // Fixed for the session
     val providerSessionId: String,          // Provider API session ID

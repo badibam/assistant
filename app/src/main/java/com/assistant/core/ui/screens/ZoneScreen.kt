@@ -35,7 +35,8 @@ fun ZoneScreen(
     onBack: () -> Unit,
     onNavigateToSeedEditor: ((seedSessionId: String) -> Unit)? = null,
     onNavigateToAutomationHistory: ((automationId: String) -> Unit)? = null,
-    onConfigureZone: ((zoneId: String) -> Unit)? = null
+    onConfigureZone: ((zoneId: String) -> Unit)? = null,
+    onAutomationStartChat: ((seedSessionId: String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -381,6 +382,7 @@ fun ZoneScreen(
                             }
                         }
                     },
+                    onAutomationStartChat = onAutomationStartChat,
                     context = context
                 )
             }
@@ -483,6 +485,7 @@ fun ZoneScreen(
                             }
                         }
                     },
+                    onAutomationStartChat = onAutomationStartChat,
                     context = context
                 )
         }
@@ -567,6 +570,7 @@ private fun GroupSection(
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationView: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationToggle: (com.assistant.core.ai.data.Automation, Boolean) -> Unit,
+    onAutomationStartChat: ((String) -> Unit)?,
     context: android.content.Context
 ) {
     val s = remember { Strings.`for`(context = context) }
@@ -674,7 +678,8 @@ private fun GroupSection(
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
-            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) }
+            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
+            onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
         )
     }
 
@@ -710,6 +715,7 @@ private fun UngroupedSection(
     onAutomationTest: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationView: (com.assistant.core.ai.data.Automation) -> Unit,
     onAutomationToggle: (com.assistant.core.ai.data.Automation, Boolean) -> Unit,
+    onAutomationStartChat: ((String) -> Unit)?,
     context: android.content.Context
 ) {
     val s = remember { Strings.`for`(context = context) }
@@ -814,7 +820,8 @@ private fun UngroupedSection(
             onEdit = { onAutomationEdit(automation) },
             onTest = { onAutomationTest(automation) },
             onView = { onAutomationView(automation) },
-            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) }
+            onToggleEnabled = { enabled -> onAutomationToggle(automation, enabled) },
+            onStartChat = { onAutomationStartChat?.invoke(automation.seedSessionId) }
         )
     }
 

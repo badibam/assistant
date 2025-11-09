@@ -702,6 +702,14 @@ abstract class AppDatabase : RoomDatabase() {
 
                 LogManager.database("MIGRATION 17->18: Added group column to automations", "INFO")
 
+                // 4. Add seedId column to ai_sessions (for CHAT sessions created from automation button)
+                database.execSQL("""
+                    ALTER TABLE ai_sessions
+                    ADD COLUMN seedId TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 17->18: Added seedId column to ai_sessions", "INFO")
+
                 // Count affected records for logging
                 val zonesCount = database.query("SELECT COUNT(*) FROM zones").use { cursor ->
                     if (cursor.moveToFirst()) cursor.getInt(0) else 0
@@ -709,8 +717,11 @@ abstract class AppDatabase : RoomDatabase() {
                 val automationsCount = database.query("SELECT COUNT(*) FROM automations").use { cursor ->
                     if (cursor.moveToFirst()) cursor.getInt(0) else 0
                 }
+                val sessionsCount = database.query("SELECT COUNT(*) FROM ai_sessions").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
 
-                LogManager.database("MIGRATION 17->18: Completed - $zonesCount zones and $automationsCount automations ready for groups", "INFO")
+                LogManager.database("MIGRATION 17->18: Completed - $zonesCount zones, $automationsCount automations, and $sessionsCount sessions ready", "INFO")
             }
         }
 

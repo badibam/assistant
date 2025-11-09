@@ -313,11 +313,54 @@ object AIOrchestrator {
     // ========================================================================================
 
     /**
+     * Create a new CHAT session (always creates, never reuses).
+     *
+     * @param seedId Optional ID of SEED session to pre-fill composer from
+     * @return The created session ID
+     */
+    private suspend fun createNewChatSession(seedId: String? = null): String {
+        val newSessionId = java.util.UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        // Get active provider
+        val provider = aiDao.getActiveProviderConfig()
+        val providerId = provider?.providerId ?: "claude"
+
+        val session = AISessionEntity(
+            id = newSessionId,
+            name = "Chat ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
+            type = SessionType.CHAT,
+            requireValidation = false,
+            phase = "IDLE",
+            waitingContextJson = null,
+            totalRoundtrips = 0,
+            lastEventTime = now,
+            lastUserInteractionTime = now,
+            automationId = null,
+            seedId = seedId,  // ID of SEED session to pre-fill from (null if normal chat)
+            scheduledExecutionTime = null,
+            providerId = providerId,
+            providerSessionId = java.util.UUID.randomUUID().toString(),
+            createdAt = now,
+            lastActivity = now,
+            isActive = false, // Will be activated by SessionActivationRequested
+            endReason = null,
+            tokensJson = null,
+            costJson = null
+        )
+
+        aiDao.insertSession(session)
+        LogManager.aiSession("Created new CHAT session: $newSessionId (seedId=$seedId)", "INFO")
+
+        return newSessionId
+    }
+
+    /**
      * Request chat session activation.
-     * Creates new session if needed.
+     * Reuses existing CHAT session if active, otherwise creates new one.
      *
      * Flow:
-     * 1. Check if there's already an active CHAT session
+     * 1. Check if there's already an active CHAT session (reuse if yes)
      * 2. If not, create new CHAT session
      * 3. Request activation via scheduler (handles queue/eviction logic)
      * 4. Handle activation result (immediate, enqueue, or evict)
@@ -334,39 +377,8 @@ object AIOrchestrator {
             LogManager.aiSession("Reusing existing CHAT session: $currentSessionId", "DEBUG")
             currentSessionId
         } else {
-            // Create new CHAT session
-            val newSessionId = java.util.UUID.randomUUID().toString()
-            val now = System.currentTimeMillis()
-
-            // Get active provider
-            val provider = aiDao.getActiveProviderConfig()
-            val providerId = provider?.providerId ?: "claude"
-
-            val session = AISessionEntity(
-                id = newSessionId,
-                name = "Chat ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
-                type = SessionType.CHAT,
-                requireValidation = false,
-                phase = "IDLE",
-                waitingContextJson = null,
-                totalRoundtrips = 0,
-                lastEventTime = now,
-                lastUserInteractionTime = now,
-                automationId = null,
-                scheduledExecutionTime = null,
-                providerId = providerId,
-                providerSessionId = java.util.UUID.randomUUID().toString(),
-                createdAt = now,
-                lastActivity = now,
-                isActive = false, // Will be activated by SessionActivationRequested
-                endReason = null,
-                tokensJson = null,
-                costJson = null
-            )
-
-            aiDao.insertSession(session)
-            LogManager.aiSession("Created new CHAT session: $newSessionId", "INFO")
-            newSessionId
+            // Create new CHAT session (no seedId for normal chat flow)
+            createNewChatSession(seedId = null)
         }
 
         // Request activation via scheduler
@@ -419,37 +431,90 @@ object AIOrchestrator {
     }
 
     /**
-     * Interrupt active AUTOMATION to start CHAT session.
+     * Start a new CHAT session, evicting any currently active session.
+     *
+     * Behavior:
+     * - AUTOMATION active: Suspended (can resume later)
+     * - CHAT active: Cancelled (permanently replaced)
+     * - IDLE: Creates new chat directly
      *
      * Flow:
-     * 1. Request CHAT session first (will be enqueued with priority 1)
-     * 2. Close automation with SUSPENDED reason (frees the slot)
-     * 3. CHAT will be activated from queue before automation resumes
+     * 1. Create NEW CHAT session (always new, never reuses)
+     * 2. Close current session with appropriate reason (frees the slot)
+     * 3. Request activation of new CHAT session
      *
-     * Used when user clicks "Interrupt" option in ChatOptionsDialog.
+     * Used when:
+     * - User clicks "Interrupt" in ChatOptionsDialog
+     * - User clicks chat button on automation card (with seedId pre-fill)
      *
-     * Note: The automation will be resumed automatically by the scheduler
+     * @param seedId Optional ID of SEED session to pre-fill composer from (for automation button)
+     *
+     * Note: AUTOMATION sessions will be resumed automatically by the scheduler
      * when the slot becomes free again (after CHAT ends or becomes inactive).
      */
-    suspend fun interruptAutomationForChat() {
-        LogManager.aiSession("interruptAutomationForChat called", "INFO")
+    suspend fun startNewChatSession(seedId: String? = null) {
+        LogManager.aiSession("startNewChatSession called (seedId=$seedId)", "INFO")
 
         val currentState = stateRepository.state.value
 
-        // Verify there's an active AUTOMATION session
-        if (currentState.sessionType != SessionType.AUTOMATION) {
-            LogManager.aiSession("interruptAutomationForChat: No active AUTOMATION, ignoring", "WARN")
-            return
+        // Step 1: Create NEW CHAT session (always creates, never reuses)
+        val sessionId = createNewChatSession(seedId)
+
+        // Step 2: Request activation via scheduler (will enqueue if slot occupied)
+        val activationResult = sessionScheduler.requestSession(
+            sessionId = sessionId,
+            sessionType = SessionType.CHAT,
+            trigger = ExecutionTrigger.MANUAL,
+            currentState = currentState
+        )
+
+        // Step 3: Handle activation result
+        when (activationResult) {
+            is com.assistant.core.ai.scheduling.ActivationResult.ActivateImmediate -> {
+                // Slot free - activate immediately
+                eventProcessor.emit(AIEvent.SessionActivationRequested(sessionId, SessionType.CHAT))
+                LogManager.aiSession("startNewChatSession: No active session, new CHAT activated directly", "INFO")
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.EvictAndActivate -> {
+                // Enqueue new session first (will be auto-activated when slot free)
+                enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, priority = 1)
+                // Then evict current session - processNextSessionActivation() will activate queued session
+                eventProcessor.emit(AIEvent.SessionCompleted(activationResult.evictionReason))
+                LogManager.aiSession("startNewChatSession: Current session evicted, new CHAT enqueued (will auto-activate)", "INFO")
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Enqueue -> {
+                // AUTOMATION active - enqueue and auto-suspend (for seedId-based chat from automation button)
+                enqueueSession(sessionId, SessionType.CHAT, ExecutionTrigger.MANUAL, activationResult.priority)
+
+                // Auto-suspend AUTOMATION (specific behavior for automation button chat)
+                if (currentState.sessionType == SessionType.AUTOMATION) {
+                    eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
+                    LogManager.aiSession("startNewChatSession: AUTOMATION auto-suspended, new CHAT enqueued", "INFO")
+                }
+            }
+            is com.assistant.core.ai.scheduling.ActivationResult.Skip -> {
+                LogManager.aiSession("startNewChatSession: Session activation skipped: ${activationResult.reason}", "WARN")
+            }
         }
+    }
 
-        // Step 1: Request CHAT session (will be enqueued with priority 1 since slot occupied)
-        requestChatSession()
+    /**
+     * Load messages from a SEED session for pre-filling chat composer.
+     *
+     * @param seedId ID of the SEED session
+     * @return List of SessionMessage from the SEED session (typically one USER message with enrichments)
+     */
+    suspend fun loadSeedMessages(seedId: String): List<com.assistant.core.ai.data.SessionMessage> {
+        LogManager.aiSession("loadSeedMessages called for seedId=$seedId", "INFO")
 
-        // Step 2: Close the automation with SUSPENDED reason (frees slot)
-        // When slot becomes free, CHAT from queue will be activated before automation resume
-        eventProcessor.emit(AIEvent.SessionCompleted(SessionEndReason.SUSPENDED))
-
-        LogManager.aiSession("interruptAutomationForChat: CHAT enqueued, AUTOMATION being suspended", "INFO")
+        return try {
+            val messages = messageRepository.loadMessages(seedId)
+            LogManager.aiSession("Loaded ${messages.size} messages from SEED session $seedId", "INFO")
+            messages
+        } catch (e: Exception) {
+            LogManager.aiSession("Failed to load SEED messages: ${e.message}", "ERROR", e)
+            emptyList()
+        }
     }
 
     // ========================================================================================

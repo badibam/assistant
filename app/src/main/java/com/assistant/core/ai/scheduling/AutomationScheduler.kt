@@ -47,9 +47,8 @@ class AutomationScheduler(private val context: Context) {
      * Returns Resume/Create/None based on enabled automations and their states
      *
      * Logic:
-     * 1. For each enabled automation (with or without schedule):
-     *    - Check for incomplete session (crash/network/suspended/manual) → RESUME
-     * 2. For each enabled automation WITH schedule:
+     * 1. Check ALL incomplete sessions (any automation, even disabled) → RESUME
+     * 2. For each enabled automation WITH schedule (without incomplete session):
      *    - Calculate next execution time from last completed → CREATE if time passed
      * 3. Sort all candidates by scheduledTime ASC (oldest first)
      * 4. Return first candidate or None
@@ -58,52 +57,60 @@ class AutomationScheduler(private val context: Context) {
         try {
             LogManager.aiSession("AutomationScheduler: Calculating next session to execute", "DEBUG")
 
-            // Get ALL enabled automations (with or without schedule)
+            // Build list of candidates (resume or create)
+            val candidates = mutableListOf<ScheduleCandidate>()
+
+            // Step 1: Check ALL incomplete sessions (any automation, even if disabled)
+            // This ensures SUSPENDED sessions (from CHAT eviction) are always resumed
+            val incompleteSessions = aiDao.getAllIncompleteAutomationSessions()
+
+            LogManager.aiSession(
+                "AutomationScheduler: Found ${incompleteSessions.size} incomplete sessions to check",
+                "DEBUG"
+            )
+
+            for (incompleteSession in incompleteSessions) {
+                // scheduledExecutionTime must not be null for AUTOMATION sessions
+                if (incompleteSession.scheduledExecutionTime == null) {
+                    LogManager.aiSession(
+                        "AutomationScheduler: Skipping incomplete session ${incompleteSession.id} - scheduledExecutionTime is null (data error)",
+                        "ERROR"
+                    )
+                    continue
+                }
+
+                val automationId = incompleteSession.automationId
+                if (automationId == null) {
+                    LogManager.aiSession(
+                        "AutomationScheduler: Skipping incomplete session ${incompleteSession.id} - automationId is null (data error)",
+                        "ERROR"
+                    )
+                    continue
+                }
+
+                LogManager.aiSession(
+                    "AutomationScheduler: Found incomplete session ${incompleteSession.id} for automation $automationId " +
+                    "(endReason=${incompleteSession.endReason}, scheduled=${formatTimestamp(incompleteSession.scheduledExecutionTime)})",
+                    "INFO"
+                )
+                candidates.add(
+                    ScheduleCandidate(
+                        automationId = automationId,
+                        scheduledTime = incompleteSession.scheduledExecutionTime,
+                        action = CandidateAction.RESUME,
+                        sessionId = incompleteSession.id
+                    )
+                )
+            }
+
+            // Step 2: For enabled automations WITH schedule, calculate next scheduled execution
+            // Only if no incomplete session was found above
             val allEnabledAutomations = aiDao.getAllEnabledAutomations()
 
             if (allEnabledAutomations.isEmpty()) {
                 LogManager.aiSession("AutomationScheduler: No enabled automations", "DEBUG")
-                return NextSession.None
             }
 
-            // Build list of candidates (resume or create)
-            val candidates = mutableListOf<ScheduleCandidate>()
-
-            // Step 1: Check ALL enabled automations for incomplete sessions (MANUAL or SCHEDULED)
-            for (automation in allEnabledAutomations) {
-                // Check for incomplete session (to resume)
-                val incompleteSession = aiDao.getIncompleteAutomationSession(automation.id)
-
-                if (incompleteSession != null) {
-                    // Session to resume (crash, network error, or suspended)
-                    // scheduledExecutionTime must not be null for AUTOMATION sessions
-                    if (incompleteSession.scheduledExecutionTime == null) {
-                        LogManager.aiSession(
-                            "AutomationScheduler: Skipping incomplete session ${incompleteSession.id} - scheduledExecutionTime is null (data error)",
-                            "ERROR"
-                        )
-                        continue
-                    }
-
-                    LogManager.aiSession(
-                        "AutomationScheduler: Found incomplete session for automation ${automation.id} " +
-                        "(endReason=${incompleteSession.endReason}, scheduled=${formatTimestamp(incompleteSession.scheduledExecutionTime)})",
-                        "INFO"
-                    )
-                    candidates.add(
-                        ScheduleCandidate(
-                            automationId = automation.id,
-                            scheduledTime = incompleteSession.scheduledExecutionTime,
-                            action = CandidateAction.RESUME,
-                            sessionId = incompleteSession.id
-                        )
-                    )
-                    // Continue to next automation (only one candidate per automation)
-                }
-            }
-
-            // Step 2: For automations WITH schedule, calculate next scheduled execution
-            // Only if no incomplete session was found above
             val automationsWithIncomplete = candidates.map { it.automationId }.toSet()
             val automationsWithSchedule = allEnabledAutomations
                 .filter { !it.scheduleJson.isNullOrEmpty() && !automationsWithIncomplete.contains(it.id) }

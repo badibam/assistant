@@ -329,6 +329,14 @@ fun MainScreen() {
             },
             onConfigureZone = { zoneId ->
                 configZoneId = zoneId
+            },
+            onAutomationStartChat = { seedSessionId ->
+                coroutineScope.launch {
+                    com.assistant.core.ai.orchestration.AIOrchestrator.startNewChatSession(seedId = seedSessionId)
+                    // Close ZoneScreen to return to MainScreen where AIFloatingChat is rendered
+                    selectedZoneId = null
+                    showAIChat = true
+                }
             }
         )
         return // Exit MainScreen composition when showing ZoneScreen

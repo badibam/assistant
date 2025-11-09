@@ -426,7 +426,7 @@ object DefaultTheme : ThemeContract {
             ButtonAction.DOWN -> "▼"      // Triangle bas
             ButtonAction.LEFT -> "◀"      // Triangle gauche
             ButtonAction.RIGHT -> "▶"     // Triangle droite
-            ButtonAction.AI_CHAT -> "🤖"   // Robot face
+            ButtonAction.AI_CHAT -> "💬"   // Chat bubble
             ButtonAction.INTERRUPT -> "⏸"  // Pause symbol
             ButtonAction.STOP -> "⏹"      // Stop symbol
             ButtonAction.PAUSE -> "⏸"     // Pause symbol

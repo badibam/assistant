@@ -34,7 +34,8 @@ fun AutomationCard(
     onEdit: () -> Unit,
     onTest: () -> Unit,
     onView: () -> Unit,
-    onToggleEnabled: (Boolean) -> Unit
+    onToggleEnabled: (Boolean) -> Unit,
+    onStartChat: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
@@ -178,6 +179,14 @@ fun AutomationCard(
                         display = ButtonDisplay.ICON,
                         size = Size.S,
                         onClick = onTest
+                    )
+
+                    // Chat button (start chat with SEED pre-fill)
+                    UI.ActionButton(
+                        action = ButtonAction.AI_CHAT,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        onClick = onStartChat
                     )
                 }
 
