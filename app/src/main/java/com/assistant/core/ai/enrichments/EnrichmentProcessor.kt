@@ -546,12 +546,15 @@ class EnrichmentProcessor(
                             ))
                         }
 
-                        // Data schema resource
+                        // Data schema resource (requires toolInstanceId for custom fields enrichment)
                         if ("data_schema" in selectedResources && dataSchemaId.isNotEmpty()) {
                             queries.add(DataCommand(
-                                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId)),
+                                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId, "toolInstanceId" to toolInstanceId)),
                                 type = "SCHEMA",
-                                params = mapOf("id" to dataSchemaId),
+                                params = mapOf(
+                                    "id" to dataSchemaId,
+                                    "toolInstanceId" to toolInstanceId
+                                ),
                                 isRelative = isRelative
                             ))
                         }
@@ -577,12 +580,15 @@ class EnrichmentProcessor(
                             ))
                         }
 
-                        // Executions schema resource
+                        // Executions schema resource (requires toolInstanceId for custom fields enrichment)
                         if ("executions_schema" in selectedResources && executionSchemaId.isNotEmpty()) {
                             queries.add(DataCommand(
-                                id = buildQueryId("schema_execution", mapOf("id" to executionSchemaId)),
+                                id = buildQueryId("schema_execution", mapOf("id" to executionSchemaId, "toolInstanceId" to toolInstanceId)),
                                 type = "SCHEMA",
-                                params = mapOf("id" to executionSchemaId),
+                                params = mapOf(
+                                    "id" to executionSchemaId,
+                                    "toolInstanceId" to toolInstanceId
+                                ),
                                 isRelative = isRelative
                             ))
                         }

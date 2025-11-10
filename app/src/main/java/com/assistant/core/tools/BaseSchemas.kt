@@ -402,10 +402,12 @@ object BaseSchemas {
             return mergedSchema
         }
 
-        val configJson = result.data?.get("config") as? String
+        // tools.get returns { "tool_instance": { "config_json": "...", ... } }
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        val configJson = toolInstance?.get("config_json") as? String
         if (configJson == null) {
             LogManager.schema(
-                "Tool instance config is null for custom fields enrichment",
+                "Tool instance config_json is null for custom fields enrichment (toolInstanceId=$toolInstanceId)",
                 "WARN"
             )
             return mergedSchema

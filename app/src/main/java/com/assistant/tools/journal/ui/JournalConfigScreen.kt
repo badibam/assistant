@@ -222,14 +222,21 @@ fun JournalConfigScreen(
         }
 
         // Custom fields editor
-        CustomFieldsEditor(
-            fields = customFields,
-            onFieldsChange = { newFields ->
-                customFields = newFields
-                LogManager.ui("Custom fields updated: ${newFields.size} fields")
-            },
-            context = context
-        )
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CustomFieldsEditor(
+                    fields = customFields,
+                    onFieldsChange = { newFields ->
+                        customFields = newFields
+                        LogManager.ui("Custom fields updated: ${newFields.size} fields")
+                    },
+                    context = context
+                )
+            }
+        }
 
         // Form actions
         val handleSave = {

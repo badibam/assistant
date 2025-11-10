@@ -140,25 +140,18 @@ fun CustomFieldsDisplay(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Section title
-        UI.Text(
-            text = s.shared("custom_fields_section_title"),
-            type = TextType.SUBTITLE,
-            fillMaxWidth = true
-        )
-
-        // Display each field
+        // Display each field with its own title
         fieldsToDisplay.forEach { field ->
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Field label (display name)
+                // Field title (display name as subtitle)
                 UI.Text(
                     text = field.displayName,
-                    type = TextType.LABEL,
+                    type = TextType.SUBTITLE,
                     fillMaxWidth = true
                 )
 

@@ -61,6 +61,7 @@ object PromptChunks {
         Chunk("commands_queries_signatures", 1) { ctx, _ -> buildCommandsQueriesSignatures(ctx) },
         Chunk("commands_actions_signatures", 1) { ctx, _ -> buildChunk("commands_actions_signatures", ctx) },
         Chunk("commands_response_format", 2) { ctx, _ -> buildChunk("commands_response_format", ctx) },
+        Chunk("custom_fields", 1) { ctx, _ -> buildCustomFieldsChunk(ctx) },
         Chunk("commands_queries_examples", 3) { ctx, _ -> buildChunk("commands_queries_examples", ctx) },
         Chunk("commands_actions_examples", 3) { ctx, _ -> buildChunk("commands_actions_examples", ctx) },
 
@@ -202,6 +203,32 @@ object PromptChunks {
         val s = Strings.`for`(context = context)
         val content = s.shared("ai_chunk_$chunkName")
         return replacePlaceholders(content, context)
+    }
+
+    /**
+     * Build custom field types list dynamically from FieldType enum
+     * Single source of truth for supported field types
+     */
+    private fun buildCustomFieldTypesList(): String {
+        val types = com.assistant.core.fields.FieldType.values()
+
+        return types.joinToString("\n") { type ->
+            val description = when (type) {
+                com.assistant.core.fields.FieldType.TEXT_UNLIMITED -> "Texte libre illimité"
+            }
+            "- **${type.name}** : $description"
+        }
+    }
+
+    /**
+     * Build custom fields chunk with dynamic type list
+     */
+    private suspend fun buildCustomFieldsChunk(context: Context): String {
+        val s = Strings.`for`(context = context)
+        val content = s.shared("ai_chunk_custom_fields")
+        val typesList = buildCustomFieldTypesList()
+
+        return content.replace("{{CUSTOM_FIELD_TYPES}}", typesList)
     }
 
     // ================================================================

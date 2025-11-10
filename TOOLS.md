@@ -18,6 +18,18 @@ Guide pour comprendre et créer des outils dans l'architecture modulaire.
 - **Message** : 1 message/rappel planifié
 - **Alerte** : 1 règle d'alerte automatique
 
+### Custom Fields (Champs Personnalisés)
+
+Tous les tooltypes supportent des **champs supplémentaires** définis par l'utilisateur pour étendre les données.
+
+**Structure** :
+- **Définitions** : Dans `custom_fields` array de la config (name, display_name, type, always_visible)
+- **Valeurs** : Dans `custom_fields` object des données (clé = name du champ)
+- **Types** : V1 supporte `TEXT_UNLIMITED` uniquement (source unique : `FieldType` enum)
+- **Validation** : Intégrée automatiquement dans les schémas data/execution enrichis
+
+**Pattern** : Les schémas data/execution nécessitent `toolInstanceId` pour enrichissement avec custom fields.
+
 ## Architecture Outil
 
 ### Structure Physique
@@ -166,6 +178,7 @@ Validation unifiée pour tous les types d'outils via SchemaValidator.
 
 ### API Standard
 - Récupération ToolType via ToolTypeManager.getToolType()
+- Récupération schémas : `getSchema(schemaId, context, toolInstanceId)` - toolInstanceId **requis** pour data/execution schemas (enrichissement custom fields)
 - Validation données métier avec schemaType = "data"
 - Validation configuration avec schemaType = "config"
 - Gestion résultat : isValid et errorMessage traduit automatiquement

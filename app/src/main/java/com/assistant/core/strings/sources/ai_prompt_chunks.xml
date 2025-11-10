@@ -493,7 +493,40 @@ Les actions retournent un **SystemMessage** de type `ACTIONS_EXECUTED` contenant
 
 Si toutes les actions réussissent, ton `postText` est affiché automatiquement.]]></string>
 
-    <!-- C.4 Exemples Queries [DEGRÉ 3] -->
+    <!-- C.4 Custom Fields [DEGRÉ 1] -->
+    <string name="ai_chunk_custom_fields"><![CDATA[## Champs Personnalisés
+
+Tous les tooltypes supportent des **champs supplémentaires** définis par l\'utilisateur.
+
+**Structure dans config** (définitions) :
+```json
+"custom_fields": [
+  {
+    "name": "mood_before",
+    "display_name": "Humeur avant",
+    "type": "TEXT_UNLIMITED",
+    "always_visible": true
+  }
+]
+```
+
+**Structure dans données** (valeurs) :
+```json
+{
+  "custom_fields": {
+    "mood_before": "stressed"
+  }
+}
+```
+
+**Types supportés** : {{CUSTOM_FIELD_TYPES}}
+
+**Comportement** :
+- Tous les custom_fields sont **optionnels**
+- Retournés automatiquement par `TOOL_CONFIG`, `TOOL_DATA` et `TOOL_EXECUTIONS`
+- Utilisables dans `CREATE_DATA` et `UPDATE_DATA`]]></string>
+
+    <!-- C.5 Exemples Queries [DEGRÉ 3] -->
     <string name="ai_chunk_commands_queries_examples"><![CDATA[## Exemples de Queries
 
 ### Exemple 1 : Lister les zones
@@ -518,7 +551,17 @@ Retourne toutes les zones avec leurs configurations.
 }
 ```
 
-Retourne la config JSON complète de cet outil.
+Retourne la config JSON complète incluant les custom_fields définis :
+```json
+{
+  "name": "Poids quotidien",
+  "type": "numeric",
+  "unit": "kg",
+  "custom_fields": [
+    {"name": "mood", "display_name": "Humeur", "type": "TEXT_UNLIMITED"}
+  ]
+}
+```
 
 ### Exemple 3 : Données filtrées par période
 
@@ -536,10 +579,24 @@ Retourne la config JSON complète de cet outil.
 }
 ```
 
-Retourne jusqu\'à 50 entrées de données entre ces dates.
+Retourne jusqu\'à 50 entrées incluant custom_fields si définis :
+```json
+{
+  "entries": [
+    {
+      "id": "entry_456",
+      "timestamp": 1704067200000,
+      "data": {"value": 75.5},
+      "custom_fields": {"mood": "stressed"}
+    }
+  ],
+  "total": 42
+}
+```
 
 ### Exemple 4 : Récupérer un schéma
 
+**Config schema** (toolInstanceId optionnel) :
 ```json
 {
   "type": "SCHEMA",
@@ -549,7 +606,18 @@ Retourne jusqu\'à 50 entrées de données entre ces dates.
 }
 ```
 
-Retourne le schéma JSON complet avec tous les champs et contraintes.
+**Data schema** (toolInstanceId requis pour custom_fields) :
+```json
+{
+  "type": "SCHEMA",
+  "params": {
+    "id": "journal_data",
+    "toolInstanceId": "tools_abc123"
+  }
+}
+```
+
+Retourne le schéma JSON complet avec tous les champs, contraintes et custom_fields (si toolInstanceId fourni).
 
 ### Exemple 5 : Outils d\'une zone spécifique
 
@@ -595,18 +663,20 @@ Retourne toutes les entrées de la période. Ensuite, extrait uniquement les IDs
     "entries": [
       {
         "timestamp": 1704067200000,
-        "data": { "value": 75.5 }
+        "data": { "value": 75.5 },
+        "custom_fields": { "mood": "calm" }
       },
       {
         "timestamp": 1704153600000,
-        "data": { "value": 75.2 }
+        "data": { "value": 75.2 },
+        "custom_fields": { "mood": "stressed" }
       }
     ]
   }
 }
 ```
 
-Crée 2 entrées de poids. Le schema_id est automatiquement déduit de la config de l\'outil.
+Crée 2 entrées de poids avec custom_fields. Le schema_id est automatiquement déduit de la config de l\'outil.
 
 ### Exemple 2 : Mettre à jour des données (update partiel)
 
@@ -619,14 +689,15 @@ Crée 2 entrées de poids. Le schema_id est automatiquement déduit de la config
     "entries": [
       {
         "id": "entry_456",
-        "data": { "value": 75.8 }
+        "data": { "value": 75.8 },
+        "custom_fields": { "mood": "calm" }
       }
     ]
   }
 }
 ```
 
-**Update partiel** : Modifie uniquement la valeur. Les autres champs (name, timestamp, autres champs data) conservent leurs valeurs existantes.
+**Update partiel** : Modifie uniquement la valeur et le custom_field mood. Les autres champs (name, timestamp, autres champs data, autres custom_fields) conservent leurs valeurs existantes.
 Seuls les champs fournis sont mis à jour.
 
 ### Exemple 3 : Supprimer des données
@@ -700,10 +771,9 @@ Format : `{tooltype}_config_{variant}` (ex: `tracking_config_numeric`)
 **Data schemas** : Valident les entrées de données
 Format : `{tooltype}_data_{variant}` (ex: `tracking_data_numeric`)
 
-### Où trouver les schémas
+### Récupération des schémas
 
-Utilise la commande `SCHEMA` pour récupérer n\'importe quel schéma :
-
+**Config schemas** (toolInstanceId optionnel) :
 ```json
 {
   "type": "SCHEMA",
@@ -711,7 +781,18 @@ Utilise la commande `SCHEMA` pour récupérer n\'importe quel schéma :
 }
 ```
 
-Le schéma retourné contient la structure JSON complète avec tous les champs requis, optionnels et leurs contraintes.]]></string>
+**Data et Execution schemas** (toolInstanceId **requis**) :
+```json
+{
+  "type": "SCHEMA",
+  "params": {
+    "id": "journal_data",
+    "toolInstanceId": "tools_abc123"
+  }
+}
+```
+
+Le `toolInstanceId` enrichit le schéma avec les custom fields de l\'instance. Le schéma retourné contient la structure JSON complète avec tous les champs requis, optionnels et leurs contraintes.]]></string>
 
     <!-- D.2 Relation IDs [DEGRÉ 2] -->
     <string name="ai_chunk_validation_schema_relation"><![CDATA[## Relation entre schema_id et data_schema_id

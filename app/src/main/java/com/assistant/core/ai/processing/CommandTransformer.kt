@@ -130,10 +130,18 @@ object CommandTransformer {
             return null
         }
 
+        val params = mutableMapOf<String, Any>("id" to schemaId)
+
+        // Add toolInstanceId if present (required for data/execution schemas with custom fields)
+        command.params["toolInstanceId"]?.let {
+            params["toolInstanceId"] = it
+            LogManager.aiPrompt("SCHEMA command includes toolInstanceId for enrichment", "VERBOSE")
+        }
+
         return ExecutableCommand(
             resource = "schemas",
             operation = "get",
-            params = mapOf("id" to schemaId)
+            params = params
         )
     }
 

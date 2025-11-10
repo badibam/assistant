@@ -110,8 +110,12 @@ fun JournalEntryScreen(
     }
 
     // Load entry if not creating
-    LaunchedEffect(entryId) {
+    // Force reload on every composition by resetting custom fields before load
+    LaunchedEffect(entryId, isCreating) {
+        LogManager.ui("LaunchedEffect triggered: entryId=$entryId, isCreating=$isCreating")
         if (!isCreating) {
+            // Reset custom fields to ensure clean state
+            customFieldsValues = emptyMap()
             LogManager.ui("Loading journal entry: $entryId")
             val params = mapOf(
                 "entry_id" to entryId
@@ -146,7 +150,8 @@ fun JournalEntryScreen(
                     content = parsedData["content"] as? String ?: ""
 
                     // Load custom fields values
-                    val customFieldsData = data["custom_fields"]
+                    // Note: service returns "customFields" (camelCase), not "custom_fields"
+                    val customFieldsData = data["customFields"]
                     val parsedCustomFields = try {
                         when (customFieldsData) {
                             is Map<*, *> -> customFieldsData as Map<String, Any?>
@@ -206,7 +211,7 @@ fun JournalEntryScreen(
             // Note: schema_id must be at root level for validation (per ActionValidator pattern)
             // CRITICAL: data field is required by schema, and content must be present (even if empty)
             // to prevent SchemaValidator from filtering out the entire data map when it's empty
-            val entryData = mapOf(
+            val entryData = mutableMapOf<String, Any>(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "journal",
                 "schema_id" to "journal_data",  // Required for validation
@@ -217,9 +222,15 @@ fun JournalEntryScreen(
                 )
             )
 
+            // Add custom fields if any (for validation)
+            if (customFieldsValues.isNotEmpty()) {
+                entryData["custom_fields"] = customFieldsValues
+            }
+
             LogManager.ui("Journal validation - entryData: $entryData")
 
-            val schema = toolType.getSchema("journal_data", context)
+            // Get schema WITH toolInstanceId to include custom fields definitions
+            val schema = toolType.getSchema("journal_data", context, toolInstanceId)
             validationResult = if (schema != null) {
                 SchemaValidator.validate(schema, entryData, context)
             } else {
@@ -415,15 +426,22 @@ fun JournalEntryScreen(
 
             // Custom fields input (if any custom fields defined)
             if (customFieldsDefinitions.isNotEmpty()) {
-                CustomFieldsInput(
-                    fields = customFieldsDefinitions,
-                    values = customFieldsValues,
-                    onValuesChange = { newValues ->
-                        customFieldsValues = newValues
-                        LogManager.ui("Custom fields values updated")
-                    },
-                    context = context
-                )
+                UI.Card(type = CardType.DEFAULT) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CustomFieldsInput(
+                            fields = customFieldsDefinitions,
+                            values = customFieldsValues,
+                            onValuesChange = { newValues ->
+                                customFieldsValues = newValues
+                                LogManager.ui("Custom fields values updated")
+                            },
+                            context = context
+                        )
+                    }
+                }
             }
 
             // Form actions

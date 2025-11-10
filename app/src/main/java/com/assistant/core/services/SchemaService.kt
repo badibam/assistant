@@ -57,16 +57,29 @@ class SchemaService(private val context: Context) : ExecutableService {
             return OperationResult.error("Schema ID is required")
         }
 
-        LogManager.service("SchemaService.get() called with schemaId='$schemaId'")
+        val toolInstanceId = params.optString("toolInstanceId", null)
+        LogManager.service("SchemaService.get() called with schemaId='$schemaId', toolInstanceId='$toolInstanceId'")
 
-        val schema = getSchemaById(schemaId)
-        return if (schema != null) {
-            OperationResult.success(mapOf(
+        val schema = getSchemaById(schemaId, toolInstanceId)
+
+        if (schema != null) {
+            // Check if schema requires toolInstanceId (data/execution schemas need it for custom fields)
+            val requiresInstanceId = schema.category == com.assistant.core.validation.SchemaCategory.TOOL_DATA ||
+                                      schema.category == com.assistant.core.validation.SchemaCategory.TOOL_EXECUTION
+
+            if (requiresInstanceId && toolInstanceId == null) {
+                val s = Strings.`for`(context = context)
+                return OperationResult.error(
+                    s.shared("service_error_schema_requires_tool_instance_id").format(schemaId, schema.category.name)
+                )
+            }
+
+            return OperationResult.success(mapOf(
                 "schema_id" to schema.id,
                 "content" to schema.content
             ))
         } else {
-            OperationResult.error("Schema not found: $schemaId")
+            return OperationResult.error("Schema not found: $schemaId")
         }
     }
 
@@ -90,16 +103,18 @@ class SchemaService(private val context: Context) : ExecutableService {
 
     /**
      * Get schema by ID with automatic provider discovery
+     * @param schemaId Schema identifier
+     * @param toolInstanceId Optional tool instance ID for data/execution schema enrichment
      */
-    private fun getSchemaById(schemaId: String): Schema? {
-        LogManager.service("Resolving schema for ID: $schemaId")
+    private fun getSchemaById(schemaId: String, toolInstanceId: String?): Schema? {
+        LogManager.service("Resolving schema for ID: $schemaId, toolInstanceId=$toolInstanceId")
 
-        // Try system schemas first (hardcoded providers)
+        // Try system schemas first (hardcoded providers, no toolInstanceId needed)
         val systemSchema = getSystemSchema(schemaId)
         if (systemSchema != null) return systemSchema
 
-        // Try tooltype schemas via discovery
-        val tooltypeSchema = getTooltypeSchema(schemaId)
+        // Try tooltype schemas via discovery (may need toolInstanceId for data/execution schemas)
+        val tooltypeSchema = getTooltypeSchema(schemaId, toolInstanceId)
         if (tooltypeSchema != null) return tooltypeSchema
 
         LogManager.service("Schema not found: $schemaId", "WARN")
@@ -146,9 +161,12 @@ class SchemaService(private val context: Context) : ExecutableService {
      *
      * CRITICAL: Do NOT mask technical exceptions - they must propagate to AI
      * Only catch exceptions for individual tooltypes, not the outer loop
+     *
+     * @param schemaId Schema identifier
+     * @param toolInstanceId Optional tool instance ID for data/execution schema enrichment
      */
-    private fun getTooltypeSchema(schemaId: String): Schema? {
-        LogManager.service("Searching for schema '$schemaId' across all tooltypes")
+    private fun getTooltypeSchema(schemaId: String, toolInstanceId: String?): Schema? {
+        LogManager.service("Searching for schema '$schemaId' across all tooltypes (toolInstanceId=$toolInstanceId)")
 
         // Outer try catches only ToolTypeManager.getAllToolTypes() failures (technical error)
         val allToolTypes = try {
@@ -162,7 +180,7 @@ class SchemaService(private val context: Context) : ExecutableService {
         // Iterate through tooltypes - catch individual failures but continue searching
         for ((toolTypeName, toolType) in allToolTypes) {
             try {
-                val schema = toolType.getSchema(schemaId, context)
+                val schema = toolType.getSchema(schemaId, context, toolInstanceId)
                 if (schema != null) {
                     LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
                     return schema
@@ -241,10 +259,17 @@ class SchemaService(private val context: Context) : ExecutableService {
 
     /**
      * Verbalize schema operation
-     * Schema queries are typically not exposed to AI actions (read-only)
      */
     override fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
-        return s.shared("action_verbalize_unknown")
+
+        return when (operation) {
+            "get" -> {
+                val schemaId = params.optString("id", "")
+                s.shared("action_verbalize_schema_get").format(schemaId)
+            }
+            "list" -> s.shared("action_verbalize_schema_list")
+            else -> s.shared("action_verbalize_unknown")
+        }
     }
 }

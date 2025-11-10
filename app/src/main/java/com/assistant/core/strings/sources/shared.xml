@@ -218,6 +218,8 @@
     <string name="action_verbalize_update_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : modification de %3$d entrée(s)</string>
     <string name="action_verbalize_delete_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : suppression de %3$d entrée(s)</string>
     <string name="action_verbalize_update_app_config">Modification de la configuration de l\'application</string>
+    <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
+    <string name="action_verbalize_schema_list">Récupération de la liste des schémas</string>
     <string name="action_verbalize_unknown">Action inconnue</string>
 
     <!-- AI Errors - Network and System -->
@@ -724,6 +726,7 @@
     <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
     <string name="service_error_invalid_phase">Phase invalide: %1$s</string>
     <string name="service_error_unknown_category">Catégorie inconnue: %1$s</string>
+    <string name="service_error_schema_requires_tool_instance_id">Le schéma \'%1$s\' (catégorie: %2$s) nécessite le paramètre toolInstanceId</string>
 
     <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
     <string name="ai_system_no_commands">Aucune commande à exécuter</string>
