@@ -22,9 +22,14 @@ import com.assistant.core.transcription.models.TranscriptionContext
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.fields.CustomFieldsInput
+import com.assistant.core.fields.CustomFieldsDisplay
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.tools.journal.utils.DateFormatUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.json.JSONArray
 import java.io.File
 
 /**
@@ -63,6 +68,10 @@ fun JournalEntryScreen(
     var content by rememberSaveable { mutableStateOf("") }
     var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
 
+    // Custom fields states
+    var customFieldsDefinitions by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var customFieldsValues by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+
     // Transcription states (survive rotation where possible)
     var audioFilePath by remember { mutableStateOf("") } // Recalculated on recomposition
     var transcriptionStatus by remember { mutableStateOf<TranscriptionStatus?>(null) } // Complex type, reload on recomposition
@@ -74,6 +83,31 @@ fun JournalEntryScreen(
 
     // Validation state
     var validationResult by remember { mutableStateOf(ValidationResult.success()) }
+
+    // Load tool instance config to get custom fields definitions
+    LaunchedEffect(toolInstanceId) {
+        val configResult = coordinator.processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to toolInstanceId)
+        )
+
+        if (configResult?.isSuccess == true) {
+            val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
+            toolData?.let { data ->
+                val configJson = data["config_json"] as? String ?: "{}"
+                try {
+                    val config = JSONObject(configJson)
+                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    if (customFieldsArray != null) {
+                        customFieldsDefinitions = customFieldsArray.toFieldDefinitions()
+                        LogManager.ui("Loaded ${customFieldsDefinitions.size} custom field definitions")
+                    }
+                } catch (e: Exception) {
+                    LogManager.ui("Error parsing custom fields definitions: ${e.message}", "ERROR")
+                }
+            }
+        }
+    }
 
     // Load entry if not creating
     LaunchedEffect(entryId) {
@@ -110,6 +144,26 @@ fun JournalEntryScreen(
                     }
 
                     content = parsedData["content"] as? String ?: ""
+
+                    // Load custom fields values
+                    val customFieldsData = data["custom_fields"]
+                    val parsedCustomFields = try {
+                        when (customFieldsData) {
+                            is Map<*, *> -> customFieldsData as Map<String, Any?>
+                            is String -> {
+                                val customFieldsJson = JSONObject(customFieldsData)
+                                mutableMapOf<String, Any?>().apply {
+                                    customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
+                                }
+                            }
+                            else -> emptyMap()
+                        }
+                    } catch (e: Exception) {
+                        LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+                        emptyMap<String, Any?>()
+                    }
+                    customFieldsValues = parsedCustomFields
+                    LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                     // TODO: Load transcription data if available
                     // audioFilePath = parsedData["audio_file_path"] as? String ?: ""
@@ -190,7 +244,7 @@ fun JournalEntryScreen(
             coroutineScope.launch {
                 isSaving = true
                 try {
-                    val params = mapOf(
+                    val params = mutableMapOf<String, Any>(
                         "id" to entryId,
                         "toolInstanceId" to toolInstanceId,
                         "schema_id" to "journal_data",
@@ -200,6 +254,11 @@ fun JournalEntryScreen(
                             put("content", content)
                         }
                     )
+
+                    // Add custom fields if any
+                    if (customFieldsValues.isNotEmpty()) {
+                        params["custom_fields"] = JSONObject(customFieldsValues)
+                    }
 
                     val result = coordinator.processUserAction("tool_data.update", params)
                     if (result?.isSuccess == true) {
@@ -354,6 +413,19 @@ fun JournalEntryScreen(
                 }
             }
 
+            // Custom fields input (if any custom fields defined)
+            if (customFieldsDefinitions.isNotEmpty()) {
+                CustomFieldsInput(
+                    fields = customFieldsDefinitions,
+                    values = customFieldsValues,
+                    onValuesChange = { newValues ->
+                        customFieldsValues = newValues
+                        LogManager.ui("Custom fields values updated")
+                    },
+                    context = context
+                )
+            }
+
             // Form actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -398,6 +470,16 @@ fun JournalEntryScreen(
                         text = content,
                         type = TextType.BODY
                     )
+
+                    // Custom fields display (if any)
+                    if (customFieldsDefinitions.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        CustomFieldsDisplay(
+                            fields = customFieldsDefinitions,
+                            values = customFieldsValues,
+                            context = context
+                        )
+                    }
                 }
             }
 

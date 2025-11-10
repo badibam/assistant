@@ -14,8 +14,13 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.tools.ui.ToolGeneralConfigSection
+import com.assistant.core.fields.CustomFieldsEditor
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.fields.toJsonArray
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.json.JSONArray
 
 /**
  * Configuration screen for Journal tool type
@@ -50,6 +55,7 @@ fun JournalConfigScreen(
 
     // Configuration states - journal specific
     var sortOrder by remember { mutableStateOf("descending") }
+    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Zone change tracking
     val isEditing = existingToolId != null
@@ -85,6 +91,19 @@ fun JournalConfigScreen(
                         alwaysSend = config.optBoolean("always_send", false)
                         group = config.optString("group").takeIf { it.isNotEmpty() }
                         sortOrder = config.optString("sort_order", "descending")
+
+                        // Load custom fields
+                        val customFieldsArray = config.optJSONArray("custom_fields")
+                        if (customFieldsArray != null) {
+                            try {
+                                customFields = customFieldsArray.toFieldDefinitions()
+                                LogManager.ui("Loaded ${customFields.size} custom fields")
+                            } catch (e: Exception) {
+                                LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+                                // Keep empty list on error
+                            }
+                        }
+
                         LogManager.ui("Successfully loaded journal config: name=$name, sortOrder=$sortOrder")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
@@ -202,6 +221,16 @@ fun JournalConfigScreen(
             }
         }
 
+        // Custom fields editor
+        CustomFieldsEditor(
+            fields = customFields,
+            onFieldsChange = { newFields ->
+                customFields = newFields
+                LogManager.ui("Custom fields updated: ${newFields.size} fields")
+            },
+            context = context
+        )
+
         // Form actions
         val handleSave = {
             coroutineScope.launch {
@@ -222,6 +251,11 @@ fun JournalConfigScreen(
                     )
                     // Add group if present
                     group?.let { configData["group"] = it }
+
+                    // Add custom fields
+                    if (customFields.isNotEmpty()) {
+                        configData["custom_fields"] = customFields.toJsonArray()
+                    }
 
                     // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(
