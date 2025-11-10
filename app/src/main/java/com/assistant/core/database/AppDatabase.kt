@@ -710,6 +710,14 @@ abstract class AppDatabase : RoomDatabase() {
 
                 LogManager.database("MIGRATION 17->18: Added seedId column to ai_sessions", "INFO")
 
+                // 5. Add custom_fields column to tool_data (JSON object for custom field values)
+                database.execSQL("""
+                    ALTER TABLE tool_data
+                    ADD COLUMN custom_fields TEXT DEFAULT NULL
+                """)
+
+                LogManager.database("MIGRATION 17->18: Added custom_fields column to tool_data", "INFO")
+
                 // Count affected records for logging
                 val zonesCount = database.query("SELECT COUNT(*) FROM zones").use { cursor ->
                     if (cursor.moveToFirst()) cursor.getInt(0) else 0
@@ -720,8 +728,11 @@ abstract class AppDatabase : RoomDatabase() {
                 val sessionsCount = database.query("SELECT COUNT(*) FROM ai_sessions").use { cursor ->
                     if (cursor.moveToFirst()) cursor.getInt(0) else 0
                 }
+                val toolDataCount = database.query("SELECT COUNT(*) FROM tool_data").use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                }
 
-                LogManager.database("MIGRATION 17->18: Completed - $zonesCount zones, $automationsCount automations, and $sessionsCount sessions ready", "INFO")
+                LogManager.database("MIGRATION 17->18: Completed - $zonesCount zones, $automationsCount automations, $sessionsCount sessions, and $toolDataCount tool_data entries ready", "INFO")
             }
         }
 

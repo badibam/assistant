@@ -52,24 +52,55 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         """.trimIndent()
     }
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
-        return when(schemaId) {
-            "tracking_config_numeric" -> createConfigNumericSchema(context)
-            "tracking_config_scale" -> createConfigScaleSchema(context)
-            "tracking_config_boolean" -> createConfigBooleanSchema(context)
-            "tracking_config_choice" -> createConfigChoiceSchema(context)
-            "tracking_config_counter" -> createConfigCounterSchema(context)
-            "tracking_config_timer" -> createConfigTimerSchema(context)
-            "tracking_config_text" -> createConfigTextSchema(context)
-            "tracking_data_numeric" -> createDataNumericSchema(context)
-            "tracking_data_scale" -> createDataScaleSchema(context)
-            "tracking_data_boolean" -> createDataBooleanSchema(context)
-            "tracking_data_choice" -> createDataChoiceSchema(context)
-            "tracking_data_counter" -> createDataCounterSchema(context)
-            "tracking_data_timer" -> createDataTimerSchema(context)
-            "tracking_data_text" -> createDataTextSchema(context)
-            else -> null
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
+        // Config schemas (no custom fields)
+        if (schemaId.startsWith("tracking_config_")) {
+            return when(schemaId) {
+                "tracking_config_numeric" -> createConfigNumericSchema(context)
+                "tracking_config_scale" -> createConfigScaleSchema(context)
+                "tracking_config_boolean" -> createConfigBooleanSchema(context)
+                "tracking_config_choice" -> createConfigChoiceSchema(context)
+                "tracking_config_counter" -> createConfigCounterSchema(context)
+                "tracking_config_timer" -> createConfigTimerSchema(context)
+                "tracking_config_text" -> createConfigTextSchema(context)
+                else -> null
+            }
         }
+
+        // Data schemas (with custom fields if toolInstanceId provided)
+        if (schemaId.startsWith("tracking_data_")) {
+            val baseSchema = when(schemaId) {
+                "tracking_data_numeric" -> createDataNumericSchema(context)
+                "tracking_data_scale" -> createDataScaleSchema(context)
+                "tracking_data_boolean" -> createDataBooleanSchema(context)
+                "tracking_data_choice" -> createDataChoiceSchema(context)
+                "tracking_data_counter" -> createDataCounterSchema(context)
+                "tracking_data_timer" -> createDataTimerSchema(context)
+                "tracking_data_text" -> createDataTextSchema(context)
+                else -> return null
+            }
+
+            // If toolInstanceId provided, enrich with custom fields
+            if (toolInstanceId != null) {
+                val enrichedContent = BaseSchemas.createExtendedDataSchema(
+                    BaseSchemas.getBaseDataSchema(context),
+                    baseSchema.content,
+                    toolInstanceId,
+                    context
+                )
+                return Schema(
+                    id = schemaId,
+                    displayName = baseSchema.displayName,
+                    description = baseSchema.description,
+                    category = baseSchema.category,
+                    content = enrichedContent
+                )
+            }
+
+            return baseSchema
+        }
+
+        return null
     }
 
     override fun getAllSchemaIds(): List<String> {

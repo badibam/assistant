@@ -38,6 +38,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "batch_create" -> batchCreateEntries(params, token)  // Batch create multiple entries
                 "batch_update" -> batchUpdateEntries(params, token)  // Batch update multiple entries
                 "batch_delete" -> batchDeleteEntries(params, token)  // Batch delete multiple entries
+                "remove_custom_field" -> removeCustomFieldFromAllEntries(params, token)  // Remove custom field from all entries
                 else -> OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         } catch (e: Exception) {
@@ -51,6 +52,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val toolInstanceId = params.optString("toolInstanceId")
         val tooltype = params.optString("tooltype")
         val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
+        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
         // timestamp is optional: defaults to current time if omitted, but can be specified for retroactive entries
         val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else System.currentTimeMillis()
         val name = params.optString("name", null)
@@ -78,7 +80,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
             name = name,
             data = finalDataJson,
             createdAt = now,
-            updatedAt = now
+            updatedAt = now,
+            customFields = customFieldsJson  // Store custom fields separately
         )
 
         val dao = getToolDataDao()
@@ -137,6 +140,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val entryId = params.optString("id")
         val dataJson = params.optJSONObject("data")?.toString()
+        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
         val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else null
         val name = params.optString("name", null)
 
@@ -165,8 +169,28 @@ class ToolDataService(private val context: Context) : ExecutableService {
             existingEntity.data
         }
 
+        // Merge custom fields: new fields overwrite, absent fields are preserved
+        val mergedCustomFields = if (customFieldsJson != null) {
+            val existingCustomFields = if (existingEntity.customFields != null) {
+                JSONObject(existingEntity.customFields)
+            } else {
+                JSONObject()
+            }
+            val newCustomFields = JSONObject(customFieldsJson)
+
+            // Copy all keys from newCustomFields into existingCustomFields (overwrite present, preserve absent)
+            newCustomFields.keys().forEach { key ->
+                existingCustomFields.put(key, newCustomFields.get(key))
+            }
+
+            existingCustomFields.toString()
+        } else {
+            existingEntity.customFields
+        }
+
         val updatedEntity = existingEntity.copy(
             data = mergedData,
+            customFields = mergedCustomFields,
             timestamp = timestamp ?: existingEntity.timestamp,
             name = name ?: existingEntity.name,
             updatedAt = System.currentTimeMillis()
@@ -279,6 +303,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         "timestamp" to entity.timestamp,
                         "name" to entity.name,
                         "data" to entity.data,
+                        "customFields" to entity.customFields,
                         "createdAt" to entity.createdAt,
                         "updatedAt" to entity.updatedAt
                     )
@@ -314,6 +339,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "timestamp" to entity.timestamp,
                     "name" to entity.name,
                     "data" to entity.data,
+                    "customFields" to entity.customFields,
                     "createdAt" to entity.createdAt,
                     "updatedAt" to entity.updatedAt
                 )
@@ -649,6 +675,68 @@ class ToolDataService(private val context: Context) : ExecutableService {
             "deleted_count" to successCount,
             "failed_count" to failureCount
         ))
+    }
+
+    /**
+     * Removes a custom field from all entries of a tool instance.
+     *
+     * Called by ToolInstanceService when a custom field is deleted from the tool config.
+     * Uses SQLite json_remove() for efficient bulk update without loading entries in memory.
+     *
+     * @param params Must contain: toolInstanceId (string), fieldName (string)
+     * @return OperationResult with updated_count
+     */
+    private suspend fun removeCustomFieldFromAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val toolInstanceId = params.optString("toolInstanceId")
+        val fieldName = params.optString("fieldName")
+
+        if (toolInstanceId.isEmpty() || fieldName.isEmpty()) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, fieldName"))
+        }
+
+        try {
+            // Use direct SQL query with json_remove() for performance
+            // SQLite json_remove() syntax: json_remove(json, path)
+            val database = AppDatabase.getDatabase(context).openHelper.writableDatabase
+
+            database.execSQL(
+                """
+                UPDATE tool_data
+                SET custom_fields = json_remove(custom_fields, ?),
+                    updated_at = ?
+                WHERE tool_instance_id = ? AND custom_fields IS NOT NULL
+                """.trimIndent(),
+                arrayOf("$.$fieldName", System.currentTimeMillis(), toolInstanceId)
+            )
+
+            // Count affected entries for logging
+            val affectedCount = database.compileStatement(
+                "SELECT changes()"
+            ).simpleQueryForLong()
+
+            com.assistant.core.utils.LogManager.service(
+                "Removed custom field '$fieldName' from $affectedCount entries in tool instance $toolInstanceId"
+            )
+
+            // Notify UI of data change
+            val zoneId = getZoneIdForTool(toolInstanceId)
+            if (zoneId != null) {
+                DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
+            }
+
+            return OperationResult.success(mapOf(
+                "updated_count" to affectedCount.toInt()
+            ))
+        } catch (e: Exception) {
+            com.assistant.core.utils.LogManager.service(
+                "Failed to remove custom field: ${e.message}",
+                "ERROR",
+                e
+            )
+            return OperationResult.error("Failed to remove custom field: ${e.message}")
+        }
     }
 
     /**

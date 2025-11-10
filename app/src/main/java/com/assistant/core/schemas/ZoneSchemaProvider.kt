@@ -13,7 +13,7 @@ import com.assistant.core.strings.Strings
  */
 object ZoneSchemaProvider : SchemaProvider {
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "zone_config" -> createZoneConfigSchema(context)
             else -> null

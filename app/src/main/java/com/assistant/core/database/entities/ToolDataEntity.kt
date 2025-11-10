@@ -9,6 +9,10 @@ import androidx.room.Index
 /**
  * Unified entity for storing all tool data
  * Replaces specialized tables (tracking_data, journal_data, etc.)
+ *
+ * Fields:
+ * - data: Tool-specific data as JSON (content, tracking values, etc.)
+ * - custom_fields: User-defined custom fields as JSON (separate namespace)
  */
 @Entity(
     tableName = "tool_data",
@@ -35,5 +39,6 @@ data class ToolDataEntity(
     @ColumnInfo(name = "name") val name: String?,
     @ColumnInfo(name = "data") val data: String,
     @ColumnInfo(name = "created_at") val createdAt: Long,
-    @ColumnInfo(name = "updated_at") val updatedAt: Long
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @ColumnInfo(name = "custom_fields") val customFields: String? = null
 )

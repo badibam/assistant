@@ -12,7 +12,7 @@ import com.assistant.core.strings.Strings
  */
 object AppConfigSchemaProvider : SchemaProvider {
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "app_config_format" -> createFormatSchema(context)
             // Future schema types:

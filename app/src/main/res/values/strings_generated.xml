@@ -623,6 +623,8 @@
     <string name="shared_label_zone">Zone</string>
     <string name="shared_label_tool">Outil</string>
     <string name="shared_label_item">Élément</string>
+    <string name="shared_field_type_text_unlimited">Texte illimité</string>
+    <string name="shared_field_type_text_unlimited_description">Texte sans limite de longueur</string>
     <string name="shared_ui_toggle_enabled">Activé</string>
     <string name="shared_ui_toggle_disabled">Désactivé</string>
     <string name="shared_ui_new_item_placeholder">Nouvel élément</string>

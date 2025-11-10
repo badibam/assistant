@@ -320,6 +320,72 @@ object BaseSchemas {
     
     
     /**
+     * Creates an extended data schema enriched with custom fields from tool instance config.
+     *
+     * This function:
+     * 1. Merges base schema + specific schema (standard merge)
+     * 2. Loads the tool instance config via Coordinator
+     * 3. Enriches the merged schema with custom_fields definitions
+     *
+     * This is the central integration point for custom fields validation.
+     * Used by ToolTypes when generating data schemas with toolInstanceId.
+     *
+     * @param baseSchema Base data schema JSON string
+     * @param specificSchema Tool-specific data schema JSON string
+     * @param toolInstanceId ID of the tool instance to load config from
+     * @param context Android context for Coordinator access
+     * @return Enriched schema JSON string with custom_fields properties
+     */
+    fun createExtendedDataSchema(
+        baseSchema: String,
+        specificSchema: String,
+        toolInstanceId: String,
+        context: Context
+    ): String {
+        // Step 1: Merge base + specific schemas
+        val mergedSchema = createExtendedSchema(baseSchema, specificSchema)
+
+        // Step 2: Load tool instance config
+        val coordinator = com.assistant.core.coordinator.Coordinator(context)
+        val result = kotlinx.coroutines.runBlocking {
+            coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+        }
+
+        if (result.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
+            LogManager.schema(
+                "Failed to load tool instance config for custom fields enrichment: ${result.error}",
+                "WARN"
+            )
+            // Return merged schema without custom fields enrichment
+            return mergedSchema
+        }
+
+        val configJson = result.data?.get("config") as? String
+        if (configJson == null) {
+            LogManager.schema(
+                "Tool instance config is null for custom fields enrichment",
+                "WARN"
+            )
+            return mergedSchema
+        }
+
+        // Step 3: Enrich with custom fields
+        return try {
+            com.assistant.core.fields.CustomFieldsSchemaGenerator.enrichSchema(mergedSchema, configJson)
+        } catch (e: Exception) {
+            LogManager.schema(
+                "Failed to enrich schema with custom fields: ${e.message}",
+                "ERROR",
+                e
+            )
+            // Return merged schema without custom fields enrichment
+            mergedSchema
+        }
+    }
+
+    /**
      * Get human-readable name for common ToolType fields
      * Used for validation error messages
      * @param fieldName Technical field name (e.g., "management", "display_mode")
@@ -330,7 +396,7 @@ object BaseSchemas {
         val s = Strings.`for`(context = context)
         return when(fieldName) {
             "name" -> s.shared("tools_config_label_name")
-            "description" -> s.shared("tools_config_label_description") 
+            "description" -> s.shared("tools_config_label_description")
             "management" -> s.shared("tools_config_label_management")
             "display_mode" -> s.shared("tools_config_label_display_mode")
             "icon_name" -> s.shared("tools_config_label_icon")
@@ -342,5 +408,5 @@ object BaseSchemas {
             else -> null
         }
     }
-    
+
 }

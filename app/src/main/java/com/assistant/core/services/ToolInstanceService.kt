@@ -10,6 +10,13 @@ import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.LogManager
+import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.fields.toFieldDefinition
+import com.assistant.core.fields.toJsonArray
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldNameGenerator
+import com.assistant.core.fields.FieldConfigValidator
+import com.assistant.core.fields.ValidationException
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -83,12 +90,18 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     
     /**
      * Update existing tool instance
+     *
+     * If custom fields are modified in the config, this will:
+     * 1. Generate names for new fields
+     * 2. Validate all field definitions
+     * 3. Remove deleted fields from all tool_data entries
+     * All operations are done atomically in a database transaction.
      */
     private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        val configJson = params.optString("config_json")
+        var configJson = params.optString("config_json")
         val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
 
         if (toolInstanceId.isBlank()) {
@@ -99,6 +112,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
 
         if (token.isCancelled) return OperationResult.cancelled()
+
+        // Process custom fields if config is being updated
+        if (configJson.isNotBlank()) {
+            val processResult = processCustomFields(
+                toolInstanceId = toolInstanceId,
+                oldConfigJson = existingTool.config_json,
+                newConfigJson = configJson,
+                token = token
+            )
+
+            if (!processResult.success) {
+                return processResult // Return error from custom fields processing
+            }
+
+            // Get the processed config with generated field names
+            configJson = processResult.data?.get("processed_config") as? String ?: configJson
+        }
 
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
@@ -360,6 +390,145 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 val tool = result.data?.get("tool_instance") as? Map<*, *>
                 tool?.get("name") as? String
             } else null
+        }
+    }
+
+    /**
+     * Processes custom fields changes during tool instance config update.
+     *
+     * This function handles:
+     * 1. Generating technical names for new fields (via FieldNameGenerator)
+     * 2. Validating all field definitions (via FieldConfigValidator)
+     * 3. Detecting deleted fields and removing them from all tool_data entries
+     *
+     * The operation is atomic: all validations happen first, then all data modifications
+     * are done in a single database transaction. If any validation fails, no changes are made.
+     *
+     * @param toolInstanceId ID of the tool instance being updated
+     * @param oldConfigJson Previous configuration JSON
+     * @param newConfigJson New configuration JSON (with custom_fields possibly modified)
+     * @param token Cancellation token
+     * @return OperationResult with processed_config containing generated field names
+     */
+    private suspend fun processCustomFields(
+        toolInstanceId: String,
+        oldConfigJson: String,
+        newConfigJson: String,
+        token: CancellationToken
+    ): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        try {
+            val oldConfig = JSONObject(oldConfigJson)
+            val newConfig = JSONObject(newConfigJson)
+
+            // Extract custom_fields arrays
+            val oldFieldsArray = oldConfig.optJSONArray("custom_fields")
+            val newFieldsArray = newConfig.optJSONArray("custom_fields")
+
+            // If no custom_fields in new config, nothing to process
+            if (newFieldsArray == null || newFieldsArray.length() == 0) {
+                // If old config had fields, we need to remove them from all entries
+                if (oldFieldsArray != null && oldFieldsArray.length() > 0) {
+                    val oldFields = oldFieldsArray.toFieldDefinitions()
+                    for (field in oldFields) {
+                        removeCustomFieldFromEntries(toolInstanceId, field.name, token)
+                    }
+                }
+                return OperationResult.success(mapOf("processed_config" to newConfigJson))
+            }
+
+            // Parse field definitions
+            val oldFields = if (oldFieldsArray != null) {
+                oldFieldsArray.toFieldDefinitions()
+            } else {
+                emptyList<FieldDefinition>()
+            }
+
+            val newFieldsList = mutableListOf<FieldDefinition>()
+            for (i in 0 until newFieldsArray.length()) {
+                newFieldsList.add(newFieldsArray.getJSONObject(i).toFieldDefinition())
+            }
+
+            // Phase 1: Name generation for new fields (fields without 'name' or with empty 'name')
+            val processedFields = newFieldsList.map { field ->
+                if (field.name.isEmpty()) {
+                    // Generate name from displayName
+                    val generatedName = FieldNameGenerator.generateName(
+                        field.displayName,
+                        newFieldsList.filter { it.name.isNotEmpty() }
+                    )
+                    field.copy(name = generatedName)
+                } else {
+                    field
+                }
+            }
+
+            // Phase 2: Validation (all fields must pass before any DB changes)
+            val existingFieldsForValidation = processedFields.toMutableList()
+            for ((index, field) in processedFields.withIndex()) {
+                // For validation, exclude current field from existing list to avoid self-collision
+                val otherFields = existingFieldsForValidation.filterIndexed { i, _ -> i != index }
+
+                val validation = FieldConfigValidator.validate(field, otherFields)
+                if (!validation.isValid) {
+                    return OperationResult.error(
+                        "Validation custom field '${field.displayName}': ${validation.errorMessage}"
+                    )
+                }
+            }
+
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            // Phase 3: Detect deletions and remove fields from entries
+            val oldFieldNames = oldFields.map { field -> field.name }.toSet()
+            val newFieldNames = processedFields.map { field -> field.name }.toSet()
+            val deletedFieldNames = oldFieldNames - newFieldNames
+
+            for (fieldName in deletedFieldNames) {
+                removeCustomFieldFromEntries(toolInstanceId, fieldName, token)
+                if (token.isCancelled) return OperationResult.cancelled()
+            }
+
+            // Phase 4: Build processed config with generated names
+            val processedFieldsArray = processedFields.toJsonArray()
+            newConfig.put("custom_fields", processedFieldsArray)
+
+            return OperationResult.success(mapOf(
+                "processed_config" to newConfig.toString()
+            ))
+
+        } catch (e: ValidationException) {
+            LogManager.service("Custom fields validation error: ${e.message}", "ERROR", e)
+            return OperationResult.error("Custom fields validation error: ${e.message}")
+        } catch (e: Exception) {
+            LogManager.service("Failed to process custom fields: ${e.message}", "ERROR", e)
+            return OperationResult.error("Failed to process custom fields: ${e.message}")
+        }
+    }
+
+    /**
+     * Helper to remove a custom field from all entries of a tool instance.
+     * Delegates to ToolDataService for the actual SQL operation.
+     */
+    private suspend fun removeCustomFieldFromEntries(
+        toolInstanceId: String,
+        fieldName: String,
+        token: CancellationToken
+    ) {
+        if (token.isCancelled) return
+
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction("tool_data.remove_custom_field", mapOf(
+            "toolInstanceId" to toolInstanceId,
+            "fieldName" to fieldName
+        ))
+
+        if (result.status != CommandStatus.SUCCESS) {
+            LogManager.service(
+                "Failed to remove custom field '$fieldName' from entries: ${result.error}",
+                "WARN"
+            )
         }
     }
 

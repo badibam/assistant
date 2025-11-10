@@ -61,7 +61,7 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "OpenAI"
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return core.getSchema(schemaId, context)
     }
 
@@ -138,7 +138,7 @@ class OpenAIEconomicProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "OpenAI (économique)"
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return core.getSchema(schemaId, context)
     }
 

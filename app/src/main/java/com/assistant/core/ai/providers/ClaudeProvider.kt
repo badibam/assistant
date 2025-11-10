@@ -60,7 +60,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "Claude"
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return core.getSchema(schemaId, context)
     }
 
@@ -136,7 +136,7 @@ class ClaudeEconomicProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "Claude (économique)"
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return core.getSchema(schemaId, context)
     }
 

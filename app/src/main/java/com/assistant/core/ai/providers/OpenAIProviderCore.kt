@@ -64,7 +64,7 @@ internal class OpenAIProviderCore(
      * Get schema by ID
      * Uses variantId to generate unique schema IDs per variant
      */
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "ai_provider_${variantId}_config" -> createOpenAIConfigSchema(context)
             else -> null

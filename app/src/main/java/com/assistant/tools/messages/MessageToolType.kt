@@ -88,10 +88,10 @@ object MessageToolType : ToolTypeContract {
         return listOf("messages_config", "messages_data", "messages_execution")
     }
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "messages_config" -> createMessagesConfigSchema(context)
-            "messages_data" -> createMessagesDataSchema(context)
+            "messages_data" -> createMessagesDataSchema(context, toolInstanceId)
             "messages_execution" -> createMessagesExecutionSchema(context)
             else -> null
         }
@@ -152,7 +152,7 @@ object MessageToolType : ToolTypeContract {
      * - triggers: Event-based triggers (STUB, always null for MVP)
      * - executions: Array of execution snapshots (systemManaged, stripped from AI commands)
      */
-    private fun createMessagesDataSchema(context: Context): Schema {
+    private fun createMessagesDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "messages", context = context)
 
         // Specific schema template for message data (will be wrapped in base structure)
@@ -206,11 +206,20 @@ object MessageToolType : ToolTypeContract {
             context
         )
 
-        // Combine with base schema (tool_instance_id, tooltype)
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchemaWithSchedule
-        )
+        // Combine with base schema and enrich with custom fields if toolInstanceId provided
+        val content = if (toolInstanceId != null) {
+            BaseSchemas.createExtendedDataSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchemaWithSchedule,
+                toolInstanceId,
+                context
+            )
+        } else {
+            BaseSchemas.createExtendedSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchemaWithSchedule
+            )
+        }
 
         return Schema(
             id = "messages_data",

@@ -81,7 +81,7 @@ class VoskProvider(private val context: Context) : TranscriptionProvider {
 
     override fun getAllSchemaIds(): List<String> = listOf(SCHEMA_ID)
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         if (schemaId != SCHEMA_ID) return null
 
         return Schema(

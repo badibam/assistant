@@ -49,10 +49,10 @@ object JournalToolType : ToolTypeContract {
         """.trimIndent()
     }
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "journal_config" -> createJournalConfigSchema(context)
-            "journal_data" -> createJournalDataSchema(context)
+            "journal_data" -> createJournalDataSchema(context, toolInstanceId)
             else -> null
         }
     }
@@ -110,8 +110,9 @@ object JournalToolType : ToolTypeContract {
      * - name: Entry title (required via BaseSchemas)
      * - timestamp: Entry date/time (modifiable, required)
      * - data.content: Text content without length limit (optional - can be filled via transcription)
+     * - custom_fields: Custom fields defined in tool instance config (if toolInstanceId provided)
      */
-    private fun createJournalDataSchema(context: Context): Schema {
+    private fun createJournalDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "journal", context = context)
 
         val specificSchema = """
@@ -144,10 +145,20 @@ object JournalToolType : ToolTypeContract {
         }
         """.trimIndent()
 
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
+        // Use createExtendedDataSchema to enrich with custom fields if toolInstanceId provided
+        val content = if (toolInstanceId != null) {
+            BaseSchemas.createExtendedDataSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchema,
+                toolInstanceId,
+                context
+            )
+        } else {
+            BaseSchemas.createExtendedSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchema
+            )
+        }
 
         return Schema(
             id = "journal_data",

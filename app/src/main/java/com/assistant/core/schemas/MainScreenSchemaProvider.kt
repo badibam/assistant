@@ -11,7 +11,7 @@ import com.assistant.core.strings.Strings
  */
 object MainScreenSchemaProvider : SchemaProvider {
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "main_screen_config" -> createMainScreenConfigSchema(context)
             else -> null

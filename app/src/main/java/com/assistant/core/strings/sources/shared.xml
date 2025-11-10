@@ -323,6 +323,10 @@
     <string name="label_tool">Outil</string>
     <string name="label_item">Élément</string>
 
+    <!-- Custom Fields Types -->
+    <string name="field_type_text_unlimited">Texte illimité</string>
+    <string name="field_type_text_unlimited_description">Texte sans limite de longueur</string>
+
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
     <string name="ui_toggle_disabled">Désactivé</string>

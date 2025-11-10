@@ -47,10 +47,10 @@ object NotesToolType : ToolTypeContract {
         return notesSpecificConfig
     }
 
-    override fun getSchema(schemaId: String, context: Context): Schema? {
+    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "notes_config" -> createNotesConfigSchema(context)
-            "notes_data" -> createNotesDataSchema(context)
+            "notes_data" -> createNotesDataSchema(context, toolInstanceId)
             else -> null
         }
     }
@@ -90,7 +90,7 @@ object NotesToolType : ToolTypeContract {
         )
     }
 
-    private fun createNotesDataSchema(context: Context): Schema {
+    private fun createNotesDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "notes", context = context)
 
         val specificSchema = """
@@ -129,10 +129,20 @@ object NotesToolType : ToolTypeContract {
         }
         """.trimIndent()
 
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
+        // Use createExtendedDataSchema to enrich with custom fields if toolInstanceId provided
+        val content = if (toolInstanceId != null) {
+            BaseSchemas.createExtendedDataSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchema,
+                toolInstanceId,
+                context
+            )
+        } else {
+            BaseSchemas.createExtendedSchema(
+                BaseSchemas.getBaseDataSchema(context),
+                specificSchema
+            )
+        }
 
         return Schema(
             id = "notes_data",
