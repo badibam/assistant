@@ -86,6 +86,46 @@ object BaseSchemas {
                     "type": "string",
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.shared("tools_base_schema_config_group")}"
+                },
+                "custom_fields": {
+                    "type": "array",
+                    "description": "${s.shared("tools_base_schema_config_custom_fields")}",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "${s.shared("tools_base_schema_custom_field_name")}"
+                            },
+                            "display_name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": ${FieldLimits.SHORT_LENGTH},
+                                "description": "${s.shared("tools_base_schema_custom_field_display_name")}"
+                            },
+                            "description": {
+                                "type": "string",
+                                "maxLength": ${FieldLimits.MEDIUM_LENGTH},
+                                "description": "${s.shared("tools_base_schema_custom_field_description")}"
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": ["TEXT_UNLIMITED"],
+                                "description": "${s.shared("tools_base_schema_custom_field_type")}"
+                            },
+                            "always_visible": {
+                                "type": "boolean",
+                                "default": false,
+                                "description": "${s.shared("tools_base_schema_custom_field_always_visible")}"
+                            },
+                            "config": {
+                                "type": ["object", "null"],
+                                "description": "${s.shared("tools_base_schema_custom_field_config")}"
+                            }
+                        },
+                        "required": ["display_name", "type"],
+                        "additionalProperties": false
+                    }
                 }
             },
             "required": ["name", "management", "display_mode"],

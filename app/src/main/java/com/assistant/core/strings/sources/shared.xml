@@ -501,6 +501,15 @@
     <string name="tools_config_label_display_mode">Mode d\'affichage</string>
     <string name="tools_config_label_icon">Icône</string>
     <string name="tools_config_label_management">Gestion</string>
+
+    <!-- Base schemas - Config -->
+    <string name="tools_base_schema_config_custom_fields">Liste des champs personnalisables additionnels</string>
+    <string name="tools_base_schema_custom_field_name">Identifiant technique du champ (généré automatiquement)</string>
+    <string name="tools_base_schema_custom_field_display_name">Nom affiché du champ</string>
+    <string name="tools_base_schema_custom_field_description">Description du champ</string>
+    <string name="tools_base_schema_custom_field_type">Type de champ</string>
+    <string name="tools_base_schema_custom_field_always_visible">Toujours afficher le champ même s\'il est vide</string>
+    <string name="tools_base_schema_custom_field_config">Configuration spécifique au type de champ</string>
     <string name="tools_config_label_config_validation">Validation config par IA</string>
     <string name="tools_config_label_data_validation">Validation données par IA</string>
     <string name="tools_config_label_schema_id">Identifiant de schéma</string>
