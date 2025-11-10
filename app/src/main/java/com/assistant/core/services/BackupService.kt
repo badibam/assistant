@@ -155,6 +155,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("name", data.name)
                                 put("timestamp", data.timestamp)
                                 put("data", data.data)
+                                if (data.customFields != null) {
+                                    put("custom_fields", data.customFields)
+                                }
                                 put("created_at", data.createdAt)
                                 put("updated_at", data.updatedAt)
                             })
@@ -498,6 +501,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         timestamp = item.optLong("timestamp", 0).let { if (it == 0L) null else it },
                         name = item.optString("name", null),
                         data = item.getString("data"),
+                        customFields = item.optString("custom_fields", null),
                         createdAt = item.getLong("created_at"),
                         updatedAt = item.getLong("updated_at")
                     )

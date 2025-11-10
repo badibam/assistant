@@ -1,5 +1,7 @@
 package com.assistant.core.fields
 
+import android.content.Context
+import com.assistant.core.strings.Strings
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -98,6 +100,35 @@ fun List<FieldDefinition>.toJsonArray(): JSONArray {
         forEach { field ->
             put(field.toJson())
         }
+    }
+}
+
+/**
+ * Formats a custom field value for display in the UI according to its type.
+ *
+ * This function provides consistent formatting across the entire UI:
+ * - TEXT_UNLIMITED: Returns the text as-is
+ * - Future types (SCALE, NUMERIC, CHOICE, etc.): Will add formatted display
+ *
+ * @param value The raw value to format (can be null)
+ * @param context Android context for accessing string resources
+ * @return Formatted string ready for display in UI
+ */
+fun FieldDefinition.formatValue(value: Any?, context: Context): String {
+    val s = Strings.`for`(context = context)
+
+    // Return "no value" for null/empty values
+    if (value == null) return s.shared("no_value")
+
+    return when (type) {
+        FieldType.TEXT_UNLIMITED -> value.toString()
+
+        // Future field types will be added here with specific formatting:
+        // FieldType.SCALE -> formatScaleValue(value, config, s)
+        // FieldType.NUMERIC -> formatNumericValue(value, config, s)
+        // FieldType.CHOICE -> formatChoiceValue(value, config, s)
+        // FieldType.BOOLEAN -> if (value as? Boolean == true) s.shared("yes") else s.shared("no")
+        // etc.
     }
 }
 

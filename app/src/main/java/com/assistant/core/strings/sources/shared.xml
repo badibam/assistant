@@ -480,6 +480,20 @@
     <string name="new_item">Nouvel élément</string>
     <string name="unnamed">Sans nom</string>
     <string name="content_unnamed">sans nom</string>
+    <string name="no_value">Aucune valeur</string>
+
+    <!-- Custom Fields -->
+    <string name="custom_fields_section_title">Champs supplémentaires</string>
+    <string name="custom_fields_add">Ajouter un champ</string>
+    <string name="custom_fields_edit">Modifier le champ</string>
+    <string name="custom_fields_create">Créer un champ</string>
+    <string name="custom_fields_delete_confirm_title">Supprimer le champ</string>
+    <string name="custom_fields_delete_confirm_message">Ce champ sera supprimé de toutes les entrées. Continuer ?</string>
+    <string name="custom_fields_display_name">Nom du champ</string>
+    <string name="custom_fields_description">Description (optionnel)</string>
+    <string name="custom_fields_type">Type de champ</string>
+    <string name="custom_fields_always_visible">Toujours afficher (même si vide)</string>
+    <string name="custom_fields_generated_name">Nom technique : %1$s</string>
 
     <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
     <string name="tools_config_label_name">Nom</string>
