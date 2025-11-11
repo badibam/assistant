@@ -266,6 +266,29 @@ object MessageToolType : ToolTypeContract {
                         "custom_fields": {
                             "type": "object",
                             "description": "Custom field values at execution time (snapshot from template)"
+                        },
+                        "custom_fields_metadata": {
+                            "type": "array",
+                            "description": "Custom field definitions at execution time (archived for self-contained snapshots)",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "display_name": { "type": "string" },
+                                    "type": { "type": "string" },
+                                    "placeholder": { "type": "string" },
+                                    "always_visible": { "type": "boolean" },
+                                    "options": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    },
+                                    "min": { "type": "number" },
+                                    "max": { "type": "number" },
+                                    "default_value": {}
+                                },
+                                "required": ["name", "display_name", "type", "always_visible"],
+                                "additionalProperties": false
+                            }
                         }
                     },
                     "required": ["title", "priority"],

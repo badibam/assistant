@@ -389,22 +389,35 @@ fun FieldInput(
  * This high-level component iterates over all field definitions and renders
  * a FieldInput for each one. It manages the global state of all field values.
  *
- * @param fields List of field definitions to render
+ * Supports two modes (priority order):
+ * 1. SnapshotBased: Use archived metadata from execution snapshot
+ * 2. ConfigBased: Load field definitions from tool instance config
+ *
+ * @param toolInstanceId Tool instance ID to load config from (ConfigBased mode)
+ * @param customFieldsMetadata Archived field definitions (SnapshotBased mode)
  * @param values Current values map (fieldName -> value)
  * @param onValuesChange Callback when any value changes (receives updated full map)
  * @param context Android context for strings and formatting
  */
 @Composable
 fun CustomFieldsInput(
-    fields: List<FieldDefinition>,
+    toolInstanceId: String? = null,
+    customFieldsMetadata: List<FieldDefinition>? = null,
     values: Map<String, Any?>,
     onValuesChange: (Map<String, Any?>) -> Unit,
     context: Context
 ) {
     val s = Strings.`for`(context = context)
 
+    // Resolve field definitions from metadata source
+    val resolvedFields = resolveFieldDefinitions(
+        toolInstanceId = toolInstanceId,
+        customFieldsMetadata = customFieldsMetadata,
+        context = context
+    )
+
     // Early return if no custom fields defined
-    if (fields.isEmpty()) {
+    if (resolvedFields.isEmpty()) {
         return
     }
 
@@ -420,7 +433,7 @@ fun CustomFieldsInput(
         )
 
         // Render each field
-        fields.forEach { field ->
+        resolvedFields.forEach { field ->
             FieldInput(
                 fieldDef = field,
                 value = values[field.name],
@@ -446,20 +459,33 @@ fun CustomFieldsInput(
  * This component displays the formatted values of custom fields. Fields with no value
  * are either hidden or shown with "No value" text depending on the alwaysVisible flag.
  *
- * @param fields List of field definitions to display
+ * Supports two modes (priority order):
+ * 1. SnapshotBased: Use archived metadata from execution snapshot
+ * 2. ConfigBased: Load field definitions from tool instance config
+ *
+ * @param toolInstanceId Tool instance ID to load config from (ConfigBased mode)
+ * @param customFieldsMetadata Archived field definitions (SnapshotBased mode)
  * @param values Current values map (fieldName -> value)
  * @param context Android context for strings and formatting
  */
 @Composable
 fun CustomFieldsDisplay(
-    fields: List<FieldDefinition>,
+    toolInstanceId: String? = null,
+    customFieldsMetadata: List<FieldDefinition>? = null,
     values: Map<String, Any?>,
     context: Context
 ) {
     val s = Strings.`for`(context = context)
 
+    // Resolve field definitions from metadata source
+    val resolvedFields = resolveFieldDefinitions(
+        toolInstanceId = toolInstanceId,
+        customFieldsMetadata = customFieldsMetadata,
+        context = context
+    )
+
     // Filter fields to display: either has value OR alwaysVisible is true
-    val fieldsToDisplay = fields.filter { field ->
+    val fieldsToDisplay = resolvedFields.filter { field ->
         values[field.name] != null || field.alwaysVisible
     }
 
@@ -495,4 +521,82 @@ fun CustomFieldsDisplay(
             }
         }
     }
+}
+
+/**
+ * Resolves field definitions from the appropriate metadata source.
+ *
+ * Logic:
+ * - If customFieldsMetadata is provided: use it directly (SnapshotBased mode)
+ * - Else if toolInstanceId is provided: load from config (ConfigBased mode)
+ * - Else: return empty list
+ *
+ * @param toolInstanceId Tool instance ID to load config from
+ * @param customFieldsMetadata Archived field definitions
+ * @param context Android context
+ * @return List of resolved field definitions
+ */
+@Composable
+private fun resolveFieldDefinitions(
+    toolInstanceId: String?,
+    customFieldsMetadata: List<FieldDefinition>?,
+    context: Context
+): List<FieldDefinition> {
+    // Priority 1: Use provided metadata (SnapshotBased mode)
+    if (customFieldsMetadata != null) {
+        return customFieldsMetadata
+    }
+
+    // Priority 2: Load from tool instance config (ConfigBased mode)
+    if (toolInstanceId != null) {
+        return loadFieldDefinitionsFromConfig(toolInstanceId, context)
+    }
+
+    // No metadata source provided
+    return emptyList()
+}
+
+/**
+ * Loads field definitions from a tool instance configuration.
+ *
+ * @param toolInstanceId The ID of the tool instance
+ * @param context Android context
+ * @return List of field definitions from the config, or empty list if not found
+ */
+@Composable
+private fun loadFieldDefinitionsFromConfig(
+    toolInstanceId: String,
+    context: Context
+): List<FieldDefinition> {
+    var fields by remember(toolInstanceId) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(toolInstanceId) {
+        scope.launch {
+            try {
+                val coordinator = com.assistant.core.coordinator.Coordinator(context)
+                val result = coordinator.processUserAction("tools.get", mapOf(
+                    "tool_instance_id" to toolInstanceId
+                ))
+
+                if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
+                    val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+                    val config = toolInstance?.get("config") as? Map<*, *>
+                    val customFieldsRaw = config?.get("custom_fields") as? List<*>
+
+                    // Convert raw list to FieldDefinition objects
+                    fields = customFieldsRaw?.mapNotNull { rawField ->
+                        (rawField as? Map<*, *>)?.let { fieldMap ->
+                            FieldDefinition.fromMap(fieldMap)
+                        }
+                    } ?: emptyList()
+                }
+            } catch (e: Exception) {
+                com.assistant.core.utils.LogManager.ui("Failed to load custom fields from config: ${e.message}", "ERROR", e)
+                fields = emptyList()
+            }
+        }
+    }
+
+    return fields
 }

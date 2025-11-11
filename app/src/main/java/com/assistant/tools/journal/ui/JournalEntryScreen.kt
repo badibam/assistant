@@ -24,8 +24,6 @@ import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.CustomFieldsDisplay
-import com.assistant.core.fields.FieldDefinition
-import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.tools.journal.utils.DateFormatUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -68,8 +66,7 @@ fun JournalEntryScreen(
     var content by rememberSaveable { mutableStateOf("") }
     var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
 
-    // Custom fields states
-    var customFieldsDefinitions by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    // Custom fields values state (definitions loaded automatically by CustomFieldsInput/Display)
     var customFieldsValues by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
 
     // Transcription states (survive rotation where possible)
@@ -83,31 +80,6 @@ fun JournalEntryScreen(
 
     // Validation state
     var validationResult by remember { mutableStateOf(ValidationResult.success()) }
-
-    // Load tool instance config to get custom fields definitions
-    LaunchedEffect(toolInstanceId) {
-        val configResult = coordinator.processUserAction(
-            "tools.get",
-            mapOf("tool_instance_id" to toolInstanceId)
-        )
-
-        if (configResult?.isSuccess == true) {
-            val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
-            toolData?.let { data ->
-                val configJson = data["config_json"] as? String ?: "{}"
-                try {
-                    val config = JSONObject(configJson)
-                    val customFieldsArray = config.optJSONArray("custom_fields")
-                    if (customFieldsArray != null) {
-                        customFieldsDefinitions = customFieldsArray.toFieldDefinitions()
-                        LogManager.ui("Loaded ${customFieldsDefinitions.size} custom field definitions")
-                    }
-                } catch (e: Exception) {
-                    LogManager.ui("Error parsing custom fields definitions: ${e.message}", "ERROR")
-                }
-            }
-        }
-    }
 
     // Load entry if not creating
     // Force reload on every composition by resetting custom fields before load
@@ -425,22 +397,21 @@ fun JournalEntryScreen(
             }
 
             // Custom fields input (if any custom fields defined)
-            if (customFieldsDefinitions.isNotEmpty()) {
-                UI.Card(type = CardType.DEFAULT) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CustomFieldsInput(
-                            fields = customFieldsDefinitions,
-                            values = customFieldsValues,
-                            onValuesChange = { newValues ->
-                                customFieldsValues = newValues
-                                LogManager.ui("Custom fields values updated")
-                            },
-                            context = context
-                        )
-                    }
+            // Custom fields (definitions loaded automatically from toolInstanceId)
+            UI.Card(type = CardType.DEFAULT) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CustomFieldsInput(
+                        toolInstanceId = toolInstanceId,
+                        values = customFieldsValues,
+                        onValuesChange = { newValues ->
+                            customFieldsValues = newValues
+                            LogManager.ui("Custom fields values updated")
+                        },
+                        context = context
+                    )
                 }
             }
 
@@ -490,14 +461,13 @@ fun JournalEntryScreen(
                     )
 
                     // Custom fields display (if any)
-                    if (customFieldsDefinitions.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        CustomFieldsDisplay(
-                            fields = customFieldsDefinitions,
-                            values = customFieldsValues,
-                            context = context
-                        )
-                    }
+                    // Custom fields display (definitions loaded automatically from toolInstanceId)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CustomFieldsDisplay(
+                        toolInstanceId = toolInstanceId,
+                        values = customFieldsValues,
+                        context = context
+                    )
                 }
             }
 
