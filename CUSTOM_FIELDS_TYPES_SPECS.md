@@ -44,7 +44,7 @@
 
 **Value format**: `"string"`
 
-**Default value**: Supported via `default_value` in config
+**Default value**: Supported via `default_value`
 
 **Validation**:
 - Config: None (null config)
@@ -79,7 +79,7 @@
 
 **Value format**: `"string"`
 
-**Default value**: Supported via `default_value` in config
+**Default value**: Supported via `default_value`
 
 **Validation**:
 - Config: None (null config)

@@ -2,12 +2,15 @@ package com.assistant.core.fields
 
 import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
+import com.assistant.core.validation.SchemaValidator
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
@@ -193,21 +196,8 @@ private fun FieldDefinitionCard(
             )
 
             // Field type
-            val typeLabel = when (field.type) {
-                FieldType.TEXT_SHORT -> s.shared("field_type_text_short_display_name")
-                FieldType.TEXT_LONG -> s.shared("field_type_text_long_display_name")
-                FieldType.TEXT_UNLIMITED -> s.shared("field_type_text_unlimited_display_name")
-                FieldType.NUMERIC -> s.shared("field_type_numeric_display_name")
-                FieldType.SCALE -> s.shared("field_type_scale_display_name")
-                FieldType.CHOICE -> s.shared("field_type_choice_display_name")
-                FieldType.BOOLEAN -> s.shared("field_type_boolean_display_name")
-                FieldType.RANGE -> s.shared("field_type_range_display_name")
-                FieldType.DATE -> s.shared("field_type_date_display_name")
-                FieldType.TIME -> s.shared("field_type_time_display_name")
-                FieldType.DATETIME -> s.shared("field_type_datetime_display_name")
-            }
             UI.Text(
-                text = typeLabel,
+                text = field.type.getDisplayName(context),
                 type = TextType.LABEL,
                 fillMaxWidth = true
             )
@@ -297,6 +287,7 @@ fun FieldDefinitionDialog(
     var description by remember { mutableStateOf(existingField?.description ?: "") }
     var fieldType by remember { mutableStateOf(existingField?.type ?: FieldType.TEXT_UNLIMITED) }
     var alwaysVisible by remember { mutableStateOf(existingField?.alwaysVisible ?: false) }
+    var config by remember { mutableStateOf(existingField?.config) }
 
     // Generated name preview (for transparency)
     val generatedName = remember(displayName) {
@@ -330,30 +321,57 @@ fun FieldDefinitionDialog(
     UI.Dialog(
         type = if (isEditing) DialogType.EDIT else DialogType.CREATE,
         onConfirm = {
-            if (isValid) {
-                // Validate field definition
-                val otherFields = if (isEditing) {
-                    existingFields.filter { it.name != existingField?.name }
-                } else {
-                    existingFields
+            // Basic pre-check
+            if (displayName.isBlank()) {
+                errorMessage = s.shared("custom_fields_display_name") + " " + s.shared("message_required")
+                return@Dialog
+            }
+
+            val otherFields = if (isEditing) {
+                existingFields.filter { it.name != existingField?.name }
+            } else {
+                existingFields
+            }
+
+            val fieldDef = FieldDefinition(
+                name = existingField?.name ?: generatedName, // Keep existing name if editing
+                displayName = displayName.trim(),
+                description = description.trim().ifEmpty { null },
+                type = fieldType,
+                alwaysVisible = alwaysVisible,
+                config = config
+            )
+
+            // Step 1: Schema validation (structure, types, formats)
+            val schemaId = "field_type_${fieldType.name}"
+            val schema = FieldTypeSchemaProvider.getSchema(schemaId, context, null)
+
+            if (schema != null) {
+                // Build validation map matching schema structure (no description field in schema)
+                val fieldDefMap = buildMap<String, Any> {
+                    put("name", fieldDef.name)
+                    put("display_name", fieldDef.displayName)
+                    put("type", fieldDef.type.name)
+                    put("always_visible", fieldDef.alwaysVisible)
+                    // Only include config if not null/empty
+                    if (fieldDef.config != null && fieldDef.config.isNotEmpty()) {
+                        put("config", fieldDef.config)
+                    }
                 }
 
-                val fieldDef = FieldDefinition(
-                    name = existingField?.name ?: generatedName, // Keep existing name if editing
-                    displayName = displayName.trim(),
-                    description = description.trim().ifEmpty { null },
-                    type = fieldType,
-                    alwaysVisible = alwaysVisible,
-                    config = null // V1: always null for TEXT_UNLIMITED
-                )
-
-                // Validate with FieldConfigValidator
-                val validation = FieldConfigValidator.validate(fieldDef, otherFields)
-                if (validation.isValid) {
-                    onConfirm(fieldDef)
-                } else {
-                    errorMessage = validation.errorMessage
+                val schemaValidation = SchemaValidator.validate(schema, fieldDefMap, context)
+                if (!schemaValidation.isValid) {
+                    errorMessage = schemaValidation.errorMessage
+                    return@Dialog
                 }
+            }
+
+            // Step 2: Business logic validation (FieldConfigValidator)
+            val businessValidation = FieldConfigValidator.validate(fieldDef, otherFields)
+            if (businessValidation.isValid) {
+                onConfirm(fieldDef)
+            } else {
+                errorMessage = businessValidation.errorMessage
             }
         },
         onCancel = onDismiss
@@ -361,6 +379,7 @@ fun FieldDefinitionDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -402,7 +421,7 @@ fun FieldDefinitionDialog(
                 required = false
             )
 
-            // Type selection (only TEXT_UNLIMITED for V1)
+            // Type selection (all 11 types)
             // In edit mode, type is immutable (read-only)
             if (isEditing) {
                 // Show type as read-only in edit mode
@@ -413,21 +432,42 @@ fun FieldDefinitionDialog(
                         fillMaxWidth = true
                     )
                     UI.Text(
-                        text = s.shared("field_type_text_unlimited"),
+                        text = fieldType.getDisplayName(context),
                         type = TextType.BODY,
                         fillMaxWidth = true
                     )
                 }
             } else {
-                // Show type as selection in create mode (only one option for V1)
+                // Show type as selection in create mode (all types available dynamically)
+                val typeOptions = FieldType.getAllTypes().map { type ->
+                    type to type.getDisplayName(context)
+                }
+
+                val selectedLabel = fieldType.getDisplayName(context)
+
                 UI.FormSelection(
                     label = s.shared("custom_fields_type"),
-                    options = listOf(s.shared("field_type_text_unlimited")),
-                    selected = s.shared("field_type_text_unlimited"),
-                    onSelect = { /* No-op, only one option */ },
+                    options = typeOptions.map { it.second },
+                    selected = selectedLabel,
+                    onSelect = { selected ->
+                        // Find the FieldType corresponding to the selected label
+                        typeOptions.find { it.second == selected }?.first?.let { type ->
+                            fieldType = type
+                            // Reset config when type changes
+                            config = null
+                        }
+                    },
                     required = true
                 )
             }
+
+            // Type-specific configuration editor
+            FieldConfigEditor(
+                fieldType = fieldType,
+                config = config,
+                onConfigChange = { newConfig -> config = newConfig },
+                context = context
+            )
 
             // Always visible toggle
             UI.ToggleField(

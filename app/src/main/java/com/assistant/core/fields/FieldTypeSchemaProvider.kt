@@ -107,42 +107,27 @@ object FieldTypeSchemaProvider : SchemaProvider {
      * @param context Android context for internationalization
      * @return JSON Schema string for custom_fields items with oneOf all field types
      */
-    fun getCustomFieldsItemsSchema(context: Context): String {
-        // Build oneOf array with all field type schemas
-        val fieldTypeSchemas = FieldType.entries.joinToString(",\n") { fieldType ->
-            when (fieldType) {
-                FieldType.TEXT_SHORT -> buildTextShortSchemaJson(context)
-                FieldType.TEXT_LONG -> buildTextLongSchemaJson(context)
-                FieldType.TEXT_UNLIMITED -> buildTextUnlimitedSchemaJson(context)
-                FieldType.NUMERIC -> buildNumericSchemaJson(context)
-                FieldType.SCALE -> buildScaleSchemaJson(context)
-                FieldType.CHOICE -> buildChoiceSchemaJson(context)
-                FieldType.BOOLEAN -> buildBooleanSchemaJson(context)
-                FieldType.RANGE -> buildRangeSchemaJson(context)
-                FieldType.DATE -> buildDateSchemaJson(context)
-                FieldType.TIME -> buildTimeSchemaJson(context)
-                FieldType.DATETIME -> buildDateTimeSchemaJson(context)
-            }
-        }
-
-        return """
-        {
-            "oneOf": [
-                $fieldTypeSchemas
-            ]
-        }
-        """.trimIndent()
-    }
-
-    // ================================================================
-    // Field Type Schema Builders
-    // ================================================================
-
     /**
-     * Build TEXT_SHORT JSON Schema
+     * Get generic schema for custom_fields items in tool config.
+     *
+     * This is a simplified schema that provides the AI with the basic structure
+     * without all the detailed config constraints for each field type.
+     * The AI can query specific field type schemas (field_type_*) when needed.
+     *
+     * Validation strategy:
+     * - Individual fields are validated against their specific type schemas (field_type_*)
+     *   either in the UI dialog or by the service before persisting
+     * - This generic schema validates only the basic structure in the global config
+     *
+     * @param context Android context for strings
+     * @return Generic JSON schema for custom_fields array items
      */
-    private fun buildTextShortSchemaJson(context: Context): String {
+    fun getCustomFieldsItemsSchema(context: Context): String {
         val s = Strings.`for`(context = context)
+
+        // Build enum of all available field types
+        val fieldTypeEnum = FieldType.entries.joinToString(", ") { "\"${it.name}\"" }
+
         return """
         {
             "type": "object",
@@ -160,9 +145,14 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "maxLength": 60,
                     "description": "${s.shared("field_type_schema_display_name_description")}"
                 },
+                "description": {
+                    "type": "string",
+                    "maxLength": 250,
+                    "description": "Description optionnelle du champ"
+                },
                 "type": {
                     "type": "string",
-                    "const": "TEXT_SHORT",
+                    "enum": [$fieldTypeEnum],
                     "description": "${s.shared("field_type_schema_type_description")}"
                 },
                 "always_visible": {
@@ -170,6 +160,74 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "default": false,
                     "description": "${s.shared("field_type_schema_always_visible_description")}"
                 },
+                "config": {
+                    "type": "object",
+                    "description": "Configuration spécifique au type (voir schéma field_type_* correspondant)"
+                }
+            },
+            "required": ["name", "display_name", "type"],
+            "additionalProperties": false
+        }
+        """.trimIndent()
+    }
+
+    // ================================================================
+    // Field Type Schema Builders
+    // ================================================================
+
+    /**
+     * Helper to generate common field properties for all field type schemas
+     * Returns JSON string for: name, display_name, description, type, always_visible
+     *
+     * @param context Android context for strings
+     * @param fieldTypeName The field type name (e.g., "TEXT_SHORT", "NUMERIC")
+     * @return JSON properties string (without enclosing braces)
+     */
+    private fun buildCommonFieldProperties(context: Context, fieldTypeName: String): String {
+        val s = Strings.`for`(context = context)
+        return """
+                "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "${s.shared("field_type_schema_name_description")}"
+                },
+                "display_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60,
+                    "description": "${s.shared("field_type_schema_display_name_description")}"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 250,
+                    "description": "Description optionnelle du champ"
+                },
+                "type": {
+                    "type": "string",
+                    "const": "$fieldTypeName",
+                    "description": "${s.shared("field_type_schema_type_description")}"
+                },
+                "always_visible": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                }
+        """.trimIndent()
+    }
+
+    /**
+     * Build TEXT_SHORT JSON Schema
+     */
+    private fun buildTextShortSchemaJson(context: Context): String {
+        val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "TEXT_SHORT")
+        return """
+        {
+            "type": "object",
+            "properties": {
+                $commonProps,
                 "default_value": {
                     "type": "string",
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
@@ -198,33 +256,12 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildTextLongSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "TEXT_LONG")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "TEXT_LONG",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
-                },
+                $commonProps,
                 "default_value": {
                     "type": "string",
                     "maxLength": ${FieldLimits.LONG_LENGTH},
@@ -253,33 +290,12 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildTextUnlimitedSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "TEXT_UNLIMITED")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "TEXT_UNLIMITED",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
-                },
+                $commonProps,
                 "default_value": {
                     "type": "string",
                     "description": "${s.shared("field_type_schema_default_value_description")}"
@@ -307,32 +323,15 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildNumericSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "NUMERIC")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "NUMERIC",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                $commonProps,
+                "default_value": {
+                    "type": "number",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -359,10 +358,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "type": "number",
                             "exclusiveMinimum": 0,
                             "description": "Incrément suggéré (UI uniquement)"
-                        },
-                        "default_value": {
-                            "type": "number",
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false
@@ -390,32 +385,15 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildScaleSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "SCALE")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "SCALE",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                $commonProps,
+                "default_value": {
+                    "type": "number",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -441,10 +419,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "exclusiveMinimum": 0,
                             "default": 1,
                             "description": "Incrément"
-                        },
-                        "default_value": {
-                            "type": "number",
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "required": ["min", "max"],
@@ -473,32 +447,26 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildChoiceSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "CHOICE")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "CHOICE",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                $commonProps,
+                "default_value": {
+                    "oneOf": [
+                        {
+                            "type": "string",
+                            "description": "${s.shared("field_type_schema_default_value_description")}"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "${s.shared("field_type_schema_default_value_description")}"
+                        }
+                    ]
                 },
                 "config": {
                     "type": "object",
@@ -521,21 +489,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "type": "boolean",
                             "default": false,
                             "description": "Autoriser valeurs personnalisées (non implémenté en V1)"
-                        },
-                        "default_value": {
-                            "oneOf": [
-                                {
-                                    "type": "string",
-                                    "description": "Valeur par défaut (choix unique)"
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    },
-                                    "description": "Valeurs par défaut (choix multiple)"
-                                }
-                            ]
                         }
                     },
                     "required": ["options"],
@@ -564,32 +517,16 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildBooleanSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "BOOLEAN")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "BOOLEAN",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
+                $commonProps,
+                "default_value": {
                     "type": "boolean",
                     "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -605,11 +542,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "minLength": 1,
                             "default": "label_no",
                             "description": "Clé i18n pour label faux"
-                        },
-                        "default_value": {
-                            "type": "boolean",
-                            "default": false,
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false
@@ -637,32 +569,24 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildRangeSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "RANGE")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "RANGE",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                $commonProps,
+                "default_value": {
+                    "type": "object",
+                    "properties": {
+                        "start": {
+                            "type": "number"
+                        },
+                        "end": {
+                            "type": "number"
+                        }
+                    },
+                    "required": ["start", "end"],
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -684,19 +608,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "minimum": 0,
                             "default": 0,
                             "description": "Nombre de décimales"
-                        },
-                        "default_value": {
-                            "type": "object",
-                            "properties": {
-                                "start": {
-                                    "type": "number"
-                                },
-                                "end": {
-                                    "type": "number"
-                                }
-                            },
-                            "required": ["start", "end"],
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false
@@ -724,32 +635,16 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildDateSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "DATE")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
+                $commonProps,
+                "default_value": {
                     "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "DATE",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                    "format": "date",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -763,11 +658,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "type": "string",
                             "format": "date",
                             "description": "Date maximale (ISO 8601 YYYY-MM-DD)"
-                        },
-                        "default_value": {
-                            "type": "string",
-                            "format": "date",
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false
@@ -795,32 +685,16 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildTimeSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "TIME")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
+                $commonProps,
+                "default_value": {
                     "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "TIME",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                    "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -830,11 +704,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "enum": ["24h", "12h"],
                             "default": "24h",
                             "description": "Format d'affichage (stockage toujours 24h)"
-                        },
-                        "default_value": {
-                            "type": "string",
-                            "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false
@@ -862,32 +731,16 @@ object FieldTypeSchemaProvider : SchemaProvider {
      */
     private fun buildDateTimeSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "DATETIME")
         return """
         {
             "type": "object",
             "properties": {
-                "name": {
+                $commonProps,
+                "default_value": {
                     "type": "string",
-                    "pattern": "^[a-z][a-z0-9_]*[a-z0-9]$|^[a-z]$",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_name_description")}"
-                },
-                "display_name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60,
-                    "description": "${s.shared("field_type_schema_display_name_description")}"
-                },
-                "type": {
-                    "type": "string",
-                    "const": "DATETIME",
-                    "description": "${s.shared("field_type_schema_type_description")}"
-                },
-                "always_visible": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "${s.shared("field_type_schema_always_visible_description")}"
+                    "format": "date-time",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
@@ -907,11 +760,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "enum": ["24h", "12h"],
                             "default": "24h",
                             "description": "Format d'affichage de l'heure"
-                        },
-                        "default_value": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "${s.shared("field_type_schema_default_value_description")}"
                         }
                     },
                     "additionalProperties": false

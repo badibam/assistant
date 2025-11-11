@@ -40,6 +40,13 @@ object SchemaValidator {
         return try {
             val cleanData = filterEmptyValues(convertJsonObjectsToMaps(data))
 
+            // Step 1: Validate custom_fields individually if present (2-step validation)
+            val customFieldsValidation = validateCustomFieldsIfPresent(cleanData, context)
+            if (!customFieldsValidation.isValid) {
+                LogManager.schema("Custom fields validation failed: ${customFieldsValidation.errorMessage}", "ERROR")
+                return customFieldsValidation
+            }
+
             // For partial validation, modify schema to make 'required' fields optional
             // This allows updates to only specify the fields they want to change
             val schemaContent = if (partialValidation) {
@@ -275,11 +282,77 @@ object SchemaValidator {
     }
     
     /**
+     * Validates custom_fields array individually before global config validation
+     *
+     * This implements 2-step validation strategy:
+     * 1. Each custom field is validated against its specific field_type_* schema
+     * 2. Then the global config is validated with the generic custom_fields schema
+     *
+     * Transparent for both UI and AI - they just send the full config.
+     *
+     * @param data Cleaned data map (may contain custom_fields array)
+     * @param context Android context for schema access
+     * @return ValidationResult - success if no custom_fields or all valid, error otherwise
+     */
+    private fun validateCustomFieldsIfPresent(
+        data: Map<String, Any>,
+        context: Context
+    ): ValidationResult {
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+        // Check if data contains custom_fields
+        val customFields = data["custom_fields"] as? List<*> ?: return ValidationResult.success()
+
+        if (customFields.isEmpty()) {
+            return ValidationResult.success()
+        }
+
+        LogManager.schema("Validating ${customFields.size} custom fields individually")
+
+        // Validate each field against its specific type schema
+        customFields.forEachIndexed { index, field ->
+            @Suppress("UNCHECKED_CAST")
+            val fieldMap = field as? Map<String, Any> ?: run {
+                LogManager.schema("Custom field at index $index is not a Map", "ERROR")
+                return ValidationResult.error(s.shared("error_custom_field_invalid_format").format(index.toString()))
+            }
+
+            val fieldType = fieldMap["type"] as? String
+            if (fieldType.isNullOrEmpty()) {
+                LogManager.schema("Custom field at index $index missing type", "ERROR")
+                return ValidationResult.error(s.shared("error_custom_field_missing_type").format(index.toString()))
+            }
+
+            // Get schema for this field type
+            val schemaId = "field_type_$fieldType"
+            val schema = com.assistant.core.fields.FieldTypeSchemaProvider.getSchema(schemaId, context, null)
+
+            if (schema == null) {
+                LogManager.schema("Schema not found for field type: $fieldType", "ERROR")
+                return ValidationResult.error(s.shared("error_custom_field_unknown_type").format(index.toString(), fieldType))
+            }
+
+            // Validate this field against its type schema
+            val fieldValidation = validate(schema, fieldMap, context, partialValidation = false)
+            if (!fieldValidation.isValid) {
+                val fieldName = fieldMap["display_name"] as? String ?: "index $index"
+                LogManager.schema("Custom field '$fieldName' validation failed: ${fieldValidation.errorMessage}", "ERROR")
+                return ValidationResult.error(s.shared("error_custom_field_validation_failed").format(fieldName, fieldValidation.errorMessage ?: ""))
+            }
+
+            LogManager.schema("Custom field '$fieldType' at index $index validated successfully")
+        }
+
+        LogManager.schema("All custom fields validated successfully")
+        return ValidationResult.success()
+    }
+
+    /**
      * Clears schema cache - useful for tests or development
      */
     fun clearCache() {
         schemaCache.clear()
         LogManager.schema("Schema cache cleared")
     }
-    
+
 }

@@ -493,6 +493,32 @@
     <string name="custom_fields_always_visible">Toujours afficher (même si vide)</string>
     <string name="custom_fields_generated_name">Nom technique : %1$s</string>
 
+    <!-- Custom Fields Configuration - Field-specific config labels -->
+    <string name="field_config_section_title">Configuration du champ</string>
+    <string name="field_config_default_value">Valeur par défaut</string>
+    <string name="field_config_unit">Unité</string>
+    <string name="field_config_min">Minimum</string>
+    <string name="field_config_max">Maximum</string>
+    <string name="field_config_decimals">Nombre de décimales</string>
+    <string name="field_config_step">Pas</string>
+    <string name="field_config_min_label">Label minimum</string>
+    <string name="field_config_max_label">Label maximum</string>
+    <string name="field_config_options">Options</string>
+    <string name="field_config_multiple">Sélection multiple</string>
+    <string name="field_config_option_add">Ajouter une option</string>
+    <string name="field_config_option_delete">Supprimer l\'option</string>
+    <string name="field_config_option_placeholder">Nouvelle option</string>
+    <string name="field_config_true_label">Label pour vrai</string>
+    <string name="field_config_false_label">Label pour faux</string>
+    <string name="field_config_time_format">Format d\'heure</string>
+    <string name="field_config_no_config_required">Ce type de champ ne nécessite aucune configuration</string>
+
+    <!-- Custom Fields Validation Errors -->
+    <string name="error_custom_field_invalid_format">Champ personnalisé %1$s : format invalide</string>
+    <string name="error_custom_field_missing_type">Champ personnalisé %1$s : type manquant</string>
+    <string name="error_custom_field_unknown_type">Champ personnalisé %1$s : type inconnu \'%2$s\'</string>
+    <string name="error_custom_field_validation_failed">Champ \'%1$s\' : %2$s</string>
+
     <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
     <string name="tools_config_label_name">Nom</string>
     <string name="tools_config_label_description">Description</string>
