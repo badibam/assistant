@@ -262,6 +262,10 @@ object MessageToolType : ToolTypeContract {
                             "type": "string",
                             "enum": ["default", "high", "low"],
                             "description": "Priority at execution time"
+                        },
+                        "custom_fields": {
+                            "type": "object",
+                            "description": "Custom field values at execution time (snapshot from template)"
                         }
                     },
                     "required": ["title", "priority"],

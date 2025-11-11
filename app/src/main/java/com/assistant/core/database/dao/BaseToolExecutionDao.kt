@@ -116,4 +116,10 @@ abstract class BaseToolExecutionDao {
      */
     @Query("SELECT * FROM tool_executions WHERE status = 'pending' ORDER BY scheduled_time ASC")
     abstract suspend fun getPendingExecutions(): List<ToolExecutionEntity>
+
+    /**
+     * Retrieves all executions (for backup export)
+     */
+    @Query("SELECT * FROM tool_executions ORDER BY execution_time DESC")
+    abstract suspend fun getAllExecutions(): List<ToolExecutionEntity>
 }

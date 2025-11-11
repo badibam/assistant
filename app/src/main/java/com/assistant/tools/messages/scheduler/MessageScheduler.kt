@@ -88,9 +88,10 @@ object MessageScheduler : ToolScheduler {
                     val messageId = entry["id"] as? String ?: continue
                     val messageName = entry["name"] as? String ?: ""
                     val data = entry["data"] as? String ?: continue
+                    val customFieldsJson = entry["customFields"] as? String
 
                     try {
-                        processMessage(context, messageId, messageName, data, now, messageService, coordinator, instance)
+                        processMessage(context, messageId, messageName, data, customFieldsJson, now, messageService, coordinator, instance)
                     } catch (e: Exception) {
                         LogManager.service("Failed to process message $messageId: ${e.message}", "ERROR", e)
                         // Continue with other messages
@@ -112,6 +113,7 @@ object MessageScheduler : ToolScheduler {
      * @param messageId ID of message (ToolDataEntity.id) - serves as templateDataId
      * @param messageName Name/title of the message (from ToolDataEntity.name)
      * @param dataJson JSON string of message data
+     * @param customFieldsJson JSON string of custom fields (null if no custom fields)
      * @param now Current timestamp
      * @param messageService MessageService instance (unused, kept for compatibility)
      * @param coordinator Coordinator for creating execution and updating message
@@ -122,6 +124,7 @@ object MessageScheduler : ToolScheduler {
         messageId: String,
         messageName: String,
         dataJson: String,
+        customFieldsJson: String?,
         now: Long,
         messageService: MessageService,
         coordinator: Coordinator,
@@ -189,6 +192,16 @@ object MessageScheduler : ToolScheduler {
             put("title", messageName)
             put("content", content)
             put("priority", priority)
+
+            // Include custom_fields snapshot if present
+            if (customFieldsJson != null) {
+                try {
+                    val customFields = JSONObject(customFieldsJson)
+                    put("custom_fields", customFields)
+                } catch (e: Exception) {
+                    LogManager.service("Failed to parse customFields JSON for message $messageId: ${e.message}", "WARN")
+                }
+            }
         }
 
         val executionResult = JSONObject().apply {

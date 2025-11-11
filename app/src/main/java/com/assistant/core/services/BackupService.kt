@@ -80,6 +80,7 @@ class BackupService(private val context: Context) : ExecutableService {
             val aiProviderConfigs = database.aiDao().getAllProviderConfigs()
             val automations = database.aiDao().getAllAutomations()
             val transcriptionProviderConfigs = database.transcriptionDao().getAllProviderConfigs()
+            val toolExecutions = database.toolExecutionDao().getAllExecutions()
 
             // Check cancellation before building JSON
             if (token.isCancelled) {
@@ -271,6 +272,29 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("is_active", config.isActive)
                                 put("created_at", config.createdAt)
                                 put("updated_at", config.updatedAt)
+                            })
+                        }
+                    })
+
+                    // Tool executions
+                    put("tool_executions", JSONArray().apply {
+                        for (execution in toolExecutions) {
+                            put(JSONObject().apply {
+                                put("id", execution.id)
+                                put("tool_instance_id", execution.toolInstanceId)
+                                put("tooltype", execution.tooltype)
+                                put("template_data_id", execution.templateDataId)
+                                if (execution.scheduledTime != null) {
+                                    put("scheduled_time", execution.scheduledTime)
+                                }
+                                put("execution_time", execution.executionTime)
+                                put("status", execution.status)
+                                put("snapshot_data", execution.snapshotData)
+                                put("execution_result", execution.executionResult)
+                                put("triggered_by", execution.triggeredBy)
+                                put("metadata", execution.metadata)
+                                put("created_at", execution.createdAt)
+                                put("updated_at", execution.updatedAt)
                             })
                         }
                     })
@@ -620,6 +644,30 @@ class BackupService(private val context: Context) : ExecutableService {
                         configJson = item.getString("config_json"),
                         isConfigured = item.getBoolean("is_configured"),
                         isActive = item.getBoolean("is_active"),
+                        createdAt = item.getLong("created_at"),
+                        updatedAt = item.getLong("updated_at")
+                    )
+                )
+            }
+        }
+
+        // Tool executions
+        data.optJSONArray("tool_executions")?.let { array ->
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                database.toolExecutionDao().insert(
+                    ToolExecutionEntity(
+                        id = item.getString("id"),
+                        toolInstanceId = item.getString("tool_instance_id"),
+                        tooltype = item.getString("tooltype"),
+                        templateDataId = item.getString("template_data_id"),
+                        scheduledTime = item.optLong("scheduled_time", 0).let { if (it == 0L) null else it },
+                        executionTime = item.getLong("execution_time"),
+                        status = item.getString("status"),
+                        snapshotData = item.getString("snapshot_data"),
+                        executionResult = item.getString("execution_result"),
+                        triggeredBy = item.getString("triggered_by"),
+                        metadata = item.getString("metadata"),
                         createdAt = item.getLong("created_at"),
                         updatedAt = item.getLong("updated_at")
                     )
