@@ -48,6 +48,33 @@ class CommandExecutor(private val context: Context) {
     private val s = Strings.`for`(context = context)
 
     /**
+     * Generate schema deduplication key
+     *
+     * For config schemas: returns schema_id only
+     * For data/execution schemas: returns "schema_id:toolInstanceId" (composite key)
+     *
+     * Data and execution schemas are enriched with custom_fields per instance,
+     * so same schema_id with different toolInstanceId produces different schemas.
+     *
+     * @param schemaId The schema ID (e.g., "tracking_data_numeric", "tracking_config_numeric")
+     * @param toolInstanceId The tool instance ID (null for config schemas)
+     * @return Deduplication key string
+     */
+    private fun getSchemaDeduplicationKey(schemaId: String, toolInstanceId: String?): String {
+        // Check if schema requires instance-specific enrichment (data or execution schemas)
+        val requiresInstanceId = schemaId.contains("_data_") ||
+                                 schemaId.contains("_execution_") ||
+                                 schemaId.endsWith("_data") ||
+                                 schemaId.endsWith("_execution")
+
+        return if (requiresInstanceId && toolInstanceId != null) {
+            "$schemaId:$toolInstanceId"
+        } else {
+            schemaId
+        }
+    }
+
+    /**
      * Execute commands and return complete result with prompt data + SystemMessage
      *
      * @param commands The commands to execute
@@ -98,16 +125,21 @@ class CommandExecutor(private val context: Context) {
             // Check for schema deduplication BEFORE execution
             if (command.resource == "schemas" && command.operation == "get" && sessionId != null) {
                 val schemaId = command.params["id"] as? String
+                val toolInstanceId = command.params["toolInstanceId"] as? String
+
                 if (schemaId != null) {
+                    // Generate composite key for data/execution schemas (includes toolInstanceId)
+                    val deduplicationKey = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+
                     // Check inter-message deduplication (historical)
-                    val isDuplicatedFromHistory = schemaId in historicalSchemas
+                    val isDuplicatedFromHistory = deduplicationKey in historicalSchemas
 
                     // Check intra-message deduplication (current batch)
-                    val isDuplicatedInBatch = schemaId in currentBatchSchemas
+                    val isDuplicatedInBatch = deduplicationKey in currentBatchSchemas
 
                     if (isDuplicatedFromHistory || isDuplicatedInBatch) {
                         // Schema already retrieved - create CACHED result
-                        LogManager.aiPrompt("Schema $schemaId already included - creating CACHED result", "DEBUG")
+                        LogManager.aiPrompt("Schema $deduplicationKey already included - creating CACHED result", "DEBUG")
 
                         val cachedResult = InternalCommandResult(
                             promptResult = PromptCommandResult("", ""),  // No prompt data for cached
@@ -124,11 +156,11 @@ class CommandExecutor(private val context: Context) {
                         promptResults.add(cachedResult.promptResult)
                         commandResults.add(cachedResult.commandResult)
                         successCount++
-                        LogManager.aiPrompt("Command ${index + 1} cached (schema $schemaId)", "DEBUG")
+                        LogManager.aiPrompt("Command ${index + 1} cached (schema $deduplicationKey)", "DEBUG")
                         continue  // Skip execution, move to next command
                     } else {
                         // Not a duplicate - will execute normally, add to current batch tracker
-                        currentBatchSchemas.add(schemaId)
+                        currentBatchSchemas.add(deduplicationKey)
                     }
                 }
             }
@@ -394,16 +426,18 @@ class CommandExecutor(private val context: Context) {
      * Filter query result data to essential metadata (avoid DB bloat)
      *
      * Removes large content fields while keeping identifiers needed for deduplication:
-     * - schemas: keep schema_id only (remove large 'content' JSON)
+     * - schemas: keep schema_id + toolInstanceId (for data/execution schema deduplication)
      * - tools/zones: keep id, name, count fields
      * - Remove large nested objects and arrays
      */
     private fun filterQueryResultData(resource: String, data: Map<String, Any>): Map<String, Any>? {
         return when (resource) {
             "schemas" -> {
-                // Schemas: keep only schema_id for deduplication, remove large 'content'
+                // Schemas: keep schema_id + toolInstanceId for deduplication, remove large 'content'
+                // toolInstanceId is needed for data/execution schemas (custom_fields enrichment)
                 val filtered = mutableMapOf<String, Any>()
                 data["schema_id"]?.let { filtered["schema_id"] = it }
+                data["toolInstanceId"]?.let { filtered["toolInstanceId"] = it }
                 if (filtered.isEmpty()) null else filtered
             }
             "zones", "tools", "tool_data" -> {
@@ -899,10 +933,13 @@ class CommandExecutor(private val context: Context) {
     }
 
     /**
-     * Load historical schema IDs from previous messages in the session
-     * Returns Set of schema_id that have been successfully retrieved before
+     * Load historical schema deduplication keys from previous messages in the session
+     * Returns Set of deduplication keys that have been successfully retrieved before
      *
-     * Scans all SystemMessages with type DATA_ADDED and extracts schema_id from
+     * For config schemas: returns schema_id only
+     * For data/execution schemas: returns "schema_id:toolInstanceId" (composite key)
+     *
+     * Scans all SystemMessages with type DATA_ADDED and extracts schema_id + toolInstanceId from
      * CommandResults where command == "schemas.get" and status == SUCCESS
      */
     private suspend fun loadHistoricalSchemas(sessionId: String): Set<String> {
@@ -913,7 +950,7 @@ class CommandExecutor(private val context: Context) {
             val messageRepository = com.assistant.core.ai.state.AIMessageRepository(aiDao)
 
             val messages = messageRepository.loadMessages(sessionId)
-            val schemaIds = mutableSetOf<String>()
+            val schemaKeys = mutableSetOf<String>()
 
             LogManager.aiPrompt("loadHistoricalSchemas: Found ${messages.size} messages in session", "DEBUG")
 
@@ -932,23 +969,26 @@ class CommandExecutor(private val context: Context) {
                         // Look for successful schema.get commands
                         if (commandResult.command == "schemas.get" &&
                             commandResult.status == com.assistant.core.ai.data.CommandStatus.SUCCESS) {
-                            // Extract schema_id from result data
+                            // Extract schema_id and toolInstanceId from result data
                             val schemaId = commandResult.data?.get("schema_id") as? String
-                            LogManager.aiPrompt("    schema.get found, schema_id=$schemaId, data keys=${commandResult.data?.keys}", "DEBUG")
+                            val toolInstanceId = commandResult.data?.get("toolInstanceId") as? String
+                            LogManager.aiPrompt("    schema.get found, schema_id=$schemaId, toolInstanceId=$toolInstanceId, data keys=${commandResult.data?.keys}", "DEBUG")
 
                             if (schemaId != null) {
-                                schemaIds.add(schemaId)
-                                LogManager.aiPrompt("Found historical schema: $schemaId", "VERBOSE")
+                                // Generate composite key for data/execution schemas
+                                val deduplicationKey = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+                                schemaKeys.add(deduplicationKey)
+                                LogManager.aiPrompt("Found historical schema: $deduplicationKey", "VERBOSE")
                             } else {
-                                LogManager.aiPrompt("    WARNING: schema_id is null! data=${ commandResult.data}", "WARN")
+                                LogManager.aiPrompt("    WARNING: schema_id is null! data=${commandResult.data}", "WARN")
                             }
                         }
                     }
                 }
             }
 
-            LogManager.aiPrompt("Loaded ${schemaIds.size} historical schemas from session $sessionId", "DEBUG")
-            schemaIds
+            LogManager.aiPrompt("Loaded ${schemaKeys.size} historical schema keys from session $sessionId", "DEBUG")
+            schemaKeys
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to load historical schemas: ${e.message}", "WARN", e)
             emptySet()
