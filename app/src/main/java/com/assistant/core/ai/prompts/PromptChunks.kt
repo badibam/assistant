@@ -206,16 +206,17 @@ object PromptChunks {
     }
 
     /**
-     * Build custom field types list dynamically from FieldType enum
+     * Build custom field types list dynamically from FieldTypeSchemaProvider
      * Single source of truth for supported field types
      */
-    private fun buildCustomFieldTypesList(): String {
+    private fun buildCustomFieldTypesList(context: Context): String {
         val types = com.assistant.core.fields.FieldType.values()
+        val provider = com.assistant.core.fields.FieldTypeSchemaProvider
 
         return types.joinToString("\n") { type ->
-            val description = when (type) {
-                com.assistant.core.fields.FieldType.TEXT_UNLIMITED -> "Texte libre illimité"
-            }
+            // Get description from schema provider (single source of truth)
+            val schema = provider.getSchema("field_type_${type.name}", context, null)
+            val description = schema?.description ?: type.name
             "- **${type.name}** : $description"
         }
     }
@@ -226,7 +227,7 @@ object PromptChunks {
     private suspend fun buildCustomFieldsChunk(context: Context): String {
         val s = Strings.`for`(context = context)
         val content = s.shared("ai_chunk_custom_fields")
-        val typesList = buildCustomFieldTypesList()
+        val typesList = buildCustomFieldTypesList(context)
 
         return content.replace("{{CUSTOM_FIELD_TYPES}}", typesList)
     }

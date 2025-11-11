@@ -134,7 +134,7 @@ object DateUtils {
         return try {
             val dateTimestamp = parseDateForFilter(dateString)
             val (hour, minute) = parseTime(timeString)
-            
+
             val calendar = Calendar.getInstance().apply {
                 timeInMillis = dateTimestamp
                 set(Calendar.HOUR_OF_DAY, hour)
@@ -146,5 +146,136 @@ object DateUtils {
         } catch (e: Exception) {
             System.currentTimeMillis()
         }
+    }
+
+    // ================================================================
+    // ISO 8601 Conversion Helpers (for custom fields DATE/TIME/DATETIME)
+    // ================================================================
+
+    /**
+     * Parse ISO 8601 date string to timestamp (YYYY-MM-DD → Long)
+     * Used for custom fields DATE type
+     */
+    fun parseIso8601Date(dateStr: String): Long {
+        return try {
+            val parts = dateStr.split("-")
+            if (parts.size == 3) {
+                val year = parts[0].toInt()
+                val month = parts[1].toInt() - 1 // Calendar months are 0-indexed
+                val day = parts[2].toInt()
+
+                Calendar.getInstance().apply {
+                    set(Calendar.YEAR, year)
+                    set(Calendar.MONTH, month)
+                    set(Calendar.DAY_OF_MONTH, day)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            } else {
+                System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
+    /**
+     * Parse ISO 8601 time string to timestamp (HH:MM → Long, today's date)
+     * Used for custom fields TIME type
+     */
+    fun parseIso8601Time(timeStr: String): Long {
+        return try {
+            val (hour, minute) = parseTime(timeStr)
+
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
+    /**
+     * Parse ISO 8601 datetime string to timestamp (YYYY-MM-DDTHH:MM:SS → Long)
+     * Used for custom fields DATETIME type
+     */
+    fun parseIso8601DateTime(dateTimeStr: String): Long {
+        return try {
+            val parts = dateTimeStr.split("T")
+            if (parts.size == 2) {
+                val dateStr = parts[0]
+                val timeStr = parts[1].substringBefore(":") + ":" + parts[1].split(":").getOrNull(1)
+
+                val dateParts = dateStr.split("-")
+                if (dateParts.size == 3) {
+                    val year = dateParts[0].toInt()
+                    val month = dateParts[1].toInt() - 1
+                    val day = dateParts[2].toInt()
+
+                    val timeParts = timeStr.split(":")
+                    val hour = timeParts[0].toInt()
+                    val minute = timeParts.getOrNull(1)?.toInt() ?: 0
+
+                    Calendar.getInstance().apply {
+                        set(Calendar.YEAR, year)
+                        set(Calendar.MONTH, month)
+                        set(Calendar.DAY_OF_MONTH, day)
+                        set(Calendar.HOUR_OF_DAY, hour)
+                        set(Calendar.MINUTE, minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }.timeInMillis
+                } else {
+                    System.currentTimeMillis()
+                }
+            } else {
+                System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+
+    /**
+     * Convert timestamp to ISO 8601 date string (Long → YYYY-MM-DD)
+     * Used for custom fields DATE type
+     */
+    fun timestampToIso8601Date(timestamp: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val year = calendar.get(Calendar.YEAR)
+        val month = String.format("%02d", calendar.get(Calendar.MONTH) + 1)
+        val day = String.format("%02d", calendar.get(Calendar.DAY_OF_MONTH))
+        return "$year-$month-$day"
+    }
+
+    /**
+     * Convert timestamp to ISO 8601 time string (Long → HH:MM)
+     * Used for custom fields TIME type
+     */
+    fun timestampToIso8601Time(timestamp: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val hour = String.format("%02d", calendar.get(Calendar.HOUR_OF_DAY))
+        val minute = String.format("%02d", calendar.get(Calendar.MINUTE))
+        return "$hour:$minute"
+    }
+
+    /**
+     * Convert timestamp to ISO 8601 datetime string (Long → YYYY-MM-DDTHH:MM:SS)
+     * Used for custom fields DATETIME type
+     */
+    fun timestampToIso8601DateTime(timestamp: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val year = calendar.get(Calendar.YEAR)
+        val month = String.format("%02d", calendar.get(Calendar.MONTH) + 1)
+        val day = String.format("%02d", calendar.get(Calendar.DAY_OF_MONTH))
+        val hour = String.format("%02d", calendar.get(Calendar.HOUR_OF_DAY))
+        val minute = String.format("%02d", calendar.get(Calendar.MINUTE))
+        val second = String.format("%02d", calendar.get(Calendar.SECOND))
+        return "$year-$month-${day}T$hour:$minute:$second"
     }
 }

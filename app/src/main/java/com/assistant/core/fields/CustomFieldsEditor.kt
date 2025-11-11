@@ -194,8 +194,17 @@ private fun FieldDefinitionCard(
 
             // Field type
             val typeLabel = when (field.type) {
-                FieldType.TEXT_UNLIMITED -> s.shared("field_type_text_unlimited")
-                // Future types will be added here
+                FieldType.TEXT_SHORT -> s.shared("field_type_text_short_display_name")
+                FieldType.TEXT_LONG -> s.shared("field_type_text_long_display_name")
+                FieldType.TEXT_UNLIMITED -> s.shared("field_type_text_unlimited_display_name")
+                FieldType.NUMERIC -> s.shared("field_type_numeric_display_name")
+                FieldType.SCALE -> s.shared("field_type_scale_display_name")
+                FieldType.CHOICE -> s.shared("field_type_choice_display_name")
+                FieldType.BOOLEAN -> s.shared("field_type_boolean_display_name")
+                FieldType.RANGE -> s.shared("field_type_range_display_name")
+                FieldType.DATE -> s.shared("field_type_date_display_name")
+                FieldType.TIME -> s.shared("field_type_time_display_name")
+                FieldType.DATETIME -> s.shared("field_type_datetime_display_name")
             }
             UI.Text(
                 text = typeLabel,

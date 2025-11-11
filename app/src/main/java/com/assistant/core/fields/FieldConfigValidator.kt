@@ -1,5 +1,10 @@
 package com.assistant.core.fields
 
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
 /**
  * Validates field definitions for custom fields.
  *
@@ -38,7 +43,7 @@ object FieldConfigValidator {
         if (fieldDef.displayName.isBlank()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "Le nom d'affichage ne peut pas être vide"
+                errorMessage = "field_validation_display_name_empty"
             )
         }
 
@@ -65,14 +70,14 @@ object FieldConfigValidator {
         if (name.isEmpty()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "Le nom technique du champ ne peut pas être vide"
+                errorMessage = "field_validation_name_empty"
             )
         }
 
         if (!name.matches(Regex("^[a-z][a-z0-9_]*[a-z0-9]$")) && !name.matches(Regex("^[a-z]$"))) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "Le nom technique doit être en format snake_case (lettres minuscules, chiffres, underscores)"
+                errorMessage = "field_validation_name_format"
             )
         }
 
@@ -87,7 +92,8 @@ object FieldConfigValidator {
         if (collision != null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "Un champ avec le nom technique '$name' existe déjà"
+                errorMessage = "field_validation_name_duplicate",
+                errorMessageArgs = arrayOf(name)
             )
         }
 
@@ -97,39 +103,436 @@ object FieldConfigValidator {
     /**
      * Validates that the config is appropriate for the field type.
      *
-     * V1: Only TEXT_UNLIMITED supported, config must be null
-     * Future: Add validation for other types (SCALE requires min/max/labels, CHOICE requires options, etc.)
+     * Checks type-specific config requirements and constraints.
      */
     private fun validateTypeConfig(type: FieldType, config: Map<String, Any>?): ValidationResult {
         return when (type) {
-            FieldType.TEXT_UNLIMITED -> {
-                // TEXT_UNLIMITED does not require config (should be null)
+            FieldType.TEXT_SHORT, FieldType.TEXT_LONG, FieldType.TEXT_UNLIMITED -> {
+                // Text types do not require config (should be null)
                 if (config != null) {
                     ValidationResult(
                         isValid = false,
-                        errorMessage = "Le type TEXT_UNLIMITED ne nécessite pas de configuration"
+                        errorMessage = "field_validation_config_not_null",
+                        errorMessageArgs = arrayOf(type.name)
                     )
                 } else {
                     ValidationResult(isValid = true)
                 }
             }
-            // Future types validation will be added here with when branches
-            // Example for future SCALE type:
-            // FieldType.SCALE -> {
-            //     if (config == null) {
-            //         return ValidationResult(false, "SCALE type requires config with min, max, min_label, max_label")
-            //     }
-            //     val min = config["min"] as? Number
-            //     val max = config["max"] as? Number
-            //     if (min == null || max == null) {
-            //         return ValidationResult(false, "SCALE config must have min and max")
-            //     }
-            //     if (min.toDouble() >= max.toDouble()) {
-            //         return ValidationResult(false, "SCALE min must be less than max")
-            //     }
-            //     ValidationResult(isValid = true)
-            // }
+
+            FieldType.NUMERIC -> validateNumericConfig(config)
+            FieldType.SCALE -> validateScaleConfig(config)
+            FieldType.CHOICE -> validateChoiceConfig(config)
+            FieldType.BOOLEAN -> validateBooleanConfig(config)
+            FieldType.RANGE -> validateRangeConfig(config)
+            FieldType.DATE -> validateDateConfig(config)
+            FieldType.TIME -> validateTimeConfig(config)
+            FieldType.DATETIME -> validateDateTimeConfig(config)
         }
+    }
+
+    /**
+     * Validates NUMERIC field config.
+     * Config: {unit?, min?, max?, decimals?, step?, default_value?}
+     */
+    private fun validateNumericConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for NUMERIC
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate min <= max if both defined
+        val min = config["min"] as? Number
+        val max = config["max"] as? Number
+        if (min != null && max != null && min.toDouble() > max.toDouble()) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_numeric_min_max"
+            )
+        }
+
+        // Validate decimals >= 0
+        val decimals = config["decimals"] as? Number
+        if (decimals != null && decimals.toInt() < 0) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_numeric_decimals"
+            )
+        }
+
+        // Validate step > 0 if defined
+        val step = config["step"] as? Number
+        if (step != null && step.toDouble() <= 0) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_numeric_step"
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates SCALE field config.
+     * Config: {min (required), max (required), min_label?, max_label?, step?, default_value?}
+     */
+    private fun validateScaleConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is required for SCALE
+        if (config == null) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_scale_min_max_required"
+            )
+        }
+
+        // min and max are required
+        val min = config["min"] as? Number
+        val max = config["max"] as? Number
+        if (min == null || max == null) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_scale_min_max_required"
+            )
+        }
+
+        // min < max (strict)
+        if (min.toDouble() >= max.toDouble()) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_scale_min_max_order"
+            )
+        }
+
+        // Validate step > 0 if defined
+        val step = config["step"] as? Number
+        if (step != null && step.toDouble() <= 0) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_scale_step"
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates CHOICE field config.
+     * Config: {options (required, min 2), multiple?, allow_custom?, default_value?}
+     */
+    private fun validateChoiceConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is required for CHOICE
+        if (config == null) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_choice_options_required"
+            )
+        }
+
+        // options array is required
+        val options = config["options"] as? List<*>
+        if (options == null) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_choice_options_required"
+            )
+        }
+
+        // Minimum 2 options
+        if (options.size < 2) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_choice_options_min"
+            )
+        }
+
+        // No duplicate options
+        if (options.size != options.toSet().size) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_choice_options_duplicate"
+            )
+        }
+
+        // Validate multiple is boolean if present
+        val multiple = config["multiple"]
+        if (multiple != null && multiple !is Boolean) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_choice_multiple_type"
+            )
+        }
+
+        // Validate default_value type matches multiple mode
+        val defaultValue = config["default_value"]
+        if (defaultValue != null) {
+            val isMultiple = (multiple as? Boolean) ?: false
+            if (isMultiple) {
+                if (defaultValue !is List<*>) {
+                    return ValidationResult(
+                        isValid = false,
+                        errorMessage = "field_validation_choice_default_type_multiple"
+                    )
+                }
+            } else {
+                if (defaultValue !is String) {
+                    return ValidationResult(
+                        isValid = false,
+                        errorMessage = "field_validation_choice_default_type_single"
+                    )
+                }
+            }
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates BOOLEAN field config.
+     * Config: {true_label?, false_label?, default_value?}
+     */
+    private fun validateBooleanConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for BOOLEAN
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate labels are non-empty if provided
+        val trueLabel = config["true_label"] as? String
+        if (trueLabel != null && trueLabel.isEmpty()) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_boolean_label_empty"
+            )
+        }
+
+        val falseLabel = config["false_label"] as? String
+        if (falseLabel != null && falseLabel.isEmpty()) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_boolean_label_empty"
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates RANGE field config.
+     * Config: {min?, max?, unit?, decimals?, default_value?}
+     */
+    private fun validateRangeConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for RANGE
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate min <= max if both defined
+        val min = config["min"] as? Number
+        val max = config["max"] as? Number
+        if (min != null && max != null && min.toDouble() > max.toDouble()) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_range_min_max"
+            )
+        }
+
+        // Validate decimals >= 0
+        val decimals = config["decimals"] as? Number
+        if (decimals != null && decimals.toInt() < 0) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_range_decimals"
+            )
+        }
+
+        // Validate default_value if provided
+        val defaultValue = config["default_value"] as? Map<*, *>
+        if (defaultValue != null) {
+            val start = defaultValue["start"] as? Number
+            val end = defaultValue["end"] as? Number
+
+            if (start == null || end == null) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_range_default_incomplete"
+                )
+            }
+
+            if (start.toDouble() > end.toDouble()) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_range_default_order"
+                )
+            }
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates DATE field config.
+     * Config: {min?, max?, default_value?}
+     */
+    private fun validateDateConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for DATE
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate min and max are valid ISO 8601 dates
+        val minStr = config["min"] as? String
+        val maxStr = config["max"] as? String
+
+        val minDate = if (minStr != null) {
+            try {
+                LocalDate.parse(minStr, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_date_min_max_format"
+                )
+            }
+        } else null
+
+        val maxDate = if (maxStr != null) {
+            try {
+                LocalDate.parse(maxStr, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_date_min_max_format"
+                )
+            }
+        } else null
+
+        // Validate min <= max
+        if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_date_min_max_order"
+            )
+        }
+
+        // Validate default_value
+        val defaultStr = config["default_value"] as? String
+        if (defaultStr != null) {
+            val defaultDate = try {
+                LocalDate.parse(defaultStr, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_date_default_format"
+                )
+            }
+
+            // Check default is within range
+            if ((minDate != null && defaultDate.isBefore(minDate)) ||
+                (maxDate != null && defaultDate.isAfter(maxDate))) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_date_default_range"
+                )
+            }
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates TIME field config.
+     * Config: {format?, default_value?}
+     */
+    private fun validateTimeConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for TIME
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate format is "24h" or "12h"
+        val format = config["format"] as? String
+        if (format != null && format !in listOf("24h", "12h")) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_time_format"
+            )
+        }
+
+        // Validate default_value format HH:MM
+        val defaultValue = config["default_value"] as? String
+        if (defaultValue != null && !defaultValue.matches(Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_time_default_format"
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates DATETIME field config.
+     * Config: {min?, max?, time_format?, default_value?}
+     */
+    private fun validateDateTimeConfig(config: Map<String, Any>?): ValidationResult {
+        // Config is optional for DATETIME
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate time_format is "24h" or "12h"
+        val timeFormat = config["time_format"] as? String
+        if (timeFormat != null && timeFormat !in listOf("24h", "12h")) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_datetime_format"
+            )
+        }
+
+        // Validate min and max are valid ISO 8601 datetimes
+        val minStr = config["min"] as? String
+        val maxStr = config["max"] as? String
+
+        val minDateTime = if (minStr != null) {
+            try {
+                LocalDateTime.parse(minStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_datetime_min_max_format"
+                )
+            }
+        } else null
+
+        val maxDateTime = if (maxStr != null) {
+            try {
+                LocalDateTime.parse(maxStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_datetime_min_max_format"
+                )
+            }
+        } else null
+
+        // Validate min <= max
+        if (minDateTime != null && maxDateTime != null && minDateTime.isAfter(maxDateTime)) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "field_validation_datetime_min_max_order"
+            )
+        }
+
+        // Validate default_value
+        val defaultStr = config["default_value"] as? String
+        if (defaultStr != null) {
+            val defaultDateTime = try {
+                LocalDateTime.parse(defaultStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            } catch (e: DateTimeParseException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_datetime_default_format"
+                )
+            }
+
+            // Check default is within range
+            if ((minDateTime != null && defaultDateTime.isBefore(minDateTime)) ||
+                (maxDateTime != null && defaultDateTime.isAfter(maxDateTime))) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = "field_validation_datetime_default_range"
+                )
+            }
+        }
+
+        return ValidationResult(isValid = true)
     }
 }
 
@@ -137,9 +540,34 @@ object FieldConfigValidator {
  * Result of field validation.
  *
  * @property isValid Whether the field definition is valid
- * @property errorMessage Human-readable error message if invalid (null if valid)
+ * @property errorMessage Error message string key if invalid (null if valid)
+ * @property errorMessageArgs Optional arguments for the error message (for placeholders)
  */
 data class ValidationResult(
     val isValid: Boolean,
-    val errorMessage: String? = null
-)
+    val errorMessage: String? = null,
+    val errorMessageArgs: Array<Any>? = null
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ValidationResult
+
+        if (isValid != other.isValid) return false
+        if (errorMessage != other.errorMessage) return false
+        if (errorMessageArgs != null) {
+            if (other.errorMessageArgs == null) return false
+            if (!errorMessageArgs.contentEquals(other.errorMessageArgs)) return false
+        } else if (other.errorMessageArgs != null) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = isValid.hashCode()
+        result = 31 * result + (errorMessage?.hashCode() ?: 0)
+        result = 31 * result + (errorMessageArgs?.contentHashCode() ?: 0)
+        return result
+    }
+}

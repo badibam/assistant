@@ -947,14 +947,78 @@
     <string name="ai_schema_communication_validation_message_desc">Le message/question de validation à afficher à l\'utilisateur</string>
 
     <!-- CUSTOM FIELDS SCHEMAS - Field type definitions -->
-    <string name="field_type_text_unlimited_display_name">Champ texte illimité</string>
-    <string name="field_type_text_unlimited_description">Définition de champ personnalisé de type texte sans limite de longueur</string>
+    <string name="field_type_text_short_display_name">Texte court</string>
+    <string name="field_type_text_short_description">Texte court pour identifiants, noms, labels courts (max 60 caractères)</string>
+    <string name="field_type_text_long_display_name">Texte long</string>
+    <string name="field_type_text_long_description">Texte long pour contenu substantiel (max 1500 caractères)</string>
+    <string name="field_type_text_unlimited_display_name">Texte illimité</string>
+    <string name="field_type_text_unlimited_description">Texte sans limite de longueur</string>
+    <string name="field_type_numeric_display_name">Numérique</string>
+    <string name="field_type_numeric_description">Valeur numérique avec unité et contraintes optionnelles</string>
+    <string name="field_type_scale_display_name">Échelle</string>
+    <string name="field_type_scale_description">Échelle graduée entre deux valeurs avec labels</string>
+    <string name="field_type_choice_display_name">Choix</string>
+    <string name="field_type_choice_description">Choix unique ou multiple parmi des options prédéfinies</string>
+    <string name="field_type_boolean_display_name">Booléen</string>
+    <string name="field_type_boolean_description">Valeur vrai/faux (oui/non)</string>
+    <string name="field_type_range_display_name">Intervalle</string>
+    <string name="field_type_range_description">Intervalle entre deux valeurs numériques</string>
+    <string name="field_type_date_display_name">Date</string>
+    <string name="field_type_date_description">Date (jour/mois/année)</string>
+    <string name="field_type_time_display_name">Heure</string>
+    <string name="field_type_time_description">Heure (heure:minute)</string>
+    <string name="field_type_datetime_display_name">Date et heure</string>
+    <string name="field_type_datetime_description">Date et heure combinées</string>
+
+    <!-- CUSTOM FIELDS - Schema descriptions (used by AI) -->
     <string name="field_type_text_unlimited_schema_root_description">Schéma de définition pour un champ personnalisé de type TEXT_UNLIMITED (texte libre illimité). Utilisé dans l\'array custom_fields de la configuration d\'un outil.</string>
     <string name="field_type_schema_name_description">Identifiant technique unique du champ (format: a-z, 0-9, underscore uniquement). Utilisé comme clé pour stocker les valeurs.</string>
     <string name="field_type_schema_display_name_description">Nom affiché à l\'utilisateur pour ce champ personnalisé</string>
     <string name="field_type_schema_type_description">Type de champ personnalisé. Doit correspondre à l\'un des types disponibles (voir liste des field types supportés).</string>
     <string name="field_type_schema_always_visible_description">Si true, ce champ est toujours affiché dans l\'interface (même s\'il est vide). Si false, il n\'est affiché que lorsqu\'il contient une valeur.</string>
     <string name="field_type_schema_default_value_description">Valeur par défaut optionnelle pour ce champ. Si fournie, sera automatiquement renseignée lors de la création de nouvelles entrées.</string>
+
+    <!-- CUSTOM FIELDS - Default labels for field types -->
+    <string name="label_scale_bad">Mauvais</string>
+    <string name="label_scale_excellent">Excellent</string>
+    <string name="label_scale_min">Minimum</string>
+    <string name="label_scale_max">Maximum</string>
+
+    <!-- CUSTOM FIELDS - Validation error messages -->
+    <string name="field_validation_name_empty">Le nom technique du champ ne peut pas être vide</string>
+    <string name="field_validation_name_format">Le nom technique doit être en format snake_case (lettres minuscules, chiffres, underscores)</string>
+    <string name="field_validation_name_duplicate">Un champ avec le nom technique %1$s existe déjà</string>
+    <string name="field_validation_display_name_empty">Le nom d\'affichage ne peut pas être vide</string>
+    <string name="field_validation_config_not_null">Le type %1$s ne nécessite pas de configuration</string>
+    <string name="field_validation_numeric_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
+    <string name="field_validation_numeric_decimals">Le nombre de décimales doit être supérieur ou égal à 0</string>
+    <string name="field_validation_numeric_step">L\'incrément doit être supérieur à 0</string>
+    <string name="field_validation_scale_min_max_required">Le type SCALE nécessite les valeurs min et max</string>
+    <string name="field_validation_scale_min_max_order">La valeur minimale doit être strictement inférieure à la valeur maximale</string>
+    <string name="field_validation_scale_step">L\'incrément doit être supérieur à 0</string>
+    <string name="field_validation_choice_options_required">Le type CHOICE nécessite une liste d\'options</string>
+    <string name="field_validation_choice_options_min">Le type CHOICE nécessite au moins 2 options</string>
+    <string name="field_validation_choice_options_duplicate">Les options ne peuvent pas contenir de doublons</string>
+    <string name="field_validation_choice_multiple_type">Le champ multiple doit être un booléen</string>
+    <string name="field_validation_choice_default_type_single">La valeur par défaut doit être une chaîne de caractères pour un choix unique</string>
+    <string name="field_validation_choice_default_type_multiple">La valeur par défaut doit être un tableau pour un choix multiple</string>
+    <string name="field_validation_boolean_label_empty">Les labels vrai/faux ne peuvent pas être vides</string>
+    <string name="field_validation_range_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
+    <string name="field_validation_range_decimals">Le nombre de décimales doit être supérieur ou égal à 0</string>
+    <string name="field_validation_range_default_incomplete">La valeur par défaut doit contenir start et end</string>
+    <string name="field_validation_range_default_order">Dans la valeur par défaut, start doit être inférieur ou égal à end</string>
+    <string name="field_validation_date_min_max_format">Les dates min et max doivent être au format ISO 8601 (YYYY-MM-DD)</string>
+    <string name="field_validation_date_min_max_order">La date minimale doit être antérieure ou égale à la date maximale</string>
+    <string name="field_validation_date_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DD)</string>
+    <string name="field_validation_date_default_range">La valeur par défaut doit être comprise entre min et max</string>
+    <string name="field_validation_time_format">Le format doit être 24h ou 12h</string>
+    <string name="field_validation_time_default_format">La valeur par défaut doit être au format HH:MM</string>
+    <string name="field_validation_datetime_min_max_format">Les dates min et max doivent être au format ISO 8601 (YYYY-MM-DDTHH:MM:SS)</string>
+    <string name="field_validation_datetime_min_max_order">La date minimale doit être antérieure ou égale à la date maximale</string>
+    <string name="field_validation_datetime_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DDTHH:MM:SS)</string>
+    <string name="field_validation_datetime_default_range">La valeur par défaut doit être comprise entre min et max</string>
+    <string name="field_validation_datetime_format">Le format d\'heure doit être 24h ou 12h</string>
+    <string name="field_value_range_start_end">La valeur start doit être inférieure ou égale à end</string>
 
     <!-- CUSTOM FIELDS - Labels for form field names -->
     <string name="label_display_name">Nom affiché</string>
