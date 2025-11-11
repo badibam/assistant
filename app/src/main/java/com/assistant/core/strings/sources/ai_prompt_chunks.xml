@@ -521,6 +521,8 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l\'ut
 
 **Types supportés** : {{CUSTOM_FIELD_TYPES}}
 
+**Schémas détaillés** : Pour connaître la structure exacte d\'un type de field, utilise `SCHEMA` avec l\'ID `field_type_{TYPE}` (ex: `field_type_TEXT_UNLIMITED`).
+
 **Comportement** :
 - Tous les custom_fields sont **optionnels**
 - Retournés automatiquement par `TOOL_CONFIG`, `TOOL_DATA` et `TOOL_EXECUTIONS`

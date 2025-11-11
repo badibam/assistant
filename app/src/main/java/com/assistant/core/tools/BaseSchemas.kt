@@ -5,6 +5,7 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
 import com.assistant.core.validation.ValidationException
 import com.assistant.core.validation.FieldLimits
+import com.assistant.core.fields.FieldTypeSchemaProvider
 
 /**
  * Base JSON Schemas for all ToolTypes
@@ -24,7 +25,11 @@ object BaseSchemas {
      */
     fun getBaseConfigSchema(context: Context): String {
         val s = Strings.`for`(context = context)
-        return """
+
+        // Get custom fields items schema from FieldTypeSchemaProvider (single source of truth)
+        val customFieldsItemsSchema = FieldTypeSchemaProvider.getCustomFieldsItemsSchema(context)
+
+        val schemaTemplate = """
         {
             "type": "object",
             "properties": {
@@ -90,48 +95,16 @@ object BaseSchemas {
                 "custom_fields": {
                     "type": "array",
                     "description": "${s.shared("tools_base_schema_config_custom_fields")}",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "${s.shared("tools_base_schema_custom_field_name")}"
-                            },
-                            "display_name": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": ${FieldLimits.SHORT_LENGTH},
-                                "description": "${s.shared("tools_base_schema_custom_field_display_name")}"
-                            },
-                            "description": {
-                                "type": "string",
-                                "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                                "description": "${s.shared("tools_base_schema_custom_field_description")}"
-                            },
-                            "type": {
-                                "type": "string",
-                                "enum": ["TEXT_UNLIMITED"],
-                                "description": "${s.shared("tools_base_schema_custom_field_type")}"
-                            },
-                            "always_visible": {
-                                "type": "boolean",
-                                "default": false,
-                                "description": "${s.shared("tools_base_schema_custom_field_always_visible")}"
-                            },
-                            "config": {
-                                "type": ["object", "null"],
-                                "description": "${s.shared("tools_base_schema_custom_field_config")}"
-                            }
-                        },
-                        "required": ["display_name", "type"],
-                        "additionalProperties": false
-                    }
+                    "items": {{CUSTOM_FIELDS_ITEMS_SCHEMA}}
                 }
             },
             "required": ["name", "management", "display_mode"],
             "additionalProperties": false
         }
         """.trimIndent()
+
+        // Replace placeholder with actual schema from FieldTypeSchemaProvider
+        return schemaTemplate.replace("{{CUSTOM_FIELDS_ITEMS_SCHEMA}}", customFieldsItemsSchema)
     }
     
     /**

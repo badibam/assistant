@@ -325,10 +325,6 @@
     <string name="label_tool">Outil</string>
     <string name="label_item">Élément</string>
 
-    <!-- Custom Fields Types -->
-    <string name="field_type_text_unlimited">Texte illimité</string>
-    <string name="field_type_text_unlimited_description">Texte sans limite de longueur</string>
-
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
     <string name="ui_toggle_disabled">Désactivé</string>
@@ -949,6 +945,23 @@
     <string name="ai_schema_communication_validation_name">Module de validation</string>
     <string name="ai_schema_communication_validation_desc">Schéma pour module de communication de validation</string>
     <string name="ai_schema_communication_validation_message_desc">Le message/question de validation à afficher à l\'utilisateur</string>
+
+    <!-- CUSTOM FIELDS SCHEMAS - Field type definitions -->
+    <string name="field_type_text_unlimited_display_name">Champ texte illimité</string>
+    <string name="field_type_text_unlimited_description">Définition de champ personnalisé de type texte sans limite de longueur</string>
+    <string name="field_type_text_unlimited_schema_root_description">Schéma de définition pour un champ personnalisé de type TEXT_UNLIMITED (texte libre illimité). Utilisé dans l\'array custom_fields de la configuration d\'un outil.</string>
+    <string name="field_type_schema_name_description">Identifiant technique unique du champ (format: a-z, 0-9, underscore uniquement). Utilisé comme clé pour stocker les valeurs.</string>
+    <string name="field_type_schema_display_name_description">Nom affiché à l\'utilisateur pour ce champ personnalisé</string>
+    <string name="field_type_schema_type_description">Type de champ personnalisé. Doit correspondre à l\'un des types disponibles (voir liste des field types supportés).</string>
+    <string name="field_type_schema_always_visible_description">Si true, ce champ est toujours affiché dans l\'interface (même s\'il est vide). Si false, il n\'est affiché que lorsqu\'il contient une valeur.</string>
+    <string name="field_type_schema_default_value_description">Valeur par défaut optionnelle pour ce champ. Si fournie, sera automatiquement renseignée lors de la création de nouvelles entrées.</string>
+
+    <!-- CUSTOM FIELDS - Labels for form field names -->
+    <string name="label_display_name">Nom affiché</string>
+    <string name="label_type">Type</string>
+    <string name="label_always_visible">Toujours visible</string>
+    <string name="label_default_value">Valeur par défaut</string>
+    <string name="label_config">Configuration</string>
 
     <!-- AUTOMATIONS - General -->
     <string name="automation_display_name">Automatisation</string>

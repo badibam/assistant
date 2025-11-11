@@ -60,6 +60,9 @@ enum class SchemaCategory {
     /** Zone configuration schemas */
     ZONE_CONFIG,
 
+    /** Custom field type definition schemas */
+    FIELD_TYPE,
+
     /** Utility schemas (reusable components like ScheduleConfig) */
     UTILITY
 }
