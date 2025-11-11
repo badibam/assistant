@@ -1047,6 +1047,22 @@
     <string name="field_validation_datetime_format">Le format d\'heure doit être 24h ou 12h</string>
     <string name="field_value_range_start_end">La valeur start doit être inférieure ou égale à end</string>
 
+    <!-- CUSTOM FIELDS - Migration -->
+    <string name="migration_confirm_title">Confirmation des changements</string>
+    <string name="migration_confirm_message">Ces modifications affecteront les données existantes.</string>
+    <string name="migration_fields_removed">%1$d champ(s) supprimé(s) : leurs données seront effacées</string>
+    <string name="migration_choice_options_removed">%1$d option(s) CHOICE supprimée(s) : données concernées seront effacées</string>
+    <string name="migration_scale_range_changed">%1$d champ(s) SCALE avec plage modifiée : leurs données seront effacées</string>
+    <string name="migration_choice_multiple_changed">%1$d champ(s) CHOICE avec mode single/multiple modifié : leurs données seront effacées</string>
+    <string name="migration_in_progress">Migration en cours...</string>
+    <string name="migration_success">Migration réussie</string>
+    <string name="migration_failed">Échec de la migration</string>
+    <string name="migration_warning_note">Attention : Cette opération est irréversible. Les données effacées ne pourront pas être récupérées.</string>
+    <string name="migration_no_changes">Aucune modification détectée</string>
+    <string name="error_field_name_changed">Le nom d\'un champ ne peut pas être modifié (le nom est l\'identifiant stable du champ)</string>
+    <string name="error_field_type_changed">Le type d\'un champ ne peut pas être modifié (modification de type corromprait les données existantes)</string>
+    <string name="error_migration_blocked">Cette modification ne peut pas être appliquée</string>
+
     <!-- CUSTOM FIELDS - Labels for form field names -->
     <string name="label_display_name">Nom affiché</string>
     <string name="label_type">Type</string>

@@ -1,6 +1,8 @@
 package com.assistant.core.fields
 
 import android.content.Context
+import com.assistant.core.fields.migration.FieldChange
+import com.assistant.core.fields.migration.FieldConfigComparator
 import com.assistant.core.strings.Strings
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -15,6 +17,7 @@ import java.time.format.DateTimeParseException
  * - Type/config coherence (required config for certain types)
  * - Inter-field constraints (min < max for numeric types)
  * - Name format validation (snake_case, ASCII)
+ * - Migration constraints (no name changes, no type changes)
  *
  * Philosophy: Single validation point with full trust.
  * No re-validation during schema generation.
@@ -451,6 +454,87 @@ object FieldConfigValidator {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_datetime_min_max_order")
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates that no field names have changed between old and new configurations.
+     *
+     * This validation is required for AI-driven configuration updates to prevent
+     * data loss. Field names are stable identifiers and cannot be changed.
+     *
+     * A name change would appear as:
+     * - FieldChange.Removed (old name not in new config)
+     * - FieldChange.Added (new name not in old config)
+     *
+     * This could be a legitimate removal + addition, or a renaming attempt.
+     * Since we cannot distinguish, we treat any removal as forbidden in this context.
+     *
+     * @param oldFields Previous field configuration
+     * @param newFields New field configuration
+     * @param context Android context for string translation
+     * @return ValidationResult with success if no name changes detected
+     */
+    fun validateNoNameChanges(
+        oldFields: List<FieldDefinition>,
+        newFields: List<FieldDefinition>,
+        context: Context
+    ): ValidationResult {
+        val s = Strings.`for`(context = context)
+
+        // Detect all changes using comparator
+        val changes = FieldConfigComparator.compare(oldFields, newFields)
+
+        // Check for removed fields (potential name change or legitimate removal)
+        val removedChanges = changes.filterIsInstance<FieldChange.Removed>()
+        if (removedChanges.isNotEmpty()) {
+            val removedNames = removedChanges.joinToString(", ") { it.name }
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "${s.shared("error_field_name_changed")}: $removedNames"
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates that no field types have changed between old and new configurations.
+     *
+     * This validation is required for AI-driven configuration updates to prevent
+     * data corruption. Changing a field's type would make existing values invalid
+     * (e.g., text stored in a numeric field).
+     *
+     * Type changes are detected by FieldConfigComparator as FieldChange.TypeChanged
+     * for fields with the same name but different types.
+     *
+     * @param oldFields Previous field configuration
+     * @param newFields New field configuration
+     * @param context Android context for string translation
+     * @return ValidationResult with success if no type changes detected
+     */
+    fun validateNoTypeChanges(
+        oldFields: List<FieldDefinition>,
+        newFields: List<FieldDefinition>,
+        context: Context
+    ): ValidationResult {
+        val s = Strings.`for`(context = context)
+
+        // Detect all changes using comparator
+        val changes = FieldConfigComparator.compare(oldFields, newFields)
+
+        // Check for type changes
+        val typeChanges = changes.filterIsInstance<FieldChange.TypeChanged>()
+        if (typeChanges.isNotEmpty()) {
+            val changedFields = typeChanges.joinToString(", ") {
+                "${it.name} (${it.oldType} → ${it.newType})"
+            }
+            return ValidationResult(
+                isValid = false,
+                errorMessage = "${s.shared("error_field_type_changed")}: $changedFields"
             )
         }
 

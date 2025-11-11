@@ -569,32 +569,33 @@ private fun loadFieldDefinitionsFromConfig(
     context: Context
 ): List<FieldDefinition> {
     var fields by remember(toolInstanceId) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(toolInstanceId) {
-        scope.launch {
-            try {
-                val coordinator = com.assistant.core.coordinator.Coordinator(context)
-                val result = coordinator.processUserAction("tools.get", mapOf(
-                    "tool_instance_id" to toolInstanceId
-                ))
+        try {
+            val coordinator = com.assistant.core.coordinator.Coordinator(context)
+            val result = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
 
-                if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
-                    val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-                    val config = toolInstance?.get("config") as? Map<*, *>
-                    val customFieldsRaw = config?.get("custom_fields") as? List<*>
+            if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
+                val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+                val configJson = toolInstance?.get("config_json") as? String
 
-                    // Convert raw list to FieldDefinition objects
-                    fields = customFieldsRaw?.mapNotNull { rawField ->
-                        (rawField as? Map<*, *>)?.let { fieldMap ->
-                            FieldDefinition.fromMap(fieldMap)
-                        }
-                    } ?: emptyList()
+                if (configJson != null) {
+                    val config = org.json.JSONObject(configJson)
+                    val customFieldsArray = config.optJSONArray("custom_fields")
+
+                    // Convert JSONArray to List<FieldDefinition>
+                    fields = if (customFieldsArray != null) {
+                        customFieldsArray.toFieldDefinitions()
+                    } else {
+                        emptyList()
+                    }
                 }
-            } catch (e: Exception) {
-                com.assistant.core.utils.LogManager.ui("Failed to load custom fields from config: ${e.message}", "ERROR", e)
-                fields = emptyList()
             }
+        } catch (e: Exception) {
+            com.assistant.core.utils.LogManager.ui("Failed to load custom fields from config: ${e.message}", "ERROR", e)
+            fields = emptyList()
         }
     }
 

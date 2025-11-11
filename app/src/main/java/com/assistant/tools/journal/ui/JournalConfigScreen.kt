@@ -18,6 +18,7 @@ import com.assistant.core.fields.CustomFieldsEditor
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toJsonArray
+import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONArray
@@ -56,6 +57,7 @@ fun JournalConfigScreen(
     // Configuration states - journal specific
     var sortOrder by remember { mutableStateOf("descending") }
     var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var oldCustomFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Zone change tracking
     val isEditing = existingToolId != null
@@ -97,6 +99,7 @@ fun JournalConfigScreen(
                         if (customFieldsArray != null) {
                             try {
                                 customFields = customFieldsArray.toFieldDefinitions()
+                                oldCustomFields = customFields // Save original for migration comparison
                                 LogManager.ui("Loaded ${customFields.size} custom fields")
                             } catch (e: Exception) {
                                 LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
@@ -238,76 +241,88 @@ fun JournalConfigScreen(
             }
         }
 
-        // Form actions
-        val handleSave = {
-            coroutineScope.launch {
-                isSaving = true
-                try {
-                    val configData = mutableMapOf<String, Any>(
-                        "schema_id" to "journal_config",  // Add schema_id for validation
-                        "data_schema_id" to "journal_data", // Add data_schema_id for runtime
-                        "name" to name,
-                        "description" to description,
-                        "icon_name" to iconName,
-                        "display_mode" to displayMode,
-                        "management" to management,
-                        "validateConfig" to validateConfig,
-                        "validateData" to validateData,
-                        "always_send" to alwaysSend,
-                        "sort_order" to sortOrder
-                    )
-                    // Add group if present
-                    group?.let { configData["group"] = it }
+        // Migration handler (reusable)
+        val migrationHandler = rememberCustomFieldsMigrationHandler(
+            toolInstanceId = existingToolId,
+            oldFields = oldCustomFields,
+            newFields = customFields,
+            context = context,
+            onSuccess = {
+                // Migration succeeded or not needed - proceed with config save
+                coroutineScope.launch {
+                    try {
+                        // Build config data
+                        val configData = mutableMapOf<String, Any>(
+                            "schema_id" to "journal_config",
+                            "data_schema_id" to "journal_data",
+                            "name" to name,
+                            "description" to description,
+                            "icon_name" to iconName,
+                            "display_mode" to displayMode,
+                            "management" to management,
+                            "validateConfig" to validateConfig,
+                            "validateData" to validateData,
+                            "always_send" to alwaysSend,
+                            "sort_order" to sortOrder
+                        )
+                        group?.let { configData["group"] = it }
 
-                    // Add custom fields
-                    if (customFields.isNotEmpty()) {
-                        configData["custom_fields"] = customFields.toJsonArray()
-                    }
+                        if (customFields.isNotEmpty()) {
+                            configData["custom_fields"] = customFields.toJsonArray()
+                        }
 
-                    // Use unified ValidationHelper
-                    UI.ValidationHelper.validateAndSave(
-                        toolTypeName = "journal",
-                        configData = configData,
-                        context = context,
-                        schemaType = "config",
-                        onSuccess = { configJson ->
-                            LogManager.ui("Journal config validation success - checking zone change")
+                        // Validate and save config
+                        UI.ValidationHelper.validateAndSave(
+                            toolTypeName = "journal",
+                            configData = configData,
+                            context = context,
+                            schemaType = "config",
+                            onSuccess = { configJson ->
+                                LogManager.ui("Journal config validation success")
 
-                            // If zone changed and we're editing, update zone_id FIRST
-                            if (isEditing && currentZoneId != zoneId && existingToolId != null) {
-                                LogManager.ui("Zone changed detected - updating from $zoneId to $currentZoneId BEFORE config save", "DEBUG")
-                                coroutineScope.launch {
-                                    val zoneUpdateResult = coordinator.processUserAction(
-                                        "tools.update",
-                                        mapOf(
-                                            "tool_instance_id" to existingToolId,
-                                            "zone_id" to currentZoneId
+                                // If zone changed and we're editing, update zone_id FIRST
+                                if (isEditing && currentZoneId != zoneId && existingToolId != null) {
+                                    LogManager.ui("Zone changed - updating from $zoneId to $currentZoneId", "DEBUG")
+                                    coroutineScope.launch {
+                                        val zoneUpdateResult = coordinator.processUserAction(
+                                            "tools.update",
+                                            mapOf(
+                                                "tool_instance_id" to existingToolId,
+                                                "zone_id" to currentZoneId
+                                            )
                                         )
-                                    )
-                                    if (zoneUpdateResult.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
-                                        LogManager.ui("Failed to update zone: ${zoneUpdateResult.error}", "ERROR")
-                                    } else {
-                                        LogManager.ui("Zone updated successfully to $currentZoneId, now saving config", "DEBUG")
+                                        if (zoneUpdateResult.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
+                                            LogManager.ui("Failed to update zone: ${zoneUpdateResult.error}", "ERROR")
+                                        }
+                                        onSave(configJson)
                                     }
+                                } else {
                                     onSave(configJson)
                                 }
-                            } else {
-                                LogManager.ui("No zone change - saving config normally", "DEBUG")
-                                onSave(configJson)
+                            },
+                            onError = { error ->
+                                LogManager.ui("Journal config validation failed: $error", "ERROR")
+                                errorMessage = error
                             }
-                        },
-                        onError = { error ->
-                            LogManager.ui("Journal config validation failed: $error", "ERROR")
-                            errorMessage = error
-                        }
-                    )
-                } catch (e: Exception) {
-                    LogManager.ui("Error during save: ${e.message}", "ERROR")
-                    errorMessage = s.tool("error_save")
-                } finally {
-                    isSaving = false
+                        )
+                    } catch (e: Exception) {
+                        LogManager.ui("Error during save: ${e.message}", "ERROR")
+                        errorMessage = s.tool("error_save")
+                    } finally {
+                        isSaving = false
+                    }
                 }
+            },
+            onError = { error ->
+                errorMessage = error
+                isSaving = false
             }
+        )
+
+        // Form actions
+        val handleSave = {
+            isSaving = true
+            migrationHandler.checkAndProceed()
         }
 
         UI.ToolConfigActions(

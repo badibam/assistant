@@ -17,6 +17,9 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldNameGenerator
 import com.assistant.core.fields.FieldConfigValidator
 import com.assistant.core.fields.ValidationException
+import com.assistant.core.fields.migration.FieldConfigComparator
+import com.assistant.core.fields.migration.MigrationPolicy
+import com.assistant.core.fields.migration.FieldDataMigrator
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -396,13 +399,15 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     /**
      * Processes custom fields changes during tool instance config update.
      *
-     * This function handles:
-     * 1. Generating technical names for new fields (via FieldNameGenerator)
-     * 2. Validating all field definitions (via FieldConfigValidator)
-     * 3. Detecting deleted fields and removing them from all tool_data entries
+     * This function handles the complete custom fields migration workflow for AI-driven updates:
+     * 1. Detecting structural changes (additions, removals, type changes, option removals)
+     * 2. Validating forbidden changes (name changes, type changes)
+     * 3. Executing data migration silently (field removals, conditional removals)
+     * 4. Generating technical names for new fields
+     * 5. Validating all field definitions
      *
-     * The operation is atomic: all validations happen first, then all data modifications
-     * are done in a single database transaction. If any validation fails, no changes are made.
+     * Migration is automatic and silent for AI updates (no user confirmation).
+     * Forbidden changes (name/type) return errors and block the update.
      *
      * @param toolInstanceId ID of the tool instance being updated
      * @param oldConfigJson Previous configuration JSON
@@ -428,11 +433,32 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             // If no custom_fields in new config, nothing to process
             if (newFieldsArray == null || newFieldsArray.length() == 0) {
-                // If old config had fields, we need to remove them from all entries
+                // If old config had fields, we need to migrate (remove all fields from entries)
                 if (oldFieldsArray != null && oldFieldsArray.length() > 0) {
                     val oldFields = oldFieldsArray.toFieldDefinitions()
-                    for (field in oldFields) {
-                        removeCustomFieldFromEntries(toolInstanceId, field.name, token)
+
+                    // Use migration system to handle removal
+                    val changes = oldFields.map { field ->
+                        com.assistant.core.fields.migration.FieldChange.Removed(field.name)
+                    }
+
+                    val strategies = MigrationPolicy.getStrategies(changes)
+
+                    val migrationResult = FieldDataMigrator.migrateCustomFields(
+                        coordinator = Coordinator(context),
+                        toolInstanceId = toolInstanceId,
+                        changes = changes,
+                        strategies = strategies,
+                        context = context,
+                        token = token
+                    )
+
+                    if (!migrationResult.success) {
+                        LogManager.service(
+                            "Failed to remove all custom fields: ${migrationResult.error}",
+                            "ERROR"
+                        )
+                        return migrationResult
                     }
                 }
                 return OperationResult.success(mapOf("processed_config" to newConfigJson))
@@ -450,7 +476,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 newFieldsList.add(newFieldsArray.getJSONObject(i).toFieldDefinition())
             }
 
-            // Phase 1: Name generation for new fields (fields without 'name' or with empty 'name')
+            // Phase 1: Generate names for new fields (fields without 'name' or with empty 'name')
             val processedFields = newFieldsList.map { field ->
                 if (field.name.isEmpty()) {
                     // Generate name from displayName
@@ -464,7 +490,80 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 }
             }
 
-            // Phase 2: Validation (all fields must pass before any DB changes)
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            // Phase 2: Migration validation and execution
+            // Validate no forbidden changes (type changes only - removals are legitimate)
+            // Note: Name changes cannot be detected (name is the identifier)
+            val typeValidation = FieldConfigValidator.validateNoTypeChanges(
+                oldFields = oldFields,
+                newFields = processedFields,
+                context = context
+            )
+            if (!typeValidation.isValid) {
+                LogManager.service(
+                    "Tool config attempted forbidden type change: ${typeValidation.errorMessage}",
+                    "ERROR"
+                )
+                return OperationResult.error(typeValidation.errorMessage ?: s.shared("error_field_type_changed"))
+            }
+
+            // Detect all structural changes
+            val changes = FieldConfigComparator.compare(oldFields, processedFields)
+
+            if (changes.isNotEmpty()) {
+                LogManager.service(
+                    "Detected ${changes.size} custom field change(s) for tool $toolInstanceId",
+                    "INFO"
+                )
+
+                // Determine migration strategies
+                val strategies = MigrationPolicy.getStrategies(changes)
+
+                // Check for error strategies (should have been caught above, but double-check)
+                if (MigrationPolicy.hasErrorStrategy(strategies)) {
+                    val errorMessage = MigrationPolicy.getDescription(changes, strategies, context)
+                    LogManager.service(
+                        "Migration blocked by error strategy: $errorMessage",
+                        "ERROR"
+                    )
+                    return OperationResult.error(errorMessage)
+                }
+
+                // Execute migration if needed (silent for AI)
+                if (MigrationPolicy.requiresMigration(strategies)) {
+                    LogManager.service(
+                        "Executing automatic migration for tool $toolInstanceId",
+                        "INFO"
+                    )
+
+                    val migrationResult = FieldDataMigrator.migrateCustomFields(
+                        coordinator = Coordinator(context),
+                        toolInstanceId = toolInstanceId,
+                        changes = changes,
+                        strategies = strategies,
+                        context = context,
+                        token = token
+                    )
+
+                    if (!migrationResult.success) {
+                        LogManager.service(
+                            "Migration failed: ${migrationResult.error}",
+                            "ERROR"
+                        )
+                        return migrationResult
+                    }
+
+                    LogManager.service(
+                        "Migration completed successfully",
+                        "INFO"
+                    )
+                }
+            }
+
+            if (token.isCancelled) return OperationResult.cancelled()
+
+            // Phase 3: Field definition validation (all fields must pass)
             val existingFieldsForValidation = processedFields.toMutableList()
             for ((index, field) in processedFields.withIndex()) {
                 // For validation, exclude current field from existing list to avoid self-collision
@@ -472,22 +571,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
                 val validation = FieldConfigValidator.validate(field, otherFields, context)
                 if (!validation.isValid) {
+                    LogManager.service(
+                        "Field validation failed for '${field.displayName}': ${validation.errorMessage}",
+                        "ERROR"
+                    )
                     return OperationResult.error(
                         "Validation custom field '${field.displayName}': ${validation.errorMessage}"
                     )
                 }
-            }
-
-            if (token.isCancelled) return OperationResult.cancelled()
-
-            // Phase 3: Detect deletions and remove fields from entries
-            val oldFieldNames = oldFields.map { field -> field.name }.toSet()
-            val newFieldNames = processedFields.map { field -> field.name }.toSet()
-            val deletedFieldNames = oldFieldNames - newFieldNames
-
-            for (fieldName in deletedFieldNames) {
-                removeCustomFieldFromEntries(toolInstanceId, fieldName, token)
-                if (token.isCancelled) return OperationResult.cancelled()
             }
 
             // Phase 4: Build processed config with generated names
@@ -508,28 +599,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Helper to remove a custom field from all entries of a tool instance.
-     * Delegates to ToolDataService for the actual SQL operation.
+     * Legacy helper function - DEPRECATED.
+     * Now handled by FieldDataMigrator.migrateCustomFields() which supports
+     * multiple migration strategies (STRIP_FIELD, STRIP_FIELD_IF_VALUE, etc.)
+     *
+     * This function is kept for reference only and should not be used in new code.
      */
+    @Deprecated(
+        message = "Use FieldDataMigrator.migrateCustomFields() instead",
+        replaceWith = ReplaceWith("FieldDataMigrator.migrateCustomFields(...)")
+    )
     private suspend fun removeCustomFieldFromEntries(
         toolInstanceId: String,
         fieldName: String,
         token: CancellationToken
     ) {
-        if (token.isCancelled) return
-
-        val coordinator = Coordinator(context)
-        val result = coordinator.processUserAction("tool_data.remove_custom_field", mapOf(
-            "toolInstanceId" to toolInstanceId,
-            "fieldName" to fieldName
-        ))
-
-        if (result.status != CommandStatus.SUCCESS) {
-            LogManager.service(
-                "Failed to remove custom field '$fieldName' from entries: ${result.error}",
-                "WARN"
-            )
-        }
+        // Kept for reference only - not used anymore
+        // Migration now handled by FieldDataMigrator
     }
 
     /**
