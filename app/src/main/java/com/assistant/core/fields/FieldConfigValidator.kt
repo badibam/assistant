@@ -1,5 +1,7 @@
 package com.assistant.core.fields
 
+import android.content.Context
+import com.assistant.core.strings.Strings
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -24,17 +26,20 @@ object FieldConfigValidator {
      *
      * @param fieldDef The field definition to validate
      * @param existingFields List of existing fields (for uniqueness check, excluding the field being edited)
-     * @return ValidationResult with success status and error message if invalid
+     * @param context Android context for string translation
+     * @return ValidationResult with success status and translated error message if invalid
      */
-    fun validate(fieldDef: FieldDefinition, existingFields: List<FieldDefinition>): ValidationResult {
+    fun validate(fieldDef: FieldDefinition, existingFields: List<FieldDefinition>, context: Context): ValidationResult {
+        val s = Strings.`for`(context = context)
+
         // Validate name format
-        val nameValidation = validateNameFormat(fieldDef.name)
+        val nameValidation = validateNameFormat(fieldDef.name, s)
         if (!nameValidation.isValid) {
             return nameValidation
         }
 
         // Validate name uniqueness
-        val uniquenessValidation = validateNameUniqueness(fieldDef.name, existingFields)
+        val uniquenessValidation = validateNameUniqueness(fieldDef.name, existingFields, s)
         if (!uniquenessValidation.isValid) {
             return uniquenessValidation
         }
@@ -43,12 +48,12 @@ object FieldConfigValidator {
         if (fieldDef.displayName.isBlank()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_display_name_empty"
+                errorMessage = s.shared("field_validation_display_name_empty")
             )
         }
 
         // Validate type/config coherence
-        val configValidation = validateTypeConfig(fieldDef.type, fieldDef.config)
+        val configValidation = validateTypeConfig(fieldDef.type, fieldDef.config, s)
         if (!configValidation.isValid) {
             return configValidation
         }
@@ -66,18 +71,18 @@ object FieldConfigValidator {
      * - Does not start or end with underscore
      * - Does not start with a number
      */
-    private fun validateNameFormat(name: String): ValidationResult {
+    private fun validateNameFormat(name: String, s: com.assistant.core.strings.StringsContext): ValidationResult {
         if (name.isEmpty()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_name_empty"
+                errorMessage = s.shared("field_validation_name_empty")
             )
         }
 
         if (!name.matches(Regex("^[a-z][a-z0-9_]*[a-z0-9]$")) && !name.matches(Regex("^[a-z]$"))) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_name_format"
+                errorMessage = s.shared("field_validation_name_format")
             )
         }
 
@@ -87,13 +92,12 @@ object FieldConfigValidator {
     /**
      * Validates name uniqueness within existing fields.
      */
-    private fun validateNameUniqueness(name: String, existingFields: List<FieldDefinition>): ValidationResult {
+    private fun validateNameUniqueness(name: String, existingFields: List<FieldDefinition>, s: com.assistant.core.strings.StringsContext): ValidationResult {
         val collision = existingFields.find { it.name == name }
         if (collision != null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_name_duplicate",
-                errorMessageArgs = arrayOf(name)
+                errorMessage = s.shared("field_validation_name_duplicate").format(name)
             )
         }
 
@@ -105,29 +109,28 @@ object FieldConfigValidator {
      *
      * Checks type-specific config requirements and constraints.
      */
-    private fun validateTypeConfig(type: FieldType, config: Map<String, Any>?): ValidationResult {
+    private fun validateTypeConfig(type: FieldType, config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         return when (type) {
             FieldType.TEXT_SHORT, FieldType.TEXT_LONG, FieldType.TEXT_UNLIMITED -> {
                 // Text types do not require config (should be null)
                 if (config != null) {
                     ValidationResult(
                         isValid = false,
-                        errorMessage = "field_validation_config_not_null",
-                        errorMessageArgs = arrayOf(type.name)
+                        errorMessage = s.shared("field_validation_config_not_null").format(type.name)
                     )
                 } else {
                     ValidationResult(isValid = true)
                 }
             }
 
-            FieldType.NUMERIC -> validateNumericConfig(config)
-            FieldType.SCALE -> validateScaleConfig(config)
-            FieldType.CHOICE -> validateChoiceConfig(config)
-            FieldType.BOOLEAN -> validateBooleanConfig(config)
-            FieldType.RANGE -> validateRangeConfig(config)
-            FieldType.DATE -> validateDateConfig(config)
-            FieldType.TIME -> validateTimeConfig(config)
-            FieldType.DATETIME -> validateDateTimeConfig(config)
+            FieldType.NUMERIC -> validateNumericConfig(config, s)
+            FieldType.SCALE -> validateScaleConfig(config, s)
+            FieldType.CHOICE -> validateChoiceConfig(config, s)
+            FieldType.BOOLEAN -> validateBooleanConfig(config, s)
+            FieldType.RANGE -> validateRangeConfig(config, s)
+            FieldType.DATE -> validateDateConfig(config, s)
+            FieldType.TIME -> validateTimeConfig(config, s)
+            FieldType.DATETIME -> validateDateTimeConfig(config, s)
         }
     }
 
@@ -135,7 +138,7 @@ object FieldConfigValidator {
      * Validates NUMERIC field config.
      * Config: {unit?, min?, max?, decimals?, step?}
      */
-    private fun validateNumericConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateNumericConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for NUMERIC
         if (config == null) return ValidationResult(isValid = true)
 
@@ -145,7 +148,7 @@ object FieldConfigValidator {
         if (min != null && max != null && min.toDouble() > max.toDouble()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_numeric_min_max"
+                errorMessage = s.shared("field_validation_numeric_min_max")
             )
         }
 
@@ -154,7 +157,7 @@ object FieldConfigValidator {
         if (decimals != null && decimals.toInt() < 0) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_numeric_decimals"
+                errorMessage = s.shared("field_validation_numeric_decimals")
             )
         }
 
@@ -163,7 +166,7 @@ object FieldConfigValidator {
         if (step != null && step.toDouble() <= 0) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_numeric_step"
+                errorMessage = s.shared("field_validation_numeric_step")
             )
         }
 
@@ -174,12 +177,12 @@ object FieldConfigValidator {
      * Validates SCALE field config.
      * Config: {min (required), max (required), min_label?, max_label?, step?}
      */
-    private fun validateScaleConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateScaleConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is required for SCALE
         if (config == null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_scale_min_max_required"
+                errorMessage = s.shared("field_validation_scale_min_max_required")
             )
         }
 
@@ -189,7 +192,7 @@ object FieldConfigValidator {
         if (min == null || max == null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_scale_min_max_required"
+                errorMessage = s.shared("field_validation_scale_min_max_required")
             )
         }
 
@@ -197,17 +200,31 @@ object FieldConfigValidator {
         if (min.toDouble() >= max.toDouble()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_scale_min_max_order"
+                errorMessage = s.shared("field_validation_scale_min_max_order")
             )
         }
 
         // Validate step > 0 if defined
         val step = config["step"] as? Number
-        if (step != null && step.toDouble() <= 0) {
-            return ValidationResult(
-                isValid = false,
-                errorMessage = "field_validation_scale_step"
-            )
+        if (step != null) {
+            val stepValue = step.toDouble()
+            if (stepValue <= 0) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = s.shared("field_validation_scale_step")
+                )
+            }
+
+            // Validate that (max - min) is divisible by step
+            val range = max.toDouble() - min.toDouble()
+            val epsilon = stepValue * 1e-10 // Floating point tolerance
+            val remainder = range % stepValue
+            if (remainder > epsilon && (stepValue - remainder) > epsilon) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = s.shared("field_validation_scale_step_range_mismatch")
+                )
+            }
         }
 
         return ValidationResult(isValid = true)
@@ -217,12 +234,12 @@ object FieldConfigValidator {
      * Validates CHOICE field config.
      * Config: {options (required, min 2), multiple?, allow_custom?}
      */
-    private fun validateChoiceConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateChoiceConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is required for CHOICE
         if (config == null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_choice_options_required"
+                errorMessage = s.shared("field_validation_choice_options_required")
             )
         }
 
@@ -231,7 +248,7 @@ object FieldConfigValidator {
         if (options == null) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_choice_options_required"
+                errorMessage = s.shared("field_validation_choice_options_required")
             )
         }
 
@@ -239,7 +256,7 @@ object FieldConfigValidator {
         if (options.size < 2) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_choice_options_min"
+                errorMessage = s.shared("field_validation_choice_options_min")
             )
         }
 
@@ -247,7 +264,7 @@ object FieldConfigValidator {
         if (options.size != options.toSet().size) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_choice_options_duplicate"
+                errorMessage = s.shared("field_validation_choice_options_duplicate")
             )
         }
 
@@ -256,7 +273,7 @@ object FieldConfigValidator {
         if (multiple != null && multiple !is Boolean) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_choice_multiple_type"
+                errorMessage = s.shared("field_validation_choice_multiple_type")
             )
         }
 
@@ -267,7 +284,7 @@ object FieldConfigValidator {
      * Validates BOOLEAN field config.
      * Config: {true_label?, false_label?}
      */
-    private fun validateBooleanConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateBooleanConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for BOOLEAN
         if (config == null) return ValidationResult(isValid = true)
 
@@ -276,7 +293,7 @@ object FieldConfigValidator {
         if (trueLabel != null && trueLabel.isEmpty()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_boolean_label_empty"
+                errorMessage = s.shared("field_validation_boolean_label_empty")
             )
         }
 
@@ -284,7 +301,7 @@ object FieldConfigValidator {
         if (falseLabel != null && falseLabel.isEmpty()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_boolean_label_empty"
+                errorMessage = s.shared("field_validation_boolean_label_empty")
             )
         }
 
@@ -295,7 +312,7 @@ object FieldConfigValidator {
      * Validates RANGE field config.
      * Config: {min?, max?, unit?, decimals?}
      */
-    private fun validateRangeConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateRangeConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for RANGE
         if (config == null) return ValidationResult(isValid = true)
 
@@ -305,7 +322,7 @@ object FieldConfigValidator {
         if (min != null && max != null && min.toDouble() > max.toDouble()) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_range_min_max"
+                errorMessage = s.shared("field_validation_range_min_max")
             )
         }
 
@@ -314,7 +331,7 @@ object FieldConfigValidator {
         if (decimals != null && decimals.toInt() < 0) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_range_decimals"
+                errorMessage = s.shared("field_validation_range_decimals")
             )
         }
 
@@ -325,7 +342,7 @@ object FieldConfigValidator {
      * Validates DATE field config.
      * Config: {min?, max?}
      */
-    private fun validateDateConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateDateConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for DATE
         if (config == null) return ValidationResult(isValid = true)
 
@@ -339,7 +356,7 @@ object FieldConfigValidator {
             } catch (e: DateTimeParseException) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "field_validation_date_min_max_format"
+                    errorMessage = s.shared("field_validation_date_min_max_format")
                 )
             }
         } else null
@@ -350,7 +367,7 @@ object FieldConfigValidator {
             } catch (e: DateTimeParseException) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "field_validation_date_min_max_format"
+                    errorMessage = s.shared("field_validation_date_min_max_format")
                 )
             }
         } else null
@@ -359,7 +376,7 @@ object FieldConfigValidator {
         if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_date_min_max_order"
+                errorMessage = s.shared("field_validation_date_min_max_order")
             )
         }
 
@@ -370,7 +387,7 @@ object FieldConfigValidator {
      * Validates TIME field config.
      * Config: {format?}
      */
-    private fun validateTimeConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateTimeConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for TIME
         if (config == null) return ValidationResult(isValid = true)
 
@@ -379,7 +396,7 @@ object FieldConfigValidator {
         if (format != null && format !in listOf("24h", "12h")) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_time_format"
+                errorMessage = s.shared("field_validation_time_format")
             )
         }
 
@@ -390,7 +407,7 @@ object FieldConfigValidator {
      * Validates DATETIME field config.
      * Config: {min?, max?, time_format?}
      */
-    private fun validateDateTimeConfig(config: Map<String, Any>?): ValidationResult {
+    private fun validateDateTimeConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is optional for DATETIME
         if (config == null) return ValidationResult(isValid = true)
 
@@ -399,7 +416,7 @@ object FieldConfigValidator {
         if (timeFormat != null && timeFormat !in listOf("24h", "12h")) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_datetime_format"
+                errorMessage = s.shared("field_validation_datetime_format")
             )
         }
 
@@ -413,7 +430,7 @@ object FieldConfigValidator {
             } catch (e: DateTimeParseException) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "field_validation_datetime_min_max_format"
+                    errorMessage = s.shared("field_validation_datetime_min_max_format")
                 )
             }
         } else null
@@ -424,7 +441,7 @@ object FieldConfigValidator {
             } catch (e: DateTimeParseException) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = "field_validation_datetime_min_max_format"
+                    errorMessage = s.shared("field_validation_datetime_min_max_format")
                 )
             }
         } else null
@@ -433,7 +450,7 @@ object FieldConfigValidator {
         if (minDateTime != null && maxDateTime != null && minDateTime.isAfter(maxDateTime)) {
             return ValidationResult(
                 isValid = false,
-                errorMessage = "field_validation_datetime_min_max_order"
+                errorMessage = s.shared("field_validation_datetime_min_max_order")
             )
         }
 
@@ -445,34 +462,9 @@ object FieldConfigValidator {
  * Result of field validation.
  *
  * @property isValid Whether the field definition is valid
- * @property errorMessage Error message string key if invalid (null if valid)
- * @property errorMessageArgs Optional arguments for the error message (for placeholders)
+ * @property errorMessage Translated error message if invalid (null if valid)
  */
 data class ValidationResult(
     val isValid: Boolean,
-    val errorMessage: String? = null,
-    val errorMessageArgs: Array<Any>? = null
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as ValidationResult
-
-        if (isValid != other.isValid) return false
-        if (errorMessage != other.errorMessage) return false
-        if (errorMessageArgs != null) {
-            if (other.errorMessageArgs == null) return false
-            if (!errorMessageArgs.contentEquals(other.errorMessageArgs)) return false
-        } else if (other.errorMessageArgs != null) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = isValid.hashCode()
-        result = 31 * result + (errorMessage?.hashCode() ?: 0)
-        result = 31 * result + (errorMessageArgs?.contentHashCode() ?: 0)
-        return result
-    }
-}
+    val errorMessage: String? = null
+)

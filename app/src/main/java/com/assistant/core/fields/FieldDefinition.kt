@@ -167,12 +167,10 @@ private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsC
     val min = (config?.get("min") as? Number) ?: 0
     val max = (config?.get("max") as? Number) ?: 10
 
-    val minLabelKey = config?.get("min_label") as? String
-    val maxLabelKey = config?.get("max_label") as? String
+    val minLabel = config?.get("min_label") as? String
+    val maxLabel = config?.get("max_label") as? String
 
-    val labelsStr = if (minLabelKey != null && maxLabelKey != null) {
-        val minLabel = s.shared(minLabelKey)
-        val maxLabel = s.shared(maxLabelKey)
+    val labelsStr = if (minLabel != null && maxLabel != null) {
         " - \"$minLabel\" à \"$maxLabel\""
     } else {
         ""
@@ -201,17 +199,17 @@ private fun formatChoiceValue(value: Any?, config: Map<String, Any>?, s: Strings
 }
 
 /**
- * Format BOOLEAN value with translated labels
+ * Format BOOLEAN value with user labels or default translated labels
  */
 private fun formatBooleanValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
     return when (value) {
         true -> {
-            val trueLabel = config?.get("true_label") as? String ?: "label_yes"
-            s.shared(trueLabel)
+            // Use user-provided label if exists, otherwise use default translated label
+            config?.get("true_label") as? String ?: s.shared("label_yes")
         }
         false -> {
-            val falseLabel = config?.get("false_label") as? String ?: "label_no"
-            s.shared(falseLabel)
+            // Use user-provided label if exists, otherwise use default translated label
+            config?.get("false_label") as? String ?: s.shared("label_no")
         }
         else -> s.shared("label_no_value")
     }

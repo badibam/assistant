@@ -1178,6 +1178,7 @@
     <string name="shared_field_validation_scale_min_max_required">Le type SCALE nécessite les valeurs min et max</string>
     <string name="shared_field_validation_scale_min_max_order">La valeur minimale doit être strictement inférieure à la valeur maximale</string>
     <string name="shared_field_validation_scale_step">L\'incrément doit être supérieur à 0</string>
+    <string name="shared_field_validation_scale_step_range_mismatch">La plage (max - min) doit être divisible par l\'incrément</string>
     <string name="shared_field_validation_choice_options_required">Le type CHOICE nécessite une liste d\'options</string>
     <string name="shared_field_validation_choice_options_min">Le type CHOICE nécessite au moins 2 options</string>
     <string name="shared_field_validation_choice_options_duplicate">Les options ne peuvent pas contenir de doublons</string>

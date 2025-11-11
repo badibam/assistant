@@ -95,12 +95,8 @@ fun FieldInput(
             val config = fieldDef.config
             val min = (config?.get("min") as? Number)?.toInt() ?: 0
             val max = (config?.get("max") as? Number)?.toInt() ?: 10
-            val minLabelKey = config?.get("min_label") as? String
-            val maxLabelKey = config?.get("max_label") as? String
-
-            val s = Strings.`for`(context = context)
-            val minLabel = minLabelKey?.let { s.shared(it) } ?: ""
-            val maxLabel = maxLabelKey?.let { s.shared(it) } ?: ""
+            val minLabel = config?.get("min_label") as? String ?: ""
+            val maxLabel = config?.get("max_label") as? String ?: ""
 
             // Use SliderField (will need step support added)
             UI.SliderField(
@@ -168,10 +164,9 @@ fun FieldInput(
             val config = fieldDef.config
 
             val s = Strings.`for`(context = context)
-            val trueLabelKey = config?.get("true_label") as? String ?: "label_yes"
-            val falseLabelKey = config?.get("false_label") as? String ?: "label_no"
-            val trueLabel = s.shared(trueLabelKey)
-            val falseLabel = s.shared(falseLabelKey)
+            // Use user-provided labels if exist, otherwise use default translated labels
+            val trueLabel = config?.get("true_label") as? String ?: s.shared("label_yes")
+            val falseLabel = config?.get("false_label") as? String ?: s.shared("label_no")
 
             UI.ToggleField(
                 label = fieldDef.displayName,

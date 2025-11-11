@@ -347,12 +347,16 @@ fun FieldDefinitionDialog(
             val schema = FieldTypeSchemaProvider.getSchema(schemaId, context, null)
 
             if (schema != null) {
-                // Build validation map matching schema structure (no description field in schema)
+                // Build validation map matching schema structure
                 val fieldDefMap = buildMap<String, Any> {
                     put("name", fieldDef.name)
                     put("display_name", fieldDef.displayName)
                     put("type", fieldDef.type.name)
                     put("always_visible", fieldDef.alwaysVisible)
+                    // Include description if not null
+                    if (fieldDef.description != null) {
+                        put("description", fieldDef.description)
+                    }
                     // Only include config if not null/empty
                     if (fieldDef.config != null && fieldDef.config.isNotEmpty()) {
                         put("config", fieldDef.config)
@@ -367,7 +371,7 @@ fun FieldDefinitionDialog(
             }
 
             // Step 2: Business logic validation (FieldConfigValidator)
-            val businessValidation = FieldConfigValidator.validate(fieldDef, otherFields)
+            val businessValidation = FieldConfigValidator.validate(fieldDef, otherFields, context)
             if (businessValidation.isValid) {
                 onConfirm(fieldDef)
             } else {

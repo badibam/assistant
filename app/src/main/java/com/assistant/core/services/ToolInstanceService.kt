@@ -470,7 +470,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 // For validation, exclude current field from existing list to avoid self-collision
                 val otherFields = existingFieldsForValidation.filterIndexed { i, _ -> i != index }
 
-                val validation = FieldConfigValidator.validate(field, otherFields)
+                val validation = FieldConfigValidator.validate(field, otherFields, context)
                 if (!validation.isValid) {
                     return OperationResult.error(
                         "Validation custom field '${field.displayName}': ${validation.errorMessage}"
