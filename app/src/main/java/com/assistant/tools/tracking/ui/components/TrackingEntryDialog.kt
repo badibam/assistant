@@ -20,6 +20,11 @@ import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.CustomFieldsInput
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -94,8 +99,29 @@ fun TrackingEntryDialog(
     var timerMinutes by remember(isVisible) { 
         mutableStateOf(((initialSeconds % 3600) / 60).toString()) 
     }
-    var timerSeconds by remember(isVisible) { 
-        mutableStateOf((initialSeconds % 60).toString()) 
+    var timerSeconds by remember(isVisible) {
+        mutableStateOf((initialSeconds % 60).toString())
+    }
+
+    // Custom fields states
+    val customFieldsDefinitions = remember(config) {
+        val customFieldsArray = config.optJSONArray("custom_fields")
+        if (customFieldsArray != null) {
+            try {
+                customFieldsArray.toFieldDefinitions()
+            } catch (e: Exception) {
+                LogManager.tracking("Error parsing custom fields definitions: ${e.message}", "ERROR")
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+    var customFieldsValues by remember(isVisible, initialData) {
+        val values = (initialData["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
+        LogManager.tracking("TrackingEntryDialog - Custom fields values: ${values.size} fields, keys=${values.keys}")
+        mutableStateOf(values)
     }
 
     // Date/time UI states
@@ -318,6 +344,11 @@ fun TrackingEntryDialog(
                                 else -> put(key, value)
                             }
                         }
+
+                        // Add custom fields if any
+                        if (customFieldsValues.isNotEmpty()) {
+                            put("custom_fields", JSONObject(customFieldsValues))
+                        }
                     }.toString()
                     
                     LogManager.tracking("=== Calling parent onConfirm ===")
@@ -502,7 +533,20 @@ fun TrackingEntryDialog(
                         }
                     }
                 }
-                
+
+                // Custom fields input (if any custom fields defined)
+                if (customFieldsDefinitions.isNotEmpty()) {
+                    CustomFieldsInput(
+                        customFieldsMetadata = customFieldsDefinitions,
+                        values = customFieldsValues,
+                        onValuesChange = { newValues ->
+                            customFieldsValues = newValues
+                            LogManager.tracking("Custom fields values updated")
+                        },
+                        context = context
+                    )
+                }
+
                 // Date and time fields
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

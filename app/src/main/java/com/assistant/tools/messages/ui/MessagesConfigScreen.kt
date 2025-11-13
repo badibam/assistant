@@ -15,6 +15,10 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.tools.ui.ToolGeneralConfigSection
+import com.assistant.core.fields.CustomFieldsEditor
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.fields.toJsonArray
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -58,6 +62,9 @@ fun MessagesConfigScreen(
     var defaultPriority by remember { mutableStateOf("default") }
     var externalNotifications by remember { mutableStateOf(true) }
 
+    // Custom fields state
+    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+
     // Zone change tracking
     val isEditing = existingToolId != null
     var currentZoneId by remember { mutableStateOf(zoneId) }
@@ -96,6 +103,18 @@ fun MessagesConfigScreen(
                         // Load Messages-specific config
                         defaultPriority = config.optString("default_priority", "default")
                         externalNotifications = config.optBoolean("external_notifications", true)
+
+                        // Load custom fields
+                        val customFieldsArray = config.optJSONArray("custom_fields")
+                        if (customFieldsArray != null) {
+                            try {
+                                customFields = customFieldsArray.toFieldDefinitions()
+                                LogManager.ui("Loaded ${customFields.size} custom fields")
+                            } catch (e: Exception) {
+                                LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+                                // Keep empty list on error
+                            }
+                        }
 
                         LogManager.ui("Successfully loaded config: name=$name, default_priority=$defaultPriority, external_notifications=$externalNotifications")
                     } catch (e: Exception) {
@@ -223,6 +242,23 @@ fun MessagesConfigScreen(
             }
         }
 
+        // Custom fields editor
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CustomFieldsEditor(
+                    fields = customFields,
+                    onFieldsChange = { newFields ->
+                        customFields = newFields
+                        LogManager.ui("Custom fields updated: ${newFields.size} fields")
+                    },
+                    context = context
+                )
+            }
+        }
+
         // Form actions
         val handleSave = {
             coroutineScope.launch {
@@ -245,6 +281,11 @@ fun MessagesConfigScreen(
                     )
                     // Add group if present
                     group?.let { configData["group"] = it }
+
+                    // Add custom fields if any
+                    if (customFields.isNotEmpty()) {
+                        configData["custom_fields"] = customFields.toJsonArray()
+                    }
 
                     // Use unified ValidationHelper
                     UI.ValidationHelper.validateAndSave(

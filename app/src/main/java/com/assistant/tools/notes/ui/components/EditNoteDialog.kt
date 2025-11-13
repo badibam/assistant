@@ -17,6 +17,9 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.fields.CustomFieldsInput
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -33,9 +36,14 @@ fun EditNoteDialog(
     insertPosition: Int? = null,
     initialContent: String = "",
     initialNoteId: String? = null,
-    onConfirm: suspend (content: String, position: Int?) -> Boolean,
+    initialCustomFields: Map<String, Any?> = emptyMap(),
+    onConfirm: suspend (content: String, position: Int?, customFields: Map<String, Any?>) -> Boolean,
     onCancel: () -> Unit
 ) {
+    // Get context and coordinator
+    val context = LocalContext.current
+    val coordinator = remember { Coordinator(context) }
+
     // State management
     var content by remember(isVisible) { mutableStateOf(initialContent) }
     var isSaving by remember { mutableStateOf(false) }
@@ -43,11 +51,41 @@ fun EditNoteDialog(
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
     val coroutineScope = rememberCoroutineScope()
 
+    // Custom fields states
+    var customFieldsDefinitions by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var customFieldsValues by remember(isVisible, initialCustomFields) {
+        mutableStateOf(initialCustomFields)
+    }
+
+    // Load custom fields definitions from tool instance config
+    LaunchedEffect(toolInstanceId) {
+        val configResult = coordinator.processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to toolInstanceId)
+        )
+
+        if (configResult?.isSuccess == true) {
+            val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
+            toolData?.let { data ->
+                val configJson = data["config_json"] as? String ?: "{}"
+                try {
+                    val config = JSONObject(configJson)
+                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    if (customFieldsArray != null) {
+                        customFieldsDefinitions = customFieldsArray.toFieldDefinitions()
+                        LogManager.ui("Loaded ${customFieldsDefinitions.size} custom field definitions")
+                    }
+                } catch (e: Exception) {
+                    LogManager.ui("Error parsing custom fields definitions: ${e.message}", "ERROR")
+                }
+            }
+        }
+    }
+
     // Focus management
     val focusRequester = remember { FocusRequester() }
 
     // Get strings
-    val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "notes", context = context) }
 
     // Reset validation when dialog opens
@@ -115,7 +153,7 @@ fun EditNoteDialog(
                         // Use coroutine to call suspend function
                         coroutineScope.launch {
                             try {
-                                val success = onConfirm(content.trim(), insertPosition)
+                                val success = onConfirm(content.trim(), insertPosition, customFieldsValues)
                                 if (success) {
                                     // Dialog will close automatically
                                 } else {
@@ -152,6 +190,19 @@ fun EditNoteDialog(
                     fieldType = FieldType.TEXT_LONG,
                     fieldModifier = FieldModifier.withFocus(focusRequester)
                 )
+
+                // Custom fields input (if any custom fields defined)
+                if (customFieldsDefinitions.isNotEmpty()) {
+                    CustomFieldsInput(
+                        customFieldsMetadata = customFieldsDefinitions,
+                        values = customFieldsValues,
+                        onValuesChange = { newValues ->
+                            customFieldsValues = newValues
+                            LogManager.ui("Custom fields values updated")
+                        },
+                        context = context
+                    )
+                }
 
             }
         }

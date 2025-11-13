@@ -324,6 +324,7 @@
     <string name="label_zone">Zone</string>
     <string name="label_tool">Outil</string>
     <string name="label_item">Élément</string>
+    <string name="label_no_value">Aucune valeur</string>
 
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>

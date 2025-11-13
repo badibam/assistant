@@ -18,6 +18,11 @@ import com.assistant.core.ai.ui.automation.ScheduleConfigEditor
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.CustomFieldsInput
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -40,9 +45,13 @@ fun EditMessageDialog(
     toolInstanceId: String,
     defaultPriority: String = "default",
     initialMessage: MessageDialogData? = null, // null = creation mode
-    onConfirm: suspend (title: String, content: String?, schedule: ScheduleConfig?, priority: String) -> Boolean,
+    onConfirm: suspend (title: String, content: String?, schedule: ScheduleConfig?, priority: String, customFields: Map<String, Any?>) -> Boolean,
     onCancel: () -> Unit
 ) {
+    // Get context and coordinator
+    val context = LocalContext.current
+    val coordinator = remember { Coordinator(context) }
+
     // State management
     var title by remember(isVisible, initialMessage) {
         mutableStateOf(initialMessage?.title ?: "")
@@ -61,13 +70,43 @@ fun EditMessageDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
 
+    // Custom fields states
+    var customFieldsDefinitions by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var customFieldsValues by remember(isVisible, initialMessage) {
+        mutableStateOf(initialMessage?.customFields ?: emptyMap())
+    }
+
+    // Load custom fields definitions from tool instance config
+    LaunchedEffect(toolInstanceId) {
+        val configResult = coordinator.processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to toolInstanceId)
+        )
+
+        if (configResult?.isSuccess == true) {
+            val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
+            toolData?.let { data ->
+                val configJson = data["config_json"] as? String ?: "{}"
+                try {
+                    val config = JSONObject(configJson)
+                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    if (customFieldsArray != null) {
+                        customFieldsDefinitions = customFieldsArray.toFieldDefinitions()
+                        LogManager.ui("Loaded ${customFieldsDefinitions.size} custom field definitions")
+                    }
+                } catch (e: Exception) {
+                    LogManager.ui("Error parsing custom fields definitions: ${e.message}", "ERROR")
+                }
+            }
+        }
+    }
+
     // Schedule editor nested dialog state
     var showScheduleEditor by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
     // Get strings
-    val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "messages", context = context) }
 
     // Reset validation when dialog opens
@@ -167,7 +206,8 @@ fun EditMessageDialog(
                                     title.trim(),
                                     content.trim().takeIf { it.isNotEmpty() },
                                     scheduleConfig,
-                                    priority
+                                    priority,
+                                    customFieldsValues
                                 )
                                 if (!success) {
                                     errorMessage = s.shared("message_error_simple")
@@ -287,6 +327,19 @@ fun EditMessageDialog(
                     }
                 }
 
+                // Custom fields input (if any custom fields defined)
+                if (customFieldsDefinitions.isNotEmpty()) {
+                    CustomFieldsInput(
+                        customFieldsMetadata = customFieldsDefinitions,
+                        values = customFieldsValues,
+                        onValuesChange = { newValues ->
+                            customFieldsValues = newValues
+                            LogManager.ui("Custom fields values updated")
+                        },
+                        context = context
+                    )
+                }
+
                 // Note: Form actions removed - using Dialog's onConfirm/onCancel
             }
         }
@@ -358,5 +411,6 @@ data class MessageDialogData(
     val title: String,
     val content: String?,
     val schedule: ScheduleConfig?,
-    val priority: String
+    val priority: String,
+    val customFields: Map<String, Any?> = emptyMap()
 )

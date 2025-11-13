@@ -626,6 +626,7 @@
     <string name="shared_label_zone">Zone</string>
     <string name="shared_label_tool">Outil</string>
     <string name="shared_label_item">Élément</string>
+    <string name="shared_label_no_value">Aucune valeur</string>
     <string name="shared_ui_toggle_enabled">Activé</string>
     <string name="shared_ui_toggle_disabled">Désactivé</string>
     <string name="shared_ui_new_item_placeholder">Nouvel élément</string>

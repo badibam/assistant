@@ -31,7 +31,8 @@ data class NoteEntry(
     val id: String,
     val content: String,
     val timestamp: Long,
-    val position: Int = 0
+    val position: Int = 0,
+    val customFields: Map<String, Any?> = emptyMap()
 )
 
 /**
@@ -116,8 +117,30 @@ fun NotesScreen(
                         val content = parsedData["content"] as? String ?: ""
                         val position = (parsedData["position"] as? Number)?.toInt() ?: 0
 
-                        LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position")
-                        NoteEntry(id, content, timestamp, position)
+                        // Load custom fields from entity column (not from data JSON)
+                        val customFieldsData = map["custom_fields"]
+                        val customFields = try {
+                            when (customFieldsData) {
+                                is Map<*, *> -> customFieldsData as Map<String, Any?>
+                                is String -> {
+                                    if (customFieldsData.isNotEmpty()) {
+                                        val customFieldsJson = JSONObject(customFieldsData)
+                                        mutableMapOf<String, Any?>().apply {
+                                            customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
+                                        }
+                                    } else {
+                                        emptyMap()
+                                    }
+                                }
+                                else -> emptyMap()
+                            }
+                        } catch (e: Exception) {
+                            LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+                            emptyMap<String, Any?>()
+                        }
+
+                        LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position, customFields=${customFields.size}")
+                        NoteEntry(id, content, timestamp, position, customFields)
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing note entry: ${e.message}", "ERROR")
                         null
@@ -305,16 +328,17 @@ fun NotesScreen(
             insertPosition = dialogPosition,
             initialContent = dialogNote?.content ?: "",
             initialNoteId = dialogNote?.id,
-            onConfirm = { content, position ->
+            initialCustomFields = dialogNote?.customFields ?: emptyMap(),
+            onConfirm = { content, position, customFields ->
                 if (dialogNote == null) {
                     // Create new note
-                    createNote(coordinator, toolInstanceId, content, position ?: 0) {
+                    createNote(coordinator, toolInstanceId, content, position ?: 0, customFields) {
                         refreshTrigger++
                         showNoteDialog = false
                     }
                 } else {
                     // Update existing note
-                    updateNote(coordinator, dialogNote!!, content) { updatedNote ->
+                    updateNote(coordinator, dialogNote!!, content, customFields) { updatedNote ->
                         notes = notes.map { if (it.id == updatedNote.id) updatedNote else it }
                         showNoteDialog = false
                     }
@@ -350,7 +374,7 @@ private suspend fun moveNoteUp(
         val targetNewPosition = note.position
 
         // Update note position in database
-        val params = mapOf(
+        val params = mutableMapOf<String, Any>(
             "id" to note.id,
             "toolInstanceId" to toolInstanceId,
             "data" to JSONObject().apply {
@@ -358,11 +382,14 @@ private suspend fun moveNoteUp(
                 put("position", newPosition)
             }
         )
+        if (note.customFields.isNotEmpty()) {
+            params["custom_fields"] = JSONObject(note.customFields)
+        }
 
         val result = coordinator.processUserAction("tool_data.update", params)
         if (result?.isSuccess == true) {
             // Update target note position
-            val targetParams = mapOf(
+            val targetParams = mutableMapOf<String, Any>(
                 "id" to targetNote.id,
                 "toolInstanceId" to toolInstanceId,
                 "data" to JSONObject().apply {
@@ -370,6 +397,9 @@ private suspend fun moveNoteUp(
                     put("position", targetNewPosition)
                 }
             )
+            if (targetNote.customFields.isNotEmpty()) {
+                targetParams["custom_fields"] = JSONObject(targetNote.customFields)
+            }
 
             val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
             if (targetResult?.isSuccess == true) {
@@ -407,7 +437,7 @@ private suspend fun moveNoteDown(
         val targetNewPosition = note.position
 
         // Update note position in database
-        val params = mapOf(
+        val params = mutableMapOf<String, Any>(
             "id" to note.id,
             "toolInstanceId" to toolInstanceId,
             "data" to JSONObject().apply {
@@ -415,11 +445,14 @@ private suspend fun moveNoteDown(
                 put("position", newPosition)
             }
         )
+        if (note.customFields.isNotEmpty()) {
+            params["custom_fields"] = JSONObject(note.customFields)
+        }
 
         val result = coordinator.processUserAction("tool_data.update", params)
         if (result?.isSuccess == true) {
             // Update target note position
-            val targetParams = mapOf(
+            val targetParams = mutableMapOf<String, Any>(
                 "id" to targetNote.id,
                 "toolInstanceId" to toolInstanceId,
                 "data" to JSONObject().apply {
@@ -427,6 +460,9 @@ private suspend fun moveNoteDown(
                     put("position", targetNewPosition)
                 }
             )
+            if (targetNote.customFields.isNotEmpty()) {
+                targetParams["custom_fields"] = JSONObject(targetNote.customFields)
+            }
 
             val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
             if (targetResult?.isSuccess == true) {
@@ -453,9 +489,10 @@ private suspend fun createNote(
     toolInstanceId: String,
     content: String,
     position: Int,
+    customFields: Map<String, Any?>,
     onSuccess: () -> Unit
 ) {
-    val params = mapOf(
+    val params = mutableMapOf<String, Any>(
         "toolInstanceId" to toolInstanceId,
         "tooltype" to "notes",
         "name" to "Note",
@@ -465,6 +502,11 @@ private suspend fun createNote(
             put("position", position)
         }
     )
+
+    // Add custom fields if any
+    if (customFields.isNotEmpty()) {
+        params["custom_fields"] = JSONObject(customFields)
+    }
 
     val result = coordinator.processUserAction("tool_data.create", params)
     if (result?.isSuccess == true) {
@@ -479,9 +521,10 @@ private suspend fun updateNote(
     coordinator: Coordinator,
     note: NoteEntry,
     newContent: String,
+    customFields: Map<String, Any?>,
     onSuccess: (NoteEntry) -> Unit
 ) {
-    val params = mapOf(
+    val params = mutableMapOf<String, Any>(
         "id" to note.id,
         "toolInstanceId" to note.id, // Will be corrected by backend
         "data" to JSONObject().apply {
@@ -490,9 +533,14 @@ private suspend fun updateNote(
         }
     )
 
+    // Add custom fields if any
+    if (customFields.isNotEmpty()) {
+        params["custom_fields"] = JSONObject(customFields)
+    }
+
     val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {
-        val updatedNote = note.copy(content = newContent.trim())
+        val updatedNote = note.copy(content = newContent.trim(), customFields = customFields)
         onSuccess(updatedNote)
     }
 }

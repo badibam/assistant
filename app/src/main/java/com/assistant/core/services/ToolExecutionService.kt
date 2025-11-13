@@ -71,12 +71,28 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
 
             if (configResult.status == CommandStatus.SUCCESS) {
                 val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-                val config = toolInstance?.get("config") as? Map<*, *>
-                val customFields = config?.get("custom_fields") as? List<*>
+                val configJson = toolInstance?.get("config_json") as? String
 
-                // Add custom_fields_metadata to snapshot if custom_fields exist in config
-                if (customFields != null && customFields.isNotEmpty()) {
-                    snapshotDataJson.put("custom_fields_metadata", org.json.JSONArray(customFields))
+                if (configJson != null && configJson.isNotEmpty()) {
+                    try {
+                        val config = JSONObject(configJson)
+                        val customFieldsArray = config.optJSONArray("custom_fields")
+
+                        // Add custom_fields_metadata to snapshot if custom_fields exist in config
+                        if (customFieldsArray != null && customFieldsArray.length() > 0) {
+                            snapshotDataJson.put("custom_fields_metadata", customFieldsArray)
+                            com.assistant.core.utils.LogManager.service(
+                                "Enriched execution snapshot with ${customFieldsArray.length()} custom field definitions",
+                                "DEBUG"
+                            )
+                        }
+                    } catch (e: Exception) {
+                        com.assistant.core.utils.LogManager.service(
+                            "Failed to parse config_json when enriching snapshot: ${e.message}",
+                            "WARN",
+                            e
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {

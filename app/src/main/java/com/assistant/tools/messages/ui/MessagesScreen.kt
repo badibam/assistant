@@ -24,6 +24,8 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.fields.CustomFieldsDisplay
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.tools.messages.ui.components.EditMessageDialog
 import com.assistant.tools.messages.ui.components.MessageDialogData
 import kotlinx.coroutines.launch
@@ -44,7 +46,9 @@ data class ExecutionEntry(
     val titleSnapshot: String,         // Title at execution time
     val contentSnapshot: String?,      // Content at execution time
     val read: Boolean,                 // Read status from executionResult
-    val archived: Boolean              // Archived status from executionResult
+    val archived: Boolean,             // Archived status from executionResult
+    val customFieldsSnapshot: Map<String, Any?> = emptyMap(),  // Custom fields values at execution time
+    val customFieldsMetadata: List<com.assistant.core.fields.FieldDefinition> = emptyList()  // Custom fields definitions at execution time
 )
 
 /**
@@ -56,7 +60,8 @@ data class MessageTemplate(
     val content: String?,
     val schedule: ScheduleConfig?,
     val priority: String,
-    val executionCount: Int
+    val executionCount: Int,
+    val customFields: Map<String, Any?> = emptyMap()
 )
 
 /**
@@ -459,6 +464,20 @@ private fun ExecutionCard(
                 UI.Text(content, TextType.BODY)
             }
 
+            // Custom fields display (if any)
+            // Uses metadata from snapshot for historical accuracy
+            if (execution.customFieldsSnapshot.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LogManager.ui("ExecutionCard - Displaying custom fields: ${execution.customFieldsSnapshot.size} values, ${execution.customFieldsMetadata.size} metadata")
+                CustomFieldsDisplay(
+                    customFieldsMetadata = execution.customFieldsMetadata,
+                    values = execution.customFieldsSnapshot,
+                    context = context
+                )
+            } else {
+                LogManager.ui("ExecutionCard - No custom fields to display (snapshot empty)")
+            }
+
             // Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -634,7 +653,8 @@ private fun ManageMessagesTab(
                     title = it.title,
                     content = it.content,
                     schedule = it.schedule,
-                    priority = it.priority
+                    priority = it.priority,
+                    customFields = it.customFields
                 )
             }
 
@@ -643,7 +663,7 @@ private fun ManageMessagesTab(
                 toolInstanceId = toolInstanceId,
                 defaultPriority = defaultPriority,
                 initialMessage = initialMessage,
-                onConfirm = { title, content, schedule, priority ->
+                onConfirm = { title, content, schedule, priority, customFields ->
                     if (editingMessageId == null) {
                         // Create new message
                         createMessage(
@@ -653,6 +673,7 @@ private fun ManageMessagesTab(
                             content,
                             schedule,
                             priority,
+                            customFields,
                             onSuccess = {
                                 showMessageDialog = false
                                 onRefresh()
@@ -668,6 +689,7 @@ private fun ManageMessagesTab(
                             content,
                             schedule,
                             priority,
+                            customFields,
                             onSuccess = {
                                 showMessageDialog = false
                                 onRefresh()
@@ -785,6 +807,40 @@ private fun parseExecutionEntries(data: List<*>?): List<ExecutionEntry> {
             val titleSnapshot = snapshotData.optString("title", "")
             val contentSnapshot = snapshotData.optString("content", null)
 
+            // Parse custom fields values from snapshot
+            val customFieldsSnapshot = try {
+                val customFieldsJson = snapshotData.optJSONObject("custom_fields")
+                if (customFieldsJson != null) {
+                    val fields = mutableMapOf<String, Any?>().apply {
+                        customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
+                    }
+                    LogManager.ui("parseExecutionEntries - Parsed ${fields.size} custom field values for execution $executionId")
+                    fields
+                } else {
+                    LogManager.ui("parseExecutionEntries - No custom_fields in snapshot for execution $executionId")
+                    emptyMap()
+                }
+            } catch (e: Exception) {
+                LogManager.ui("Error parsing execution custom fields: ${e.message}", "ERROR")
+                emptyMap<String, Any?>()
+            }
+
+            // Parse custom fields metadata from snapshot (field definitions)
+            val customFieldsMetadata = try {
+                val metadataArray = snapshotData.optJSONArray("custom_fields_metadata")
+                if (metadataArray != null) {
+                    val metadata = metadataArray.toFieldDefinitions()
+                    LogManager.ui("parseExecutionEntries - Parsed ${metadata.size} custom field definitions for execution $executionId")
+                    metadata
+                } else {
+                    LogManager.ui("parseExecutionEntries - No custom_fields_metadata in snapshot for execution $executionId")
+                    emptyList()
+                }
+            } catch (e: Exception) {
+                LogManager.ui("Error parsing execution custom fields metadata: ${e.message}", "ERROR")
+                emptyList()
+            }
+
             // Parse executionResult JSON for read/archived flags
             val executionResultStr = execution["executionResult"] as? String ?: "{}"
             val executionResult = JSONObject(executionResultStr)
@@ -800,7 +856,9 @@ private fun parseExecutionEntries(data: List<*>?): List<ExecutionEntry> {
                 titleSnapshot = titleSnapshot,
                 contentSnapshot = contentSnapshot,
                 read = read,
-                archived = archived
+                archived = archived,
+                customFieldsSnapshot = customFieldsSnapshot,
+                customFieldsMetadata = customFieldsMetadata
             )
         } catch (e: Exception) {
             LogManager.ui("Error parsing execution entry: ${e.message}", "ERROR")
@@ -863,7 +921,25 @@ private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
         // For now, set to 0 since executions are now in separate table
         val executionCount = 0
 
-        return MessageTemplate(id, title, content, schedule, priority, executionCount)
+        // Load custom fields
+        val customFieldsData = map["custom_fields"]
+        val customFields = try {
+            when (customFieldsData) {
+                is Map<*, *> -> customFieldsData as Map<String, Any?>
+                is String -> {
+                    val customFieldsJson = JSONObject(customFieldsData)
+                    mutableMapOf<String, Any?>().apply {
+                        customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
+                    }
+                }
+                else -> emptyMap()
+            }
+        } catch (e: Exception) {
+            LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+            emptyMap<String, Any?>()
+        }
+
+        return MessageTemplate(id, title, content, schedule, priority, executionCount, customFields)
     } catch (e: Exception) {
         LogManager.ui("Error parsing message template: ${e.message}", "ERROR")
         return null
@@ -935,6 +1011,7 @@ private suspend fun createMessage(
     content: String?,
     schedule: ScheduleConfig?,
     priority: String,
+    customFields: Map<String, Any?>,
     onSuccess: () -> Unit,
     onError: (String) -> Unit
 ) {
@@ -960,7 +1037,7 @@ private suspend fun createMessage(
         // Note: title is stored at entity level as "name", not in data
     }
 
-    val params = mapOf(
+    val params = mutableMapOf<String, Any>(
         "toolInstanceId" to toolInstanceId,
         "tooltype" to "messages",
         "schema_id" to "messages_data",  // Schema ID at params level, not in data
@@ -968,6 +1045,11 @@ private suspend fun createMessage(
         "timestamp" to System.currentTimeMillis(),
         "data" to dataJson  // JSONObject, not .toString()
     )
+
+    // Add custom fields if any
+    if (customFields.isNotEmpty()) {
+        params["custom_fields"] = JSONObject(customFields)
+    }
 
     val result = coordinator.processUserAction("tool_data.create", params)
     if (result?.isSuccess == true) {
@@ -987,6 +1069,7 @@ private suspend fun updateMessage(
     content: String?,
     schedule: ScheduleConfig?,
     priority: String,
+    customFields: Map<String, Any?>,
     onSuccess: () -> Unit,
     onError: (String) -> Unit
 ) {
@@ -1012,12 +1095,17 @@ private suspend fun updateMessage(
         // Note: title is stored at entity level as "name", not in data
     }
 
-    val params = mapOf(
+    val params = mutableMapOf<String, Any>(
         "id" to messageId,
         "schema_id" to "messages_data",  // Schema ID at params level, not in data
         "name" to title,  // Update name in tool_data as well
         "data" to dataJson  // JSONObject, not .toString()
     )
+
+    // Add custom fields if any
+    if (customFields.isNotEmpty()) {
+        params["custom_fields"] = JSONObject(customFields)
+    }
 
     val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {

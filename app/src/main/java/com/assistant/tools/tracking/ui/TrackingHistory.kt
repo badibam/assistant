@@ -76,8 +76,30 @@ fun TrackingHistory(
     var dayStartHour by remember { mutableStateOf<Int?>(null) }
     var weekStartDay by remember { mutableStateOf<String?>(null) }
     var isConfigLoading by remember { mutableStateOf(true) }
-    
-    
+
+    // Tool instance config (for custom fields definitions)
+    var toolConfig by remember { mutableStateOf(JSONObject()) }
+
+    // Load tool instance config once
+    LaunchedEffect(toolInstanceId) {
+        val configResult = coordinator.processUserAction("tools.get", mapOf(
+            "tool_instance_id" to toolInstanceId
+        ))
+
+        if (configResult.isSuccess) {
+            val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
+            toolData?.let { data ->
+                val configJson = data["config_json"] as? String ?: "{}"
+                try {
+                    toolConfig = JSONObject(configJson)
+                    LogManager.tracking("TrackingHistory - Loaded tool config with ${toolConfig.optJSONArray("custom_fields")?.length() ?: 0} custom fields")
+                } catch (e: Exception) {
+                    LogManager.tracking("Error parsing tool config: ${e.message}", "ERROR")
+                }
+            }
+        }
+    }
+
     // Load data
     val loadData = {
         scope.launch {
@@ -486,7 +508,24 @@ fun TrackingHistory(
             // Parse JSON directly for each type instead of using limited ParsedValue
             val initialProperties = try {
                 val json = JSONObject(entry.data)
-                when (trackingType) {
+
+                // Parse custom fields from entity
+                val customFieldsData = entry.customFields
+                val customFields = if (customFieldsData != null && customFieldsData.isNotEmpty()) {
+                    try {
+                        val customFieldsJson = JSONObject(customFieldsData)
+                        mutableMapOf<String, Any?>().apply {
+                            customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
+                        }
+                    } catch (e: Exception) {
+                        LogManager.tracking("Error parsing custom fields: ${e.message}", "ERROR")
+                        emptyMap<String, Any?>()
+                    }
+                } else {
+                    emptyMap<String, Any?>()
+                }
+
+                val typeSpecificData = when (trackingType) {
                     "numeric" -> mapOf(
                         "quantity" to json.optString("quantity", ""),
                         "unit" to json.optString("unit", "")
@@ -504,7 +543,7 @@ fun TrackingHistory(
                             "max_value" to json.optInt("max_value"),
                             "min_label" to json.optString("min_label"),
                             "max_label" to json.optString("max_label")
-                        ).also { 
+                        ).also {
                             LogManager.tracking("InitialProperties created: $it")
                         }
                     }
@@ -528,6 +567,13 @@ fun TrackingHistory(
                     )
                     else -> emptyMap()
                 }
+
+                // Combine type-specific data with custom fields
+                typeSpecificData + if (customFields.isNotEmpty()) {
+                    mapOf("custom_fields" to customFields)
+                } else {
+                    emptyMap()
+                }
             } catch (e: Exception) {
                 emptyMap<String, Any>()
             }
@@ -535,7 +581,7 @@ fun TrackingHistory(
             TrackingEntryDialog(
                 isVisible = showEditDialog,
                 trackingType = trackingType,
-                config = JSONObject(), // Empty config for editing existing entries
+                config = toolConfig, // Tool config with custom fields definitions
                 itemType = null, // History editing - no itemType
                 actionType = ActionType.UPDATE,
                 toolInstanceId = toolInstanceId,

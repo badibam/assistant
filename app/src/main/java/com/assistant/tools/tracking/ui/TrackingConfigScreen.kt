@@ -24,6 +24,10 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.tools.ui.ToolGeneralConfigSection
+import com.assistant.core.fields.CustomFieldsEditor
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.fields.toJsonArray
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -134,6 +138,9 @@ fun TrackingConfigScreen(
     var alwaysSend by remember { mutableStateOf(false) }
     var currentZoneId by remember { mutableStateOf(zoneId) }
 
+    // Custom fields state
+    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+
     // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
     val items by remember { derivedStateOf {
@@ -209,6 +216,18 @@ fun TrackingConfigScreen(
 
         config = newConfig
         alwaysSend = config.optBoolean("always_send", false)
+
+        // Load custom fields
+        val customFieldsArray = newConfig.optJSONArray("custom_fields")
+        if (customFieldsArray != null) {
+            try {
+                customFields = customFieldsArray.toFieldDefinitions()
+                LogManager.tracking("Loaded ${customFields.size} custom fields")
+            } catch (e: Exception) {
+                LogManager.tracking("Error parsing custom fields: ${e.message}", "ERROR")
+                // Keep empty list on error
+            }
+        }
     }
     
     // UI state for item dialog
@@ -369,7 +388,12 @@ fun TrackingConfigScreen(
         
         // Nettoyer la config avant validation
         val cleanConfig = cleanConfiguration(config)
-        
+
+        // Add custom fields
+        if (customFields.isNotEmpty()) {
+            cleanConfig.put("custom_fields", customFields.toJsonArray())
+        }
+
         // Convertir JSONObject en Map pour ValidationHelper
         val configMap = cleanConfig.keys().asSequence().associateWith { key ->
             cleanConfig.get(key)
@@ -439,6 +463,12 @@ fun TrackingConfigScreen(
                 
                 // Then proceed with normal save
                 val cleanConfig = cleanConfiguration(config)
+
+                // Add custom fields
+                if (customFields.isNotEmpty()) {
+                    cleanConfig.put("custom_fields", customFields.toJsonArray())
+                }
+
                 val configMap = cleanConfig.keys().asSequence().associateWith { key ->
                     cleanConfig.get(key)
                 }
@@ -920,7 +950,24 @@ fun TrackingConfigScreen(
                 }
             }
         }
-        
+
+        // Custom fields editor
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CustomFieldsEditor(
+                    fields = customFields,
+                    onFieldsChange = { newFields ->
+                        customFields = newFields
+                        LogManager.tracking("Custom fields updated: ${newFields.size} fields")
+                    },
+                    context = context
+                )
+            }
+        }
+
         // Actions
         UI.ToolConfigActions(
             isEditing = isEditing,

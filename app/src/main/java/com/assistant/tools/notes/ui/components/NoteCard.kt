@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
+import com.assistant.core.fields.CustomFieldsDisplay
 import com.assistant.tools.notes.ui.NoteEntry
 
 /**
@@ -97,6 +98,16 @@ fun NoteCard(
                                 text = displayContent,
                                 type = TextType.BODY
                             )
+
+                            // Custom fields display (if any)
+                            if (note?.customFields?.isNotEmpty() == true) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CustomFieldsDisplay(
+                                    toolInstanceId = toolInstanceId,
+                                    values = note.customFields,
+                                    context = context
+                                )
+                            }
                         }
                     }
                 }
