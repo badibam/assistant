@@ -1,9 +1,13 @@
 package com.assistant
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
@@ -65,6 +69,9 @@ class MainActivity : ComponentActivity() {
 
         // Request notification permission (Android 13+)
         requestNotificationPermissionIfNeeded()
+
+        // Request battery optimization exemption for background scheduling
+        requestBatteryOptimizationExemptionIfNeeded()
 
         // Initialize model price manager (async, non-blocking)
         CoroutineScope(Dispatchers.IO).launch {
@@ -239,6 +246,43 @@ class MainActivity : ComponentActivity() {
                     NOTIFICATION_PERMISSION_REQUEST_CODE
                 )
             }
+        }
+    }
+
+    /**
+     * Request battery optimization exemption to allow background scheduling
+     *
+     * Without this exemption, Android's Doze mode will suspend the CoreScheduler's
+     * 1-minute heartbeat coroutine when the app is in the background, preventing
+     * scheduled messages (and other scheduled tasks) from executing.
+     *
+     * This opens the system settings dialog for the user to grant the exemption.
+     * The exemption is critical for reliable background notifications.
+     */
+    private fun requestBatteryOptimizationExemptionIfNeeded() {
+        try {
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+            val packageName = packageName
+
+            // Check if already ignoring battery optimizations
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                    LogManager.service("Battery optimization is enabled - requesting exemption for background scheduling", "INFO")
+
+                    // Create intent to request exemption
+                    val intent = Intent().apply {
+                        action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                        data = Uri.parse("package:$packageName")
+                    }
+
+                    // Launch settings dialog
+                    startActivity(intent)
+                } else {
+                    LogManager.service("Battery optimization exemption already granted", "DEBUG")
+                }
+            }
+        } catch (e: Exception) {
+            LogManager.service("Failed to request battery optimization exemption: ${e.message}", "WARN", e)
         }
     }
 
