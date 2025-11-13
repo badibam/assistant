@@ -7,6 +7,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -114,7 +115,7 @@ object FieldDataMigrator {
             }
 
             // Step 2: Transform each entry's custom_fields map
-            val updates = mutableListOf<Map<String, Any>>()
+            val entriesToUpdate = mutableListOf<Map<String, Any>>()
             var modifiedCount = 0
 
             entries.forEach { entry ->
@@ -131,15 +132,20 @@ object FieldDataMigrator {
                     return@forEach
                 }
 
-                // Extract custom_fields (can be Map or null)
+                // Extract custom_fields (can be String JSON, Map, or null)
                 val customFieldsRaw = entry["custom_fields"]
                 LogManager.service(
                     "DEBUG Entry $entryId: custom_fields type=${customFieldsRaw?.javaClass?.simpleName}, value=$customFieldsRaw",
                     "DEBUG"
                 )
 
-                @Suppress("UNCHECKED_CAST")
-                val customFields = (customFieldsRaw as? Map<String, Any>)?.toMutableMap()
+                // Parse custom_fields using JsonUtils (handles String JSON, JSONObject, Map, or null)
+                val customFields = try {
+                    JsonUtils.toMap(customFieldsRaw)
+                } catch (e: Exception) {
+                    LogManager.service("Entry $entryId: Error parsing custom_fields: ${e.message}", "ERROR", e)
+                    null
+                }
 
                 // Skip if no custom fields
                 if (customFields.isNullOrEmpty()) {
@@ -160,11 +166,23 @@ object FieldDataMigrator {
                 if (transformed != customFields) {
                     modifiedCount++
 
-                    // Build partial update (only custom_fields changed)
-                    updates.add(
+                    // Build update with explicit null for removed fields
+                    // Since batch_update merges custom_fields (preserves absent fields),
+                    // we must explicitly send null for fields that were removed
+                    val updateMap = transformed.toMutableMap()
+
+                    // Add null for fields that were removed
+                    customFields.keys.forEach { oldKey ->
+                        if (oldKey !in transformed) {
+                            updateMap[oldKey] = JSONObject.NULL
+                        }
+                    }
+
+                    // Convert Map to JSONObject for service compatibility
+                    entriesToUpdate.add(
                         mapOf(
                             "id" to entryId,
-                            "custom_fields" to transformed
+                            "custom_fields" to JsonUtils.toJSONObject(updateMap)
                         )
                     )
                 }
@@ -176,7 +194,7 @@ object FieldDataMigrator {
             )
 
             // Step 3: Batch update modified entries
-            if (updates.isEmpty()) {
+            if (entriesToUpdate.isEmpty()) {
                 LogManager.service("No entries needed modification", "INFO")
                 return OperationResult.success()
             }
@@ -191,7 +209,7 @@ object FieldDataMigrator {
                 "tool_data.batch_update",
                 mapOf(
                     "toolInstanceId" to toolInstanceId,
-                    "updates" to updates
+                    "entries" to entriesToUpdate  // batch_update expects "entries" parameter
                     // partialValidation=true is applied automatically for batch_update
                 )
             )
@@ -233,10 +251,10 @@ object FieldDataMigrator {
      * @return Transformed custom_fields map
      */
     private fun applyMigrationStrategies(
-        customFields: Map<String, Any>,
+        customFields: Map<String, Any?>,
         changes: List<FieldChange>,
         strategies: Map<FieldChange, MigrationStrategy>
-    ): Map<String, Any> {
+    ): Map<String, Any?> {
         val result = customFields.toMutableMap()
 
         changes.forEach { change ->

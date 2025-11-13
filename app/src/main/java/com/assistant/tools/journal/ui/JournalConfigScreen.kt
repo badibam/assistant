@@ -99,7 +99,7 @@ fun JournalConfigScreen(
                         if (customFieldsArray != null) {
                             try {
                                 customFields = customFieldsArray.toFieldDefinitions()
-                                oldCustomFields = customFields // Save original for migration comparison
+                                oldCustomFields = customFields.toList() // Save copy for migration comparison
                                 LogManager.ui("Loaded ${customFields.size} custom fields")
                             } catch (e: Exception) {
                                 LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")

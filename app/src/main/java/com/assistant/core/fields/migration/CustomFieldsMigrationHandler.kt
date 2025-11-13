@@ -60,7 +60,8 @@ fun rememberCustomFieldsMigrationHandler(
     var isMigrating by remember { mutableStateOf(false) }
 
     // Handler instance
-    val handler = remember {
+    // IMPORTANT: Include oldFields and newFields as keys to recreate handler when they change
+    val handler = remember(oldFields, newFields) {
         CustomFieldsMigrationHandler(
             checkAndProceed = {
                 coroutineScope.launch {

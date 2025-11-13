@@ -88,7 +88,7 @@ object MessageScheduler : ToolScheduler {
                     val messageId = entry["id"] as? String ?: continue
                     val messageName = entry["name"] as? String ?: ""
                     val data = entry["data"] as? String ?: continue
-                    val customFieldsJson = entry["customFields"] as? String
+                    val customFieldsJson = entry["custom_fields"] as? String
 
                     try {
                         processMessage(context, messageId, messageName, data, customFieldsJson, now, messageService, coordinator, instance)
@@ -199,7 +199,7 @@ object MessageScheduler : ToolScheduler {
                     val customFields = JSONObject(customFieldsJson)
                     put("custom_fields", customFields)
                 } catch (e: Exception) {
-                    LogManager.service("Failed to parse customFields JSON for message $messageId: ${e.message}", "WARN")
+                    LogManager.service("Failed to parse custom_fields JSON for message $messageId: ${e.message}", "WARN")
                 }
             }
         }

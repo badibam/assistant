@@ -122,8 +122,7 @@ fun JournalEntryScreen(
                     content = parsedData["content"] as? String ?: ""
 
                     // Load custom fields values
-                    // Note: service returns "customFields" (camelCase), not "custom_fields"
-                    val customFieldsData = data["customFields"]
+                    val customFieldsData = data["custom_fields"]
                     val parsedCustomFields = try {
                         when (customFieldsData) {
                             is Map<*, *> -> customFieldsData as Map<String, Any?>

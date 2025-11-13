@@ -169,7 +169,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             existingEntity.data
         }
 
-        // Merge custom fields: new fields overwrite, absent fields are preserved
+        // Merge custom fields: new fields overwrite, absent fields are preserved, null values remove fields
         val mergedCustomFields = if (customFieldsJson != null) {
             val existingCustomFields = if (existingEntity.customFields != null) {
                 JSONObject(existingEntity.customFields)
@@ -178,10 +178,31 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
             val newCustomFields = JSONObject(customFieldsJson)
 
-            // Copy all keys from newCustomFields into existingCustomFields (overwrite present, preserve absent)
+            com.assistant.core.utils.LogManager.service(
+                "DEBUG updateEntry: Merging custom_fields - existing=$existingCustomFields, new=$newCustomFields",
+                "DEBUG"
+            )
+
+            // Copy all keys from newCustomFields into existingCustomFields
+            // - Regular values: overwrite present, preserve absent
+            // - null values: remove the field (for migration support)
             newCustomFields.keys().forEach { key ->
-                existingCustomFields.put(key, newCustomFields.get(key))
+                // Use isNull() to detect JSON null values (handles both JSONObject.NULL and parsed null)
+                if (newCustomFields.isNull(key)) {
+                    // Remove field explicitly set to null
+                    com.assistant.core.utils.LogManager.service("DEBUG updateEntry: Removing field '$key' (null value)", "DEBUG")
+                    existingCustomFields.remove(key)
+                } else {
+                    // Update/add field
+                    val value = newCustomFields.get(key)
+                    existingCustomFields.put(key, value)
+                }
             }
+
+            com.assistant.core.utils.LogManager.service(
+                "DEBUG updateEntry: Result custom_fields=$existingCustomFields",
+                "DEBUG"
+            )
 
             existingCustomFields.toString()
         } else {
@@ -303,7 +324,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         "timestamp" to entity.timestamp,
                         "name" to entity.name,
                         "data" to entity.data,
-                        "customFields" to entity.customFields,
+                        "custom_fields" to entity.customFields,  // Use underscore for consistency with DB and configs
                         "createdAt" to entity.createdAt,
                         "updatedAt" to entity.updatedAt
                     )
@@ -339,7 +360,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "timestamp" to entity.timestamp,
                     "name" to entity.name,
                     "data" to entity.data,
-                    "customFields" to entity.customFields,
+                    "custom_fields" to entity.customFields,  // Use underscore for consistency with DB and configs
                     "createdAt" to entity.createdAt,
                     "updatedAt" to entity.updatedAt
                 )
@@ -526,6 +547,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 val singleParams = JSONObject().apply {
                     put("id", entryId)
                     if (entryJson.has("data")) put("data", entryJson.getJSONObject("data"))
+                    if (entryJson.has("custom_fields")) put("custom_fields", entryJson.getJSONObject("custom_fields"))
                     if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
                     if (entryJson.has("name")) put("name", entryJson.getString("name"))
                 }
