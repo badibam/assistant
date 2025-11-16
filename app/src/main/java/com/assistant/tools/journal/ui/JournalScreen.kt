@@ -285,7 +285,7 @@ fun JournalScreen(
                     onClick = {
                         coroutineScope.launch {
                             // Create entry immediately in DB with default values
-                            // Note: content is optional and will be filled by user typing or transcription
+                            // Note: content is optional
                             val params = mapOf(
                                 "toolInstanceId" to toolInstanceId,
                                 "tooltype" to "journal",

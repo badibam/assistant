@@ -19,7 +19,7 @@ import org.json.JSONObject
  * Provides static metadata for journal tool instances
  *
  * Journal entries are timestamped entries with title and content,
- * sorted chronologically with audio transcription support.
+ * sorted chronologically.
  */
 object JournalToolType : ToolTypeContract {
 
@@ -109,7 +109,7 @@ object JournalToolType : ToolTypeContract {
      * Creates journal data schema
      * - name: Entry title (required via BaseSchemas)
      * - timestamp: Entry date/time (modifiable, required)
-     * - data.content: Text content without length limit (optional - can be filled via transcription)
+     * - data.content: Text content without length limit (optional)
      * - custom_fields: Custom fields defined in tool instance config (if toolInstanceId provided)
      */
     private fun createJournalDataSchema(context: Context, toolInstanceId: String?): Schema {

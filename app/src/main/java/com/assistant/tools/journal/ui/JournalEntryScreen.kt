@@ -16,9 +16,6 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DateUtils
-import com.assistant.core.transcription.ui.TranscribableTextField
-import com.assistant.core.transcription.ui.TranscriptionStatus
-import com.assistant.core.transcription.models.TranscriptionContext
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
@@ -28,7 +25,6 @@ import com.assistant.tools.journal.utils.DateFormatUtils
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.json.JSONArray
-import java.io.File
 
 /**
  * Screen for viewing and editing a single journal entry
@@ -38,7 +34,7 @@ import java.io.File
  * - Edition mode with editable fields
  * - Date/time picker
  * - Title field
- * - Content field with transcription support
+ * - Content field
  * - Cancel in creation mode = auto-delete entry
  */
 @Composable
@@ -68,11 +64,6 @@ fun JournalEntryScreen(
 
     // Custom fields values state (definitions loaded automatically by CustomFieldsInput/Display)
     var customFieldsValues by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
-
-    // Transcription states (survive rotation where possible)
-    var audioFilePath by remember { mutableStateOf("") } // Recalculated on recomposition
-    var transcriptionStatus by remember { mutableStateOf<TranscriptionStatus?>(null) } // Complex type, reload on recomposition
-    var activeTranscriptionModel by rememberSaveable { mutableStateOf("") }
 
     // Date/time picker states
     var showDatePicker by remember { mutableStateOf(false) }
@@ -141,10 +132,6 @@ fun JournalEntryScreen(
                     customFieldsValues = parsedCustomFields
                     LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
-                    // TODO: Load transcription data if available
-                    // audioFilePath = parsedData["audio_file_path"] as? String ?: ""
-                    // transcriptionStatus = ...
-
                     LogManager.ui("Successfully loaded entry: title=$title")
                 }
             } else {
@@ -155,15 +142,6 @@ fun JournalEntryScreen(
             // In creation mode, initialize with current timestamp
             timestamp = System.currentTimeMillis()
         }
-    }
-
-    // Initialize audio file path
-    LaunchedEffect(entryId) {
-        // Audio files are stored in: /data/data/.../files/journal_audio/{entryId}.wav
-        // Format: WAV 16kHz mono 16-bit PCM (Vosk requirement)
-        val journalAudioDir = File(context.filesDir, "journal_audio")
-        journalAudioDir.mkdirs()
-        audioFilePath = File(journalAudioDir, "$entryId.wav").absolutePath
     }
 
     // Error message display
@@ -367,30 +345,18 @@ fun JournalEntryScreen(
                 }
             }
 
-            // Content field with transcription support
+            // Content field
             UI.Card(type = CardType.DEFAULT) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TranscribableTextField(
+                    UI.FormField(
                         label = s.tool("label_content"),
                         value = content,
                         onChange = { content = it },
-                        audioFilePath = audioFilePath,
-                        transcriptionStatus = transcriptionStatus,
-                        modelName = activeTranscriptionModel,
-                        enabled = true,
-                        required = false,  // Content is optional - can be filled via transcription or typing
-                        // Auto-transcription configuration
-                        autoTranscribe = true,
-                        transcriptionContext = TranscriptionContext(
-                            entryId = entryId,
-                            toolInstanceId = toolInstanceId,
-                            tooltype = "journal",
-                            fieldName = "content"
-                        ),
-                        onTranscriptionStatusChange = { transcriptionStatus = it }
+                        fieldType = FieldType.TEXT_UNLIMITED,
+                        required = false
                     )
                 }
             }

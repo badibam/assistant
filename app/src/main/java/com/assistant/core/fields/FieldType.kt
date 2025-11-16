@@ -34,7 +34,7 @@ enum class FieldType {
     /**
      * Text field with no length limit.
      * Config: null (no configuration required)
-     * Example: Long notes, transcriptions, detailed descriptions
+     * Example: Long notes, detailed descriptions
      */
     TEXT_UNLIMITED,
 

@@ -76,7 +76,6 @@ cd assistant
 - **Versioning** : Migrations SQL + transformations JSON centralisées
 - **Backup/Restore** : Export/import/reset avec gestion versions et détection erreurs
 - **Navigation données** : DataNavigator hiérarchique + ZoneScopeSelector avec périodes
-- **Transcription** : Provider pattern (offline/online) avec auto-retry, formatage segments Vosk
 - **Logging** : Système de logs in-app avec filtres (niveau, durée, tag) et purge automatique
 
 ### Système IA

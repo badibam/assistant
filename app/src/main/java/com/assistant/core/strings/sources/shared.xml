@@ -811,12 +811,6 @@
     <string name="settings_ai_providers_description">Configurer les fournisseurs d\'intelligence artificielle</string>
     <string name="settings_ai_providers_config">Configuration du fournisseur</string>
 
-    <string name="settings_transcription">Transcription</string>
-    <string name="settings_transcription_description">Configurer la transcription audio</string>
-    <string name="settings_transcription_provider">Fournisseur de transcription</string>
-    <string name="settings_transcription_configure">Configurer le fournisseur</string>
-    <string name="settings_transcription_no_provider">Aucun fournisseur actif</string>
-
     <string name="settings_format">Format et dates</string>
     <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
 
@@ -1241,83 +1235,11 @@
     <string name="ai_automation_no_commands_guidance">Tu es en mode automation, tes réponses doivent contenir des requêtes de données ou des actions. Si tu as terminé, utilise le flag \'completed\'.</string>
     <string name="ai_completion_confirmation_required">Le flag \'completed\' signifie que TOUTE la demande initiale est terminée, pas juste une étape. Si c\'était bien ton intention, renvoie un message avec \'completed: true\'. Sinon, continue ton travail.</string>
 
-    <!-- Transcription System -->
-    <string name="transcription_recording">Enregistrement...</string>
-    <string name="transcription_paused">En pause</string>
-    <string name="transcription_processing">Transcription en cours...</string>
-    <string name="transcription_completed">Transcription terminée</string>
-    <string name="transcription_failed">Échec de la transcription</string>
-    <string name="transcription_ready">Prêt à enregistrer</string>
-
-    <string name="transcription_record">Enregistrer</string>
-    <string name="transcription_stop_recording">Arrêter l\'enregistrement</string>
-    <string name="transcription_play_audio">Écouter l\'audio</string>
-    <string name="transcription_retry">Réessayer</string>
-    <string name="transcription_end_of_sentence">Fin de phrase</string>
-    <string name="transcription_cancel_recording">Annuler l\'enregistrement</string>
-
-    <string name="transcription_dialog_title">Enregistrement audio</string>
-    <string name="transcription_duration">Durée: %1$s</string>
-    <string name="transcription_model">Modèle: %1$s</string>
-    <string name="transcription_segments">%1$d segment(s)</string>
-
-    <string name="transcription_confirm_cancel_title">Annuler l\'enregistrement ?</string>
-    <string name="transcription_confirm_cancel_message">L\'audio enregistré sera supprimé. Cette action est irréversible.</string>
-    <string name="transcription_confirm_validate_title">Terminer l\'enregistrement ?</string>
-    <string name="transcription_confirm_validate_message">L\'audio sera transcrit automatiquement.</string>
-
-    <string name="transcription_confirm_rerecord_title">Ré-enregistrer ?</string>
-    <string name="transcription_confirm_rerecord_message">Cela écrasera le texte et l\'audio existants. Cette action est irréversible.</string>
-
-    <string name="transcription_permission_required">Permission audio requise</string>
-    <string name="transcription_permission_denied">Permission refusée. Impossible d\'enregistrer de l\'audio.</string>
-    <string name="transcription_no_provider">Aucun provider de transcription configuré</string>
-    <string name="transcription_no_model">Aucun modèle de transcription sélectionné</string>
-    <string name="transcription_no_config">Configuration de transcription manquante</string>
-
-    <!-- Transcription Errors -->
-    <string name="error_transcription_start">Impossible de démarrer la transcription</string>
-    <string name="error_transcription_no_segments">Aucun segment audio à transcrire</string>
-    <string name="transcription_no_content">La transcription n\'a produit aucun texte. Essayez de parler plus clairement ou de ré-enregistrer.</string>
-    <string name="error_transcription_audio_not_found">Fichier audio introuvable: %1$s</string>
-    <string name="error_transcription_no_provider">Aucun provider de transcription actif</string>
-    <string name="error_transcription_no_config">Configuration de transcription manquante</string>
-    <string name="error_transcription_no_model">Aucun modèle de transcription configuré</string>
-    <string name="error_transcription_provider_not_found">Provider de transcription introuvable: %1$s</string>
-    <string name="error_transcription_unknown">Erreur de transcription inconnue</string>
-
     <!-- Provider Configuration -->
     <string name="error_provider_not_configured">Provider non configuré: %1$s</string>
     <string name="error_unknown_provider">Provider inconnu: %1$s</string>
     <string name="error_schema_not_found">Schéma de validation introuvable</string>
     <string name="error_invalid_json">JSON invalide: %1$s</string>
-
-    <!-- Vosk Provider Configuration -->
-    <string name="vosk_config_title">Configuration Vosk</string>
-    <string name="vosk_available_models">Modèles disponibles</string>
-    <string name="vosk_downloaded_models">Modèles téléchargés</string>
-    <string name="vosk_no_models_downloaded">Aucun modèle téléchargé</string>
-    <string name="vosk_select_default_model">Sélectionner le modèle par défaut</string>
-    <string name="vosk_default_model">Modèle par défaut</string>
-    <string name="vosk_no_default_model">Aucun modèle par défaut</string>
-    <string name="vosk_download_model">Télécharger</string>
-    <string name="vosk_delete_model">Supprimer</string>
-    <string name="vosk_downloading">Téléchargement en cours...</string>
-    <string name="vosk_download_progress">Téléchargement: %1$d%%</string>
-    <string name="vosk_download_success">Modèle téléchargé avec succès</string>
-    <string name="vosk_download_failed">Échec du téléchargement: %1$s</string>
-    <string name="vosk_delete_confirm_title">Supprimer le modèle ?</string>
-    <string name="vosk_delete_confirm_message">Cela supprimera définitivement le modèle %1$s (%2$s). Cette action est irréversible.</string>
-    <string name="vosk_delete_success">Modèle supprimé</string>
-    <string name="vosk_delete_failed">Échec de la suppression</string>
-    <string name="vosk_model_size">Taille: %1$s</string>
-    <string name="vosk_model_language">Langue: %1$s</string>
-    <string name="vosk_model_quality">Qualité: %1$s</string>
-    <string name="vosk_quality_small">Petite</string>
-    <string name="vosk_quality_medium">Moyenne</string>
-    <string name="vosk_quality_large">Grande</string>
-    <string name="vosk_select_model_first">Veuillez d\'abord télécharger et sélectionner un modèle par défaut</string>
-    <string name="vosk_help">Les modèles sont téléchargés depuis les serveurs officiels Vosk. Sélectionnez un modèle par défaut pour la transcription.</string>
 
     <!-- Notification Channels -->
     <string name="notification_channel_high_name">Priorité haute</string>

@@ -91,8 +91,6 @@
 
 **Description**: Unlimited text (already implemented).
 
-**Usage**: Transcriptions, documentation, exports.
-
 **Config**: `null` (no configuration)
 
 **JSON Schema generated**:

@@ -13,8 +13,6 @@ import com.assistant.core.services.SchemaService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.ai.services.AutomationService
-import com.assistant.core.transcription.service.TranscriptionProviderConfigService
-import com.assistant.core.transcription.service.TranscriptionService
 import com.assistant.core.notifications.NotificationService
 import kotlin.reflect.KClass
 
@@ -40,8 +38,6 @@ object ServiceFactory {
             AISessionService::class -> AISessionService(context)
             AIProviderConfigService::class -> AIProviderConfigService(context)
             AutomationService::class -> AutomationService(context)
-            TranscriptionProviderConfigService::class -> TranscriptionProviderConfigService(context)
-            TranscriptionService::class -> TranscriptionService(context)
             NotificationService::class -> NotificationService(context)
             else -> throw IllegalArgumentException("Unknown service class: ${serviceClass.simpleName}")
         }

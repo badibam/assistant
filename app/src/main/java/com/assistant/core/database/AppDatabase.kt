@@ -23,8 +23,6 @@ import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
-import com.assistant.core.transcription.database.TranscriptionDao
-import com.assistant.core.transcription.database.TranscriptionProviderConfigEntity
 import com.assistant.core.utils.LogManager
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -40,12 +38,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SessionMessageEntity::class,
         AIProviderConfigEntity::class,
         AutomationEntity::class,
-        TranscriptionProviderConfigEntity::class,
         LogEntry::class
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 18,
+    version = 19,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -59,7 +56,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun toolExecutionDao(): BaseToolExecutionDao
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
-    abstract fun transcriptionDao(): TranscriptionDao
     abstract fun logDao(): LogDao
 
     companion object {
@@ -72,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 18
+        const val VERSION = 19
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -736,6 +732,65 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 18 → 19: Remove transcription system
+         *
+         * Problem: Transcription is being moved to external app
+         * - TranscriptionProviderConfigEntity table no longer needed
+         * - transcription_metadata field in tool_data no longer needed
+         *
+         * Solution: Drop transcription-related database objects
+         * - Drop transcription_provider_config table
+         * - Remove transcription_metadata from all tool_data entries
+         */
+        private val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 18->19: Starting - Removing transcription system", "INFO")
+
+                // 1. Drop transcription_provider_config table (if exists)
+                database.execSQL("DROP TABLE IF EXISTS transcription_provider_config")
+                LogManager.database("MIGRATION 18->19: Dropped transcription_provider_config table", "INFO")
+
+                // 2. Remove transcription_metadata from all tool_data entries
+                val cursor = database.query(
+                    "SELECT id, data FROM tool_data WHERE data LIKE '%transcription_metadata%'"
+                )
+
+                val totalEntries = cursor.count
+                LogManager.database("MIGRATION 18->19: Found $totalEntries entries with transcription_metadata", "INFO")
+
+                var cleanedCount = 0
+                var errorCount = 0
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getString(0)
+                    val dataJson = cursor.getString(1)
+
+                    try {
+                        val dataObj = org.json.JSONObject(dataJson)
+
+                        // Remove transcription_metadata if present
+                        if (dataObj.has("transcription_metadata")) {
+                            dataObj.remove("transcription_metadata")
+
+                            database.execSQL(
+                                "UPDATE tool_data SET data = ? WHERE id = ?",
+                                arrayOf(dataObj.toString(), id)
+                            )
+                            cleanedCount++
+                            LogManager.database("MIGRATION 18->19: Cleaned transcription_metadata from entry $id", "DEBUG")
+                        }
+                    } catch (e: Exception) {
+                        errorCount++
+                        LogManager.database("MIGRATION 18->19: Failed to clean entry $id: ${e.message}", "ERROR", e)
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 18->19: Completed - Cleaned $cleanedCount entries ($errorCount errors)", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -752,7 +807,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_14_15,
                     MIGRATION_15_16,
                     MIGRATION_16_17,
-                    MIGRATION_17_18
+                    MIGRATION_17_18,
+                    MIGRATION_18_19
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -13,8 +13,6 @@ import com.assistant.core.services.SchemaService
 import com.assistant.core.ai.services.AISessionService
 import com.assistant.core.ai.services.AIProviderConfigService
 import com.assistant.core.ai.services.AutomationService
-import com.assistant.core.transcription.service.TranscriptionProviderConfigService
-import com.assistant.core.transcription.service.TranscriptionService
 import com.assistant.core.notifications.NotificationService
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
@@ -39,8 +37,6 @@ class ServiceRegistry(private val context: Context) {
         "ai_sessions" to AISessionService::class,
         "ai_provider_config" to AIProviderConfigService::class,
         "automations" to AutomationService::class,
-        "transcription_provider_config" to TranscriptionProviderConfigService::class,
-        "transcription" to TranscriptionService::class,
         "notifications" to NotificationService::class
     )
     

@@ -113,9 +113,6 @@ class MainActivity : ComponentActivity() {
         // Preload icons for current theme using multi-step operations
         startIconPreloading()
 
-        // Auto-retry pending transcriptions on app startup
-        retryPendingTranscriptions()
-
         // Test multi-step operations (uncomment to test)
         //testMultiStepOperations()
 
@@ -308,70 +305,6 @@ class MainActivity : ComponentActivity() {
             LogManager.service("scheduleCoreSchedulerWorker: SUCCESS - Core scheduler registered (${intervalMinutes}min periodic tick for app-closed)", "INFO")
         } catch (e: Exception) {
             LogManager.service("scheduleCoreSchedulerWorker: FAILED - ${e.message}", "ERROR", e)
-        }
-    }
-
-    /**
-     * Auto-retry pending transcriptions on app startup
-     *
-     * Scans all tool_data entries for pending transcriptions and re-launches them.
-     * This ensures transcriptions continue after app restart.
-     */
-    private fun retryPendingTranscriptions() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                LogManager.service("Scanning for pending transcriptions...")
-
-                // List pending transcriptions via service
-                val result = coordinator.processUserAction("transcription.list_pending", mapOf<String, Any>())
-
-                if (result.status == CommandStatus.SUCCESS) {
-                    val pendingList = result.data?.get("pending") as? List<*>
-
-                    if (pendingList != null && pendingList.isNotEmpty()) {
-                        LogManager.service("Found ${pendingList.size} pending transcription(s), retrying...")
-
-                        // Re-launch each pending transcription
-                        pendingList.forEach { item ->
-                            if (item is Map<*, *>) {
-                                val entryId = item["entryId"] as? String
-                                val toolInstanceId = item["toolInstanceId"] as? String
-                                val tooltype = item["tooltype"] as? String
-                                val fieldName = item["fieldName"] as? String
-                                val audioFile = item["audioFile"] as? String
-                                val model = item["model"] as? String
-                                val segmentsJson = item["segmentsTimestamps"]
-
-                                if (entryId != null && toolInstanceId != null && tooltype != null &&
-                                    fieldName != null && audioFile != null && model != null && segmentsJson != null) {
-
-                                    LogManager.service("Retrying transcription: entry=$entryId, field=$fieldName")
-
-                                    // Launch transcription with isRetry=true
-                                    coordinator.processUserAction("transcription.start", mapOf(
-                                        "entryId" to entryId,
-                                        "toolInstanceId" to toolInstanceId,
-                                        "tooltype" to tooltype,
-                                        "fieldName" to fieldName,
-                                        "audioFile" to audioFile,
-                                        "segmentsTimestamps" to segmentsJson,
-                                        "isRetry" to true
-                                    ))
-                                }
-                            }
-                        }
-
-                        LogManager.service("Pending transcriptions retry initiated")
-                    } else {
-                        LogManager.service("No pending transcriptions found")
-                    }
-                } else {
-                    LogManager.service("Failed to list pending transcriptions: ${result.error}", "WARN")
-                }
-
-            } catch (e: Exception) {
-                LogManager.service("Error retrying pending transcriptions: ${e.message}", "ERROR", e)
-            }
         }
     }
 }

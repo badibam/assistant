@@ -95,7 +95,7 @@ UI.ActionButton supporte requireConfirmation avec message personnalisable.
 - **TEXT** (60 chars) : Noms, identifiants, labels
 - **TEXT_MEDIUM** (250 chars) : Descriptions courtes
 - **TEXT_LONG** (1500 chars) : Contenu textuel substantiel
-- **TEXT_UNLIMITED** : Contenu long sans limite (journaux, notes, messages IA, transcriptions)
+- **TEXT_UNLIMITED** : Contenu long sans limite (journaux, etc.)
 - **NUMERIC** : Clavier numérique
 - **EMAIL** : Clavier email, pas d'autocorrect
 - **PASSWORD** : Masqué, pas d'autocorrect

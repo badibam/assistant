@@ -273,6 +273,17 @@ object JsonTransformers {
                 }
                 json
             }
+            18 -> {
+                // v18→v19: Remove transcription_metadata completely (transcription system removed)
+                // Transcription is now handled by external app, so metadata no longer needed
+                if (json.has("transcription_metadata")) {
+                    json.remove("transcription_metadata")
+                    LogManager.service("transformGenericToolData v18->v19: Removed transcription_metadata", "INFO")
+                } else {
+                    LogManager.service("transformGenericToolData v18->v19: No transcription_metadata to remove", "DEBUG")
+                }
+                json
+            }
             else -> json // No generic migrations for this version
         }
     }

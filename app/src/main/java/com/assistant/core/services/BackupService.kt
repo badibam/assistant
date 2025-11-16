@@ -7,7 +7,6 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.*
 import com.assistant.core.ai.database.*
-import com.assistant.core.transcription.database.TranscriptionProviderConfigEntity
 import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,7 +78,6 @@ class BackupService(private val context: Context) : ExecutableService {
 
             val aiProviderConfigs = database.aiDao().getAllProviderConfigs()
             val automations = database.aiDao().getAllAutomations()
-            val transcriptionProviderConfigs = database.transcriptionDao().getAllProviderConfigs()
             val toolExecutions = database.toolExecutionDao().getAllExecutions()
 
             // Check cancellation before building JSON
@@ -257,21 +255,6 @@ class BackupService(private val context: Context) : ExecutableService {
                                 if (automation.group != null) {
                                     put("group", automation.group)
                                 }
-                            })
-                        }
-                    })
-
-                    // Transcription provider configs
-                    put("transcription_provider_configs", JSONArray().apply {
-                        transcriptionProviderConfigs.forEach { config ->
-                            put(JSONObject().apply {
-                                put("provider_id", config.providerId)
-                                put("display_name", config.displayName)
-                                put("config_json", config.configJson)
-                                put("is_configured", config.isConfigured)
-                                put("is_active", config.isActive)
-                                put("created_at", config.createdAt)
-                                put("updated_at", config.updatedAt)
                             })
                         }
                     })
@@ -628,24 +611,6 @@ class BackupService(private val context: Context) : ExecutableService {
                         lastExecutionId = item.optString("last_execution_id", null),
                         executionHistoryJson = item.optString("execution_history_json", "[]"),
                         group = item.optString("group", null)
-                    )
-                )
-            }
-        }
-
-        // Transcription provider configs
-        data.optJSONArray("transcription_provider_configs")?.let { array ->
-            for (i in 0 until array.length()) {
-                val item = array.getJSONObject(i)
-                database.transcriptionDao().insertProviderConfig(
-                    TranscriptionProviderConfigEntity(
-                        providerId = item.getString("provider_id"),
-                        displayName = item.getString("display_name"),
-                        configJson = item.getString("config_json"),
-                        isConfigured = item.getBoolean("is_configured"),
-                        isActive = item.getBoolean("is_active"),
-                        createdAt = item.getLong("created_at"),
-                        updatedAt = item.getLong("updated_at")
                     )
                 )
             }
