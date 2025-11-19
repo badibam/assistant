@@ -27,12 +27,16 @@ import kotlinx.coroutines.launch
  * @param fields Current list of field definitions (ordered)
  * @param onFieldsChange Callback when the field list changes (create/update/delete/reorder)
  * @param context Android context for strings
+ * @param toolInstanceId Optional tool instance ID for data length checking (edit mode only)
+ * @param tooltype Optional tooltype name for data queries
  */
 @Composable
 fun CustomFieldsEditor(
     fields: List<FieldDefinition>,
     onFieldsChange: (List<FieldDefinition>) -> Unit,
-    context: Context
+    context: Context,
+    toolInstanceId: String? = null,
+    tooltype: String? = null
 ) {
     val s = Strings.`for`(context = context)
 
@@ -113,6 +117,8 @@ fun CustomFieldsEditor(
         FieldDefinitionDialog(
             existingField = editingField,
             existingFields = fields,
+            toolInstanceId = toolInstanceId,
+            tooltype = tooltype,
             onDismiss = {
                 showDialog = false
                 editingField = null
@@ -267,6 +273,8 @@ private fun FieldDefinitionCard(
  *
  * @param existingField Field to edit (null for creating new field)
  * @param existingFields List of all existing fields (for name collision detection)
+ * @param toolInstanceId Optional tool instance ID for data length checking
+ * @param tooltype Optional tooltype name for data queries
  * @param onDismiss Callback when dialog is dismissed
  * @param onConfirm Callback when field is confirmed (receives the new/updated field)
  * @param context Android context for strings
@@ -275,6 +283,8 @@ private fun FieldDefinitionCard(
 fun FieldDefinitionDialog(
     existingField: FieldDefinition?,
     existingFields: List<FieldDefinition>,
+    toolInstanceId: String? = null,
+    tooltype: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (FieldDefinition) -> Unit,
     context: Context
@@ -309,6 +319,11 @@ fun FieldDefinitionDialog(
 
     // Error message state for toast
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Warning dialog state (for length change with exceeding data)
+    var showWarningDialog by remember { mutableStateOf(false) }
+    var exceedingDataCount by remember { mutableStateOf(0) }
+    var pendingField by remember { mutableStateOf<FieldDefinition?>(null) }
 
     // Show error toast
     LaunchedEffect(errorMessage) {
