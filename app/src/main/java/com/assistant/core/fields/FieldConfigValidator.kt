@@ -114,17 +114,7 @@ object FieldConfigValidator {
      */
     private fun validateTypeConfig(type: FieldType, config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         return when (type) {
-            FieldType.TEXT_SHORT, FieldType.TEXT_LONG, FieldType.TEXT_UNLIMITED -> {
-                // Text types do not require config (should be null)
-                if (config != null) {
-                    ValidationResult(
-                        isValid = false,
-                        errorMessage = s.shared("field_validation_config_not_null").format(type.name)
-                    )
-                } else {
-                    ValidationResult(isValid = true)
-                }
-            }
+            FieldType.TEXT -> validateTextConfig(config, s)
 
             FieldType.NUMERIC -> validateNumericConfig(config, s)
             FieldType.SCALE -> validateScaleConfig(config, s)
@@ -135,6 +125,31 @@ object FieldConfigValidator {
             FieldType.TIME -> validateTimeConfig(config, s)
             FieldType.DATETIME -> validateDateTimeConfig(config, s)
         }
+    }
+
+    /**
+     * Validates TEXT field config.
+     * Config: {length: "SHORT" | "MEDIUM" | "LONG" | "UNLIMITED"} (optional, default: UNLIMITED)
+     */
+    private fun validateTextConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
+        // Config is optional for TEXT (defaults to UNLIMITED)
+        if (config == null) return ValidationResult(isValid = true)
+
+        // Validate length if provided
+        val lengthStr = config["length"] as? String
+        if (lengthStr != null) {
+            // Check if length is a valid TextLength enum value
+            try {
+                TextLength.valueOf(lengthStr.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ValidationResult(
+                    isValid = false,
+                    errorMessage = s.shared("field_validation_text_length_invalid").format(lengthStr)
+                )
+            }
+        }
+
+        return ValidationResult(isValid = true)
     }
 
     /**

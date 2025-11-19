@@ -32,32 +32,23 @@ fun FieldInput(
     modifier: Modifier = Modifier
 ) {
     when (fieldDef.type) {
-        com.assistant.core.fields.FieldType.TEXT_SHORT -> {
-            UI.FormField(
-                label = fieldDef.displayName,
-                value = value?.toString() ?: "",
-                onChange = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
-                fieldType = UIFieldType.TEXT,
-                required = false
-            )
-        }
+        com.assistant.core.fields.FieldType.TEXT -> {
+            // Determine UI field type based on config.length
+            val lengthStr = fieldDef.config?.get("length") as? String
+            val length = TextLength.fromString(lengthStr)
 
-        com.assistant.core.fields.FieldType.TEXT_LONG -> {
-            UI.FormField(
-                label = fieldDef.displayName,
-                value = value?.toString() ?: "",
-                onChange = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
-                fieldType = UIFieldType.TEXT_LONG,
-                required = false
-            )
-        }
+            val uiFieldType = when (length) {
+                TextLength.SHORT -> UIFieldType.TEXT
+                TextLength.MEDIUM -> UIFieldType.TEXT_MEDIUM
+                TextLength.LONG -> UIFieldType.TEXT_LONG
+                TextLength.UNLIMITED -> UIFieldType.TEXT_UNLIMITED
+            }
 
-        com.assistant.core.fields.FieldType.TEXT_UNLIMITED -> {
             UI.FormField(
                 label = fieldDef.displayName,
                 value = value?.toString() ?: "",
                 onChange = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
-                fieldType = UIFieldType.TEXT_UNLIMITED,
+                fieldType = uiFieldType,
                 required = false
             )
         }

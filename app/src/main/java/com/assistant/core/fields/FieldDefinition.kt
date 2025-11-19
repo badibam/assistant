@@ -121,7 +121,7 @@ fun FieldDefinition.formatValue(value: Any?, context: Context): String {
     if (value == null) return s.shared("label_no_value")
 
     return when (type) {
-        FieldType.TEXT_SHORT, FieldType.TEXT_LONG, FieldType.TEXT_UNLIMITED -> {
+        FieldType.TEXT -> {
             val text = value.toString()
             if (text.isEmpty()) s.shared("label_no_value") else text
         }

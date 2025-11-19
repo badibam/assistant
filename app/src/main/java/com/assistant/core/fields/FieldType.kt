@@ -16,27 +16,16 @@ import com.assistant.core.strings.Strings
  */
 enum class FieldType {
     /**
-     * Short text for identifiers, names, short labels.
-     * Config: null (no configuration required)
-     * Max length: 60 chars (FieldLimits.SHORT_LENGTH) - fixed, not configurable
-     * Example: Names, short titles, visible identifiers
+     * Text field with configurable length.
+     * Config: {length: "SHORT" | "MEDIUM" | "LONG" | "UNLIMITED"} (default: UNLIMITED)
+     * Length options:
+     * - SHORT: 60 chars (a few words)
+     * - MEDIUM: 250 chars (one paragraph)
+     * - LONG: 1500 chars (one page)
+     * - UNLIMITED: no limit (default)
+     * Example: Notes, descriptions, comments with flexible length
      */
-    TEXT_SHORT,
-
-    /**
-     * Long text for substantial content.
-     * Config: null (no configuration required)
-     * Max length: 1500 chars (FieldLimits.LONG_LENGTH) - fixed, not configurable
-     * Example: Detailed descriptions, comments, long notes
-     */
-    TEXT_LONG,
-
-    /**
-     * Text field with no length limit.
-     * Config: null (no configuration required)
-     * Example: Long notes, detailed descriptions
-     */
-    TEXT_UNLIMITED,
+    TEXT,
 
     /**
      * Numeric value with optional unit and constraints.
@@ -107,9 +96,7 @@ enum class FieldType {
     fun getDisplayName(context: Context): String {
         val s = Strings.`for`(context = context)
         return when (this) {
-            TEXT_SHORT -> s.shared("field_type_text_short_display_name")
-            TEXT_LONG -> s.shared("field_type_text_long_display_name")
-            TEXT_UNLIMITED -> s.shared("field_type_text_unlimited_display_name")
+            TEXT -> s.shared("field_type_text_display_name")
             NUMERIC -> s.shared("field_type_numeric_display_name")
             SCALE -> s.shared("field_type_scale_display_name")
             CHOICE -> s.shared("field_type_choice_display_name")
@@ -131,9 +118,7 @@ enum class FieldType {
     fun getDescription(context: Context): String {
         val s = Strings.`for`(context = context)
         return when (this) {
-            TEXT_SHORT -> s.shared("field_type_text_short_description")
-            TEXT_LONG -> s.shared("field_type_text_long_description")
-            TEXT_UNLIMITED -> s.shared("field_type_text_unlimited_description")
+            TEXT -> s.shared("field_type_text_description")
             NUMERIC -> s.shared("field_type_numeric_description")
             SCALE -> s.shared("field_type_scale_description")
             CHOICE -> s.shared("field_type_choice_description")

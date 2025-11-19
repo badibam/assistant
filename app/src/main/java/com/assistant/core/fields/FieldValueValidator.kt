@@ -30,10 +30,8 @@ object FieldValueValidator {
         if (value == null) return ValidationResult(isValid = true)
 
         return when (fieldDef.type) {
-            // Text types: fully handled by JSON Schema (maxLength)
-            FieldType.TEXT_SHORT,
-            FieldType.TEXT_LONG,
-            FieldType.TEXT_UNLIMITED -> ValidationResult(isValid = true)
+            // TEXT: fully handled by JSON Schema (maxLength based on config.length)
+            FieldType.TEXT -> ValidationResult(isValid = true)
 
             // NUMERIC: fully handled by JSON Schema (min, max, multipleOf)
             FieldType.NUMERIC -> ValidationResult(isValid = true)

@@ -285,7 +285,7 @@ fun FieldDefinitionDialog(
     // Form state
     var displayName by remember { mutableStateOf(existingField?.displayName ?: "") }
     var description by remember { mutableStateOf(existingField?.description ?: "") }
-    var fieldType by remember { mutableStateOf(existingField?.type ?: FieldType.TEXT_UNLIMITED) }
+    var fieldType by remember { mutableStateOf(existingField?.type ?: FieldType.TEXT) }
     var alwaysVisible by remember { mutableStateOf(existingField?.alwaysVisible ?: false) }
     var config by remember { mutableStateOf(existingField?.config) }
 

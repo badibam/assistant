@@ -100,29 +100,19 @@ object CustomFieldsSchemaGenerator {
      */
     private fun createFieldSchema(fieldDef: FieldDefinition): JSONObject {
         return when (fieldDef.type) {
-            FieldType.TEXT_SHORT -> {
+            FieldType.TEXT -> {
                 JSONObject().apply {
                     put("type", "string")
-                    put("maxLength", FieldLimits.SHORT_LENGTH)
-                    if (fieldDef.description != null) {
-                        put("description", fieldDef.description)
-                    }
-                }
-            }
 
-            FieldType.TEXT_LONG -> {
-                JSONObject().apply {
-                    put("type", "string")
-                    put("maxLength", FieldLimits.LONG_LENGTH)
-                    if (fieldDef.description != null) {
-                        put("description", fieldDef.description)
-                    }
-                }
-            }
+                    // Get length from config (default UNLIMITED)
+                    val lengthStr = fieldDef.config?.get("length") as? String
+                    val length = TextLength.fromString(lengthStr)
 
-            FieldType.TEXT_UNLIMITED -> {
-                JSONObject().apply {
-                    put("type", "string")
+                    // Only set maxLength if not UNLIMITED
+                    if (length != TextLength.UNLIMITED) {
+                        put("maxLength", length.getLimit())
+                    }
+
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }

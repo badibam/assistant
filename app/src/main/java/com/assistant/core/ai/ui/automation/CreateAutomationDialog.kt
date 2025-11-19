@@ -70,12 +70,37 @@ fun CreateAutomationDialog(
             else preSelectedGroup
         )
     }
+    var selectedZoneId by remember {
+        mutableStateOf(
+            if (isEditMode) automation?.get("zone_id") as? String ?: zoneId
+            else zoneId
+        )
+    }
 
-    // Load zone tool_groups
-    var zoneToolGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-    LaunchedEffect(zoneId) {
+    // Load all zones for zone selection (EDIT mode)
+    var availableZones by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    LaunchedEffect(Unit) {
         try {
-            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            val zonesResult = coordinator.processUserAction("zones.list", emptyMap())
+            if (zonesResult.status == CommandStatus.SUCCESS) {
+                val zones = zonesResult.data?.get("zones") as? List<*>
+                availableZones = zones?.mapNotNull { zoneMap ->
+                    val map = zoneMap as? Map<*, *>
+                    val id = map?.get("id") as? String
+                    val name = map?.get("name") as? String
+                    if (id != null && name != null) Pair(id, name) else null
+                } ?: emptyList()
+            }
+        } catch (e: Exception) {
+            LogManager.aiUI("Failed to load zones: ${e.message}", "ERROR", e)
+        }
+    }
+
+    // Load zone tool_groups (updates when selectedZoneId changes)
+    var zoneToolGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(selectedZoneId) {
+        try {
+            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to selectedZoneId))
             if (result.status == CommandStatus.SUCCESS) {
                 val zoneData = result.data?.get("zone") as? Map<*, *>
                 val toolGroupsJson = zoneData?.get("tool_groups") as? String
@@ -150,6 +175,7 @@ fun CreateAutomationDialog(
                         val automationId = automation?.get("id") as? String
                         val seedSessionId = automation?.get("seed_session_id") as? String
                         val currentProviderId = automation?.get("provider_id") as? String
+                        val currentZoneId = automation?.get("zone_id") as? String
 
                         if (automationId == null || seedSessionId == null) {
                             errorMessage = s.shared("error_automation_not_found")
@@ -157,7 +183,7 @@ fun CreateAutomationDialog(
                             return@launch
                         }
 
-                        // Update automation (name + provider + group)
+                        // Update automation (name + provider + group + zone)
                         val updateParams = mutableMapOf<String, Any>(
                             "automation_id" to automationId,
                             "name" to name,
@@ -166,6 +192,10 @@ fun CreateAutomationDialog(
                         // Add group if present (empty string means explicitly ungrouped)
                         if (selectedGroup != null) {
                             updateParams["group"] = selectedGroup!!
+                        }
+                        // Add zone_id if changed
+                        if (selectedZoneId != currentZoneId) {
+                            updateParams["zone_id"] = selectedZoneId
                         }
 
                         val updateResult = coordinator.processUserAction("automations.update", updateParams)
@@ -327,6 +357,25 @@ fun CreateAutomationDialog(
                 onGroupSelected = { selectedGroup = it },
                 label = s.shared("label_group")
             )
+
+            // Zone selection (only in EDIT mode)
+            if (isEditMode && availableZones.isNotEmpty()) {
+                val currentZoneName = availableZones.find { it.first == selectedZoneId }?.second ?: ""
+                UI.FormSelection(
+                    label = s.shared("label_zone"),
+                    options = availableZones.map { it.second },
+                    selected = currentZoneName,
+                    onSelect = { selectedZoneName ->
+                        val newZoneId = availableZones.find { it.second == selectedZoneName }?.first
+                        if (newZoneId != null) {
+                            selectedZoneId = newZoneId
+                            // Reset group selection when zone changes (groups are zone-specific)
+                            selectedGroup = null
+                        }
+                    },
+                    required = false
+                )
+            }
 
             // Info text (changes based on mode)
             UI.Text(

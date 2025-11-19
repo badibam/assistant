@@ -129,7 +129,7 @@ fun ZoneScreen(
         }
     }
 
-    // Observe data changes and reload tools automatically for this zone
+    // Observe data changes and reload tools/automations automatically for this zone
     LaunchedEffect(zone.id) {
         DataChangeNotifier.changes.collect { event ->
             when (event) {
@@ -156,6 +156,39 @@ fun ZoneScreen(
                                     updated_at = (map["updated_at"] as Number).toLong()
                                 )
                             }
+                        }
+                    }
+                }
+                is DataChangeEvent.ZonesChanged -> {
+                    // Reload automations when zones change (includes automation enable/disable/update/delete)
+                    coordinator.executeWithLoading(
+                        operation = "automations.list",
+                        params = mapOf("zone_id" to zone.id),
+                        onLoading = { isLoadingAutomations = it },
+                        onError = { error -> errorMessage = error }
+                    )?.let { result ->
+                        @Suppress("UNCHECKED_CAST")
+                        val automationsList = result.data?.get("automations") as? List<Map<String, Any>> ?: emptyList()
+                        automations = automationsList.map { map ->
+                            val scheduleJson = map["schedule"] as? String
+                            com.assistant.core.ai.data.Automation(
+                                id = map["id"] as String,
+                                name = map["name"] as String,
+                                zoneId = map["zone_id"] as String,
+                                seedSessionId = map["seed_session_id"] as String,
+                                schedule = scheduleJson?.let {
+                                    kotlinx.serialization.json.Json.decodeFromString(it)
+                                },
+                                triggerIds = (map["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                                dismissOlderInstances = map["dismiss_older_instances"] as? Boolean ?: false,
+                                providerId = map["provider_id"] as String,
+                                isEnabled = map["is_enabled"] as? Boolean ?: true,
+                                group = map["group"] as? String,
+                                createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                                updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
+                                lastExecutionId = map["last_execution_id"] as? String,
+                                executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                            )
                         }
                     }
                 }

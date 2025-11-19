@@ -165,6 +165,8 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         // Update fields if provided
         val name = params.optString("name").takeIf { it.isNotEmpty() } ?: entity.name
+        val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() } ?: entity.providerId
 
         // Parse schedule if provided (no nextExecutionTime calculation - dynamic via AutomationScheduler)
         val scheduleJson = params.optString("schedule")
@@ -202,8 +204,13 @@ class AutomationService(private val context: Context) : ExecutableService {
             entity.group // Keep existing if not provided
         }
 
+        // Store old zone_id for notification
+        val oldZoneId = entity.zoneId
+
         val updatedEntity = entity.copy(
             name = name,
+            zoneId = newZoneId ?: entity.zoneId, // Update zone if provided
+            providerId = providerId,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
             dismissOlderInstances = dismissOlderInstances,
@@ -213,11 +220,19 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         dao.updateAutomation(updatedEntity)
 
+        // Notify UI of automation change in affected zones
+        if (newZoneId != null && newZoneId != oldZoneId) {
+            // Automation moved to different zone - notify both old and new zones
+            com.assistant.core.utils.DataChangeNotifier.notifyZonesChanged()
+            LogManager.service("Automation $automationId moved from zone $oldZoneId to $newZoneId", "DEBUG")
+        }
+
         LogManager.service("Successfully updated automation: $automationId", "INFO")
 
         return OperationResult.success(mapOf(
             "automation_id" to automationId,
             "name" to name,
+            "zone_id" to updatedEntity.zoneId,
             "updated" to true
         ))
     }
@@ -346,6 +361,9 @@ class AutomationService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
         dao.setAutomationEnabled(automationId, enabled, System.currentTimeMillis())
+
+        // Notify UI of automation change
+        com.assistant.core.utils.DataChangeNotifier.notifyZonesChanged()
 
         LogManager.service("Successfully set automation $automationId enabled=$enabled", "INFO")
 

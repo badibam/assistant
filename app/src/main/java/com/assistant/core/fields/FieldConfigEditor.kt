@@ -54,15 +54,8 @@ fun FieldConfigEditor(
         )
 
         when (fieldType) {
-            FieldType.TEXT_SHORT,
-            FieldType.TEXT_LONG,
-            FieldType.TEXT_UNLIMITED -> {
-                // No configuration required for text types
-                UI.Text(
-                    text = s.shared("field_config_no_config_required"),
-                    type = TextType.CAPTION,
-                    fillMaxWidth = true
-                )
+            FieldType.TEXT -> {
+                TextConfigEditor(config, onConfigChange, context)
             }
 
             FieldType.NUMERIC -> {
@@ -97,6 +90,50 @@ fun FieldConfigEditor(
                 DateTimeConfigEditor(config, onConfigChange, context)
             }
         }
+    }
+}
+
+/**
+ * Configuration editor for TEXT type.
+ * Config: {length: "SHORT" | "MEDIUM" | "LONG" | "UNLIMITED"}
+ */
+@Composable
+private fun TextConfigEditor(
+    config: Map<String, Any>?,
+    onConfigChange: (Map<String, Any>?) -> Unit,
+    context: Context
+) {
+    val s = Strings.`for`(context = context)
+    val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
+
+    // Current length selection
+    val currentLengthStr = config?.get("length") as? String
+    val currentLength = TextLength.fromString(currentLengthStr)
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        UI.FormSelection(
+            label = s.shared("field_config_text_length"),
+            options = TextLength.getAllLengths().map { it.getDisplayName(context) },
+            selected = currentLength.getDisplayName(context),
+            onSelect = { selectedDisplayName ->
+                // Find the TextLength that matches the selected display name
+                val selectedLength = TextLength.getAllLengths()
+                    .find { it.getDisplayName(context) == selectedDisplayName }
+                    ?: TextLength.DEFAULT
+
+                // Update config
+                mutableConfig["length"] = selectedLength.name
+                onConfigChange(mutableConfig)
+            },
+            required = false
+        )
+
+        // Show description of selected length
+        UI.Text(
+            text = currentLength.getDescription(context),
+            type = TextType.CAPTION,
+            fillMaxWidth = true
+        )
     }
 }
 

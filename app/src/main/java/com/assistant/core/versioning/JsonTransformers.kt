@@ -45,12 +45,16 @@ object JsonTransformers {
 
             // Apply sequential transformations
             for (version in fromVersion until toVersion) {
+                // Apply tooltype-specific transformations
                 transformed = when (tooltype) {
                     "tracking" -> transformTrackingConfig(transformed, version)
                     "journal" -> transformJournalConfig(transformed, version)
                     // Add other tooltypes as needed
                     else -> transformed // No transformation for unknown tooltypes
                 }
+
+                // Apply generic custom_fields transformation (all tooltypes)
+                transformed = transformCustomFields(transformed, version)
             }
 
             return transformed.toString()
@@ -297,6 +301,67 @@ object JsonTransformers {
     // ============================================================
     // Utility functions
     // ============================================================
+
+    /**
+     * Transforms custom_fields array in tool config from old TEXT types to new TEXT + length.
+     *
+     * Migration v25 → v26: Custom fields TEXT type refactoring
+     * - TEXT_SHORT → TEXT with config.length = SHORT
+     * - TEXT_LONG → TEXT with config.length = LONG
+     * - TEXT_UNLIMITED → TEXT with config.length = UNLIMITED
+     *
+     * @param json The config JSONObject containing custom_fields array
+     * @param version The source version (migration applied for v25 only)
+     * @return Transformed JSONObject with updated custom_fields
+     */
+    private fun transformCustomFields(json: JSONObject, version: Int): JSONObject {
+        // Only apply for v25 → v26 migration
+        if (version != 25) return json
+
+        try {
+            // Check if custom_fields array exists
+            if (!json.has("custom_fields")) return json
+
+            val customFields = json.optJSONArray("custom_fields") ?: return json
+            val transformedFields = org.json.JSONArray()
+
+            for (i in 0 until customFields.length()) {
+                val field = customFields.getJSONObject(i)
+                val type = field.optString("type")
+
+                when (type) {
+                    "TEXT_SHORT" -> {
+                        field.put("type", "TEXT")
+                        val config = org.json.JSONObject()
+                        config.put("length", "SHORT")
+                        field.put("config", config)
+                    }
+                    "TEXT_LONG" -> {
+                        field.put("type", "TEXT")
+                        val config = org.json.JSONObject()
+                        config.put("length", "LONG")
+                        field.put("config", config)
+                    }
+                    "TEXT_UNLIMITED" -> {
+                        field.put("type", "TEXT")
+                        val config = org.json.JSONObject()
+                        config.put("length", "UNLIMITED")
+                        field.put("config", config)
+                    }
+                    // Other types unchanged
+                }
+
+                transformedFields.put(field)
+            }
+
+            json.put("custom_fields", transformedFields)
+            LogManager.service("Transformed custom_fields for v25→v26", "DEBUG")
+        } catch (e: Exception) {
+            LogManager.service("Failed to transform custom_fields: ${e.message}", "ERROR", e)
+        }
+
+        return json
+    }
 
     /**
      * Fix SchedulePattern type serialization format (v10 → v11)

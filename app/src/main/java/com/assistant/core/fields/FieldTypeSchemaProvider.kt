@@ -45,9 +45,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
         }
 
         return when (fieldType) {
-            FieldType.TEXT_SHORT -> createTextShortSchema(context)
-            FieldType.TEXT_LONG -> createTextLongSchema(context)
-            FieldType.TEXT_UNLIMITED -> createTextUnlimitedSchema(context)
+            FieldType.TEXT -> createTextSchema(context)
             FieldType.NUMERIC -> createNumericSchema(context)
             FieldType.SCALE -> createScaleSchema(context)
             FieldType.CHOICE -> createChoiceSchema(context)
@@ -218,84 +216,28 @@ object FieldTypeSchemaProvider : SchemaProvider {
     }
 
     /**
-     * Build TEXT_SHORT JSON Schema
+     * Build TEXT JSON Schema with configurable length
      */
-    private fun buildTextShortSchemaJson(context: Context): String {
+    private fun buildTextSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
-        val commonProps = buildCommonFieldProperties(context, "TEXT_SHORT")
+        val commonProps = buildCommonFieldProperties(context, "TEXT")
         return """
         {
             "type": "object",
             "properties": {
                 $commonProps,
-                "default_value": {
-                    "type": "string",
-                    "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "${s.shared("field_type_schema_default_value_description")}"
-                }
-            },
-            "required": ["name", "display_name", "type"],
-            "additionalProperties": false
-        }
-        """.trimIndent()
-    }
-
-    private fun createTextShortSchema(context: Context): Schema {
-        val s = Strings.`for`(context = context)
-        return Schema(
-            id = "field_type_TEXT_SHORT",
-            displayName = s.shared("field_type_text_short_display_name"),
-            description = s.shared("field_type_text_short_description"),
-            category = SchemaCategory.FIELD_TYPE,
-            content = buildTextShortSchemaJson(context)
-        )
-    }
-
-    /**
-     * Build TEXT_LONG JSON Schema
-     */
-    private fun buildTextLongSchemaJson(context: Context): String {
-        val s = Strings.`for`(context = context)
-        val commonProps = buildCommonFieldProperties(context, "TEXT_LONG")
-        return """
-        {
-            "type": "object",
-            "properties": {
-                $commonProps,
-                "default_value": {
-                    "type": "string",
-                    "maxLength": ${FieldLimits.LONG_LENGTH},
-                    "description": "${s.shared("field_type_schema_default_value_description")}"
-                }
-            },
-            "required": ["name", "display_name", "type"],
-            "additionalProperties": false
-        }
-        """.trimIndent()
-    }
-
-    private fun createTextLongSchema(context: Context): Schema {
-        val s = Strings.`for`(context = context)
-        return Schema(
-            id = "field_type_TEXT_LONG",
-            displayName = s.shared("field_type_text_long_display_name"),
-            description = s.shared("field_type_text_long_description"),
-            category = SchemaCategory.FIELD_TYPE,
-            content = buildTextLongSchemaJson(context)
-        )
-    }
-
-    /**
-     * Build TEXT_UNLIMITED JSON Schema (existing)
-     */
-    private fun buildTextUnlimitedSchemaJson(context: Context): String {
-        val s = Strings.`for`(context = context)
-        val commonProps = buildCommonFieldProperties(context, "TEXT_UNLIMITED")
-        return """
-        {
-            "type": "object",
-            "properties": {
-                $commonProps,
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "length": {
+                            "type": "string",
+                            "enum": ["SHORT", "MEDIUM", "LONG", "UNLIMITED"],
+                            "default": "UNLIMITED",
+                            "description": "${s.shared("field_type_text_length_description")}"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "default_value": {
                     "type": "string",
                     "description": "${s.shared("field_type_schema_default_value_description")}"
@@ -307,14 +249,14 @@ object FieldTypeSchemaProvider : SchemaProvider {
         """.trimIndent()
     }
 
-    private fun createTextUnlimitedSchema(context: Context): Schema {
+    private fun createTextSchema(context: Context): Schema {
         val s = Strings.`for`(context = context)
         return Schema(
-            id = "field_type_TEXT_UNLIMITED",
-            displayName = s.shared("field_type_text_unlimited_display_name"),
-            description = s.shared("field_type_text_unlimited_description"),
+            id = "field_type_TEXT",
+            displayName = s.shared("field_type_text_display_name"),
+            description = s.shared("field_type_text_description"),
             category = SchemaCategory.FIELD_TYPE,
-            content = buildTextUnlimitedSchemaJson(context)
+            content = buildTextSchemaJson(context)
         )
     }
 
