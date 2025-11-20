@@ -90,20 +90,19 @@ fun JournalEntryScreen(
                 val entryData = result.data?.get("entry") as? Map<*, *>
                 entryData?.let { data ->
                     title = data["name"] as? String ?: ""
-                    // Parse timestamp: can be ISO String (from service) or Long (legacy)
-                    timestamp = when (val ts = data["timestamp"]) {
-                        is String -> {
-                            try {
-                                com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
-                                    ts,
-                                    com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                                )
-                            } catch (e: Exception) {
-                                System.currentTimeMillis()
-                            }
+                    // Parse ISO timestamp from service
+                    val timestampString = data["timestamp"] as? String
+                    timestamp = if (timestampString != null) {
+                        try {
+                            com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
+                                timestampString,
+                                com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+                            )
+                        } catch (e: Exception) {
+                            System.currentTimeMillis()
                         }
-                        is Number -> ts.toLong()
-                        else -> System.currentTimeMillis()
+                    } else {
+                        System.currentTimeMillis()
                     }
 
                     // Parse data field

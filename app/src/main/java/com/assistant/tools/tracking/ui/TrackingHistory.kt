@@ -187,20 +187,19 @@ fun TrackingHistory(
                                         return@mapNotNull null
                                     }
                                     
-                                    // Parse timestamp: can be ISO String (from service) or Long (legacy)
-                                    val timestamp = when (val ts = entryMap["timestamp"]) {
-                                        is String -> {
-                                            try {
-                                                com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
-                                                    ts,
-                                                    com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                                                )
-                                            } catch (e: Exception) {
-                                                System.currentTimeMillis()
-                                            }
+                                    // Parse ISO timestamp from service
+                                    val timestampString = entryMap["timestamp"] as? String
+                                    val timestamp = if (timestampString != null) {
+                                        try {
+                                            com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
+                                                timestampString,
+                                                com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+                                            )
+                                        } catch (e: Exception) {
+                                            System.currentTimeMillis()
                                         }
-                                        is Number -> ts.toLong()
-                                        else -> System.currentTimeMillis()
+                                    } else {
+                                        System.currentTimeMillis()
                                     }
                                     LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(timestamp, context)})")
                                     ToolDataEntity(
