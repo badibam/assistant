@@ -2,6 +2,7 @@ package com.assistant.core.utils
 
 import android.content.Context
 import com.assistant.core.config.DateTimeConfig
+import com.assistant.core.config.FormatDefaults
 import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.services.AppConfigService
 import kotlinx.coroutines.runBlocking
@@ -45,13 +46,8 @@ object AppConfigManager {
             isInitialized = true
             LogManager.service("AppConfigManager initialized: dayStartHour=$cachedDayStartHour, weekStartDay=$cachedWeekStartDay, dateTimeConfig=$cachedDateTimeConfig, aiLimits=$cachedAILimits")
         } catch (e: Exception) {
-            LogManager.service("Failed to initialize AppConfigManager: ${e.message}", "ERROR", e)
-            // Set defaults as fallback
-            cachedDayStartHour = 4
-            cachedWeekStartDay = "monday"
-            cachedDateTimeConfig = DateTimeConfig() // Use data class defaults
-            cachedAILimits = AILimitsConfig() // Use data class defaults
-            isInitialized = true
+            LogManager.service("CRITICAL: Failed to initialize AppConfigManager: ${e.message}", "ERROR", e)
+            throw RuntimeException("AppConfigManager initialization failed - app cannot start without valid configuration", e)
         }
     }
 

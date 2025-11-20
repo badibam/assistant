@@ -131,7 +131,8 @@ object JsonTransformers {
     fun transformAppConfig(
         json: String,
         fromVersion: Int,
-        toVersion: Int
+        toVersion: Int,
+        context: android.content.Context? = null
     ): String {
         if (fromVersion >= toVersion) return json
 
@@ -141,9 +142,10 @@ object JsonTransformers {
             // Apply sequential transformations
             for (version in fromVersion until toVersion) {
                 transformed = when (version) {
+                    19 -> migrateAppConfigFrom19To20(transformed, context)
                     // Example future migration:
                     // 10 -> migrateAppConfigFrom10To11(transformed)
-                    else -> transformed // No migrations yet
+                    else -> transformed // No migrations
                 }
             }
 
@@ -152,6 +154,43 @@ object JsonTransformers {
             LogManager.service("App config transformation failed from v$fromVersion to v$toVersion: ${e.message}", "ERROR", e)
             return json // Return original on error (fail-safe)
         }
+    }
+
+    // ============================================================
+    // Private transformation functions for app config
+    // ============================================================
+
+    /**
+     * Migrate app config from version 19 to 20
+     * Fills null use_24_hour_format and date_format_pattern with system-detected values
+     */
+    private fun migrateAppConfigFrom19To20(json: JSONObject, context: android.content.Context?): JSONObject {
+        try {
+            // Fill null use_24_hour_format
+            if (!json.has("use_24_hour_format") || json.isNull("use_24_hour_format")) {
+                val systemValue = if (context != null) {
+                    com.assistant.core.config.FormatDefaults.getSystemDefault24HourFormat(context)
+                } else {
+                    true // Fallback if no context (shouldn't happen in practice)
+                }
+                json.put("use_24_hour_format", systemValue)
+                LogManager.service("JSON Transform 19->20: Filled use_24_hour_format with ${if (context != null) "system" else "fallback"} value: $systemValue", "INFO")
+            }
+
+            // Fill null date_format_pattern
+            if (!json.has("date_format_pattern") || json.isNull("date_format_pattern")) {
+                val systemValue = if (context != null) {
+                    com.assistant.core.config.FormatDefaults.getSystemDefaultDatePattern(context)
+                } else {
+                    "dd/MM/yyyy" // Fallback if no context (shouldn't happen in practice)
+                }
+                json.put("date_format_pattern", systemValue)
+                LogManager.service("JSON Transform 19->20: Filled date_format_pattern with ${if (context != null) "system" else "fallback"} value: $systemValue", "INFO")
+            }
+        } catch (e: Exception) {
+            LogManager.service("JSON Transform 19->20: Failed to fill null format values: ${e.message}", "ERROR", e)
+        }
+        return json
     }
 
     // ============================================================

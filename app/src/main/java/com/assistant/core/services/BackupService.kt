@@ -415,11 +415,12 @@ class BackupService(private val context: Context) : ExecutableService {
      * Called after reset to ensure app has valid defaults
      */
     private suspend fun insertDefaultAppConfig() {
-        // Insert default app settings
+        // Insert default app settings with system-detected values
+        @Suppress("DEPRECATION")
         database.appSettingsCategoryDao().insertOrUpdateSettings(
             AppSettingsCategory(
                 category = AppSettingCategories.FORMAT,
-                settings = DefaultFormatSettings.JSON.trimIndent()
+                settings = DefaultFormatSettings.getJson(context)
             )
         )
         database.appSettingsCategoryDao().insertOrUpdateSettings(
@@ -708,7 +709,8 @@ class BackupService(private val context: Context) : ExecutableService {
                     val transformedSettings = JsonTransformers.transformAppConfig(
                         settingsJson,
                         fromVersion,
-                        toVersion
+                        toVersion,
+                        context  // Pass context for system detection in migrations
                     )
                     category.put("settings", transformedSettings)
                 }

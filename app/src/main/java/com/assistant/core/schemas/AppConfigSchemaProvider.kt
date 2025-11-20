@@ -33,6 +33,10 @@ object AppConfigSchemaProvider : SchemaProvider {
             "week_start_day" -> s.shared("app_config_format_week_start_day")
             "day_start_hour" -> s.shared("app_config_format_day_start_hour")
             "locale_override" -> s.shared("app_config_format_locale_override")
+            "timezone_override" -> s.shared("app_config_format_timezone_override")
+            "use_24_hour_format" -> s.shared("app_config_format_use_24_hour_format")
+            "date_format_pattern" -> s.shared("app_config_format_date_format_pattern")
+            "time_separator" -> s.shared("app_config_format_time_separator")
             "relative_label_limits" -> s.shared("app_config_format_relative_label_limits")
             "hour_limit" -> s.shared("app_config_format_hour_limit")
             "day_limit" -> s.shared("app_config_format_day_limit")
@@ -64,6 +68,23 @@ object AppConfigSchemaProvider : SchemaProvider {
                 "locale_override": {
                     "type": ["string", "null"],
                     "description": "${s.shared("app_config_schema_format_locale_override")}"
+                },
+                "timezone_override": {
+                    "type": ["string", "null"],
+                    "description": "${s.shared("app_config_schema_format_timezone_override")}"
+                },
+                "use_24_hour_format": {
+                    "type": ["boolean", "null"],
+                    "description": "${s.shared("app_config_schema_format_use_24_hour_format")}"
+                },
+                "date_format_pattern": {
+                    "type": ["string", "null"],
+                    "description": "${s.shared("app_config_schema_format_date_format_pattern")}"
+                },
+                "time_separator": {
+                    "type": "string",
+                    "enum": [":", "h"],
+                    "description": "${s.shared("app_config_schema_format_time_separator")}"
                 },
                 "relative_label_limits": {
                     "type": "object",
@@ -104,7 +125,7 @@ object AppConfigSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["week_start_day", "day_start_hour", "relative_label_limits"],
+            "required": ["week_start_day", "day_start_hour", "time_separator", "relative_label_limits"],
             "additionalProperties": false
         }
         """.trimIndent()

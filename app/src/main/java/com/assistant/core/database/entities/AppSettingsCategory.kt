@@ -32,26 +32,25 @@ object AppSettingCategories {
 /**
  * Default format configuration
  * Includes date/time settings, locale overrides, and period calculation parameters
+ *
+ * DEPRECATED: Use FormatDefaults.toJson(context) instead.
+ * This object is kept for backward compatibility but delegates to FormatDefaults.
  */
+@Deprecated(
+    message = "Use FormatDefaults.toJson(context) instead",
+    replaceWith = ReplaceWith("FormatDefaults.toJson(context)", "com.assistant.core.config.FormatDefaults")
+)
 object DefaultFormatSettings {
-    const val JSON = """
-    {
-        "week_start_day": "monday",
-        "day_start_hour": 4,
-        "locale_override": null,
-        "timezone_override": null,
-        "use_24_hour_format": null,
-        "date_format_pattern": null,
-        "time_separator": ":",
-        "relative_label_limits": {
-            "hour_limit": 12,
-            "day_limit": 7,
-            "week_limit": 4,
-            "month_limit": 6,
-            "year_limit": 3
-        }
+    /**
+     * Generate default format settings JSON with system-detected values.
+     * Delegates to FormatDefaults for single source of truth.
+     *
+     * @param context Context for detecting system preferences
+     * @return JSON string with all default format settings
+     */
+    fun getJson(context: android.content.Context): String {
+        return com.assistant.core.config.FormatDefaults.toJson(context)
     }
-    """
 }
 
 /**

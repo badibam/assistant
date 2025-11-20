@@ -16,6 +16,9 @@ import java.time.ZoneId
  * - External interfaces (UI + AI): ISO 8601 with timezone offset
  * - Conversion handled by DateTimeConverter in services
  * - Display formatting via DateTimeFormatter
+ *
+ * Default values: Detected from system at first app launch (see FormatDefaults)
+ * Constructor defaults below are for documentation only - actual defaults come from DB.
  */
 data class DateTimeConfig(
     // ===== TIMEZONE / LOCALE =====
@@ -36,22 +39,22 @@ data class DateTimeConfig(
     // ===== DISPLAY FORMATS =====
     /**
      * Whether to use 24-hour format for time display.
-     * If null, uses system/locale default.
+     * Detected from system at first launch (see FormatDefaults.getSystemDefault24HourFormat).
      */
-    val use24HourFormat: Boolean? = null,
+    val use24HourFormat: Boolean? = true,  // Common default, actual value from DB
 
     /**
      * Date format pattern for display.
-     * If null, uses locale default.
+     * Detected from system locale at first launch (see FormatDefaults.getSystemDefaultDatePattern).
      * Examples: "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd"
      */
-    val dateFormatPattern: String? = null,
+    val dateFormatPattern: String? = "dd/MM/yyyy",  // Common default, actual value from DB
 
     /**
      * Time separator for display.
      * Examples: ":" (14:30), "h" (14h30)
      */
-    val timeSeparator: String = ":",
+    val timeSeparator: String = FormatDefaults.TIME_SEPARATOR,
 
     // ===== BUSINESS LOGIC (PERIOD NORMALIZATION) =====
     /**
@@ -59,14 +62,14 @@ data class DateTimeConfig(
      * Used by PeriodUtils for normalizing timestamps to day/week/month boundaries.
      * Independent of timezone setting.
      */
-    val dayStartHour: Int = 4,
+    val dayStartHour: Int = FormatDefaults.DAY_START_HOUR,
 
     /**
      * Day on which a week starts.
      * Used by PeriodUtils for week calculations.
      * Must be a valid DayOfWeek name in uppercase.
      */
-    val weekStartDay: String = "MONDAY"
+    val weekStartDay: String = FormatDefaults.getWeekStartDayUppercase()
 ) {
     /**
      * Get ZoneId for app timezone.

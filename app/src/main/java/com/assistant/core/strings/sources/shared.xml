@@ -326,6 +326,21 @@
     <string name="label_item">Élément</string>
     <string name="label_no_value">Aucune valeur</string>
 
+    <!-- App Config - Format Settings labels -->
+    <string name="app_config_format_week_start_day">Jour de début de semaine</string>
+    <string name="app_config_format_day_start_hour">Heure de début de journée</string>
+    <string name="app_config_format_locale_override">Locale personnalisée</string>
+    <string name="app_config_format_timezone_override">Fuseau horaire personnalisé</string>
+    <string name="app_config_format_use_24_hour_format">Format 24h</string>
+    <string name="app_config_format_date_format_pattern">Pattern de format de date</string>
+    <string name="app_config_format_time_separator">Séparateur d\'heure</string>
+    <string name="app_config_format_relative_label_limits">Limites labels relatifs</string>
+    <string name="app_config_format_hour_limit">Limite heures</string>
+    <string name="app_config_format_day_limit">Limite jours</string>
+    <string name="app_config_format_week_limit">Limite semaines</string>
+    <string name="app_config_format_month_limit">Limite mois</string>
+    <string name="app_config_format_year_limit">Limite années</string>
+
     <!-- UI Component defaults -->
     <string name="ui_toggle_enabled">Activé</string>
     <string name="ui_toggle_disabled">Désactivé</string>
@@ -629,15 +644,19 @@
     <string name="main_screen_config_schema_display_name"></string>
 
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
-    <string name="app_config_schema_format_week_start_day"></string>
-    <string name="app_config_schema_format_day_start_hour"></string>
-    <string name="app_config_schema_format_locale_override"></string>
-    <string name="app_config_schema_format_relative_label_limits"></string>
-    <string name="app_config_schema_format_hour_limit"></string>
-    <string name="app_config_schema_format_day_limit"></string>
-    <string name="app_config_schema_format_week_limit"></string>
-    <string name="app_config_schema_format_month_limit"></string>
-    <string name="app_config_schema_format_year_limit"></string>
+    <string name="app_config_schema_format_week_start_day">Jour de début de semaine</string>
+    <string name="app_config_schema_format_day_start_hour">Heure de début de journée pour calcul des périodes</string>
+    <string name="app_config_schema_format_locale_override">Locale personnalisée (null pour utiliser locale système)</string>
+    <string name="app_config_schema_format_timezone_override">Fuseau horaire personnalisé (null pour utiliser fuseau système)</string>
+    <string name="app_config_schema_format_use_24_hour_format">Format 24h pour affichage heure (null pour utiliser défaut locale)</string>
+    <string name="app_config_schema_format_date_format_pattern">Pattern de format de date (null pour utiliser défaut locale)</string>
+    <string name="app_config_schema_format_time_separator">Séparateur pour affichage heure (: ou h)</string>
+    <string name="app_config_schema_format_relative_label_limits">Limites pour affichage relatif des périodes</string>
+    <string name="app_config_schema_format_hour_limit">Nombre d\'heures avant passage à jours</string>
+    <string name="app_config_schema_format_day_limit">Nombre de jours avant passage à semaines</string>
+    <string name="app_config_schema_format_week_limit">Nombre de semaines avant passage à mois</string>
+    <string name="app_config_schema_format_month_limit">Nombre de mois avant passage à années</string>
+    <string name="app_config_schema_format_year_limit">Nombre d\'années avant passage à date absolue</string>
 
     <!-- MAIN SCREEN SCHEMA - Descriptions pour validation écran principal -->
     <string name="main_screen_schema_zone_display_mode"></string>

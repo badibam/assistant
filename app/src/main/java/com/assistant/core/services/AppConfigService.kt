@@ -2,6 +2,7 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.config.DateTimeConfig
+import com.assistant.core.config.FormatDefaults
 import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
@@ -51,11 +52,32 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     suspend fun setWeekStartDay(day: String) {
-        updateFormatSetting("week_start_day", day)
+        // Store lowercase in DB for consistency with FormatDefaults
+        updateFormatSetting("week_start_day", day.lowercase())
     }
 
     suspend fun setDayStartHour(hour: Int) {
         updateFormatSetting("day_start_hour", hour)
+    }
+
+    /**
+     * Set relative label limits for period display.
+     */
+    suspend fun setRelativeLabelLimits(
+        hourLimit: Int,
+        dayLimit: Int,
+        weekLimit: Int,
+        monthLimit: Int,
+        yearLimit: Int
+    ) {
+        val limits = org.json.JSONObject().apply {
+            put("hour_limit", hourLimit)
+            put("day_limit", dayLimit)
+            put("week_limit", weekLimit)
+            put("month_limit", monthLimit)
+            put("year_limit", yearLimit)
+        }
+        updateFormatSetting("relative_label_limits", limits)
     }
 
     suspend fun setLocaleOverride(locale: String?) {
@@ -100,8 +122,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     private suspend fun createDefaultFormatSettings(): JSONObject {
-        LogManager.service("Creating default format settings")
-        val defaultSettings = JSONObject(DefaultFormatSettings.JSON.trimIndent())
+        LogManager.service("Creating default format settings with system-detected values")
+        @Suppress("DEPRECATION")
+        val defaultSettings = JSONObject(DefaultFormatSettings.getJson(context))
         settingsDao.insertOrUpdateSettings(
             AppSettingsCategory(
                 category = AppSettingCategories.FORMAT,
@@ -115,31 +138,62 @@ class AppConfigService(private val context: Context) : ExecutableService {
     private suspend fun updateFormatSetting(key: String, value: Any?) {
         val settings = getFormatSettings()
         settings.put(key, value)
-        
-        // Validation with SchemaValidator
+
+        // Validation with SchemaValidator - include ALL required fields
         val dataMap = mutableMapOf<String, Any>()
         dataMap["week_start_day"] = settings.optString("week_start_day")
         dataMap["day_start_hour"] = settings.optInt("day_start_hour")
-        settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }?.let { 
-            dataMap["locale_override"] = it 
+
+        // Optional overrides
+        settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }?.let {
+            dataMap["locale_override"] = it
         }
+        settings.optString("timezone_override").takeIf { it != "null" && it.isNotBlank() }?.let {
+            dataMap["timezone_override"] = it
+        }
+        settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() }?.let {
+            dataMap["date_format_pattern"] = it
+        }
+
+        // Boolean fields
+        if (settings.has("use_24_hour_format")) {
+            dataMap["use_24_hour_format"] = settings.opt("use_24_hour_format")
+        }
+
+        // Time separator
+        dataMap["time_separator"] = settings.optString("time_separator", ":")
+
+        // Relative label limits (required)
+        val relativeLimits = settings.optJSONObject("relative_label_limits")
+        if (relativeLimits != null) {
+            dataMap["relative_label_limits"] = mapOf(
+                "hour_limit" to relativeLimits.optInt("hour_limit", 12),
+                "day_limit" to relativeLimits.optInt("day_limit", 7),
+                "week_limit" to relativeLimits.optInt("week_limit", 4),
+                "month_limit" to relativeLimits.optInt("month_limit", 6),
+                "year_limit" to relativeLimits.optInt("year_limit", 3)
+            )
+        }
+
         val schema = AppConfigSchemaProvider.getSchema("app_config_format", context)
         val validation = if (schema != null) {
             SchemaValidator.validate(schema, dataMap, context)
         } else {
             com.assistant.core.validation.ValidationResult.error("App config format schema not found")
         }
-        
+
         if (!validation.isValid) {
             throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
         }
-        
+
         settingsDao.updateSettings(AppSettingCategories.FORMAT, settings.toString())
     }
 
     /**
      * Get comprehensive date/time configuration.
      * Includes timezone, locale, display formats, and business logic parameters.
+     *
+     * Note: week_start_day is stored lowercase in DB but returned uppercase for DayOfWeek compatibility.
      *
      * @return DateTimeConfig with all date/time related settings
      */
@@ -155,9 +209,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 else -> null
             },
             dateFormatPattern = settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() },
-            timeSeparator = settings.optString("time_separator", ":"),
-            dayStartHour = settings.optInt("day_start_hour", 4),
-            weekStartDay = settings.optString("week_start_day", "MONDAY")
+            timeSeparator = settings.optString("time_separator", FormatDefaults.TIME_SEPARATOR),
+            dayStartHour = settings.optInt("day_start_hour", FormatDefaults.DAY_START_HOUR),
+            weekStartDay = settings.optString("week_start_day", FormatDefaults.WEEK_START_DAY).uppercase()  // Convert to uppercase for DayOfWeek
         )
     }
 
@@ -392,7 +446,8 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun resetToDefaults(category: String) {
         when (category) {
             AppSettingCategories.FORMAT -> {
-                settingsDao.updateSettings(category, DefaultFormatSettings.JSON.trimIndent())
+                @Suppress("DEPRECATION")
+                settingsDao.updateSettings(category, DefaultFormatSettings.getJson(context))
             }
             AppSettingCategories.AI_LIMITS -> {
                 settingsDao.updateSettings(category, DefaultAILimitsSettings.JSON.trimIndent())

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.config.FormatDefaults
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.util.Locale
@@ -46,14 +47,21 @@ fun FormatSettingsScreen(
     var localeOverride by remember { mutableStateOf<String?>(null) }
     var useSystemLocale by remember { mutableStateOf(true) }
 
-    // Display formats
+    // Display formats - nullable until loaded from DB
     var use24HourFormat by remember { mutableStateOf<Boolean?>(null) }
     var dateFormatPattern by remember { mutableStateOf<String?>(null) }
-    var timeSeparator by remember { mutableStateOf(":") }
+    var timeSeparator by remember { mutableStateOf(FormatDefaults.TIME_SEPARATOR) }
 
     // Business logic
-    var dayStartHour by remember { mutableStateOf(4) }
-    var weekStartDay by remember { mutableStateOf("MONDAY") }
+    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
+    var weekStartDay by remember { mutableStateOf(FormatDefaults.getWeekStartDayUppercase()) }
+
+    // Relative label limits
+    var hourLimit by remember { mutableStateOf(FormatDefaults.HOUR_LIMIT) }
+    var dayLimit by remember { mutableStateOf(FormatDefaults.DAY_LIMIT) }
+    var weekLimit by remember { mutableStateOf(FormatDefaults.WEEK_LIMIT) }
+    var monthLimit by remember { mutableStateOf(FormatDefaults.MONTH_LIMIT) }
+    var yearLimit by remember { mutableStateOf(FormatDefaults.YEAR_LIMIT) }
 
     // Available options
     val timezoneOptions = remember {
@@ -115,6 +123,10 @@ fun FormatSettingsScreen(
             dayStartHour = config.dayStartHour
             weekStartDay = config.weekStartDay
 
+            // Relative label limits are in AppConfig but not in DateTimeConfig
+            // Use defaults for now, will be loaded on first save or if accessed directly
+            // (Could add getter to AppConfigService if needed)
+
             isLoading = false
         } catch (e: Exception) {
             errorMessage = "Erreur de chargement: ${e.message}"
@@ -152,6 +164,15 @@ fun FormatSettingsScreen(
                 // Save business logic
                 service.setDayStartHour(dayStartHour)
                 service.setWeekStartDay(weekStartDay)
+
+                // Save relative label limits
+                service.setRelativeLabelLimits(
+                    hourLimit = hourLimit,
+                    dayLimit = dayLimit,
+                    weekLimit = weekLimit,
+                    monthLimit = monthLimit,
+                    yearLimit = yearLimit
+                )
 
                 // Refresh cache
                 AppConfigManager.refresh(context)
@@ -275,20 +296,28 @@ fun FormatSettingsScreen(
                 UI.Text(text = "Formats d'affichage", type = TextType.SUBTITLE)
 
                 // 24h format toggle
-                UI.ToggleField(
-                    label = "Format 24h (sinon 12h)",
-                    checked = use24HourFormat ?: true,
-                    onCheckedChange = { use24HourFormat = it }
-                )
+                if (use24HourFormat != null) {
+                    UI.ToggleField(
+                        label = "Format 24h (sinon 12h)",
+                        checked = use24HourFormat!!,
+                        onCheckedChange = { use24HourFormat = it }
+                    )
+                } else {
+                    UI.Text(text = "Format 24h : ${s.shared("message_loading")}", type = TextType.BODY)
+                }
 
                 // Date format selector
-                UI.FormSelection(
-                    label = "Format de date",
-                    options = dateFormatOptions,
-                    selected = dateFormatPattern ?: "dd/MM/yyyy",
-                    onSelect = { dateFormatPattern = it },
-                    required = false
-                )
+                if (dateFormatPattern != null) {
+                    UI.FormSelection(
+                        label = "Format de date",
+                        options = dateFormatOptions,
+                        selected = dateFormatPattern!!,
+                        onSelect = { dateFormatPattern = it },
+                        required = false
+                    )
+                } else {
+                    UI.Text(text = "Format de date : ${s.shared("message_loading")}", type = TextType.BODY)
+                }
 
                 // Time separator selector
                 UI.FormSelection(
@@ -312,25 +341,14 @@ fun FormatSettingsScreen(
                 UI.Text(text = "Logique métier (périodes)", type = TextType.SUBTITLE)
 
                 // Day start hour
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    UI.Text(
-                        text = "Heure de début de journée: ${dayStartHour}h",
-                        type = TextType.BODY
-                    )
-                    UI.Text(
-                        text = "Pour le calcul des périodes quotidiennes",
-                        type = TextType.CAPTION
-                    )
-                    androidx.compose.material3.Slider(
-                        value = dayStartHour.toFloat(),
-                        onValueChange = { dayStartHour = it.toInt() },
-                        valueRange = 0f..23f,
-                        steps = 22
-                    )
-                }
+                UI.SliderField(
+                    label = "Heure de début de journée (périodes quotidiennes)",
+                    value = dayStartHour,
+                    onValueChange = { dayStartHour = it },
+                    range = 0..23,
+                    minLabel = "0h",
+                    maxLabel = "23h"
+                )
 
                 // Week start day
                 UI.FormSelection(
@@ -339,6 +357,72 @@ fun FormatSettingsScreen(
                     selected = weekStartDay,
                     onSelect = { weekStartDay = it },
                     required = true
+                )
+            }
+        }
+
+        // === RELATIVE LABELS SECTION ===
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                UI.Text(text = "Labels relatifs (périodes)", type = TextType.SUBTITLE)
+                UI.Text(
+                    text = "Limites pour affichage relatif (\"il y a X heures\", etc.)",
+                    type = TextType.CAPTION
+                )
+
+                // Hour limit
+                UI.SliderField(
+                    label = "Limite heures",
+                    value = hourLimit,
+                    onValueChange = { hourLimit = it },
+                    range = 1..48,
+                    minLabel = "1",
+                    maxLabel = "48"
+                )
+
+                // Day limit
+                UI.SliderField(
+                    label = "Limite jours",
+                    value = dayLimit,
+                    onValueChange = { dayLimit = it },
+                    range = 1..31,
+                    minLabel = "1",
+                    maxLabel = "31"
+                )
+
+                // Week limit
+                UI.SliderField(
+                    label = "Limite semaines",
+                    value = weekLimit,
+                    onValueChange = { weekLimit = it },
+                    range = 1..12,
+                    minLabel = "1",
+                    maxLabel = "12"
+                )
+
+                // Month limit
+                UI.SliderField(
+                    label = "Limite mois",
+                    value = monthLimit,
+                    onValueChange = { monthLimit = it },
+                    range = 1..24,
+                    minLabel = "1",
+                    maxLabel = "24"
+                )
+
+                // Year limit
+                UI.SliderField(
+                    label = "Limite années",
+                    value = yearLimit,
+                    onValueChange = { yearLimit = it },
+                    range = 1..10,
+                    minLabel = "1",
+                    maxLabel = "10"
                 )
             }
         }

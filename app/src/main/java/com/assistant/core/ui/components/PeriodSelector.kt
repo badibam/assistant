@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.config.FormatDefaults
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
 import com.assistant.core.coordinator.Coordinator
@@ -253,8 +254,8 @@ fun SinglePeriodSelector(
     val s = remember { Strings.`for`(context = context) }
 
     // Load app configuration internally
-    var dayStartHour by remember { mutableStateOf(0) }
-    var weekStartDay by remember { mutableStateOf("monday") }
+    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
+    var weekStartDay by remember { mutableStateOf(FormatDefaults.WEEK_START_DAY) }
     var isConfigLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
@@ -263,13 +264,18 @@ fun SinglePeriodSelector(
             val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
             if (configResult.isSuccess) {
                 val config = configResult.data?.get("settings") as? Map<String, Any>
-                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
-                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
+                // Update only if parsing succeeds, keep initial state values otherwise
+                config?.get("day_start_hour")?.let {
+                    (it as? Number)?.toInt()?.let { hour -> dayStartHour = hour }
+                }
+                config?.get("week_start_day")?.let {
+                    (it as? String)?.let { day -> weekStartDay = day }
+                }
             }
         } catch (e: Exception) {
-            // Use defaults if config loading fails
-            dayStartHour = 0
-            weekStartDay = "monday"
+            // Log error but keep initial state values (FormatDefaults)
+            // No silent fallback - config should always load from DB after first launch
+            com.assistant.core.utils.LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
         } finally {
             isConfigLoading = false
         }
@@ -1159,8 +1165,8 @@ fun PeriodRangeSelector(
     val s = remember { Strings.`for`(context = context) }
 
     // App configuration state
-    var dayStartHour by remember { mutableStateOf(0) }
-    var weekStartDay by remember { mutableStateOf("monday") }
+    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
+    var weekStartDay by remember { mutableStateOf(FormatDefaults.WEEK_START_DAY) }
     var isConfigLoading by remember { mutableStateOf(true) }
 
     // Load app configuration
@@ -1170,13 +1176,18 @@ fun PeriodRangeSelector(
             val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
             if (configResult.isSuccess) {
                 val config = configResult.data?.get("settings") as? Map<String, Any>
-                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt() ?: 0
-                weekStartDay = config?.get("week_start_day") as? String ?: "monday"
+                // Update only if parsing succeeds, keep initial state values otherwise
+                config?.get("day_start_hour")?.let {
+                    (it as? Number)?.toInt()?.let { hour -> dayStartHour = hour }
+                }
+                config?.get("week_start_day")?.let {
+                    (it as? String)?.let { day -> weekStartDay = day }
+                }
             }
         } catch (e: Exception) {
-            // Use defaults if config loading fails
-            dayStartHour = 0
-            weekStartDay = "monday"
+            // Log error but keep initial state values (FormatDefaults)
+            // No silent fallback - config should always load from DB after first launch
+            com.assistant.core.utils.LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
         } finally {
             isConfigLoading = false
         }

@@ -42,7 +42,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -62,13 +62,13 @@ abstract class AppDatabase : RoomDatabase() {
         /**
          * Database schema version
          *
-         * ⚠️ MUST match @Database(version = X) annotation above (line 48)
+         * ⚠️ MUST match @Database(version = X) annotation above (line 45)
          * ⚠️ Change BOTH when incrementing database version
          *
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 19
+        const val VERSION = 20
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -791,6 +791,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                LogManager.database("MIGRATION 19->20: Version bump only - data migration handled in post-migration", "INFO")
+                // No schema changes - just version bump
+                // Actual data migration (filling null format values) happens in post-migration
+                // after Room initialization, where we have access to Context for system detection
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -808,7 +817,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_15_16,
                     MIGRATION_16_17,
                     MIGRATION_17_18,
-                    MIGRATION_18_19
+                    MIGRATION_18_19,
+                    MIGRATION_19_20
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
@@ -820,8 +830,58 @@ abstract class AppDatabase : RoomDatabase() {
                 })
                 .build()
 
+                // Post-migration: Fix null format settings (migration 19->20 data fix)
+                fixNullFormatSettings(context, instance)
+
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        /**
+         * Post-migration data fix for version 19->20
+         * Fills null use_24_hour_format and date_format_pattern with system-detected values
+         */
+        private fun fixNullFormatSettings(context: Context, database: AppDatabase) {
+            try {
+                val cursor = database.openHelper.readableDatabase.query(
+                    "SELECT settings FROM app_settings_categories WHERE category = 'format'"
+                )
+
+                if (cursor.moveToFirst()) {
+                    val settingsJson = cursor.getString(0)
+                    val settings = org.json.JSONObject(settingsJson)
+                    var needsUpdate = false
+
+                    // Check and fix use_24_hour_format
+                    if (!settings.has("use_24_hour_format") || settings.isNull("use_24_hour_format")) {
+                        val systemValue = com.assistant.core.config.FormatDefaults.getSystemDefault24HourFormat(context)
+                        settings.put("use_24_hour_format", systemValue)
+                        needsUpdate = true
+                        LogManager.database("POST-MIGRATION 19->20: Filled use_24_hour_format with system value: $systemValue", "INFO")
+                    }
+
+                    // Check and fix date_format_pattern
+                    if (!settings.has("date_format_pattern") || settings.isNull("date_format_pattern")) {
+                        val systemValue = com.assistant.core.config.FormatDefaults.getSystemDefaultDatePattern(context)
+                        settings.put("date_format_pattern", systemValue)
+                        needsUpdate = true
+                        LogManager.database("POST-MIGRATION 19->20: Filled date_format_pattern with system value: $systemValue", "INFO")
+                    }
+
+                    // Update database if needed
+                    if (needsUpdate) {
+                        database.openHelper.writableDatabase.execSQL(
+                            "UPDATE app_settings_categories SET settings = ? WHERE category = 'format'",
+                            arrayOf(settings.toString())
+                        )
+                        LogManager.database("POST-MIGRATION 19->20: Updated format settings in database", "INFO")
+                    }
+                }
+                cursor.close()
+            } catch (e: Exception) {
+                LogManager.database("POST-MIGRATION 19->20: Failed to fix null format settings: ${e.message}", "ERROR", e)
+                // Don't throw - app can continue with null values (will show loading placeholders)
             }
         }
     }
