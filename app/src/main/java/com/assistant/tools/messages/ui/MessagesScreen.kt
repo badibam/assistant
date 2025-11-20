@@ -418,7 +418,7 @@ private fun ExecutionCard(
     // Format date/time using app's internal system
     val sentAtFormatted = remember(execution.executionTime) {
         if (execution.status == "completed") {
-            DateUtils.formatTimeForDisplay(execution.executionTime)
+            com.assistant.core.utils.DateTimeFormatter.formatTimeOnly(execution.executionTime, context)
         } else {
             ""
         }

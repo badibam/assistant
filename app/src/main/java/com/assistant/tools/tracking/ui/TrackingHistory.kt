@@ -187,8 +187,22 @@ fun TrackingHistory(
                                         return@mapNotNull null
                                     }
                                     
-                                    val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
-                                    LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${DateUtils.formatFullDateTime(timestamp ?: 0)})")
+                                    // Parse timestamp: can be ISO String (from service) or Long (legacy)
+                                    val timestamp = when (val ts = entryMap["timestamp"]) {
+                                        is String -> {
+                                            try {
+                                                com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
+                                                    ts,
+                                                    com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+                                                )
+                                            } catch (e: Exception) {
+                                                System.currentTimeMillis()
+                                            }
+                                        }
+                                        is Number -> ts.toLong()
+                                        else -> System.currentTimeMillis()
+                                    }
+                                    LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(timestamp, context)})")
                                     ToolDataEntity(
                                         id = entryId,
                                         toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
@@ -626,7 +640,10 @@ private fun TrackingHistoryRow(
             modifier = Modifier.weight(3f).padding(8.dp)
         ) {
             UI.Text(
-                text = DateUtils.formatFullDateTime(entry.timestamp ?: System.currentTimeMillis()),
+                text = com.assistant.core.utils.DateTimeFormatter.formatForDisplay(
+                    entry.timestamp ?: System.currentTimeMillis(),
+                    androidx.compose.ui.platform.LocalContext.current
+                ),
                 type = TextType.BODY
             )
         }
