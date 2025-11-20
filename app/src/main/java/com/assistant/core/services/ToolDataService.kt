@@ -10,6 +10,8 @@ import com.assistant.core.database.dao.BaseToolDataDao
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DateTimeConverter
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
@@ -51,15 +53,38 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val toolInstanceId = params.optString("toolInstanceId")
         val tooltype = params.optString("tooltype")
-        val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
-        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
-        // timestamp is optional: defaults to current time if omitted, but can be specified for retroactive entries
-        val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else System.currentTimeMillis()
         val name = params.optString("name", null)
         val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
+        }
+
+        // Get app timezone for ISO ↔ timestamp conversion
+        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
+        // Convert ISO → timestamps in data (recursive)
+        val dataJson = params.optJSONObject("data")?.let { dataObj ->
+            DateTimeConverter.isoToTimestamps(dataObj, appTimezone).toString()
+        } ?: "{}"
+
+        // Convert ISO → timestamps in custom_fields (recursive)
+        val customFieldsJson = params.optJSONObject("custom_fields")?.let { customFieldsObj ->
+            DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
+        }
+
+        // Parse timestamp parameter: can be Long (already timestamp) or String (ISO format)
+        val timestamp = when {
+            !params.has("timestamp") -> System.currentTimeMillis() // Default to now
+            params.opt("timestamp") is Long -> params.optLong("timestamp")
+            params.opt("timestamp") is String -> {
+                try {
+                    DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
+                } catch (e: IllegalArgumentException) {
+                    return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
+                }
+            }
+            else -> System.currentTimeMillis()
         }
 
         // Handle position-based insertion
@@ -139,9 +164,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val entryId = params.optString("id")
-        val dataJson = params.optJSONObject("data")?.toString()
-        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
-        val timestamp = if (params.has("timestamp")) params.optLong("timestamp") else null
         val name = params.optString("name", null)
 
         if (entryId.isEmpty()) {
@@ -151,6 +173,33 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
+
+        // Get app timezone for ISO ↔ timestamp conversion
+        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
+        // Convert ISO → timestamps in data (recursive)
+        val dataJson = params.optJSONObject("data")?.let { dataObj ->
+            DateTimeConverter.isoToTimestamps(dataObj, appTimezone).toString()
+        }
+
+        // Convert ISO → timestamps in custom_fields (recursive)
+        val customFieldsJson = params.optJSONObject("custom_fields")?.let { customFieldsObj ->
+            DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
+        }
+
+        // Parse timestamp parameter: can be Long (already timestamp) or String (ISO format)
+        val timestamp = when {
+            !params.has("timestamp") -> null
+            params.opt("timestamp") is Long -> params.optLong("timestamp")
+            params.opt("timestamp") is String -> {
+                try {
+                    DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
+                } catch (e: IllegalArgumentException) {
+                    return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
+                }
+            }
+            else -> null
+        }
 
         // Merge JSON data: new fields overwrite, absent fields are preserved (e.g. systemManaged fields)
         // Protection layers: AI commands have systemManaged fields stripped, UI doesn't expose them
@@ -314,19 +363,34 @@ class ToolDataService(private val context: Context) : ExecutableService {
         
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
+        // Get app timezone for timestamp → ISO conversion
+        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
         return OperationResult.success(
             data = mapOf(
                 "entries" to entries.map { entity ->
+                    // Convert timestamps → ISO in data (recursive)
+                    val dataWithISO = JSONObject(entity.data).let { dataObj ->
+                        DateTimeConverter.timestampsToISO(dataObj, appTimezone).toString()
+                    }
+
+                    // Convert timestamps → ISO in custom_fields (recursive)
+                    val customFieldsWithISO = entity.customFields?.let { cf ->
+                        JSONObject(cf).let { customFieldsObj ->
+                            DateTimeConverter.timestampsToISO(customFieldsObj, appTimezone).toString()
+                        }
+                    }
+
                     mapOf(
                         "id" to entity.id,
                         "toolInstanceId" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
-                        "timestamp" to entity.timestamp,
+                        "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
                         "name" to entity.name,
-                        "data" to entity.data,
-                        "custom_fields" to entity.customFields,  // Use underscore for consistency with DB and configs
-                        "createdAt" to entity.createdAt,
-                        "updatedAt" to entity.updatedAt
+                        "data" to dataWithISO,
+                        "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
+                        "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
+                        "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
                     )
                 },
                 "pagination" to mapOf(
@@ -351,18 +415,33 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val entity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
+        // Get app timezone for timestamp → ISO conversion
+        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
+        // Convert timestamps → ISO in data (recursive)
+        val dataWithISO = JSONObject(entity.data).let { dataObj ->
+            DateTimeConverter.timestampsToISO(dataObj, appTimezone).toString()
+        }
+
+        // Convert timestamps → ISO in custom_fields (recursive)
+        val customFieldsWithISO = entity.customFields?.let { cf ->
+            JSONObject(cf).let { customFieldsObj ->
+                DateTimeConverter.timestampsToISO(customFieldsObj, appTimezone).toString()
+            }
+        }
+
         return OperationResult.success(
             data = mapOf(
                 "entry" to mapOf(
                     "id" to entity.id,
                     "toolInstanceId" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
-                    "timestamp" to entity.timestamp,
+                    "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
                     "name" to entity.name,
-                    "data" to entity.data,
-                    "custom_fields" to entity.customFields,  // Use underscore for consistency with DB and configs
-                    "createdAt" to entity.createdAt,
-                    "updatedAt" to entity.updatedAt
+                    "data" to dataWithISO,
+                    "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
+                    "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
+                    "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
                 )
             )
         )
