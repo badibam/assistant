@@ -31,6 +31,7 @@ object AppSettingCategories {
 
 /**
  * Default format configuration
+ * Includes date/time settings, locale overrides, and period calculation parameters
  */
 object DefaultFormatSettings {
     const val JSON = """
@@ -38,6 +39,10 @@ object DefaultFormatSettings {
         "week_start_day": "monday",
         "day_start_hour": 4,
         "locale_override": null,
+        "timezone_override": null,
+        "use_24_hour_format": null,
+        "date_format_pattern": null,
+        "time_separator": ":",
         "relative_label_limits": {
             "hour_limit": 12,
             "day_limit": 7,
@@ -47,12 +52,6 @@ object DefaultFormatSettings {
         }
     }
     """
-
-    // Future format settings:
-    // "timezone": "Europe/Paris"
-    // "date_format": "dd/MM/yyyy"
-    // "time_format": "24h"
-    // "number_format_preference": "locale" // vs "user"
 }
 
 /**

@@ -1,7 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
-import com.assistant.core.config.TimeConfig
+import com.assistant.core.config.DateTimeConfig
 import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
@@ -138,14 +138,66 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Get structured time configuration
+     * Get comprehensive date/time configuration.
+     * Includes timezone, locale, display formats, and business logic parameters.
+     *
+     * @return DateTimeConfig with all date/time related settings
      */
-    suspend fun getTimeConfig(): TimeConfig {
+    suspend fun getDateTimeConfig(): DateTimeConfig {
         val settings = getFormatSettings()
-        return TimeConfig(
+        return DateTimeConfig(
+            timezoneOverride = settings.optString("timezone_override").takeIf { it != "null" && it.isNotBlank() },
+            localeOverride = settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() },
+            use24HourFormat = when (val value = settings.opt("use_24_hour_format")) {
+                is Boolean -> value
+                "true" -> true
+                "false" -> false
+                else -> null
+            },
+            dateFormatPattern = settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() },
+            timeSeparator = settings.optString("time_separator", ":"),
             dayStartHour = settings.optInt("day_start_hour", 4),
             weekStartDay = settings.optString("week_start_day", "MONDAY")
         )
+    }
+
+    /**
+     * Set timezone override for date/time display and conversion.
+     * If null, uses system default timezone.
+     *
+     * @param timezone Timezone ID (e.g., "Europe/Paris", "UTC") or null for system default
+     */
+    suspend fun setTimezoneOverride(timezone: String?) {
+        updateFormatSetting("timezone_override", timezone)
+    }
+
+    /**
+     * Set whether to use 24-hour format for time display.
+     * If null, uses system/locale default.
+     *
+     * @param use24h True for 24h, false for 12h, null for system default
+     */
+    suspend fun setUse24HourFormat(use24h: Boolean?) {
+        updateFormatSetting("use_24_hour_format", use24h)
+    }
+
+    /**
+     * Set date format pattern for display.
+     * If null, uses locale default.
+     *
+     * @param pattern Date pattern (e.g., "dd/MM/yyyy", "MM/dd/yyyy") or null for locale default
+     */
+    suspend fun setDateFormatPattern(pattern: String?) {
+        updateFormatSetting("date_format_pattern", pattern)
+    }
+
+    /**
+     * Set time separator for display.
+     *
+     * @param separator Time separator (e.g., ":", "h")
+     */
+    suspend fun setTimeSeparator(separator: String) {
+        updateFormatSetting("time_separator", separator)
     }
 
     /**
