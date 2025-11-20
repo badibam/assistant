@@ -95,7 +95,21 @@ fun NotesScreen(
                     try {
                         val map = entry as? Map<*, *> ?: return@mapNotNull null
                         val id = map["id"] as? String ?: return@mapNotNull null
-                        val timestamp = (map["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
+                        // Parse timestamp: can be ISO String (from service) or Long (legacy)
+                        val timestamp = when (val ts = map["timestamp"]) {
+                            is String -> {
+                                try {
+                                    com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
+                                        ts,
+                                        com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+                                    )
+                                } catch (e: Exception) {
+                                    return@mapNotNull null
+                                }
+                            }
+                            is Number -> ts.toLong()
+                            else -> return@mapNotNull null
+                        }
 
                         val dataValue = map["data"]
                         val parsedData = try {
