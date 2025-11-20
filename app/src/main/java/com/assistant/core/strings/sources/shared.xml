@@ -14,6 +14,9 @@
     <string name="action_create">Créer</string>
     <string name="action_cancel">Annuler</string>
     <string name="action_delete">Supprimer</string>
+
+    <!-- Success messages -->
+    <string name="settings_saved">Paramètres sauvegardés</string>
     <string name="action_validate">Valider</string>
     <string name="action_confirm">Confirmer</string>
     <string name="action_send">Envoyer</string>

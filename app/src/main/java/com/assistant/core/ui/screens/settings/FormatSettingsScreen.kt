@@ -178,6 +178,9 @@ fun FormatSettingsScreen(
                 AppConfigManager.refresh(context)
 
                 UI.Toast(context, s.shared("settings_saved"), Duration.SHORT)
+
+                // Close screen after successful save
+                onBack()
             } catch (e: Exception) {
                 errorMessage = "Erreur de sauvegarde: ${e.message}"
             }

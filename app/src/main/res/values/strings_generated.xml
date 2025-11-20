@@ -381,6 +381,7 @@
     <string name="shared_action_create">Créer</string>
     <string name="shared_action_cancel">Annuler</string>
     <string name="shared_action_delete">Supprimer</string>
+    <string name="shared_settings_saved">Paramètres sauvegardés</string>
     <string name="shared_action_validate">Valider</string>
     <string name="shared_action_confirm">Confirmer</string>
     <string name="shared_action_send">Envoyer</string>
