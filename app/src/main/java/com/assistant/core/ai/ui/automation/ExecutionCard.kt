@@ -80,7 +80,7 @@ fun ExecutionCard(
                 Box(modifier = Modifier.weight(1f)) {
                     UI.Text(
                         text = if (scheduledExecutionTime != null) {
-                            "${s.shared("automation_scheduled_label")}: ${DateUtils.formatFullDateTime(scheduledExecutionTime)}"
+                            "${s.shared("automation_scheduled_label")}: ${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(scheduledExecutionTime, context)}"
                         } else {
                             s.shared("automation_manual_execution")
                         },
@@ -114,7 +114,7 @@ fun ExecutionCard(
                 // Left column: Started time
                 Box(modifier = Modifier.weight(1f)) {
                     UI.Text(
-                        text = "${s.shared("automation_started_label")}: ${DateUtils.formatFullDateTime(createdAt)}",
+                        text = "${s.shared("automation_started_label")}: ${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(createdAt, context)}",
                         type = TextType.CAPTION
                     )
                 }

@@ -75,7 +75,10 @@ fun SessionCard(
                 // Left column: Created date
                 Box(modifier = Modifier.weight(1f)) {
                     UI.Text(
-                        text = DateUtils.formatFullDateTime(createdAt),
+                        text = com.assistant.core.utils.DateTimeFormatter.formatForDisplay(
+                            createdAt,
+                            androidx.compose.ui.platform.LocalContext.current
+                        ),
                         type = TextType.CAPTION
                     )
                 }
