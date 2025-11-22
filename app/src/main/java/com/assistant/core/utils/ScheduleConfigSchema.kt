@@ -208,11 +208,6 @@ object ScheduleConfigSchema {
                     ],
                     "description": "${s.shared("schedule_pattern")}"
                 },
-                "timezone": {
-                    "type": "string",
-                    "default": "Europe/Paris",
-                    "description": "${s.shared("schedule_timezone")}"
-                },
                 "enabled": {
                     "type": "boolean",
                     "default": true,
@@ -234,7 +229,7 @@ object ScheduleConfigSchema {
                     "description": "${s.shared("schedule_next_execution")}"
                 }
             },
-            "required": ["pattern", "timezone", "enabled"]
+            "required": ["pattern", "enabled"]
         }
         """.trimIndent()
 
