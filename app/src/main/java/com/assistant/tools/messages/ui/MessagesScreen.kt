@@ -19,6 +19,8 @@ import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
@@ -797,8 +799,15 @@ private fun parseExecutionEntries(data: List<*>?): List<ExecutionEntry> {
 
             val executionId = execution["id"] as? String ?: return@mapNotNull null
             val templateDataId = execution["templateDataId"] as? String ?: return@mapNotNull null
-            val scheduledTime = (execution["scheduledTime"] as? Number)?.toLong() ?: return@mapNotNull null
-            val executionTime = (execution["executionTime"] as? Number)?.toLong() ?: return@mapNotNull null
+
+            // Parse timestamps: service returns ISO 8601 strings
+            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+            val scheduledTime = (execution["scheduledTime"] as? String)?.let {
+                DateTimeConverter.isoToTimestamp(it, timezone)
+            } ?: return@mapNotNull null
+            val executionTime = (execution["executionTime"] as? String)?.let {
+                DateTimeConverter.isoToTimestamp(it, timezone)
+            } ?: return@mapNotNull null
             val status = execution["status"] as? String ?: "pending"
 
             // Parse snapshotData JSON

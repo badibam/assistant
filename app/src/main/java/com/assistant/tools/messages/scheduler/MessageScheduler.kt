@@ -4,6 +4,8 @@ import android.content.Context
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.tools.ToolScheduler
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
@@ -216,14 +218,16 @@ object MessageScheduler : ToolScheduler {
             }
         }
 
+        // Convert timestamps to ISO 8601 for service (external interface)
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         val createExecutionResult = coordinator.processUserAction(
             "tool_executions.create",
             mapOf(
                 "toolInstanceId" to toolInstanceId,
                 "tooltype" to "messages",
                 "templateDataId" to messageId,
-                "scheduledTime" to nextExecutionTime,
-                "executionTime" to now,
+                "scheduledTime" to DateTimeConverter.timestampToISO(nextExecutionTime, timezone),
+                "executionTime" to DateTimeConverter.timestampToISO(now, timezone),
                 "status" to finalStatus,
                 "triggeredBy" to "SCHEDULE",
                 "snapshotData" to snapshotData,
