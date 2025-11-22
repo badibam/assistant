@@ -329,8 +329,8 @@ Récupère la date et heure actuelle du système.
 
 **Retour** :
 
-- `timestamp` (number) : Timestamp en millisecondes (format Unix)
-- `formatted` (string) : Date/heure formatée (yyyy-MM-dd HH:mm:ss)
+- `timestamp` (string) : Timestamp ISO 8601 avec timezone offset (ex: `"2025-11-23T14:30:00+01:00"`)
+- `formatted` (string) : Date/heure formatée pour affichage (yyyy-MM-dd HH:mm:ss)
 
 **Usage** : Utilise cette commande quand tu as besoin du timestamp actuel pour créer des données avec des dates précises.
 Exemple : créer une note avec l\'heure exacte de création.
@@ -478,7 +478,7 @@ Les queries retournent un **SystemMessage** de type `DATA_ADDED` contenant :
 ```json
 {
   "entries": [
-    { "id": "entry_456", "timestamp": 1704067200000, "data": { "value": 75.5 } }
+    { "id": "entry_456", "timestamp": "2024-01-01T08:00:00+01:00", "data": { "value": 75.5 } }
   ],
   "total": 42
 }
@@ -573,8 +573,8 @@ Retourne la config JSON complète incluant les custom_fields définis :
   "params": {
     "id": "tracking_weight_123",
     "period": {
-      "start": 1704067200000,
-      "end": 1706745600000
+      "start": "2024-01-01T00:00:00+01:00",
+      "end": "2024-02-01T00:00:00+01:00"
     },
     "limit": 50
   }
@@ -587,7 +587,7 @@ Retourne jusqu\'à 50 entrées incluant custom_fields si définis :
   "entries": [
     {
       "id": "entry_456",
-      "timestamp": 1704067200000,
+      "timestamp": "2024-01-01T08:00:00+01:00",
       "data": {"value": 75.5},
       "custom_fields": {"mood": "stressed"}
     }
@@ -642,8 +642,8 @@ Retourne tous les outils configurés dans la zone Santé.
   "params": {
     "id": "tracking_weight_123",
     "period": {
-      "start": 1704067200000,
-      "end": 1706745600000
+      "start": "2024-01-01T00:00:00+01:00",
+      "end": "2024-02-01T00:00:00+01:00"
     }
   }
 }
@@ -664,12 +664,12 @@ Retourne toutes les entrées de la période. Ensuite, extrait uniquement les IDs
     "tooltype": "tracking",
     "entries": [
       {
-        "timestamp": 1704067200000,
+        "timestamp": "2024-01-01T08:00:00+01:00",
         "data": { "value": 75.5 },
         "custom_fields": { "mood": "calm" }
       },
       {
-        "timestamp": 1704153600000,
+        "timestamp": "2024-01-02T08:00:00+01:00",
         "data": { "value": 75.2 },
         "custom_fields": { "mood": "stressed" }
       }
@@ -889,8 +889,9 @@ Trois formats pour filtrer temporellement les queries :
 - `"NOW"` = instant précis (pas une période)
 - Usage : combiner avec période relative pour "jusqu'à maintenant"
 
-**3. Timestamps absolus** - Long en millisecondes
+**3. Timestamps ISO 8601** - Format avec timezone offset
 - Pour dates fixes uniquement
+- Format : `"2025-11-23T09:00:00+01:00"`
 
 ### Paramètres temporels
 
