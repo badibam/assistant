@@ -156,7 +156,6 @@ class AutomationScheduler(private val context: Context) {
 
                 val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
                     pattern = schedule.pattern,
-                    timezone = schedule.timezone,
                     startDate = schedule.startDate,
                     endDate = schedule.endDate,
                     fromTimestamp = fromTimestamp
@@ -300,7 +299,6 @@ class AutomationScheduler(private val context: Context) {
 
             val nextExecutionTime = ScheduleCalculator.calculateNextExecution(
                 pattern = schedule.pattern,
-                timezone = schedule.timezone,
                 startDate = schedule.startDate,
                 endDate = schedule.endDate,
                 fromTimestamp = fromTimestamp

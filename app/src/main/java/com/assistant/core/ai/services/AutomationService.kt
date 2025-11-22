@@ -9,6 +9,8 @@ import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
@@ -141,11 +143,13 @@ class AutomationService(private val context: Context) : ExecutableService {
 
         LogManager.service("Successfully created automation: $automationId", "INFO")
 
+        // Convert timestamp to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         return OperationResult.success(mapOf(
             "automation_id" to automationId,
             "name" to name,
             "zone_id" to zoneId,
-            "created_at" to now
+            "created_at" to DateTimeConverter.timestampToISO(now, timezone)
         ))
     }
 
@@ -432,8 +436,10 @@ class AutomationService(private val context: Context) : ExecutableService {
 
     /**
      * Convert automation to map for CommandResult
+     * Converts timestamps to ISO 8601 format for output
      */
     private fun automationToMap(automation: Automation): Map<String, Any?> {
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         return mapOf(
             "id" to automation.id,
             "name" to automation.name,
@@ -444,10 +450,11 @@ class AutomationService(private val context: Context) : ExecutableService {
             "dismiss_older_instances" to automation.dismissOlderInstances,
             "provider_id" to automation.providerId,
             "is_enabled" to automation.isEnabled,
-            "created_at" to automation.createdAt,
-            "updated_at" to automation.updatedAt,
+            "created_at" to DateTimeConverter.timestampToISO(automation.createdAt, timezone),
+            "updated_at" to DateTimeConverter.timestampToISO(automation.updatedAt, timezone),
             "last_execution_id" to automation.lastExecutionId,
-            "execution_history" to automation.executionHistory
+            "execution_history" to automation.executionHistory,
+            "group" to automation.group
         )
     }
 

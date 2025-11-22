@@ -242,7 +242,6 @@ object MessageScheduler : ToolScheduler {
         if (scheduleConfig != null) {
             val nextExecution = ScheduleCalculator.calculateNextExecution(
                 pattern = scheduleConfig.pattern,
-                timezone = scheduleConfig.timezone,
                 startDate = scheduleConfig.startDate,
                 endDate = scheduleConfig.endDate,
                 fromTimestamp = now

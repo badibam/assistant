@@ -5,7 +5,9 @@ import java.time.temporal.TemporalAdjusters
 
 /**
  * Calculator for next execution time based on schedule patterns
- * Handles all 6 schedule pattern types with timezone support
+ * Handles all 6 schedule pattern types
+ *
+ * Note: Timezone is resolved from AppConfig (user-configured global timezone)
  */
 object ScheduleCalculator {
 
@@ -13,7 +15,6 @@ object ScheduleCalculator {
      * Calculate next execution time for a schedule
      *
      * @param pattern The schedule pattern to evaluate
-     * @param timezone Timezone string (e.g., "Europe/Paris")
      * @param startDate Earliest allowed execution time (null = now)
      * @param endDate Latest allowed execution time (null = no limit)
      * @param fromTimestamp Calculate from this timestamp (default = now)
@@ -21,12 +22,12 @@ object ScheduleCalculator {
      */
     fun calculateNextExecution(
         pattern: SchedulePattern,
-        timezone: String,
         startDate: Long?,
         endDate: Long?,
         fromTimestamp: Long = System.currentTimeMillis()
     ): Long? {
-        val zoneId = ZoneId.of(timezone)
+        // Use timezone from AppConfig (user-configured global timezone)
+        val zoneId = AppConfigManager.getDateTimeConfig().getZoneId()
         val fromInstant = Instant.ofEpochMilli(fromTimestamp)
         val fromZoned = ZonedDateTime.ofInstant(fromInstant, zoneId)
 
@@ -45,7 +46,7 @@ object ScheduleCalculator {
         // Apply start/end date constraints
         if (startDate != null && nextTimestamp < startDate) {
             // Recursively calculate from startDate
-            return calculateNextExecution(pattern, timezone, startDate, endDate, startDate)
+            return calculateNextExecution(pattern, startDate, endDate, startDate)
         }
 
         if (endDate != null && nextTimestamp > endDate) {

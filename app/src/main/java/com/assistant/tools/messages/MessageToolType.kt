@@ -467,7 +467,6 @@ object MessageToolType : ToolTypeContract {
             val now = System.currentTimeMillis()
             val nextExecutionTime = com.assistant.core.utils.ScheduleCalculator.calculateNextExecution(
                 pattern = scheduleConfig.pattern,
-                timezone = scheduleConfig.timezone,
                 startDate = scheduleConfig.startDate,
                 endDate = scheduleConfig.endDate,
                 fromTimestamp = now

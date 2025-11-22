@@ -121,11 +121,7 @@ fun ScheduleConfigEditor(
         )
     }
 
-    // Common config fields
-    // Use system timezone (will be configurable via AppConfig in future)
-    var timezone by remember {
-        mutableStateOf(existingConfig?.timezone ?: java.util.TimeZone.getDefault().id)
-    }
+    // Common config fields (timezone now resolved from AppConfig globally)
 
     UI.Dialog(
         type = DialogType.CONFIGURE,
@@ -152,7 +148,6 @@ fun ScheduleConfigEditor(
             } else {
                 ScheduleConfig(
                     pattern = pattern,
-                    timezone = timezone,
                     enabled = true, // Always enabled if schedule is configured
                     startDate = existingConfig?.startDate ?: System.currentTimeMillis(), // Initialize to now on creation, preserve on update
                     endDate = null,

@@ -8,7 +8,9 @@ import com.assistant.core.database.entities.ToolExecutionEntity
 import com.assistant.core.database.dao.BaseToolExecutionDao
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DataChangeNotifier
+import com.assistant.core.utils.DateTimeConverter
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
@@ -49,10 +51,18 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
         val toolInstanceId = params.optString("toolInstanceId")
         val tooltype = params.optString("tooltype")
         val templateDataId = params.optString("templateDataId")
-        val executionTime = params.optLong("executionTime", System.currentTimeMillis())
+
+        // Parse executionTime: accept ISO String or Long timestamp (default to now)
+        val executionTime = parseTimestampParam(params, "executionTime") ?: System.currentTimeMillis()
+
         val status = params.optString("status", "completed")
         val triggeredBy = params.optString("triggeredBy", "MANUAL")
-        val scheduledTime = if (params.has("scheduledTime")) params.optLong("scheduledTime") else null
+
+        // Parse scheduledTime: accept ISO String or Long timestamp (nullable)
+        val scheduledTime = if (params.has("scheduledTime")) {
+            parseTimestampParam(params, "scheduledTime")
+        } else null
+
         val snapshotDataJson = params.optJSONObject("snapshotData") ?: JSONObject()
         val executionResult = params.optJSONObject("executionResult")?.toString() ?: "{}"
         val metadata = params.optJSONObject("metadata")?.toString() ?: "{}"
@@ -131,10 +141,12 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             DataChangeNotifier.notifyToolDataChanged(toolInstanceId, zoneId)
         }
 
+        // Convert timestamps to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         return OperationResult.success(
             data = mapOf(
                 "id" to entity.id,
-                "createdAt" to entity.createdAt
+                "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, timezone)
             )
         )
     }
@@ -170,10 +182,19 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             existingEntity.metadata
         }
 
+        // Parse timestamps: accept ISO String or Long, fallback to existing values
+        val newExecutionTime = if (params.has("executionTime")) {
+            parseTimestampParam(params, "executionTime") ?: existingEntity.executionTime
+        } else existingEntity.executionTime
+
+        val newScheduledTime = if (params.has("scheduledTime")) {
+            parseTimestampParam(params, "scheduledTime")
+        } else existingEntity.scheduledTime
+
         val updatedEntity = existingEntity.copy(
             status = params.optString("status", existingEntity.status),
-            executionTime = params.optLong("executionTime", existingEntity.executionTime),
-            scheduledTime = if (params.has("scheduledTime")) params.optLong("scheduledTime") else existingEntity.scheduledTime,
+            executionTime = newExecutionTime,
+            scheduledTime = newScheduledTime,
             snapshotData = mergedSnapshotData,
             executionResult = mergedExecutionResult,
             metadata = mergedMetadata,
@@ -188,10 +209,12 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             DataChangeNotifier.notifyToolDataChanged(existingEntity.toolInstanceId, zoneId)
         }
 
+        // Convert timestamps to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         return OperationResult.success(
             data = mapOf(
                 "id" to updatedEntity.id,
-                "updatedAt" to updatedEntity.updatedAt
+                "updatedAt" to DateTimeConverter.timestampToISO(updatedEntity.updatedAt, timezone)
             )
         )
     }
@@ -271,6 +294,9 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
 
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
+        // Convert timestamps to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
         return OperationResult.success(
             data = mapOf(
                 "executions" to executions.map { entity ->
@@ -279,15 +305,15 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
                         "toolInstanceId" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
                         "templateDataId" to entity.templateDataId,
-                        "scheduledTime" to entity.scheduledTime,
-                        "executionTime" to entity.executionTime,
+                        "scheduledTime" to entity.scheduledTime?.let { DateTimeConverter.timestampToISO(it, timezone) },
+                        "executionTime" to DateTimeConverter.timestampToISO(entity.executionTime, timezone),
                         "status" to entity.status,
                         "snapshotData" to entity.snapshotData,
                         "executionResult" to entity.executionResult,
                         "triggeredBy" to entity.triggeredBy,
                         "metadata" to entity.metadata,
-                        "createdAt" to entity.createdAt,
-                        "updatedAt" to entity.updatedAt
+                        "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, timezone),
+                        "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, timezone)
                     )
                 },
                 "pagination" to mapOf(
@@ -312,6 +338,9 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
         val entity = dao.getById(executionId)
             ?: return OperationResult.error(s.shared("service_error_execution_not_found").format(executionId))
 
+        // Convert timestamps to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+
         return OperationResult.success(
             data = mapOf(
                 "execution" to mapOf(
@@ -319,15 +348,15 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
                     "toolInstanceId" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
                     "templateDataId" to entity.templateDataId,
-                    "scheduledTime" to entity.scheduledTime,
-                    "executionTime" to entity.executionTime,
+                    "scheduledTime" to entity.scheduledTime?.let { DateTimeConverter.timestampToISO(it, timezone) },
+                    "executionTime" to DateTimeConverter.timestampToISO(entity.executionTime, timezone),
                     "status" to entity.status,
                     "snapshotData" to entity.snapshotData,
                     "executionResult" to entity.executionResult,
                     "triggeredBy" to entity.triggeredBy,
                     "metadata" to entity.metadata,
-                    "createdAt" to entity.createdAt,
-                    "updatedAt" to entity.updatedAt
+                    "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, timezone),
+                    "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, timezone)
                 )
             )
         )
@@ -659,6 +688,34 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             } else defaultName
 
             ToolInfo(toolName, zoneName)
+        }
+    }
+
+    /**
+     * Parse timestamp parameter: accepts ISO String or Long timestamp
+     * Returns Long timestamp (UTC milliseconds) or null if not present/invalid
+     */
+    private fun parseTimestampParam(params: JSONObject, key: String): Long? {
+        if (!params.has(key)) return null
+
+        return try {
+            // Try as String (ISO 8601 format)
+            val value = params.opt(key)
+            when (value) {
+                is String -> {
+                    if (value.isEmpty()) null
+                    else DateTimeConverter.isoToTimestamp(value, AppConfigManager.getDateTimeConfig().getZoneId())
+                }
+                is Number -> value.toLong()
+                else -> null
+            }
+        } catch (e: Exception) {
+            com.assistant.core.utils.LogManager.service(
+                "Failed to parse timestamp parameter '$key': ${e.message}",
+                "WARN",
+                e
+            )
+            null
         }
     }
 }

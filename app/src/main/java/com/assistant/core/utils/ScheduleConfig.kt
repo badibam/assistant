@@ -7,13 +7,11 @@ import kotlinx.serialization.SerialName
  * Schedule configuration for automated executions
  * Supports 6 types of scheduling patterns
  *
- * Note: timezone default is system timezone.
- * TODO: Make timezone configurable via AppConfig with system fallback
+ * Note: Timezone is resolved from AppConfig (user-configured global timezone)
  */
 @Serializable
 data class ScheduleConfig(
     val pattern: SchedulePattern,
-    val timezone: String = java.util.TimeZone.getDefault().id,
     val enabled: Boolean = true,
     val startDate: Long? = null,        // Start executing from this date (null = now)
     val endDate: Long? = null,          // Stop executing after this date (null = indefinite)
