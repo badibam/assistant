@@ -56,8 +56,10 @@ import com.assistant.core.ui.FeedbackType
 import com.assistant.core.ui.Duration
 import com.assistant.core.ui.DialogType
 import com.assistant.core.ui.DisplayMode
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.tools.BaseSchemas
+import java.time.Instant
 import java.util.Calendar
 
 /**
@@ -1331,9 +1333,11 @@ object DefaultTheme : ThemeContract {
         onDateSelected: (String) -> Unit,
         onDismiss: () -> Unit
     ) {
-        // Convert local date to UTC for DatePicker compatibility
+        // Convert local date to UTC for DatePicker compatibility (uses AppConfig timezone)
         val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
-        val utcDate = selectedDateMs + java.util.TimeZone.getDefault().getOffset(selectedDateMs)
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+        val offsetMs = timezone.rules.getOffset(java.time.Instant.ofEpochMilli(selectedDateMs)).totalSeconds * 1000L
+        val utcDate = selectedDateMs + offsetMs
         
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
