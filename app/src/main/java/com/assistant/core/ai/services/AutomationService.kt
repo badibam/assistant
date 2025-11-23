@@ -427,6 +427,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             dismissOlderInstances = entity.dismissOlderInstances,
             providerId = entity.providerId,
             isEnabled = entity.isEnabled,
+            group = entity.group,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
             lastExecutionId = entity.lastExecutionId,
