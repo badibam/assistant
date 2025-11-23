@@ -210,7 +210,8 @@ fun TrackingHistory(
                                         name = entryMap["name"] as? String,
                                         data = entryMap["data"] as? String ?: "",
                                         createdAt = (entryMap["createdAt"] as? Number)?.toLong() ?: 0L,
-                                        updatedAt = (entryMap["updatedAt"] as? Number)?.toLong() ?: 0L
+                                        updatedAt = (entryMap["updatedAt"] as? Number)?.toLong() ?: 0L,
+                                        customFields = entryMap["custom_fields"] as? String
                                     )
                                 } catch (e: Exception) {
                                     LogManager.tracking("Failed to map entry", "ERROR", e)
