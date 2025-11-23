@@ -237,17 +237,29 @@ fun TrackingHistory(
         LogManager.tracking("updateEntry called: entryId=$entryId, name=$name, dataJson=$dataJson, newTimestamp=$newTimestamp")
         scope.launch {
             try {
+                // Parse dataJson and extract custom_fields
+                val dataObject = JSONObject(dataJson)
+                val customFields = dataObject.optJSONObject("custom_fields")
+                if (customFields != null) {
+                    dataObject.remove("custom_fields") // Remove from data object
+                }
+
                 val params = mutableMapOf<String, Any>(
                     "id" to entryId,
                     "name" to name,
-                    "data" to JSONObject(dataJson)
+                    "data" to dataObject
                 )
-                
+
+                // Add custom_fields as separate parameter if present
+                if (customFields != null) {
+                    params["custom_fields"] = customFields
+                }
+
                 // Add timestamp if provided
-                newTimestamp?.let { 
+                newTimestamp?.let {
                     params["timestamp"] = it
                 }
-                
+
                 LogManager.tracking("Final update params: $params")
                 
                 val result = coordinator.processUserAction("tool_data.update", params)

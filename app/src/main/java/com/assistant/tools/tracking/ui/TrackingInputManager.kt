@@ -50,6 +50,13 @@ fun TrackingInputManager(
             isLoading = true
             
             try {
+                // Parse dataJson and extract custom_fields
+                val dataObject = JSONObject(dataJson)
+                val customFields = dataObject.optJSONObject("custom_fields")
+                if (customFields != null) {
+                    dataObject.remove("custom_fields") // Remove from data object
+                }
+
                 // Build params pour nouvelle structure tool_data
                 val params = mutableMapOf<String, Any>(
                     "toolInstanceId" to toolInstanceId,
@@ -57,8 +64,14 @@ fun TrackingInputManager(
                     "timestamp" to timestamp,
                     "name" to itemName,
                     "schema_id" to "tracking_data_$trackingType", // Add schema_id for validation
-                    "data" to JSONObject(dataJson)
+                    "data" to dataObject
                 )
+
+                // Add custom_fields as separate parameter if present
+                if (customFields != null) {
+                    params["custom_fields"] = customFields
+                }
+
                 LogManager.tracking("Final params being sent: $params")
                 
                 val result = coordinator.processUserAction("tool_data.create", params)
