@@ -99,15 +99,13 @@ fun NoteCard(
                                 type = TextType.BODY
                             )
 
-                            // Custom fields display (if any)
-                            if (note?.customFields?.isNotEmpty() == true) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                CustomFieldsDisplay(
-                                    toolInstanceId = toolInstanceId,
-                                    values = note.customFields,
-                                    context = context
-                                )
-                            }
+                            // Custom fields display (always shown for alwaysVisible fields)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            CustomFieldsDisplay(
+                                toolInstanceId = toolInstanceId,
+                                values = note?.customFields ?: emptyMap(),
+                                context = context
+                            )
                         }
                     }
                 }
