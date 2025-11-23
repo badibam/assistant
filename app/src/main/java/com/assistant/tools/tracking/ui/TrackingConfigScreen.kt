@@ -28,6 +28,7 @@ import com.assistant.core.fields.CustomFieldsEditor
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toJsonArray
+import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -140,6 +141,7 @@ fun TrackingConfigScreen(
 
     // Custom fields state
     var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var oldCustomFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
@@ -222,6 +224,7 @@ fun TrackingConfigScreen(
         if (customFieldsArray != null) {
             try {
                 customFields = customFieldsArray.toFieldDefinitions()
+                oldCustomFields = customFields.toList() // Save copy for migration comparison
                 LogManager.tracking("Loaded ${customFields.size} custom fields")
             } catch (e: Exception) {
                 LogManager.tracking("Error parsing custom fields: ${e.message}", "ERROR")
@@ -352,8 +355,8 @@ fun TrackingConfigScreen(
         } else false
     }
 
-    // Save function avec validation V3
-    val handleSave = handleSave@{
+    // Internal save function with tracking-specific logic
+    val handleSaveInternal: () -> Unit = handleSaveInternal@{
         // Debug logs for type change detection
         LogManager.tracking("handleSave - isEditing: $isEditing")
         LogManager.tracking("handleSave - originalType: '$originalType'")
@@ -365,25 +368,25 @@ fun TrackingConfigScreen(
             // Show data deletion warning
             LogManager.tracking("Showing data deletion warning")
             showDataDeletionWarning = true
-            return@handleSave
+            return@handleSaveInternal
         }
-        
+
         // Check if scale parameters changed
         if (detectScaleChanges()) {
             showScaleChangeWarning = true
-            return@handleSave
+            return@handleSaveInternal
         }
-        
+
         // Check if boolean labels changed
         if (detectBooleanChanges()) {
             showBooleanChangeWarning = true
-            return@handleSave
+            return@handleSaveInternal
         }
-        
+
         // Check if choice options changed
         if (detectChoiceChanges()) {
             showChoiceChangeWarning = true
-            return@handleSave
+            return@handleSaveInternal
         }
         
         // Nettoyer la config avant validation
@@ -436,7 +439,28 @@ fun TrackingConfigScreen(
             }
         )
     }
-    
+
+    // Migration handler for custom fields (reusable)
+    val migrationHandler = rememberCustomFieldsMigrationHandler(
+        toolInstanceId = existingToolId,
+        oldFields = oldCustomFields,
+        newFields = customFields,
+        context = context,
+        onSuccess = {
+            // Migration succeeded or not needed - proceed with tracking-specific logic
+            handleSaveInternal()
+        },
+        onError = { error ->
+            errorMessage = error
+        }
+    )
+
+    // Public save function - checks custom fields migration first
+    val handleSave = {
+        // Check custom fields migration first, then proceed to tracking-specific logic
+        migrationHandler.checkAndProceed()
+    }
+
     // Final save with data deletion
     val handleFinalSave = {
         LogManager.tracking("=== Final save started ===")
