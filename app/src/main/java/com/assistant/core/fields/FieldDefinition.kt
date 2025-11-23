@@ -68,9 +68,21 @@ fun JSONObject.toFieldDefinition(): FieldDefinition {
             alwaysVisible = optBoolean("always_visible", false),
             config = optJSONObject("config")?.let { configJson ->
                 // Convert JSONObject to Map<String, Any>
+                // Handle JSONArray conversion to List for fields like "options"
                 val map = mutableMapOf<String, Any>()
                 configJson.keys().forEach { key ->
-                    map[key] = configJson.get(key)
+                    val value = configJson.get(key)
+                    map[key] = when (value) {
+                        is JSONArray -> {
+                            // Convert JSONArray to List<Any>
+                            val list = mutableListOf<Any>()
+                            for (i in 0 until value.length()) {
+                                list.add(value.get(i))
+                            }
+                            list
+                        }
+                        else -> value
+                    }
                 }
                 map
             }

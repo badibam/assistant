@@ -367,7 +367,8 @@ private fun ChoiceConfigEditor(
                         display = ButtonDisplay.ICON,
                         size = Size.S,
                         onClick = {
-                            options.removeAt(index)
+                            // Create new list to trigger recomposition
+                            options = options.toMutableList().apply { removeAt(index) }
                             mutableConfig["options"] = options.filter { it.isNotEmpty() }
                             onConfigChange(mutableConfig)
                         }
@@ -379,10 +380,13 @@ private fun ChoiceConfigEditor(
         // Add option button
         UI.ActionButton(
             action = ButtonAction.ADD,
-            display = ButtonDisplay.LABEL,
+            display = ButtonDisplay.ICON,
             size = Size.S,
             onClick = {
-                options.add("")
+                // Create new list to trigger recomposition
+                options = (options + "").toMutableList()
+                mutableConfig["options"] = options.filter { it.isNotEmpty() }
+                onConfigChange(mutableConfig)
             }
         )
     }
