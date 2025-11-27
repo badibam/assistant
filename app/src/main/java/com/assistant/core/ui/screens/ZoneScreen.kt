@@ -66,6 +66,10 @@ fun ZoneScreen(
     var showCreateAutomationDialog by rememberSaveable { mutableStateOf(false) }
     var preSelectedGroup by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // State for duplication dialogs
+    var showDuplicateToolDialog by rememberSaveable { mutableStateOf(false) }
+    var showDuplicateAutomationDialog by rememberSaveable { mutableStateOf(false) }
+
     // Derived states from IDs (recomputed after orientation change)
     val editingTool = toolInstances.find { it.id == editingToolId }
     val selectedToolInstance = toolInstances.find { it.id == selectedToolInstanceId }
@@ -375,6 +379,16 @@ fun ZoneScreen(
                         showCreateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
+                    onDuplicateTool = {
+                        preSelectedGroup = groupName
+                        showDuplicateToolDialog = true
+                        showAvailableToolsForGroup = null
+                    },
+                    onDuplicateAutomation = {
+                        preSelectedGroup = groupName
+                        showDuplicateAutomationDialog = true
+                        showAvailableToolsForGroup = null
+                    },
                     onToolClick = { toolId -> selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
@@ -478,6 +492,16 @@ fun ZoneScreen(
                         showCreateAutomationDialog = true
                         showAvailableToolsForGroup = null
                     },
+                    onDuplicateTool = {
+                        preSelectedGroup = null
+                        showDuplicateToolDialog = true
+                        showAvailableToolsForGroup = null
+                    },
+                    onDuplicateAutomation = {
+                        preSelectedGroup = null
+                        showDuplicateAutomationDialog = true
+                        showAvailableToolsForGroup = null
+                    },
                     onToolClick = { toolId -> selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
@@ -576,6 +600,133 @@ fun ZoneScreen(
         )
     }
 
+    // Duplicate tool dialog
+    if (showDuplicateToolDialog) {
+        com.assistant.core.ui.selectors.DuplicateSelector(
+            type = com.assistant.core.ui.selectors.DuplicateType.TOOL,
+            onDismiss = {
+                showDuplicateToolDialog = false
+            },
+            onConfirm = { sourceZoneId, toolInstanceId ->
+                coroutineScope.launch {
+                    isLoading = true
+                    try {
+                        val result = coordinator.processUserAction(
+                            "tools.duplicate",
+                            mapOf(
+                                "tool_instance_id" to toolInstanceId,
+                                "target_zone_id" to zone.id,
+                                "target_group" to (preSelectedGroup ?: "")
+                            )
+                        )
+                        if (result.status == CommandStatus.SUCCESS) {
+                            UI.Toast(context, s.shared("duplicate_success_tool"))
+                            showDuplicateToolDialog = false
+                            // Reload tools to show the new one
+                            coordinator.executeWithLoading(
+                                operation = "tools.list",
+                                params = mapOf(
+                                    "zone_id" to zone.id,
+                                    "include_config" to true
+                                ),
+                                onLoading = { isLoading = it },
+                                onError = { error -> errorMessage = error }
+                            )?.let { toolsResult ->
+                                toolInstances = toolsResult.mapData("tool_instances") { map ->
+                                    ToolInstance(
+                                        id = map["id"] as String,
+                                        zone_id = map["zone_id"] as String,
+                                        tool_type = map["tool_type"] as String,
+                                        config_json = map["config_json"] as String,
+                                        order_index = (map["order_index"] as? Number)?.toInt() ?: 0,
+                                        created_at = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                                        updated_at = (map["updated_at"] as? Number)?.toLong() ?: 0L
+                                    )
+                                }
+                            }
+                        } else {
+                            errorMessage = result.error ?: s.shared("duplicate_error").format("")
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = s.shared("duplicate_error").format(e.message ?: "")
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            }
+        )
+    }
+
+    // Duplicate automation dialog
+    if (showDuplicateAutomationDialog) {
+        com.assistant.core.ui.selectors.DuplicateSelector(
+            type = com.assistant.core.ui.selectors.DuplicateType.AUTOMATION,
+            onDismiss = {
+                showDuplicateAutomationDialog = false
+            },
+            onConfirm = { sourceZoneId, automationId ->
+                coroutineScope.launch {
+                    isLoading = true
+                    try {
+                        val result = coordinator.processUserAction(
+                            "automations.duplicate",
+                            mapOf(
+                                "automation_id" to automationId,
+                                "target_zone_id" to zone.id,
+                                "target_group" to (preSelectedGroup ?: "")
+                            )
+                        )
+                        if (result.status == CommandStatus.SUCCESS) {
+                            UI.Toast(context, s.shared("duplicate_success_automation"))
+                            showDuplicateAutomationDialog = false
+                            // Reload automations to show the new one
+                            coordinator.executeWithLoading(
+                                operation = "automations.list",
+                                params = mapOf("zone_id" to zone.id),
+                                onLoading = { isLoadingAutomations = it },
+                                onError = { error -> errorMessage = error }
+                            )?.let { result ->
+                                val automationsArray = result.data?.get("automations") as? org.json.JSONArray
+                                if (automationsArray != null) {
+                                    automations = (0 until automationsArray.length()).mapNotNull { i ->
+                                        val map = automationsArray.getJSONObject(i).let { json ->
+                                            json.keys().asSequence().associateWith { key -> json.get(key) }
+                                        }
+                                        val scheduleJson = map["schedule"] as? String
+                                        com.assistant.core.ai.data.Automation(
+                                            id = map["id"] as String,
+                                            name = map["name"] as String,
+                                            zoneId = map["zone_id"] as String,
+                                            seedSessionId = map["seed_session_id"] as String,
+                                            schedule = scheduleJson?.let {
+                                                kotlinx.serialization.json.Json.decodeFromString(it)
+                                            },
+                                            triggerIds = (map["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                                            dismissOlderInstances = map["dismiss_older_instances"] as? Boolean ?: false,
+                                            providerId = map["provider_id"] as String,
+                                            isEnabled = map["is_enabled"] as? Boolean ?: true,
+                                            group = map["group"] as? String,
+                                            createdAt = (map["created_at"] as? Number)?.toLong() ?: 0L,
+                                            updatedAt = (map["updated_at"] as? Number)?.toLong() ?: 0L,
+                                            lastExecutionId = map["last_execution_id"] as? String,
+                                            executionHistory = (map["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            errorMessage = result.error ?: s.shared("duplicate_error").format("")
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = s.shared("duplicate_error").format(e.message ?: "")
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            }
+        )
+    }
+
     // Error handling with Toast
     errorMessage?.let { message ->
         LaunchedEffect(message) {
@@ -597,6 +748,8 @@ private fun GroupSection(
     onToggleToolsList: () -> Unit,
     onSelectToolType: (String) -> Unit,
     onCreateAutomation: () -> Unit,
+    onDuplicateTool: () -> Unit,
+    onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -656,7 +809,39 @@ private fun GroupSection(
                     textAlign = TextAlign.Center
                 )
 
-                // Automation button (SECONDARY, first)
+                // Duplicate automation button (SECONDARY, first)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onDuplicateAutomation
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_duplicate_automation"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // Duplicate tool button (PRIMARY, second)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        onClick = onDuplicateTool
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_duplicate_tool"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // Automation button (SECONDARY)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -742,6 +927,8 @@ private fun UngroupedSection(
     onToggleToolsList: () -> Unit,
     onSelectToolType: (String) -> Unit,
     onCreateAutomation: () -> Unit,
+    onDuplicateTool: () -> Unit,
+    onDuplicateAutomation: () -> Unit,
     onToolClick: (String) -> Unit,
     onToolLongClick: (ToolInstance) -> Unit,
     onAutomationEdit: (com.assistant.core.ai.data.Automation) -> Unit,
@@ -798,7 +985,39 @@ private fun UngroupedSection(
                     textAlign = TextAlign.Center
                 )
 
-                // Automation button (SECONDARY, first)
+                // Duplicate automation button (SECONDARY, first)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.SECONDARY,
+                        onClick = onDuplicateAutomation
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_duplicate_automation"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // Duplicate tool button (PRIMARY, second)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    UI.Button(
+                        type = ButtonType.PRIMARY,
+                        onClick = onDuplicateTool
+                    ) {
+                        UI.Text(
+                            text = s.shared("action_duplicate_tool"),
+                            type = TextType.LABEL
+                        )
+                    }
+                }
+
+                // Automation button (SECONDARY)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center

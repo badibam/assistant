@@ -45,6 +45,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
                 "delete" -> handleDelete(params, token)
+                "duplicate" -> handleDuplicate(params, token)
                 "list" -> handleGetByZone(params, token)  // zones/{id}/tools pattern
                 "list_all" -> handleListAll(params, token) // All tool instances across zones
                 "get" -> handleGetById(params, token)      // tools/{id} pattern
@@ -199,7 +200,81 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "deleted_at" to System.currentTimeMillis()
         ))
     }
-    
+
+    /**
+     * Duplicate an existing tool instance
+     *
+     * Creates a copy of the source tool with modified name (adds " (copie)")
+     * in the specified target zone and group.
+     */
+    private suspend fun handleDuplicate(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val toolInstanceId = params.optString("tool_instance_id")
+        val targetZoneId = params.optString("target_zone_id")
+        val targetGroup = params.optString("target_group").takeIf { it.isNotBlank() }
+
+        if (toolInstanceId.isBlank()) {
+            return OperationResult.error(s.shared("service_error_tool_instance_id_required"))
+        }
+
+        if (targetZoneId.isBlank()) {
+            return OperationResult.error(s.shared("service_error_zone_id_required"))
+        }
+
+        // Load source tool instance
+        val sourceTool = toolInstanceDao.getToolInstanceById(toolInstanceId)
+            ?: return OperationResult.error(s.shared("service_error_tool_instance_not_found"))
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Parse and modify config
+        val sourceConfig = try {
+            JSONObject(sourceTool.config_json)
+        } catch (e: Exception) {
+            LogManager.service("Failed to parse source config: ${e.message}", "ERROR", e)
+            return OperationResult.error(s.shared("duplicate_error").format(e.message ?: "Invalid config"))
+        }
+
+        // Modify name to indicate it's a copy
+        val originalName = sourceConfig.optString("name", "")
+        val newName = if (originalName.isNotBlank()) {
+            "$originalName (copie)"
+        } else {
+            s.shared("action_duplicate") // Fallback if name is empty
+        }
+        sourceConfig.put("name", newName)
+
+        // Update group if specified
+        if (targetGroup != null) {
+            sourceConfig.put("group", targetGroup)
+        }
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Create new tool instance in target zone
+        val newToolInstance = ToolInstance(
+            zone_id = targetZoneId, // Target zone, not source zone
+            tool_type = sourceTool.tool_type,
+            config_json = sourceConfig.toString()
+        )
+
+        toolInstanceDao.insertToolInstance(newToolInstance)
+
+        // Notify UI of tools change in target zone
+        DataChangeNotifier.notifyToolsChanged(targetZoneId)
+
+        LogManager.service("Duplicated tool $toolInstanceId to ${newToolInstance.id} in zone $targetZoneId", "INFO")
+
+        return OperationResult.success(mapOf(
+            "tool_instance_id" to newToolInstance.id,
+            "source_tool_instance_id" to toolInstanceId,
+            "zone_id" to newToolInstance.zone_id,
+            "tool_type" to newToolInstance.tool_type,
+            "name" to newName
+        ))
+    }
+
     /**
      * Get tool instances by zone
      */

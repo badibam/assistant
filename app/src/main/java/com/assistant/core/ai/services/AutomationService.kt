@@ -60,6 +60,7 @@ class AutomationService(private val context: Context) : ExecutableService {
                 "create" -> createAutomation(params, token)
                 "update" -> updateAutomation(params, token)
                 "delete" -> deleteAutomation(params, token)
+                "duplicate" -> duplicateAutomation(params, token)
                 "get" -> getAutomation(params, token)
                 "get_by_seed_session" -> getAutomationBySeedSession(params, token)
                 "list" -> listAutomations(params, token)
@@ -262,6 +263,120 @@ class AutomationService(private val context: Context) : ExecutableService {
         return OperationResult.success(mapOf(
             "automation_id" to automationId,
             "deleted" to true
+        ))
+    }
+
+    /**
+     * Duplicate an existing automation
+     *
+     * Creates a copy of the source automation with:
+     * - A new SEED session (duplicated from source)
+     * - All messages from source SEED copied to new SEED
+     * - Modified name (adds " (copie)")
+     * - Created in the specified target zone and group
+     */
+    private suspend fun duplicateAutomation(params: JSONObject, token: CancellationToken): OperationResult {
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        val automationId = params.optString("automation_id").takeIf { it.isNotEmpty() }
+            ?: return OperationResult.error(s.shared("error_param_automation_id_required"))
+        val targetZoneId = params.optString("target_zone_id").takeIf { it.isNotBlank() }
+            ?: return OperationResult.error(s.shared("error_param_zone_id_required"))
+        val targetGroup = params.optString("target_group").takeIf { it.isNotBlank() }
+
+        LogManager.service("Duplicating automation: $automationId to zone $targetZoneId", "DEBUG")
+
+        // Load source automation
+        val sourceEntity = dao.getAutomationById(automationId)
+            ?: return OperationResult.error(s.shared("error_automation_not_found"))
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Load source SEED session
+        val sourceSeedSession = dao.getSession(sourceEntity.seedSessionId)
+            ?: return OperationResult.error("Source SEED session not found: ${sourceEntity.seedSessionId}")
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Load all messages from source SEED session
+        val sourceMessages = dao.getMessagesForSession(sourceEntity.seedSessionId)
+
+        LogManager.service("Loaded ${sourceMessages.size} messages from source SEED session", "DEBUG")
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Create new SEED session (copy of source)
+        val newSeedSessionId = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val newSeedSession = sourceSeedSession.copy(
+            id = newSeedSessionId,
+            name = "${sourceEntity.name} (copie)", // Name the SEED session with same pattern
+            createdAt = now,
+            lastActivity = now,
+            isActive = false, // SEED sessions are never active
+            endReason = null,
+            automationId = null, // Will be set after automation is created
+            phase = "IDLE",
+            waitingContextJson = null,
+            totalRoundtrips = 0,
+            lastEventTime = now,
+            lastUserInteractionTime = now,
+            tokensJson = null // Reset token usage for new session
+        )
+
+        dao.insertSession(newSeedSession)
+
+        LogManager.service("Created new SEED session: $newSeedSessionId", "DEBUG")
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Duplicate all messages to new SEED session
+        sourceMessages.forEach { sourceMessage ->
+            val newMessage = sourceMessage.copy(
+                id = UUID.randomUUID().toString(),
+                sessionId = newSeedSessionId,
+                timestamp = now + sourceMessages.indexOf(sourceMessage) // Preserve order with slight offset
+            )
+            dao.insertMessage(newMessage)
+        }
+
+        LogManager.service("Duplicated ${sourceMessages.size} messages to new SEED session", "DEBUG")
+
+        if (token.isCancelled) return OperationResult.cancelled()
+
+        // Create new automation
+        val newAutomationId = UUID.randomUUID().toString()
+        val newName = "${sourceEntity.name} (copie)"
+
+        val newAutomation = sourceEntity.copy(
+            id = newAutomationId,
+            name = newName,
+            zoneId = targetZoneId, // Target zone, not source zone
+            seedSessionId = newSeedSessionId,
+            group = targetGroup, // Use target group (can be null for ungrouped)
+            createdAt = now,
+            updatedAt = now,
+            lastExecutionId = null, // Reset execution history
+            executionHistoryJson = json.encodeToString(emptyList<String>())
+        )
+
+        dao.insertAutomation(newAutomation)
+
+        // Notify UI
+        com.assistant.core.utils.DataChangeNotifier.notifyZonesChanged()
+
+        LogManager.service("Successfully duplicated automation $automationId to $newAutomationId", "INFO")
+
+        // Convert timestamp to ISO 8601 for output
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+        return OperationResult.success(mapOf(
+            "automation_id" to newAutomationId,
+            "source_automation_id" to automationId,
+            "name" to newName,
+            "zone_id" to newAutomation.zoneId,
+            "seed_session_id" to newSeedSessionId,
+            "created_at" to DateTimeConverter.timestampToISO(now, timezone)
         ))
     }
 

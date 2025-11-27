@@ -1,0 +1,390 @@
+package com.assistant.core.ui.selectors
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import com.assistant.core.strings.Strings
+import com.assistant.core.ui.UI
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.TextType
+import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.executeWithLoading
+import com.assistant.core.coordinator.mapData
+import com.assistant.core.commands.CommandStatus
+import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+
+/**
+ * Duplicate Selector - Simplified selector for duplicating tools or automations
+ *
+ * Navigation flow:
+ * 1. Zone selection
+ * 2. Instance selection (filtered by type: tool/automation)
+ *
+ * @param type Type of element to duplicate (TOOL or AUTOMATION)
+ * @param onDismiss Callback when dialog is dismissed
+ * @param onConfirm Callback when selection is confirmed with (zoneId, instanceId)
+ */
+@Composable
+fun DuplicateSelector(
+    type: DuplicateType,
+    onDismiss: () -> Unit,
+    onConfirm: (zoneId: String, instanceId: String) -> Unit
+) {
+    val context = LocalContext.current
+    val s = Strings.`for`(context = context)
+    val scope = rememberCoroutineScope()
+    val coordinator = remember { Coordinator(context) }
+
+    // Navigation state
+    var currentStep by remember { mutableStateOf(DuplicateStep.ZONE) }
+    var selectedZoneId by remember { mutableStateOf("") }
+    var selectedZoneName by remember { mutableStateOf("") }
+    var selectedInstanceId by remember { mutableStateOf<String?>(null) }
+
+    // Data state
+    var zones by remember { mutableStateOf<List<ZoneItem>>(emptyList()) }
+    var instances by remember { mutableStateOf<List<InstanceItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Load zones on mount
+    LaunchedEffect(Unit) {
+        coordinator.executeWithLoading(
+            operation = "zones.list",
+            params = emptyMap(),
+            onLoading = { isLoading = it },
+            onError = { error -> errorMessage = error }
+        )?.let { result ->
+            zones = result.mapData("zones") { map ->
+                ZoneItem(
+                    id = map["id"] as String,
+                    name = map["name"] as String
+                )
+            }
+            // Set selected zone name
+            selectedZoneName = zones.find { it.id == selectedZoneId }?.name ?: ""
+            LogManager.ui("DuplicateSelector: Loaded ${zones.size} zones", "DEBUG")
+        }
+    }
+
+    // Load instances when zone is selected
+    LaunchedEffect(selectedZoneId, currentStep) {
+        if (currentStep == DuplicateStep.INSTANCE) {
+            val (operation, dataKey) = when (type) {
+                DuplicateType.TOOL -> "tools.list" to "tool_instances"
+                DuplicateType.AUTOMATION -> "automations.list" to "automations"
+            }
+
+            coordinator.executeWithLoading(
+                operation = operation,
+                params = mapOf("zone_id" to selectedZoneId),
+                onLoading = { isLoading = it },
+                onError = { error -> errorMessage = error }
+            )?.let { result ->
+                instances = result.mapData(dataKey) { map ->
+                    InstanceItem(
+                        id = map["id"] as String,
+                        name = map["name"] as String,
+                        toolType = if (type == DuplicateType.TOOL) {
+                            map["tool_type"] as? String
+                        } else null
+                    )
+                }
+
+                if (instances.isEmpty()) {
+                    errorMessage = if (type == DuplicateType.TOOL) {
+                        s.shared("duplicate_no_tools")
+                    } else {
+                        s.shared("duplicate_no_automations")
+                    }
+                }
+
+                LogManager.ui("DuplicateSelector: Loaded ${instances.size} instances", "DEBUG")
+            }
+        }
+    }
+
+    // Error toast
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { msg ->
+            UI.Toast(context, msg)
+            errorMessage = null
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.medium,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Title
+                UI.Text(
+                    text = if (type == DuplicateType.TOOL) {
+                        s.shared("duplicate_selector_title_tool")
+                    } else {
+                        s.shared("duplicate_selector_title_automation")
+                    },
+                    type = TextType.TITLE,
+                    fillMaxWidth = true
+                )
+
+                // Breadcrumb
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.Text(
+                        text = if (currentStep == DuplicateStep.ZONE) {
+                            "► ${s.shared("duplicate_select_zone")}"
+                        } else {
+                            selectedZoneName
+                        },
+                        type = TextType.BODY
+                    )
+                    if (currentStep == DuplicateStep.INSTANCE) {
+                        UI.Text(text = " > ", type = TextType.BODY)
+                        UI.Text(
+                            text = "► ${s.shared("duplicate_select_instance")}",
+                            type = TextType.BODY
+                        )
+                    }
+                }
+
+                Divider()
+
+                // Content
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    when {
+                        isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                        currentStep == DuplicateStep.ZONE -> {
+                            ZoneList(
+                                zones = zones,
+                                selectedZoneId = selectedZoneId,
+                                onZoneSelected = { zone ->
+                                    selectedZoneId = zone.id
+                                    selectedZoneName = zone.name
+                                    currentStep = DuplicateStep.INSTANCE
+                                }
+                            )
+                        }
+                        currentStep == DuplicateStep.INSTANCE -> {
+                            if (instances.isEmpty() && !isLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    UI.Text(
+                                        text = if (type == DuplicateType.TOOL) {
+                                            s.shared("duplicate_no_tools")
+                                        } else {
+                                            s.shared("duplicate_no_automations")
+                                        },
+                                        type = TextType.BODY
+                                    )
+                                }
+                            } else {
+                                InstanceList(
+                                    instances = instances,
+                                    selectedInstanceId = selectedInstanceId,
+                                    onInstanceSelected = { instance ->
+                                        selectedInstanceId = instance.id
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Divider()
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Back/Cancel button
+                    if (currentStep == DuplicateStep.INSTANCE) {
+                        UI.ActionButton(
+                            action = ButtonAction.BACK,
+                            onClick = {
+                                currentStep = DuplicateStep.ZONE
+                                selectedInstanceId = null
+                            }
+                        )
+                    } else {
+                        UI.ActionButton(
+                            action = ButtonAction.CANCEL,
+                            onClick = onDismiss
+                        )
+                    }
+
+                    // Confirm button
+                    UI.ActionButton(
+                        action = ButtonAction.CONFIRM,
+                        enabled = selectedInstanceId != null,
+                        onClick = {
+                            selectedInstanceId?.let { instanceId ->
+                                onConfirm(selectedZoneId, instanceId)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Zone list component
+ */
+@Composable
+private fun ZoneList(
+    zones: List<ZoneItem>,
+    selectedZoneId: String,
+    onZoneSelected: (ZoneItem) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(zones) { zone ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onZoneSelected(zone) },
+                color = if (zone.id == selectedZoneId) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+                shape = MaterialTheme.shapes.small,
+                tonalElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    UI.Text(
+                        text = zone.name,
+                        type = TextType.BODY
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Instance list component
+ */
+@Composable
+private fun InstanceList(
+    instances: List<InstanceItem>,
+    selectedInstanceId: String?,
+    onInstanceSelected: (InstanceItem) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(instances) { instance ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onInstanceSelected(instance) },
+                color = if (instance.id == selectedInstanceId) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
+                shape = MaterialTheme.shapes.small,
+                tonalElevation = 2.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    UI.Text(
+                        text = instance.name,
+                        type = TextType.BODY
+                    )
+                    instance.toolType?.let { toolType ->
+                        UI.Text(
+                            text = toolType,
+                            type = TextType.CAPTION
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Duplicate type enum
+ */
+enum class DuplicateType {
+    TOOL,
+    AUTOMATION
+}
+
+/**
+ * Navigation steps
+ */
+private enum class DuplicateStep {
+    ZONE,
+    INSTANCE
+}
+
+/**
+ * Data classes
+ */
+private data class ZoneItem(
+    val id: String,
+    val name: String
+)
+
+private data class InstanceItem(
+    val id: String,
+    val name: String,
+    val toolType: String? = null
+)

@@ -408,6 +408,9 @@
     <string name="shared_action_resume">Reprendre</string>
     <string name="shared_action_start">Démarrer</string>
     <string name="shared_action_view">Voir</string>
+    <string name="shared_action_duplicate">Dupliquer</string>
+    <string name="shared_action_duplicate_tool">Dupliquer un outil</string>
+    <string name="shared_action_duplicate_automation">Dupliquer une automation</string>
     <string name="shared_ai_composer_placeholder">Écris ton message...</string>
     <string name="shared_ai_composer_add_text">Texte</string>
     <string name="shared_ai_composer_active_block">Actif</string>
@@ -657,6 +660,11 @@
     <string name="shared_message_no_items_in_group">Aucun élément dans ce groupe</string>
     <string name="shared_error_tooltype_not_found">Type d\'outil \'%1$s\' introuvable</string>
     <string name="shared_message_copied">Message copié</string>
+    <string name="shared_duplicate_success_tool">Outil dupliqué avec succès</string>
+    <string name="shared_duplicate_success_automation">Automation dupliquée avec succès</string>
+    <string name="shared_duplicate_no_tools">Aucun outil disponible à dupliquer</string>
+    <string name="shared_duplicate_no_automations">Aucune automation disponible à dupliquer</string>
+    <string name="shared_duplicate_error">Erreur lors de la duplication: %1$s</string>
     <string name="shared_confirm_action">Confirmer cette action ?</string>
     <string name="shared_confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="shared_confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
@@ -915,6 +923,10 @@
     <string name="shared_scope_navigation_selection">Navigation hiérarchique</string>
     <string name="shared_scope_available_values">Valeurs disponibles</string>
     <string name="shared_scope_preview">Aperçu</string>
+    <string name="shared_duplicate_selector_title_tool">Sélectionner l\'outil à dupliquer</string>
+    <string name="shared_duplicate_selector_title_automation">Sélectionner l\'automation à dupliquer</string>
+    <string name="shared_duplicate_select_zone">Sélectionner la zone</string>
+    <string name="shared_duplicate_select_instance">Sélectionner l\'instance</string>
     <string name="shared_scope_temporal_selection">Sélection temporelle</string>
     <string name="shared_scope_name_selection">Sélection par nom</string>
     <string name="shared_scope_loading_config">Chargement de la configuration...</string>
