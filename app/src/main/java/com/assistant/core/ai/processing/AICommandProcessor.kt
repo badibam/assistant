@@ -37,6 +37,35 @@ class AICommandProcessor(private val context: Context) {
     fun processDataCommands(commands: List<DataCommand>): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
+        // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
+        val validationErrors = mutableListOf<String>()
+        for ((index, command) in commands.withIndex()) {
+            if (command.type == "TOOL_DATA") {
+                val fields = command.params["fields"]
+                if (fields == null) {
+                    val errorMsg = "Command[$index] (TOOL_DATA): missing required 'fields' parameter. " +
+                        "TOOL_DATA queries must explicitly specify which fields to retrieve. " +
+                        "Example: \"fields\": [\"id\", \"timestamp\", \"name\", \"data.value\", \"custom_fields.notes\"]"
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
+                    val errorMsg = "Command[$index] (TOOL_DATA): 'fields' must be a non-empty array. " +
+                        "Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]"
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                }
+            }
+        }
+
+        // If validation errors exist, return early without transformation
+        if (validationErrors.isNotEmpty()) {
+            LogManager.aiService("AICommandProcessor validation failed with ${validationErrors.size} errors", "WARN")
+            return TransformationResult(
+                executableCommands = emptyList(),
+                errors = validationErrors
+            )
+        }
+
         // TODO: Add AI-specific validations for data commands
         // 1. Token limit enforcement per command (prevent excessive data loading)
         // 2. Data access permissions checking (verify AI can access requested data)

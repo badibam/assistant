@@ -366,6 +366,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Get app timezone for timestamp → ISO conversion
         val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
+        // Parse fields filter if provided (optional for backward compatibility)
+        val fieldsFilter = params.optJSONArray("fields")?.let { fieldsArray ->
+            val list = mutableListOf<String>()
+            for (i in 0 until fieldsArray.length()) {
+                list.add(fieldsArray.getString(i))
+            }
+            list
+        }
+
         return OperationResult.success(
             data = mapOf(
                 "entries" to entries.map { entity ->
@@ -381,7 +390,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         }
                     }
 
-                    mapOf(
+                    val fullEntry = mapOf(
                         "id" to entity.id,
                         "toolInstanceId" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
@@ -392,6 +401,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
                         "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
                     )
+
+                    // Apply fields filter if provided
+                    if (fieldsFilter != null) {
+                        filterEntryFields(fullEntry, fieldsFilter)
+                    } else {
+                        fullEntry
+                    }
                 },
                 "pagination" to mapOf(
                     "currentPage" to page,
@@ -1005,5 +1021,97 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
             ToolInfo(toolName, zoneName)
         }
+    }
+
+    /**
+     * Filter entry fields according to requested fields list
+     *
+     * Supports three field types:
+     * - Root fields: "id", "timestamp", "name", "createdAt", "updatedAt", "toolInstanceId", "tooltype"
+     * - Data fields: "data.value", "data.text", "data.quantity", etc.
+     * - Custom fields: "custom_fields.notes", "custom_fields.mood", etc.
+     *
+     * @param entry Full entry map with all fields
+     * @param requestedFields List of field paths to include
+     * @return Filtered entry map with only requested fields
+     */
+    private fun filterEntryFields(entry: Map<String, Any?>, requestedFields: List<String>): Map<String, Any?> {
+        val filtered = mutableMapOf<String, Any?>()
+
+        // Separate fields by type
+        val rootFields = mutableListOf<String>()
+        val dataFields = mutableListOf<String>()
+        val customFields = mutableListOf<String>()
+
+        for (field in requestedFields) {
+            when {
+                field.startsWith("data.") -> dataFields.add(field.removePrefix("data."))
+                field.startsWith("custom_fields.") -> customFields.add(field.removePrefix("custom_fields."))
+                else -> rootFields.add(field)
+            }
+        }
+
+        // Include requested root fields
+        for (field in rootFields) {
+            if (entry.containsKey(field)) {
+                filtered[field] = entry[field]
+            }
+        }
+
+        // Filter data fields if requested
+        if (dataFields.isNotEmpty()) {
+            val dataJsonStr = entry["data"] as? String
+            if (dataJsonStr != null) {
+                try {
+                    val dataJson = JSONObject(dataJsonStr)
+                    val filteredDataJson = JSONObject()
+
+                    for (field in dataFields) {
+                        if (dataJson.has(field)) {
+                            filteredDataJson.put(field, dataJson.get(field))
+                        }
+                    }
+
+                    filtered["data"] = filteredDataJson.toString()
+                } catch (e: Exception) {
+                    com.assistant.core.utils.LogManager.service(
+                        "Failed to filter data fields: ${e.message}",
+                        "WARN",
+                        e
+                    )
+                    // Include original data on error
+                    filtered["data"] = dataJsonStr
+                }
+            }
+        }
+
+        // Filter custom_fields if requested
+        if (customFields.isNotEmpty()) {
+            val customFieldsJsonStr = entry["custom_fields"] as? String
+            if (customFieldsJsonStr != null) {
+                try {
+                    val customFieldsJson = JSONObject(customFieldsJsonStr)
+                    val filteredCustomFieldsJson = JSONObject()
+
+                    for (field in customFields) {
+                        if (customFieldsJson.has(field)) {
+                            filteredCustomFieldsJson.put(field, customFieldsJson.get(field))
+                        }
+                    }
+
+                    filtered["custom_fields"] = filteredCustomFieldsJson.toString()
+                } catch (e: Exception) {
+                    com.assistant.core.utils.LogManager.service(
+                        "Failed to filter custom_fields: ${e.message}",
+                        "WARN",
+                        e
+                    )
+                    // Include original custom_fields on error
+                    filtered["custom_fields"] = customFieldsJsonStr
+                }
+            }
+        }
+
+        return filtered
     }
 }

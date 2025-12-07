@@ -244,13 +244,20 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
 **Paramètres** :
 
 - `id` (string, **requis**) : tool_instance_id
+- `fields` (array, **requis**) : Liste des champs à récupérer. **TOUS les champs doivent être explicitement demandés**.
+  - **Champs système** : `"id"`, `"timestamp"`, `"name"`, `"createdAt"`, `"updatedAt"`, `"toolInstanceId"`, `"tooltype"`
+  - **Champs data** : `"data.value"`, `"data.text"`, `"data.quantity"`, etc. (selon le type d\'outil)
+  - **Champs custom** : `"custom_fields.notes"`, `"custom_fields.mood"`, etc. (selon la config)
+  - **Pas de wildcard** : chaque champ doit être listé individuellement
 - `period` (object, optionnel) : Filtre temporel
   - `start` (number) : timestamp début
   - `end` (number) : timestamp fin
 - `limit` (number, optionnel) : Nombre maximum d\'entrées
 - `offset` (number, optionnel) : Décalage pour pagination
 
-**Optimisation** : N\'inclus que les champs strictement nécessaires à ta tâche. Exemple : pour compter des entrées sur une période → `id` uniquement, pour lister des titres → `id` + champ titre, etc.
+**Config extract automatique** : Chaque réponse TOOL_DATA inclut un `config_extract` avec les champs de configuration pertinents pour interpréter les données (type, min/max, options, custom_fields, etc.). Utilise ces informations pour comprendre le contexte des valeurs retournées.
+
+**Optimisation** : N\'inclus que les champs strictement nécessaires à ta tâche. Exemple : pour compter des entrées → `["id"]`, pour analyser des valeurs → `["id", "timestamp", "data.value"]`, etc.
 
 ### TOOL_EXECUTIONS
 
@@ -565,13 +572,14 @@ Retourne la config JSON complète incluant les custom_fields définis :
 }
 ```
 
-### Exemple 3 : Données filtrées par période
+### Exemple 3 : Données filtrées par période avec champs explicites
 
 ```json
 {
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
+    "fields": ["id", "timestamp", "data.value", "custom_fields.notes"],
     "period": {
       "start": "2024-01-01T00:00:00+01:00",
       "end": "2024-02-01T00:00:00+01:00"
@@ -641,6 +649,7 @@ Retourne tous les outils configurés dans la zone Santé.
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
+    "fields": ["id"],
     "period": {
       "start": "2024-01-01T00:00:00+01:00",
       "end": "2024-02-01T00:00:00+01:00"
@@ -912,6 +921,7 @@ Trois formats pour filtrer temporellement les queries :
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
+    "fields": ["id", "timestamp", "data.value"],
     "period_start": "-1_WEEK",
     "period_end": "-1_WEEK"
   }
@@ -925,6 +935,7 @@ Trois formats pour filtrer temporellement les queries :
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
+    "fields": ["id", "timestamp", "data.value"],
     "period_start": "-7_DAY",
     "period_end": "NOW"
   }
@@ -938,6 +949,7 @@ Trois formats pour filtrer temporellement les queries :
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
+    "fields": ["id", "timestamp", "data.value"],
     "period_start": "0_MONTH"
   }
 }

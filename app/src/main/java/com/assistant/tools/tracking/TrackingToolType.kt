@@ -895,6 +895,25 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
     }
 
     /**
+     * Returns config fields relevant for interpreting tracking data entries
+     *
+     * Includes:
+     * - type: determines how to interpret data structure (numeric, scale, choice, etc.)
+     * - unit: for numeric values (e.g., "kg", "km")
+     * - min/max: for scale values (e.g., 1-10)
+     * - min_label/max_label: for scale interpretation (e.g., "Very Bad" to "Excellent")
+     * - items: predefined numeric/scale/choice/boolean items
+     * - options: available choice options
+     * - custom_fields: field definitions (always included)
+     *
+     * This context allows AI to correctly interpret data values without requesting
+     * full config every time.
+     */
+    override fun getRelevantConfigFieldsForData(): List<String> {
+        return listOf("type", "unit", "min", "max", "min_label", "max_label", "items", "options", "custom_fields")
+    }
+
+    /**
      * Enrich tracking data by calculating the 'raw' display field
      * The 'raw' field is an auto-generated human-readable representation of the data
      *

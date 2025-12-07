@@ -9,7 +9,9 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 /**
  * Result of executing a single command for prompt formatting
@@ -101,6 +103,52 @@ class CommandExecutor(private val context: Context) {
 
         // Track schemas executed in current batch (for intra-batch deduplication)
         val currentBatchSchemas = mutableSetOf<String>()
+
+        // LOGIQUE 1: Verify data schemas before first TOOL_DATA query
+        // Check if any tool_data commands are present and verify their schemas are available
+        if (sessionId != null) {
+            val missingSchemas = checkRequiredDataSchemas(commands, historicalSchemas, currentBatchSchemas)
+
+            if (missingSchemas.isNotEmpty()) {
+                LogManager.aiPrompt("Schema verification failed: ${missingSchemas.size} schemas missing", "WARN")
+
+                // Build summary message listing all missing schemas
+                val schemaSummary = missingSchemas.joinToString("\n") { schema ->
+                    "- ${schema.schemaId} (tool instance: ${schema.toolInstanceId})"
+                }
+                val summary = s.shared("ai_schema_required_summary").format(missingSchemas.size, schemaSummary)
+
+                // Build formatted data with all schema contents
+                val schemasJson = StringBuilder()
+                for (schema in missingSchemas) {
+                    schemasJson.appendLine("## Schema: ${schema.schemaId}")
+                    schemasJson.appendLine("Tool Instance: ${schema.toolInstanceId}")
+                    schemasJson.appendLine()
+                    schemasJson.appendLine("```json")
+                    // Parse and pretty-print the schema
+                    try {
+                        val parsedSchema = JSONObject(schema.schemaContent)
+                        schemasJson.appendLine(parsedSchema.toString(2))
+                    } catch (e: Exception) {
+                        // If parsing fails, include as-is
+                        schemasJson.appendLine(schema.schemaContent)
+                    }
+                    schemasJson.appendLine("```")
+                    schemasJson.appendLine()
+                }
+
+                // Return SCHEMA_REQUIRED message without executing tool_data commands
+                return CommandExecutionResult(
+                    promptResults = emptyList(),
+                    systemMessage = SystemMessage(
+                        type = SystemMessageType.SCHEMA_REQUIRED,
+                        commandResults = emptyList(),  // No command results needed
+                        summary = summary,
+                        formattedData = schemasJson.toString()
+                    )
+                )
+            }
+        }
 
         if (commands.isEmpty()) {
             LogManager.aiPrompt("No commands to execute, returning empty result", "DEBUG")
@@ -518,6 +566,11 @@ class CommandExecutor(private val context: Context) {
                 // This case should not be reached in normal flow
                 "Completion confirmation request"
             }
+            SystemMessageType.SCHEMA_REQUIRED -> {
+                // SCHEMA_REQUIRED messages provide their own summary directly
+                // This case should not be reached in normal flow
+                "Data schema required"
+            }
             SystemMessageType.NETWORK_ERROR, SystemMessageType.SESSION_TIMEOUT, SystemMessageType.INTERRUPTED, SystemMessageType.PROVIDER_ERROR -> {
                 // These messages should never reach here (filtered from prompts, audit only)
                 // But provide fallback just in case
@@ -826,6 +879,12 @@ class CommandExecutor(private val context: Context) {
             // Extract metadata keys first based on command type
             when (command.resource) {
                 "tool_data" -> {
+                    // LOGIQUE 2: Build config_extract with relevant config fields
+                    val configExtract = runBlocking { buildConfigExtract(command) }
+                    if (configExtract != null) {
+                        reordered["config_extract"] = configExtract
+                    }
+
                     // Metadata: toolInstanceName, count
                     // Bulk data: entries (with parsed data JSON)
                     data["toolInstanceName"]?.let { reordered["toolInstanceName"] = it }
@@ -930,6 +989,248 @@ class CommandExecutor(private val context: Context) {
             LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
             org.json.JSONObject(data).toString(2)
         }
+    }
+
+    /**
+     * Build config_extract for TOOL_DATA responses
+     *
+     * Extracts relevant config fields as defined by ToolType.getRelevantConfigFieldsForData()
+     * to provide AI with context for interpreting data values (scale min/max, choice options, etc.)
+     *
+     * @param command The tool_data command being executed
+     * @return Map with relevant config fields, or null if extraction fails
+     */
+    private suspend fun buildConfigExtract(command: ExecutableCommand): Map<String, Any>? {
+        return try {
+            // Extract toolInstanceId from command params
+            val toolInstanceId = command.params["toolInstanceId"] as? String
+                ?: command.params["id"] as? String
+                ?: return null
+
+            // Fetch tool instance config
+            val configResult = coordinator.processUserAction("tools.get", mapOf(
+                "tool_instance_id" to toolInstanceId
+            ))
+
+            if (!configResult.isSuccess) {
+                LogManager.aiPrompt("Failed to fetch config for config_extract: ${configResult.error}", "WARN")
+                return null
+            }
+
+            // Extract config_json and tooltype
+            val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
+            val configJsonStr = toolInstance?.get("config_json") as? String
+            val tooltype = toolInstance?.get("tooltype") as? String
+
+            if (configJsonStr == null || tooltype == null) {
+                LogManager.aiPrompt("Missing config_json or tooltype for tool instance $toolInstanceId", "WARN")
+                return null
+            }
+
+            // Get ToolType to determine relevant fields
+            val toolType = com.assistant.core.tools.ToolTypeManager.getToolType(tooltype)
+            if (toolType == null) {
+                LogManager.aiPrompt("ToolType not found for tooltype=$tooltype", "WARN")
+                return null
+            }
+
+            // Get list of relevant config fields
+            val relevantFields = toolType.getRelevantConfigFieldsForData()
+
+            // Parse config and extract relevant fields
+            val configJson = org.json.JSONObject(configJsonStr)
+            val configExtract = mutableMapOf<String, Any>()
+
+            for (fieldName in relevantFields) {
+                if (configJson.has(fieldName)) {
+                    val value = configJson.get(fieldName)
+
+                    // Convert JSONArray/JSONObject to native types for better prompt formatting
+                    configExtract[fieldName] = when (value) {
+                        is org.json.JSONArray -> {
+                            // Convert JSONArray to List
+                            val list = mutableListOf<Any>()
+                            for (i in 0 until value.length()) {
+                                list.add(value.get(i))
+                            }
+                            list
+                        }
+                        is org.json.JSONObject -> {
+                            // Keep as JSONObject (will be formatted as nested JSON in prompt)
+                            value
+                        }
+                        else -> value
+                    }
+                }
+            }
+
+            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields for tool instance $toolInstanceId", "DEBUG")
+
+            if (configExtract.isEmpty()) null else configExtract
+
+        } catch (e: Exception) {
+            LogManager.aiPrompt("Error building config_extract: ${e.message}", "ERROR", e)
+            null
+        }
+    }
+
+    /**
+     * Data class for missing schema information with full schema content
+     */
+    private data class MissingSchemaInfo(
+        val schemaId: String,
+        val toolInstanceId: String,
+        val schemaContent: String  // Full JSON schema content
+    )
+
+    /**
+     * Check if required data schemas are available before executing TOOL_DATA commands
+     *
+     * For each tool_data command:
+     * 1. Extract toolInstanceId from params
+     * 2. Fetch tool instance config via coordinator
+     * 3. Extract data_schema_id from config
+     * 4. Check if schema exists in historicalSchemas or currentBatchSchemas
+     *
+     * Returns list of missing schemas that need to be fetched before data queries
+     *
+     * @param commands All commands to execute
+     * @param historicalSchemas Schemas already fetched in previous messages
+     * @param currentBatchSchemas Schemas fetched in current batch (will be updated)
+     * @return List of missing schema info (empty if all schemas available)
+     */
+    private suspend fun checkRequiredDataSchemas(
+        commands: List<ExecutableCommand>,
+        historicalSchemas: Set<String>,
+        currentBatchSchemas: MutableSet<String>
+    ): List<MissingSchemaInfo> {
+        val missingSchemas = mutableListOf<MissingSchemaInfo>()
+        val checkedInstances = mutableSetOf<String>() // Avoid checking same instance multiple times
+
+        // Find all tool_data commands
+        val toolDataCommands = commands.filter { it.resource == "tool_data" && it.operation == "get" }
+
+        if (toolDataCommands.isEmpty()) {
+            return emptyList() // No tool_data commands, no verification needed
+        }
+
+        LogManager.aiPrompt("Checking data schemas for ${toolDataCommands.size} TOOL_DATA commands", "DEBUG")
+
+        // IMPORTANT: Pre-populate currentBatchSchemas with SCHEMA commands from current batch
+        // This allows detecting schemas that will be fetched in the same batch
+        val schemaCommands = commands.filter { it.resource == "schemas" && it.operation == "get" }
+        for (schemaCommand in schemaCommands) {
+            val schemaId = schemaCommand.params["id"] as? String
+            val toolInstanceId = schemaCommand.params["toolInstanceId"] as? String
+            if (schemaId != null) {
+                val key = getSchemaDeduplicationKey(schemaId, toolInstanceId)
+                currentBatchSchemas.add(key)
+                LogManager.aiPrompt("Pre-added schema $key from current batch SCHEMA command", "DEBUG")
+            }
+        }
+
+        for (command in toolDataCommands) {
+            val toolInstanceId = command.params["toolInstanceId"] as? String
+                ?: command.params["id"] as? String
+
+            if (toolInstanceId == null || toolInstanceId in checkedInstances) {
+                continue // Skip if already checked
+            }
+
+            checkedInstances.add(toolInstanceId)
+
+            try {
+                // Fetch tool instance config to get data_schema_id
+                val configResult = coordinator.processUserAction("tools.get", mapOf(
+                    "tool_instance_id" to toolInstanceId
+                ))
+
+                if (!configResult.isSuccess) {
+                    LogManager.aiPrompt("Failed to fetch config for tool instance $toolInstanceId: ${configResult.error}", "WARN")
+                    continue // Skip if config fetch fails (tool might not exist)
+                }
+
+                // Extract config_json and parse data_schema_id
+                val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
+                val configJsonStr = toolInstance?.get("config_json") as? String
+
+                if (configJsonStr == null) {
+                    LogManager.aiPrompt("No config_json found for tool instance $toolInstanceId", "WARN")
+                    continue
+                }
+
+                val configJson = JSONObject(configJsonStr)
+                val dataSchemaId = configJson.optString("data_schema_id")
+
+                if (dataSchemaId.isEmpty()) {
+                    LogManager.aiPrompt("No data_schema_id in config for tool instance $toolInstanceId", "WARN")
+                    continue
+                }
+
+                // Generate deduplication key (composite for data schemas)
+                val deduplicationKey = getSchemaDeduplicationKey(dataSchemaId, toolInstanceId)
+
+                LogManager.aiPrompt("Checking schema availability:", "DEBUG")
+                LogManager.aiPrompt("  - deduplicationKey: $deduplicationKey", "DEBUG")
+                LogManager.aiPrompt("  - historicalSchemas contains: ${deduplicationKey in historicalSchemas}", "DEBUG")
+                LogManager.aiPrompt("  - currentBatchSchemas contains: ${deduplicationKey in currentBatchSchemas}", "DEBUG")
+                LogManager.aiPrompt("  - historicalSchemas: $historicalSchemas", "DEBUG")
+                LogManager.aiPrompt("  - currentBatchSchemas: $currentBatchSchemas", "DEBUG")
+
+                // Check if schema is available (historical or current batch)
+                val isAvailable = deduplicationKey in historicalSchemas || deduplicationKey in currentBatchSchemas
+
+                if (!isAvailable) {
+                    LogManager.aiPrompt("Schema $deduplicationKey is missing for tool instance $toolInstanceId", "DEBUG")
+
+                    // Fetch the schema content immediately
+                    val schemaResult = coordinator.processUserAction("schemas.get", mapOf(
+                        "id" to dataSchemaId,
+                        "toolInstanceId" to toolInstanceId
+                    ))
+
+                    LogManager.aiPrompt("Schema fetch result: isSuccess=${schemaResult.isSuccess}, data keys=${schemaResult.data?.keys}, error=${schemaResult.error}", "DEBUG")
+
+                    if (schemaResult.isSuccess) {
+                        val schemaContent = schemaResult.data?.get("content") as? String
+                        LogManager.aiPrompt("Schema content: ${schemaContent?.take(100)}...", "DEBUG")
+
+                        if (schemaContent != null && schemaContent.isNotEmpty()) {
+                            missingSchemas.add(MissingSchemaInfo(
+                                schemaId = dataSchemaId,
+                                toolInstanceId = toolInstanceId,
+                                schemaContent = schemaContent
+                            ))
+                            LogManager.aiPrompt("Successfully added schema $dataSchemaId to missing schemas", "DEBUG")
+                        } else {
+                            LogManager.aiPrompt("Schema $dataSchemaId content is null or empty", "ERROR")
+                            // Add with error message as content
+                            missingSchemas.add(MissingSchemaInfo(
+                                schemaId = dataSchemaId,
+                                toolInstanceId = toolInstanceId,
+                                schemaContent = "{\"error\": \"Schema content is null or empty\"}"
+                            ))
+                        }
+                    } else {
+                        LogManager.aiPrompt("Failed to fetch schema $dataSchemaId: ${schemaResult.error}", "ERROR")
+                        // Add with error message as content
+                        missingSchemas.add(MissingSchemaInfo(
+                            schemaId = dataSchemaId,
+                            toolInstanceId = toolInstanceId,
+                            schemaContent = "{\"error\": \"Failed to fetch schema: ${schemaResult.error}\"}"
+                        ))
+                    }
+                } else {
+                    LogManager.aiPrompt("Schema $deduplicationKey already available", "DEBUG")
+                }
+
+            } catch (e: Exception) {
+                LogManager.aiPrompt("Error checking schema for tool instance $toolInstanceId: ${e.message}", "ERROR", e)
+                // Continue checking other instances even if one fails
+            }
+        }
+
+        return missingSchemas
     }
 
     /**

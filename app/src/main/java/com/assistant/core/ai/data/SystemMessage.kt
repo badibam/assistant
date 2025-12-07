@@ -111,7 +111,8 @@ enum class SystemMessageType {
     COMMUNICATION_CANCELLED, // User did not respond to communication module (sent to AI prompt for context)
     VALIDATION_CANCELLED,    // User did not validate AI actions or explicitly refused (sent to AI prompt for context)
     COMPLETED_CONFIRMATION,  // AI used completed flag, asking for confirmation (sent to AI prompt for double-check)
-    PROVIDER_ERROR           // AI provider not configured or not found (stored for audit, FILTERED from prompt)
+    PROVIDER_ERROR,          // AI provider not configured or not found (stored for audit, FILTERED from prompt)
+    SCHEMA_REQUIRED          // Data schema required before TOOL_DATA query (sent to AI to request schema first)
 }
 
 /**

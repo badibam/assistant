@@ -18,7 +18,7 @@ import org.json.JSONObject
  * @property description Optional documentation for the field (visible in schema and config UI)
  * @property type Field type (immutable after creation)
  * @property alwaysVisible Whether to display the field in read mode even when empty
- * @property config Type-specific configuration (null for TEXT_UNLIMITED, required for types like SCALE)
+ * @property config Type-specific configuration (required for types like SCALE)
  */
 data class FieldDefinition(
     val name: String,

@@ -156,4 +156,30 @@ interface ToolTypeContract : SchemaProvider {
      * @return true if this tool type stores execution history, false otherwise (default)
      */
     fun supportsExecutions(): Boolean = false
+
+    /**
+     * Returns the list of config fields that are relevant for interpreting data entries
+     *
+     * Used by CommandExecutor to build config_extract section in TOOL_DATA responses.
+     * The config_extract provides context for AI to interpret data values correctly
+     * (e.g., scale min/max, choice options, custom_fields definitions).
+     *
+     * Default implementation returns only custom_fields (relevant for all tooltypes).
+     * Override to include tooltypes-specific fields needed to interpret data.
+     *
+     * Example (Tracking):
+     * - type: to know if it's scale, numeric, choice, etc.
+     * - min/max: to interpret scale values
+     * - items: to know available numeric items
+     * - options: to interpret choice values
+     * - custom_fields: always included (field definitions)
+     *
+     * Note: This extract is included in EVERY TOOL_DATA response (no deduplication)
+     * since config can change between queries.
+     *
+     * @return List of config field names to include in config_extract
+     */
+    fun getRelevantConfigFieldsForData(): List<String> {
+        return listOf("custom_fields")  // Default: only custom_fields
+    }
 }
