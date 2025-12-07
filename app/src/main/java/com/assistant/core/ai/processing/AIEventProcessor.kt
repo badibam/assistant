@@ -1068,12 +1068,17 @@ class AIEventProcessor(
             )
 
             // Store SystemMessage with formattedData
-            val formattedData = result.promptResults.joinToString("\n\n") {
-                "# ${it.dataTitle}\n${it.formattedData}"
+            // For DATA_ADDED: rebuild formattedData from promptResults
+            // For SCHEMA_REQUIRED: keep original formattedData (promptResults is empty)
+            val systemMessageWithData = if (result.promptResults.isNotEmpty()) {
+                val formattedData = result.promptResults.joinToString("\n\n") {
+                    "# ${it.dataTitle}\n${it.formattedData}"
+                }
+                result.systemMessage.copy(formattedData = formattedData)
+            } else {
+                // Keep original formattedData (already set in CommandExecutor for SCHEMA_REQUIRED)
+                result.systemMessage
             }
-            val systemMessageWithData = result.systemMessage.copy(
-                formattedData = formattedData
-            )
 
             val systemSessionMessage = SessionMessage(
                 id = java.util.UUID.randomUUID().toString(),

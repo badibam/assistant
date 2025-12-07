@@ -75,10 +75,18 @@ class SchemaService(private val context: Context) : ExecutableService {
                 )
             }
 
-            return OperationResult.success(mapOf(
+            // Build result data - always include schema_id and content
+            val resultData = mutableMapOf<String, Any>(
                 "schema_id" to schema.id,
                 "content" to schema.content
-            ))
+            )
+
+            // Include toolInstanceId if provided (needed for deduplication key in loadHistoricalSchemas)
+            if (toolInstanceId != null) {
+                resultData["toolInstanceId"] = toolInstanceId
+            }
+
+            return OperationResult.success(resultData)
         } else {
             return OperationResult.error("Schema not found: $schemaId")
         }

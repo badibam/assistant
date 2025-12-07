@@ -138,13 +138,40 @@ class CommandExecutor(private val context: Context) {
                 }
 
                 // Return SCHEMA_REQUIRED message without executing tool_data commands
+                val formattedDataContent = schemasJson.toString()
+                LogManager.aiPrompt("SCHEMA_REQUIRED formattedData length: ${formattedDataContent.length}", "DEBUG")
+                LogManager.aiPrompt("SCHEMA_REQUIRED formattedData preview: ${formattedDataContent.take(500)}", "DEBUG")
+
+                // Create CommandResults for each schema provided (for deduplication tracking)
+                // Get verbalization from SchemaService for consistency with DATA_ADDED
+                val schemaService = com.assistant.core.services.SchemaService(context)
+                val schemaCommandResults = missingSchemas.map { schema ->
+                    val params = org.json.JSONObject().apply {
+                        put("id", schema.schemaId)
+                        schema.toolInstanceId?.let { put("toolInstanceId", it) }
+                    }
+                    val details = schemaService.verbalize("get", params, context)
+
+                    com.assistant.core.ai.data.CommandResult(
+                        command = "schemas.get",
+                        status = com.assistant.core.ai.data.CommandStatus.SUCCESS,
+                        details = details,
+                        data = mapOf(
+                            "schema_id" to schema.schemaId,
+                            "toolInstanceId" to schema.toolInstanceId
+                        ),
+                        error = null,
+                        isActionCommand = false
+                    )
+                }
+
                 return CommandExecutionResult(
                     promptResults = emptyList(),
                     systemMessage = SystemMessage(
                         type = SystemMessageType.SCHEMA_REQUIRED,
-                        commandResults = emptyList(),  // No command results needed
+                        commandResults = schemaCommandResults,  // Track schemas for deduplication
                         summary = summary,
-                        formattedData = schemasJson.toString()
+                        formattedData = formattedDataContent
                     )
                 )
             }
@@ -672,8 +699,15 @@ class CommandExecutor(private val context: Context) {
                     val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
                     headerParts.add(s.shared("ai_data_exact_query").format("TOOL_DATA", aiQueryJson))
 
-                    // Fields included (standard fields for tool_data)
-                    headerParts.add(s.shared("ai_data_fields_tool_data"))
+                    // Fields included (dynamic from command params)
+                    val requestedFields = command.params["fields"] as? List<*>
+                    val fieldsDisplay = if (requestedFields != null && requestedFields.isNotEmpty()) {
+                        requestedFields.joinToString(", ")
+                    } else {
+                        // Fallback for backward compatibility (no fields param = all fields)
+                        s.shared("ai_data_fields_all")
+                    }
+                    headerParts.add(s.shared("ai_data_fields").format(fieldsDisplay))
 
                     // Confidence message
                     if (count == 0) {
@@ -766,8 +800,15 @@ class CommandExecutor(private val context: Context) {
                     val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
                     headerParts.add(s.shared("ai_data_exact_query").format("TOOL_EXECUTIONS", aiQueryJson))
 
-                    // Fields included
-                    headerParts.add(s.shared("ai_data_fields_executions"))
+                    // Fields included (dynamic from command params)
+                    val requestedFields = command.params["fields"] as? List<*>
+                    val fieldsDisplay = if (requestedFields != null && requestedFields.isNotEmpty()) {
+                        requestedFields.joinToString(", ")
+                    } else {
+                        // Fallback for backward compatibility (no fields param = all fields)
+                        s.shared("ai_data_fields_all")
+                    }
+                    headerParts.add(s.shared("ai_data_fields").format(fieldsDisplay))
 
                     // Confidence message
                     if (count == 0) {
@@ -1258,10 +1299,14 @@ class CommandExecutor(private val context: Context) {
             for ((index, message) in messages.withIndex()) {
                 LogManager.aiPrompt("Message $index: sender=${message.sender}, hasSystemMessage=${message.systemMessage != null}", "VERBOSE")
 
-                // Only check SystemMessages with DATA_ADDED type
+                // Check SystemMessages with DATA_ADDED or SCHEMA_REQUIRED type
                 val systemMessage = message.systemMessage
-                if (systemMessage?.type == com.assistant.core.ai.data.SystemMessageType.DATA_ADDED) {
-                    LogManager.aiPrompt("Found DATA_ADDED message with ${systemMessage.commandResults.size} results", "VERBOSE")
+                val relevantTypes = listOf(
+                    com.assistant.core.ai.data.SystemMessageType.DATA_ADDED,
+                    com.assistant.core.ai.data.SystemMessageType.SCHEMA_REQUIRED
+                )
+                if (systemMessage != null && systemMessage.type in relevantTypes) {
+                    LogManager.aiPrompt("Found ${systemMessage.type} message with ${systemMessage.commandResults.size} results", "VERBOSE")
 
                     // Check all command results in this system message
                     for ((cmdIndex, commandResult) in systemMessage.commandResults.withIndex()) {

@@ -372,7 +372,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
             for (i in 0 until fieldsArray.length()) {
                 list.add(fieldsArray.getString(i))
             }
+            com.assistant.core.utils.LogManager.service("ToolDataService.get: fieldsFilter = $list", "DEBUG")
             list
+        }
+
+        if (fieldsFilter == null) {
+            com.assistant.core.utils.LogManager.service("ToolDataService.get: No fields filter provided (backward compatibility mode)", "DEBUG")
         }
 
         return OperationResult.success(
@@ -404,9 +409,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
                     // Apply fields filter if provided
                     if (fieldsFilter != null) {
-                        filterEntryFields(fullEntry, fieldsFilter)
+                        filterEntryFields(fullEntry, fieldsFilter)  // Return filtered entry
                     } else {
-                        fullEntry
+                        fullEntry  // Return full entry if no filter
                     }
                 },
                 "pagination" to mapOf(

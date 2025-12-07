@@ -294,13 +294,27 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
 
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
+        // Parse fields filter if provided (optional for backward compatibility)
+        val fieldsFilter = params.optJSONArray("fields")?.let { fieldsArray ->
+            val list = mutableListOf<String>()
+            for (i in 0 until fieldsArray.length()) {
+                list.add(fieldsArray.getString(i))
+            }
+            com.assistant.core.utils.LogManager.service("ToolExecutionService.get: fieldsFilter = $list", "DEBUG")
+            list
+        }
+
+        if (fieldsFilter == null) {
+            com.assistant.core.utils.LogManager.service("ToolExecutionService.get: No fields filter provided (backward compatibility mode)", "DEBUG")
+        }
+
         // Convert timestamps to ISO 8601 for output
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         return OperationResult.success(
             data = mapOf(
                 "executions" to executions.map { entity ->
-                    mapOf(
+                    val fullExecution = mapOf(
                         "id" to entity.id,
                         "toolInstanceId" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
@@ -315,6 +329,13 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
                         "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, timezone),
                         "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, timezone)
                     )
+
+                    // Apply fields filter if provided
+                    if (fieldsFilter != null) {
+                        filterExecutionFields(fullExecution, fieldsFilter)  // Return filtered execution
+                    } else {
+                        fullExecution  // Return full execution if no filter
+                    }
                 },
                 "pagination" to mapOf(
                     "currentPage" to page,
@@ -717,5 +738,30 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             )
             null
         }
+    }
+
+    /**
+     * Filter execution fields according to requested fields list
+     *
+     * Supports root fields only (no nested JSON fields like tool_data)
+     * - Root fields: "id", "toolInstanceId", "tooltype", "templateDataId", "scheduledTime",
+     *   "executionTime", "status", "snapshotData", "executionResult", "triggeredBy",
+     *   "metadata", "createdAt", "updatedAt"
+     *
+     * @param execution Full execution map with all fields
+     * @param requestedFields List of field names to include
+     * @return Filtered execution map with only requested fields
+     */
+    private fun filterExecutionFields(execution: Map<String, Any?>, requestedFields: List<String>): Map<String, Any?> {
+        val filtered = mutableMapOf<String, Any?>()
+
+        // Include only requested root fields
+        for (field in requestedFields) {
+            if (execution.containsKey(field)) {
+                filtered[field] = execution[field]
+            }
+        }
+
+        return filtered
     }
 }

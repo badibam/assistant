@@ -179,6 +179,9 @@ object CommandTransformer {
         command.params["limit"]?.let { params["limit"] = it }
         command.params["page"]?.let { params["page"] = it }
 
+        // Add fields filter if specified (field selection for data queries)
+        command.params["fields"]?.let { params["fields"] = it }
+
         return ExecutableCommand(
             resource = "tool_data",
             operation = "get",
@@ -209,6 +212,9 @@ object CommandTransformer {
 
         // Add templateDataId filter if specified
         command.params["templateDataId"]?.let { params["templateDataId"] = it }
+
+        // Add fields filter if specified (field selection for execution queries)
+        command.params["fields"]?.let { params["fields"] = it }
 
         return ExecutableCommand(
             resource = "tool_executions",
