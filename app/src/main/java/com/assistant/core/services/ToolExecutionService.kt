@@ -11,6 +11,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateTimeConverter
+import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
@@ -701,24 +702,89 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Filter execution fields according to requested fields list
+     * Filter execution fields based on requested fields parameter with pattern matching
      *
-     * Supports root fields only (no nested JSON fields like tool_data)
-     * - Root fields: "id", "toolInstanceId", "tooltype", "templateDataId", "scheduledTime",
-     *   "executionTime", "status", "snapshotData", "executionResult", "triggeredBy",
-     *   "metadata", "createdAt", "updatedAt"
+     * Supports three patterns:
+     * 1. Root fields (no dot): "id", "execution_time", "status", "execution_result", etc.
+     * 2. Snapshot data fields: "snapshot_data.title", "snapshot_data.content"
+     * 3. Snapshot custom fields: "snapshot_data.custom_fields.field_name"
      *
      * @param execution Full execution map with all fields
-     * @param requestedFields List of field names to include
+     * @param requestedFields List of field patterns to include
      * @return Filtered execution map with only requested fields
      */
     private fun filterExecutionFields(execution: Map<String, Any?>, requestedFields: List<String>): Map<String, Any?> {
         val filtered = mutableMapOf<String, Any?>()
 
-        // Include only requested root fields
+        // Separate fields by pattern
+        val rootFields = mutableListOf<String>()
+        val snapshotDataFields = mutableListOf<String>()
+        val snapshotCustomFields = mutableListOf<String>()
+
         for (field in requestedFields) {
+            when {
+                // Pattern: snapshot_data.custom_fields.*
+                field.startsWith("snapshot_data.custom_fields.") -> {
+                    snapshotCustomFields.add(field.removePrefix("snapshot_data.custom_fields."))
+                }
+
+                // Pattern: snapshot_data.*
+                field.startsWith("snapshot_data.") -> {
+                    snapshotDataFields.add(field.removePrefix("snapshot_data."))
+                }
+
+                // Pattern: * (root, no dot)
+                !field.contains(".") -> {
+                    rootFields.add(field)
+                }
+            }
+        }
+
+        // 1. Include requested root fields
+        for (field in rootFields) {
             if (execution.containsKey(field)) {
                 filtered[field] = execution[field]
+            }
+        }
+
+        // 2. Filter snapshot_data if any snapshot fields requested
+        if (snapshotDataFields.isNotEmpty() || snapshotCustomFields.isNotEmpty()) {
+            val snapshotDataStr = execution["snapshotData"] as? String
+            if (snapshotDataStr != null) {
+                try {
+                    val snapshotJson = JSONObject(snapshotDataStr)
+                    val filteredSnapshot = JSONObject()
+
+                    // Add requested snapshot_data.* fields
+                    for (field in snapshotDataFields) {
+                        if (snapshotJson.has(field)) {
+                            filteredSnapshot.put(field, snapshotJson.get(field))
+                        }
+                    }
+
+                    // Filter custom_fields if requested
+                    if (snapshotCustomFields.isNotEmpty()) {
+                        val customFieldsStr = snapshotJson.optString("custom_fields")
+                        if (customFieldsStr.isNotEmpty()) {
+                            val customFieldsJson = JSONObject(customFieldsStr)
+                            val filteredCustomFields = JSONObject()
+
+                            for (field in snapshotCustomFields) {
+                                if (customFieldsJson.has(field)) {
+                                    filteredCustomFields.put(field, customFieldsJson.get(field))
+                                }
+                            }
+
+                            filteredSnapshot.put("custom_fields", filteredCustomFields.toString())
+                        }
+                    }
+
+                    filtered["snapshotData"] = filteredSnapshot.toString()
+                } catch (e: Exception) {
+                    LogManager.service("Failed to filter snapshot_data: ${e.message}", "WARN", e)
+                    // On error, include full snapshotData
+                    filtered["snapshotData"] = snapshotDataStr
+                }
             }
         }
 

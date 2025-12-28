@@ -154,6 +154,7 @@
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
     <string name="ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
     <string name="ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
+    <string name="ai_validation_tool_executions_fields_invalid_pattern">Champ invalide \'%1$s\' dans TOOL_EXECUTIONS. Patterns valides: champs root sans point (\"id\", \"execution_time\"), champs snapshot (\"snapshot_data.title\"), custom fields (\"snapshot_data.custom_fields.field_name\"). INTERDITS: \"snapshot_data\" seul, \"snapshot_data.custom_fields\" seul, \"execution_result.read\" (demander \"execution_result\" en entier). Exemple: {\"type\":\"TOOL_EXECUTIONS\",\"params\":{\"id\":\"tool_id\",\"fields\":[\"id\",\"execution_time\",\"status\",\"execution_result\",\"snapshot_data.title\",\"snapshot_data.custom_fields.priority\"]}}</string>
 
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>

@@ -5,6 +5,7 @@ import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.LogManager
@@ -22,6 +23,8 @@ import org.json.JSONObject
  * - Implement cascade failure logic for action commands (stop on first action failure)
  */
 class AICommandProcessor(private val context: Context) {
+
+    private val s = Strings.`for`(context = context)
 
     /**
      * Process AI data commands (queries) with security validation
@@ -67,6 +70,53 @@ class AICommandProcessor(private val context: Context) {
                         "Example: \"fields\": [\"id\", \"executionTime\", \"status\"]"
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
+                } else {
+                    // Pattern matching validation for each field
+                    for ((fieldIndex, field) in (fields as List<*>).withIndex()) {
+                        val fieldStr = field.toString()
+
+                        // Pattern detection
+                        val isRootField = !fieldStr.contains(".")
+                        val isSnapshotData = fieldStr.startsWith("snapshot_data.") && fieldStr != "snapshot_data."
+                        val isSnapshotCustomFields = fieldStr.startsWith("snapshot_data.custom_fields.") &&
+                                                      fieldStr != "snapshot_data.custom_fields."
+
+                        // Validation
+                        when {
+                            // INVALID: snapshot_data alone
+                            fieldStr == "snapshot_data" -> {
+                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
+                                validationErrors.add(errorMsg)
+                                LogManager.aiService(errorMsg, "WARN")
+                            }
+
+                            // INVALID: snapshot_data.custom_fields alone
+                            fieldStr == "snapshot_data.custom_fields" -> {
+                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
+                                validationErrors.add(errorMsg)
+                                LogManager.aiService(errorMsg, "WARN")
+                            }
+
+                            // INVALID: execution_result.* (sub-field)
+                            fieldStr.startsWith("execution_result.") -> {
+                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
+                                validationErrors.add(errorMsg)
+                                LogManager.aiService(errorMsg, "WARN")
+                            }
+
+                            // VALID: root, snapshot_data.*, snapshot_data.custom_fields.*
+                            isRootField || isSnapshotData || isSnapshotCustomFields -> {
+                                // Valid pattern, no error
+                            }
+
+                            // INVALID: unknown pattern
+                            else -> {
+                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
+                                validationErrors.add(errorMsg)
+                                LogManager.aiService(errorMsg, "WARN")
+                            }
+                        }
+                    }
                 }
             }
         }
