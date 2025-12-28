@@ -37,7 +37,7 @@ class AICommandProcessor(private val context: Context) {
     fun processDataCommands(commands: List<DataCommand>): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
-        // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
+        // VALIDATION: Check that TOOL_DATA and TOOL_EXECUTIONS commands include 'fields' parameter
         val validationErrors = mutableListOf<String>()
         for ((index, command) in commands.withIndex()) {
             if (command.type == "TOOL_DATA") {
@@ -51,6 +51,20 @@ class AICommandProcessor(private val context: Context) {
                 } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
                     val errorMsg = "Command[$index] (TOOL_DATA): 'fields' must be a non-empty array. " +
                         "Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]"
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                }
+            } else if (command.type == "TOOL_EXECUTIONS") {
+                val fields = command.params["fields"]
+                if (fields == null) {
+                    val errorMsg = "Command[$index] (TOOL_EXECUTIONS): missing required 'fields' parameter. " +
+                        "TOOL_EXECUTIONS queries must explicitly specify which fields to retrieve. " +
+                        "Example: \"fields\": [\"id\", \"executionTime\", \"status\", \"executionResult\"]"
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
+                    val errorMsg = "Command[$index] (TOOL_EXECUTIONS): 'fields' must be a non-empty array. " +
+                        "Example: \"fields\": [\"id\", \"executionTime\", \"status\"]"
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
                 }
