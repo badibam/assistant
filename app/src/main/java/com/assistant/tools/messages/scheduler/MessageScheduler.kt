@@ -10,7 +10,11 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
 import com.assistant.tools.messages.MessageService
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.formatValue
+import com.assistant.core.fields.toFieldDefinitions
 import kotlinx.serialization.json.Json
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -195,14 +199,11 @@ object MessageScheduler : ToolScheduler {
             put("content", content)
             put("priority", priority)
 
-            // Include custom_fields snapshot if present
-            if (customFieldsJson != null) {
-                try {
-                    val customFields = JSONObject(customFieldsJson)
-                    put("custom_fields", customFields)
-                } catch (e: Exception) {
-                    LogManager.service("Failed to parse custom_fields JSON for message $messageId: ${e.message}", "WARN")
-                }
+            // Include FORMATTED custom_fields snapshot if present
+            // Custom fields are formatted for human readability in execution snapshots
+            val formattedCustomFields = formatCustomFields(customFieldsJson, configJson, context)
+            if (formattedCustomFields != null) {
+                put("custom_fields", formattedCustomFields)
             }
         }
 
@@ -340,5 +341,54 @@ object MessageScheduler : ToolScheduler {
             })
         }
         return list
+    }
+
+    /**
+     * Format custom fields for execution snapshot
+     *
+     * Converts raw custom field values to formatted strings for human readability
+     * in execution snapshots. Uses FieldDefinition.formatValue() for consistent formatting.
+     *
+     * @param customFieldsJson Raw custom field values (JSON string)
+     * @param configJsonStr Tool instance config (JSON string)
+     * @param context Android context for string resources
+     * @return JSONObject with formatted custom field values, or null if no custom fields
+     */
+    private fun formatCustomFields(
+        customFieldsJson: String?,
+        configJsonStr: String?,
+        context: Context
+    ): JSONObject? {
+        // Return null if no custom fields
+        if (customFieldsJson == null) return null
+
+        try {
+            // Parse config to get custom field definitions
+            val config = configJsonStr?.let { JSONObject(it) } ?: return null
+            val customFieldsArray = config.optJSONArray("custom_fields") ?: return null
+
+            // Convert to FieldDefinition list
+            val fieldDefinitions = customFieldsArray.toFieldDefinitions()
+            if (fieldDefinitions.isEmpty()) return null
+
+            // Parse raw custom field values
+            val customFieldValues = JSONObject(customFieldsJson)
+
+            // Format each custom field value
+            val formattedFields = JSONObject()
+            for (fieldDef in fieldDefinitions) {
+                val rawValue = customFieldValues.opt(fieldDef.name)
+                if (rawValue != null) {
+                    val formattedValue = fieldDef.formatValue(rawValue, context)
+                    formattedFields.put(fieldDef.name, formattedValue)
+                }
+            }
+
+            return if (formattedFields.length() > 0) formattedFields else null
+
+        } catch (e: Exception) {
+            LogManager.service("Failed to format custom fields for snapshot: ${e.message}", "WARN", e)
+            return null
+        }
     }
 }

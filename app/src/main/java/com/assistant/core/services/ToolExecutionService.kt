@@ -71,49 +71,9 @@ class ToolExecutionService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype, templateDataId"))
         }
 
-        // Enrich snapshotData with custom_fields_metadata from tool instance config
-        // This makes executions self-contained: they preserve the field definitions at execution time
-        try {
-            val coordinator = Coordinator(context)
-            val configResult = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-
-            if (configResult.status == CommandStatus.SUCCESS) {
-                val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-                val configJson = toolInstance?.get("config_json") as? String
-
-                if (configJson != null && configJson.isNotEmpty()) {
-                    try {
-                        val config = JSONObject(configJson)
-                        val customFieldsArray = config.optJSONArray("custom_fields")
-
-                        // Add custom_fields_metadata to snapshot if custom_fields exist in config
-                        if (customFieldsArray != null && customFieldsArray.length() > 0) {
-                            snapshotDataJson.put("custom_fields_metadata", customFieldsArray)
-                            com.assistant.core.utils.LogManager.service(
-                                "Enriched execution snapshot with ${customFieldsArray.length()} custom field definitions",
-                                "DEBUG"
-                            )
-                        }
-                    } catch (e: Exception) {
-                        com.assistant.core.utils.LogManager.service(
-                            "Failed to parse config_json when enriching snapshot: ${e.message}",
-                            "WARN",
-                            e
-                        )
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // Log error but don't fail execution creation
-            // Worst case: snapshot won't have metadata, will fall back to current config
-            com.assistant.core.utils.LogManager.service(
-                "Failed to enrich snapshot with custom_fields_metadata for execution: ${e.message}",
-                "WARN",
-                e
-            )
-        }
+        // Note: Custom fields in snapshotData are now pre-formatted by the calling tool
+        // (e.g., MessageScheduler formats custom fields before creating execution)
+        // This simplifies execution snapshots for human readability
 
         val now = System.currentTimeMillis()
         val entity = ToolExecutionEntity(

@@ -277,7 +277,12 @@ Par exemple, un message planifié est un template (tool_data) qui génère plusi
 - `limit` (number, optionnel) : Nombre maximum d\'entrées
 - `offset` (number, optionnel) : Décalage pour pagination
 
-**Retour** : Chaque exécution contient snapshot_data (état du template au moment de l\'exécution), execution_result (résultat spécifique au tooltype), execution_time, status, etc.
+**Retour** : Chaque exécution contient :
+- `snapshot_data` : État du template au moment de l\'exécution (champs core de l\'outil + custom_fields formatés pour lisibilité humaine)
+- `execution_result` : Résultat spécifique au tooltype
+- `execution_time`, `status`, etc.
+
+**Note importante sur custom_fields** : Dans les snapshots d\'exécution, les custom_fields sont des **valeurs formatées** (strings lisibles) et non des valeurs brutes. Exemple : "5/10" au lieu de 5, "Élevé" au lieu de "high".
 
 **Usage** : Utilise cette commande pour consulter l\'historique des exécutions passées.
 
