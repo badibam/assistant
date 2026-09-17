@@ -143,21 +143,6 @@ interface ToolTypeContract : SchemaProvider {
     fun getScheduler(): ToolScheduler? = null
 
     /**
-     * Indicates if this tool type supports execution history tracking
-     *
-     * Tools with executions maintain history in tool_executions table:
-     * - Messages: scheduled message deliveries
-     * - Goals: periodic goal evaluations
-     * - Alerts: threshold checks and notifications
-     * - Questionnaires: scheduled form submissions
-     *
-     * Used by ZoneScopeSelector to show EXECUTIONS context option.
-     *
-     * @return true if this tool type stores execution history, false otherwise (default)
-     */
-    fun supportsExecutions(): Boolean = false
-
-    /**
      * Returns the list of config fields that are relevant for interpreting data entries
      *
      * Used by CommandExecutor to build config_extract section in TOOL_DATA responses.

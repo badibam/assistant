@@ -116,6 +116,7 @@
     <string name="messages_action_configure_schedule">Configurer la récurrence</string>
     <string name="messages_occurrence_due_at">Prévu le %1$s</string>
     <string name="messages_occurrence_nothing_written">Rien d\'écrit pour cet envoi : seule la part commune partira</string>
+    <string name="messages_verbalize_execute">Envoi immédiat du message</string>
     <string name="messages_action_mark_read">Marquer comme lu</string>
     <string name="messages_action_mark_unread">Marquer comme non lu</string>
     <string name="messages_action_archive">Archiver</string>

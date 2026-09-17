@@ -260,9 +260,8 @@ object JsonTransformers {
     private fun transformMessagesData(json: JSONObject, version: Int): JSONObject {
         return when (version) {
             13 -> {
-                // v13→v14: Remove executions array (migrated to tool_executions table)
-                // The migration handles moving data to tool_executions table
-                // This transformer just cleans up the JSON for backups/imports
+                // v13→v14: Remove the executions array that message entries used to embed.
+                // Only reachable through an old backup: nothing writes this shape any more.
                 if (json.has("executions")) {
                     LogManager.service("transformMessagesData v13->v14: Removing executions array", "INFO")
                     json.remove("executions")

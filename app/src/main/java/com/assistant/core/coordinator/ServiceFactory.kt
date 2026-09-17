@@ -5,7 +5,6 @@ import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.ZoneService
 import com.assistant.core.services.ToolInstanceService
 import com.assistant.core.services.ToolDataService
-import com.assistant.core.services.ToolExecutionService
 import com.assistant.core.services.AppConfigService
 import com.assistant.core.services.IconPreloadService
 import com.assistant.core.services.BackupService
@@ -30,7 +29,6 @@ object ServiceFactory {
             ZoneService::class -> ZoneService(context)
             ToolInstanceService::class -> ToolInstanceService(context)
             ToolDataService::class -> ToolDataService(context)
-            ToolExecutionService::class -> ToolExecutionService(context)
             AppConfigService::class -> AppConfigService(context)
             IconPreloadService::class -> IconPreloadService(context)
             BackupService::class -> BackupService(context)

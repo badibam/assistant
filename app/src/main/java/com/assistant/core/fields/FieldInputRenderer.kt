@@ -381,11 +381,11 @@ fun FieldInput(
  * a FieldInput for each one. It manages the global state of all field values.
  *
  * Supports two modes (priority order):
- * 1. SnapshotBased: Use archived metadata from execution snapshot
+ * 1. Explicit definitions passed in by the caller
  * 2. ConfigBased: Load field definitions from tool instance config
  *
  * @param toolInstanceId Tool instance ID to load config from (ConfigBased mode)
- * @param customFieldsMetadata Archived field definitions (SnapshotBased mode)
+ * @param customFieldsMetadata Field definitions supplied directly by the caller
  * @param values Current values map (fieldName -> value)
  * @param onValuesChange Callback when any value changes (receives updated full map)
  * @param context Android context for strings and formatting
@@ -451,11 +451,11 @@ fun CustomFieldsInput(
  * are either hidden or shown with "No value" text depending on the alwaysVisible flag.
  *
  * Supports two modes (priority order):
- * 1. SnapshotBased: Use archived metadata from execution snapshot
+ * 1. Explicit definitions passed in by the caller
  * 2. ConfigBased: Load field definitions from tool instance config
  *
  * @param toolInstanceId Tool instance ID to load config from (ConfigBased mode)
- * @param customFieldsMetadata Archived field definitions (SnapshotBased mode)
+ * @param customFieldsMetadata Field definitions supplied directly by the caller
  * @param values Current values map (fieldName -> value)
  * @param context Android context for strings and formatting
  */
@@ -518,7 +518,7 @@ fun CustomFieldsDisplay(
  * Resolves field definitions from the appropriate metadata source.
  *
  * Logic:
- * - If customFieldsMetadata is provided: use it directly (SnapshotBased mode)
+ * - If customFieldsMetadata is provided: use it directly
  * - Else if toolInstanceId is provided: load from config (ConfigBased mode)
  * - Else: return empty list
  *
@@ -533,7 +533,7 @@ private fun resolveFieldDefinitions(
     customFieldsMetadata: List<FieldDefinition>?,
     context: Context
 ): List<FieldDefinition> {
-    // Priority 1: Use provided metadata (SnapshotBased mode)
+    // Priority 1: Use the definitions the caller passed in
     if (customFieldsMetadata != null) {
         return customFieldsMetadata
     }

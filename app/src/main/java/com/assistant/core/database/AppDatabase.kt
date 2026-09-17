@@ -7,13 +7,11 @@ import android.content.Context
 import com.assistant.core.database.dao.ZoneDao
 import com.assistant.core.database.dao.ToolInstanceDao
 import com.assistant.core.database.dao.BaseToolDataDao
-import com.assistant.core.database.dao.BaseToolExecutionDao
 import com.assistant.core.database.dao.AppSettingsCategoryDao
 import com.assistant.core.database.dao.LogDao
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.database.entities.ToolDataEntity
-import com.assistant.core.database.entities.ToolExecutionEntity
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.LogEntry
 import com.assistant.core.ai.database.AIDao
@@ -32,7 +30,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Zone::class,
         ToolInstance::class,
         ToolDataEntity::class,
-        ToolExecutionEntity::class,
         AppSettingsCategory::class,
         AISessionEntity::class,
         SessionMessageEntity::class,
@@ -42,7 +39,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 21,
+    version = 22,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -53,7 +50,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun zoneDao(): ZoneDao
     abstract fun toolInstanceDao(): ToolInstanceDao
     abstract fun toolDataDao(): BaseToolDataDao
-    abstract fun toolExecutionDao(): BaseToolExecutionDao
     abstract fun appSettingsCategoryDao(): AppSettingsCategoryDao
     abstract fun aiDao(): AIDao
     abstract fun logDao(): LogDao
@@ -68,7 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 21
+        const val VERSION = 22
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -832,6 +828,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // The execution plane is gone. Occurrences are ordinary tool_data entries, so
+                // there is no third place where a tool records what it produced.
+                //
+                // Dropping the table here rather than with the data deletion of 20->21: Room
+                // validates the schema against its entities at startup, so the table can only
+                // go once ToolExecutionEntity does, and both happen at this version.
+                // SQLite drops a table's indexes with the table, so the five created by 13->14
+                // need no statement of their own.
+                database.execSQL("DROP TABLE IF EXISTS tool_executions")
+
+                LogManager.database("MIGRATION 21->22: tool_executions dropped", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -851,7 +863,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_17_18,
                     MIGRATION_18_19,
                     MIGRATION_19_20,
-                    MIGRATION_20_21
+                    MIGRATION_20_21,
+                    MIGRATION_21_22
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

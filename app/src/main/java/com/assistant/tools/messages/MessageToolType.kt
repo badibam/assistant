@@ -66,10 +66,9 @@ object MessageToolType : ToolTypeContract {
     }
 
     override fun getAvailableOperations(): List<String> {
-        return listOf(
-            "get_history",
-            "mark_read", "mark_archived", "stats"
-        )
+        // Reading occurrences and flagging them read or archived go through tool_data, like
+        // any other entry. Sending now is the only thing that is not plain data editing.
+        return listOf("execute")
     }
 
     override fun getDefaultConfig(): String {

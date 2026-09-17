@@ -21,7 +21,6 @@ object BaseSchemas {
      * System-managed fields (automatically set by system, never provided by AI/user):
      * - schema_id: Determined by tooltype and variant
      * - data_schema_id: Determined by tooltype and variant
-     * - execution_schema_id: Determined by tooltype (if supports executions)
      */
     fun getBaseConfigSchema(context: Context): String {
         val s = Strings.`for`(context = context)
@@ -77,10 +76,6 @@ object BaseSchemas {
                 "data_schema_id": {
                     "type": "string",
                     "description": "${s.shared("tools_base_schema_config_data_schema_id")}"
-                },
-                "execution_schema_id": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_config_execution_schema_id")}"
                 },
                 "always_send": {
                     "type": "boolean",
@@ -176,74 +171,6 @@ object BaseSchemas {
         """.trimIndent()
     }
 
-    /**
-     * Base execution schema for all tool types that support executions
-     * Common fields: id, tool_instance_id, tooltype, template_data_id, scheduled_time, execution_time,
-     *                status, triggered_by, created_at, updated_at
-     *
-     * Note: snapshot_data, execution_result, and metadata are tool-specific and defined in each ToolType's schema
-     */
-    fun getBaseExecutionSchema(context: Context): String {
-        val s = Strings.`for`(context = context)
-        return """
-        {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_execution_id")}"
-                },
-                "tool_instance_id": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_execution_tool_instance_id")}"
-                },
-                "tooltype": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_execution_tooltype")}"
-                },
-                "template_data_id": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_execution_template_data_id")}"
-                },
-                "scheduled_time": {
-                    "type": ["integer", "null"],
-                    "minimum": 0,
-                    "description": "${s.shared("tools_base_schema_execution_scheduled_time")}"
-                },
-                "execution_time": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "${s.shared("tools_base_schema_execution_execution_time")}"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": ["pending", "completed", "failed", "cancelled"],
-                    "description": "${s.shared("tools_base_schema_execution_status")}"
-                },
-                "triggered_by": {
-                    "type": "string",
-                    "enum": ["SCHEDULE", "MANUAL", "EVENT"],
-                    "description": "${s.shared("tools_base_schema_execution_triggered_by")}"
-                },
-                "created_at": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "${s.shared("tools_base_schema_execution_created_at")}"
-                },
-                "updated_at": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "description": "${s.shared("tools_base_schema_execution_updated_at")}"
-                },
-                "schema_id": {
-                    "type": "string",
-                    "description": "${s.shared("tools_base_schema_execution_schema_id")}"
-                }
-            },
-            "required": ["tool_instance_id", "tooltype", "template_data_id", "execution_time", "status", "triggered_by"]
-        }
-        """.trimIndent()
-    }
     
     /**
      * Simple utility function to merge base schema with specific schema
@@ -419,7 +346,6 @@ object BaseSchemas {
             "validateData" -> s.shared("tools_config_label_validate_data")
             "schema_id" -> s.shared("tools_config_label_schema_id")
             "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
-            "execution_schema_id" -> s.shared("tools_config_label_execution_schema_id")
             else -> null
         }
     }
