@@ -51,7 +51,7 @@ Chaque opération reçoit automatiquement un CancellationToken unique avec créa
 **Principe** : Point d'entrée unique pour scheduling AI + Tools via discovery pattern.
 
 **Heartbeat** : Coroutine 1 min (app-open) + WorkManager 15 min (app-closed)
-**Triggers** : Périodiques + événementiels (CRUD automations, CRUD messages, fin session)
+**Triggers** : Périodiques + événementiels (CRUD automations, CRUD instances d'outils, fin session)
 
 **Découverte** : `ToolTypeManager.getAllToolTypes().forEach { toolType.getScheduler()?.checkScheduled() }`
 

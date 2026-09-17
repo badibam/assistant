@@ -20,6 +20,11 @@ import com.assistant.core.fields.ValidationException
 import com.assistant.core.fields.migration.FieldConfigComparator
 import com.assistant.core.fields.migration.MigrationPolicy
 import com.assistant.core.fields.migration.FieldDataMigrator
+import com.assistant.core.scheduling.CoreScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
@@ -31,6 +36,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     private val database by lazy { AppDatabase.getDatabase(context) }
     private val toolInstanceDao by lazy { database.toolInstanceDao() }
     private val s = Strings.`for`(context = context)
+
+    // Detached scope for the post-CRUD tick, which must not hold up the caller
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     /**
      * Execute tool instance operation with cancellation support
@@ -40,7 +48,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         params: JSONObject,
         token: CancellationToken
     ): OperationResult {
-        return try {
+        val result = try {
             when (operation) {
                 "create" -> handleCreate(params, token)
                 "update" -> handleUpdate(params, token)
@@ -54,6 +62,23 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         } catch (e: Exception) {
             OperationResult.error(s.shared("service_error_tool_instance_service").format(e.message ?: ""))
         }
+
+        // An active tooltype keeps its config and its scheduled work in step: the config IS the
+        // definition, so changing it changes what is owed. Without this, editing a recurrence
+        // leaves the screen empty until the next heartbeat, with no way to tell a slow tick from
+        // something broken. Mirrors what AutomationService does for automations.
+        if (result.success && operation in listOf("create", "update", "delete", "duplicate")) {
+            LogManager.service("ToolInstanceService: Triggering scheduler tick after $operation", "DEBUG")
+            scope.launch {
+                try {
+                    CoreScheduler.tick()
+                } catch (e: Exception) {
+                    LogManager.service("ToolInstanceService: Error calling tick(): ${e.message}", "ERROR", e)
+                }
+            }
+        }
+
+        return result
     }
     
     /**
