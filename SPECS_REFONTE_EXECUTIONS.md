@@ -166,15 +166,19 @@ Cas testé pendant le design : un Objectif récurrent type « journée-type » �
 
 ---
 
-## 5. Migration des données existantes
+## 5. Données existantes : table rase, pas de conversion
 
-Migration Room (nouvelle version DB) + JsonTransformers. **Ne pas modifier les migrations historiques existantes.**
+**Décision du 2026-09-18, qui remplace le plan de conversion initial.** Les données Messages antérieures à la refonte sont supprimées, pas converties. L'utilisateur a tranché : il n'y tient pas, et une conversion se paierait cher pour un résultat que personne n'aurait vérifié.
 
-1. **Éclater chaque instance Messages multi-templates** : pour chaque entrée template (tool_data actuel d'une instance Messages) → créer une nouvelle instance Messages (config = name/content/priority/schedule du template + custom field values), dans la même zone.
-2. **Convertir les exécutions** : chaque ligne `tool_executions` → une entrée tool_data de la nouvelle instance correspondante (`templateDataId` fait le lien). Mapping : `executionTime` → timestamp ; `snapshotData.title/content/priority` → data ; `executionResult.read/archived/notification_sent` → data ; `triggeredBy`, `scheduledTime` → data ; `status: "sent"` sur toutes les entrées migrées (l'historique ne contient que des envois déjà partis) ; `common_title` non renseigné sur ces entrées, la notion n'existait pas avant l'amendement du 2026-09-17 — ne rien reconstituer. **Custom fields des snapshots : valeurs actuellement FORMATÉES (strings)** — les reconvertir en brut est impossible (information détruite par le formatage de déc 2025). Décision : les copier telles quelles dans `custom_fields` de l'entrée (strings), en acceptant l'impureté sur l'historique pré-refonte. Ne PAS construire de mécanisme de dé-formatage.
-3. **Supprimer la table** `tool_executions` (DROP) et l'instance d'origine multi-templates après éclatement.
-4. **Nettoyer les configs** : retirer `execution_schema_id` des configs existantes (JsonTransformer).
-5. Tester le backup/restore après migration (BackupService exporte/importe tool_executions actuellement — à retirer).
+Ce que la conversion aurait demandé, pour mémoire : éclater chaque instance multi-modèles en une instance par modèle, relier chaque ligne `tool_executions` à sa nouvelle instance via `templateDataId`, et recopier des valeurs de champs personnalisés **déjà formatées** (strings « Élevé », « 5/10 ») sans moyen de revenir au brut, l'information ayant été détruite par le formatage de décembre 2025. On aurait donc migré un historique impur vers un modèle qui exige des valeurs brutes.
+
+Migration Room `20 → 21` (`AppDatabase.MIGRATION_20_21`) : supprime les entrées `tool_data` de tooltype `messages`, les lignes `tool_executions` correspondantes, et les instances Messages elles-mêmes. Dans le vocabulaire de la refonte, une instance **est** un message : supprimer « tous les messages » supprime bien les instances, l'utilisateur recrée celles qu'il veut sous le nouveau modèle.
+
+**Ne pas modifier les migrations historiques existantes.**
+
+Le `DROP TABLE tool_executions` ne se fait PAS ici : l'entité existe encore à cette version et Room valide son schéma contre ses entités au démarrage. Il part avec l'entité, à l'étape de démolition (§6).
+
+Reste lié : le backup/restore exporte et importe `tool_executions` aujourd'hui — à retirer avec le reste (§6), et à tester après coup.
 
 ---
 

@@ -42,7 +42,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 20,
+    version = 21,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -68,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 20
+        const val VERSION = 21
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -800,6 +800,38 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Messages refonte: a Messages instance is now one notification template, its
+                // config holds what used to be a tool_data template entry, and its tool_data
+                // holds the occurrences that used to be tool_executions rows.
+                //
+                // Nothing is converted. Pre-existing Messages instances were multi-template and
+                // their configs cannot satisfy the new schema; the user chose a clean slate over
+                // a conversion nobody would trust. See SPECS_REFONTE_EXECUTIONS.md section 5.
+                //
+                // tool_executions itself is not dropped here: the entity still exists at this
+                // version, and Room validates the schema against its entities at startup.
+
+                val dataCursor = database.query("SELECT COUNT(*) FROM tool_data WHERE tooltype = 'messages'")
+                val deletedEntries = if (dataCursor.moveToFirst()) dataCursor.getInt(0) else 0
+                dataCursor.close()
+
+                val instanceCursor = database.query("SELECT COUNT(*) FROM tool_instances WHERE tool_type = 'messages'")
+                val deletedInstances = if (instanceCursor.moveToFirst()) instanceCursor.getInt(0) else 0
+                instanceCursor.close()
+
+                database.execSQL("DELETE FROM tool_executions WHERE tooltype = 'messages'")
+                database.execSQL("DELETE FROM tool_data WHERE tooltype = 'messages'")
+                database.execSQL("DELETE FROM tool_instances WHERE tool_type = 'messages'")
+
+                LogManager.database(
+                    "MIGRATION 20->21: Removed $deletedInstances Messages instance(s) and $deletedEntries entry(ies) - clean slate for the refonte",
+                    "INFO"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -818,7 +850,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_16_17,
                     MIGRATION_17_18,
                     MIGRATION_18_19,
-                    MIGRATION_19_20
+                    MIGRATION_19_20,
+                    MIGRATION_20_21
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
