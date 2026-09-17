@@ -1,8 +1,6 @@
 package com.assistant.tools.messages.ui
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Tab
@@ -13,67 +11,63 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.core.ui.*
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.coordinator.executeWithLoading
 import com.assistant.core.coordinator.mapSingleData
-import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.utils.DataChangeEvent
+import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
+import com.assistant.core.ui.*
 import com.assistant.core.utils.AppConfigManager
+import com.assistant.tools.messages.ui.components.EditOccurrenceDialog
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
-import com.assistant.core.utils.DataChangeNotifier
-import com.assistant.core.utils.DataChangeEvent
-import com.assistant.core.utils.ScheduleConfig
-import com.assistant.core.utils.DateUtils
-import com.assistant.core.fields.CustomFieldsDisplay
-import com.assistant.core.fields.toFieldDefinitions
-import com.assistant.tools.messages.ui.components.EditMessageDialog
-import com.assistant.tools.messages.ui.components.MessageDialogData
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 /**
- * Data class for execution entries (messages received)
- * Updated for tool_executions table format
+ * One send of this message, as the screen needs it.
+ *
+ * A pending occurrence carries only what was written for it; a resolved one also carries the
+ * common part copied in when it went out. Both shapes are the same entry at different points
+ * of its life, which is why one type covers them.
  */
-data class ExecutionEntry(
-    val executionId: String,           // ID from tool_executions table
-    val templateDataId: String,        // ID of the message template
-    val scheduledTime: Long,           // When it was scheduled
-    val executionTime: Long,           // When it was actually executed
-    val status: String,                // "pending", "completed", "failed"
-    val titleSnapshot: String,         // Title at execution time
-    val contentSnapshot: String?,      // Content at execution time
-    val read: Boolean,                 // Read status from executionResult
-    val archived: Boolean,             // Archived status from executionResult
-    val customFieldsSnapshot: Map<String, Any?> = emptyMap(),  // Custom fields values at execution time
-    val customFieldsMetadata: List<com.assistant.core.fields.FieldDefinition> = emptyList()  // Custom fields definitions at execution time
-)
-
-/**
- * Data class for message templates (messages management)
- */
-data class MessageTemplate(
+data class Occurrence(
     val id: String,
-    val title: String,
-    val content: String?,
-    val schedule: ScheduleConfig?,
-    val priority: String,
-    val executionCount: Int,
-    val customFields: Map<String, Any?> = emptyMap()
-)
+    val dueAt: Long,
+    val status: String,
+    val commonTitle: String?,
+    val commonContent: String?,
+    val ownTitle: String?,
+    val ownContent: String?,
+    val read: Boolean,
+    val archived: Boolean,
+    val notificationSent: Boolean,
+    val customFields: Map<String, Any?>
+) {
+    /** What actually went out, or would go out: the common part joined with the day's. */
+    val displayTitle: String
+        get() = listOfNotNull(commonTitle, ownTitle).joinToString(" · ")
+
+    val displayContent: String?
+        get() = listOfNotNull(commonContent, ownContent).joinToString("\n\n").takeIf { it.isNotEmpty() }
+}
 
 /**
- * Main screen for Messages tool instance
+ * Main screen of a Messages tool instance.
  *
- * Displays 2 tabs:
- * - Tab 1 "Messages reçus": Execution history with filters (unread/read/archived)
- * - Tab 2 "Gestion messages": Message templates CRUD with schedule configuration
+ * The instance is one notification template and this screen shows what it has produced: the
+ * sends already resolved, and the ones still to come. The template itself is not edited here —
+ * it is the config, reached through the configure button.
  *
- * Pattern reference: NotesScreen (structure), first tab pattern in project
+ * Two tabs, because the two populations answer different questions. "Reçus" is the inbox,
+ * filtered the way an inbox is. "À venir" is what the recurrence has laid out ahead, each one
+ * open to being written before it goes.
  */
 @Composable
 fun MessagesScreen(
@@ -87,18 +81,14 @@ fun MessagesScreen(
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val s = remember { Strings.`for`(tool = "messages", context = context) }
-    val coroutineScope = rememberCoroutineScope()
 
-    // State
     var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    // Tab state (survives rotation)
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
-    // Load tool instance data
     LaunchedEffect(toolInstanceId) {
         coordinator.executeWithLoading(
             operation = "tools.get",
@@ -110,35 +100,27 @@ fun MessagesScreen(
         }
     }
 
-    // Observe data changes and refresh
     LaunchedEffect(toolInstanceId) {
         DataChangeNotifier.changes.collect { event ->
             when (event) {
                 is DataChangeEvent.ToolDataChanged -> {
-                    if (event.toolInstanceId == toolInstanceId) {
-                        refreshTrigger++
-                    }
+                    if (event.toolInstanceId == toolInstanceId) refreshTrigger++
                 }
-                else -> {} // Ignore other events
+                else -> {}
             }
         }
     }
 
-    // Parse configuration
     val config = remember(toolInstance) {
         val configJson = toolInstance?.get("config_json") as? String ?: "{}"
         try {
             JSONObject(configJson)
         } catch (e: Exception) {
+            LogManager.ui("Unreadable config for $toolInstanceId: ${e.message}", "ERROR", e)
             JSONObject()
         }
     }
 
-    val defaultPriority = remember(config) {
-        config.optString("default_priority", "default")
-    }
-
-    // Error message display
     errorMessage?.let { message ->
         LaunchedEffect(message) {
             UI.Toast(context, message, Duration.LONG)
@@ -146,29 +128,18 @@ fun MessagesScreen(
         }
     }
 
-    // Early return for loading state
     if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             UI.Text(s.shared("tools_loading"), TextType.BODY)
         }
         return
     }
 
-    // Main screen layout
     Column(modifier = Modifier.fillMaxSize()) {
-        // Tool header (fixed at top)
-        val toolName = config.optString("name", s.tool("display_name"))
-        val toolDescription = config.optString("description", "")
-
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             UI.PageHeader(
-                title = toolName,
-                subtitle = toolDescription.takeIf { it.isNotBlank() },
+                title = config.optString("name", s.tool("display_name")),
+                subtitle = config.optString("description", "").takeIf { it.isNotBlank() },
                 icon = config.optString("icon_name", "notification"),
                 leftButton = ButtonAction.BACK,
                 rightButton = ButtonAction.CONFIGURE,
@@ -177,7 +148,6 @@ fun MessagesScreen(
             )
         }
 
-        // Tab navigation
         TabRow(selectedTabIndex = selectedTab) {
             Tab(
                 selected = selectedTab == 0,
@@ -187,43 +157,35 @@ fun MessagesScreen(
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { UI.Text(s.tool("tab_manage_messages"), TextType.BODY) }
+                text = { UI.Text(s.tool("tab_upcoming"), TextType.BODY) }
             )
         }
 
-        // Tab content
         when (selectedTab) {
-            0 -> ReceivedMessagesTab(
+            0 -> ReceivedTab(
                 toolInstanceId = toolInstanceId,
                 coordinator = coordinator,
                 refreshTrigger = refreshTrigger,
-                onError = { error -> errorMessage = error }
+                onError = { errorMessage = it }
             )
-            1 -> ManageMessagesTab(
+            1 -> UpcomingTab(
                 toolInstanceId = toolInstanceId,
                 coordinator = coordinator,
-                defaultPriority = defaultPriority,
                 refreshTrigger = refreshTrigger,
-                onRefresh = { refreshTrigger++ },
-                onError = { error -> errorMessage = error }
+                onError = { errorMessage = it }
             )
         }
     }
 }
 
-/**
- * Tab 1: Messages reçus (Execution history)
- *
- * Displays execution history with filters (checkboxes OR logic):
- * - Non lus (default checked)
- * - Lus
- * - Archivés
- *
- * List sorted by sent_at DESC
- * Actions: toggle read, archive
- */
+// ========================================
+// Received: what has already been resolved
+// ========================================
+
+private enum class ReceivedFilter { UNREAD, READ, ARCHIVED, NOT_DELIVERED }
+
 @Composable
-private fun ReceivedMessagesTab(
+private fun ReceivedTab(
     toolInstanceId: String,
     coordinator: Coordinator,
     refreshTrigger: Int,
@@ -231,393 +193,212 @@ private fun ReceivedMessagesTab(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "messages", context = context) }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
-    // Filter states (survive rotation)
-    var filterUnread by rememberSaveable { mutableStateOf(true) }  // Default checked
-    var filterRead by rememberSaveable { mutableStateOf(false) }
-    var filterArchived by rememberSaveable { mutableStateOf(false) }
+    var filter by rememberSaveable { mutableStateOf(ReceivedFilter.UNREAD) }
+    var occurrences by remember { mutableStateOf<List<Occurrence>>(emptyList()) }
 
-    // Execution data
-    var executions by remember { mutableStateOf<List<ExecutionEntry>>(emptyList()) }
-    var isLoadingExecutions by remember { mutableStateOf(true) }
-
-    // Load executions with filters
-    LaunchedEffect(toolInstanceId, refreshTrigger, filterUnread, filterRead, filterArchived) {
-        isLoadingExecutions = true
-
-        // Build filters according to specs (Option A - Inclusion stricte)
-        val filters = mutableMapOf<String, Any>()
-
-        // Determine which executions to include based on checkbox states
-        val includeUnread = filterUnread
-        val includeRead = filterRead
-        val includeArchived = filterArchived
-
-        // If no checkbox is checked, show empty list
-        if (!includeUnread && !includeRead && !includeArchived) {
-            executions = emptyList()
-            isLoadingExecutions = false
-            return@LaunchedEffect
-        }
-
-        // Apply filters according to logic in specs (section 13.2)
-        // We need to call get_history multiple times for different filter combinations
-        val allExecutions = mutableListOf<ExecutionEntry>()
-
-        // Unread checked → read=false AND archived=false
-        if (includeUnread) {
-            val params = mapOf(
-                "toolInstanceId" to toolInstanceId,
-                "filters" to JSONObject().apply {
-                    put("read", false)
-                    put("archived", false)
+    // Expired and cancelled are two different facts, so they are loaded together only under the
+    // filter that asks for "what never reached me" — never merged into the inbox itself.
+    LaunchedEffect(toolInstanceId, refreshTrigger, filter) {
+        occurrences = if (filter == ReceivedFilter.NOT_DELIVERED) {
+            (loadByStatus(context, coordinator, toolInstanceId, "expired", onError) +
+                loadByStatus(context, coordinator, toolInstanceId, "cancelled", onError))
+                .sortedByDescending { it.dueAt }
+        } else {
+            loadByStatus(context, coordinator, toolInstanceId, "sent", onError)
+                .filter { occurrence ->
+                    when (filter) {
+                        ReceivedFilter.UNREAD -> !occurrence.read && !occurrence.archived
+                        ReceivedFilter.READ -> occurrence.read && !occurrence.archived
+                        ReceivedFilter.ARCHIVED -> occurrence.archived
+                        ReceivedFilter.NOT_DELIVERED -> false
+                    }
                 }
-            )
-            val result = coordinator.processUserAction("messages.get_history", params)
-            if (result?.isSuccess == true) {
-                val entries = parseExecutionEntries(result.data?.get("executions") as? List<*>)
-                allExecutions.addAll(entries)
-            }
+                .sortedByDescending { it.dueAt }
         }
-
-        // Read checked → read=true AND archived=false
-        if (includeRead) {
-            val params = mapOf(
-                "toolInstanceId" to toolInstanceId,
-                "filters" to JSONObject().apply {
-                    put("read", true)
-                    put("archived", false)
-                }
-            )
-            val result = coordinator.processUserAction("messages.get_history", params)
-            if (result?.isSuccess == true) {
-                val entries = parseExecutionEntries(result.data?.get("executions") as? List<*>)
-                allExecutions.addAll(entries)
-            }
-        }
-
-        // Archived checked → archived=true (regardless of read status)
-        if (includeArchived) {
-            val params = mapOf(
-                "toolInstanceId" to toolInstanceId,
-                "filters" to JSONObject().apply {
-                    put("archived", true)
-                }
-            )
-            val result = coordinator.processUserAction("messages.get_history", params)
-            if (result?.isSuccess == true) {
-                val entries = parseExecutionEntries(result.data?.get("executions") as? List<*>)
-                allExecutions.addAll(entries)
-            }
-        }
-
-        // Remove duplicates (can happen if unread+archived both checked)
-        executions = allExecutions.distinctBy { it.executionId }
-
-        isLoadingExecutions = false
-        LogManager.ui("Loaded ${executions.size} executions with filters: unread=$filterUnread, read=$filterRead, archived=$filterArchived")
     }
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Filters section
-        UI.Card(type = CardType.DEFAULT) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Unread checkbox
-                UI.FormField(
-                    label = s.tool("filter_unread"),
-                    value = if (filterUnread) "☑" else "☐",
-                    onChange = {},
-                    fieldType = FieldType.TEXT,
-                    readonly = true,
-                    onClick = { filterUnread = !filterUnread }
-                )
-
-                // Read checkbox
-                UI.FormField(
-                    label = s.tool("filter_read"),
-                    value = if (filterRead) "☑" else "☐",
-                    onChange = {},
-                    fieldType = FieldType.TEXT,
-                    readonly = true,
-                    onClick = { filterRead = !filterRead }
-                )
-
-                // Archived checkbox
-                UI.FormField(
-                    label = s.tool("filter_archived"),
-                    value = if (filterArchived) "☑" else "☐",
-                    onChange = {},
-                    fieldType = FieldType.TEXT,
-                    readonly = true,
-                    onClick = { filterArchived = !filterArchived }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Executions list
-        if (isLoadingExecutions) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                UI.Text(s.shared("tools_loading"), TextType.BODY)
-            }
-        } else if (executions.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                UI.Text(s.tool("empty_received_messages"), TextType.BODY)
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(executions) { execution ->
-                    ExecutionCard(
-                        execution = execution,
-                        onToggleRead = {
-                            coroutineScope.launch {
-                                toggleExecutionRead(coordinator, execution, onError)
-                            }
-                        },
-                        onToggleArchived = {
-                            coroutineScope.launch {
-                                toggleExecutionArchived(coordinator, execution, onError)
-                            }
-                        }
-                    )
+        UI.FormSelection(
+            label = "",
+            options = listOf(
+                s.tool("filter_unread"),
+                s.tool("filter_read"),
+                s.tool("filter_archived"),
+                s.tool("filter_not_delivered")
+            ),
+            selected = when (filter) {
+                ReceivedFilter.UNREAD -> s.tool("filter_unread")
+                ReceivedFilter.READ -> s.tool("filter_read")
+                ReceivedFilter.ARCHIVED -> s.tool("filter_archived")
+                ReceivedFilter.NOT_DELIVERED -> s.tool("filter_not_delivered")
+            },
+            onSelect = { selected ->
+                filter = when (selected) {
+                    s.tool("filter_read") -> ReceivedFilter.READ
+                    s.tool("filter_archived") -> ReceivedFilter.ARCHIVED
+                    s.tool("filter_not_delivered") -> ReceivedFilter.NOT_DELIVERED
+                    else -> ReceivedFilter.UNREAD
                 }
             }
+        )
+
+        if (occurrences.isEmpty()) {
+            UI.Text(s.tool("empty_received_messages"), TextType.CAPTION, fillMaxWidth = true)
+            return@Column
+        }
+
+        occurrences.forEach { occurrence ->
+            ReceivedCard(
+                occurrence = occurrence,
+                s = s,
+                onToggleRead = {
+                    scope.launch {
+                        updateFlags(context, coordinator, occurrence, read = !occurrence.read, onError = onError)
+                    }
+                },
+                onToggleArchived = {
+                    scope.launch {
+                        updateFlags(context, coordinator, occurrence, archived = !occurrence.archived, onError = onError)
+                    }
+                }
+            )
         }
     }
 }
 
-/**
- * Card displaying a single execution entry
- */
 @Composable
-private fun ExecutionCard(
-    execution: ExecutionEntry,
+private fun ReceivedCard(
+    occurrence: Occurrence,
+    s: StringsContext,
     onToggleRead: () -> Unit,
     onToggleArchived: () -> Unit
 ) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(tool = "messages", context = context) }
-
-    // Format date/time using app's internal system
-    val sentAtFormatted = remember(execution.executionTime) {
-        if (execution.status == "completed") {
-            com.assistant.core.utils.DateTimeFormatter.formatTimeOnly(execution.executionTime, context)
-        } else {
-            ""
-        }
-    }
-
     UI.Card(type = CardType.DEFAULT) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header: Date/time + status badges
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                UI.Text(sentAtFormatted, TextType.CAPTION)
+            UI.Text(formatMoment(occurrence.dueAt), TextType.CAPTION)
+            UI.Text(occurrence.displayTitle, TextType.SUBTITLE)
+            occurrence.displayContent?.let { UI.Text(it, TextType.BODY) }
 
+            // Each badge states a fact the history would otherwise lose
+            val badges = buildList {
+                when (occurrence.status) {
+                    "expired" -> add(s.tool("status_expired"))
+                    "cancelled" -> add(s.tool("status_cancelled"))
+                }
+                if (occurrence.status == "sent" && !occurrence.notificationSent) {
+                    add(s.tool("status_notification_failed"))
+                }
+                if (occurrence.status == "sent" && !occurrence.read) add(s.tool("badge_unread"))
+            }
+            if (badges.isNotEmpty()) {
+                UI.Text(badges.joinToString(" · "), TextType.CAPTION)
+            }
+
+            // Only something that actually went out can be read or filed away
+            if (occurrence.status == "sent") {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Status badge (if not sent)
-                    if (execution.status != "sent") {
-                        val statusText = when (execution.status) {
-                            "pending" -> s.tool("status_pending")
-                            "failed" -> s.tool("status_failed")
-                            "completed" -> s.tool("status_sent")
-                            else -> execution.status
-                        }
-                        UI.Text(statusText, TextType.CAPTION)
+                    UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onToggleRead) {
+                        UI.Text(
+                            if (occurrence.read) s.tool("action_mark_unread") else s.tool("action_mark_read"),
+                            TextType.LABEL
+                        )
                     }
-
-                    // Unread badge (if sent and not read)
-                    if (execution.status == "sent" && !execution.read) {
-                        UI.Text("🔴 ${s.tool("badge_unread")}", TextType.CAPTION)
+                    UI.Button(type = ButtonType.DEFAULT, size = Size.S, onClick = onToggleArchived) {
+                        UI.Text(
+                            if (occurrence.archived) s.tool("action_unarchive") else s.tool("action_archive"),
+                            TextType.LABEL
+                        )
                     }
-                }
-            }
-
-            // Message title (snapshot)
-            UI.Text(execution.titleSnapshot, TextType.SUBTITLE)
-
-            // Message content (snapshot, if exists)
-            execution.contentSnapshot?.let { content ->
-                UI.Text(content, TextType.BODY)
-            }
-
-            // Custom fields display (if any)
-            // Uses metadata from snapshot for historical accuracy
-            if (execution.customFieldsSnapshot.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LogManager.ui("ExecutionCard - Displaying custom fields: ${execution.customFieldsSnapshot.size} values, ${execution.customFieldsMetadata.size} metadata")
-                CustomFieldsDisplay(
-                    customFieldsMetadata = execution.customFieldsMetadata,
-                    values = execution.customFieldsSnapshot,
-                    context = context
-                )
-            } else {
-                LogManager.ui("ExecutionCard - No custom fields to display (snapshot empty)")
-            }
-
-            // Actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Toggle read/unread
-                UI.Button(
-                    type = ButtonType.DEFAULT,
-                    size = Size.S,
-                    onClick = onToggleRead
-                ) {
-                    UI.Text(if (execution.read) s.tool("action_mark_unread") else s.tool("action_mark_read"), TextType.LABEL)
-                }
-
-                // Toggle archive/unarchive
-                UI.Button(
-                    type = ButtonType.DEFAULT,
-                    size = Size.S,
-                    onClick = onToggleArchived
-                ) {
-                    UI.Text(if (execution.archived) s.tool("action_unarchive") else s.tool("action_archive"), TextType.LABEL)
                 }
             }
         }
     }
 }
 
-/**
- * Tab 2: Gestion messages (Message templates management)
- *
- * Displays list of message templates (sorted by title alphabetically)
- * Actions: Edit, Delete
- * FAB: Add new message
- */
+// ========================================
+// Upcoming: what has been laid out ahead
+// ========================================
+
 @Composable
-private fun ManageMessagesTab(
+private fun UpcomingTab(
     toolInstanceId: String,
     coordinator: Coordinator,
-    defaultPriority: String,
     refreshTrigger: Int,
-    onRefresh: () -> Unit,
     onError: (String) -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "messages", context = context) }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
-    // Message templates data
-    var templates by remember { mutableStateOf<List<MessageTemplate>>(emptyList()) }
-    var isLoadingTemplates by remember { mutableStateOf(true) }
+    var occurrences by remember { mutableStateOf<List<Occurrence>>(emptyList()) }
+    var editing by remember { mutableStateOf<Occurrence?>(null) }
 
-    // Dialog states (survive rotation for navigation safety)
-    var showMessageDialog by rememberSaveable { mutableStateOf(false) }
-    var editingMessageId by rememberSaveable { mutableStateOf<String?>(null) }
-
-    // Load message templates with execution counts
     LaunchedEffect(toolInstanceId, refreshTrigger) {
-        isLoadingTemplates = true
-
-        val params = mapOf(
-            "toolInstanceId" to toolInstanceId,
-            "limit" to 100
-        )
-
-        LogManager.ui("Loading message templates for tool $toolInstanceId (refreshTrigger=$refreshTrigger)", "DEBUG")
-
-        val result = coordinator.processUserAction("tool_data.get", params)
-        if (result?.isSuccess == true) {
-            val entriesData = result.data?.get("entries") as? List<*> ?: emptyList<Any>()
-            LogManager.ui("Received ${entriesData.size} raw entries from tool_data.get", "DEBUG")
-
-            // First load all templates
-            val loadedTemplates = entriesData.mapNotNull { entry ->
-                try {
-                    val parsed = parseMessageTemplate(entry as? Map<*, *>)
-                    if (parsed == null) {
-                        LogManager.ui("Failed to parse entry: ${entry}", "WARN")
-                    }
-                    parsed
-                } catch (e: Exception) {
-                    LogManager.ui("Error parsing message template: ${e.message}", "ERROR", e)
-                    null
-                }
-            }
-
-            // Then fetch execution counts for each template
-            templates = loadedTemplates.map { template ->
-                // Get execution count for this template
-                val executionCount = getExecutionCountForTemplate(coordinator, toolInstanceId, template.id)
-                template.copy(executionCount = executionCount)
-            }.sortedBy { it.title }
-
-            LogManager.ui("Loaded ${templates.size} message templates with execution counts", "INFO")
-        } else {
-            LogManager.ui("Failed to load templates: ${result?.error}", "ERROR")
-            templates = emptyList()
-            onError(s.tool("error_load_messages"))
-        }
-
-        isLoadingTemplates = false
+        occurrences = loadByStatus(context, coordinator, toolInstanceId, "pending", onError).sortedBy { it.dueAt }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            // Templates list
-            if (isLoadingTemplates) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (occurrences.isEmpty()) {
+            UI.Text(s.tool("empty_upcoming"), TextType.CAPTION, fillMaxWidth = true)
+            return@Column
+        }
+
+        occurrences.forEach { occurrence ->
+            UI.Card(type = CardType.DEFAULT) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    UI.Text(s.shared("tools_loading"), TextType.BODY)
-                }
-            } else if (templates.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    UI.Text(s.tool("empty_templates"), TextType.BODY)
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(templates) { template ->
-                        TemplateCard(
-                            template = template,
-                            defaultPriority = defaultPriority,
-                            onEdit = {
-                                editingMessageId = template.id
-                                showMessageDialog = true
-                            },
-                            onDelete = {
-                                coroutineScope.launch {
-                                    deleteTemplate(coordinator, template.id, onRefresh, onError)
+                    UI.Text(s.tool("occurrence_due_at").format(formatMoment(occurrence.dueAt)), TextType.CAPTION)
+
+                    // A pending occurrence shows only what was written for it. The common part is
+                    // not shown as if it were already copied in, because it is not: it is read
+                    // from the template at send time, so editing the template still reaches this.
+                    val ownParts = listOfNotNull(occurrence.ownTitle, occurrence.ownContent)
+                    if (ownParts.isEmpty()) {
+                        UI.Text(s.tool("occurrence_nothing_written"), TextType.CAPTION)
+                    } else {
+                        occurrence.ownTitle?.let { UI.Text(it, TextType.SUBTITLE) }
+                        occurrence.ownContent?.let { UI.Text(it, TextType.BODY) }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        UI.ActionButton(
+                            action = ButtonAction.EDIT,
+                            display = ButtonDisplay.ICON,
+                            onClick = { editing = occurrence }
+                        )
+                        UI.ActionButton(
+                            action = ButtonAction.DELETE,
+                            display = ButtonDisplay.ICON,
+                            requireConfirmation = true,
+                            confirmMessage = s.tool("delete_occurrence_confirm"),
+                            onClick = {
+                                scope.launch {
+                                    val result = coordinator.processUserAction(
+                                        "tool_data.delete",
+                                        mapOf("id" to occurrence.id)
+                                    )
+                                    if (!result.isSuccess) {
+                                        onError(result.error ?: s.tool("error_delete"))
+                                    }
                                 }
                             }
                         )
@@ -625,544 +406,128 @@ private fun ManageMessagesTab(
                 }
             }
         }
+    }
 
-        // FAB: Add new message
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            UI.Button(
-                type = ButtonType.PRIMARY,
-                size = Size.M,
-                onClick = {
-                    editingMessageId = null
-                    showMessageDialog = true
-                }
-            ) {
-                UI.Text(s.tool("action_add_message"), TextType.LABEL)
-            }
-        }
-
-        // Edit/Create Message Dialog
-        if (showMessageDialog) {
-            // Find message data if editing
-            val editingTemplate = templates.find { it.id == editingMessageId }
-            val initialMessage = editingTemplate?.let {
-                MessageDialogData(
-                    id = it.id,
-                    title = it.title,
-                    content = it.content,
-                    schedule = it.schedule,
-                    priority = it.priority,
-                    customFields = it.customFields
-                )
-            }
-
-            EditMessageDialog(
-                isVisible = showMessageDialog,
-                toolInstanceId = toolInstanceId,
-                defaultPriority = defaultPriority,
-                initialMessage = initialMessage,
-                onConfirm = { title, content, schedule, priority, customFields ->
-                    if (editingMessageId == null) {
-                        // Create new message
-                        createMessage(
-                            coordinator,
-                            toolInstanceId,
-                            title,
-                            content,
-                            schedule,
-                            priority,
-                            customFields,
-                            onSuccess = {
-                                showMessageDialog = false
-                                onRefresh()
-                            },
-                            onError
-                        )
-                    } else {
-                        // Update existing message
-                        updateMessage(
-                            coordinator,
-                            editingMessageId!!,
-                            title,
-                            content,
-                            schedule,
-                            priority,
-                            customFields,
-                            onSuccess = {
-                                showMessageDialog = false
-                                onRefresh()
-                            },
-                            onError
-                        )
-                    }
-                    true // Always return success (errors handled in callbacks)
-                },
-                onCancel = {
-                    showMessageDialog = false
-                    editingMessageId = null
-                }
-            )
-        }
+    editing?.let { occurrence ->
+        EditOccurrenceDialog(
+            toolInstanceId = toolInstanceId,
+            occurrence = occurrence,
+            onDismiss = { editing = null },
+            onSaved = { editing = null },
+            onError = onError
+        )
     }
 }
 
+// ========================================
+// Reading and writing occurrences
+// ========================================
+
 /**
- * Card displaying a single message template
+ * Loads the occurrences of one instance in a given state.
+ *
+ * Goes through the status filter rather than pulling everything and sorting it out here: the
+ * history of a long-running reminder is unbounded, and the screen only ever shows one state.
  */
-@Composable
-private fun TemplateCard(
-    template: MessageTemplate,
-    defaultPriority: String,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val context = LocalContext.current
-    val s = remember { Strings.`for`(tool = "messages", context = context) }
+private suspend fun loadByStatus(
+    context: android.content.Context,
+    coordinator: Coordinator,
+    toolInstanceId: String,
+    status: String,
+    onError: (String) -> Unit
+): List<Occurrence> {
+    val result = coordinator.processUserAction(
+        "tool_data.get",
+        mapOf("toolInstanceId" to toolInstanceId, "status" to status)
+    )
 
-    UI.Card(type = CardType.DEFAULT) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Title
-            UI.Text(template.title, TextType.SUBTITLE)
-
-            // Schedule summary
-            val scheduleSummary = remember(template.schedule) {
-                getScheduleSummary(template.schedule, s.tool("schedule_summary_on_demand"))
-            }
-            UI.Text(scheduleSummary, TextType.CAPTION)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Priority badge (if different from default)
-                    if (template.priority != defaultPriority) {
-                        val priorityText = when (template.priority) {
-                            "high" -> s.tool("priority_high")
-                            "low" -> s.tool("priority_low")
-                            else -> s.tool("priority_default")
-                        }
-                        UI.Text(priorityText, TextType.CAPTION)
-                    }
-
-                    // Execution count
-                    UI.Text(
-                        s.tool("schedule_executions_count").format(template.executionCount),
-                        TextType.CAPTION
-                    )
-                }
-
-                // Actions
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    UI.ActionButton(
-                        action = ButtonAction.EDIT,
-                        display = ButtonDisplay.ICON,
-                        size = Size.S,
-                        onClick = onEdit
-                    )
-
-                    UI.ActionButton(
-                        action = ButtonAction.DELETE,
-                        display = ButtonDisplay.ICON,
-                        size = Size.S,
-                        requireConfirmation = true,
-                        confirmMessage = s.tool("delete_message_confirm"),
-                        onClick = onDelete
-                    )
-                }
-            }
-        }
+    if (!result.isSuccess) {
+        LogManager.ui("Failed to load $status occurrences: ${result.error}", "ERROR")
+        onError(result.error ?: Strings.`for`(tool = "messages", context = context).tool("error_load_occurrences"))
+        return emptyList()
     }
-}
 
-// ============================================================================
-// Helper functions
-// ============================================================================
+    @Suppress("UNCHECKED_CAST")
+    val entries = (result.data?.get("entries") as? List<Map<String, Any>>) ?: emptyList()
+    val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-/**
- * Parse execution entries from tool_executions.get result
- */
-private fun parseExecutionEntries(data: List<*>?): List<ExecutionEntry> {
-    if (data == null) return emptyList()
+    return entries.mapNotNull { entry ->
+        val id = entry["id"] as? String ?: return@mapNotNull null
+        val iso = entry["timestamp"] as? String ?: return@mapNotNull null
+        val dataJson = entry["data"] as? String ?: return@mapNotNull null
 
-    return data.mapNotNull { item ->
         try {
-            val execution = item as? Map<*, *> ?: return@mapNotNull null
+            val data = JSONObject(dataJson)
+            val customFields = (entry["custom_fields"] as? String)?.let { JSONObject(it).toValueMap() } ?: emptyMap()
 
-            val executionId = execution["id"] as? String ?: return@mapNotNull null
-            val templateDataId = execution["templateDataId"] as? String ?: return@mapNotNull null
-
-            // Parse timestamps: service returns ISO 8601 strings
-            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
-            val scheduledTime = (execution["scheduledTime"] as? String)?.let {
-                DateTimeConverter.isoToTimestamp(it, timezone)
-            } ?: return@mapNotNull null
-            val executionTime = (execution["executionTime"] as? String)?.let {
-                DateTimeConverter.isoToTimestamp(it, timezone)
-            } ?: return@mapNotNull null
-            val status = execution["status"] as? String ?: "pending"
-
-            // Parse snapshotData JSON
-            val snapshotDataStr = execution["snapshotData"] as? String ?: "{}"
-            val snapshotData = JSONObject(snapshotDataStr)
-            val titleSnapshot = snapshotData.optString("title", "")
-            val contentSnapshot = snapshotData.optString("content", null)
-
-            // Parse custom fields values from snapshot
-            val customFieldsSnapshot = try {
-                val customFieldsJson = snapshotData.optJSONObject("custom_fields")
-                if (customFieldsJson != null) {
-                    val fields = mutableMapOf<String, Any?>().apply {
-                        customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
-                    }
-                    LogManager.ui("parseExecutionEntries - Parsed ${fields.size} custom field values for execution $executionId")
-                    fields
-                } else {
-                    LogManager.ui("parseExecutionEntries - No custom_fields in snapshot for execution $executionId")
-                    emptyMap()
-                }
-            } catch (e: Exception) {
-                LogManager.ui("Error parsing execution custom fields: ${e.message}", "ERROR")
-                emptyMap<String, Any?>()
-            }
-
-            // Parse custom fields metadata from snapshot (field definitions)
-            val customFieldsMetadata = try {
-                val metadataArray = snapshotData.optJSONArray("custom_fields_metadata")
-                if (metadataArray != null) {
-                    val metadata = metadataArray.toFieldDefinitions()
-                    LogManager.ui("parseExecutionEntries - Parsed ${metadata.size} custom field definitions for execution $executionId")
-                    metadata
-                } else {
-                    LogManager.ui("parseExecutionEntries - No custom_fields_metadata in snapshot for execution $executionId")
-                    emptyList()
-                }
-            } catch (e: Exception) {
-                LogManager.ui("Error parsing execution custom fields metadata: ${e.message}", "ERROR")
-                emptyList()
-            }
-
-            // Parse executionResult JSON for read/archived flags
-            val executionResultStr = execution["executionResult"] as? String ?: "{}"
-            val executionResult = JSONObject(executionResultStr)
-            val read = executionResult.optBoolean("read", false)
-            val archived = executionResult.optBoolean("archived", false)
-
-            ExecutionEntry(
-                executionId = executionId,
-                templateDataId = templateDataId,
-                scheduledTime = scheduledTime,
-                executionTime = executionTime,
-                status = status,
-                titleSnapshot = titleSnapshot,
-                contentSnapshot = contentSnapshot,
-                read = read,
-                archived = archived,
-                customFieldsSnapshot = customFieldsSnapshot,
-                customFieldsMetadata = customFieldsMetadata
+            Occurrence(
+                id = id,
+                dueAt = DateTimeConverter.isoToTimestamp(iso, timezone),
+                status = data.optString("status", "pending"),
+                commonTitle = data.optString("common_title").takeIf { it.isNotEmpty() },
+                commonContent = data.optString("common_content").takeIf { it.isNotEmpty() },
+                ownTitle = data.optString("title").takeIf { it.isNotEmpty() },
+                ownContent = data.optString("content").takeIf { it.isNotEmpty() },
+                read = data.optBoolean("read", false),
+                archived = data.optBoolean("archived", false),
+                notificationSent = data.optBoolean("notification_sent", true),
+                customFields = customFields
             )
         } catch (e: Exception) {
-            LogManager.ui("Error parsing execution entry: ${e.message}", "ERROR")
+            LogManager.ui("Unreadable occurrence $id, skipped: ${e.message}", "ERROR", e)
             null
         }
     }
 }
 
 /**
- * Parse message template from tool_data entry
+ * Flips a read or archived flag on a resolved occurrence.
+ *
+ * A plain tool_data.update, like correcting any other entry — the occurrence is ordinary data,
+ * so it needs no dedicated service operation to be marked read.
  */
-private fun parseMessageTemplate(map: Map<*, *>?): MessageTemplate? {
-    if (map == null) return null
-
-    try {
-        val id = map["id"] as? String ?: return null
-
-        // Get title from entity-level "name" field (not from data.title)
-        val title = map["name"] as? String ?: return null
-
-        // Parse data field (can be String or Map)
-        val dataValue = map["data"]
-        val parsedData = when (dataValue) {
-            is Map<*, *> -> dataValue as Map<String, Any>
-            is String -> {
-                val dataJson = JSONObject(dataValue)
-                mutableMapOf<String, Any>().apply {
-                    dataJson.keys().forEach { key -> put(key, dataJson.get(key)) }
-                }
-            }
-            else -> return null
-        }
-        val content = parsedData["content"] as? String?
-        val priority = parsedData["priority"] as? String ?: "default"
-
-        // Parse schedule (can be null, Map, or JSONObject)
-        val schedule = parsedData["schedule"]?.let { scheduleValue ->
-            try {
-                // Convert to JSON string if needed
-                val scheduleJsonStr = when (scheduleValue) {
-                    is String -> scheduleValue
-                    is Map<*, *> -> JSONObject(scheduleValue as Map<String, Any>).toString()
-                    is JSONObject -> scheduleValue.toString()
-                    else -> null
-                }
-
-                // Deserialize using kotlinx.serialization
-                if (scheduleJsonStr != null && scheduleJsonStr != "null") {
-                    kotlinx.serialization.json.Json.decodeFromString<ScheduleConfig>(scheduleJsonStr)
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                LogManager.ui("Error parsing schedule: ${e.message}", "WARN")
-                null
-            }
-        }
-
-        // Count executions - we'll need to fetch this from tool_executions service
-        // For now, set to 0 since executions are now in separate table
-        val executionCount = 0
-
-        // Load custom fields
-        val customFieldsData = map["custom_fields"]
-        val customFields = try {
-            when (customFieldsData) {
-                is Map<*, *> -> customFieldsData as Map<String, Any?>
-                is String -> {
-                    val customFieldsJson = JSONObject(customFieldsData)
-                    mutableMapOf<String, Any?>().apply {
-                        customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
-                    }
-                }
-                else -> emptyMap()
-            }
-        } catch (e: Exception) {
-            LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
-            emptyMap<String, Any?>()
-        }
-
-        return MessageTemplate(id, title, content, schedule, priority, executionCount, customFields)
-    } catch (e: Exception) {
-        LogManager.ui("Error parsing message template: ${e.message}", "ERROR")
-        return null
-    }
-}
-
-/**
- * Get schedule summary text
- * Pass strings context from caller for translations
- */
-private fun getScheduleSummary(schedule: ScheduleConfig?, onDemandText: String): String {
-    if (schedule == null) return onDemandText
-    // TODO: Use ScheduleFormatter when available
-    return when (schedule.pattern) {
-        is com.assistant.core.utils.SchedulePattern.DailyMultiple -> "Quotidien"
-        is com.assistant.core.utils.SchedulePattern.WeeklySimple -> "Hebdomadaire"
-        is com.assistant.core.utils.SchedulePattern.MonthlyRecurrent -> "Mensuel"
-        is com.assistant.core.utils.SchedulePattern.WeeklyCustom -> "Hebdomadaire personnalisé"
-        is com.assistant.core.utils.SchedulePattern.YearlyRecurrent -> "Annuel"
-        is com.assistant.core.utils.SchedulePattern.SpecificDates -> "Dates spécifiques"
-    }
-}
-
-/**
- * Toggle execution read status
- */
-private suspend fun toggleExecutionRead(
+private suspend fun updateFlags(
+    context: android.content.Context,
     coordinator: Coordinator,
-    execution: ExecutionEntry,
+    occurrence: Occurrence,
+    read: Boolean? = null,
+    archived: Boolean? = null,
     onError: (String) -> Unit
 ) {
-    val params = mapOf(
-        "execution_id" to execution.executionId,
-        "read" to !execution.read
+    val data = JSONObject().apply {
+        read?.let { put("read", it) }
+        archived?.let { put("archived", it) }
+    }
+
+    val result = coordinator.processUserAction(
+        "tool_data.update",
+        mapOf("id" to occurrence.id, "data" to data)
     )
 
-    val result = coordinator.processUserAction("messages.mark_read", params)
-    if (result?.isSuccess != true) {
-        onError(result?.error ?: "Failed to update read status")
+    if (!result.isSuccess) {
+        LogManager.ui("Failed to update occurrence ${occurrence.id}: ${result.error}", "ERROR")
+        onError(result.error ?: Strings.`for`(tool = "messages", context = context).tool("error_mark_read"))
     }
 }
 
-/**
- * Toggle execution archived status
- */
-private suspend fun toggleExecutionArchived(
-    coordinator: Coordinator,
-    execution: ExecutionEntry,
-    onError: (String) -> Unit
-) {
-    val params = mapOf(
-        "execution_id" to execution.executionId,
-        "archived" to !execution.archived
-    )
-
-    val result = coordinator.processUserAction("messages.mark_archived", params)
-    if (result?.isSuccess != true) {
-        onError(result?.error ?: "Failed to update archived status")
-    }
-}
-
-/**
- * Create new message template
- */
-private suspend fun createMessage(
-    coordinator: Coordinator,
-    toolInstanceId: String,
-    title: String,
-    content: String?,
-    schedule: ScheduleConfig?,
-    priority: String,
-    customFields: Map<String, Any?>,
-    onSuccess: () -> Unit,
-    onError: (String) -> Unit
-) {
-    // Serialize ScheduleConfig to JSON if present
-    val scheduleJson = schedule?.let {
-        // Configure JSON to encode defaults (timezone, enabled, etc.)
-        val json = kotlinx.serialization.json.Json {
-            encodeDefaults = true
+/** Recursive JSONObject to a plain map, for custom field values. */
+private fun JSONObject.toValueMap(): Map<String, Any?> {
+    val map = mutableMapOf<String, Any?>()
+    keys().forEach { key ->
+        map[key] = when (val value = get(key)) {
+            is JSONObject -> value.toValueMap()
+            JSONObject.NULL -> null
+            else -> value
         }
-        val jsonString = json.encodeToString(
-            ScheduleConfig.serializer(),
-            it
-        )
-        JSONObject(jsonString)
     }
-
-    val dataJson = JSONObject().apply {
-        put("content", content)
-        put("schedule", scheduleJson ?: JSONObject.NULL)
-        put("priority", priority)
-        put("triggers", JSONObject.NULL)
-        // executions auto-initialized by service
-        // Note: title is stored at entity level as "name", not in data
-    }
-
-    val params = mutableMapOf<String, Any>(
-        "toolInstanceId" to toolInstanceId,
-        "tooltype" to "messages",
-        "schema_id" to "messages_data",  // Schema ID at params level, not in data
-        "name" to title,  // Use title as name in tool_data
-        "timestamp" to System.currentTimeMillis(),
-        "data" to dataJson  // JSONObject, not .toString()
-    )
-
-    // Add custom fields if any
-    if (customFields.isNotEmpty()) {
-        params["custom_fields"] = JSONObject(customFields)
-    }
-
-    val result = coordinator.processUserAction("tool_data.create", params)
-    if (result?.isSuccess == true) {
-        onSuccess()
-    } else {
-        onError(result?.error ?: "Failed to create message")
-    }
+    return map
 }
 
-/**
- * Update existing message template
- */
-private suspend fun updateMessage(
-    coordinator: Coordinator,
-    messageId: String,
-    title: String,
-    content: String?,
-    schedule: ScheduleConfig?,
-    priority: String,
-    customFields: Map<String, Any?>,
-    onSuccess: () -> Unit,
-    onError: (String) -> Unit
-) {
-    // Serialize ScheduleConfig to JSON if present
-    val scheduleJson = schedule?.let {
-        // Configure JSON to encode defaults (timezone, enabled, etc.)
-        val json = kotlinx.serialization.json.Json {
-            encodeDefaults = true
-        }
-        val jsonString = json.encodeToString(
-            ScheduleConfig.serializer(),
-            it
-        )
-        JSONObject(jsonString)
-    }
-
-    val dataJson = JSONObject().apply {
-        put("content", content)
-        put("schedule", scheduleJson ?: JSONObject.NULL)
-        put("priority", priority)
-        put("triggers", JSONObject.NULL)
-        // executions preserved by service
-        // Note: title is stored at entity level as "name", not in data
-    }
-
-    val params = mutableMapOf<String, Any>(
-        "id" to messageId,
-        "schema_id" to "messages_data",  // Schema ID at params level, not in data
-        "name" to title,  // Update name in tool_data as well
-        "data" to dataJson  // JSONObject, not .toString()
-    )
-
-    // Add custom fields if any
-    if (customFields.isNotEmpty()) {
-        params["custom_fields"] = JSONObject(customFields)
-    }
-
-    val result = coordinator.processUserAction("tool_data.update", params)
-    if (result?.isSuccess == true) {
-        onSuccess()
-    } else {
-        onError(result?.error ?: "Failed to update message")
-    }
-}
-
-/**
- * Get execution count for a specific message template
- */
-private suspend fun getExecutionCountForTemplate(
-    coordinator: Coordinator,
-    toolInstanceId: String,
-    templateDataId: String
-): Int {
-    try {
-        val params = mapOf(
-            "toolInstanceId" to toolInstanceId,
-            "templateDataId" to templateDataId
-        )
-        val result = coordinator.processUserAction("tool_executions.get", params)
-        if (result?.isSuccess == true) {
-            @Suppress("UNCHECKED_CAST")
-            val executions = result.data?.get("executions") as? List<Map<String, Any>> ?: emptyList()
-            return executions.size
-        }
-    } catch (e: Exception) {
-        LogManager.ui("Error getting execution count for template $templateDataId: ${e.message}", "ERROR")
-    }
-    return 0
-}
-
-/**
- * Delete message template
- */
-private suspend fun deleteTemplate(
-    coordinator: Coordinator,
-    messageId: String,
-    onSuccess: () -> Unit,
-    onError: (String) -> Unit
-) {
-    val params = mapOf("id" to messageId)
-    val result = coordinator.processUserAction("tool_data.delete", params)
-    if (result?.isSuccess == true) {
-        onSuccess()
-    } else {
-        onError(result?.error ?: "Failed to delete message")
-    }
+/** A moment as the user reads it, in the timezone the app is configured for. */
+private fun formatMoment(timestamp: Long): String {
+    val zone = AppConfigManager.getDateTimeConfig().getZoneId()
+    return DateTimeFormatter
+        .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+        .withZone(zone)
+        .format(Instant.ofEpochMilli(timestamp))
 }

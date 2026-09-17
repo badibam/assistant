@@ -9,6 +9,7 @@
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name"></string>
     <string name="schema_data_display_name"></string>
+    <string name="schema_config_description">Schéma de validation du modèle de message</string>
     <string name="schema_data_description">Schéma de validation des occurrences (envois) d\'un message</string>
 
     <!-- SCHEMAS CONFIG - Le modèle du message (part invariante de chaque envoi) -->
@@ -17,7 +18,6 @@
     <string name="schema_config_common_content">Corps commun à chaque notification (optionnel, composé avec le contenu propre à l\'envoi)</string>
     <string name="schema_config_priority">Priorité des notifications de ce message (default, high, low)</string>
     <string name="schema_config_external_notifications">Afficher notifications système Android</string>
-    <string name="schema_config_schedule">Récurrence qui engendre les occurrences (absent = canal alimenté uniquement à la demande)</string>
     <string name="schema_config_creation_horizon_days">Nombre de jours d\'occurrences créées à l\'avance, pour laisser le temps de les remplir</string>
     <string name="schema_config_validity_window_minutes">Retard au-delà duquel une occurrence non partie expire au lieu d\'être envoyée</string>
 
@@ -49,7 +49,6 @@
     <string name="field_read">Lu</string>
     <string name="field_archived">Archivé</string>
     <string name="field_triggered_by">Déclenché par</string>
-    <string name="field_unknown">Champ non reconnu</string>
 
     <!-- LABELS - UI labels -->
     <string name="label_schedule">Planning</string>
@@ -69,22 +68,22 @@
     <string name="priority_low">Basse (silencieuse)</string>
 
     <!-- TABS - Onglets de l'écran principal -->
-    <string name="tab_received_messages">Messages reçus</string>
-    <string name="tab_manage_messages">Gestion messages</string>
+    <string name="tab_received_messages">Reçus</string>
+    <string name="tab_upcoming">À venir</string>
 
-    <!-- FILTERS - Filtres messages reçus -->
+    <!-- FILTERS - Filtres des occurrences reçues -->
     <string name="filter_unread">Non lus</string>
     <string name="filter_read">Lus</string>
     <string name="filter_archived">Archivés</string>
+    <string name="filter_not_delivered">Non parvenus</string>
 
-    <!-- STATUS - Badges statut execution -->
-    <string name="status_pending">En attente</string>
-    <string name="status_sent">Envoyé</string>
-    <string name="status_failed">Échec</string>
+    <!-- STATUS - Badges d'état d'une occurrence -->
+    <string name="status_expired">Expiré</string>
+    <string name="status_cancelled">Annulé</string>
+    <string name="status_notification_failed">Notification non partie</string>
     <string name="badge_unread">Non lu</string>
 
     <!-- SCHEDULE - Résumés de planning -->
-    <string name="schedule_summary_on_demand">À la demande</string>
     <string name="schedule_summary_not_configured">Aucune récurrence : rien ne part tout seul</string>
     <string name="schedule_summary_daily">Chaque jour, %1$d fois</string>
     <string name="schedule_summary_weekly">Chaque semaine</string>
@@ -93,17 +92,17 @@
     <string name="schedule_summary_yearly">Chaque année</string>
     <string name="schedule_summary_specific_dates">Dates précises</string>
 
-    <!-- DIALOG - Édition/création de message -->
-    <string name="create_message_title">Créer un message</string>
-    <string name="edit_message_title">Modifier le message</string>
-    <string name="label_title">Titre</string>
-    <string name="label_content">Contenu (optionnel)</string>
+    <!-- DIALOG - Préparation d'un envoi à venir -->
+    <string name="edit_occurrence_title">Préparer cet envoi</string>
+    <string name="edit_occurrence_hint">Ce qui est écrit ici s\'ajoute au titre et au corps communs du message.</string>
+    <string name="label_title">Titre du jour</string>
+    <string name="label_content">Contenu du jour</string>
     <string name="label_priority">Priorité</string>
-    <string name="action_configure_schedule">Configurer planning</string>
-    <string name="label_triggers_stub">Déclencheurs événementiels (à venir)</string>
+    <string name="action_configure_schedule">Configurer la récurrence</string>
+    <string name="occurrence_due_at">Prévu le %1$s</string>
+    <string name="occurrence_nothing_written">Rien d\'écrit pour cet envoi : seule la part commune partira</string>
 
     <!-- ACTIONS - Actions spécifiques -->
-    <string name="action_add_message">Ajouter un message</string>
     <string name="action_mark_read">Marquer comme lu</string>
     <string name="action_mark_unread">Marquer comme non lu</string>
     <string name="action_archive">Archiver</string>
@@ -111,16 +110,15 @@
 
     <!-- EMPTY STATES - États vides -->
     <string name="empty_received_messages">Aucun message reçu</string>
-    <string name="empty_templates">Aucun message configuré</string>
+    <string name="empty_upcoming">Rien de prévu pour l\'instant</string>
 
     <!-- CONFIRMATIONS - Messages de confirmation -->
-    <string name="delete_message_confirm">Supprimer ce message et tout son historique ?</string>
+    <string name="delete_occurrence_confirm">Supprimer cet envoi à venir ?</string>
 
     <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
     <string name="error_config_load">Erreur lors du chargement de la configuration</string>
     <string name="error_config_not_found">Impossible de charger la configuration existante</string>
-    <string name="error_load_messages">Erreur lors du chargement des messages</string>
-    <string name="error_load_executions">Erreur lors du chargement de l\'historique</string>
+    <string name="error_load_occurrences">Erreur lors du chargement des envois</string>
     <string name="error_save">Erreur lors de la sauvegarde</string>
     <string name="error_mark_read">Erreur lors du changement de statut</string>
     <string name="error_delete">Erreur lors de la suppression</string>
