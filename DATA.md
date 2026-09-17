@@ -57,8 +57,7 @@ data class NavigationConfig(
     val allowedContexts: List<PointerContext> = listOf(
         PointerContext.GENERIC,
         PointerContext.CONFIG,
-        PointerContext.DATA,
-        PointerContext.EXECUTIONS
+        PointerContext.DATA
     ),                                               // Contextes disponibles
     val defaultContext: PointerContext = PointerContext.GENERIC,  // Contexte par défaut
 
@@ -75,9 +74,7 @@ Contexte explicite pour désambiguïser les requêtes de données :
 - **GENERIC** : Référence floue, aucun command automatique, période optionnelle pour contexte IA
 - **CONFIG** : Configuration d'outils, pas de période temporelle
 - **DATA** : Données métier (tool_data), période optionnelle sur `tool_data.timestamp`
-- **EXECUTIONS** : Historique d'exécutions (tool_executions), période optionnelle sur `tool_executions.executionTime`
 
-**Filtrage dynamique** : EXECUTIONS visible uniquement si `toolType.supportsExecutions() == true`.
 
 #### Cas d'usage
 
@@ -90,8 +87,7 @@ NavigationConfig(
     allowedContexts = listOf(
         PointerContext.GENERIC,
         PointerContext.CONFIG,
-        PointerContext.DATA,
-        PointerContext.EXECUTIONS
+        PointerContext.DATA
     ),
     defaultContext = PointerContext.GENERIC,
     useRelativeLabels = false
@@ -143,7 +139,6 @@ data class SelectionResult(
 - GENERIC : `[]` (vide, pas de query automatique)
 - CONFIG : `["config", "config_schema"]` disponibles
 - DATA : `["data", "data_schema"]` disponibles, `["data"]` coché par défaut
-- EXECUTIONS : `["executions", "executions_schema"]` disponibles, `["executions"]` coché par défaut
 
 **Périodes** : Stockées dans `timestampSelection` (non visible dans SelectionResult, géré en interne par ZoneScopeSelector)
 

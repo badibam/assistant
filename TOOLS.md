@@ -26,9 +26,9 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l'uti
 - **Définitions** : Dans `custom_fields` array de la config (name, display_name, type, always_visible)
 - **Valeurs** : Dans `custom_fields` object des données (clé = name du champ)
 - **Types** : V1 supporte `TEXT_UNLIMITED` uniquement (source unique : `FieldType` enum)
-- **Validation** : Intégrée automatiquement dans les schémas data/execution enrichis
+- **Validation** : Intégrée automatiquement dans les schémas data enrichis
 
-**Pattern** : Les schémas data/execution nécessitent `toolInstanceId` pour enrichissement avec custom fields.
+**Pattern** : Les schémas data nécessitent `toolInstanceId` pour enrichissement avec custom fields.
 
 ## Architecture Outil
 
@@ -93,19 +93,24 @@ Class implémentant ToolTypeContract avec :
 ```kotlin
 override fun enrichData(data: Map<String, Any>, context: Context): Map<String, Any> {
     // Calculs, validations, enrichissements automatiques
-    // Exemple Messages : schedule config → nextExecutionTime
+    // Exemple Tracking : valeur brute → champ d'affichage formaté
     return enrichedData
 }
 ```
 
 **Usage** : Unifié UI + IA, logique pré-persistence sans interception manuelle.
 
-### supportsExecutions Pattern
-**Principe** : Outils avec historique d'exécutions (Messages, Goals, Alerts...) implémentent `supportsExecutions() = true`.
+### Tooltypes passifs et actifs
 
-**Infrastructure** : Table `tool_executions` centralise l'historique (template_data_id, execution_time, snapshot_data, execution_result). Schéma execution défini par `createXxxExecutionSchema()` (structure snapshot_data + execution_result + metadata).
+**Principe** : il n'y a que deux plans de données. La **config** est ce que l'outil *est* (sa définition : template, formule, planning) ; **tool_data** est tout ce qu'il *enregistre ou produit* (saisies, occurrences, résultats). Pas de troisième plan — l'audit technique des échecs relève du système de logs.
 
-**UI** : EXECUTIONS context disponible dans ZoneScopeSelector pour enrichments POINTER. Service `tool_executions.*` gère CRUD historique.
+**Passifs** (Tracking, Journal, Note) : l'utilisateur écrit dans tool_data.
+
+**Actifs** (Messages, futurs Calcul, Alertes, Objectifs) : le système écrit dans tool_data, piloté par la config. Un tooltype actif expose une opération `execute` (`{tooltype}.execute` avec `tool_instance_id`) et généralement un `getScheduler()`. Ses occurrences sont des entrées tool_data ordinaires : requêtables, statistiquables, migrables, visibles par l'IA, comme n'importe quelle autre entrée.
+
+**Occurrences à cycle de vie** : une occurrence n'est pas forcément instantanée. Elle peut vivre (créée → active → close), auquel cas son schéma data porte un champ `status` et ses exigences en dépendent. Le filtre `status` de `tool_data.get` existe pour ces tooltypes-là.
+
+**Raisonnement complet** : `SPECS_REFONTE_EXECUTIONS.md`.
 
 ### Enregistrement
 Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
@@ -155,8 +160,9 @@ Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 **Configuration** : Template, catégories
 
 ### Message (Message)
-**Usage** : Notifications et rappels planifiés
-**Configuration** : Fréquence, contenu, conditions
+**Usage** : Un message de notification et ses envois
+**Configuration** : Titre et corps communs, priorité, récurrence, jours d'avance de création, fenêtre de validité
+**Données** : Une entrée par envoi (`pending`, `sent`, `expired`, `cancelled`), portant la part écrite pour ce jour-là et, une fois parti, la part commune recopiée
 
 ### Alerte (Alert)
 **Usage** : Déclenchement automatique sur seuils
@@ -178,7 +184,7 @@ Validation unifiée pour tous les types d'outils via SchemaValidator.
 
 ### API Standard
 - Récupération ToolType via ToolTypeManager.getToolType()
-- Récupération schémas : `getSchema(schemaId, context, toolInstanceId)` - toolInstanceId **requis** pour data/execution schemas (enrichissement custom fields)
+- Récupération schémas : `getSchema(schemaId, context, toolInstanceId)` - toolInstanceId **requis** pour les schémas data (enrichissement custom fields)
 - Validation données métier avec schemaType = "data"
 - Validation configuration avec schemaType = "config"
 - Gestion résultat : isValid et errorMessage traduit automatiquement
