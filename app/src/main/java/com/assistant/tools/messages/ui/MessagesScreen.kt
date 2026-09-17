@@ -250,12 +250,12 @@ private fun ReceivedTab(
             }
         )
 
+        // No early return here: Column's content lambda is inline, so a non-local return skips
+        // the rest of the lambda and leaves the composition groups unbalanced — it crashes on
+        // the next recomposition rather than where the mistake is.
         if (occurrences.isEmpty()) {
             UI.Text(s.tool("empty_received_messages"), TextType.CAPTION, fillMaxWidth = true)
-            return@Column
-        }
-
-        occurrences.forEach { occurrence ->
+        } else occurrences.forEach { occurrence ->
             ReceivedCard(
                 occurrence = occurrence,
                 s = s,
@@ -357,10 +357,7 @@ private fun UpcomingTab(
     ) {
         if (occurrences.isEmpty()) {
             UI.Text(s.tool("empty_upcoming"), TextType.CAPTION, fillMaxWidth = true)
-            return@Column
-        }
-
-        occurrences.forEach { occurrence ->
+        } else occurrences.forEach { occurrence ->
             UI.Card(type = CardType.DEFAULT) {
                 Column(
                     modifier = Modifier.padding(16.dp),
