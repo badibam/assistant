@@ -54,9 +54,14 @@
     <!-- LABELS - UI labels -->
     <string name="label_schedule">Planning</string>
 
-    <!-- CONFIG SCREEN - Configuration de l'instance -->
-    <string name="label_default_priority">Priorité par défaut</string>
+    <!-- CONFIG SCREEN - Le modèle du message -->
+    <string name="label_enabled">Actif</string>
+    <string name="label_common_title">Titre commun</string>
+    <string name="label_common_content">Corps commun</string>
     <string name="label_external_notifications">Afficher notifications système</string>
+    <string name="label_creation_horizon_days">Occurrences créées à l\'avance (jours)</string>
+    <string name="label_validity_window_minutes">Ne plus envoyer passé un retard de (minutes)</string>
+    <string name="hint_common_parts">Ces deux champs partent sur chaque notification. Un message qui ne varie jamais n\'a besoin de rien d\'autre.</string>
 
     <!-- PRIORITY - Options de priorité -->
     <string name="priority_default">Normale</string>
@@ -80,8 +85,13 @@
 
     <!-- SCHEDULE - Résumés de planning -->
     <string name="schedule_summary_on_demand">À la demande</string>
-    <string name="schedule_summary_not_configured">Pas de planning configuré</string>
-    <string name="schedule_executions_count">%1$d envois</string>
+    <string name="schedule_summary_not_configured">Aucune récurrence : rien ne part tout seul</string>
+    <string name="schedule_summary_daily">Chaque jour, %1$d fois</string>
+    <string name="schedule_summary_weekly">Chaque semaine</string>
+    <string name="schedule_summary_weekly_custom">Chaque semaine, horaires variables</string>
+    <string name="schedule_summary_monthly">Chaque mois</string>
+    <string name="schedule_summary_yearly">Chaque année</string>
+    <string name="schedule_summary_specific_dates">Dates précises</string>
 
     <!-- DIALOG - Édition/création de message -->
     <string name="create_message_title">Créer un message</string>

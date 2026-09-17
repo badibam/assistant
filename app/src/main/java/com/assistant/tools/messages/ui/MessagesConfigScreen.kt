@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
 import com.assistant.core.utils.LogManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -20,17 +22,24 @@ import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toJsonArray
 import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
+import com.assistant.core.ai.ui.automation.ScheduleConfigEditor
+import com.assistant.core.utils.ScheduleConfig
+import com.assistant.core.utils.SchedulePattern
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 /**
- * Configuration screen for Messages tool type
+ * Configuration screen for the Messages tool type.
  *
- * Displays:
- * - General tool configuration (ToolGeneralConfigSection)
- * - Messages-specific fields (default_priority, external_notifications)
+ * This screen IS the message. An instance is one notification template, so everything that
+ * does not change from one send to the next lives here: the common title and body, the
+ * priority of the channel, the recurrence that spawns occurrences, and the two knobs that
+ * govern their lifecycle. What changes per send is written on the occurrence itself, in the
+ * usage screen.
  *
- * Pattern reference: NotesConfigScreen (minimal configuration)
+ * A reminder whose text never varies needs nothing beyond the common part — which is why the
+ * common title and body sit at the top, before the recurrence.
  */
 @Composable
 fun MessagesConfigScreen(
@@ -59,9 +68,16 @@ fun MessagesConfigScreen(
     var alwaysSend by remember { mutableStateOf(false) }
     var group by remember { mutableStateOf<String?>(null) }
 
-    // Messages-specific configuration states
-    var defaultPriority by remember { mutableStateOf("default") }
-    var externalNotifications by remember { mutableStateOf(true) }
+    // Messages-specific configuration states — the template itself
+    var enabled by rememberSaveable { mutableStateOf(true) }
+    var commonTitle by rememberSaveable { mutableStateOf("") }
+    var commonContent by rememberSaveable { mutableStateOf("") }
+    var priority by rememberSaveable { mutableStateOf("default") }
+    var externalNotifications by rememberSaveable { mutableStateOf(true) }
+    var creationHorizonDays by rememberSaveable { mutableStateOf("2") }
+    var validityWindowMinutes by rememberSaveable { mutableStateOf("60") }
+    var scheduleConfig by remember { mutableStateOf<ScheduleConfig?>(null) }
+    var showScheduleEditor by rememberSaveable { mutableStateOf(false) }
 
     // Custom fields state
     var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
@@ -103,8 +119,22 @@ fun MessagesConfigScreen(
                         group = config.optString("group").takeIf { it.isNotEmpty() }
 
                         // Load Messages-specific config
-                        defaultPriority = config.optString("default_priority", "default")
+                        enabled = config.optBoolean("enabled", true)
+                        commonTitle = config.optString("common_title", "")
+                        commonContent = config.optString("common_content", "")
+                        priority = config.optString("priority", "default")
                         externalNotifications = config.optBoolean("external_notifications", true)
+                        creationHorizonDays = config.optInt("creation_horizon_days", 2).toString()
+                        validityWindowMinutes = config.optInt("validity_window_minutes", 60).toString()
+
+                        config.optJSONObject("schedule")?.let { scheduleJson ->
+                            scheduleConfig = try {
+                                Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
+                            } catch (e: Exception) {
+                                LogManager.ui("Error parsing schedule config: ${e.message}", "ERROR")
+                                null
+                            }
+                        }
 
                         // Load custom fields
                         val customFieldsArray = config.optJSONArray("custom_fields")
@@ -119,7 +149,7 @@ fun MessagesConfigScreen(
                             }
                         }
 
-                        LogManager.ui("Successfully loaded config: name=$name, default_priority=$defaultPriority, external_notifications=$externalNotifications")
+                        LogManager.ui("Successfully loaded config: name=$name, enabled=$enabled, priority=$priority, external_notifications=$externalNotifications")
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
                         errorMessage = s.tool("error_config_load")
@@ -202,33 +232,63 @@ fun MessagesConfigScreen(
             isEditing = isEditing
         )
 
-        // Messages-specific configuration section
+        // The common part: what every send carries. A reminder whose text never varies is
+        // complete with nothing more than this.
         UI.Card(type = CardType.DEFAULT) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(
-                    text = s.shared("label_configuration"),
-                    type = TextType.SUBTITLE
+                UI.Text(text = s.tool("label_common_title"), type = TextType.SUBTITLE)
+                UI.Text(text = s.tool("hint_common_parts"), type = TextType.CAPTION)
+
+                UI.FormField(
+                    label = s.tool("label_common_title"),
+                    value = commonTitle,
+                    onChange = { commonTitle = it },
+                    fieldType = FieldType.TEXT
                 )
 
-                // Default priority selection
+                UI.FormField(
+                    label = s.tool("label_common_content"),
+                    value = commonContent,
+                    onChange = { commonContent = it },
+                    fieldType = FieldType.TEXT_LONG
+                )
+            }
+        }
+
+        // Channel settings: how this stream is allowed to reach you
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                UI.Text(text = s.shared("label_configuration"), type = TextType.SUBTITLE)
+
+                // Suspends the whole template: while off, nothing of this instance goes out,
+                // including an occurrence placed by hand. Pending occurrences are kept, not
+                // deleted — they are cancelled as their time comes, so suspending is reversible.
+                UI.ToggleField(
+                    label = s.tool("label_enabled"),
+                    checked = enabled,
+                    onCheckedChange = { enabled = it }
+                )
+
                 UI.FormSelection(
-                    label = s.tool("label_default_priority"),
+                    label = s.tool("label_priority"),
                     options = listOf(
                         s.tool("priority_default"),
                         s.tool("priority_high"),
                         s.tool("priority_low")
                     ),
-                    selected = when (defaultPriority) {
-                        "default" -> s.tool("priority_default")
+                    selected = when (priority) {
                         "high" -> s.tool("priority_high")
                         "low" -> s.tool("priority_low")
                         else -> s.tool("priority_default")
                     },
                     onSelect = { selectedText ->
-                        defaultPriority = when (selectedText) {
+                        priority = when (selectedText) {
                             s.tool("priority_high") -> "high"
                             s.tool("priority_low") -> "low"
                             else -> "default"
@@ -236,11 +296,47 @@ fun MessagesConfigScreen(
                     }
                 )
 
-                // External notifications toggle
                 UI.ToggleField(
                     label = s.tool("label_external_notifications"),
                     checked = externalNotifications,
                     onCheckedChange = { externalNotifications = it }
+                )
+            }
+        }
+
+        // Recurrence and the lifecycle of the occurrences it spawns
+        UI.Card(type = CardType.DEFAULT) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                UI.Text(text = s.tool("label_schedule"), type = TextType.SUBTITLE)
+
+                UI.Button(
+                    type = ButtonType.DEFAULT,
+                    size = Size.M,
+                    onClick = { showScheduleEditor = true }
+                ) {
+                    UI.Text(s.tool("action_configure_schedule"), TextType.LABEL)
+                }
+
+                UI.Text(
+                    text = scheduleSummary(scheduleConfig, s),
+                    type = if (scheduleConfig != null) TextType.BODY else TextType.CAPTION
+                )
+
+                UI.FormField(
+                    label = s.tool("label_creation_horizon_days"),
+                    value = creationHorizonDays,
+                    onChange = { creationHorizonDays = it },
+                    fieldType = FieldType.NUMERIC
+                )
+
+                UI.FormField(
+                    label = s.tool("label_validity_window_minutes"),
+                    value = validityWindowMinutes,
+                    onChange = { validityWindowMinutes = it },
+                    fieldType = FieldType.NUMERIC
                 )
             }
         }
@@ -285,11 +381,26 @@ fun MessagesConfigScreen(
                             "validateConfig" to validateConfig,
                             "validateData" to validateData,
                             "always_send" to alwaysSend,
-                            "default_priority" to defaultPriority,
-                            "external_notifications" to externalNotifications
+                            "enabled" to enabled,
+                            "priority" to priority,
+                            "external_notifications" to externalNotifications,
+                            "creation_horizon_days" to (creationHorizonDays.toIntOrNull() ?: 0),
+                            "validity_window_minutes" to (validityWindowMinutes.toIntOrNull() ?: 0)
                         )
                         // Add group if present
                         group?.let { configData["group"] = it }
+
+                        // Optional common parts: an empty one contributes nothing, so it is
+                        // simply absent rather than stored as an empty string
+                        commonTitle.takeIf { it.isNotBlank() }?.let { configData["common_title"] = it }
+                        commonContent.takeIf { it.isNotBlank() }?.let { configData["common_content"] = it }
+
+                        // Recurrence, without ScheduleConfig's own enabled flag: the switch of a
+                        // Messages template is the root "enabled" above, and storing a second one
+                        // here would leave two switches with only one of them read.
+                        scheduleConfig?.let { schedule ->
+                            configData["schedule"] = scheduleWithoutSwitch(schedule)
+                        }
 
                         // Add custom fields if any
                         if (customFields.isNotEmpty()) {
@@ -359,5 +470,72 @@ fun MessagesConfigScreen(
             onDelete = onDelete,
             saveEnabled = !isSaving
         )
+    }
+
+    // Nested recurrence editor, opens on top of the config screen
+    if (showScheduleEditor) {
+        ScheduleConfigEditor(
+            existingConfig = scheduleConfig,
+            onConfirm = { config ->
+                scheduleConfig = config // null accepted: no recurrence, a channel fed on demand
+                showScheduleEditor = false
+                LogManager.ui("Schedule updated: ${if (config != null) "configured" else "cleared"}")
+            },
+            onDismiss = { showScheduleEditor = false }
+        )
+    }
+}
+
+/**
+ * Serializes a recurrence for storage, dropping ScheduleConfig's own "enabled" flag.
+ *
+ * A Messages template is suspended by the "enabled" field at the root of its config, which
+ * covers everything the instance owes and exists even without a recurrence. ScheduleConfig
+ * carries a flag of the same name that Messages never reads; storing it would leave two
+ * switches with one silently ignored. Its Kotlin default is true, so a recurrence read back
+ * without it deserializes unchanged.
+ */
+private fun scheduleWithoutSwitch(schedule: ScheduleConfig): Map<String, Any> {
+    val json = JSONObject(Json.encodeToString(ScheduleConfig.serializer(), schedule))
+    json.remove("enabled")
+    return json.toMap()
+}
+
+/** Recursive JSONObject to Map, so the config payload stays plain Kotlin collections. */
+private fun JSONObject.toMap(): Map<String, Any> {
+    val map = mutableMapOf<String, Any>()
+    keys().forEach { key ->
+        when (val value = get(key)) {
+            is JSONObject -> map[key] = value.toMap()
+            is org.json.JSONArray -> map[key] = value.toList()
+            JSONObject.NULL -> Unit // absent rather than null
+            else -> map[key] = value
+        }
+    }
+    return map
+}
+
+private fun org.json.JSONArray.toList(): List<Any> {
+    val list = mutableListOf<Any>()
+    for (i in 0 until length()) {
+        when (val value = get(i)) {
+            is JSONObject -> list.add(value.toMap())
+            is org.json.JSONArray -> list.add(value.toList())
+            else -> list.add(value)
+        }
+    }
+    return list
+}
+
+/** One line describing the recurrence, or what its absence means. */
+private fun scheduleSummary(schedule: ScheduleConfig?, s: StringsContext): String {
+    if (schedule == null) return s.tool("schedule_summary_not_configured")
+    return when (val pattern = schedule.pattern) {
+        is SchedulePattern.DailyMultiple -> s.tool("schedule_summary_daily").format(pattern.times.size)
+        is SchedulePattern.WeeklySimple -> s.tool("schedule_summary_weekly")
+        is SchedulePattern.WeeklyCustom -> s.tool("schedule_summary_weekly_custom")
+        is SchedulePattern.MonthlyRecurrent -> s.tool("schedule_summary_monthly")
+        is SchedulePattern.YearlyRecurrent -> s.tool("schedule_summary_yearly")
+        is SchedulePattern.SpecificDates -> s.tool("schedule_summary_specific_dates")
     }
 }
