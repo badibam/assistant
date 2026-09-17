@@ -40,7 +40,6 @@ import kotlinx.coroutines.launch
  * - GENERIC: No automatic queries, optional reference period
  * - CONFIG: Configuration + schemas, no period
  * - DATA: Data + schemas, optional period on tool_data.timestamp
- * - EXECUTIONS: Executions + schemas, optional period on tool_executions.executionTime
  */
 @Composable
 fun ZoneScopeSelector(
@@ -650,36 +649,12 @@ private fun filterAllowedContexts(
 
     return when (currentLevel) {
         SelectionLevel.ZONE -> {
-            // Zone level: only GENERIC and CONFIG
-            // DATA and EXECUTIONS are instance-specific
+            // Zone level: only GENERIC and CONFIG, DATA is instance-specific
             config.allowedContexts.filter {
                 it == PointerContext.GENERIC || it == PointerContext.CONFIG
             }
         }
-        SelectionLevel.INSTANCE -> {
-            // Instance level: filter based on tool type support for executions
-            val toolNode = state.selectionChain.lastOrNull { it.selectedNode.type == NodeType.TOOL }
-
-            if (toolNode != null) {
-                val tooltype = toolNode.selectedNode.toolType
-
-                if (tooltype != null) {
-                    val toolType = ToolTypeManager.getToolType(tooltype)
-                    val supportsExecutions = toolType?.supportsExecutions() == true
-
-                    if (supportsExecutions) {
-                        config.allowedContexts
-                    } else {
-                        config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
-                    }
-                } else {
-                    // No tooltype available, show all except EXECUTIONS to be safe
-                    config.allowedContexts.filter { it != PointerContext.EXECUTIONS }
-                }
-            } else {
-                config.allowedContexts
-            }
-        }
+        SelectionLevel.INSTANCE -> config.allowedContexts
         else -> {
             // No selection yet, show all contexts
             config.allowedContexts
@@ -695,7 +670,6 @@ private fun getAvailableResourcesForContext(context: PointerContext): List<Strin
         PointerContext.GENERIC -> emptyList() // No resources for GENERIC
         PointerContext.CONFIG -> listOf("config", "config_schema")
         PointerContext.DATA -> listOf("data", "data_schema")
-        PointerContext.EXECUTIONS -> listOf("executions", "executions_schema")
     }
 }
 
@@ -713,7 +687,6 @@ private fun getDefaultResourcesForContext(context: PointerContext, level: Select
             }
         }
         PointerContext.DATA -> listOf("data") // Data checked by default
-        PointerContext.EXECUTIONS -> listOf("executions") // Executions checked by default
     }
 }
 
@@ -721,9 +694,9 @@ private fun getDefaultResourcesForContext(context: PointerContext, level: Select
  * Should show period selector based on context
  */
 private fun shouldShowPeriodSelector(state: ZoneScopeState, config: NavigationConfig): Boolean {
-    // Show for DATA, EXECUTIONS (always), and GENERIC (if user wants to specify reference period)
+    // Show for DATA (always) and GENERIC (if the user wants to state a reference period)
     return when (state.selectedContext) {
-        PointerContext.DATA, PointerContext.EXECUTIONS -> true
+        PointerContext.DATA -> true
         PointerContext.GENERIC -> true // Optional reference period
         PointerContext.CONFIG -> false // No period for configs
     }
@@ -782,7 +755,6 @@ private fun getContextLabel(context: PointerContext, s: com.assistant.core.strin
         PointerContext.GENERIC -> s.shared("label_context_generic")
         PointerContext.CONFIG -> s.shared("label_context_config")
         PointerContext.DATA -> s.shared("label_context_data")
-        PointerContext.EXECUTIONS -> s.shared("label_context_executions")
     }
 }
 
@@ -792,8 +764,6 @@ private fun getResourceLabel(resource: String, s: com.assistant.core.strings.Str
         "config_schema" -> s.shared("label_resource_config_schema")
         "data" -> s.shared("label_resource_data")
         "data_schema" -> s.shared("label_resource_data_schema")
-        "executions" -> s.shared("label_resource_executions")
-        "executions_schema" -> s.shared("label_resource_executions_schema")
         else -> resource
     }
 }
@@ -802,7 +772,6 @@ private fun getPeriodSectionLabel(context: PointerContext, s: com.assistant.core
     return when (context) {
         PointerContext.GENERIC -> s.shared("label_period_reference")
         PointerContext.DATA -> s.shared("label_period_data")
-        PointerContext.EXECUTIONS -> s.shared("label_period_execution")
         PointerContext.CONFIG -> "" // Not shown
     }
 }

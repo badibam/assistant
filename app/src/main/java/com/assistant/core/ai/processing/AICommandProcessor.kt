@@ -40,7 +40,7 @@ class AICommandProcessor(private val context: Context) {
     fun processDataCommands(commands: List<DataCommand>): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
-        // VALIDATION: Check that TOOL_DATA and TOOL_EXECUTIONS commands include 'fields' parameter
+        // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
         val validationErrors = mutableListOf<String>()
         for ((index, command) in commands.withIndex()) {
             if (command.type == "TOOL_DATA") {
@@ -56,67 +56,6 @@ class AICommandProcessor(private val context: Context) {
                         "Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]"
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
-                }
-            } else if (command.type == "TOOL_EXECUTIONS") {
-                val fields = command.params["fields"]
-                if (fields == null) {
-                    val errorMsg = "Command[$index] (TOOL_EXECUTIONS): missing required 'fields' parameter. " +
-                        "TOOL_EXECUTIONS queries must explicitly specify which fields to retrieve. " +
-                        "Example: \"fields\": [\"id\", \"executionTime\", \"status\", \"executionResult\"]"
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
-                } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
-                    val errorMsg = "Command[$index] (TOOL_EXECUTIONS): 'fields' must be a non-empty array. " +
-                        "Example: \"fields\": [\"id\", \"executionTime\", \"status\"]"
-                    validationErrors.add(errorMsg)
-                    LogManager.aiService(errorMsg, "WARN")
-                } else {
-                    // Pattern matching validation for each field
-                    for ((fieldIndex, field) in (fields as List<*>).withIndex()) {
-                        val fieldStr = field.toString()
-
-                        // Pattern detection
-                        val isRootField = !fieldStr.contains(".")
-                        val isSnapshotData = fieldStr.startsWith("snapshot_data.") && fieldStr != "snapshot_data."
-                        val isSnapshotCustomFields = fieldStr.startsWith("snapshot_data.custom_fields.") &&
-                                                      fieldStr != "snapshot_data.custom_fields."
-
-                        // Validation
-                        when {
-                            // INVALID: snapshot_data alone
-                            fieldStr == "snapshot_data" -> {
-                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
-                                validationErrors.add(errorMsg)
-                                LogManager.aiService(errorMsg, "WARN")
-                            }
-
-                            // INVALID: snapshot_data.custom_fields alone
-                            fieldStr == "snapshot_data.custom_fields" -> {
-                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
-                                validationErrors.add(errorMsg)
-                                LogManager.aiService(errorMsg, "WARN")
-                            }
-
-                            // INVALID: execution_result.* (sub-field)
-                            fieldStr.startsWith("execution_result.") -> {
-                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
-                                validationErrors.add(errorMsg)
-                                LogManager.aiService(errorMsg, "WARN")
-                            }
-
-                            // VALID: root, snapshot_data.*, snapshot_data.custom_fields.*
-                            isRootField || isSnapshotData || isSnapshotCustomFields -> {
-                                // Valid pattern, no error
-                            }
-
-                            // INVALID: unknown pattern
-                            else -> {
-                                val errorMsg = "Field[$fieldIndex]: " + s.shared("ai_validation_tool_executions_fields_invalid_pattern").format(fieldStr)
-                                validationErrors.add(errorMsg)
-                                LogManager.aiService(errorMsg, "WARN")
-                            }
-                        }
-                    }
                 }
             }
         }

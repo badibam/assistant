@@ -41,19 +41,5 @@ enum class PointerContext {
      * - Temporal filtering on tool_data.timestamp
      * - Generates TOOL_DATA commands if resources selected
      */
-    DATA,
-
-    /**
-     * Tool executions context (scheduled executions, results)
-     *
-     * Available resources:
-     * - executions: Execution history (default selected)
-     * - executions_schema: JSON schema for execution validation
-     *
-     * Behavior:
-     * - Temporal filtering on tool_executions.executionTime
-     * - Generates TOOL_EXECUTIONS commands if resources selected
-     * - Only available if ToolType.supportsExecutions() == true
-     */
-    EXECUTIONS
+    DATA
 }

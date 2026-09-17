@@ -164,13 +164,12 @@ class EnrichmentProcessor(
         when (contextName) {
             "CONFIG" -> parts.add(s.shared("ai_enrichment_pointer_context_config"))
             "DATA" -> parts.add(s.shared("ai_enrichment_pointer_context_data"))
-            "EXECUTIONS" -> parts.add(s.shared("ai_enrichment_pointer_context_executions"))
             // GENERIC: no context specification
         }
 
         // 3. Period (if present and relevant)
         val timestampSelection = config.optJSONObject("timestampSelection")
-        if (timestampSelection != null && (contextName == "DATA" || contextName == "EXECUTIONS")) {
+        if (timestampSelection != null && contextName == "DATA") {
             val periodDesc = formatPointerPeriodDescription(timestampSelection)
             if (periodDesc.isNotEmpty()) {
                 parts.add(periodDesc)
@@ -369,44 +368,6 @@ class EnrichmentProcessor(
         return Pair(configSchemaId, dataSchemaId)
     }
 
-    /**
-     * Resolve execution schema ID from tool instance config
-     * Returns empty string if not available (tooltype doesn't support executions)
-     */
-    private suspend fun resolveExecutionSchemaId(toolInstanceId: String): String {
-        if (coordinator == null) {
-            LogManager.aiEnrichment("Cannot resolve execution schema ID: coordinator not available", "WARN")
-            return ""
-        }
-
-        val result = coordinator.processUserAction("tools.get", mapOf(
-            "tool_instance_id" to toolInstanceId
-        ))
-
-        if (!result.isSuccess) {
-            LogManager.aiEnrichment("Failed to fetch tool instance $toolInstanceId for execution schema ID: ${result.error}", "WARN")
-            return ""
-        }
-
-        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-        if (toolInstance == null) {
-            LogManager.aiEnrichment("Tool instance $toolInstanceId not found in response", "WARN")
-            return ""
-        }
-
-        val configJson = toolInstance["config_json"] as? String
-        if (configJson.isNullOrBlank()) {
-            LogManager.aiEnrichment("Tool instance $toolInstanceId has no config_json", "WARN")
-            return ""
-        }
-
-        val config = JSONObject(configJson)
-        val executionSchemaId = config.optString("execution_schema_id", "")
-
-        LogManager.aiEnrichment("Resolved execution schema ID for $toolInstanceId: '$executionSchemaId'", "DEBUG")
-        return executionSchemaId
-    }
-
     // ========================================================================================
     // Query Generation
     // ========================================================================================
@@ -418,7 +379,6 @@ class EnrichmentProcessor(
      * - GENERIC context: No automatic commands (AI must request explicitly)
      * - CONFIG context: Generate commands for config/config_schema resources
      * - DATA context: Generate commands for data/data_schema resources + temporal filters
-     * - EXECUTIONS context: Generate commands for executions/executions_schema resources + temporal filters
      */
     private suspend fun generatePointerQueries(
         config: JSONObject,
@@ -553,40 +513,6 @@ class EnrichmentProcessor(
                                 type = "SCHEMA",
                                 params = mapOf(
                                     "id" to dataSchemaId,
-                                    "toolInstanceId" to toolInstanceId
-                                ),
-                                isRelative = isRelative
-                            ))
-                        }
-                    }
-                    com.assistant.core.ui.selectors.data.PointerContext.EXECUTIONS -> {
-                        // Resolve execution schema ID if needed
-                        val needsSchemaId = "executions_schema" in selectedResources
-                        val executionSchemaId = if (needsSchemaId) {
-                            resolveExecutionSchemaId(toolInstanceId)
-                        } else ""
-
-                        // Add temporal parameters for EXECUTIONS context
-                        val executionParams = baseParams.toMutableMap()
-                        addTemporalParams(executionParams, config, isRelative)
-
-                        // Executions resource
-                        if ("executions" in selectedResources) {
-                            queries.add(DataCommand(
-                                id = buildQueryId("tool_executions", executionParams),
-                                type = "TOOL_EXECUTIONS",
-                                params = executionParams.toMap(),
-                                isRelative = isRelative
-                            ))
-                        }
-
-                        // Executions schema resource (requires toolInstanceId for custom fields enrichment)
-                        if ("executions_schema" in selectedResources && executionSchemaId.isNotEmpty()) {
-                            queries.add(DataCommand(
-                                id = buildQueryId("schema_execution", mapOf("id" to executionSchemaId, "toolInstanceId" to toolInstanceId)),
-                                type = "SCHEMA",
-                                params = mapOf(
-                                    "id" to executionSchemaId,
                                     "toolInstanceId" to toolInstanceId
                                 ),
                                 isRelative = isRelative

@@ -20,13 +20,13 @@ data class ZoneScopeState(
     // Options available at each level for allowing changes (flexible depth)
     val optionsByLevel: Map<Int, List<SchemaNode>> = emptyMap(),
 
-    // Context selection (GENERIC, CONFIG, DATA, EXECUTIONS)
+    // Context selection (GENERIC, CONFIG, DATA)
     val selectedContext: PointerContext = PointerContext.GENERIC,
 
     // Resources selection (context-specific checkable items)
     val selectedResources: List<String> = emptyList(),
 
-    // Period selection (for DATA and EXECUTIONS contexts, optional for GENERIC)
+    // Period selection (for the DATA context, optional for GENERIC)
     val timestampSelection: TimestampSelection = TimestampSelection(),
 
     // Completion state
@@ -48,7 +48,6 @@ data class SelectionStep(
  *
  * Used for:
  * - DATA context: filters tool_data.timestamp
- * - EXECUTIONS context: filters tool_executions.executionTime
  * - GENERIC context: reference period for AI (optional)
  */
 data class TimestampSelection(

@@ -10,12 +10,11 @@ data class NavigationConfig(
     val allowFieldSelection: Boolean = true,        // Can confirm selection at field level?
     val allowValueSelection: Boolean = true,        // Can navigate to value selection level?
 
-    // Context-aware selection (new for tool_executions support)
+    // Context-aware selection
     val allowedContexts: List<PointerContext> = listOf(
         PointerContext.GENERIC,
         PointerContext.CONFIG,
-        PointerContext.DATA,
-        PointerContext.EXECUTIONS
+        PointerContext.DATA
     ),                                              // Which contexts can be selected
     val defaultContext: PointerContext = PointerContext.GENERIC, // Default selected context
 

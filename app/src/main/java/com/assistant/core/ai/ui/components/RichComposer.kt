@@ -834,7 +834,7 @@ private fun createPointerConfig(
  * Create human-readable previews from POINTER enrichment data
  * Returns Pair(uiPreview, promptPreview)
  *
- * Includes context (DATA, CONFIG, EXECUTIONS) and detailed period information
+ * Includes context (DATA, CONFIG) and detailed period information
  */
 private fun createPointerPreview(
     context: Context,
@@ -864,7 +864,6 @@ private fun createPointerPreview(
     when (selectionResult.selectedContext) {
         PointerContext.CONFIG -> uiParts.add(s.shared("ai_enrichment_pointer_context_config"))
         PointerContext.DATA -> uiParts.add(s.shared("ai_enrichment_pointer_context_data"))
-        PointerContext.EXECUTIONS -> uiParts.add(s.shared("ai_enrichment_pointer_context_executions"))
         else -> {} // GENERIC: no context label
     }
 

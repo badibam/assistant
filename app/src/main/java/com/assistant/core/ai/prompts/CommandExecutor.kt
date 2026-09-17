@@ -53,21 +53,19 @@ class CommandExecutor(private val context: Context) {
      * Generate schema deduplication key
      *
      * For config schemas: returns schema_id only
-     * For data/execution schemas: returns "schema_id:toolInstanceId" (composite key)
+     * For data schemas: returns "schema_id:toolInstanceId" (composite key)
      *
-     * Data and execution schemas are enriched with custom_fields per instance,
-     * so same schema_id with different toolInstanceId produces different schemas.
+     * Data schemas are enriched with custom_fields per instance, so the same schema_id with a
+     * different toolInstanceId produces a different schema.
      *
      * @param schemaId The schema ID (e.g., "tracking_data_numeric", "tracking_config_numeric")
      * @param toolInstanceId The tool instance ID (null for config schemas)
      * @return Deduplication key string
      */
     private fun getSchemaDeduplicationKey(schemaId: String, toolInstanceId: String?): String {
-        // Check if schema requires instance-specific enrichment (data or execution schemas)
+        // Check if schema requires instance-specific enrichment (data schemas)
         val requiresInstanceId = schemaId.contains("_data_") ||
-                                 schemaId.contains("_execution_") ||
-                                 schemaId.endsWith("_data") ||
-                                 schemaId.endsWith("_execution")
+                                 schemaId.endsWith("_data")
 
         return if (requiresInstanceId && toolInstanceId != null) {
             "$schemaId:$toolInstanceId"
@@ -104,13 +102,9 @@ class CommandExecutor(private val context: Context) {
         // Track schemas executed in current batch (for intra-batch deduplication)
         val currentBatchSchemas = mutableSetOf<String>()
 
-        // LOGIQUE 1: Verify data AND execution schemas before first queries
-        // Check if any tool_data or tool_executions commands are present and verify their schemas are available
+        // LOGIQUE 1: Verify data schemas before first queries
         if (sessionId != null) {
-            val missingDataSchemas = checkRequiredDataSchemas(commands, historicalSchemas, currentBatchSchemas)
-            val missingExecutionSchemas = checkRequiredExecutionSchemas(commands, historicalSchemas, currentBatchSchemas)
-
-            val missingSchemas = missingDataSchemas + missingExecutionSchemas
+            val missingSchemas = checkRequiredDataSchemas(commands, historicalSchemas, currentBatchSchemas)
 
             if (missingSchemas.isNotEmpty()) {
                 LogManager.aiPrompt("Schema verification failed: ${missingSchemas.size} schemas missing", "WARN")
@@ -721,107 +715,6 @@ class CommandExecutor(private val context: Context) {
 
                     headerParts.joinToString("\n")
                 }
-                "tool_executions" -> {
-                    // Resolve tool instance name from ID in command params
-                    val toolInstanceId = command.params["toolInstanceId"] as? String
-                        ?: command.params["id"] as? String
-
-                    val toolName = if (toolInstanceId != null) {
-                        resolveToolInstanceName(toolInstanceId)
-                    } else {
-                        "unknown tool"
-                    }
-
-                    val count = data["count"] as? Int
-                        ?: (data["executions"] as? List<*>)?.size
-                        ?: 0
-
-                    // Build comprehensive header with ALL query details
-                    val headerParts = mutableListOf<String>()
-
-                    // Main title with result count (ALWAYS shown, even if 0)
-                    headerParts.add("=== ${s.shared("ai_data_header_trusted")}: ${s.shared("ai_data_header_executions").format(toolName)} ===")
-                    headerParts.add(s.shared("ai_data_result_count_executions").format(count))
-
-                    // Period info if present (on execution_time field)
-                    val startTime = command.params["startTime"] as? Long
-                    val endTime = command.params["endTime"] as? Long
-                    if (startTime != null && endTime != null) {
-                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(startTime))
-                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(endTime))
-                        headerParts.add(s.shared("ai_data_period_range").format(startDate, endDate))
-                    } else if (startTime != null) {
-                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(startTime))
-                        headerParts.add(s.shared("ai_data_period_from").format(startDate))
-                    } else if (endTime != null) {
-                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(endTime))
-                        headerParts.add(s.shared("ai_data_period_until").format(endDate))
-                    } else {
-                        headerParts.add(s.shared("ai_data_period_all_time"))
-                    }
-
-                    // Status filter if present
-                    val status = command.params["status"] as? String
-                    if (status != null) {
-                        headerParts.add(s.shared("ai_data_status_filter").format(status))
-                    }
-
-                    // Template filter if present
-                    val templateDataId = command.params["templateDataId"] as? String
-                    if (templateDataId != null) {
-                        headerParts.add(s.shared("ai_data_template_filter").format(templateDataId))
-                    }
-
-                    val limit = command.params["limit"] as? Int
-                    if (limit != null) {
-                        headerParts.add(s.shared("ai_data_limit").format(limit))
-                    }
-
-                    val offset = command.params["offset"] as? Int
-                    if (offset != null) {
-                        headerParts.add(s.shared("ai_data_offset").format(offset))
-                    }
-
-                    // Build exact query as AI would write it (TOOL_EXECUTIONS format)
-                    val aiQueryParams = mutableMapOf<String, Any>()
-                    aiQueryParams["id"] = toolInstanceId ?: "unknown"
-                    if (startTime != null || endTime != null) {
-                        val period = mutableMapOf<String, Any>()
-                        if (startTime != null) period["start"] = startTime
-                        if (endTime != null) period["end"] = endTime
-                        aiQueryParams["period"] = period
-                    }
-                    if (status != null) aiQueryParams["status"] = status
-                    if (templateDataId != null) aiQueryParams["templateDataId"] = templateDataId
-                    if (limit != null) aiQueryParams["limit"] = limit
-                    if (offset != null) aiQueryParams["offset"] = offset
-
-                    val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
-                    headerParts.add(s.shared("ai_data_exact_query").format("TOOL_EXECUTIONS", aiQueryJson))
-
-                    // Fields included (dynamic from command params)
-                    val requestedFields = command.params["fields"] as? List<*>
-                    val fieldsDisplay = if (requestedFields != null && requestedFields.isNotEmpty()) {
-                        requestedFields.joinToString(", ")
-                    } else {
-                        // Fallback for backward compatibility (no fields param = all fields)
-                        s.shared("ai_data_fields_all")
-                    }
-                    headerParts.add(s.shared("ai_data_fields").format(fieldsDisplay))
-
-                    // Confidence message
-                    if (count == 0) {
-                        headerParts.add(s.shared("ai_data_no_results_executions_warning"))
-                    } else {
-                        headerParts.add(s.shared("ai_data_complete_dataset"))
-                    }
-
-                    headerParts.joinToString("\n")
-                }
                 "schemas" -> {
                     val schemaId = data["schema_id"] as? String ?: "unknown"
                     "Schema: $schemaId"
@@ -1270,154 +1163,6 @@ class CommandExecutor(private val context: Context) {
 
             } catch (e: Exception) {
                 LogManager.aiPrompt("Error checking schema for tool instance $toolInstanceId: ${e.message}", "ERROR", e)
-                // Continue checking other instances even if one fails
-            }
-        }
-
-        return missingSchemas
-    }
-
-    /**
-     * LOGIC 1 (EXECUTIONS): Check if execution schemas are available before querying
-     *
-     * For each tool_executions command:
-     * 1. Extract toolInstanceId from params
-     * 2. Fetch tool instance config via coordinator
-     * 3. Extract tooltype from config
-     * 4. Determine execution schema ID: {tooltype}_execution
-     * 5. Check if schema exists in historicalSchemas or currentBatchSchemas
-     *
-     * Returns list of missing schemas that need to be fetched before execution queries
-     *
-     * @param commands All commands to execute
-     * @param historicalSchemas Schemas already fetched in previous messages
-     * @param currentBatchSchemas Schemas fetched in current batch (will be updated)
-     * @return List of missing schema info (empty if all schemas available)
-     */
-    private suspend fun checkRequiredExecutionSchemas(
-        commands: List<ExecutableCommand>,
-        historicalSchemas: Set<String>,
-        currentBatchSchemas: MutableSet<String>
-    ): List<MissingSchemaInfo> {
-        val missingSchemas = mutableListOf<MissingSchemaInfo>()
-        val checkedInstances = mutableSetOf<String>() // Avoid checking same instance multiple times
-
-        // Find all tool_executions commands
-        val executionCommands = commands.filter { it.resource == "tool_executions" && it.operation == "get" }
-
-        LogManager.aiPrompt("DEBUG: Total commands received: ${commands.size}", "DEBUG")
-        LogManager.aiPrompt("DEBUG: Commands resources: ${commands.map { it.resource }}", "DEBUG")
-        LogManager.aiPrompt("DEBUG: Execution commands found: ${executionCommands.size}", "DEBUG")
-
-        if (executionCommands.isEmpty()) {
-            LogManager.aiPrompt("DEBUG: No TOOL_EXECUTIONS commands found, skipping schema verification", "DEBUG")
-            return emptyList() // No tool_executions commands, no verification needed
-        }
-
-        LogManager.aiPrompt("Checking execution schemas for ${executionCommands.size} TOOL_EXECUTIONS commands", "DEBUG")
-
-        // IMPORTANT: Pre-populate currentBatchSchemas with SCHEMA commands from current batch
-        // This allows detecting schemas that will be fetched in the same batch
-        val schemaCommands = commands.filter { it.resource == "schemas" && it.operation == "get" }
-        for (schemaCommand in schemaCommands) {
-            val schemaId = schemaCommand.params["id"] as? String
-            val toolInstanceId = schemaCommand.params["toolInstanceId"] as? String
-            if (schemaId != null) {
-                val key = getSchemaDeduplicationKey(schemaId, toolInstanceId)
-                currentBatchSchemas.add(key)
-                LogManager.aiPrompt("Pre-added schema $key from current batch SCHEMA command", "DEBUG")
-            }
-        }
-
-        for (command in executionCommands) {
-            val toolInstanceId = command.params["toolInstanceId"] as? String
-                ?: command.params["id"] as? String
-
-            if (toolInstanceId == null || toolInstanceId in checkedInstances) {
-                continue // Skip if already checked
-            }
-
-            checkedInstances.add(toolInstanceId)
-
-            try {
-                // Fetch tool instance config to get tooltype
-                val configResult = coordinator.processUserAction("tools.get", mapOf(
-                    "tool_instance_id" to toolInstanceId
-                ))
-
-                if (!configResult.isSuccess) {
-                    LogManager.aiPrompt("Failed to fetch config for tool instance $toolInstanceId: ${configResult.error}", "WARN")
-                    continue // Skip if config fetch fails (tool might not exist)
-                }
-
-                // Extract tooltype from tool instance
-                val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-                val tooltype = toolInstance?.get("tool_type") as? String  // Field name is "tool_type" not "tooltype"
-
-                if (tooltype == null) {
-                    LogManager.aiPrompt("No tool_type found for tool instance $toolInstanceId", "WARN")
-                    continue
-                }
-
-                // Determine execution schema ID: {tooltype}_execution
-                val executionSchemaId = "${tooltype}_execution"
-
-                // Generate deduplication key (composite for execution schemas)
-                val deduplicationKey = getSchemaDeduplicationKey(executionSchemaId, toolInstanceId)
-
-                LogManager.aiPrompt("Checking execution schema availability:", "DEBUG")
-                LogManager.aiPrompt("  - deduplicationKey: $deduplicationKey", "DEBUG")
-                LogManager.aiPrompt("  - historicalSchemas contains: ${deduplicationKey in historicalSchemas}", "DEBUG")
-                LogManager.aiPrompt("  - currentBatchSchemas contains: ${deduplicationKey in currentBatchSchemas}", "DEBUG")
-
-                // Check if schema is available (historical or current batch)
-                val isAvailable = deduplicationKey in historicalSchemas || deduplicationKey in currentBatchSchemas
-
-                if (!isAvailable) {
-                    LogManager.aiPrompt("Execution schema $deduplicationKey is missing for tool instance $toolInstanceId", "DEBUG")
-
-                    // Fetch the schema content immediately
-                    val schemaResult = coordinator.processUserAction("schemas.get", mapOf(
-                        "id" to executionSchemaId,
-                        "toolInstanceId" to toolInstanceId
-                    ))
-
-                    LogManager.aiPrompt("Execution schema fetch result: isSuccess=${schemaResult.isSuccess}, error=${schemaResult.error}", "DEBUG")
-
-                    if (schemaResult.isSuccess) {
-                        val schemaContent = schemaResult.data?.get("content") as? String
-
-                        if (schemaContent != null && schemaContent.isNotEmpty()) {
-                            missingSchemas.add(MissingSchemaInfo(
-                                schemaId = executionSchemaId,
-                                toolInstanceId = toolInstanceId,
-                                schemaContent = schemaContent
-                            ))
-                            LogManager.aiPrompt("Successfully added execution schema $executionSchemaId to missing schemas", "DEBUG")
-                        } else {
-                            LogManager.aiPrompt("Execution schema $executionSchemaId content is null or empty", "ERROR")
-                            // Add with error message as content
-                            missingSchemas.add(MissingSchemaInfo(
-                                schemaId = executionSchemaId,
-                                toolInstanceId = toolInstanceId,
-                                schemaContent = "{\"error\": \"Schema content is null or empty\"}"
-                            ))
-                        }
-                    } else {
-                        LogManager.aiPrompt("Failed to fetch execution schema $executionSchemaId: ${schemaResult.error}", "ERROR")
-                        // Add with error message as content
-                        missingSchemas.add(MissingSchemaInfo(
-                            schemaId = executionSchemaId,
-                            toolInstanceId = toolInstanceId,
-                            schemaContent = "{\"error\": \"Failed to fetch schema: ${schemaResult.error}\"}"
-                        ))
-                    }
-                } else {
-                    LogManager.aiPrompt("Execution schema $deduplicationKey already available", "DEBUG")
-                }
-
-            } catch (e: Exception) {
-                LogManager.aiPrompt("Error checking execution schema for tool instance $toolInstanceId: ${e.message}", "ERROR", e)
                 // Continue checking other instances even if one fails
             }
         }

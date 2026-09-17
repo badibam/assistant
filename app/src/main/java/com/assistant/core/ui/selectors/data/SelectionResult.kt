@@ -7,9 +7,9 @@ data class SelectionResult(
     val selectedPath: String,                       // Full path of selection (e.g., "zones.zone1.tools.instance1.data.field")
     val selectionLevel: SelectionLevel,             // Level where selection stopped
 
-    // Context-aware selection (new for tool_executions support)
-    val selectedContext: PointerContext = PointerContext.DATA,  // Selected context (GENERIC, CONFIG, DATA, EXECUTIONS)
-    val selectedResources: List<String> = emptyList(),          // Resources checked: ["data", "data_schema"] or ["executions", "executions_schema"] etc.
+    // Context-aware selection
+    val selectedContext: PointerContext = PointerContext.DATA,  // Selected context (GENERIC, CONFIG, DATA)
+    val selectedResources: List<String> = emptyList(),          // Resources checked: ["data", "data_schema"] etc.
 
     // Period selection (from ZoneScopeSelector)
     val timestampSelection: TimestampSelection = TimestampSelection(),  // Period range selected for temporal filtering
