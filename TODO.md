@@ -62,6 +62,5 @@ Les huit points de `docs/design/post-refactor-audit.md`, partie B, chacun avec s
 
 ## Sagesse
 
-- Pull des canaux restants : `universel` (21 commits), `android` (8), `fdroid` (6).
-- Dette `dev_base` en cours : voir `manifest.md`.
+- Pull des canaux restants : `universel` (21 commits), `android` (8), `fdroid` (6). `dev_base` est conforme, sans dette.
 - Revoir l'organisation des dossiers de `/mnt/data/OUTILS/assistant` : le dépôt est le sous-dossier `App/`, ce qui oblige le registry à pointer un sous-chemin. Décider si le dépôt remonte d'un cran.
