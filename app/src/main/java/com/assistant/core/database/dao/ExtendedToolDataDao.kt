@@ -23,4 +23,8 @@ interface ExtendedToolDataDao {
     suspend fun getLatest(toolInstanceId: String): ToolDataEntity?
     suspend fun getByDateRange(toolInstanceId: String, startTime: Long, endTime: Long): List<ToolDataEntity>
     suspend fun getByItemName(toolInstanceId: String, itemName: String): List<ToolDataEntity>
+
+    // Status-aware query, for tooltypes whose entries have a lifecycle (see BaseToolDataDao)
+    suspend fun getByStatus(toolInstanceId: String, status: String, startTime: Long, endTime: Long, limit: Int, offset: Int): List<ToolDataEntity>
+    suspend fun countByStatus(toolInstanceId: String, status: String, startTime: Long, endTime: Long): Int
 }

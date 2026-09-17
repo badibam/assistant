@@ -332,9 +332,22 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val startTime = if (params.has("startTime")) params.optLong("startTime") else null
         val endTime = if (params.has("endTime")) params.optLong("endTime") else null
 
+        // Status of the entries to return, for tooltypes whose data has a lifecycle
+        // (Messages occurrences and the future active tooltypes). Combines with the time
+        // range rather than excluding it: a status filter narrows, it does not replace.
+        val status = if (params.has("status")) params.optString("status") else null
+
         val dao = getToolDataDao()
 
         val (entries, totalCount) = when {
+            // Status filter, optionally narrowed further by the time range
+            status != null -> {
+                val from = startTime ?: 0
+                val to = endTime ?: Long.MAX_VALUE
+                val count = dao.countByStatusAndTimeRange(toolInstanceId, status, from, to)
+                val data = dao.getByStatusAndTimeRangePaginated(toolInstanceId, status, from, to, limit, offset)
+                Pair(data, count)
+            }
             // Both startTime and endTime specified
             startTime != null && endTime != null -> {
                 val count = dao.countByTimeRange(toolInstanceId, startTime, endTime)

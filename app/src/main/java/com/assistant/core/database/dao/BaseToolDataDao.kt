@@ -93,4 +93,28 @@ abstract class BaseToolDataDao {
     @Query("SELECT * FROM tool_data ORDER BY timestamp DESC")
     abstract suspend fun getAllEntries(): List<ToolDataEntity>
 
+    /**
+     * Retrieves entries whose data carries a given status, within a time range.
+     *
+     * Only meaningful for tooltypes whose data schema defines a "status" field — the
+     * occurrence-based ones (Messages, and the future Calcul, Alertes, Objectifs), whose
+     * entries have a lifecycle rather than being written once and left alone.
+     *
+     * Exists because time is otherwise the only query axis on tool_data, and a scheduler
+     * that can only ask "what falls in this window" cannot find a pending occurrence left
+     * behind by a gap longer than the window. Narrowing by status removes the window.
+     *
+     * Ordered ascending: a scheduler processes what is due oldest first.
+     * Uses SQLite's json_extract (JSON1, available since API 24; the project targets 26).
+     */
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(data, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp ASC LIMIT :limit OFFSET :offset")
+    abstract suspend fun getByStatusAndTimeRangePaginated(toolInstanceId: String, status: String, startTime: Long, endTime: Long, limit: Int, offset: Int): List<ToolDataEntity>
+
+    /**
+     * Counts entries matching a status within a time range.
+     * Counting in SQL rather than loading rows to call .size on them.
+     */
+    @Query("SELECT COUNT(*) FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(data, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime")
+    abstract suspend fun countByStatusAndTimeRange(toolInstanceId: String, status: String, startTime: Long, endTime: Long): Int
+
 }
