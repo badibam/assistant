@@ -259,64 +259,6 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
 
 **Optimisation** : N\'inclus que les champs strictement nécessaires à ta tâche. Exemple : pour compter des entrées → `["id"]`, pour analyser des valeurs → `["id", "timestamp", "data.value"]`, etc.
 
-### TOOL_EXECUTIONS
-
-Récupère l\'historique d\'exécutions d\'un outil (uniquement pour les tooltypes supportant les exécutions).
-
-**Concept** : Certains tooltypes séparent template/config (stockés dans tool_data) et historique d\'exécutions (stockés dans tool_executions).
-Par exemple, un message planifié est un template (tool_data) qui génère plusieurs exécutions (tool_executions) au fil du temps.
-
-**Paramètres** :
-
-- `id` (string, **requis**) : tool_instance_id
-- `fields` (array, **requis**) : Champs à récupérer (pattern matching)
-- `period` (object, optionnel) : Filtre temporel sur execution_time
-- `status` (string, optionnel) : Filtrer par statut
-- `templateDataId` (string, optionnel) : Filtrer par template
-- `limit` (number, optionnel) : Nombre maximum d\'entrées
-- `offset` (number, optionnel) : Décalage pour pagination
-
-**Champ \'fields\' - Patterns valides** :
-
-1. **Champs root** (sans point) : `\"id\"`, `\"execution_time\"`, `\"status\"`, `\"execution_result\"`, `\"scheduled_time\"`, `\"triggered_by\"`, `\"metadata\"`, etc.
-
-2. **Champs snapshot_data** (avec sous-champ) : `\"snapshot_data.title\"`, `\"snapshot_data.content\"`, `\"snapshot_data.priority\"`
-
-3. **Custom fields** (double nested) : `\"snapshot_data.custom_fields.priority_level\"`, `\"snapshot_data.custom_fields.notes\"`
-
-**INTERDICTIONS** :
-- ❌ `\"snapshot_data\"` seul (spécifier sous-champ)
-- ❌ `\"snapshot_data.custom_fields\"` seul (spécifier nom du field)
-- ❌ `\"execution_result.read\"` (demander `\"execution_result\"` en entier)
-
-**Exemple** :
-```json
-{
-  \"type\": \"TOOL_EXECUTIONS\",
-  \"params\": {
-    \"id\": \"tool_instance_id\",
-    \"fields\": [
-      \"id\",
-      \"execution_time\",
-      \"status\",
-      \"execution_result\",
-      \"snapshot_data.title\",
-      \"snapshot_data.custom_fields.priority\"
-    ]
-  }
-}
-```
-
-**Retour** : Exécutions filtrées selon les champs demandés.
-
-**IMPORTANT - Schema requis** : Comme pour TOOL_DATA, le schéma d\'exécution doit être disponible AVANT de requêter.
-Si manquant, vous recevrez SCHEMA_REQUIRED avec le schéma complet.
-
-**Note sur custom_fields** : Dans les snapshots, custom_fields contiennent des valeurs formatées (strings lisibles).
-Exemple : `\"5/10\"` au lieu de `5`, `\"Élevé\"` au lieu de `\"high\"`.
-
-**Tooltypes supportant les exécutions** : {TOOLTYPES_WITH_EXECUTIONS}
-
 ### TOOL_CONFIG
 
 Récupère la configuration d\'un outil.
@@ -566,7 +508,7 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l\'ut
 
 **Comportement** :
 - Tous les custom_fields sont **optionnels**
-- Retournés automatiquement par `TOOL_CONFIG`, `TOOL_DATA` et `TOOL_EXECUTIONS`
+- Retournés automatiquement par `TOOL_CONFIG` et `TOOL_DATA`
 - Utilisables dans `CREATE_DATA` et `UPDATE_DATA`]]></string>
 
     <!-- C.5 Exemples Queries [DEGRÉ 3] -->
@@ -826,7 +768,7 @@ Format : `{tooltype}_data_{variant}` (ex: `tracking_data_numeric`)
 }
 ```
 
-**Data et Execution schemas** (toolInstanceId **requis**) :
+**Data schemas** (toolInstanceId **requis**) :
 ```json
 {
   "type": "SCHEMA",

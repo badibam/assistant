@@ -154,7 +154,6 @@
     <string name="ai_error_validation_multiple_action_types">Plusieurs types de commandes présents: %1$s. Un seul type autorisé par réponse.</string>
     <string name="ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
     <string name="ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
-    <string name="ai_validation_tool_executions_fields_invalid_pattern">Champ invalide \'%1$s\' dans TOOL_EXECUTIONS. Patterns valides: champs root sans point (\"id\", \"execution_time\"), champs snapshot (\"snapshot_data.title\"), custom fields (\"snapshot_data.custom_fields.field_name\"). INTERDITS: \"snapshot_data\" seul, \"snapshot_data.custom_fields\" seul, \"execution_result.read\" (demander \"execution_result\" en entier). Exemple: {\"type\":\"TOOL_EXECUTIONS\",\"params\":{\"id\":\"tool_id\",\"fields\":[\"id\",\"execution_time\",\"status\",\"execution_result\",\"snapshot_data.title\",\"snapshot_data.custom_fields.priority\"]}}</string>
 
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
@@ -567,7 +566,6 @@
     <string name="tools_config_label_data_validation">Validation données par IA</string>
     <string name="tools_config_label_schema_id">Identifiant de schéma</string>
     <string name="tools_config_label_data_schema_id">Identifiant de schéma de données</string>
-    <string name="tools_config_label_execution_schema_id">Identifiant de schéma d\'exécutions</string>
     <string name="tools_config_label_always_send">Toujours envoyer à l\'IA</string>
     <string name="tools_config_label_validate_config">Validation config</string>
     <string name="tools_config_label_validate_data">Validation données</string>
@@ -620,7 +618,6 @@
     <string name="tools_base_schema_config_data_validation"></string>
     <string name="tools_base_schema_config_schema_id"></string>
     <string name="tools_base_schema_config_data_schema_id"></string>
-    <string name="tools_base_schema_config_execution_schema_id">Identifiant du schéma d\'exécutions (optionnel, uniquement pour tooltypes supportant les exécutions)</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
     <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
@@ -637,17 +634,6 @@
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
 
     <!-- Tools BASE SCHEMA EXECUTION - Descriptions communes pour validation des exécutions -->
-    <string name="tools_base_schema_execution_id"></string>
-    <string name="tools_base_schema_execution_tool_instance_id"></string>
-    <string name="tools_base_schema_execution_tooltype"></string>
-    <string name="tools_base_schema_execution_template_data_id">ID du template (tool_data) utilisé pour cette exécution</string>
-    <string name="tools_base_schema_execution_scheduled_time">Timestamp planifié (null si non planifié)</string>
-    <string name="tools_base_schema_execution_execution_time">Timestamp réel d\'exécution</string>
-    <string name="tools_base_schema_execution_status">Statut de l\'exécution (pending, completed, failed, cancelled)</string>
-    <string name="tools_base_schema_execution_triggered_by">Source du déclenchement (SCHEDULE, MANUAL, EVENT)</string>
-    <string name="tools_base_schema_execution_created_at"></string>
-    <string name="tools_base_schema_execution_updated_at"></string>
-    <string name="tools_base_schema_execution_schema_id"></string>
 
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
     <string name="zone_config_schema_display_name"></string>
@@ -745,20 +731,16 @@
     <string name="label_context_generic">Référence générique</string>
     <string name="label_context_config">Configuration</string>
     <string name="label_context_data">Données</string>
-    <string name="label_context_executions">Exécutions</string>
 
     <!-- SCOPE SELECTOR - Resource labels -->
     <string name="label_resource_config">Configuration</string>
     <string name="label_resource_config_schema">Schéma de configuration</string>
     <string name="label_resource_data">Données</string>
     <string name="label_resource_data_schema">Schéma de données</string>
-    <string name="label_resource_executions">Historique d\'exécutions</string>
-    <string name="label_resource_executions_schema">Schéma d\'exécutions</string>
 
     <!-- SCOPE SELECTOR - Period labels (context-specific) -->
     <string name="label_period_reference">Période de référence (optionnelle)</string>
     <string name="label_period_data">Période des données</string>
-    <string name="label_period_execution">Période d\'exécution</string>
     <string name="label_period_type">Type de période</string>
 
     <!-- SCOPE SELECTOR - Error messages -->
@@ -1327,9 +1309,7 @@
     <!-- AI Data Headers (CommandExecutor prompt formatting) -->
     <string name="ai_data_header_trusted">DONNÉES FIABLES</string>
     <string name="ai_data_header_tool">Outil \'%1$s\'</string>
-    <string name="ai_data_header_executions">Exécutions de l\'outil \'%1$s\'</string>
     <string name="ai_data_result_count">Nombre de résultats : %1$d enregistrements</string>
-    <string name="ai_data_result_count_executions">Nombre de résultats : %1$d exécutions</string>
     <string name="ai_data_period_range">Période : %1$s à %2$s</string>
     <string name="ai_data_period_from">Période : à partir de %1$s</string>
     <string name="ai_data_period_until">Période : jusqu\'à %1$s</string>
@@ -1342,7 +1322,6 @@
     <string name="ai_data_fields">Champs inclus : %1$s</string>
     <string name="ai_data_fields_all">tous</string>
     <string name="ai_data_no_results_warning">⚠️ AUCUNE DONNÉE TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>
-    <string name="ai_data_no_results_executions_warning">⚠️ AUCUNE EXÉCUTION TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>
     <string name="ai_data_complete_dataset">✓ Jeu de données complet pour les critères spécifiés - Utiliser directement, NE PAS refaire la requête.</string>
 
     <!-- AI Enrichment - POINTER inline summaries -->
@@ -1351,7 +1330,6 @@
     <string name="ai_enrichment_pointer_generic">Données</string>
     <string name="ai_enrichment_pointer_context_config">configuration</string>
     <string name="ai_enrichment_pointer_context_data">données</string>
-    <string name="ai_enrichment_pointer_context_executions">exécutions</string>
     <string name="ai_enrichment_pointer_period_range">%1$s à %2$s</string>
     <string name="ai_enrichment_pointer_period_from">à partir de %1$s</string>
     <string name="ai_enrichment_pointer_period_until">jusqu\'à %1$s</string>
