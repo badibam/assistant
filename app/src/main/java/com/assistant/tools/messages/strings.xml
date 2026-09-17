@@ -28,7 +28,7 @@
     <string name="schema_data_notification_sent">La notification système est effectivement partie</string>
     <string name="schema_data_read">L\'utilisateur a lu cette occurrence</string>
     <string name="schema_data_archived">L\'utilisateur a archivé cette occurrence</string>
-    <string name="schema_data_triggered_by">Origine du déclenchement (SCHEDULE, MANUAL)</string>
+    <string name="schema_data_triggered_by">Origine de l\'occurrence, posée à sa création (SCHEDULE = engendrée par la récurrence, MANUAL = posée à la main)</string>
 
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_title">Titre</string>

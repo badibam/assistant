@@ -271,7 +271,7 @@ object MessageToolType : ToolTypeContract {
                             "description": "${s.tool("schema_data_triggered_by")}"
                         }
                     },
-                    "required": ["status"],
+                    "required": ["status", "triggered_by"],
                     "additionalProperties": false,
                     "allOf": [
                         {
@@ -280,7 +280,7 @@ object MessageToolType : ToolTypeContract {
                                 "required": ["status"]
                             },
                             "then": {
-                                "required": ["priority", "notification_sent", "read", "archived", "triggered_by"]
+                                "required": ["priority", "notification_sent", "read", "archived"]
                             }
                         }
                     ]

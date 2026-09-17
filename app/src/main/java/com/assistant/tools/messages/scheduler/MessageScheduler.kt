@@ -4,58 +4,67 @@ import android.content.Context
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.tools.ToolScheduler
+import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
-import com.assistant.tools.messages.MessageService
-import com.assistant.core.fields.FieldDefinition
-import com.assistant.core.fields.formatValue
-import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.validation.SchemaValidator
 import kotlinx.serialization.json.Json
-import org.json.JSONArray
 import org.json.JSONObject
+import java.time.ZoneId
 
 /**
- * Scheduler for Messages tool
+ * Scheduler for the Messages tool.
  *
- * Responsibilities:
- * - Scan all Messages tool instances for scheduled messages
- * - For each message with schedule != null, check if nextExecutionTime is reached
- * - Create execution record in tool_executions table
- * - Send notification via NotificationService
- * - Update schedule.nextExecutionTime for next occurrence
+ * One instance is one notification template. Its config holds the invariant part of every
+ * send and the recurrence; its tool_data entries are the occurrences, one per send.
  *
- * Architecture:
- * - Called by CoreScheduler.tick() (1 min app-open, 15 min app-closed)
- * - Uses tool_executions.create command (unified execution history)
- * - Best effort notifications (failed = status: "failed", no retry)
- * - Atomic sequence per message: send notif → create execution with final status
+ * Every tick does two things per instance, in this order:
  *
- * Flow per scheduled message:
- * 1. Check if nextExecutionTime <= now
- * 2. Send notification via NotificationService
- * 3. Create execution record (status: "completed" or "failed" based on notif result)
- * 4. Calculate next execution time via ScheduleCalculator
- * 5. Update schedule.nextExecutionTime in message data
+ * 1. Reconcile — bring the set of pending occurrences in line with the recurrence, within
+ *    the creation horizon. Missing ones are created, orphans are deleted, the rest are left
+ *    alone. There is deliberately no special path for "the recurrence just changed": editing
+ *    it simply gives the next reconciliation more to do.
+ *
+ * 2. Fire — resolve every pending occurrence whose time has come, oldest first. It is sent,
+ *    or expired if it is later than the template allows, or cancelled if the recurrence was
+ *    switched off in the meantime.
+ *
+ * The invariant part of the message is copied onto the occurrence AT SEND TIME and never at
+ * creation, so a pending occurrence is an intention rather than a half-written event, and
+ * editing the template reaches everything that has not gone out yet.
+ *
+ * See SPECS_REFONTE_EXECUTIONS.md sections 4.1 and 4.4.
  */
 object MessageScheduler : ToolScheduler {
 
+    private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
+    private const val MILLIS_PER_MINUTE = 60L * 1000L
+
+    /** Guards against a pattern that would otherwise enumerate forever within the horizon. */
+    private const val MAX_EXPECTED_PER_HORIZON = 1000
+
+    /**
+     * One pending occurrence as the scheduler needs it: its identity, when it is due, where
+     * it came from, and the part already written into it.
+     */
+    private data class PendingOccurrence(
+        val id: String,
+        val dueAt: Long,
+        val triggeredBy: String,
+        val data: JSONObject
+    )
+
     override suspend fun checkScheduled(context: Context) {
-        LogManager.service("MessageScheduler.checkScheduled() - scanning messages", "DEBUG")
+        LogManager.service("MessageScheduler.checkScheduled() - scanning message templates", "DEBUG")
 
         try {
             val coordinator = Coordinator(context)
-            val messageService = MessageService(context)
             val now = System.currentTimeMillis()
 
-            // 1. Get all Messages tool instances
-            val instancesResult = coordinator.processUserAction(
-                "tools.list_all",
-                emptyMap()
-            )
-
+            val instancesResult = coordinator.processUserAction("tools.list_all", emptyMap())
             if (!instancesResult.isSuccess) {
                 LogManager.service("Failed to list tool instances: ${instancesResult.error}", "ERROR")
                 return
@@ -72,36 +81,13 @@ object MessageScheduler : ToolScheduler {
 
             LogManager.service("Found ${messageInstances.size} Messages tool instance(s)", "DEBUG")
 
-            // 2. For each instance, get all messages (data entries)
             for (instance in messageInstances) {
                 val toolInstanceId = instance["id"] as? String ?: continue
-
-                val messagesResult = coordinator.processUserAction(
-                    "tool_data.get",
-                    mapOf("toolInstanceId" to toolInstanceId)
-                )
-
-                if (!messagesResult.isSuccess) {
-                    LogManager.service("Failed to get messages for instance $toolInstanceId: ${messagesResult.error}", "WARN")
-                    continue
-                }
-
-                @Suppress("UNCHECKED_CAST")
-                val entries = (messagesResult.data?.get("entries") as? List<Map<String, Any>>) ?: emptyList()
-
-                // 3. Check each message for scheduling
-                for (entry in entries) {
-                    val messageId = entry["id"] as? String ?: continue
-                    val messageName = entry["name"] as? String ?: ""
-                    val data = entry["data"] as? String ?: continue
-                    val customFieldsJson = entry["custom_fields"] as? String
-
-                    try {
-                        processMessage(context, messageId, messageName, data, customFieldsJson, now, messageService, coordinator, instance)
-                    } catch (e: Exception) {
-                        LogManager.service("Failed to process message $messageId: ${e.message}", "ERROR", e)
-                        // Continue with other messages
-                    }
+                try {
+                    processInstance(context, coordinator, toolInstanceId, instance, now)
+                } catch (e: Exception) {
+                    // One broken template must not stop the others
+                    LogManager.service("Failed to process message template $toolInstanceId: ${e.message}", "ERROR", e)
                 }
             }
 
@@ -112,183 +98,376 @@ object MessageScheduler : ToolScheduler {
         }
     }
 
-    /**
-     * Process a single message for scheduling
-     *
-     * @param context Android context
-     * @param messageId ID of message (ToolDataEntity.id) - serves as templateDataId
-     * @param messageName Name/title of the message (from ToolDataEntity.name)
-     * @param dataJson JSON string of message data
-     * @param customFieldsJson JSON string of custom fields (null if no custom fields)
-     * @param now Current timestamp
-     * @param messageService MessageService instance (unused, kept for compatibility)
-     * @param coordinator Coordinator for creating execution and updating message
-     * @param instance Tool instance data (for external_notifications config and toolInstanceId)
-     */
-    private suspend fun processMessage(
-        context: Context,
-        messageId: String,
-        messageName: String,
-        dataJson: String,
-        customFieldsJson: String?,
-        now: Long,
-        messageService: MessageService,
-        coordinator: Coordinator,
-        instance: Map<String, Any>
-    ) {
-        val data = JSONObject(dataJson)
+    // ========================================
+    // Per-instance pass
+    // ========================================
 
-        // Skip if no schedule
-        val schedule = data.optJSONObject("schedule")
-        if (schedule == null || schedule.toString() == "null") {
+    private suspend fun processInstance(
+        context: Context,
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        instance: Map<String, Any>,
+        now: Long
+    ) {
+        val configJson = instance["config_json"] as? String
+        if (configJson == null) {
+            LogManager.service("Message template $toolInstanceId has no config, skipping", "WARN")
             return
         }
-
-        // Check if nextExecutionTime is reached
-        val nextExecutionTime = schedule.optLong("nextExecutionTime", -1)
-        if (nextExecutionTime <= 0 || nextExecutionTime > now) {
-            return  // Not yet time to execute
-        }
-
-        // Extract message data for execution
-        // Note: title comes from ToolDataEntity.name field, not from data JSON
-        LogManager.service("Executing scheduled message: '$messageName' (id=$messageId)", "INFO")
-        val content = data.optString("content", "")
-        val priority = data.optString("priority", "default")
-        val toolInstanceId = instance["id"] as? String ?: return
-
-        // Get external_notifications setting from config
-        val configJson = instance["config_json"] as? String
-        val externalNotifications = if (configJson != null) {
-            try {
-                val config = JSONObject(configJson)
-                config.optBoolean("external_notifications", true)
-            } catch (e: Exception) {
-                true  // Default to true if config parsing fails
-            }
-        } else {
-            true
-        }
-
-        // Send notification if external_notifications enabled
-        var notificationSuccess = true
-        if (externalNotifications) {
-            val notifResult = coordinator.processUserAction(
-                "notifications.send",
-                mapOf(
-                    "title" to messageName,
-                    "content" to content,
-                    "priority" to priority
-                )
-            )
-
-            notificationSuccess = notifResult.isSuccess
-            if (!notificationSuccess) {
-                LogManager.service("Notification send failed for message $messageId: ${notifResult.error}", "WARN")
-            }
-        } else {
-            LogManager.service("External notifications disabled for instance, skipping notification", "DEBUG")
-        }
-
-        // Determine final execution status
-        val finalStatus = if (notificationSuccess) "completed" else "failed"
-
-        // Create execution record in tool_executions table
-        val snapshotData = JSONObject().apply {
-            put("title", messageName)
-            put("content", content)
-            put("priority", priority)
-
-            // Include FORMATTED custom_fields snapshot if present
-            // Custom fields are formatted for human readability in execution snapshots
-            val formattedCustomFields = formatCustomFields(customFieldsJson, configJson, context)
-            if (formattedCustomFields != null) {
-                put("custom_fields", formattedCustomFields)
-            }
-        }
-
-        val executionResult = JSONObject().apply {
-            put("read", false)
-            put("archived", false)
-            put("notification_sent", notificationSuccess)
-        }
-
-        val metadata = JSONObject().apply {
-            if (!notificationSuccess) {
-                put("error", "Notification send failed")
-            }
-        }
-
-        // Convert timestamps to ISO 8601 for service (external interface)
+        val config = JSONObject(configJson)
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
-        val createExecutionResult = coordinator.processUserAction(
-            "tool_executions.create",
-            mapOf(
-                "toolInstanceId" to toolInstanceId,
-                "tooltype" to "messages",
-                "templateDataId" to messageId,
-                "scheduledTime" to DateTimeConverter.timestampToISO(nextExecutionTime, timezone),
-                "executionTime" to DateTimeConverter.timestampToISO(now, timezone),
-                "status" to finalStatus,
-                "triggeredBy" to "SCHEDULE",
-                "snapshotData" to snapshotData,
-                "executionResult" to executionResult,
-                "metadata" to metadata
-            )
-        )
 
-        if (!createExecutionResult.isSuccess) {
-            LogManager.service("Failed to create execution record for message $messageId: ${createExecutionResult.error}", "ERROR")
-            // Continue anyway to update next execution time
+        val schedule = parseSchedule(config)
+        val scheduleEnabled = schedule?.enabled ?: false
+
+        val pending = loadPending(coordinator, toolInstanceId, timezone)
+
+        // A recurrence that is absent or switched off stops creating AND stops deleting: the
+        // pending set drains on its own as each occurrence is cancelled at its time, so
+        // suspending is never destructive and removing the recurrence keeps a faithful trace
+        // of what had been planned.
+        if (schedule != null && scheduleEnabled) {
+            reconcilePending(context, coordinator, toolInstanceId, config, schedule, pending, now, timezone)
         }
 
-        // Calculate next execution time using ScheduleCalculator
-        val scheduleConfig = parseScheduleConfig(schedule)
-        if (scheduleConfig != null) {
-            val nextExecution = ScheduleCalculator.calculateNextExecution(
-                pattern = scheduleConfig.pattern,
-                startDate = scheduleConfig.startDate,
-                endDate = scheduleConfig.endDate,
-                fromTimestamp = now
-            )
+        // Reconciliation only ever touches occurrences still in the future, so the due set is
+        // exactly what was loaded above — nothing it did can have added to or removed from it.
+        firePending(coordinator, toolInstanceId, config, scheduleEnabled, pending, now)
+    }
 
-            if (nextExecution != null) {
-                schedule.put("nextExecutionTime", nextExecution)
-                LogManager.service("Message '$messageName' next execution: ${formatTimestamp(nextExecution)}", "INFO")
+    // ========================================
+    // 1. Reconciliation
+    // ========================================
+
+    /**
+     * Brings the pending set in line with the recurrence, inside the creation horizon.
+     *
+     * Only occurrences born of the recurrence (triggered_by = SCHEDULE) are considered: one
+     * placed by hand or by the AI is not the recurrence's to delete.
+     *
+     * Only the future is touched. An occurrence already due is resolved by firePending, which
+     * either sends it or expires it — deleting it here would silently drop something that was
+     * legitimately due before the template changed.
+     */
+    private suspend fun reconcilePending(
+        context: Context,
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        config: JSONObject,
+        schedule: ScheduleConfig,
+        pending: List<PendingOccurrence>,
+        now: Long,
+        timezone: ZoneId
+    ) {
+        val horizonDays = config.optInt("creation_horizon_days", 0)
+        if (horizonDays <= 0) {
+            LogManager.service("Message template $toolInstanceId has no creation horizon, skipping reconciliation", "WARN")
+            return
+        }
+        val horizonEnd = now + horizonDays * MILLIS_PER_DAY
+
+        val expected = expectedOccurrences(schedule, now, horizonEnd, toolInstanceId)
+
+        val futureScheduled = pending.filter { it.dueAt > now && it.triggeredBy == "SCHEDULE" }
+        val existingTimes = futureScheduled.map { it.dueAt }.toSet()
+        val expectedTimes = expected.toSet()
+
+        for (orphan in futureScheduled.filter { it.dueAt !in expectedTimes }) {
+            val result = coordinator.processUserAction("tool_data.delete", mapOf("id" to orphan.id))
+            if (result.isSuccess) {
+                LogManager.service("Deleted orphaned occurrence ${orphan.id} (no longer matches the recurrence)", "INFO")
             } else {
-                schedule.put("nextExecutionTime", JSONObject.NULL)
-                LogManager.service("Message '$messageName' completed (no more scheduled executions)", "INFO")
+                LogManager.service("Failed to delete orphaned occurrence ${orphan.id}: ${result.error}", "ERROR")
             }
-            data.put("schedule", schedule)
-        } else {
-            // Failed to parse schedule, disable this message to prevent infinite retries
-            LogManager.service("Failed to parse schedule for message '$messageName', disabling", "WARN")
-            schedule.put("nextExecutionTime", JSONObject.NULL)
-            data.put("schedule", schedule)
         }
 
-        val updateResult = coordinator.processUserAction(
-            "tool_data.update",
-            mapOf(
-                "id" to messageId,
-                "data" to data  // JSONObject, not toString()
-            )
-        )
-
-        if (!updateResult.isSuccess) {
-            LogManager.service("Failed to update message $messageId after execution: ${updateResult.error}", "WARN")
+        for (dueAt in expected.filter { it !in existingTimes }) {
+            createPendingOccurrence(context, coordinator, toolInstanceId, config, dueAt, timezone)
         }
     }
 
     /**
-     * Parse schedule JSONObject to ScheduleConfig
+     * Enumerates the times the recurrence produces between now and the end of the horizon.
      *
-     * @param scheduleJson JSONObject from message data
-     * @return ScheduleConfig object or null if parsing fails
+     * ScheduleCalculator answers "next execution strictly after this instant", so walking it
+     * forward gives the whole set. The iteration cap and the non-progress check are guards, not
+     * fallbacks: if either triggers, the pattern is wrong and the log says so.
      */
-    private fun parseScheduleConfig(scheduleJson: JSONObject): ScheduleConfig? {
+    private fun expectedOccurrences(
+        schedule: ScheduleConfig,
+        now: Long,
+        horizonEnd: Long,
+        toolInstanceId: String
+    ): List<Long> {
+        val times = mutableListOf<Long>()
+        var cursor = now
+
+        while (times.size < MAX_EXPECTED_PER_HORIZON) {
+            val next = ScheduleCalculator.calculateNextExecution(
+                pattern = schedule.pattern,
+                startDate = schedule.startDate,
+                endDate = schedule.endDate,
+                fromTimestamp = cursor
+            ) ?: break
+
+            if (next > horizonEnd) break
+
+            if (next <= cursor) {
+                LogManager.service(
+                    "Schedule pattern of $toolInstanceId did not advance past $cursor, stopping enumeration",
+                    "ERROR"
+                )
+                break
+            }
+
+            times.add(next)
+            cursor = next
+        }
+
+        if (times.size >= MAX_EXPECTED_PER_HORIZON) {
+            LogManager.service(
+                "Schedule pattern of $toolInstanceId produced $MAX_EXPECTED_PER_HORIZON occurrences within its horizon, truncated",
+                "ERROR"
+            )
+        }
+
+        return times
+    }
+
+    /**
+     * Creates one pending occurrence, due at the given time and carrying nothing else.
+     *
+     * It holds only its status and its origin. The invariant part of the message is not copied
+     * in here — that happens at send time, so that editing the template still reaches it.
+     *
+     * Validated before insertion: ToolDataService.create does not validate on its own, and the
+     * occurrences this replaces were written with no validation at all.
+     */
+    private suspend fun createPendingOccurrence(
+        context: Context,
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        config: JSONObject,
+        dueAt: Long,
+        timezone: ZoneId
+    ) {
+        val name = config.optString("name")
+        val data = JSONObject().apply {
+            put("status", "pending")
+            put("triggered_by", "SCHEDULE")
+        }
+
+        val validation = validateOccurrence(context, toolInstanceId, name, dueAt, data)
+        if (validation != null) {
+            LogManager.service("Refusing to create occurrence for $toolInstanceId: $validation", "ERROR")
+            return
+        }
+
+        val result = coordinator.processUserAction("tool_data.create", mapOf(
+            "toolInstanceId" to toolInstanceId,
+            "tooltype" to "messages",
+            "schema_id" to "messages_data",
+            "name" to name,
+            "timestamp" to DateTimeConverter.timestampToISO(dueAt, timezone),
+            "data" to data
+        ))
+
+        if (result.isSuccess) {
+            LogManager.service("Created pending occurrence for $toolInstanceId due at ${DateTimeConverter.timestampToISO(dueAt, timezone)}", "INFO")
+        } else {
+            LogManager.service("Failed to create pending occurrence for $toolInstanceId: ${result.error}", "ERROR")
+        }
+    }
+
+    // ========================================
+    // 2. Firing
+    // ========================================
+
+    /**
+     * Resolves every pending occurrence whose time has come, oldest first.
+     *
+     * Three outcomes, and each says why it happened rather than leaving it to be guessed later:
+     * - cancelled: the recurrence was switched off before its time came. A decision, not a miss.
+     *   Only occurrences born of the recurrence are cancelled this way — one placed by hand is
+     *   not suspended by turning the recurrence off.
+     * - expired: it came due longer ago than validity_window_minutes allows. A morning reminder
+     *   arriving mid-afternoon is worse than no reminder.
+     * - sent: the notification goes out, and the invariant part of the message is copied in.
+     *
+     * An occurrence with nothing in it yet is a fourth case and gets no outcome at all: it is
+     * left pending, so it can still be filled, and the validity window resolves it if nobody
+     * does. Naming that expired would say "too late" about something that was never written.
+     */
+    private suspend fun firePending(
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        config: JSONObject,
+        scheduleEnabled: Boolean,
+        pending: List<PendingOccurrence>,
+        now: Long
+    ) {
+        val due = pending.filter { it.dueAt <= now }.sortedBy { it.dueAt }
+        if (due.isEmpty()) return
+
+        val validityWindowMinutes = config.optInt("validity_window_minutes", -1)
+        if (validityWindowMinutes < 0) {
+            LogManager.service("Message template $toolInstanceId has no validity window, skipping its due occurrences", "WARN")
+            return
+        }
+        val validityWindowMillis = validityWindowMinutes * MILLIS_PER_MINUTE
+
+        for (occurrence in due) {
+            when {
+                occurrence.triggeredBy == "SCHEDULE" && !scheduleEnabled ->
+                    resolveWithoutSending(coordinator, occurrence, "cancelled")
+
+                now - occurrence.dueAt > validityWindowMillis ->
+                    resolveWithoutSending(coordinator, occurrence, "expired")
+
+                else ->
+                    send(coordinator, toolInstanceId, config, occurrence)
+            }
+        }
+    }
+
+    /**
+     * Sends the notification and marks the occurrence sent.
+     *
+     * Composition: the common title and the title written for this send are joined, and the
+     * content of the send forms the body. A missing part contributes nothing — there is no
+     * value stepping in for another.
+     */
+    private suspend fun send(
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        config: JSONObject,
+        occurrence: PendingOccurrence
+    ) {
+        val commonTitle = config.optString("common_title").takeIf { it.isNotEmpty() }
+        val ownTitle = occurrence.data.optString("title").takeIf { it.isNotEmpty() }
+        val content = occurrence.data.optString("content").takeIf { it.isNotEmpty() }
+        val priority = config.optString("priority", "default")
+
+        val title = listOfNotNull(commonTitle, ownTitle).joinToString(" · ")
+        if (title.isEmpty() && content == null) {
+            // Neither the template nor the day contributed anything, so there is nothing to
+            // show. It stays pending rather than being resolved: whoever was going to fill it
+            // may still do so, and if nobody does, the validity window expires it on its own.
+            // No third outcome is needed for emptiness, and expired would misname the reason.
+            LogManager.service("Occurrence ${occurrence.id} is still empty, leaving it pending", "DEBUG")
+            return
+        }
+
+        var notificationSent = false
+        if (config.optBoolean("external_notifications", true)) {
+            val params = mutableMapOf<String, Any>(
+                "title" to title,
+                "priority" to priority
+            )
+            if (content != null) params["content"] = content
+
+            val result = coordinator.processUserAction("notifications.send", params)
+            notificationSent = result.isSuccess
+            if (!notificationSent) {
+                LogManager.service("Notification failed for occurrence ${occurrence.id}: ${result.error}", "WARN")
+            }
+        } else {
+            LogManager.service("External notifications disabled for $toolInstanceId, occurrence recorded without one", "DEBUG")
+        }
+
+        val data = JSONObject(occurrence.data.toString()).apply {
+            put("status", "sent")
+            if (commonTitle != null) put("common_title", commonTitle)
+            put("priority", priority)
+            put("notification_sent", notificationSent)
+            put("read", false)
+            put("archived", false)
+        }
+
+        updateOccurrence(coordinator, occurrence, data, "sent")
+    }
+
+    /** Marks an occurrence resolved without a notification, keeping the part already written. */
+    private suspend fun resolveWithoutSending(
+        coordinator: Coordinator,
+        occurrence: PendingOccurrence,
+        status: String
+    ) {
+        val data = JSONObject(occurrence.data.toString()).apply { put("status", status) }
+        updateOccurrence(coordinator, occurrence, data, status)
+    }
+
+    private suspend fun updateOccurrence(
+        coordinator: Coordinator,
+        occurrence: PendingOccurrence,
+        data: JSONObject,
+        status: String
+    ) {
+        val result = coordinator.processUserAction("tool_data.update", mapOf(
+            "id" to occurrence.id,
+            "data" to data
+        ))
+
+        if (result.isSuccess) {
+            LogManager.service("Occurrence ${occurrence.id} resolved as $status", "INFO")
+        } else {
+            LogManager.service("Failed to mark occurrence ${occurrence.id} as $status: ${result.error}", "ERROR")
+        }
+    }
+
+    // ========================================
+    // Reading and validation helpers
+    // ========================================
+
+    /**
+     * Loads every pending occurrence of an instance, with no time bound.
+     *
+     * The status filter is what makes the absence of a bound possible. Asking by time window
+     * instead would lose any occurrence left behind by a gap longer than the window — the app
+     * unopened for a week — and leave it pending forever with nothing to notice it.
+     */
+    private suspend fun loadPending(
+        coordinator: Coordinator,
+        toolInstanceId: String,
+        timezone: ZoneId
+    ): List<PendingOccurrence> {
+        val result = coordinator.processUserAction("tool_data.get", mapOf(
+            "toolInstanceId" to toolInstanceId,
+            "status" to "pending"
+        ))
+
+        if (!result.isSuccess) {
+            LogManager.service("Failed to load pending occurrences of $toolInstanceId: ${result.error}", "ERROR")
+            return emptyList()
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val entries = (result.data?.get("entries") as? List<Map<String, Any>>) ?: emptyList()
+
+        return entries.mapNotNull { entry ->
+            val id = entry["id"] as? String ?: return@mapNotNull null
+            val iso = entry["timestamp"] as? String ?: return@mapNotNull null
+            val dataJson = entry["data"] as? String ?: return@mapNotNull null
+
+            try {
+                val data = JSONObject(dataJson)
+                PendingOccurrence(
+                    id = id,
+                    dueAt = DateTimeConverter.isoToTimestamp(iso, timezone),
+                    triggeredBy = data.optString("triggered_by", "MANUAL"),
+                    data = data
+                )
+            } catch (e: Exception) {
+                LogManager.service("Unreadable pending occurrence $id, skipped: ${e.message}", "ERROR", e)
+                null
+            }
+        }
+    }
+
+    /** Parses the recurrence out of the config. Absent means a channel fed on demand only. */
+    private fun parseSchedule(config: JSONObject): ScheduleConfig? {
+        val scheduleJson = config.optJSONObject("schedule") ?: return null
         return try {
-            // Use kotlinx.serialization to deserialize the schedule JSON
             Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
         } catch (e: Exception) {
             LogManager.service("Failed to parse schedule config: ${e.message}", "ERROR", e)
@@ -297,98 +476,30 @@ object MessageScheduler : ToolScheduler {
     }
 
     /**
-     * Format timestamp to readable date string
-     *
-     * @param timestamp Unix timestamp in milliseconds
-     * @return Formatted date string (e.g., "2025-01-15 14:30:00")
+     * Validates an occurrence against the instance's data schema.
+     * @return null when valid, the error message otherwise.
      */
-    private fun formatTimestamp(timestamp: Long): String {
-        return try {
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-            dateFormat.format(java.util.Date(timestamp))
-        } catch (e: Exception) {
-            timestamp.toString()
-        }
-    }
+    private fun validateOccurrence(
+        context: Context,
+        toolInstanceId: String,
+        name: String,
+        dueAt: Long,
+        data: JSONObject
+    ): String? {
+        val toolType = ToolTypeManager.getToolType("messages") ?: return "messages tooltype not found"
+        val schema = toolType.getSchema("messages_data", context, toolInstanceId)
+            ?: return "messages_data schema not found"
 
-    /**
-     * Helper to convert JSONObject to Map recursively
-     */
-    private fun JSONObject.toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        keys().forEach { key ->
-            val value = get(key)
-            map[key] = when (value) {
-                is JSONObject -> value.toMap()
-                is org.json.JSONArray -> value.toList()
-                else -> value
-            }
-        }
-        return map
-    }
+        val entry = mapOf(
+            "tool_instance_id" to toolInstanceId,
+            "tooltype" to "messages",
+            "schema_id" to "messages_data",
+            "name" to name,
+            "timestamp" to dueAt,
+            "data" to data
+        )
 
-    /**
-     * Helper to convert JSONArray to List recursively
-     */
-    private fun org.json.JSONArray.toList(): List<Any> {
-        val list = mutableListOf<Any>()
-        for (i in 0 until length()) {
-            val value = get(i)
-            list.add(when (value) {
-                is JSONObject -> value.toMap()
-                is org.json.JSONArray -> value.toList()
-                else -> value
-            })
-        }
-        return list
-    }
-
-    /**
-     * Format custom fields for execution snapshot
-     *
-     * Converts raw custom field values to formatted strings for human readability
-     * in execution snapshots. Uses FieldDefinition.formatValue() for consistent formatting.
-     *
-     * @param customFieldsJson Raw custom field values (JSON string)
-     * @param configJsonStr Tool instance config (JSON string)
-     * @param context Android context for string resources
-     * @return JSONObject with formatted custom field values, or null if no custom fields
-     */
-    private fun formatCustomFields(
-        customFieldsJson: String?,
-        configJsonStr: String?,
-        context: Context
-    ): JSONObject? {
-        // Return null if no custom fields
-        if (customFieldsJson == null) return null
-
-        try {
-            // Parse config to get custom field definitions
-            val config = configJsonStr?.let { JSONObject(it) } ?: return null
-            val customFieldsArray = config.optJSONArray("custom_fields") ?: return null
-
-            // Convert to FieldDefinition list
-            val fieldDefinitions = customFieldsArray.toFieldDefinitions()
-            if (fieldDefinitions.isEmpty()) return null
-
-            // Parse raw custom field values
-            val customFieldValues = JSONObject(customFieldsJson)
-
-            // Format each custom field value
-            val formattedFields = JSONObject()
-            for (fieldDef in fieldDefinitions) {
-                val rawValue = customFieldValues.opt(fieldDef.name)
-                if (rawValue != null) {
-                    val formattedValue = fieldDef.formatValue(rawValue, context)
-                    formattedFields.put(fieldDef.name, formattedValue)
-                }
-            }
-
-            return if (formattedFields.length() > 0) formattedFields else null
-
-        } catch (e: Exception) {
-            LogManager.service("Failed to format custom fields for snapshot: ${e.message}", "WARN", e)
-            return null
-        }
+        val validation = SchemaValidator.validate(schema, entry, context)
+        return if (validation.isValid) null else (validation.errorMessage ?: "invalid occurrence")
     }
 }

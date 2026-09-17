@@ -138,7 +138,9 @@ Origine : session de reprise, question soulevée en attaquant l'étape 1. Consig
 
 **Tranché depuis** (même séance, cf. §4.1) : désactiver ne cascade pas et introduit l'état `cancelled` ; changer la récurrence passe par la réconciliation de l'ensemble en attente, avec dialogue de confirmation et sans règle de correspondance devinée.
 
-**Reste à trancher à l'étape 2 (planificateur)** : confirmer la règle « occurrence vide sans part commune = ne part pas », et l'état dans lequel elle finit.
+**Tranché à l'étape 2** : une occurrence dont ni le modèle ni le jour n'ont rien écrit **reste `pending`**. Elle ne reçoit aucun état de sortie — celui qui devait la remplir peut encore le faire, et si personne ne le fait, la fenêtre de validité la passe `expired` d'elle-même. La nommer `expired` tout de suite dirait « trop tard » d'une chose qui n'a jamais été écrite, et il n'y a pas besoin d'un cinquième état pour le vide.
+
+**Aussi tranché à l'étape 2** : retirer la récurrence de la config ne supprime pas les occurrences déjà en attente — elles se vident par `cancelled`, comme une désactivation. Supprimer et désactiver suivent donc le même chemin, et l'historique garde la trace de ce qui avait été prévu.
 
 ### 4.5 Exécution = opération d'instance
 
