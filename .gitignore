@@ -51,3 +51,11 @@ keystore/
 .env
 keystore/
 .BAK/
+
+# Scratchpad user (dev_base)
+NOTES.md
+
+# Working resources kept out of git
+icons-source/
+tmp/
+.claude/settings.local.json

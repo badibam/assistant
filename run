@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Entry point of the project. Bare `./run` shows the menu; `./run <option>` runs one task directly.
+set -u
+
+cd "$(dirname "$0")" || exit 1
+
+usage() {
+    cat <<'EOF'
+Usage: ./run [option]
+
+  compile    Type-check the Kotlin sources (compileDebugKotlin)
+  strings    Regenerate string resources from the XML sources
+  debug      Build the debug APK
+  install    Build the debug APK and install it on the connected device
+  logcat     Follow the app's logs on the connected device
+  release    Build and sign the release APK (scripts/build_release.sh)
+  db         Back up or restore the device database (scripts/db_backup_restore.sh)
+EOF
+}
+
+# The Kotlin compiler drowns real errors in noise: keep only the error lines and the verdict.
+compile() {
+    ./gradlew compileDebugKotlin | grep -E '^e:|^Error:|^ERROR:|BUILD SUCCESSFUL|BUILD FAILED'
+}
+
+run_task() {
+    case "$1" in
+        compile) compile ;;
+        strings) ./gradlew generateStringResources ;;
+        debug)   ./gradlew assembleDebug ;;
+        install) ./gradlew installDebug ;;
+        logcat)  adb logcat --pid="$(adb shell pidof -s com.assistant.debug)" ;;
+        release) scripts/build_release.sh ;;
+        db)      scripts/db_backup_restore.sh ;;
+        *)       echo "Unknown option: $1" >&2; usage; return 1 ;;
+    esac
+}
+
+if [ $# -gt 0 ]; then
+    run_task "$1"
+    exit $?
+fi
+
+usage
+echo
+read -r -p "Option (empty to quit): " choice
+[ -n "$choice" ] || exit 0
+run_task "$choice"
