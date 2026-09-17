@@ -1,8 +1,7 @@
 # Refonte : Suppression du plan tool_executions
 
-**Statut** : Design validé, prêt pour implémentation
+**Statut** : Implémenté (étapes 1 à 5, 2026-09-17/18). Le document reste en place pour son §3 et son §4.4 — le raisonnement, pas le plan de travail. Ce qui est fait vit dans le code et les commits.
 **Origine** : Session de design 2026-06-10/11 (audit architecture + archéologie git)
-**Exécutant prévu** : Claude Sonnet — ce doc contient TOUT le contexte nécessaire, ne pas improviser au-delà
 
 ---
 
