@@ -81,10 +81,17 @@ Sentiment diffus que les chantiers récents (tool_executions, snapshots, custom 
 - `validity_window_minutes` — au-delà de ce retard, une occurrence non partie passe `expired` au lieu d'être envoyée. Le seuil dépend du message (« Attention du matin » à 15h n'a aucun sens, « pense à boire » à 15h en a encore), donc il est réglable par instance et non constant dans le code.
 - `custom_fields` (définitions, mécanisme standard)
 
-**tool_data de l'instance** (= les envois de CE message) — une entrée par occurrence, trois états :
+**tool_data de l'instance** (= les envois de CE message) — une entrée par occurrence, quatre états :
 - `pending` : l'occurrence existe, elle n'est pas partie. Créée à l'avance par le scheduler. Elle ne porte QUE sa part propre — `scheduled_time`, `title` (titre du jour, facultatif), `content`, `custom_fields` (valeurs brutes). Se remplit par `tool_data.update` ordinaire.
 - `sent` : l'occurrence est partie. Le scheduler y a copié la part commune (`common_title`, `priority`) et le résultat (`notification_sent`, `read`, `archived`, `triggered_by`). `timestamp` = heure d'envoi effective ; l'heure prévue reste dans `scheduled_time`.
 - `expired` : l'heure est passée au-delà de `validity_window_minutes` sans que l'app tourne. Jamais envoyée, conservée comme trace.
+- `cancelled` : l'heure est arrivée alors que le modèle était désactivé. N'avait pas à partir. Distinct d'`expired` : l'un est une décision, l'autre un raté — les confondre ferait passer une suspension délibérée pour un message manqué, et rien ne permettrait de les démêler après coup.
+
+**Désactiver ne cascade pas.** `schedule.enabled = false` est une simple modification de config, elle ne touche à aucune occurrence. Ce qui change est ce que fait le scheduler : il cesse de créer de nouvelles occurrences (l'ensemble en attente se vide de lui-même) et, quand l'heure d'une occurrence en attente arrive, il la passe `cancelled` au lieu de l'envoyer. Réactiver avant que leur heure soit passée les fait partir normalement, avec le contenu que l'IA y avait écrit. Suspendre ne doit pas être destructif, sinon on hésite à s'en servir et on finit par supprimer l'instance — ce qui est pire.
+
+**Changer la récurrence réconcilie, sans cas particulier.** Le scheduler compare en permanence l'ensemble des occurrences `pending` à l'ensemble attendu dans la fenêtre `creation_horizon_days` : il supprime celles qui ne correspondent plus à aucun créneau, crée celles qui manquent, et ne touche pas aux autres. Modifier un horaire ne déclenche donc pas un traitement dédié, seulement plus de travail à la réconciliation suivante. L'UI de config calcule et annonce les suppressions avant de valider (même geste que le dialogue de migration des champs personnalisés). Ne PAS tenter de faire correspondre les anciennes occurrences aux nouveaux créneaux : toute règle de correspondance (par ordre, par index) devine, et deviner est interdit ici.
+
+**Envoi au coup par coup** : trois chemins, aucun mécanisme supplémentaire. `messages.execute` sur l'instance crée une occurrence et l'envoie immédiatement (`triggered_by: "MANUAL"`, cf. §4.5). Créer une occurrence `pending` avec son heure et son contenu donne un envoi ponctuel programmé. Et une instance dont `schedule` est vide ne fait jamais rien toute seule : c'est un **pur canal de notification**, alimenté uniquement à la demande par l'utilisateur ou l'IA. Ce dernier cas était l'une des architectures alternatives envisagées pendant la séance ; il survit comme un réglage de l'instance, pas comme un autre design — le même tooltype porte un rappel récurrent et un canal piloté par l'IA.
 
 **Composition** : la notification affiche `common_title` et le titre du jour concaténés, le contenu du jour en corps. Une partie absente ne contribue rien — c'est de la concaténation, jamais une valeur de repli qui prend la main.
 
@@ -127,9 +134,9 @@ Origine : session de reprise, question soulevée en attaquant l'étape 1. Consig
 
 **La question d'origine de cette section se dissout.** Elle demandait où valider les valeurs de champs personnalisés du modèle, stockées en config à côté de leurs propres définitions — friction réelle, puisque le mécanisme d'enrichissement va chercher les définitions en base par identifiant d'instance, ce qui est circulaire pour une config et impossible à la création. Sous le nouveau modèle ces valeurs varient par occurrence : elles vivent donc dans `tool_data` et passent par l'enrichissement standard. Plus de `custom_field_values` en config, plus de friction. (Elle reviendrait si un champ personnalisé devait avoir une valeur commune à tous les envois — cas non rencontré, ne pas l'anticiper.)
 
-**Reste à trancher à l'étape 2 (planificateur)**, signalé ici pour ne pas le perdre :
-- Que faire des occurrences `pending` quand la récurrence du modèle change ? Les supprimer et régénérer est simple, mais peut jeter du contenu déjà écrit par l'IA.
-- Confirmer la règle « occurrence vide sans part commune = ne part pas », et l'état dans lequel elle finit.
+**Tranché depuis** (même séance, cf. §4.1) : désactiver ne cascade pas et introduit l'état `cancelled` ; changer la récurrence passe par la réconciliation de l'ensemble en attente, avec dialogue de confirmation et sans règle de correspondance devinée.
+
+**Reste à trancher à l'étape 2 (planificateur)** : confirmer la règle « occurrence vide sans part commune = ne part pas », et l'état dans lequel elle finit.
 
 ### 4.5 Exécution = opération d'instance
 
@@ -139,7 +146,7 @@ L'unité exécutable est **l'instance** (la définition étant sa config, il n'y
 - **Déclenchement manuel et planifié = même chemin de code**, `triggered_by` en simple paramètre.
 - **Symétrie UI/IA gratuite** : l'IA crée l'instance (`tools.create`), l'exécute (`{tooltype}.execute`), lit les résultats (`TOOL_DATA`) — boucle d'orchestration complète sans commande nouvelle. La hiérarchie de validation s'applique à `execute` au niveau tool.
 - **`templateDataId` disparaît** : le lien occurrence→définition est `toolInstanceId`, déjà natif sur chaque entrée.
-- **Le scheduler change de boucle** : itérer les instances et lire leur config, puis (a) créer les occurrences manquantes dans la fenêtre `creation_horizon_days`, (b) envoyer celles dont l'heure est venue, (c) marquer `expired` celles qui ont dépassé `validity_window_minutes`. Plus d'itération des entrées-templates. *(Amendé le 2026-09-17, cf. §4.4.)*
+- **Le scheduler change de boucle** : itérer les instances et lire leur config, puis (a) créer les occurrences manquantes dans la fenêtre `creation_horizon_days`, (b) envoyer celles dont l'heure est venue, (c) marquer `expired` celles qui ont dépassé `validity_window_minutes` et `cancelled` celles dont l'heure arrive alors que le modèle est désactivé, (d) supprimer celles qui ne correspondent plus à aucun créneau de la récurrence. Plus d'itération des entrées-templates. *(Amendé le 2026-09-17, cf. §4.4.)*
 - **État actif/suspendu dans la config** (ex: `schedule.enabled`) : suspendre = update de config, visible et event-sourcé.
 - **Taxonomie émergente** : tooltypes *passifs* (Tracking, Journal, Note — l'utilisateur écrit dans tool_data) vs *actifs/exécutables* (Messages, Calcul, futurs Alertes/Objectifs — le système écrit dans tool_data, piloté par la config).
 
