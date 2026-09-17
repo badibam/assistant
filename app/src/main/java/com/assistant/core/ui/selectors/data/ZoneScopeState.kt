@@ -34,7 +34,7 @@ data class ZoneScopeState(
 )
 
 /**
- * Étape de sélection dans la chaîne de navigation
+ * Which step of the navigation chain the selection is at
  */
 data class SelectionStep(
     val label: String,           // "Zone", "Outil", "Champ", etc.

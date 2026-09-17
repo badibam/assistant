@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 
 /**
- * Gestionnaire de timers par instance d'outil
+ * Manages one timer per tool instance
  */
 class TimerManager private constructor() {
 
@@ -20,10 +20,10 @@ class TimerManager private constructor() {
         }
     }
 
-    // Map des états de timer par toolInstanceId
+    // Timer states, keyed by toolInstanceId
     private val _timerStates = mutableMapOf<String, MutableState<TimerState>>()
 
-    // Map des jobs de mise à jour par toolInstanceId
+    // Update jobs, keyed by toolInstanceId
     private val updateJobs = mutableMapOf<String, Job>()
     
     /**

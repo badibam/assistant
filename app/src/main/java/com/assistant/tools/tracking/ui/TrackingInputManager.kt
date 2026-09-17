@@ -57,7 +57,7 @@ fun TrackingInputManager(
                     dataObject.remove("custom_fields") // Remove from data object
                 }
 
-                // Build params pour nouvelle structure tool_data
+                // Build the params for the current tool_data structure
                 val params = mutableMapOf<String, Any>(
                     "toolInstanceId" to toolInstanceId,
                     "tooltype" to "tracking",

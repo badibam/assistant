@@ -72,11 +72,11 @@ object PromptChunks {
         Chunk("validation_strategy", 1) { ctx, _ -> buildChunk("validation_strategy", ctx) },
         Chunk("validation_system_managed", 1) { ctx, _ -> buildChunk("validation_system_managed", ctx) },
 
-        // PARTIE E : GESTION TEMPORELLE
+        // PART E: TIME HANDLING
         Chunk("temporal_formats", 1) { ctx, _ -> buildChunk("temporal_formats", ctx) },
         Chunk("temporal_examples", 2) { ctx, _ -> buildChunk("temporal_examples", ctx) },
 
-        // PARTIE F : GESTION DES ERREURS
+        // PART F: ERROR HANDLING
         Chunk("errors_types", 3) { ctx, _ -> buildChunk("errors_types", ctx) },
         Chunk("errors_handling", 3) { ctx, _ -> buildChunk("errors_handling", ctx) },
 

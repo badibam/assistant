@@ -1,7 +1,7 @@
 package com.assistant.core.navigation.data
 
 /**
- * Nœud dans l'arbre de navigation des schémas
+ * A node in the schema navigation tree
  */
 data class SchemaNode(
     val path: String,           // "zones.health" ou "tools.weight_tracker.value"
@@ -13,7 +13,7 @@ data class SchemaNode(
 )
 
 /**
- * Types de nœuds dans l'arbre de navigation
+ * The kinds of node the navigation tree holds
  */
 enum class NodeType {
     ZONE,   // Zone de l'application
@@ -22,7 +22,7 @@ enum class NodeType {
 }
 
 /**
- * Résultat de récupération de données contextuelles
+ * Result of a contextual data lookup
  */
 data class ContextualDataResult(
     val status: DataResultStatus,
@@ -32,7 +32,7 @@ data class ContextualDataResult(
 )
 
 /**
- * Statut du résultat de récupération de données
+ * Status of a data lookup result
  */
 enum class DataResultStatus {
     OK,              // Données complètes retournées

@@ -161,7 +161,7 @@ fun CreateZoneScreen(
             }
             
         } catch (e: Exception) {
-            // Erreur technique de validation
+            // Technical validation failure
             UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
         }
     }

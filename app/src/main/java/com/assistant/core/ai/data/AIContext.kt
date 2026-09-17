@@ -1,12 +1,12 @@
 package com.assistant.core.ai.data
 
 /**
- * Contexte IA pour l'assemblage des prompts
+ * AI context used to assemble prompts
  *
- * Contient toutes les informations contextuelles nécessaires:
+ * Holds every piece of contextual information needed:
  * - État de l'application
  * - Permissions
- * - Métadonnées des zones et outils
+ * - Zone and tool metadata
  */
 data class AIContext(
     val activeZone: ZoneInfo? = null,
@@ -16,17 +16,17 @@ data class AIContext(
 ) {
 
     /**
-     * Récupère une instance d'outil par ID
-     * TODO: Implémenter avec vrais services
+     * Get a tool instance by ID
+     * TODO: implement against the real services
      */
     fun getToolInstance(toolInstanceId: String): ToolInfo? {
-        // Placeholder - sera implémenté avec les vrais services
+        // Placeholder - to be implemented against the real services
         return null
     }
 }
 
 /**
- * Informations sur une zone
+ * What is known about a zone
  */
 data class ZoneInfo(
     val id: String,
@@ -36,7 +36,7 @@ data class ZoneInfo(
 )
 
 /**
- * Informations sur un outil
+ * What is known about a tool
  */
 data class ToolInfo(
     val id: String,

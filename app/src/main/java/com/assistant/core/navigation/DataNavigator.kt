@@ -16,10 +16,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * DataNavigator - Navigation hiérarchique dans les données via schémas
+ * DataNavigator - hierarchical navigation through the data, driven by schemas
  *
- * Permet de naviguer dans la structure App → Zones → Outils → Champs
- * avec chargement à la demande et résolution des schémas conditionnels.
+ * Walks the App -> Zones -> Tools -> Fields structure
+ * with on-demand loading and resolution of conditional schemas.
  */
 class DataNavigator(private val context: Context) {
 
@@ -27,7 +27,7 @@ class DataNavigator(private val context: Context) {
     private val s = Strings.`for`(context = context)
 
     /**
-     * Récupère les nœuds racine (zones)
+     * Get the root nodes (zones)
      */
     suspend fun getRootNodes(): List<SchemaNode> {
         LogManager.coordination("DataNavigator: Getting root nodes (zones)")
@@ -60,7 +60,7 @@ class DataNavigator(private val context: Context) {
     }
 
     /**
-     * Récupère les enfants d'un nœud (outils d'une zone)
+     * Get the children of a node (the tools of a zone)
      */
     suspend fun getChildren(parentPath: String): List<SchemaNode> {
         LogManager.coordination("DataNavigator: Getting children for path: $parentPath")
@@ -83,7 +83,7 @@ class DataNavigator(private val context: Context) {
     }
 
     /**
-     * Récupère les champs d'un outil selon sa configuration actuelle
+     * Get a tool fields, as its current configuration defines them
      */
     suspend fun getFieldChildren(toolInstanceId: String): List<SchemaNode> {
         LogManager.coordination("DataNavigator: Getting field children for tool: $toolInstanceId")
@@ -102,7 +102,7 @@ class DataNavigator(private val context: Context) {
                 return emptyList()
             }
 
-            // Récupérer le data_schema_id directement depuis la config
+            // Read data_schema_id straight from the config
             val configMap = parseJsonToMap(toolInstance.config)
             val dataSchemaId = configMap["data_schema_id"]?.toString()
 
@@ -126,10 +126,10 @@ class DataNavigator(private val context: Context) {
         }
     }
 
-    // Bridge vers données réelles
+    // Bridge to the real data
 
     /**
-     * Récupère les valeurs distinctes d'un champ (avec garde-fous)
+     * Get the distinct values of a field, with guard rails
      */
     suspend fun getDistinctValues(path: String): ContextualDataResult = withContext(Dispatchers.IO) {
         LogManager.coordination("DataNavigator: Getting distinct values for path: $path")
@@ -225,13 +225,13 @@ class DataNavigator(private val context: Context) {
     }
 
     /**
-     * Récupère un échantillon de données
+     * Get a sample of the data
      */
     suspend fun getDataSample(path: String, limit: Int = 10): ContextualDataResult {
         LogManager.coordination("DataNavigator: Getting data sample for path: $path (limit: $limit)")
 
         return try {
-            // TODO: Implémenter vraie logique
+            // TODO: implement the real logic
             ContextualDataResult(
                 status = DataResultStatus.OK,
                 data = listOf("sample1", "sample2"),
@@ -247,13 +247,13 @@ class DataNavigator(private val context: Context) {
     }
 
     /**
-     * Récupère un résumé statistique
+     * Get a statistical summary
      */
     suspend fun getStatsSummary(path: String): ContextualDataResult {
         LogManager.coordination("DataNavigator: Getting stats summary for path: $path")
 
         return try {
-            // TODO: Implémenter vraie logique
+            // TODO: implement the real logic
             ContextualDataResult(
                 status = DataResultStatus.OK,
                 data = listOf("min: 0", "max: 100", "avg: 50"),

@@ -15,12 +15,12 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.strings.Strings
 
 /**
- * Extensions pour l'intégration du DataNavigator avec l'architecture existante
+ * Extensions wiring DataNavigator into the existing architecture
  */
 
 
 /**
- * Helper pour parser JSON vers Map
+ * Helper parsing JSON into a Map
  */
 private fun parseJsonToMap(jsonString: String): Map<String, Any> {
     return try {
@@ -36,7 +36,7 @@ private fun parseJsonToMap(jsonString: String): Map<String, Any> {
 }
 
 /**
- * Extension pour faciliter la navigation depuis l'UI
+ * Extension making navigation easier from the UI
  */
 fun DataNavigator.getPathDisplayName(path: String): String {
     return when {
@@ -57,7 +57,7 @@ fun DataNavigator.getPathDisplayName(path: String): String {
 }
 
 /**
- * Extension pour construire des critères de filtrage basés sur le contexte
+ * Extension building the filter criteria a context implies
  */
 suspend fun DataNavigator.buildFilterCriteria(
     selectedPath: String,
@@ -103,7 +103,7 @@ enum class FilterType {
 }
 
 /**
- * Critères de filtrage construits pour un path
+ * Filter criteria built for one path
  */
 data class FilterCriteria(
     val path: String,
@@ -169,12 +169,12 @@ suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolI
 }
 
 //
-// Extensions pour utiliser la structure commune ToolDataEntity
+// Extensions built on the shared ToolDataEntity structure
 //
 
 /**
- * Récupère les champs disponibles pour un outil donné
- * Combine les champs communs (name, timestamp) avec les champs du JSON 'data' aplatis
+ * Get the fields available on a given tool
+ * Combines the shared fields (name, timestamp) with the flattened JSON data fields
  */
 suspend fun DataNavigator.getAvailableFields(toolPath: String, context: Context): List<SchemaNode> = withContext(Dispatchers.IO) {
     try {
@@ -214,7 +214,7 @@ suspend fun DataNavigator.getAvailableFields(toolPath: String, context: Context)
 }
 
 /**
- * Récupère les champs de données du schéma JSON 'data'
+ * Get the data fields declared by the JSON data schema
  */
 suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): List<SchemaNode> = withContext(Dispatchers.IO) {
     try {
@@ -304,8 +304,8 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
 }
 
 /**
- * Récupère les enfants d'un champ d'outil (navigation dans les propriétés du schéma JSON)
- * Version améliorée qui utilise la structure commune ToolDataEntity
+ * Get the children of a tool field, walking the JSON schema properties
+ * Uses the shared ToolDataEntity structure
  */
 suspend fun DataNavigator.getFieldChildrenFromCommonStructure(toolPath: String, context: Context): List<SchemaNode> = withContext(Dispatchers.IO) {
     try {

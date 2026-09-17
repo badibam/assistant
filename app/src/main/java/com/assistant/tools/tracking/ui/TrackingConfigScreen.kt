@@ -112,7 +112,7 @@ fun TrackingConfigScreen(
     // Strings context
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
     
-    // Helper function pour charger items depuis JSONArray
+    // Helper loading items from a JSONArray
     fun loadItemsFromJSONArray(itemsArray: JSONArray): MutableList<TrackingItem> {
         val loadedItems = mutableListOf<TrackingItem>()
         for (i in 0 until itemsArray.length()) {
@@ -397,7 +397,7 @@ fun TrackingConfigScreen(
             cleanConfig.put("custom_fields", customFields.toJsonArray())
         }
 
-        // Convertir JSONObject en Map pour ValidationHelper
+        // Convert the JSONObject into the Map ValidationHelper expects
         val configMap = cleanConfig.keys().asSequence().associateWith { key ->
             cleanConfig.get(key)
         }
@@ -501,7 +501,7 @@ fun TrackingConfigScreen(
                 if (toolType != null) {
                     val type = cleanConfig.optString("type")
                     if (type.isNullOrEmpty()) {
-                        // Erreur : type manquant
+                        // Error: missing type
                         return@launch
                     }
 
@@ -856,7 +856,7 @@ fun TrackingConfigScreen(
                         UI.ActionButton(
                             action = ButtonAction.ADD,
                             onClick = { 
-                                // Ouvrir dialog pour nouvel item
+                                // Open the dialog for a new item
                                 editingItemIndex = null
                                 editItemName = String()
                                 editItemDefaultQuantity = String()
@@ -927,7 +927,7 @@ fun TrackingConfigScreen(
                             ) {}
                         }
 
-                        // Afficher les items
+                        // Show the items
                         items.forEachIndexed { itemIndex, item ->
                             ItemRowReadonly(
                                 item = item,
@@ -1112,7 +1112,7 @@ fun TrackingConfigScreen(
 
 
 /**
- * Composable pour une ligne d'item readonly avec actions
+ * Composable for a readonly item row with its actions
  */
 @Composable
 private fun ItemRowReadonly(
@@ -1406,7 +1406,7 @@ private fun cleanConfiguration(config: JSONObject): JSONObject {
         LogManager.tracking("Added schema_id: $configSchemaId and data_schema_id: $dataSchemaId")
     }
 
-    // Nettoyer les options vides pour les types CHOICE
+    // Drop the empty options on CHOICE types
     if (cleanConfig.optString("type") == "choice") {
         LogManager.tracking("Cleaning CHOICE config")
         val optionsArray = cleanConfig.optJSONArray("options")

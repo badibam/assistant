@@ -367,7 +367,7 @@ object DefaultTheme : ThemeContract {
             // PRIMARY: Actions critiques/importantes
             ButtonAction.SAVE, ButtonAction.CREATE, ButtonAction.ADD, ButtonAction.CONFIGURE, ButtonAction.SELECT, ButtonAction.EDIT, ButtonAction.UPDATE, ButtonAction.CONFIRM, ButtonAction.AI_CHAT, ButtonAction.START -> ButtonType.PRIMARY
 
-            // DANGER: Actions destructives/dangereuses avec confirmation
+            // DANGER: destructive actions, behind a confirmation
             ButtonAction.DELETE, ButtonAction.STOP -> ButtonType.DANGER
 
             // DEFAULT: Actions neutres/navigation standard
@@ -462,7 +462,7 @@ object DefaultTheme : ThemeContract {
         val isError = state == ComponentState.ERROR
         val isReadOnly = state == ComponentState.READONLY
         
-        // Configuration intelligente du clavier selon le type de champ
+        // Keyboard configured from the field type
         val keyboardOptions = when (fieldType) {
             FieldType.TEXT -> KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,
@@ -1060,14 +1060,14 @@ object DefaultTheme : ThemeContract {
         val displayLabel = if (required) label else "$label (optionnel)"
         
         if (label.isNotBlank()) {
-            // Avec label - structure Column
+            // With a label: Column layout
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Label du champ
                 Text(displayLabel, TextType.LABEL, false, null)
                 
-                // Toggle avec labels
+                // Toggle with labels
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1089,7 +1089,7 @@ object DefaultTheme : ThemeContract {
                 }
             }
         } else {
-            // Sans label - juste le Row avec toggle
+            // Without a label: just the Row holding the toggle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1429,10 +1429,10 @@ object DefaultTheme : ThemeContract {
             },
             text = {
                 if (isLandscape) {
-                    // Mode paysage - TimePicker avec layout plus compact
+                    // Landscape: the compact TimePicker layout
                     TimeInput(state = timePickerState)
                 } else {
-                    // Mode portrait - TimePicker normal avec roues
+                    // Portrait: the standard wheel TimePicker
                     TimePicker(state = timePickerState)
                 }
             }
@@ -1453,7 +1453,7 @@ object DefaultTheme : ThemeContract {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Zone gauche fixe (48.dp)
+            // Fixed left area (48.dp)
             Box(
                 modifier = Modifier.width(48.dp),
                 contentAlignment = Alignment.CenterStart
@@ -1504,7 +1504,7 @@ object DefaultTheme : ThemeContract {
                 }
             }
             
-            // Zone droite fixe (48.dp)
+            // Fixed right area (48.dp)
             Box(
                 modifier = Modifier.width(48.dp),
                 contentAlignment = Alignment.CenterEnd

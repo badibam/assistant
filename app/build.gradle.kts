@@ -28,9 +28,9 @@ android {
     signingConfigs {
         create("release") {
             // Configuration de signature
-            // IMPORTANT: Ne jamais commiter les vraies clés !
+            // IMPORTANT: never commit the real keys
             
-            // Tenter de charger depuis variables d'environnement ou .env
+            // Try the environment variables, then .env
             val keystoreFile = file("../keystore/assistant-release.keystore")
             val envFile = file("../keystore/.env")
             
@@ -80,7 +80,7 @@ android {
                 "proguard-rules.pro"
             )
             
-            // Renommage APK avec version
+            // Rename the APK after the version
             applicationVariants.all {
                 val variant = this
                 variant.outputs
@@ -125,18 +125,18 @@ tasks.register("generateThemeResources") {
     
     // Gradle cache: run if themes OR icons list changed
     inputs.dir(themesDir)
-    inputs.file(iconsListFile)  // ← AJOUT: surveille le fichier liste
+    inputs.file(iconsListFile)  // Watch the icon list too
     outputs.dir(outputDir)
     
     doFirst {
-        // Phase 1: Validation avec warnings - vérifier cohérence globale
+        // Phase 1: validate with warnings - check the whole set is coherent
         println("Validating theme consistency...")
         
         if (!themesDir.exists()) {
             throw GradleException("Themes directory not found: ${themesDir.absolutePath}")
         }
         
-        // Vérifier que le thème default existe (requis comme fallback)
+        // The default theme must exist: every other theme falls back to it
         val defaultThemeDir = File(themesDir, "default")
         if (!defaultThemeDir.exists() || !File(defaultThemeDir, "icons").exists()) {
             throw GradleException("❌ Default theme directory not found: ${defaultThemeDir.absolutePath}\n" +
@@ -148,7 +148,7 @@ tasks.register("generateThemeResources") {
             val iconsDir = File(themeDir, "icons")
             
             if (iconsDir.exists() && iconsDir.isDirectory) {
-                // Scanner SVG disponibles dans ce thème
+                // Scan the SVGs this theme provides
                 val availableSvgs = iconsDir.listFiles { _, name -> 
                     name.endsWith(".svg", ignoreCase = true)
                 }?.map { 
@@ -189,7 +189,7 @@ tasks.register("generateThemeResources") {
             if (iconsDir.exists() && iconsDir.isDirectory) {
                 println("Processing theme: $themeName")
                 
-                // Générer ressources pour toutes les icônes standard
+                // Generate resources for every standard icon
                 getStandardIcons().forEach { iconId ->
                     val svgFile = File(iconsDir, "$iconId.svg")
                     val outputFileName = "${themeName}_${iconId.replace("-", "_")}.xml"
@@ -313,7 +313,7 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
     try {
         val xmlContent = stringsFile.readText()
         
-        // Pattern amélioré pour extraire <string name="key">value</string> avec support multiline et caractères échappés
+        // Extracts <string name="key">value</string>, across several lines and through escaped characters
         val stringPattern = """<string\s+name="([^"]+)"[^>]*>(.*?)</string>""".toRegex(RegexOption.DOT_MATCHES_ALL)
         
         output.appendLine("<!-- $prefix -->")
@@ -323,7 +323,7 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
             val rawValue = match.groupValues[2].trim()
             val prefixedKey = "${prefix}_${key}"
             
-            // Nettoyer et valider le contenu de la string
+            // Clean and validate the string content
             val cleanedValue = cleanAndEscapeXmlString(rawValue)
             
             output.appendLine("""    <string name="$prefixedKey">$cleanedValue</string>""")
@@ -337,8 +337,8 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
 }
 
 /**
- * Nettoie et échappe correctement une string XML pour Android
- * Gère les apostrophes, guillemets, et placeholders de manière robuste
+ * Clean and escape an XML string for Android
+ * Handles apostrophes, quotes and placeholders
  * PRESERVE line breaks in CDATA sections (AI prompts need markdown formatting)
  */
 fun cleanAndEscapeXmlString(value: String): String {
@@ -354,25 +354,25 @@ fun cleanAndEscapeXmlString(value: String): String {
         value.replace(Regex("\\s+"), " ").trim()
     }
 
-    // 2. Gestion spéciale des apostrophes - ne pas doubler l'échappement
+    // 2. Apostrophes, without double-escaping
     if (!result.contains("\\'")) {
-        // Échapper les apostrophes seulement si pas déjà échappées
+        // Escape apostrophes only when they are not escaped already
         result = result.replace("'", "\\'")
     }
 
-    // 3. Gestion spéciale des guillemets - ne pas doubler l'échappement
+    // 3. Quotes, without double-escaping
     if (!result.contains("\\\"")) {
-        // Échapper les guillemets seulement si pas déjà échappés
+        // Escape quotes only when they are not escaped already
         result = result.replace("\"", "\\\"")
     }
 
-    // 4. Corriger les placeholders pour Android format uniquement s'ils ne sont pas déjà au bon format
+    // 4. Convert placeholders to the Android format, unless they already are
     if (!result.contains("%1\$")) {
         result = result.replace("%s", "%1\$s")
                        .replace("%d", "%1\$d")
     }
 
-    // 5. Validation finale - enlever les caractères de contrôle invisibles qui peuvent causer des erreurs Unicode
+    // 5. Final pass: strip the invisible control characters that break Unicode decoding
     // PRESERVE newlines (\n) and tabs (\t) for CDATA
     if (isCDATA) {
         result = result.replace(Regex("[\\u0000-\\u0008\\u000B-\\u000C\\u000E-\\u001F\\u007F-\\u009F]"), "")

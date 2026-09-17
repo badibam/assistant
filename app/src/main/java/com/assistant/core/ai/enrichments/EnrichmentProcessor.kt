@@ -319,7 +319,7 @@ class EnrichmentProcessor(
 
     // TODO: Implement DOCUMENT enrichment type () - lower priority
     // private fun generateDocumentSummary(config: JSONObject): String {
-    // val elementType = config.optString("elementType", "élément")
+    // val elementType = config.optString("elementType", "element")
     // val docType = config.optString("docType", "documentation")
     // return "$docType $elementType"
     // }

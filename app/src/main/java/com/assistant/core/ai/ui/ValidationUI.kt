@@ -23,15 +23,15 @@ import com.assistant.core.ai.ui.components.InteractionCard
 import com.assistant.core.strings.Strings
 
 /**
- * UI de validation des actions IA
+ * Validation UI for AI actions
  *
- * Affiche la liste des actions que l'IA souhaite effectuer avec :
- * - Description de chaque action (verbalisée)
- * - Warning icon () si action sensible (validée par config)
+ * Lists the actions the AI wants to run, each with:
+ * - The description of each action, in verbalized form
+ * - A warning icon when the action is sensitive, as decided by the config
  * - Raison de validation si applicable
  * - Boutons Refuser/Autoriser
  *
- * Pattern similaire aux communication modules pour cohérence UX.
+ * Same pattern as the communication modules, for a consistent experience.
  */
 @Composable
 fun ValidationUI(
@@ -45,7 +45,7 @@ fun ValidationUI(
     InteractionCard(
         title = s.shared("validation_title"),
         content = {
-            // Liste des actions
+            // The action list
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -70,11 +70,11 @@ fun ValidationUI(
 }
 
 /**
- * Item d'action individuel dans la liste de validation
+ * One action row inside the validation list
  *
- * @param description Description verbalisée de l'action (substantif)
- * @param showWarning true si warning icon à afficher (action validée par config)
- * @param validationReason Raison de validation (null si action non validée)
+ * @param description The verbalized action description, in substantive form
+ * @param showWarning true when the warning icon must be shown (action validated by config)
+ * @param validationReason Why validation is required, null when the action needs none
  */
 @Composable
 private fun ActionItem(
@@ -88,7 +88,7 @@ private fun ActionItem(
             .padding(vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        // Description avec warning icon si nécessaire
+        // Description, with the warning icon when needed
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -111,7 +111,7 @@ private fun ActionItem(
             )
         }
 
-        // Raison de validation (si présente)
+        // Validation reason, when there is one
         if (validationReason != null) {
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier.padding(start = if (showWarning) 28.dp else 12.dp)

@@ -17,13 +17,13 @@ import com.assistant.core.ui.TextType
 import com.assistant.core.ui.UI
 
 /**
- * Card commune pour interactions utilisateur (validation, communication modules)
+ * Shared card for user interactions (validation, communication modules)
  *
- * Pattern réutilisable pour toutes les interactions nécessitant une réponse user.
- * Utilisé pour : validation des actions IA, communication modules, etc.
+ * Reusable pattern for every interaction that needs an answer from the user.
+ * Used for AI action validation, communication modules, and the like.
  *
- * Design: Card avec bordure primary pour attirer l'attention sur l'interaction requise.
- * Délègue maintenant au thème pour l'apparence visuelle via UI.kt.
+ * Design: a primary-bordered card, so the interaction being asked for stands out.
+ * Appearance is delegated to the active theme through UI.kt.
  */
 @Composable
 fun InteractionCard(
@@ -31,7 +31,7 @@ fun InteractionCard(
     content: @Composable ColumnScope.() -> Unit,
     actions: @Composable RowScope.() -> Unit
 ) {
-    // Délègue l'apparence visuelle au thème actif via UI.kt
+    // Appearance delegated to the active theme through UI.kt
     UI.InteractionCard(
         title = title,
         content = content,
@@ -40,10 +40,10 @@ fun InteractionCard(
 }
 
 /**
- * Boutons d'actions standardisés pour interactions utilisateur
+ * Standard action buttons for user interactions
  *
- * Pattern réutilisable avec boutons CANCEL (gauche) et CONFIRM (droite).
- * Utilisé dans InteractionCard pour cohérence visuelle.
+ * Reusable pattern with CANCEL on the left and CONFIRM on the right.
+ * Used by InteractionCard so every interaction looks the same.
  */
 @Composable
 fun RowScope.InteractionActions(
