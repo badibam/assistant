@@ -198,6 +198,12 @@ object MessageToolType : ToolTypeContract {
      * BaseSchemas.createExtendedSchema merges root properties and required verbatim, so an
      * allOf written here survives the merge untouched.
      *
+     * The entry's timestamp IS the due time, not its creation time. Time is the only
+     * ordering axis tool_data has, so timestamping a pending occurrence at creation would
+     * pile every one of them at the same instant and scramble the inbox. The moment the
+     * entry was actually written stays in updated_at, which makes a separate scheduled_time
+     * field a pure duplicate — hence its absence.
+     *
      * Custom field values are raw, written per occurrence, and validated through the
      * standard enrichment (createExtendedDataSchema) like every other tooltype.
      */
@@ -216,7 +222,7 @@ object MessageToolType : ToolTypeContract {
                 },
                 "timestamp": {
                     "type": "number",
-                    "description": "Actual send time once sent; creation time while pending"
+                    "description": "When this occurrence is due (and, for a manual send, when it went out)"
                 },
                 "data": {
                     "type": "object",
@@ -226,10 +232,6 @@ object MessageToolType : ToolTypeContract {
                             "type": "string",
                             "enum": ["pending", "sent", "expired", "cancelled"],
                             "description": "${s.tool("schema_data_status")}"
-                        },
-                        "scheduled_time": {
-                            "type": "string",
-                            "description": "${s.tool("schema_data_scheduled_time")}"
                         },
                         "title": {
                             "type": "string",
@@ -324,7 +326,6 @@ object MessageToolType : ToolTypeContract {
             "creation_horizon_days" -> s.tool("field_creation_horizon_days")
             "validity_window_minutes" -> s.tool("field_validity_window_minutes")
             "status" -> s.tool("field_status")
-            "scheduled_time" -> s.tool("field_scheduled_time")
             "notification_sent" -> s.tool("field_notification_sent")
             "read" -> s.tool("field_read")
             "archived" -> s.tool("field_archived")

@@ -82,8 +82,10 @@ Sentiment diffus que les chantiers récents (tool_executions, snapshots, custom 
 - `custom_fields` (définitions, mécanisme standard)
 
 **tool_data de l'instance** (= les envois de CE message) — une entrée par occurrence, quatre états :
-- `pending` : l'occurrence existe, elle n'est pas partie. Créée à l'avance par le scheduler. Elle ne porte QUE sa part propre — `scheduled_time`, `title` (titre du jour, facultatif), `content`, `custom_fields` (valeurs brutes). Se remplit par `tool_data.update` ordinaire.
-- `sent` : l'occurrence est partie. Le scheduler y a copié la part commune (`common_title`, `priority`) et le résultat (`notification_sent`, `read`, `archived`, `triggered_by`). `timestamp` = heure d'envoi effective ; l'heure prévue reste dans `scheduled_time`.
+- `pending` : l'occurrence existe, elle n'est pas partie. Créée à l'avance par le scheduler. Elle ne porte QUE sa part propre — `title` (titre du jour, facultatif), `content`, `custom_fields` (valeurs brutes). Se remplit par `tool_data.update` ordinaire.
+- `sent` : l'occurrence est partie. Le scheduler y a copié la part commune (`common_title`, `priority`) et le résultat (`notification_sent`, `read`, `archived`, `triggered_by`).
+
+**Le `timestamp` de l'entrée est son heure prévue**, pas son heure de création. *(Tranché le 2026-09-17 en attaquant l'étape 2.)* Le temps est le seul axe d'ordre dont dispose `tool_data` : horodater une occurrence en attente à sa création les empilerait toutes au même instant et brouillerait l'inbox. Le moment où l'entrée a réellement été écrite vit dans `updated_at`, ce qui fait d'un champ `scheduled_time` séparé un pur doublon — il n'existe donc pas. Pour un envoi manuel immédiat, prévu et effectif coïncident.
 - `expired` : l'heure est passée au-delà de `validity_window_minutes` sans que l'app tourne. Jamais envoyée, conservée comme trace.
 - `cancelled` : l'heure est arrivée alors que le modèle était désactivé. N'avait pas à partir. Distinct d'`expired` : l'un est une décision, l'autre un raté — les confondre ferait passer une suspension délibérée pour un message manqué, et rien ne permettrait de les démêler après coup.
 
