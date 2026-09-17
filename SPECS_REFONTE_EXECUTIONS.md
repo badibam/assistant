@@ -21,7 +21,7 @@ Les occurrences (messages reçus, résultats de calculs) deviennent des **entré
 Corollaires :
 
 - **Une instance = un concept**, strictement : 1 message planifié = 1 instance, 1 calcul = 1 instance. (C'est un retour à la doctrine originale de TOOLS.md : « Message : 1 message/rappel planifié » — l'implémentation avait dérivé vers des instances multi-templates.)
-- **Une seule population par collection** : le tool_data d'une instance contient un seul type d'objet, validé par un seul schéma data.
+- **Une seule population par collection** : le tool_data d'une instance contient un seul type d'objet, validé par un seul schéma data. Un objet à cycle de vie (l'occurrence Messages, `pending` → `sent`/`expired`) reste une seule population : c'est un schéma unique dont les exigences dépendent de l'état, pas deux populations cohabitant. L'invariant visait la cohabitation de types distincts, pas les états d'un même type. *(Précisé le 2026-09-17, cf. §4.4.)*
 - **Critère pour les futurs tooltypes** : si les définitions d'un outil sont nombreuses et éditées fréquemment, c'est qu'elles sont en réalité son *produit* — elles vont alors en tool_data (et ses occurrences éventuelles aussi, discriminées autrement). Sinon, définition → config.
 - **Ne jamais exposer un choix de représentation à l'IA** : pas de variantes brut/formaté dans la grammaire de requête. Le système décide, l'IA reçoit une seule forme.
 
@@ -67,26 +67,34 @@ Sentiment diffus que les chantiers récents (tool_executions, snapshots, custom 
 
 ### 4.1 Messages (refonte)
 
-**Config de l'instance** (= la définition du message) :
-- Champs généraux standard (name = titre du message, description, icône, management, display_mode, validateConfig/validateData, always_send)
-- `content` (texte du message)
-- `priority` (default|high|low)
-- `schedule` (pattern de récurrence — déplacé depuis entry.data)
+**Amendé le 2026-09-17** (raisonnement complet en §4.4). La version initiale supposait que chaque occurrence était une copie conforme du modèle ; l'usage réel a montré le contraire.
+
+**Ce qu'est une instance Messages** : un modèle de notification — sa part invariante, sa récurrence, ses réglages de canal. Les envois successifs sont ses occurrences, et chacune porte une part propre, écrite au jour le jour par l'IA ou par l'utilisateur.
+
+**Config de l'instance** (= le modèle) :
+- Champs généraux standard (name, description, icône, management, display_mode, validateConfig/validateData, always_send)
+- `common_title` (facultatif) — titre commun affiché sur chaque notification. Distinct de `name` : `name` sert à se repérer dans la zone, `common_title` est ce qu'on lit sur l'écran verrouillé ; rien n'oblige les deux à coïncider. Absent, il ne contribue rien.
+- `priority` (default|high|low) — caractéristique du canal, PAS de l'occurrence. Un seul domicile (voir §4.4).
 - `external_notifications` (boolean, existant)
-- `custom_fields` (définitions, mécanisme standard) + **valeurs du template** pour ces champs (à stamper sur chaque occurrence — voir 4.4)
+- `schedule` (ScheduleConfig, déplacé depuis entry.data) — génère les occurrences ; `schedule.enabled` porte l'état actif/suspendu
+- `creation_horizon_days` — combien de jours d'occurrences le scheduler crée à l'avance (défaut 2). Exprimé en temps et non en nombre : selon le motif de récurrence, « 5 occurrences » vaut un jour ou six mois.
+- `validity_window_minutes` — au-delà de ce retard, une occurrence non partie passe `expired` au lieu d'être envoyée. Le seuil dépend du message (« Attention du matin » à 15h n'a aucun sens, « pense à boire » à 15h en a encore), donc il est réglable par instance et non constant dans le code.
+- `custom_fields` (définitions, mécanisme standard)
 
-**tool_data de l'instance** (= l'inbox de CE message) — une entrée par occurrence :
-- `timestamp` = moment de l'envoi
-- `data` : `{ "title": <copié>, "content": <copié>, "priority": <copié>, "read": false, "archived": false, "notification_sent": true|false, "scheduled_time": <ISO, optionnel>, "triggered_by": "SCHEDULE"|"MANUAL" }`
-- `custom_fields` : valeurs **brutes** copiées du template au moment de l'envoi (validées par le schéma data enrichi, couvertes par la migration — régime standard)
+**tool_data de l'instance** (= les envois de CE message) — une entrée par occurrence, trois états :
+- `pending` : l'occurrence existe, elle n'est pas partie. Créée à l'avance par le scheduler. Elle ne porte QUE sa part propre — `scheduled_time`, `title` (titre du jour, facultatif), `content`, `custom_fields` (valeurs brutes). Se remplit par `tool_data.update` ordinaire.
+- `sent` : l'occurrence est partie. Le scheduler y a copié la part commune (`common_title`, `priority`) et le résultat (`notification_sent`, `read`, `archived`, `triggered_by`). `timestamp` = heure d'envoi effective ; l'heure prévue reste dans `scheduled_time`.
+- `expired` : l'heure est passée au-delà de `validity_window_minutes` sans que l'app tourne. Jamais envoyée, conservée comme trace.
 
-**Création par le scheduler** : `tool_data.create` standard (validation par schéma comprise — les occurrences passent par la validation, contrairement aux exécutions actuelles qui ne validaient rien).
+**Composition** : la notification affiche `common_title` et le titre du jour concaténés, le contenu du jour en corps. Une partie absente ne contribue rien — c'est de la concaténation, jamais une valeur de repli qui prend la main.
 
-**Lu / archivé** : `tool_data.update` standard sur l'entrée.
+**Copie de la part commune : à l'envoi, jamais à la création.** Une occurrence en attente est une intention, pas un événement : il n'existe donc à aucun moment deux exemplaires concurrents de la part commune. Corollaire gratuit — modifier le modèle affecte tout ce qui n'est pas encore parti, comportement évident qui ne demande aucune règle à expliquer. L'insight §3.3 n°5 (« créer une entrée = copier les valeurs du moment ») tient toujours ; le moment est celui de l'envoi.
 
-**nextExecutionTime** : NE PAS stocker d'état mutable de scheduling dans la config (éviter un `tools.update` à chaque tir). **Recommandation : le calculer** — prochaine exécution = f(pattern de schedule, timestamp de la dernière entrée tool_data). État dérivé, zéro écriture de config par le scheduler. Si un cas ne le permet pas (premier tir, pattern complexe), le signaler plutôt que stocker silencieusement.
+**Le schéma data est conditionnel à l'état** : la part commune est exigée à `sent`, absente à `pending`. Sans ce marqueur explicite, on aurait des entrées à moitié vides sans moyen de les distinguer des complètes — exactement le genre d'ambiguïté que l'audit reproche au reste du pipeline.
 
-**UI MessagesScreen** : l'historique affiché = les entrées tool_data de l'instance (plus de lecture de tool_executions ni de `custom_fields_metadata`). L'édition du message = écran de config. Il n'y a plus d'inbox multi-messages au niveau instance ; si une vue agrégée « tous les messages reçus » devient nécessaire, elle se construira au niveau zone (hors périmètre).
+**nextExecutionTime** : NE PAS stocker d'état mutable de scheduling dans la config. L'ancre est l'existence des occurrences elles-mêmes — le scheduler crée celles qui manquent dans la fenêtre `creation_horizon_days`, ce qui rend l'opération idempotente par période sans compteur ni écriture de config.
+
+**UI MessagesScreen** : les `sent`/`expired` forment l'historique, les `pending` s'affichent à part (ce qui va partir). L'édition du modèle passe par l'écran de config. Plus d'inbox multi-messages au niveau instance ; une vue agrégée « tous les messages reçus » se construirait au niveau zone (hors périmètre).
 
 ### 4.2 Calcul (futur tooltype — HORS périmètre de cette refonte)
 
@@ -96,9 +104,32 @@ Mentionné ici uniquement comme validation du pattern : config = formule + sourc
 
 Voir périmètre de démolition (§6).
 
-### 4.4 Point de design à trancher à l'implémentation (signalé, pas bloquant)
+### 4.4 Amendement du 2026-09-17 : les occurrences portent une part propre
 
-Les **valeurs** des custom fields du template vivent dans la config (la définition ET la valeur à stamper). C'est inhabituel (ailleurs, les valeurs vivent dans data) mais cohérent : le template entier est de la config. Implémentation suggérée : objet `custom_field_values` dans la config, validé contre les définitions. Si cela crée une friction réelle avec le mécanisme d'enrichissement des schémas, remonter le problème plutôt que de contourner.
+Origine : session de reprise, question soulevée en attaquant l'étape 1. Consigné ici pour la même raison que la §3.3 — ce débat a déjà dû être re-déroulé une fois faute de trace.
+
+**Le point aveugle de la version initiale** : elle écrivait partout que l'occurrence est une copie conforme du modèle (§4.1 d'origine, §3.3 n°5). La question « et si le contenu variait d'un envoi à l'autre ? » n'apparaissait nulle part dans le document. Elle n'avait pas été écartée, elle n'avait pas été posée.
+
+**L'usage réel qui l'a révélée** : le montage existant = 5 entrées-modèles associées chacune à un horaire de la journée, dont l'IA réécrit les champs chaque jour ; le contenu qui part est donc choisi le jour même. Défaut de ce montage : l'écriture du jour écrase celle de la veille, il ne reste aucun historique de ce qui est réellement parti.
+
+**Décision** : une instance = un modèle (un *type* de notification) ; une occurrence = un envoi avec sa part propre. Les deux parts se **composent**, elles ne s'écrasent pas — il n'y a donc aucun arbitrage « qui gagne » à écrire nulle part.
+
+**Ce que ça gagne au passage** : l'historique réel de ce qui est parti, sans que ce soit un objectif. Et la symétrie IA/humain de §4.5 sans commande nouvelle — l'IA lit les occurrences en attente (`tool_data.get`) et les remplit (`tool_data.update`).
+
+**Ce que ça coûte** : l'état « en attente », et ses trois corollaires — ne pas créer deux occurrences pour la même période, clore celles qui n'ont jamais servi, distinguer les deux populations à l'écran. Coût accepté parce qu'il est dû de toute façon : pouvoir programmer à l'avance une notification au contenu propre est un besoin réel, et il fait exister l'état en attente quelle que soit l'option retenue par ailleurs.
+
+**Options écartées, avec leur raison** (ne pas les rejouer sans raison neuve) :
+- Modèle à contenu figé, occurrences toutes identiques (version initiale) : ne couvre pas l'usage réel.
+- Contenu du modèle servant de défaut, écrasable par l'occurrence : paire défaut/écrasement, donc un arbitrage implicite à trancher partout, et impossible de distinguer « l'IA n'avait rien à dire » de « l'IA a échoué ».
+- Contenu par défaut pour les occurrences non remplies : même raison. Règle retenue à la place — une occurrence sans part du jour part avec sa seule part commune si elle en a une, et ne part pas du tout sinon.
+- Récurrence portée par l'occurrence qui se re-sème à chaque envoi : laisse le modèle sans domicile, donc la part commune serait recopiée partout et son édition ne se propagerait plus.
+- Priorité présente en config ET sur l'occurrence : deux domiciles = écrasement. Retenu — config seule, copiée à l'envoi. Ré-ouvrable si l'usage prouve qu'une urgence varie au jour le jour ; ne pas la dédoubler « au cas où ».
+
+**La question d'origine de cette section se dissout.** Elle demandait où valider les valeurs de champs personnalisés du modèle, stockées en config à côté de leurs propres définitions — friction réelle, puisque le mécanisme d'enrichissement va chercher les définitions en base par identifiant d'instance, ce qui est circulaire pour une config et impossible à la création. Sous le nouveau modèle ces valeurs varient par occurrence : elles vivent donc dans `tool_data` et passent par l'enrichissement standard. Plus de `custom_field_values` en config, plus de friction. (Elle reviendrait si un champ personnalisé devait avoir une valeur commune à tous les envois — cas non rencontré, ne pas l'anticiper.)
+
+**Reste à trancher à l'étape 2 (planificateur)**, signalé ici pour ne pas le perdre :
+- Que faire des occurrences `pending` quand la récurrence du modèle change ? Les supprimer et régénérer est simple, mais peut jeter du contenu déjà écrit par l'IA.
+- Confirmer la règle « occurrence vide sans part commune = ne part pas », et l'état dans lequel elle finit.
 
 ### 4.5 Exécution = opération d'instance
 
@@ -108,7 +139,7 @@ L'unité exécutable est **l'instance** (la définition étant sa config, il n'y
 - **Déclenchement manuel et planifié = même chemin de code**, `triggered_by` en simple paramètre.
 - **Symétrie UI/IA gratuite** : l'IA crée l'instance (`tools.create`), l'exécute (`{tooltype}.execute`), lit les résultats (`TOOL_DATA`) — boucle d'orchestration complète sans commande nouvelle. La hiérarchie de validation s'applique à `execute` au niveau tool.
 - **`templateDataId` disparaît** : le lien occurrence→définition est `toolInstanceId`, déjà natif sur chaque entrée.
-- **Le scheduler perd un niveau de boucle** : itérer les instances, lire la config — plus d'itération des entrées-templates.
+- **Le scheduler change de boucle** : itérer les instances et lire leur config, puis (a) créer les occurrences manquantes dans la fenêtre `creation_horizon_days`, (b) envoyer celles dont l'heure est venue, (c) marquer `expired` celles qui ont dépassé `validity_window_minutes`. Plus d'itération des entrées-templates. *(Amendé le 2026-09-17, cf. §4.4.)*
 - **État actif/suspendu dans la config** (ex: `schedule.enabled`) : suspendre = update de config, visible et event-sourcé.
 - **Taxonomie émergente** : tooltypes *passifs* (Tracking, Journal, Note — l'utilisateur écrit dans tool_data) vs *actifs/exécutables* (Messages, Calcul, futurs Alertes/Objectifs — le système écrit dans tool_data, piloté par la config).
 
@@ -127,7 +158,7 @@ Cas testé pendant le design : un Objectif récurrent type « journée-type » �
 Migration Room (nouvelle version DB) + JsonTransformers. **Ne pas modifier les migrations historiques existantes.**
 
 1. **Éclater chaque instance Messages multi-templates** : pour chaque entrée template (tool_data actuel d'une instance Messages) → créer une nouvelle instance Messages (config = name/content/priority/schedule du template + custom field values), dans la même zone.
-2. **Convertir les exécutions** : chaque ligne `tool_executions` → une entrée tool_data de la nouvelle instance correspondante (`templateDataId` fait le lien). Mapping : `executionTime` → timestamp ; `snapshotData.title/content/priority` → data ; `executionResult.read/archived/notification_sent` → data ; `triggeredBy`, `scheduledTime` → data. **Custom fields des snapshots : valeurs actuellement FORMATÉES (strings)** — les reconvertir en brut est impossible (information détruite par le formatage de déc 2025). Décision : les copier telles quelles dans `custom_fields` de l'entrée (strings), en acceptant l'impureté sur l'historique pré-refonte. Ne PAS construire de mécanisme de dé-formatage.
+2. **Convertir les exécutions** : chaque ligne `tool_executions` → une entrée tool_data de la nouvelle instance correspondante (`templateDataId` fait le lien). Mapping : `executionTime` → timestamp ; `snapshotData.title/content/priority` → data ; `executionResult.read/archived/notification_sent` → data ; `triggeredBy`, `scheduledTime` → data ; `status: "sent"` sur toutes les entrées migrées (l'historique ne contient que des envois déjà partis) ; `common_title` non renseigné sur ces entrées, la notion n'existait pas avant l'amendement du 2026-09-17 — ne rien reconstituer. **Custom fields des snapshots : valeurs actuellement FORMATÉES (strings)** — les reconvertir en brut est impossible (information détruite par le formatage de déc 2025). Décision : les copier telles quelles dans `custom_fields` de l'entrée (strings), en acceptant l'impureté sur l'historique pré-refonte. Ne PAS construire de mécanisme de dé-formatage.
 3. **Supprimer la table** `tool_executions` (DROP) et l'instance d'origine multi-templates après éclatement.
 4. **Nettoyer les configs** : retirer `execution_schema_id` des configs existantes (JsonTransformer).
 5. Tester le backup/restore après migration (BackupService exporte/importe tool_executions actuellement — à retirer).
@@ -168,8 +199,8 @@ Les problèmes du pipeline TOOL_DATA constatés au même audit (objet `period` i
 
 ## 8. Ordre d'implémentation suggéré
 
-1. Refonte MessageToolType : nouveau schéma config (content/priority/schedule/custom values), nouveau schéma data (occurrences), suppression schéma execution
-2. MessageScheduler : lire config, créer occurrences via `tool_data.create`, calcul de la prochaine exécution depuis la dernière occurrence
+1. Refonte MessageToolType : nouveau schéma config (common_title/priority/schedule/horizon/fenêtre de validité), nouveau schéma data (occurrences, conditionnel à `status`), suppression schéma execution
+2. MessageScheduler : lire config, créer les occurrences `pending` manquantes dans l'horizon via `tool_data.create`, envoyer celles dont l'heure est venue (copie de la part commune à ce moment-là), marquer `expired` les retardataires. Y trancher les deux points laissés ouverts en §4.4.
 3. UI Messages : ConfigScreen (édition du message), MessagesScreen (inbox = tool_data)
 4. Migration DB + JsonTransformers (§5) — tester sur données réelles + backup/restore
 5. Démolition (§6) — dans cet ordre : pipeline IA, puis service/entité/table, puis strings (`generateStringResources`), puis docs
