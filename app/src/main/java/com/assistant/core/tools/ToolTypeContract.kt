@@ -32,7 +32,7 @@ interface ToolTypeContract : SchemaProvider {
      */
     fun getDefaultConfig(): String
     
-    // ═══ Schema Provider Implementation ═══
+    // Schema Provider Implementation
     // SchemaProvider methods are inherited from SchemaProvider interface
     
     

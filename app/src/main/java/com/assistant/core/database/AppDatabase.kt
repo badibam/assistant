@@ -58,8 +58,8 @@ abstract class AppDatabase : RoomDatabase() {
         /**
          * Database schema version
          *
-         * ⚠️ MUST match @Database(version = X) annotation above (line 45)
-         * ⚠️ Change BOTH when incrementing database version
+         * MUST match @Database(version = X) annotation above (line 45)
+         * Change BOTH when incrementing database version
          *
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
@@ -804,7 +804,7 @@ abstract class AppDatabase : RoomDatabase() {
                 //
                 // Nothing is converted. Pre-existing Messages instances were multi-template and
                 // their configs cannot satisfy the new schema; the user chose a clean slate over
-                // a conversion nobody would trust. See SPECS_REFONTE_EXECUTIONS.md section 5.
+                // a conversion nobody would trust.
                 //
                 // tool_executions itself is not dropped here: the entity still exists at this
                 // version, and Room validates the schema against its entities at startup.

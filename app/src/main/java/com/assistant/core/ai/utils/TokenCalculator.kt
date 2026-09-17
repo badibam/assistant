@@ -9,14 +9,10 @@ import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
- * Token calculation utility - Single source of truth for all token estimations
+ * Token calculation utility - single source of truth for all token estimations.
  *
- * Used by:
- * - AIQueryProcessor: For individual query result validation
- * - PromptManager: For prompt level validation (Level 1-4 + messages)
- * - AIService: For total prompt validation before API call
- *
- * Provides conservative estimates to avoid prompt rejections
+ * Provides conservative estimates to avoid prompt rejections. Nothing calls it today: it is the
+ * groundwork for the token accounting listed in TODO.md, not a component in service.
  */
 object TokenCalculator {
 

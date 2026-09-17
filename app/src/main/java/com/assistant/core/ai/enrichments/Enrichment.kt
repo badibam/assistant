@@ -18,7 +18,7 @@ sealed class Enrichment {
     abstract fun getSchema(context: Context): String
 
     /**
-     * 🔍 Pointer - Référencer des données existantes
+     * Pointer - Référencer des données existantes
      */
     data class Pointer(
         val selectedPath: String,                    // Chemin sélectionné via ZoneScopeSelector
@@ -48,7 +48,7 @@ sealed class Enrichment {
     }
 
     /**
-     * 📝 Utiliser - Ajouter dans outil existant
+     * Utiliser - Ajouter dans outil existant
      */
     data class Use(
         val toolInstanceId: String,
@@ -65,7 +65,7 @@ sealed class Enrichment {
     }
 
     /**
-     * ✨ Créer - Nouvelle instance d'outil
+     * Créer - Nouvelle instance d'outil
      */
     data class Create(
         val toolType: String,
@@ -80,7 +80,7 @@ sealed class Enrichment {
     }
 
     /**
-     * 🔧 Modifier - Config/paramètres outil existant
+     * Modifier - Config/paramètres outil existant
      */
     data class Modify(
         val toolInstanceId: String,
@@ -95,7 +95,7 @@ sealed class Enrichment {
     }
 
     /**
-     * 📁 Organiser - Zones, déplacement, hiérarchie
+     * Organiser - Zones, déplacement, hiérarchie
      */
     data class Organize(
         val action: String, // "move", "create_zone", "delete_zone"
@@ -110,7 +110,7 @@ sealed class Enrichment {
     }
 
     /**
-     * 📚 Documenter - Métadonnées, descriptions
+     * Documenter - Métadonnées, descriptions
      */
     data class Document(
         val elementType: String, // "zone", "tool", "app"

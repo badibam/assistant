@@ -64,10 +64,10 @@ import java.util.Calendar
 
 /**
  * DefaultTheme - Default ThemeContract implementation
- * 
+ *
  * Modern theme based on Material 3 with our semantic types
  * ONLY VISUAL components (themed)
- * 
+ *
  * LAYOUTS: use Compose Row/Column/Box/Spacer directly
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -1190,7 +1190,7 @@ object DefaultTheme : ThemeContract {
             // Label du champ
             Text(displayLabel, TextType.LABEL, false, null)
             
-            // Increment buttons  
+            // Increment buttons
             if (incrementButtons.isNotEmpty()) {
                 androidx.compose.material3.Text(
                     text = s.shared("ui_form_list_add_label"),

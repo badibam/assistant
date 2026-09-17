@@ -38,8 +38,6 @@ import com.assistant.tools.messages.scheduler.MessageScheduler
  * - sent: went out, holds the copied invariant part and the send result
  * - expired: its time passed beyond validity_window_minutes while the app was off
  * - cancelled: its time arrived while the template was disabled — a decision, not a miss
- *
- * See SPECS_REFONTE_EXECUTIONS.md section 4.1 and 4.4 for the full rationale.
  */
 object MessageToolType : ToolTypeContract {
 

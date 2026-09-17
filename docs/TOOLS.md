@@ -110,8 +110,6 @@ override fun enrichData(data: Map<String, Any>, context: Context): Map<String, A
 
 **Occurrences à cycle de vie** : une occurrence n'est pas forcément instantanée. Elle peut vivre (créée → active → close), auquel cas son schéma data porte un champ `status` et ses exigences en dépendent. Le filtre `status` de `tool_data.get` existe pour ces tooltypes-là.
 
-**Raisonnement complet** : `SPECS_REFONTE_EXECUTIONS.md`.
-
 ### Enregistrement
 Ajout dans ToolTypeScanner.getAllToolTypes() pour discovery automatique.
 

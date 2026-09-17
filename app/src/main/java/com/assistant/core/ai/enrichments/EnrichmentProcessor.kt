@@ -17,11 +17,11 @@ import org.json.JSONObject
  * Core logic:
  * - All enrichments generate textual summaries for AI orientation
  * - Only specific types generate DataCommands for Level 4 prompt inclusion:
- *   * 🔍 POINTER: Always generates query
- *   * 📝 USE: Query for tool instance config
- *   * 🔧 MODIFY_CONFIG: Query for tool instance config
- *   * ✨ CREATE: No query (just orientation)
- *   * 📁 ORGANIZE: No query (just orientation)
+ * * POINTER: Always generates query
+ * * USE: Query for tool instance config
+ * * MODIFY_CONFIG: Query for tool instance config
+ * * CREATE: No query (just orientation)
+ * * ORGANIZE: No query (just orientation)
  */
 class EnrichmentProcessor(
     private val context: Context,
@@ -113,7 +113,7 @@ class EnrichmentProcessor(
 
             LogManager.aiEnrichment("Generated ${queries.size} DataCommands for $type", "DEBUG")
             queries.forEach { query ->
-                LogManager.aiEnrichment("  - id='${query.id}', type='${query.type}', isRelative=${query.isRelative}", "VERBOSE")
+                LogManager.aiEnrichment("- id='${query.id}', type='${query.type}', isRelative=${query.isRelative}", "VERBOSE")
             }
 
             queries
@@ -310,18 +310,18 @@ class EnrichmentProcessor(
         return "modifier $aspect de $toolInstanceId"
     }
 
-    // TODO: Implement ORGANIZE enrichment type (📁) - lower priority
+    // TODO: Implement ORGANIZE enrichment type () - lower priority
     // private fun generateOrganizeSummary(config: JSONObject): String {
-    //     val action = config.optString("action", "organiser")
-    //     val elementId = config.optString("elementId", "")
-    //     return "$action $elementId"
+    // val action = config.optString("action", "organiser")
+    // val elementId = config.optString("elementId", "")
+    // return "$action $elementId"
     // }
 
-    // TODO: Implement DOCUMENT enrichment type (📚) - lower priority
+    // TODO: Implement DOCUMENT enrichment type () - lower priority
     // private fun generateDocumentSummary(config: JSONObject): String {
-    //     val elementType = config.optString("elementType", "élément")
-    //     val docType = config.optString("docType", "documentation")
-    //     return "$docType $elementType"
+    // val elementType = config.optString("elementType", "élément")
+    // val docType = config.optString("docType", "documentation")
+    // return "$docType $elementType"
     // }
 
     // ========================================================================================

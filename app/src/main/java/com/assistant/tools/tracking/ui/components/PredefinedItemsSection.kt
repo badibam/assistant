@@ -304,7 +304,7 @@ private fun NumericItemsLayout(
         val displayText = buildString {
             append(item.name)
             if (hasDefaultQuantity) {
-                append(" (")
+                append("(")
                 append(defaultQuantity)
                 val unit = item.getProperty("unit")
                 if (unit.isNotBlank()) {
@@ -395,7 +395,7 @@ private fun BooleanItemsLayout(
                 UI.Text(item.name, TextType.BODY)
             }
             
-            // Get labels from config 
+            // Get labels from config
             val trueLabel = config.optString("true_label", s.tool("config_default_true_label"))
             val falseLabel = config.optString("false_label", s.tool("config_default_false_label"))
             

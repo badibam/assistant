@@ -112,9 +112,7 @@ data class FilterCriteria(
     val resultStatus: com.assistant.core.navigation.data.DataResultStatus
 )
 
-// ═══════════════════════════════════════════════════════════════════════════════════════
 // Tool Instance Resolution
-// ═══════════════════════════════════════════════════════════════════════════════════════
 
 /**
  * Tool instance information resolved from coordinator
@@ -129,7 +127,7 @@ data class ToolInstanceInfo(
  */
 suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolInstanceInfo? = withContext(Dispatchers.IO) {
     try {
-        LogManager.schema("🔍 RESOLVE: Attempting to resolve tool instance: '$toolInstanceId'")
+        LogManager.schema("RESOLVE: Attempting to resolve tool instance: '$toolInstanceId'")
 
         val coordinator = Coordinator(context)
         val result = coordinator.processUserAction(
@@ -137,31 +135,31 @@ suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolI
             params = mapOf("tool_instance_id" to toolInstanceId)
         )
 
-        LogManager.schema("🔍 RESOLVE: Coordinator result status: ${result.status}, error: ${result.error}")
+        LogManager.schema("RESOLVE: Coordinator result status: ${result.status}, error: ${result.error}")
 
         if (result.status != CommandStatus.SUCCESS) {
-            LogManager.schema("❌ RESOLVE: Failed to resolve tool instance $toolInstanceId: ${result.error}", "ERROR")
+            LogManager.schema("RESOLVE: Failed to resolve tool instance $toolInstanceId: ${result.error}", "ERROR")
             return@withContext null
         }
 
         val toolInstance = result.data?.get("tool_instance") as? Map<String, Any>
         if (toolInstance == null) {
-            LogManager.schema("❌ RESOLVE: No tool_instance in result for $toolInstanceId", "ERROR")
-            LogManager.schema("🔍 RESOLVE: Available result data keys: ${result.data?.keys}", "DEBUG")
+            LogManager.schema("RESOLVE: No tool_instance in result for $toolInstanceId", "ERROR")
+            LogManager.schema("RESOLVE: Available result data keys: ${result.data?.keys}", "DEBUG")
             return@withContext null
         }
 
         val toolType = toolInstance["tool_type"] as? String
         val configJson = toolInstance["config_json"] as? String
 
-        LogManager.schema("🔍 RESOLVE: tool_type='$toolType', config_json length=${configJson?.length}")
+        LogManager.schema("RESOLVE: tool_type='$toolType', config_json length=${configJson?.length}")
 
         if (toolType.isNullOrBlank() || configJson.isNullOrBlank()) {
-            LogManager.schema("❌ RESOLVE: Missing tool_type or config_json for $toolInstanceId", "ERROR")
+            LogManager.schema("RESOLVE: Missing tool_type or config_json for $toolInstanceId", "ERROR")
             return@withContext null
         }
 
-        LogManager.schema("✅ RESOLVE: Successfully resolved $toolInstanceId -> tool_type: '$toolType'")
+        LogManager.schema("RESOLVE: Successfully resolved $toolInstanceId -> tool_type: '$toolType'")
         ToolInstanceInfo(toolType, configJson)
 
     } catch (e: Exception) {
@@ -170,9 +168,9 @@ suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolI
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════════════
+//
 // Extensions pour utiliser la structure commune ToolDataEntity
-// ═══════════════════════════════════════════════════════════════════════════════════════
+//
 
 /**
  * Récupère les champs disponibles pour un outil donné
@@ -220,24 +218,24 @@ suspend fun DataNavigator.getAvailableFields(toolPath: String, context: Context)
  */
 suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): List<SchemaNode> = withContext(Dispatchers.IO) {
     try {
-        LogManager.schema("🔍 DATA_FIELDS: Getting data fields for tool instance: '$toolPath'")
+        LogManager.schema("DATA_FIELDS: Getting data fields for tool instance: '$toolPath'")
 
         // Resolve tool instance to get real tool type and config
         val toolInstanceInfo = resolveToolInstance(toolPath, context)
         if (toolInstanceInfo == null) {
-            LogManager.schema("❌ DATA_FIELDS: Could not resolve tool instance: '$toolPath'", "ERROR")
+            LogManager.schema("DATA_FIELDS: Could not resolve tool instance: '$toolPath'", "ERROR")
             return@withContext emptyList()
         }
 
-        LogManager.schema("✅ DATA_FIELDS: Resolved to toolType: '${toolInstanceInfo.toolType}'")
+        LogManager.schema("DATA_FIELDS: Resolved to toolType: '${toolInstanceInfo.toolType}'")
 
         val toolType = ToolTypeManager.getToolType(toolInstanceInfo.toolType)
         if (toolType == null) {
-            LogManager.schema("❌ DATA_FIELDS: No tool type found for: '${toolInstanceInfo.toolType}'", "ERROR")
+            LogManager.schema("DATA_FIELDS: No tool type found for: '${toolInstanceInfo.toolType}'", "ERROR")
             return@withContext emptyList()
         }
 
-        LogManager.schema("✅ DATA_FIELDS: Found ToolType: ${toolType::class.simpleName}")
+        LogManager.schema("DATA_FIELDS: Found ToolType: ${toolType::class.simpleName}")
 
         // Use data schema from config
         val configMap = parseJsonToMap(toolInstanceInfo.configJson)
@@ -245,9 +243,9 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
         val schemaString = if (dataSchemaId != null) {
             toolType.getSchema(dataSchemaId, context)?.content
         } else null
-        LogManager.schema("🔍 DATA_FIELDS: Schema string length: ${schemaString?.length ?: 0}")
+        LogManager.schema("DATA_FIELDS: Schema string length: ${schemaString?.length ?: 0}")
         if (schemaString.isNullOrBlank()) {
-            LogManager.schema("❌ DATA_FIELDS: No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
+            LogManager.schema("DATA_FIELDS: No data schema found for tool type: ${toolType::class.simpleName}", "ERROR")
             return@withContext emptyList()
         }
 
@@ -293,14 +291,14 @@ suspend fun DataNavigator.getDataFields(toolPath: String, context: Context): Lis
             ))
         }
 
-        LogManager.schema("✅ DATA_FIELDS: Generated ${fields.size} data fields for '$toolPath'")
+        LogManager.schema("DATA_FIELDS: Generated ${fields.size} data fields for '$toolPath'")
         fields.forEach { field ->
-            LogManager.schema("🔍 DATA_FIELDS: Field - path: '${field.path}', display: '${field.displayName}', type: '${field.fieldType}'")
+            LogManager.schema("DATA_FIELDS: Field - path: '${field.path}', display: '${field.displayName}', type: '${field.fieldType}'")
         }
         fields
 
     } catch (e: Exception) {
-        LogManager.schema("❌ DATA_FIELDS: Error getting data fields for '$toolPath': ${e.message}", "ERROR", e)
+        LogManager.schema("DATA_FIELDS: Error getting data fields for '$toolPath': ${e.message}", "ERROR", e)
         emptyList()
     }
 }

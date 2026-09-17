@@ -2,7 +2,7 @@
 
 Guide technique pour la navigation, validation et manipulation des données dans l'architecture Assistant.
 
-## ═══════════════════════════════════
+##
 ## Navigation Hiérarchique
 
 ### DataNavigator
@@ -48,22 +48,22 @@ fun ZoneScopeSelector(
 ```kotlin
 data class NavigationConfig(
     // Level selection permissions
-    val allowZoneSelection: Boolean = true,          // Peut-on confirmer aux zones ?
-    val allowInstanceSelection: Boolean = true,      // Peut-on confirmer aux instances ?
-    val allowFieldSelection: Boolean = true,         // Peut-on confirmer aux champs ? (deprecated, non utilisé)
-    val allowValueSelection: Boolean = true,         // Naviguer vers valeurs ? (deprecated, non utilisé)
+    val allowZoneSelection: Boolean = true, // Peut-on confirmer aux zones ?
+    val allowInstanceSelection: Boolean = true, // Peut-on confirmer aux instances ?
+    val allowFieldSelection: Boolean = true, // Peut-on confirmer aux champs ? (deprecated, non utilisé)
+    val allowValueSelection: Boolean = true, // Naviguer vers valeurs ? (deprecated, non utilisé)
 
     // Context-aware selection
     val allowedContexts: List<PointerContext> = listOf(
         PointerContext.GENERIC,
         PointerContext.CONFIG,
         PointerContext.DATA
-    ),                                               // Contextes disponibles
-    val defaultContext: PointerContext = PointerContext.GENERIC,  // Contexte par défaut
+    ), // Contextes disponibles
+    val defaultContext: PointerContext = PointerContext.GENERIC, // Contexte par défaut
 
     // UI configuration
-    val title: String = "",                          // Titre custom ou scope_selector_title par défaut
-    val useRelativeLabels: Boolean = false           // true pour AUTOMATION, false pour CHAT
+    val title: String = "", // Titre custom ou scope_selector_title par défaut
+    val useRelativeLabels: Boolean = false // true pour AUTOMATION, false pour CHAT
 )
 ```
 
@@ -119,17 +119,17 @@ NavigationConfig(
 
 ```kotlin
 data class SelectionResult(
-    val selectedPath: String,                        // Chemin complet sélectionné
-    val selectionLevel: SelectionLevel,              // Niveau d'arrêt (ZONE ou INSTANCE)
+    val selectedPath: String, // Chemin complet sélectionné
+    val selectionLevel: SelectionLevel, // Niveau d'arrêt (ZONE ou INSTANCE)
 
     // Context-aware selection
-    val selectedContext: PointerContext,             // Contexte sélectionné
-    val selectedResources: List<String>,             // Ressources cochées (ex: ["data", "data_schema"])
+    val selectedContext: PointerContext, // Contexte sélectionné
+    val selectedResources: List<String>, // Ressources cochées (ex: ["data", "data_schema"])
 
     // Field-level selection (deprecated, non utilisé)
     val selectedValues: List<String> = emptyList(),
     val fieldSpecificData: FieldSpecificData? = null,
-    val displayChain: List<String> = emptyList()     // Labels lisibles pour affichage
+    val displayChain: List<String> = emptyList() // Labels lisibles pour affichage
 )
 ```
 
@@ -142,7 +142,7 @@ data class SelectionResult(
 
 **Périodes** : Stockées dans `timestampSelection` (non visible dans SelectionResult, géré en interne par ZoneScopeSelector)
 
-## ═══════════════════════════════════
+##
 ## Validation par Schema ID
 
 ### Architecture Schema
@@ -151,8 +151,8 @@ Système de validation basé sur identifiants de schémas explicites avec objets
 
 ```kotlin
 data class Schema(
-    val id: String,         // "tracking_config_numeric"
-    val content: String     // JSON Schema complet
+    val id: String, // "tracking_config_numeric"
+    val content: String // JSON Schema complet
 )
 ```
 
@@ -164,8 +164,8 @@ Le `schema_id` est intégré dans les données de configuration au même niveau 
 
 ```kotlin
 val configData = mapOf(
-    "schema_id" to "tracking_config_numeric",      // Pour validation
-    "data_schema_id" to "tracking_data_numeric",   // Pour usage runtime
+    "schema_id" to "tracking_config_numeric", // Pour validation
+    "data_schema_id" to "tracking_data_numeric", // Pour usage runtime
     "name" to "Mon suivi",
     "type" to "numeric"
 )
@@ -188,8 +188,8 @@ Le `schema_id` est passé au niveau des paramètres de service, séparé du JSON
 val params = mapOf(
     "toolInstanceId" to toolInstanceId,
     "tooltype" to "tracking",
-    "schema_id" to "tracking_data_numeric",   // Pour validation service
-    "data" to JSONObject(dataJson)            // JSON propre sans schema_id
+    "schema_id" to "tracking_data_numeric", // Pour validation service
+    "data" to JSONObject(dataJson) // JSON propre sans schema_id
 )
 
 coordinator.processUserAction("tool_data.create", params)
@@ -202,7 +202,7 @@ ToolDataService récupère le `schema_id` depuis les paramètres et l'ajoute à 
 ```kotlin
 val schemaId = params.optString("schema_id")
 if (schemaId.isNotEmpty()) {
-    fullDataMap["schema_id"] = schemaId  // Ajout au niveau racine
+    fullDataMap["schema_id"] = schemaId // Ajout au niveau racine
 }
 val schema = toolType.getSchema(schemaId, context)
 SchemaValidator.validate(schema, fullDataMap, context)
@@ -251,7 +251,7 @@ object ValidationHelper {
 }
 ```
 
-## ═══════════════════════════════════
+##
 ## Event Sourcing
 
 Toutes les modifications passent par des événements pour garantir cohérence et traçabilité.
@@ -284,7 +284,7 @@ Système de templates pour actions, états et résultats :
 
 **Usage** : Historique, validation utilisateur, feedback IA.
 
-## ═══════════════════════════════════
+##
 ## Versioning et Migrations
 
 ### Sources de vérité uniques
@@ -414,7 +414,7 @@ private fun transformTrackingConfig(json: JSONObject, version: Int): JSONObject 
 - Conservées indéfiniment (historique complet)
 - Application séquentielle automatique
 
-## ═══════════════════════════════════
+##
 ## Règles de Développement
 
 ### Patterns d'Implémentation

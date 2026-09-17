@@ -237,10 +237,10 @@ Singleton cache pour paramètres applicatifs globaux utilisés fréquemment.
 
 **API** :
 ```kotlin
-AppConfigManager.initialize(context)  // MainActivity.onCreate
+AppConfigManager.initialize(context) // MainActivity.onCreate
 val dayStartHour = AppConfigManager.getDayStartHour()
 val weekStartDay = AppConfigManager.getWeekStartDay()
-AppConfigManager.refresh(context)  // Après modif config
+AppConfigManager.refresh(context) // Après modif config
 ```
 
 **Règles** :

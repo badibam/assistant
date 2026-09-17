@@ -36,12 +36,12 @@ enum class ActionType { CREATE, UPDATE }
 
 /**
  * TrackingEntryDialog - Clean rewrite for tracking data entry only
- * 
+ *
  * Purpose: Create/edit tracking entries (not predefined items configuration)
- * 
+ *
  * Use cases:
  * 1. Predefined item: Use predefined item (name + defaults pre-filled)
- * 2. Free entry: Create new entry (name + value from scratch)  
+ * 2. Free entry: Create new entry (name + value from scratch)
  * 3. History edit: Edit existing entry (all fields editable)
  */
 @Composable
@@ -141,7 +141,7 @@ fun TrackingEntryDialog(
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
 
-    // ═══ Centralized actual values for all types (used in validateForm AND UI) ═══
+    // Centralized actual values for all types (used in validateForm AND UI)
     val realValues = remember(trackingType, config, initialData, s) {
         when (trackingType) {
             "scale" -> mapOf(
@@ -596,7 +596,7 @@ fun TrackingEntryDialog(
             )
         }
         
-        // Time picker dialog  
+        // Time picker dialog
         if (showTimePicker) {
             UI.TimePicker(
                 selectedTime = timeString,

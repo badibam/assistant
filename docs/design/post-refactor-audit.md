@@ -1,6 +1,6 @@
 # Chantiers post-refonte : alignement pipeline + dette constatée
 
-**Origine** : audit architecture 2026-06-10/11 (même session que `SPECS_REFONTE_EXECUTIONS.md`).
+**Origine** : audit architecture 2026-06-10/11.
 **Périmètre** : tout ce qui a été constaté pendant l'audit et qui ne fait PAS partie de la refonte executions. Deux parties : un chantier concret et prioritaire (A), et une liste de dette/choix discutables à arbitrer (B).
 
 ---
@@ -47,7 +47,7 @@ Ces problèmes survivent à la refonte (leurs équivalents TOOL_EXECUTIONS meure
 
 **a) `custom_fields` non parsé dans le prompt** : `CommandExecutor.formatResultData()` (l.937-963) re-parse `entry.data` (string JSON → objet) pour la lisibilité du prompt, mais **pas `entry.custom_fields`** → l'IA voit `data` en objet et `custom_fields` en string JSON échappée. L'Exemple 3 de la doc montre les deux en objets. Correctif : parser `custom_fields` au même endroit, même pattern. (Au passage : la forme de réponse documentée `"total": 42` ne correspond pas à la réalité — objet `pagination` ; corriger l'exemple.)
 
-**b) Source unique pour la grammaire des fields** : le `SPECS_TOOL_DATA_PATTERN_MATCHING_REFACTOR.md` suspendu prévoyait la validation pattern matching des fields TOOL_DATA (root / `data.*` / `custom_fields.*`, rejet de `data` et `custom_fields` seuls). À implémenter ici, MAIS sans recréer le défaut d'origine (grammaire dupliquée en 4 endroits : validation, filtrage, doc, strings). **Un helper unique** (ex. objet `FieldPatternGrammar` dans core) utilisé par la validation (`AICommandProcessor`) ET le filtrage (`ToolDataService.filterEntryFields`) ; doc et strings d'erreur dérivées de cette source. Après ça, supprimer le SPECS suspendu.
+**b) Source unique pour la grammaire des fields** : le `tool-data-pattern-matching.md` suspendu prévoyait la validation pattern matching des fields TOOL_DATA (root / `data.*` / `custom_fields.*`, rejet de `data` et `custom_fields` seuls). À implémenter ici, MAIS sans recréer le défaut d'origine (grammaire dupliquée en 4 endroits : validation, filtrage, doc, strings). **Un helper unique** (ex. objet `FieldPatternGrammar` dans core) utilisé par la validation (`AICommandProcessor`) ET le filtrage (`ToolDataService.filterEntryFields`) ; doc et strings d'erreur dérivées de cette source. Après ça, supprimer le SPECS suspendu.
 
 ## A.6 Hygiène (mineur, même passage)
 
@@ -84,7 +84,7 @@ Le prompt L1 vit dans `ai_prompt_chunks.xml`, traité comme de l'i18n alors que 
 
 ## B.4 Renommer un custom field = perte de données — vérifié (design doc)
 
-`CUSTOM_FIELDS_MIGRATION.md` : un renommage est détecté comme `Removed + Added`, et `Removed → STRIP_FIELD` → renommer un champ (intention cosmétique) **supprime les valeurs historiques** (avec dialogue, mais destructif). `NameChanged → ERROR` interdit l'autre chemin. Aucun moyen sûr de renommer.
+`custom-fields-migration.md` : un renommage est détecté comme `Removed + Added`, et `Removed → STRIP_FIELD` → renommer un champ (intention cosmétique) **supprime les valeurs historiques** (avec dialogue, mais destructif). `NameChanged → ERROR` interdit l'autre chemin. Aucun moyen sûr de renommer.
 
 **Recommandation** : migration rename-aware (copie de clé `old_name → new_name` dans toutes les entrées). Simple, élimine un piège réel avant qu'il ne morde sur des données réelles.
 

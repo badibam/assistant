@@ -27,7 +27,7 @@ import com.assistant.core.strings.Strings
  *
  * Affiche la liste des actions que l'IA souhaite effectuer avec :
  * - Description de chaque action (verbalisée)
- * - Warning icon (⚠️) si action sensible (validée par config)
+ * - Warning icon () si action sensible (validée par config)
  * - Raison de validation si applicable
  * - Boutons Refuser/Autoriser
  *

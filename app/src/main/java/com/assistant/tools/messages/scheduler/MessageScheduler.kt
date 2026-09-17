@@ -35,8 +35,6 @@ import java.time.ZoneId
  * The invariant part of the message is copied onto the occurrence AT SEND TIME and never at
  * creation, so a pending occurrence is an intention rather than a half-written event, and
  * editing the template reaches everything that has not gone out yet.
- *
- * See SPECS_REFONTE_EXECUTIONS.md sections 4.1 and 4.4.
  */
 object MessageScheduler : ToolScheduler {
 

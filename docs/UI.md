@@ -125,12 +125,12 @@ Les constantes suivantes sont référencées dans les schémas JSON :
 // Schéma (ToolType)
 "field": {
     "type": "string",
-    "maxLength": ${FieldLimits.LONG_LENGTH}  // Doit correspondre
+    "maxLength": ${FieldLimits.LONG_LENGTH} // Doit correspondre
 }
 
 // UI (ConfigScreen)
 UI.FormField(
-    fieldType = FieldType.TEXT_LONG  // Doit correspondre au schéma
+    fieldType = FieldType.TEXT_LONG // Doit correspondre au schéma
 )
 ```
 
@@ -266,8 +266,8 @@ Toujours vérifier config != null avant utilisation, pas de valeurs par défaut 
 ### Types de Période
 
 ```kotlin
-data class Period(val timestamp: Long, val type: PeriodType)  // Période absolue
-data class RelativePeriod(val offset: Int, val type: PeriodType)  // Période relative (offset depuis maintenant)
+data class Period(val timestamp: Long, val type: PeriodType) // Période absolue
+data class RelativePeriod(val offset: Int, val type: PeriodType) // Période relative (offset depuis maintenant)
 ```
 
 ### Composants de Période

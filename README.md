@@ -3,7 +3,7 @@
 # --------- #
 
 - **Améliorer la vie dans toutes ses dimensions**
-- **Collaboration IA-humain symétrique** 
+- **Collaboration IA-humain symétrique**
 - **Outil personnalisable et extensible**
 
 ## 1. Améliorer la vie dans toutes ses dimensions

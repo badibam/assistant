@@ -130,7 +130,7 @@ tasks.register("generateThemeResources") {
     
     doFirst {
         // Phase 1: Validation avec warnings - vérifier cohérence globale
-        println("🔍 Validating theme consistency...")
+        println("Validating theme consistency...")
         
         if (!themesDir.exists()) {
             throw GradleException("Themes directory not found: ${themesDir.absolutePath}")
@@ -160,25 +160,25 @@ tasks.register("generateThemeResources") {
                 val orphanSvgs = availableSvgs - standardIcons
                 
                 if (missingSvgs.isNotEmpty() && themeName == "default") {
-                    println("⚠️  Default theme missing SVG files: $missingSvgs")
-                    println("   → Will generate placeholders for missing icons")
+                    println("Default theme missing SVG files: $missingSvgs")
+                    println("→ Will generate placeholders for missing icons")
                 } else if (missingSvgs.isNotEmpty()) {
-                    println("ℹ️  Theme '$themeName' missing SVG files: $missingSvgs")
-                    println("   → Will fallback to default theme")
+                    println("ℹ Theme '$themeName' missing SVG files: $missingSvgs")
+                    println("→ Will fallback to default theme")
                 }
                 
                 if (orphanSvgs.isNotEmpty()) {
-                    println("⚠️  Theme '$themeName': SVG files not in IconConfig.STANDARD_ICONS: $orphanSvgs")
-                    println("   → Consider adding these to IconConfig.STANDARD_ICONS")
+                    println("Theme '$themeName': SVG files not in IconConfig.STANDARD_ICONS: $orphanSvgs")
+                    println("→ Consider adding these to IconConfig.STANDARD_ICONS")
                 }
                 
-                println("✅ Theme '$themeName': Ready (${availableSvgs.size}/${standardIcons.size} icons)")
+                println("Theme '$themeName': Ready (${availableSvgs.size}/${standardIcons.size} icons)")
             }
         }
     }
     
     doLast {
-        println("🎨 Generating theme resources...")
+        println("Generating theme resources...")
         
         outputDir.mkdirs()
         
@@ -187,7 +187,7 @@ tasks.register("generateThemeResources") {
             val iconsDir = File(themeDir, "icons")
             
             if (iconsDir.exists() && iconsDir.isDirectory) {
-                println("📁 Processing theme: $themeName")
+                println("Processing theme: $themeName")
                 
                 // Générer ressources pour toutes les icônes standard
                 getStandardIcons().forEach { iconId ->
@@ -199,13 +199,13 @@ tasks.register("generateThemeResources") {
                         // 1. SVG exists in current theme → use it
                         svgFile.exists() -> {
                             convertSvgToVectorDrawable(svgFile, outputFile, iconId)
-                            println("✅ Generated from $themeName: $outputFileName")
+                            println("Generated from $themeName: $outputFileName")
                         }
                         
                         // 2. SVG missing but theme is default → placeholder
                         themeName == "default" -> {
                             generatePlaceholderVector(outputFile, iconId)
-                            println("🔄 Generated placeholder for default: $outputFileName")
+                            println("Generated placeholder for default: $outputFileName")
                         }
                         
                         // 3. SVG missing in other theme → fallback to default
@@ -213,17 +213,17 @@ tasks.register("generateThemeResources") {
                             val defaultSvgFile = File(themesDir, "default/icons/$iconId.svg")
                             if (defaultSvgFile.exists()) {
                                 convertSvgToVectorDrawable(defaultSvgFile, outputFile, iconId)
-                                println("🔄 Fallback from default: $outputFileName")
+                                println("Fallback from default: $outputFileName")
                             } else {
                                 generatePlaceholderVector(outputFile, iconId)
-                                println("⚠️  Missing in both $themeName and default: $outputFileName")
+                                println("Missing in both $themeName and default: $outputFileName")
                             }
                         }
                     }
                 }
                 
                 // Phase 2: Nettoyage automatique - supprimer resources orphelines
-                println("🧹 Cleaning orphan resources for theme: $themeName")
+                println("Cleaning orphan resources for theme: $themeName")
                 
                 val expectedFiles = getStandardIcons().map { iconId ->
                     "${themeName}_${iconId.replace("-", "_")}.xml"
@@ -238,21 +238,21 @@ tasks.register("generateThemeResources") {
                 orphanFiles.forEach { orphanFile ->
                     val fileToDelete = File(outputDir, orphanFile)
                     if (fileToDelete.delete()) {
-                        println("🗑️  Removed orphan resource: $orphanFile")
+                        println("Removed orphan resource: $orphanFile")
                     }
                 }
                 
                 if (orphanFiles.isEmpty()) {
-                    println("✨ No orphan resources found for theme: $themeName")
+                    println("No orphan resources found for theme: $themeName")
                 }
             }
         }
         
         // Phase 3: Generate Kotlin code with direct R.drawable references
-        println("📝 Generating Kotlin theme resources...")
+        println("Generating Kotlin theme resources...")
         generateKotlinThemeResources()
         
-        println("🎉 Theme resource generation complete!")
+        println("Theme resource generation complete!")
     }
 }
 
@@ -271,7 +271,7 @@ tasks.register("generateStringResources") {
     outputs.file(outputFile)
     
     doLast {
-        println("🔤 Generating string resources...")
+        println("Generating string resources...")
         
         val aggregatedStrings = StringBuilder()
         aggregatedStrings.append("""<?xml version="1.0" encoding="utf-8"?>
@@ -286,7 +286,7 @@ tasks.register("generateStringResources") {
                 val stringsFile = File(toolDir, "strings.xml")
                 
                 if (stringsFile.exists()) {
-                    println("📁 Processing tool strings: $toolName")
+                    println("Processing tool strings: $toolName")
                     processStrings(stringsFile, toolName, aggregatedStrings)
                 }
             }
@@ -295,14 +295,14 @@ tasks.register("generateStringResources") {
         // Process all shared strings files (all XML files in sources directory)
         if (sharedStringsDir.exists()) {
             sharedStringsDir.listFiles()?.filter { it.extension == "xml" }?.forEach { xmlFile ->
-                println("📁 Processing shared strings: ${xmlFile.name}")
+                println("Processing shared strings: ${xmlFile.name}")
                 processStrings(xmlFile, "shared", aggregatedStrings)
             }
         }
         
         aggregatedStrings.append("</resources>")
         outputFile.writeText(aggregatedStrings.toString())
-        println("✅ Generated: ${outputFile.name}")
+        println("Generated: ${outputFile.name}")
     }
 }
 
@@ -316,7 +316,7 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
         // Pattern amélioré pour extraire <string name="key">value</string> avec support multiline et caractères échappés
         val stringPattern = """<string\s+name="([^"]+)"[^>]*>(.*?)</string>""".toRegex(RegexOption.DOT_MATCHES_ALL)
         
-        output.appendLine("    <!-- $prefix -->")
+        output.appendLine("<!-- $prefix -->")
         
         stringPattern.findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
@@ -332,7 +332,7 @@ fun processStrings(stringsFile: File, prefix: String, output: StringBuilder) {
         output.appendLine()
         
     } catch (e: Exception) {
-        println("❌ Error processing $stringsFile: ${e.message}")
+        println("Error processing $stringsFile: ${e.message}")
     }
 }
 
@@ -403,16 +403,16 @@ fun convertSvgToVectorDrawable(svgFile: File, outputFile: File, iconName: String
         if (result.exitValue == 0 && outputFile.exists()) {
             // Post-process to add stroke attributes for SVGs that use stroke styling
             postProcessVectorDrawable(svgFile, outputFile)
-            println("✅ Converted with svg2vectordrawable: ${outputFile.name}")
+            println("Converted with svg2vectordrawable: ${outputFile.name}")
         } else {
-            println("⚠️  svg2vectordrawable failed for $svgFile, using fallback")
+            println("svg2vectordrawable failed for $svgFile, using fallback")
             generatePlaceholderVector(outputFile, iconName)
         }
         
     } catch (e: Exception) {
-        println("❌ Error calling svg2vectordrawable for $svgFile: ${e.message}")
-        println("   Make sure Node.js and svg2vectordrawable are installed:")
-        println("   npm install -g svg2vectordrawable")
+        println("Error calling svg2vectordrawable for $svgFile: ${e.message}")
+        println("Make sure Node.js and svg2vectordrawable are installed:")
+        println("npm install -g svg2vectordrawable")
         generatePlaceholderVector(outputFile, iconName)
     }
 }
@@ -445,12 +445,12 @@ fun postProcessVectorDrawable(svgFile: File, outputFile: File) {
             
             if (updatedContent != vectorContent) {
                 outputFile.writeText(updatedContent)
-                println("🎨 Added stroke styling with neutral color to ${outputFile.name}")
+                println("Added stroke styling with neutral color to ${outputFile.name}")
             }
         }
         
     } catch (e: Exception) {
-        println("⚠️  Warning: Could not post-process ${outputFile.name}: ${e.message}")
+        println("Warning: Could not post-process ${outputFile.name}: ${e.message}")
     }
 }
 
@@ -506,38 +506,38 @@ fun generateKotlinThemeResources() {
         appendLine("import com.assistant.core.themes.AvailableIcon")
         appendLine("")
         appendLine("/**")
-        appendLine(" * Generated theme resources with direct R.drawable references")
-        appendLine(" * Auto-generated from standard_icons.txt - DO NOT EDIT MANUALLY")
-        appendLine(" */")
+        appendLine("* Generated theme resources with direct R.drawable references")
+        appendLine("* Auto-generated from standard_icons.txt - DO NOT EDIT MANUALLY")
+        appendLine("*/")
         appendLine("object GeneratedThemeResources {")
-        appendLine("    ")
-        appendLine("    /**")
-        appendLine("     * Get default theme icons with direct resource references")
-        appendLine("     */")
-        appendLine("    fun getDefaultThemeIcons(): List<AvailableIcon> {")
-        appendLine("        return listOf(")
+        appendLine("")
+        appendLine("/**")
+        appendLine("* Get default theme icons with direct resource references")
+        appendLine("*/")
+        appendLine("fun getDefaultThemeIcons(): List<AvailableIcon> {")
+        appendLine("return listOf(")
         
         standardIcons.forEach { iconId ->
             val resourceName = "default_${iconId.replace("-", "_")}"
-            val displayName = iconId.split("-").joinToString(" ") { 
+            val displayName = iconId.split("-").joinToString("") { 
                 it.replaceFirstChar { char -> char.uppercase() } 
             }
-            appendLine("            AvailableIcon(")
-            appendLine("                id = \"$iconId\",")
-            appendLine("                displayName = \"$displayName\",")
-            appendLine("                resourceId = R.drawable.$resourceName")
-            appendLine("            ),")
+            appendLine("AvailableIcon(")
+            appendLine("id = \"$iconId\",")
+            appendLine("displayName = \"$displayName\",")
+            appendLine("resourceId = R.drawable.$resourceName")
+            appendLine("),")
         }
         
-        appendLine("        )")
-        appendLine("    }")
-        appendLine("    ")
-        appendLine("    // TODO: Add other themes here (glass, etc.) when implemented")
+        appendLine(")")
+        appendLine("}")
+        appendLine("")
+        appendLine("// TODO: Add other themes here (glass, etc.) when implemented")
         appendLine("}")
     }
     
     outputFile.writeText(kotlinCode)
-    println("✅ Generated: ${outputFile.name}")
+    println("Generated: ${outputFile.name}")
 }
 
 dependencies {

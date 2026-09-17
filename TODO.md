@@ -34,7 +34,7 @@ Les huit points de `docs/design/post-refactor-audit.md`, partie B, chacun avec s
 - Custom fields : type `duration` (unité de stockage à trancher — secondes ou h/min/s, et jusqu'où on va).
 - Système d'événements dans le core, comme les automations (section par zone, intégré au `CoreScheduler`), pour lier les outils entre eux. Au passage, clarifier le vocabulaire des déclencheurs d'automation, géré de façon inconsistante.
 - POINTER : sélection multiple de champs (bascule « filtrer les champs » qui déroule la liste).
-- Compte des tokens avant envoi, via `/v1/messages/count_tokens` chez Claude — à voir pour les autres providers.
+- Compte des tokens avant envoi, via `/v1/messages/count_tokens` chez Claude — à voir pour les autres providers. `TokenCalculator` (171 lignes) et son bloc de strings existent déjà mais ne sont appelés de nulle part : soit ce chantier les reprend, soit ils partent.
 - Dupliquer un outil.
 - Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste. C'est la chaîne de valeur annoncée par `README.md`, et donc le différenciateur non prouvé du projet.
 

@@ -83,8 +83,8 @@ data class AISessionEntity(
     val name: String,
     val type: SessionType,
     val requireValidation: Boolean,
-    val phase: String,                      // Phase actuelle (serialized)
-    val waitingContextJson: String?,        // WaitingContext (serialized)
+    val phase: String, // Phase actuelle (serialized)
+    val waitingContextJson: String?, // WaitingContext (serialized)
     val totalRoundtrips: Int,
     val lastEventTime: Long,
     val lastUserInteractionTime: Long,
@@ -96,7 +96,7 @@ data class AISessionEntity(
     val lastActivity: Long,
     val isActive: Boolean,
     val endReason: SessionEndReason?,
-    val tokensUsed: String?                 // JSON tokens breakdown
+    val tokensUsed: String? // JSON tokens breakdown
 )
 ```
 
@@ -105,11 +105,11 @@ data class AISessionEntity(
 data class SessionMessage(
     val id: String,
     val timestamp: Long,
-    val sender: MessageSender,         // USER, AI, SYSTEM
-    val richContent: RichMessage?,     // Messages enrichis utilisateur
-    val textContent: String?,          // Messages simples (réponses modules)
-    val aiMessage: AIMessage?,         // Structure IA parsée pour UI
-    val aiMessageJson: String?,        // JSON original pour historique prompts
+    val sender: MessageSender, // USER, AI, SYSTEM
+    val richContent: RichMessage?, // Messages enrichis utilisateur
+    val textContent: String?, // Messages simples (réponses modules)
+    val aiMessage: AIMessage?, // Structure IA parsée pour UI
+    val aiMessageJson: String?, // JSON original pour historique prompts
     val systemMessage: SystemMessage?, // Messages système avec résultats
     val executionMetadata: ExecutionMetadata?, // Automations uniquement
     val excludeFromPrompt: Boolean = false // Exclure du prompt (messages UI uniquement)
@@ -123,20 +123,20 @@ data class SessionMessage(
 ### RichMessage et AIMessage
 ```kotlin
 data class RichMessage(
-    val segments: List<MessageSegment>,       // Text | EnrichmentBlock
-    val linearText: String,                   // Calculé avec promptPreview
-    val dataCommands: List<DataCommand>       // Calculé
+    val segments: List<MessageSegment>, // Text | EnrichmentBlock
+    val linearText: String, // Calculé avec promptPreview
+    val dataCommands: List<DataCommand> // Calculé
 )
 
 data class AIMessage(
-    val preText: String,                      // Obligatoire
-    val validationRequest: Boolean?,          // true = validation requise
-    val dataCommands: List<DataCommand>?,     // OU actions (exclusif)
+    val preText: String, // Obligatoire
+    val validationRequest: Boolean?, // true = validation requise
+    val dataCommands: List<DataCommand>?, // OU actions (exclusif)
     val actionCommands: List<DataCommand>?,
     val postText: String?,
-    val keepControl: Boolean?,                // true = garde la main après succès actions
+    val keepControl: Boolean?, // true = garde la main après succès actions
     val communicationModule: CommunicationModule?,
-    val completed: Boolean?                   // true = travail terminé (AUTOMATION uniquement)
+    val completed: Boolean? // true = travail terminé (AUTOMATION uniquement)
 )
 ```
 
@@ -147,20 +147,20 @@ data class AIMessage(
 ### SystemMessage
 ```kotlin
 data class SystemMessage(
-    val type: SystemMessageType,           // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, FORMAT_ERROR, NETWORK_ERROR, SESSION_TIMEOUT
+    val type: SystemMessageType, // DATA_ADDED, ACTIONS_EXECUTED, LIMIT_REACHED, FORMAT_ERROR, NETWORK_ERROR, SESSION_TIMEOUT
     val commandResults: List<CommandResult>,
     val summary: String,
-    val formattedData: String?              // JSON résultats (queries uniquement)
+    val formattedData: String? // JSON résultats (queries uniquement)
 )
 
 enum class SystemMessageType {
-    DATA_ADDED,          // Résultats queries → envoyé au prompt
-    ACTIONS_EXECUTED,    // Résultats actions → envoyé au prompt
-    LIMIT_REACHED,       // Limite atteinte → envoyé au prompt
-    FORMAT_ERROR,        // Erreur de format réponse IA → envoyé au prompt pour correction
-    NETWORK_ERROR,       // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
-    PROVIDER_ERROR,      // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
-    SESSION_TIMEOUT      // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
+    DATA_ADDED, // Résultats queries → envoyé au prompt
+    ACTIONS_EXECUTED, // Résultats actions → envoyé au prompt
+    LIMIT_REACHED, // Limite atteinte → envoyé au prompt
+    FORMAT_ERROR, // Erreur de format réponse IA → envoyé au prompt pour correction
+    NETWORK_ERROR, // Erreurs réseau/HTTP → filtré du prompt, visible UI (audit + transparence)
+    PROVIDER_ERROR, // Provider non configuré/invalide → filtré du prompt, visible UI (audit + transparence)
+    SESSION_TIMEOUT // Timeout watchdog session → filtré du prompt, visible UI (audit + transparence)
 }
 ```
 
@@ -169,21 +169,21 @@ enum class SystemMessageType {
 ### Commands et PromptData
 ```kotlin
 data class DataCommand(
-    val id: String,              // Hash déterministe
-    val type: String,            // TOOL_DATA, CREATE_DATA, etc.
+    val id: String, // Hash déterministe
+    val type: String, // TOOL_DATA, CREATE_DATA, etc.
     val params: Map<String, Any>,
     val isRelative: Boolean = false
 )
 
 data class ExecutableCommand(
-    val resource: String,        // "zones", "tool_data"
-    val operation: String,       // "get", "batch_create"
+    val resource: String, // "zones", "tool_data"
+    val operation: String, // "get", "batch_create"
     val params: Map<String, Any>
 )
 
 data class PromptData(
-    val level1Content: String,     // Documentation système (avec limites)
-    val level2Content: String,     // User data (always_send tools)
+    val level1Content: String, // Documentation système (avec limites)
+    val level2Content: String, // User data (always_send tools)
     val sessionMessages: List<SessionMessage>
 )
 ```
@@ -195,9 +195,9 @@ data class AIResponse(
     val content: String,
     val errorMessage: String? = null,
     val tokensUsed: Int = 0,
-    val cacheWriteTokens: Int = 0,  // Cache write/creation tokens (generic, all providers)
-    val cacheReadTokens: Int = 0,   // Cache read tokens (generic, all providers)
-    val inputTokens: Int = 0         // Uncached input tokens
+    val cacheWriteTokens: Int = 0, // Cache write/creation tokens (generic, all providers)
+    val cacheReadTokens: Int = 0, // Cache read tokens (generic, all providers)
+    val inputTokens: Int = 0 // Uncached input tokens
 )
 ```
 
@@ -246,7 +246,7 @@ data class AILimitsConfig(
 ### Command Processing Pipeline
 ```
 User: EnrichmentBlock → EnrichmentProcessor → CommandTransformer → CommandExecutor
-AI:   AIMessage → CommandTransformer → CommandExecutor
+AI: AIMessage → CommandTransformer → CommandExecutor
 ```
 
 ## 5. Contrôle de session
@@ -290,7 +290,7 @@ tick() {
   if (slotOccupé) return
   if (queueNotEmpty) processQueue()
   else {
-    nextSession = AutomationScheduler.getNextSession()  // Calcul dynamique
+    nextSession = AutomationScheduler.getNextSession() // Calcul dynamique
     if (nextSession) executeAutomation(id)
   }
 }
@@ -432,10 +432,10 @@ Event NetworkErrorOccurred:
 ## 9. Enrichissements
 
 ### Types d'enrichissements
-- **🔍 POINTER** - Référencer données (zones ou instances)
-- **📝 USE** - Utiliser données d'outils (config + schemas + data + stats)
-- **✨ CREATE** - Créer éléments (schemas pour tooltype)
-- **🔧 MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
+- ** POINTER** - Référencer données (zones ou instances)
+- ** USE** - Utiliser données d'outils (config + schemas + data + stats)
+- ** CREATE** - Créer éléments (schemas pour tooltype)
+- ** MODIFY_CONFIG** - Modifier config outils (schema + config actuelle)
 
 ### Double Preview
 **Séparation affichage UI et prompt** :

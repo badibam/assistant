@@ -126,7 +126,7 @@ class DataNavigator(private val context: Context) {
         }
     }
 
-    // ═══ Bridge vers données réelles ═══
+    // Bridge vers données réelles
 
     /**
      * Récupère les valeurs distinctes d'un champ (avec garde-fous)
@@ -268,7 +268,7 @@ class DataNavigator(private val context: Context) {
         }
     }
 
-    // ═══ Private Methods ═══
+    // Private Methods
 
     private suspend fun getToolsInZone(zoneId: String): List<SchemaNode> {
         return try {

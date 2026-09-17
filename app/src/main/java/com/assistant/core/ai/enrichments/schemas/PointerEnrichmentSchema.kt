@@ -4,7 +4,7 @@ import android.content.Context
 import com.assistant.core.strings.Strings
 
 /**
- * Schema pour l'enrichissement Pointer (🔍)
+ * Schema pour l'enrichissement Pointer ()
  * Définit la structure et documentation pour référencer des données existantes
  */
 object PointerEnrichmentSchema {
