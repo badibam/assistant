@@ -19,18 +19,27 @@ import com.assistant.tools.messages.scheduler.MessageScheduler
 /**
  * Messages Tool Type implementation
  *
- * Provides notification/reminder functionality with scheduling support.
- * Messages are data entries (templates) with execution history stored as snapshots.
+ * One instance = one notification template. Its successive sends are its occurrences,
+ * stored as ordinary tool_data entries — there is no separate execution plane.
  *
  * Architecture:
- * - Config: Minimal settings (default_priority, external_notifications)
- * - Data: Message templates with title, content, schedule, priority, and executions array
- * - Executions: Immutable snapshots of sent notifications (system-managed)
+ * - Config = the template: the invariant part of every send (common_title, priority),
+ *   the recurrence that spawns occurrences, and the channel settings.
+ * - Data = the occurrences: one entry per send, carrying the part written for that day
+ *   (title, content, custom field values) plus, once sent, the invariant part copied in.
  *
- * Scheduling:
- * - Uses ScheduleConfig infrastructure (6 patterns: Daily, Weekly, Monthly, Yearly, etc.)
- * - MessageScheduler appends executions when scheduled_time reached
- * - Notifications sent via NotificationService
+ * The two parts compose, they never override each other, so no "which one wins" rule
+ * exists anywhere. The invariant part is copied AT SEND TIME and never at creation:
+ * a pending occurrence is an intention, not an event, so two competing copies of the
+ * template never coexist, and editing the template applies to everything not yet sent.
+ *
+ * Occurrence lifecycle (data.status):
+ * - pending: created ahead of time by the scheduler, holds only its own part
+ * - sent: went out, holds the copied invariant part and the send result
+ * - expired: its time passed beyond validity_window_minutes while the app was off
+ * - cancelled: its time arrived while the template was disabled — a decision, not a miss
+ *
+ * See SPECS_REFONTE_EXECUTIONS.md section 4.1 and 4.4 for the full rationale.
  */
 object MessageToolType : ToolTypeContract {
 
@@ -74,8 +83,10 @@ object MessageToolType : ToolTypeContract {
             "validateConfig": false,
             "validateData": false,
             "always_send": false,
-            "default_priority": "default",
-            "external_notifications": true
+            "priority": "default",
+            "external_notifications": true,
+            "creation_horizon_days": 2,
+            "validity_window_minutes": 60
         }
         """.trimIndent()
     }
@@ -85,43 +96,81 @@ object MessageToolType : ToolTypeContract {
     // ========================================
 
     override fun getAllSchemaIds(): List<String> {
-        return listOf("messages_config", "messages_data", "messages_execution")
+        return listOf("messages_config", "messages_data")
     }
 
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "messages_config" -> createMessagesConfigSchema(context)
             "messages_data" -> createMessagesDataSchema(context, toolInstanceId)
-            "messages_execution" -> createMessagesExecutionSchema(context)
             else -> null
         }
     }
 
     /**
-     * Creates messages configuration schema
-     * Extends base config with default_priority and external_notifications
+     * Creates messages configuration schema — the template itself.
+     *
+     * Holds the invariant part of every send (common_title, priority), the recurrence
+     * that spawns occurrences, and the two knobs that govern their lifecycle.
+     *
+     * common_title is deliberately distinct from the base "name": name is how you find
+     * the instance in its zone, common_title is what shows up on the lock screen. Nothing
+     * forces them to match, and forcing it would be paid for later. Optional — when absent
+     * it contributes nothing and the notification carries only the occurrence's own title.
+     *
+     * priority lives here and ONLY here. It describes the channel — how insistently this
+     * stream is allowed to interrupt — not the individual send. Keeping a copy on the
+     * occurrence too would recreate the default/override pair this design rules out.
+     *
+     * schedule is optional: without it nothing fires on its own and the instance is a pure
+     * notification channel, fed on demand by the user or the AI.
      */
     private fun createMessagesConfigSchema(context: Context): Schema {
         val s = Strings.`for`(tool = "messages", context = context)
 
-        val specificSchema = """
+        val specificSchemaTemplate = """
         {
             "properties": {
-                "default_priority": {
+                "common_title": {
+                    "type": "string",
+                    "maxLength": ${FieldLimits.SHORT_LENGTH},
+                    "description": "${s.tool("schema_config_common_title")}"
+                },
+                "priority": {
                     "type": "string",
                     "enum": ["default", "high", "low"],
                     "default": "default",
-                    "description": "${s.tool("schema_config_default_priority")}"
+                    "description": "${s.tool("schema_config_priority")}"
                 },
                 "external_notifications": {
                     "type": "boolean",
                     "default": true,
                     "description": "${s.tool("schema_config_external_notifications")}"
+                },
+                "schedule": "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
+                "creation_horizon_days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 2,
+                    "description": "${s.tool("schema_config_creation_horizon_days")}"
+                },
+                "validity_window_minutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 60,
+                    "description": "${s.tool("schema_config_validity_window_minutes")}"
                 }
             },
-            "required": ["default_priority", "external_notifications"]
+            "required": ["priority", "external_notifications", "creation_horizon_days", "validity_window_minutes"]
         }
         """.trimIndent()
+
+        // Reuse the shared ScheduleConfig schema rather than restating its six patterns
+        val specificSchema = SchemaUtils.embedScheduleConfig(
+            specificSchemaTemplate,
+            "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
+            context
+        )
 
         val content = BaseSchemas.createExtendedSchema(
             BaseSchemas.getBaseConfigSchema(context),
@@ -138,86 +187,119 @@ object MessageToolType : ToolTypeContract {
     }
 
     /**
-     * Creates messages data schema
+     * Creates messages data schema — one entry per occurrence (one send).
      *
-     * Uses BaseSchemas.createExtendedSchema() to combine base tool_data structure
-     * (tool_instance_id, tooltype, name, timestamp) with message-specific data.
+     * An occurrence has a lifecycle, so the schema's requirements depend on its status.
+     * While pending it carries ONLY the part written for that day; the invariant part is
+     * copied in at send time. Requiring the invariant part unconditionally would leave
+     * half-empty entries with no way to tell them from complete ones.
      *
-     * Message-specific data (inside "data" field):
-     * - schema_id: Validation schema ID
-     * - title: Message title (SHORT_LENGTH)
-     * - content: Message content (LONG_LENGTH, optional)
-     * - schedule: ScheduleConfig (nullable, embedded via SchemaUtils)
-     * - priority: Notification priority (default|high|low)
-     * - triggers: Event-based triggers (STUB, always null for MVP)
-     * - executions: Array of execution snapshots (systemManaged, stripped from AI commands)
+     * The conditional block lives inside the "data" property on purpose:
+     * BaseSchemas.createExtendedSchema merges root properties and required verbatim, so an
+     * allOf written here survives the merge untouched.
+     *
+     * Custom field values are raw, written per occurrence, and validated through the
+     * standard enrichment (createExtendedDataSchema) like every other tooltype.
      */
     private fun createMessagesDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "messages", context = context)
 
-        // Specific schema template for message data (will be wrapped in base structure)
-        // Note: "name" is stored at ToolDataEntity level, not in the data JSON
-        // The data JSON only contains: content, schedule, priority, triggers, executions
-        val specificSchemaTemplate = """
+        // "name" is stored at ToolDataEntity level, not inside the data JSON
+        val specificSchema = """
         {
             "properties": {
                 "name": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "Message title (stored at entity level, not in data JSON)"
+                    "description": "Occurrence label (stored at entity level, not in data JSON)"
                 },
                 "timestamp": {
                     "type": "number",
-                    "description": "Creation timestamp (optional, defaults to current time)"
+                    "description": "Actual send time once sent; creation time while pending"
                 },
                 "data": {
                     "type": "object",
-                    "description": "Message template data with executions",
+                    "description": "One send of this message",
                     "properties": {
+                        "status": {
+                            "type": "string",
+                            "enum": ["pending", "sent", "expired", "cancelled"],
+                            "description": "${s.tool("schema_data_status")}"
+                        },
+                        "scheduled_time": {
+                            "type": "string",
+                            "description": "${s.tool("schema_data_scheduled_time")}"
+                        },
+                        "title": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.SHORT_LENGTH},
+                            "description": "${s.tool("schema_data_title")}"
+                        },
                         "content": {
                             "type": "string",
                             "maxLength": ${FieldLimits.LONG_LENGTH},
                             "description": "${s.tool("schema_data_content")}"
                         },
-                        "schedule": "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
+                        "common_title": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.SHORT_LENGTH},
+                            "description": "${s.tool("schema_data_common_title")}"
+                        },
                         "priority": {
                             "type": "string",
                             "enum": ["default", "high", "low"],
                             "description": "${s.tool("schema_data_priority")}"
                         },
-                        "triggers": {
-                            "type": "null",
-                            "description": "${s.tool("schema_data_triggers")}"
+                        "notification_sent": {
+                            "type": "boolean",
+                            "description": "${s.tool("schema_data_notification_sent")}"
+                        },
+                        "read": {
+                            "type": "boolean",
+                            "description": "${s.tool("schema_data_read")}"
+                        },
+                        "archived": {
+                            "type": "boolean",
+                            "description": "${s.tool("schema_data_archived")}"
+                        },
+                        "triggered_by": {
+                            "type": "string",
+                            "enum": ["SCHEDULE", "MANUAL"],
+                            "description": "${s.tool("schema_data_triggered_by")}"
                         }
                     },
-                    "required": ["priority"],
-                    "additionalProperties": false
+                    "required": ["status"],
+                    "additionalProperties": false,
+                    "allOf": [
+                        {
+                            "if": {
+                                "properties": { "status": { "const": "sent" } },
+                                "required": ["status"]
+                            },
+                            "then": {
+                                "required": ["priority", "notification_sent", "read", "archived", "triggered_by"]
+                            }
+                        }
+                    ]
                 }
             },
             "required": ["name", "data"]
         }
         """.trimIndent()
 
-        // Embed ScheduleConfig schema at placeholder
-        val specificSchemaWithSchedule = SchemaUtils.embedScheduleConfig(
-            specificSchemaTemplate,
-            "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
-            context
-        )
-
-        // Combine with base schema and enrich with custom fields if toolInstanceId provided
+        // Enrich with this instance's custom field definitions when we know which instance
         val content = if (toolInstanceId != null) {
             BaseSchemas.createExtendedDataSchema(
                 BaseSchemas.getBaseDataSchema(context),
-                specificSchemaWithSchedule,
+                specificSchema,
                 toolInstanceId,
                 context
             )
         } else {
             BaseSchemas.createExtendedSchema(
                 BaseSchemas.getBaseDataSchema(context),
-                specificSchemaWithSchedule
+                specificSchema
             )
         }
 
@@ -230,116 +312,23 @@ object MessageToolType : ToolTypeContract {
         )
     }
 
-    /**
-     * Creates messages execution schema
-     * Extends base execution schema with Messages-specific snapshot_data, execution_result, metadata
-     *
-     * snapshot_data: Template content at execution time (title, content, priority)
-     * execution_result: Execution outcome (read, archived, notification_sent)
-     * metadata: Additional context (errors, retry count, etc.)
-     */
-    private fun createMessagesExecutionSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "messages", context = context)
-
-        val specificSchema = """
-        {
-            "properties": {
-                "snapshot_data": {
-                    "type": "object",
-                    "description": "${s.tool("schema_execution_snapshot_data")}",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "Message title at execution time"
-                        },
-                        "content": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.LONG_LENGTH},
-                            "description": "Message content at execution time"
-                        },
-                        "priority": {
-                            "type": "string",
-                            "enum": ["default", "high", "low"],
-                            "description": "Priority at execution time"
-                        },
-                        "custom_fields": {
-                            "type": "object",
-                            "description": "Custom field values (formatted strings for human readability)",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "required": ["title", "priority"],
-                    "additionalProperties": false
-                },
-                "execution_result": {
-                    "type": "object",
-                    "description": "${s.tool("schema_execution_execution_result")}",
-                    "properties": {
-                        "read": {
-                            "type": "boolean",
-                            "description": "User has read the notification"
-                        },
-                        "archived": {
-                            "type": "boolean",
-                            "description": "User has archived the notification"
-                        },
-                        "notification_sent": {
-                            "type": "boolean",
-                            "description": "System notification was sent successfully"
-                        }
-                    },
-                    "required": ["read", "archived", "notification_sent"],
-                    "additionalProperties": false
-                },
-                "metadata": {
-                    "type": "object",
-                    "description": "${s.tool("schema_execution_metadata")}",
-                    "properties": {
-                        "error": {
-                            "type": "string",
-                            "description": "Error message if execution failed"
-                        },
-                        "retry_count": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Number of retry attempts"
-                        }
-                    },
-                    "additionalProperties": true
-                }
-            },
-            "required": ["snapshot_data", "execution_result", "metadata"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseExecutionSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "messages_execution",
-            displayName = s.tool("schema_execution_display_name"),
-            description = s.tool("schema_execution_description"),
-            category = SchemaCategory.TOOL_EXECUTION,
-            content = content
-        )
-    }
-
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "messages", context = context)
         return when (fieldName) {
             "title" -> s.tool("field_title")
             "content" -> s.tool("field_content")
-            "default_priority" -> s.tool("field_default_priority")
+            "common_title" -> s.tool("field_common_title")
             "external_notifications" -> s.tool("field_external_notifications")
             "priority" -> s.tool("field_priority")
             "schedule" -> s.tool("field_schedule")
-            "triggers" -> s.tool("field_triggers")
-            "executions" -> s.tool("field_executions")
+            "creation_horizon_days" -> s.tool("field_creation_horizon_days")
+            "validity_window_minutes" -> s.tool("field_validity_window_minutes")
+            "status" -> s.tool("field_status")
+            "scheduled_time" -> s.tool("field_scheduled_time")
+            "notification_sent" -> s.tool("field_notification_sent")
+            "read" -> s.tool("field_read")
+            "archived" -> s.tool("field_archived")
+            "triggered_by" -> s.tool("field_triggered_by")
             else -> BaseSchemas.getCommonFieldName(fieldName, context) ?: fieldName
         }
     }
@@ -405,92 +394,10 @@ object MessageToolType : ToolTypeContract {
     }
 
     // ========================================
-    // Data Enrichment
-    // ========================================
-
-    /**
-     * Enrich message data with calculated nextExecutionTime from schedule
-     *
-     * Called by ToolDataService before create/update operations.
-     * Calculates nextExecutionTime based on schedule pattern and adds it to the data JSON.
-     *
-     * @param dataJson The data JSON containing schedule configuration
-     * @param name The entry name (unused for messages)
-     * @param configJson The tool instance config (unused for messages)
-     * @return Enriched data JSON with nextExecutionTime calculated
-     */
-    override fun enrichData(dataJson: String, name: String?, configJson: String?): String {
-        com.assistant.core.utils.LogManager.service("MessageToolType.enrichData called for message: name=$name", "DEBUG")
-
-        return try {
-            val dataObject = org.json.JSONObject(dataJson)
-
-            // Check if schedule exists
-            val scheduleJson = dataObject.optJSONObject("schedule")
-            if (scheduleJson == null || scheduleJson.toString() == "null") {
-                return dataJson // No schedule, return as-is
-            }
-
-            // Parse schedule to ScheduleConfig
-            val scheduleConfig = try {
-                kotlinx.serialization.json.Json.decodeFromString<com.assistant.core.utils.ScheduleConfig>(scheduleJson.toString())
-            } catch (e: Exception) {
-                com.assistant.core.utils.LogManager.service(
-                    "Failed to parse schedule config during enrichment: ${e.message}",
-                    "WARN",
-                    e
-                )
-                return dataJson // Invalid schedule, return as-is (validation will catch it)
-            }
-
-            // Calculate nextExecutionTime
-            val now = System.currentTimeMillis()
-            val nextExecutionTime = com.assistant.core.utils.ScheduleCalculator.calculateNextExecution(
-                pattern = scheduleConfig.pattern,
-                startDate = scheduleConfig.startDate,
-                endDate = scheduleConfig.endDate,
-                fromTimestamp = now
-            )
-
-            // Update schedule with calculated nextExecutionTime
-            if (nextExecutionTime != null) {
-                scheduleJson.put("nextExecutionTime", nextExecutionTime)
-            } else {
-                scheduleJson.put("nextExecutionTime", org.json.JSONObject.NULL)
-                com.assistant.core.utils.LogManager.service(
-                    "No future executions for schedule (end date passed or invalid pattern)",
-                    "WARN"
-                )
-            }
-
-            // Update data with modified schedule
-            dataObject.put("schedule", scheduleJson)
-
-            dataObject.toString()
-
-        } catch (e: Exception) {
-            com.assistant.core.utils.LogManager.service(
-                "Error enriching message data with nextExecutionTime: ${e.message}",
-                "ERROR",
-                e
-            )
-            dataJson // On error, return original data
-        }
-    }
-
-    // ========================================
     // Scheduling
     // ========================================
 
     override fun getScheduler(): ToolScheduler {
         return MessageScheduler
-    }
-
-    // ========================================
-    // Execution History
-    // ========================================
-
-    override fun supportsExecutions(): Boolean {
-        return true
     }
 }
