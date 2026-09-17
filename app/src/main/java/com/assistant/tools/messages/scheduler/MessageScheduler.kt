@@ -64,7 +64,12 @@ object MessageScheduler : ToolScheduler {
             val coordinator = Coordinator(context)
             val now = System.currentTimeMillis()
 
-            val instancesResult = coordinator.processUserAction("tools.list_all", emptyMap())
+            // include_config is required: without it list_all returns a minimal snapshot with no
+            // config_json, and the config IS the template here — there would be nothing to read.
+            val instancesResult = coordinator.processUserAction(
+                "tools.list_all",
+                mapOf("include_config" to true)
+            )
             if (!instancesResult.isSuccess) {
                 LogManager.service("Failed to list tool instances: ${instancesResult.error}", "ERROR")
                 return
