@@ -29,8 +29,8 @@ import java.time.ZoneId
  *    it simply gives the next reconciliation more to do.
  *
  * 2. Fire — resolve every pending occurrence whose time has come, oldest first. It is sent,
- *    or expired if it is later than the template allows, or cancelled if the recurrence was
- *    switched off in the meantime.
+ *    or expired if it is later than the template allows, or cancelled if the template was
+ *    suspended in the meantime.
  *
  * The invariant part of the message is copied onto the occurrence AT SEND TIME and never at
  * creation, so a pending occurrence is an intention rather than a half-written event, and
@@ -118,21 +118,24 @@ object MessageScheduler : ToolScheduler {
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         val schedule = parseSchedule(config)
-        val scheduleEnabled = schedule?.enabled ?: false
+        // The switch suspends the whole template, not just its recurrence: while it is off,
+        // nothing of this instance goes out, including an occurrence placed by hand. An
+        // instance with no recurrence has no switch to read and is therefore always live.
+        val enabled = schedule?.enabled ?: true
 
         val pending = loadPending(coordinator, toolInstanceId, timezone)
 
-        // A recurrence that is absent or switched off stops creating AND stops deleting: the
-        // pending set drains on its own as each occurrence is cancelled at its time, so
-        // suspending is never destructive and removing the recurrence keeps a faithful trace
-        // of what had been planned.
-        if (schedule != null && scheduleEnabled) {
+        // Suspended means create nothing and delete nothing: the pending set drains on its own
+        // as each occurrence is cancelled at its time, so suspending is never destructive.
+        // Live, it reconciles even with no recurrence at all — nothing is then expected, so
+        // removing the recurrence sheds what it had generated, exactly like changing it.
+        if (enabled) {
             reconcilePending(context, coordinator, toolInstanceId, config, schedule, pending, now, timezone)
         }
 
         // Reconciliation only ever touches occurrences still in the future, so the due set is
         // exactly what was loaded above — nothing it did can have added to or removed from it.
-        firePending(coordinator, toolInstanceId, config, scheduleEnabled, pending, now)
+        firePending(coordinator, toolInstanceId, config, enabled, pending, now)
     }
 
     // ========================================
@@ -154,7 +157,7 @@ object MessageScheduler : ToolScheduler {
         coordinator: Coordinator,
         toolInstanceId: String,
         config: JSONObject,
-        schedule: ScheduleConfig,
+        schedule: ScheduleConfig?,
         pending: List<PendingOccurrence>,
         now: Long,
         timezone: ZoneId
@@ -166,7 +169,9 @@ object MessageScheduler : ToolScheduler {
         }
         val horizonEnd = now + horizonDays * MILLIS_PER_DAY
 
-        val expected = expectedOccurrences(schedule, now, horizonEnd, toolInstanceId)
+        // No recurrence means nothing is expected, so everything it had generated is orphaned:
+        // removing the recurrence and changing it take the same path.
+        val expected = if (schedule == null) emptyList() else expectedOccurrences(schedule, now, horizonEnd, toolInstanceId)
 
         val futureScheduled = pending.filter { it.dueAt > now && it.triggeredBy == "SCHEDULE" }
         val existingTimes = futureScheduled.map { it.dueAt }.toSet()
@@ -287,9 +292,8 @@ object MessageScheduler : ToolScheduler {
      * Resolves every pending occurrence whose time has come, oldest first.
      *
      * Three outcomes, and each says why it happened rather than leaving it to be guessed later:
-     * - cancelled: the recurrence was switched off before its time came. A decision, not a miss.
-     *   Only occurrences born of the recurrence are cancelled this way — one placed by hand is
-     *   not suspended by turning the recurrence off.
+     * - cancelled: the template was suspended before its time came. A decision, not a miss.
+     *   The switch covers everything the instance owes, a hand-placed occurrence included.
      * - expired: it came due longer ago than validity_window_minutes allows. A morning reminder
      *   arriving mid-afternoon is worse than no reminder.
      * - sent: the notification goes out, and the invariant part of the message is copied in.
@@ -302,7 +306,7 @@ object MessageScheduler : ToolScheduler {
         coordinator: Coordinator,
         toolInstanceId: String,
         config: JSONObject,
-        scheduleEnabled: Boolean,
+        enabled: Boolean,
         pending: List<PendingOccurrence>,
         now: Long
     ) {
@@ -318,7 +322,7 @@ object MessageScheduler : ToolScheduler {
 
         for (occurrence in due) {
             when {
-                occurrence.triggeredBy == "SCHEDULE" && !scheduleEnabled ->
+                !enabled ->
                     resolveWithoutSending(coordinator, occurrence, "cancelled")
 
                 now - occurrence.dueAt > validityWindowMillis ->
