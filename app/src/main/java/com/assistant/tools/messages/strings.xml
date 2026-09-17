@@ -12,7 +12,9 @@
     <string name="schema_data_description">Schéma de validation des occurrences (envois) d\'un message</string>
 
     <!-- SCHEMAS CONFIG - Le modèle du message (part invariante de chaque envoi) -->
+    <string name="schema_config_enabled">Modèle actif : suspendu, plus rien de cette instance ne part</string>
     <string name="schema_config_common_title">Titre commun affiché sur chaque notification (optionnel, composé avec le titre propre à l\'envoi)</string>
+    <string name="schema_config_common_content">Corps commun à chaque notification (optionnel, composé avec le contenu propre à l\'envoi)</string>
     <string name="schema_config_priority">Priorité des notifications de ce message (default, high, low)</string>
     <string name="schema_config_external_notifications">Afficher notifications système Android</string>
     <string name="schema_config_schedule">Récurrence qui engendre les occurrences (absent = canal alimenté uniquement à la demande)</string>
@@ -24,6 +26,7 @@
     <string name="schema_data_title">Titre propre à cet envoi (optionnel)</string>
     <string name="schema_data_content">Contenu propre à cet envoi</string>
     <string name="schema_data_common_title">Titre commun copié depuis le modèle au moment de l\'envoi</string>
+    <string name="schema_data_common_content">Corps commun copié depuis le modèle au moment de l\'envoi</string>
     <string name="schema_data_priority">Priorité copiée depuis le modèle au moment de l\'envoi</string>
     <string name="schema_data_notification_sent">La notification système est effectivement partie</string>
     <string name="schema_data_read">L\'utilisateur a lu cette occurrence</string>
@@ -33,7 +36,9 @@
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_title">Titre</string>
     <string name="field_content">Contenu</string>
+    <string name="field_enabled">Actif</string>
     <string name="field_common_title">Titre commun</string>
+    <string name="field_common_content">Corps commun</string>
     <string name="field_schedule">Planning</string>
     <string name="field_priority">Priorité</string>
     <string name="field_external_notifications">Notifications externes</string>

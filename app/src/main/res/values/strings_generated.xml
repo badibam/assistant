@@ -47,7 +47,9 @@
     <string name="messages_schema_config_display_name"></string>
     <string name="messages_schema_data_display_name"></string>
     <string name="messages_schema_data_description">Schéma de validation des occurrences (envois) d\'un message</string>
+    <string name="messages_schema_config_enabled">Modèle actif : suspendu, plus rien de cette instance ne part</string>
     <string name="messages_schema_config_common_title">Titre commun affiché sur chaque notification (optionnel, composé avec le titre propre à l\'envoi)</string>
+    <string name="messages_schema_config_common_content">Corps commun à chaque notification (optionnel, composé avec le contenu propre à l\'envoi)</string>
     <string name="messages_schema_config_priority">Priorité des notifications de ce message (default, high, low)</string>
     <string name="messages_schema_config_external_notifications">Afficher notifications système Android</string>
     <string name="messages_schema_config_schedule">Récurrence qui engendre les occurrences (absent = canal alimenté uniquement à la demande)</string>
@@ -57,6 +59,7 @@
     <string name="messages_schema_data_title">Titre propre à cet envoi (optionnel)</string>
     <string name="messages_schema_data_content">Contenu propre à cet envoi</string>
     <string name="messages_schema_data_common_title">Titre commun copié depuis le modèle au moment de l\'envoi</string>
+    <string name="messages_schema_data_common_content">Corps commun copié depuis le modèle au moment de l\'envoi</string>
     <string name="messages_schema_data_priority">Priorité copiée depuis le modèle au moment de l\'envoi</string>
     <string name="messages_schema_data_notification_sent">La notification système est effectivement partie</string>
     <string name="messages_schema_data_read">L\'utilisateur a lu cette occurrence</string>
@@ -64,7 +67,9 @@
     <string name="messages_schema_data_triggered_by">Origine de l\'occurrence, posée à sa création (SCHEDULE = engendrée par la récurrence, MANUAL = posée à la main)</string>
     <string name="messages_field_title">Titre</string>
     <string name="messages_field_content">Contenu</string>
+    <string name="messages_field_enabled">Actif</string>
     <string name="messages_field_common_title">Titre commun</string>
+    <string name="messages_field_common_content">Corps commun</string>
     <string name="messages_field_schedule">Planning</string>
     <string name="messages_field_priority">Priorité</string>
     <string name="messages_field_external_notifications">Notifications externes</string>

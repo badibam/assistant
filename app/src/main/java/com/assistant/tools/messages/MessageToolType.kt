@@ -83,6 +83,7 @@ object MessageToolType : ToolTypeContract {
             "validateConfig": false,
             "validateData": false,
             "always_send": false,
+            "enabled": true,
             "priority": "default",
             "external_notifications": true,
             "creation_horizon_days": 2,
@@ -131,10 +132,20 @@ object MessageToolType : ToolTypeContract {
         val specificSchemaTemplate = """
         {
             "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "${s.tool("schema_config_enabled")}"
+                },
                 "common_title": {
                     "type": "string",
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.tool("schema_config_common_title")}"
+                },
+                "common_content": {
+                    "type": "string",
+                    "maxLength": ${FieldLimits.LONG_LENGTH},
+                    "description": "${s.tool("schema_config_common_content")}"
                 },
                 "priority": {
                     "type": "string",
@@ -161,16 +172,17 @@ object MessageToolType : ToolTypeContract {
                     "description": "${s.tool("schema_config_validity_window_minutes")}"
                 }
             },
-            "required": ["priority", "external_notifications", "creation_horizon_days", "validity_window_minutes"]
+            "required": ["enabled", "priority", "external_notifications", "creation_horizon_days", "validity_window_minutes"]
         }
         """.trimIndent()
 
         // Reuse the shared ScheduleConfig schema rather than restating its six patterns
-        val specificSchema = SchemaUtils.embedScheduleConfig(
+        val embedded = SchemaUtils.embedScheduleConfig(
             specificSchemaTemplate,
             "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
             context
         )
+        val specificSchema = withoutScheduleSwitch(embedded)
 
         val content = BaseSchemas.createExtendedSchema(
             BaseSchemas.getBaseConfigSchema(context),
@@ -184,6 +196,36 @@ object MessageToolType : ToolTypeContract {
             category = SchemaCategory.TOOL_CONFIG,
             content = content
         )
+    }
+
+    /**
+     * Removes the recurrence's own "enabled" flag from the embedded ScheduleConfig schema.
+     *
+     * Suspending a message suspends the whole template — everything the instance owes, a
+     * hand-placed occurrence included — so the switch belongs at the root of the config, and
+     * an instance with no recurrence needs one too. Leaving ScheduleConfig's flag in place
+     * next to it would give two switches with one of them ignored, which is worse than either.
+     *
+     * ScheduleConfig's Kotlin default is true, so a stored recurrence without the flag
+     * deserializes exactly as before.
+     */
+    private fun withoutScheduleSwitch(schemaJson: String): String {
+        val root = org.json.JSONObject(schemaJson)
+        val schedule = root.optJSONObject("properties")?.optJSONObject("schedule") ?: return schemaJson
+
+        schedule.optJSONObject("properties")?.remove("enabled")
+
+        val required = schedule.optJSONArray("required")
+        if (required != null) {
+            val kept = org.json.JSONArray()
+            for (i in 0 until required.length()) {
+                val field = required.getString(i)
+                if (field != "enabled") kept.put(field)
+            }
+            schedule.put("required", kept)
+        }
+
+        return root.toString()
     }
 
     /**
@@ -247,6 +289,11 @@ object MessageToolType : ToolTypeContract {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_common_title")}"
+                        },
+                        "common_content": {
+                            "type": "string",
+                            "maxLength": ${FieldLimits.LONG_LENGTH},
+                            "description": "${s.tool("schema_data_common_content")}"
                         },
                         "priority": {
                             "type": "string",
@@ -319,7 +366,9 @@ object MessageToolType : ToolTypeContract {
         return when (fieldName) {
             "title" -> s.tool("field_title")
             "content" -> s.tool("field_content")
+            "enabled" -> s.tool("field_enabled")
             "common_title" -> s.tool("field_common_title")
+            "common_content" -> s.tool("field_common_content")
             "external_notifications" -> s.tool("field_external_notifications")
             "priority" -> s.tool("field_priority")
             "schedule" -> s.tool("field_schedule")

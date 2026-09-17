@@ -118,10 +118,10 @@ object MessageScheduler : ToolScheduler {
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         val schedule = parseSchedule(config)
-        // The switch suspends the whole template, not just its recurrence: while it is off,
-        // nothing of this instance goes out, including an occurrence placed by hand. An
-        // instance with no recurrence has no switch to read and is therefore always live.
-        val enabled = schedule?.enabled ?: true
+        // The switch sits at the root of the config, not inside the recurrence: it suspends
+        // the whole template — everything the instance owes, a hand-placed occurrence
+        // included — and it exists even when there is no recurrence at all.
+        val enabled = config.optBoolean("enabled", true)
 
         val pending = loadPending(coordinator, toolInstanceId, timezone)
 
@@ -337,9 +337,10 @@ object MessageScheduler : ToolScheduler {
     /**
      * Sends the notification and marks the occurrence sent.
      *
-     * Composition: the common title and the title written for this send are joined, and the
-     * content of the send forms the body. A missing part contributes nothing — there is no
-     * value stepping in for another.
+     * Composition: the common title and the title written for this send are joined, and so are
+     * the common body and the body written for this send. A missing part contributes nothing —
+     * there is no value stepping in for another. A reminder whose text never varies therefore
+     * needs nothing written per send: its common part alone goes out.
      */
     private suspend fun send(
         coordinator: Coordinator,
@@ -348,17 +349,20 @@ object MessageScheduler : ToolScheduler {
         occurrence: PendingOccurrence
     ) {
         val commonTitle = config.optString("common_title").takeIf { it.isNotEmpty() }
+        val commonContent = config.optString("common_content").takeIf { it.isNotEmpty() }
         val ownTitle = occurrence.data.optString("title").takeIf { it.isNotEmpty() }
-        val content = occurrence.data.optString("content").takeIf { it.isNotEmpty() }
+        val ownContent = occurrence.data.optString("content").takeIf { it.isNotEmpty() }
         val priority = config.optString("priority", "default")
 
         val title = listOfNotNull(commonTitle, ownTitle).joinToString(" · ")
+        val content = listOfNotNull(commonContent, ownContent).joinToString("\n\n").takeIf { it.isNotEmpty() }
+
         if (title.isEmpty() && content == null) {
-            // Neither the template nor the day contributed anything, so there is nothing to
-            // show. It stays pending rather than being resolved: whoever was going to fill it
-            // may still do so, and if nobody does, the validity window expires it on its own.
-            // No third outcome is needed for emptiness, and expired would misname the reason.
-            LogManager.service("Occurrence ${occurrence.id} is still empty, leaving it pending", "DEBUG")
+            // Nothing anywhere: the template says nothing of its own and nobody wrote anything
+            // for this send. A fixed reminder does not land here — its common part is enough on
+            // its own — so reaching this means the template has no text at all. Nothing goes
+            // out, and the occurrence stays pending until its validity window expires it.
+            LogManager.service("Occurrence ${occurrence.id} has nothing to show, not sending", "DEBUG")
             return
         }
 
@@ -382,6 +386,7 @@ object MessageScheduler : ToolScheduler {
         val data = JSONObject(occurrence.data.toString()).apply {
             put("status", "sent")
             if (commonTitle != null) put("common_title", commonTitle)
+            if (commonContent != null) put("common_content", commonContent)
             put("priority", priority)
             put("notification_sent", notificationSent)
             put("read", false)
