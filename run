@@ -30,8 +30,9 @@ run_task() {
         debug)   ./gradlew assembleDebug ;;
         install) ./gradlew installDebug ;;
         logcat)  adb logcat --pid="$(adb shell pidof -s com.assistant.debug)" ;;
-        release) scripts/build_release.sh ;;
-        db)      scripts/db_backup_restore.sh ;;
+        # Both scripts address the project through ../, so they run from scripts/.
+        release) (cd scripts && ./build_release.sh) ;;
+        db)      (cd scripts && ./db_backup_restore.sh) ;;
         *)       echo "Unknown option: $1" >&2; usage; return 1 ;;
     esac
 }
