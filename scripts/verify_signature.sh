@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de vérification de signature APK
+# APK signature check
 # Usage: ./verify_signature.sh path/to/app.apk
 
 set -e
@@ -13,30 +13,30 @@ if [ -z "$APK_PATH" ]; then
 fi
 
 if [ ! -f "$APK_PATH" ]; then
-    echo " APK non trouvé: $APK_PATH"
+    echo "APK not found: $APK_PATH"
     exit 1
 fi
 
-echo " Vérification de la signature: $APK_PATH"
+echo "Checking the signature of: $APK_PATH"
 
-# Vérifier avec jarsigner (détaillé)
+# jarsigner gives the detailed view
 echo ""
-echo " Informations détaillées de signature:"
+echo "Detailed signature information:"
 jarsigner -verify -verbose -certs "$APK_PATH"
 
-# Vérifier avec apksigner si disponible (Android SDK)
+# apksigner when the Android SDK provides it
 if command -v apksigner &> /dev/null; then
     echo ""
-    echo " Vérification apksigner:"
+    echo "apksigner check:"
     apksigner verify --verbose "$APK_PATH"
 else
-    echo " apksigner non disponible (Android SDK non trouvé)"
+    echo "apksigner unavailable (Android SDK not found)"
 fi
 
-# Afficher le contenu du certificat
+# The certificate itself
 echo ""
-echo " Certificat utilisé:"
+echo "Certificate used:"
 keytool -printcert -jarfile "$APK_PATH"
 
 echo ""
-echo " Vérification terminée!"
+echo "Check complete."
