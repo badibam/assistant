@@ -1,0 +1,11 @@
+{
+  "sandbox": {
+    "filesystem": {
+      "allowRead": ["/home/simon/.gradle", "/home/simon/.android", "/home/simon/android-sdk"],
+      "allowWrite": ["/home/simon/.gradle", "/home/simon/.android"]
+    },
+    "network": {
+      "allowedDomains": ["services.gradle.org", "downloads.gradle.org", "plugins.gradle.org", "dl.google.com", "repo.maven.apache.org"]
+    }
+  }
+}
