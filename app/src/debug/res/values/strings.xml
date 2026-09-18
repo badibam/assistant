@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The debug build carries its own name so the launcher tells the two apart.
+
+  It needs saying because the package name already differs (applicationIdSuffix ".debug"),
+  so both builds install side by side, and a textual launcher shows two entries reading
+  "Assistant". The label is what the user picks from; the package name is not on screen.
+
+  This overrides the generated shared_app_name of the main source set, which the manifest
+  points at. Resource merging gives the build type's value precedence.
+-->
+<resources>
+    <string name="shared_app_name">Assistant debug</string>
+</resources>

@@ -27,7 +27,7 @@ android {
     
     signingConfigs {
         create("release") {
-            // Configuration de signature
+            // Release signing
             // IMPORTANT: never commit the real keys
             
             // Try the environment variables, then .env
@@ -37,7 +37,7 @@ android {
             var keystorePass = System.getenv("KEYSTORE_PASSWORD")
             var keyPass = System.getenv("KEY_PASSWORD")
             
-            // Si pas de variables d'environnement, essayer de lire .env
+            // No environment variables: try .env
             if ((keystorePass == null || keyPass == null) && envFile.exists()) {
                 val envProps = Properties()
                 envFile.reader().use { envProps.load(it) }

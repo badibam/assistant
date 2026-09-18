@@ -1,49 +1,351 @@
-#!/usr/bin/env bash
-# Entry point of the project. Bare `./run` shows the menu; `./run <option>` runs one task directly.
-set -u
+#!/usr/bin/env python3
+"""Entry point for the Assistant development tasks.
 
-cd "$(dirname "$0")" || exit 1
+Bare invocation opens the interactive menu; `./run <task>` runs one directly,
+without requiring questionary.
+"""
 
-usage() {
-    cat <<'EOF'
-Usage: ./run [option]
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 
-  compile    Type-check the Kotlin sources (compileDebugKotlin)
-  strings    Regenerate string resources from the XML sources
-  debug      Build the debug APK
-  install    Build the debug APK and install it on the connected device
-  logcat     Follow the app's logs on the connected device
-  release    Build and sign the release APK (scripts/build_release.sh)
-  db         Back up or restore the device database (scripts/db_backup_restore.sh)
-EOF
+ROOT = Path(__file__).resolve().parent
+GRADLEW = ROOT / "gradlew"
+
+# The two builds live side by side on a device, being two applications as far as Android
+# is concerned, with separate databases. Which is the point of the suffix, and the reason
+# anything that talks to "the app" has to say which one it means.
+APPLICATION_ID = "com.assistant"
+DEBUG_APPLICATION_ID = "com.assistant.debug"
+
+# What the compiler says that is worth reading: the errors, and the verdict.
+BUILD_LINES = ("e:", "Error:", "ERROR:", "BUILD SUCCESSFUL", "BUILD FAILED")
+
+
+def gradle(*args):
+    """Delegate to the wrapper, never to a system-wide gradle."""
+    return subprocess.run([str(GRADLEW), *args], cwd=ROOT, check=False).returncode
+
+
+def gradle_filtered(*args):
+    """Run gradle and print only the error lines and the verdict.
+
+    Kotlin compilation output buries a type error under hundreds of task lines, and the
+    one thing wanted from a type check is whether it passed and where it did not.
+    """
+    process = subprocess.Popen(
+        [str(GRADLEW), *args], cwd=ROOT,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    for line in process.stdout:
+        if line.startswith(BUILD_LINES):
+            print(line, end="")
+    return process.wait()
+
+
+def attached_devices():
+    """Return [(serial, state)] as adb reports them."""
+    probe = subprocess.run(
+        ["adb", "devices"], capture_output=True, text=True, check=False
+    )
+    rows = []
+    for line in probe.stdout.splitlines()[1:]:
+        fields = line.split()
+        if len(fields) >= 2:
+            rows.append((fields[0], fields[1]))
+    return rows
+
+
+def ready_device():
+    """Return the serial of the one usable device, or None after explaining why not.
+
+    adb reports a phone that is plugged in but not paired as `unauthorized`, and gradle
+    then claims there is no device at all. Diagnosing here turns a dead end into an
+    instruction.
+    """
+    if shutil.which("adb") is None:
+        print("adb not found in PATH.", file=sys.stderr)
+        return None
+
+    devices = attached_devices()
+    ready = [serial for serial, state in devices if state == "device"]
+    if len(ready) == 1:
+        return ready[0]
+    if len(ready) > 1:
+        print("Several devices are ready:", file=sys.stderr)
+        for serial in ready:
+            print(f"  {serial}", file=sys.stderr)
+        print("Pick one with: export ANDROID_SERIAL=<serial>", file=sys.stderr)
+        return None
+
+    if not devices:
+        print(
+            "No device attached. Check that the cable carries data rather than power\n"
+            "only, and that USB debugging is on in the developer options.",
+            file=sys.stderr,
+        )
+        return None
+
+    for serial, state in devices:
+        if state == "unauthorized":
+            print(
+                f"{serial} has not authorised this computer.\n"
+                "Unlock the phone and accept the 'Allow USB debugging' prompt, ticking\n"
+                "'Always allow from this computer'. If no prompt shows up, replug, or\n"
+                "revoke the USB debugging authorisations in the developer options.",
+                file=sys.stderr,
+            )
+        elif state == "offline":
+            print(
+                f"{serial} is offline. Replug it, or restart the bridge:\n"
+                "  adb kill-server && adb start-server",
+                file=sys.stderr,
+            )
+        else:
+            print(f"{serial} is in state '{state}', not usable.", file=sys.stderr)
+    return None
+
+
+def launch(application_id):
+    """Start the application that was just installed.
+
+    A freshly installed package sits stopped and never launched, and a textual launcher is
+    free to leave it out of its list until it has run once. Running it settles that, and
+    puts it on screen besides.
+
+    The activity is asked for rather than written down: it lives under the namespace while
+    the package carries the build type's suffix, so the pair is not guessable from either.
+    """
+    probe = subprocess.run(
+        ["adb", "shell", "cmd", "package", "resolve-activity", "--brief",
+         "-c", "android.intent.category.LAUNCHER", application_id],
+        capture_output=True, text=True, check=False,
+    )
+    component = probe.stdout.strip().splitlines()[-1].strip() if probe.stdout.strip() else ""
+    if "/" not in component:
+        print(f"{application_id} declares no launcher activity to start.", file=sys.stderr)
+        return
+    subprocess.run(["adb", "shell", "am", "start", "-n", component],
+                   capture_output=True, check=False)
+
+
+def running(application_id):
+    """The pid of that application on the device, or None."""
+    probe = subprocess.run(
+        ["adb", "shell", "pidof", "-s", application_id],
+        capture_output=True, text=True, check=False,
+    )
+    return probe.stdout.strip() or None
+
+
+def task_compile():
+    """Type-check the sources without building anything installable."""
+    return gradle_filtered("compileDebugKotlin")
+
+
+def task_strings():
+    """Regenerate strings_generated.xml from the XML sources."""
+    return gradle("generateStringResources")
+
+
+def task_build():
+    return gradle("assembleDebug")
+
+
+def task_install():
+    if ready_device() is None:
+        return 1
+    code = gradle("installDebug")
+    if code == 0:
+        launch(DEBUG_APPLICATION_ID)
+    return code
+
+
+def task_release():
+    """Assemble the release, signed when the keystore and its passwords are there."""
+    keystore = ROOT / "keystore" / "assistant-release.keystore"
+    if not keystore.is_file():
+        print(
+            f"No keystore at {keystore}: run scripts/generate_keystore.sh first.\n"
+            "Android installs no unsigned APK, so the build would produce a file no\n"
+            "phone accepts.",
+            file=sys.stderr,
+        )
+        return 1
+    if not (os.environ.get("KEYSTORE_PASSWORD") and os.environ.get("KEY_PASSWORD")):
+        if not (ROOT / "keystore" / ".env").is_file():
+            print(
+                "Neither KEYSTORE_PASSWORD/KEY_PASSWORD in the environment nor\n"
+                "keystore/.env: the build script would fall back to a placeholder\n"
+                "password and the signature would not be yours.",
+                file=sys.stderr,
+            )
+            return 1
+    return gradle("assembleRelease")
+
+
+def release_apk():
+    """The release APK gradle just wrote, or None."""
+    outputs = ROOT / "app/build/outputs/apk/release"
+    apks = sorted(outputs.glob("*.apk")) if outputs.is_dir() else []
+    return apks[-1] if apks else None
+
+
+def task_install_release():
+    """Assemble the release and put it on the device.
+
+    Not `installRelease`: going through adb keeps a refusal to install an ordinary answer
+    from Android rather than a gradle task failing for its own reasons.
+    """
+    if ready_device() is None:
+        return 1
+    if task_release() != 0:
+        return 1
+    apk = release_apk()
+    if apk is None:
+        print("No release APK was produced.", file=sys.stderr)
+        return 1
+    subprocess.run(["adb", "install", "-r", str(apk)], check=False)
+    launch(APPLICATION_ID)
+    return 0
+
+
+def task_logs(which=None):
+    """Follow one build's log.
+
+    logcat takes a single --pid, so with both builds installed -- the ordinary state of a
+    device one tests releases on -- something has to choose. Whichever is running when
+    only one is; the debug build when both are, that being the working loop.
+    """
+    if ready_device() is None:
+        return 1
+    ids = {"debug": DEBUG_APPLICATION_ID, "release": APPLICATION_ID}
+    if which is not None and which not in ids:
+        print(f"Unknown build: {which}. Say 'debug' or 'release'.", file=sys.stderr)
+        return 1
+
+    if which is None:
+        up = {name: running(app) for name, app in ids.items()}
+        up = {name: pid for name, pid in up.items() if pid}
+        if not up:
+            print("Neither build is running on the device.", file=sys.stderr)
+            return 1
+        which = "debug" if "debug" in up else "release"
+        if len(up) > 1:
+            other = "release" if which == "debug" else "debug"
+            print(f"Both are running; following {which}. For the other: ./run logs {other}")
+
+    pid = running(ids[which])
+    if not pid:
+        print(f"{ids[which]} is not running on the device.", file=sys.stderr)
+        return 1
+    return subprocess.run(["adb", "logcat", f"--pid={pid}"], check=False).returncode
+
+
+def task_devices():
+    if shutil.which("adb") is None:
+        print("adb not found in PATH.", file=sys.stderr)
+        return 1
+    return subprocess.run(["adb", "devices", "-l"], check=False).returncode
+
+
+def task_db():
+    """Back up or restore the device database, for migration testing."""
+    return subprocess.run(["./db_backup_restore.sh"], cwd=ROOT / "scripts",
+                          check=False).returncode
+
+
+def task_clean():
+    return gradle("clean")
+
+
+ACTIONS = {
+    "compile": task_compile,
+    "strings": task_strings,
+    "build": task_build,
+    "install": task_install,
+    "logs": task_logs,
+    "devices": task_devices,
+    "release": task_release,
+    "install-release": task_install_release,
+    "db": task_db,
+    "clean": task_clean,
 }
 
-# The Kotlin compiler drowns real errors in noise: keep only the error lines and the verdict.
-compile() {
-    ./gradlew compileDebugKotlin | grep -E '^e:|^Error:|^ERROR:|BUILD SUCCESSFUL|BUILD FAILED'
+LABELS = {
+    "compile": "compile    type-check the sources, errors and verdict only",
+    "strings": "strings    regenerate the string resources",
+    "build": "build      assemble the debug APK",
+    "install": "install    assemble, install and start the debug build",
+    "logs": "logs       follow logcat, filtered on the app",
+    "devices": "devices    list attached devices and their state",
+    "release": "release    assemble the signed release APK",
+    "install-release": "install-release   assemble, install and start the release",
+    "db": "db         back up or restore the device database",
+    "clean": "clean      drop build outputs",
 }
 
-run_task() {
-    case "$1" in
-        compile) compile ;;
-        strings) ./gradlew generateStringResources ;;
-        debug)   ./gradlew assembleDebug ;;
-        install) ./gradlew installDebug ;;
-        logcat)  adb logcat --pid="$(adb shell pidof -s com.assistant.debug)" ;;
-        # Both scripts address the project through ../, so they run from scripts/.
-        release) (cd scripts && ./build_release.sh) ;;
-        db)      (cd scripts && ./db_backup_restore.sh) ;;
-        *)       echo "Unknown option: $1" >&2; usage; return 1 ;;
-    esac
-}
+_QUIT = object()
 
-if [ $# -gt 0 ]; then
-    run_task "$1"
-    exit $?
-fi
 
-usage
-echo
-read -r -p "Option (empty to quit): " choice
-[ -n "$choice" ] || exit 0
-run_task "$choice"
+def pause():
+    try:
+        input("\nEnter to continue ")
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
+def menu():
+    try:
+        import questionary
+        from questionary import Choice, Separator
+    except ImportError:
+        print(
+            "questionary is missing: sudo apt install python3-questionary\n"
+            "Direct invocation still works: ./run <task>",
+            file=sys.stderr,
+        )
+        return 1
+
+    choices = [Separator("Build")]
+    choices += [Choice(LABELS[k], k) for k in ("compile", "strings", "build", "install")]
+    choices += [Separator("Device")]
+    choices += [Choice(LABELS[k], k) for k in ("logs", "devices", "db")]
+    choices += [Separator("Release")]
+    choices += [Choice(LABELS[k], k) for k in ("release", "install-release")]
+    choices += [Separator(""), Choice(LABELS["clean"], "clean")]
+    choices += [Choice("quit", _QUIT)]
+
+    while True:
+        os.system("clear")
+        answer = questionary.select("assistant", choices=choices).ask()
+        if answer is None or answer is _QUIT:
+            return 0
+        ACTIONS[answer]()
+        pause()
+
+
+def usage():
+    print("Usage: ./run [task]\n\nTasks:")
+    for key in ACTIONS:
+        print(f"  {LABELS[key]}")
+
+
+def main(argv):
+    if not argv:
+        return menu()
+    task = argv[0]
+    if task in ("-h", "--help"):
+        usage()
+        return 0
+    if task not in ACTIONS:
+        print(f"Unknown task: {task}\n", file=sys.stderr)
+        usage()
+        return 1
+    return ACTIONS[task](*argv[1:]) or 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
