@@ -1,6 +1,6 @@
 # manifest — assistant
 
-## dev_base @ 535efc4
+## dev_base @ b263dd7
 ## universel @
 ## android @
 ## fdroid @
