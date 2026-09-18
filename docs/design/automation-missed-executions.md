@@ -54,7 +54,10 @@ Une occurrence sautée laisse une ligne de log, pas de trace dans l'historique d
 
 La recherche de la prochaine exécution part au plus tôt de `maintenant − fenêtre` (plus rien à sauter en boucle). Avec « seulement la plus récente », parmi les occurrences dues, seule la dernière est lancée.
 
-## Points ouverts
+### 5. Données d'avant ce changement
 
-- **Automations existantes** : la migration n'a pas de fenêtre à mettre. Proposition non tranchée : champ vide, le scheduler ne lance pas une automation sans fenêtre et le logue (comme `MessageScheduler` pour un modèle sans fenêtre), l'écran la signale « à configurer ».
+Les deux réglages ne concernent que les automations programmées. Une automation programmée qui n'a pas la fenêtre reçoit : fenêtre illimitée, seulement la plus récente. Au retour d'une longue absence elle part donc une fois, et l'utilisateur ajuste ensuite. C'est une règle de lecture des anciennes données, appliquée au même endroit par la migration de base et par l'import d'une sauvegarde (`BackupService`) qui ne contient pas le champ, pas un état « à configurer » à entretenir dans le scheduler et l'écran.
+
+## Point ouvert
+
 - **Datation des actions de l'IA** : non vérifié si les actions utilisent des périodes relatives ou des dates calculées par l'IA elle-même. Dans le premier cas, leur résolution doit rester sur l'heure actuelle et le point 1 doit les distinguer des requêtes de données.
