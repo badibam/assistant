@@ -19,8 +19,7 @@ Et, du même audit : `strings_generated.xml` est un fichier généré, versionn�
 ## Divers
 
 - Compte des tokens avant envoi, via `/v1/messages/count_tokens` chez Claude — à voir pour les autres providers. `TokenCalculator` (171 lignes) et son bloc de strings existent déjà mais ne sont appelés de nulle part : soit ce chantier les reprend, soit ils partent.
-- Filtrage des requêtes à opérateurs (`where`, `orderBy`, jointures) — spec dans `docs/design/query-parameters.md`, écrite en 2025 et jamais implémentée. Trois de ses idées ont été livrées autrement : `select` est devenu `fields`, `offset` est devenu `page`, les agrégations sont devenues l'opération `stats`. À reprendre ou à jeter, pas à appliquer telle quelle.
-- Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste. C'est la chaîne de valeur annoncée par `README.md`, et donc le différenciateur non prouvé du projet.
+- Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste.
 
 ## Sagesse
 
