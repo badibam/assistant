@@ -6,12 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Permissions pour système de mise à jour -->
+    <!-- Permissions for the in-app update mechanism -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- Permission pour désactiver l'optimisation batterie (notifications en arrière-plan) -->
+    <!-- Lets the user waive battery optimisation, so background notifications still fire -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
@@ -28,6 +28,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:label="@string/shared_app_name"
             android:theme="@style/Theme.AssistantPersonnel">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,7 +37,7 @@
             </intent-filter>
         </activity>
         
-        <!-- FileProvider pour partage de fichiers APK -->
+        <!-- FileProvider, for handing the APK to the installer -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
