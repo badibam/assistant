@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -25,30 +23,22 @@ android {
         }
     }
     
+    // Release signing. The keystore and its passwords live outside the repository and
+    // reach the build through the environment: a gitignored file at the root would still
+    // be swept away by `git clean -xdf`, and this key cannot be regenerated -- it is the
+    // app's identity to every phone that installed it.
+    //
+    // No config at all when the environment is silent, rather than a placeholder password:
+    // a release signed with the wrong key installs nowhere and says nothing about why.
     signingConfigs {
-        create("release") {
-            // Release signing
-            // IMPORTANT: never commit the real keys
-            
-            // Try the environment variables, then .env
-            val keystoreFile = file("../keystore/assistant-release.keystore")
-            val envFile = file("../keystore/.env")
-            
-            var keystorePass = System.getenv("KEYSTORE_PASSWORD")
-            var keyPass = System.getenv("KEY_PASSWORD")
-            
-            // No environment variables: try .env
-            if ((keystorePass == null || keyPass == null) && envFile.exists()) {
-                val envProps = Properties()
-                envFile.reader().use { envProps.load(it) }
-                keystorePass = keystorePass ?: envProps.getProperty("KEYSTORE_PASSWORD")
-                keyPass = keyPass ?: envProps.getProperty("KEY_PASSWORD")
+        val store = System.getenv("ASSISTANT_KEYSTORE")
+        if (store != null) {
+            create("release") {
+                storeFile = file(store)
+                storePassword = System.getenv("ASSISTANT_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ASSISTANT_KEY_ALIAS")
+                keyPassword = System.getenv("ASSISTANT_KEY_PASSWORD")
             }
-            
-            storeFile = keystoreFile
-            storePassword = keystorePass ?: "changeme"
-            keyAlias = "assistant-release"
-            keyPassword = keyPass ?: "changeme"
         }
     }
 
@@ -68,7 +58,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             isDebuggable = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
 
             // Only arm64-v8a for release to reduce APK size
             ndk {
@@ -139,7 +129,7 @@ tasks.register("generateThemeResources") {
         // The default theme must exist: every other theme falls back to it
         val defaultThemeDir = File(themesDir, "default")
         if (!defaultThemeDir.exists() || !File(defaultThemeDir, "icons").exists()) {
-            throw GradleException("❌ Default theme directory not found: ${defaultThemeDir.absolutePath}\n" +
+            throw GradleException("Default theme directory not found: ${defaultThemeDir.absolutePath}\n" +
                 "   Default theme is required as fallback for other themes")
         }
         
@@ -163,7 +153,7 @@ tasks.register("generateThemeResources") {
                     println("Default theme missing SVG files: $missingSvgs")
                     println("→ Will generate placeholders for missing icons")
                 } else if (missingSvgs.isNotEmpty()) {
-                    println("ℹ Theme '$themeName' missing SVG files: $missingSvgs")
+                    println("Theme '$themeName' missing SVG files: $missingSvgs")
                     println("→ Will fallback to default theme")
                 }
                 
@@ -480,7 +470,7 @@ fun generatePlaceholderVector(outputFile: File, iconName: String) {
 fun getStandardIcons(): Set<String> {
     val iconsFile = file("src/main/assets/standard_icons.txt")
     if (!iconsFile.exists()) {
-        throw GradleException("❌ Missing standard_icons.txt file in src/main/assets/")
+        throw GradleException("Missing standard_icons.txt file in src/main/assets/")
     }
     
     return iconsFile.readText()

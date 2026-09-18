@@ -44,12 +44,7 @@ gradle/
 # Fichiers TODO divers
 .TODO/
 
-# Release signing
-keystore/
-*.keystore
-*.jks
 .env
-keystore/
 .BAK/
 
 # Scratchpad user (dev_base)

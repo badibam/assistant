@@ -1,20 +1,27 @@
 #!/bin/bash
 
-# Generates the keystore used to sign the release APKs
+# Generates the keystore used to sign the release APKs, outside the repository.
 # Usage: ./generate_keystore.sh
 
 set -e
 
-KEYSTORE_DIR="../keystore"
-KEYSTORE_FILE="$KEYSTORE_DIR/assistant-release.keystore"
+# The key lives here rather than in the repository: a gitignored file at the root would
+# still be swept away by `git clean -xdf`, and this key cannot be regenerated -- it is the
+# app's identity to every phone that installed it.
+CONFIG_DIR="$HOME/.config/assistant"
+KEYSTORE_FILE="$CONFIG_DIR/release.keystore"
+SIGNING_ENV="$CONFIG_DIR/signing.env"
 KEY_ALIAS="assistant-release"
 
-echo "Generating the keystore for Assistant"
+echo "Generating the release key for Assistant"
 
-mkdir -p "$KEYSTORE_DIR"
+mkdir -p "$CONFIG_DIR"
+chmod 700 "$CONFIG_DIR"
 
 if [ -f "$KEYSTORE_FILE" ]; then
-    echo "The keystore already exists: $KEYSTORE_FILE"
+    echo "A key already exists: $KEYSTORE_FILE"
+    echo "Replacing it means no installed copy of the app can ever be updated again:"
+    echo "Android refuses an update signed with a different key."
     read -p "Replace it? (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -37,7 +44,6 @@ read -p "City: " L
 read -p "State or province: " ST
 read -p "Country code (2 letters): " C
 
-echo "Generating the keystore..."
 keytool -genkeypair \
     -keystore "$KEYSTORE_FILE" \
     -alias "$KEY_ALIAS" \
@@ -48,28 +54,30 @@ keytool -genkeypair \
     -keypass "$KEY_PASSWORD" \
     -dname "CN=$CN, OU=Android Development, O=$O, L=$L, ST=$ST, C=$C"
 
-echo "Keystore generated."
-echo "Location: $KEYSTORE_FILE"
-
-echo "Keystore contents:"
-keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS"
-
-echo ""
-echo "IMPORTANT: store both passwords somewhere safe. They are not printed here,"
-echo "and a lost keystore password means the app can never be updated again."
-echo ""
-echo "Keep the keystore out of git: echo 'keystore/' >> .gitignore"
-
-# Template for the environment file the release build reads
-cat > "$KEYSTORE_DIR/.env.example" << EOF
-# Environment variables used for signing
-# Copy this file to .env and fill in the values
-KEYSTORE_PASSWORD=your_keystore_password_here
-KEY_PASSWORD=your_key_password_here
+# What ./run release reads. Written here so the passwords are never retyped, and never
+# printed.
+cat > "$SIGNING_ENV" <<EOF
+# La clé de release d'Assistant. Hors du dépôt, et hors de sa portée : un fichier
+# gitignoré à la racine se ferait quand même emporter par un \`git clean -xdf\`.
+#
+#   ./run release
+#
+# Cette clé est l'identité de l'app pour qui l'installe depuis GitHub. Perdue, plus
+# aucune mise à jour ne s'installe par-dessus — il faut désinstaller, ce qui efface
+# les données. À sauvegarder ailleurs que sur ce disque.
+export ASSISTANT_KEYSTORE=$KEYSTORE_FILE
+export ASSISTANT_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+export ASSISTANT_KEY_ALIAS=$KEY_ALIAS
+export ASSISTANT_KEY_PASSWORD=$KEY_PASSWORD
 EOF
 
+chmod 600 "$KEYSTORE_FILE" "$SIGNING_ENV"
+
+echo "Key generated: $KEYSTORE_FILE"
+echo "Its passwords are in $SIGNING_ENV, readable by you alone."
 echo ""
-echo "Setup complete. Next:"
-echo "1. Copy keystore/.env.example to keystore/.env"
-echo "2. Fill in the passwords there"
-echo "3. Run: ./gradlew assembleRelease"
+echo "Back both files up somewhere other than this disk. Lost, the app can never be"
+echo "updated on any phone that installed it: only uninstalled, which erases its data."
+echo ""
+echo "Contents:"
+keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS"

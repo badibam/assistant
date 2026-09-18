@@ -20,6 +20,11 @@ GRADLEW = ROOT / "gradlew"
 APPLICATION_ID = "com.assistant"
 DEBUG_APPLICATION_ID = "com.assistant.debug"
 
+# The release signing key, which lives outside the repository on purpose: a gitignored
+# file at the root would still be swept away by `git clean -xdf`, and this one cannot be
+# regenerated -- it is the app's identity to every phone that installed it.
+SIGNING = Path.home() / ".config" / "assistant" / "signing.env"
+
 # What the compiler says that is worth reading: the errors, and the verdict.
 BUILD_LINES = ("e:", "Error:", "ERROR:", "BUILD SUCCESSFUL", "BUILD FAILED")
 
@@ -27,6 +32,12 @@ BUILD_LINES = ("e:", "Error:", "ERROR:", "BUILD SUCCESSFUL", "BUILD FAILED")
 def gradle(*args):
     """Delegate to the wrapper, never to a system-wide gradle."""
     return subprocess.run([str(GRADLEW), *args], cwd=ROOT, check=False).returncode
+
+
+def gradle_env(extra, *args):
+    """Same, with the signing key's variables added to the environment."""
+    return subprocess.run([str(GRADLEW), *args], cwd=ROOT, check=False,
+                          env={**os.environ, **extra}).returncode
 
 
 def gradle_filtered(*args):
@@ -163,27 +174,49 @@ def task_install():
     return code
 
 
+def signing():
+    """Read the signing key's environment, or None when there is none.
+
+    Parsed rather than sourced: this only ever needs four `export NAME=value` lines, and
+    handing a file to a shell to run is a much larger thing to allow than reading it.
+    """
+    if not SIGNING.is_file():
+        return None
+    values = {}
+    for line in SIGNING.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line.startswith("export "):
+            continue
+        name, _, value = line[len("export "):].partition("=")
+        values[name.strip()] = value.strip().strip("'\"")
+    return values
+
+
 def task_release():
-    """Assemble the release, signed when the keystore and its passwords are there."""
-    keystore = ROOT / "keystore" / "assistant-release.keystore"
-    if not keystore.is_file():
+    """Assemble the release, signed with the key that lives outside the repository.
+
+    It refuses rather than building unsigned: Android installs no unsigned APK, so the
+    file would be rejected by the phone much later, for no visible reason. F-Droid is the
+    exception -- it signs with its own key -- and does not go through here.
+    """
+    keys = signing()
+    if keys is None:
         print(
-            f"No keystore at {keystore}: run scripts/generate_keystore.sh first.\n"
-            "Android installs no unsigned APK, so the build would produce a file no\n"
-            "phone accepts.",
+            f"No signing key at {SIGNING}.\n"
+            "Run scripts/generate_keystore.sh to create one, or restore it from your\n"
+            "backup: this key is the app's identity to every phone that installed it,\n"
+            "and no update installs over a differently signed one.",
             file=sys.stderr,
         )
         return 1
-    if not (os.environ.get("KEYSTORE_PASSWORD") and os.environ.get("KEY_PASSWORD")):
-        if not (ROOT / "keystore" / ".env").is_file():
-            print(
-                "Neither KEYSTORE_PASSWORD/KEY_PASSWORD in the environment nor\n"
-                "keystore/.env: the build script would fall back to a placeholder\n"
-                "password and the signature would not be yours.",
-                file=sys.stderr,
-            )
-            return 1
-    return gradle("assembleRelease")
+    print(f"Signing with the key named by {SIGNING}.", flush=True)
+    code = gradle_env(keys, "assembleRelease")
+    if code == 0:
+        apk = release_apk()
+        if apk is not None:
+            subprocess.run(["./verify_signature.sh", str(apk)],
+                           cwd=ROOT / "scripts", check=False)
+    return code
 
 
 def release_apk():
