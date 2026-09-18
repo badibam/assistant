@@ -7,7 +7,11 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 - **Alignement du pipeline TOOL_DATA** — la doc IA (`ai_prompt_chunks.xml`) est une interface que rien ne teste, et chaque divergence doc↔code produit un échec silencieux côté IA. Détail des sept points dans `docs/design/post-refactor-audit.md`, partie A. Le plus grave : l'objet `period: {start, end}` est documenté mais ignoré par le transformer, ce qui peut rendre tout l'historique là où l'IA croit lire un mois.
 - **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. Premier bloquant : `LICENSE.txt` est en CC BY-NC-SA, non libre au sens DFSG ; la décision actée est GPL-3.0.
 
+- **Exécutions d'automation manquées** — une automation rattrape sans limite chaque exécution manquée, et résout ses dates relatives sur l'heure actuelle au lieu de l'heure prévue. Spec dans `docs/design/automation-missed-executions.md`, deux points ouverts.
+
 ## Dette constatée
+
+- Une erreur de l'API IA qui ne contient pas « provider » ou « configured » (429, 529, crédit épuisé, délai dépassé) est classée erreur réseau : une automation réessaie alors toutes les 30 s sans fin, prompt complet à chaque fois (`AIEventProcessor.kt:599`, `:648`, `:972`). Pas la cause de l'incident du 2026-09-18, mais le même genre de facture.
 
 Les huit points de `docs/design/post-refactor-audit.md`, partie B, chacun avec son statut (vérifié ou soupçon). Les deux à trancher en priorité :
 
