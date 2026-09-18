@@ -58,6 +58,6 @@ La recherche de la prochaine exécution part au plus tôt de `maintenant − fen
 
 Les deux réglages ne concernent que les automations programmées. Une automation programmée qui n'a pas la fenêtre reçoit : fenêtre illimitée, seulement la plus récente. Au retour d'une longue absence elle part donc une fois, et l'utilisateur ajuste ensuite. C'est une règle de lecture des anciennes données, appliquée au même endroit par la migration de base et par l'import d'une sauvegarde (`BackupService`) qui ne contient pas le champ, pas un état « à configurer » à entretenir dans le scheduler et l'écran.
 
-## Point ouvert
+### 6. Actions de l'IA
 
-- **Datation des actions de l'IA** : non vérifié si les actions utilisent des périodes relatives ou des dates calculées par l'IA elle-même. Dans le premier cas, leur résolution doit rester sur l'heure actuelle et le point 1 doit les distinguer des requêtes de données.
+Seules les lectures de données (commande TOOL_DATA, `CommandTransformer.kt:175`) résolvent des périodes relatives ; les actions n'en ont pas. Une entrée créée par l'IA porte le timestamp qu'elle fournit, ou l'heure actuelle si elle n'en donne pas (`ToolDataService.kt:78`). Le point 1 ne touche donc pas les actions. Reste à la charge du prompt : une automation qui rattrape le 03/08 et écrit un résultat « de ce jour-là » doit passer elle-même le timestamp, à partir de la ligne « Date prévue pour cette exécution » ; sinon l'entrée est datée du jour où la session tourne.
