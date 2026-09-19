@@ -323,6 +323,19 @@ LABELS = {
 _QUIT = object()
 
 
+def interruptible(action, *args):
+    """Run a task so that Ctrl+C stops it and nothing else.
+
+    Ctrl+C is how `logs` is meant to end, and how any build is abandoned: it returns to the
+    menu, or to the shell with the conventional status, rather than dumping a traceback.
+    """
+    try:
+        return action(*args) or 0
+    except KeyboardInterrupt:
+        print()
+        return 130
+
+
 def pause():
     try:
         input("\nEnter to continue ")
@@ -356,7 +369,7 @@ def menu():
         answer = questionary.select("assistant", choices=choices).ask()
         if answer is None or answer is _QUIT:
             return 0
-        ACTIONS[answer]()
+        interruptible(ACTIONS[answer])
         pause()
 
 
@@ -377,7 +390,7 @@ def main(argv):
         print(f"Unknown task: {task}\n", file=sys.stderr)
         usage()
         return 1
-    return ACTIONS[task](*argv[1:]) or 0
+    return interruptible(ACTIONS[task], *argv[1:])
 
 
 if __name__ == "__main__":
