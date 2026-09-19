@@ -8,9 +8,7 @@
 ## android @ bf72ce6
 ! 9b59e58  targetSdk stays 34: target 35+ forces edge-to-edge, every screen to rework and check on a phone
 ! 9b59e58  string resources default to French; English default and translation of ~1500 strings to do before the first F-Droid release
-! 9b59e58  only 57 of 410 remembered states use rememberSaveable: input is lost on rotation, 353 states to sort
 ! 9b59e58  UpdateManager keeps its 3 values in SharedPreferences; converting to DataStore waits for the updater's move into its own build flavor (F-Droid spec)
-! fdd9af8  27 loading flags, only 5 disable their action: each to review
 - 9b59e58  screens call the command dispatcher (Coordinator) directly and keep only view state; the dispatcher and its services are the controller layer
 ## fdroid @ bf72ce6
 ! b2320db  the in-app updater downloads APKs from GitHub; it moves to its own build flavor, left out of the F-Droid build (F-Droid spec §1)
