@@ -71,7 +71,6 @@ fun ZoneScreen(
     var showDuplicateAutomationDialog by rememberSaveable { mutableStateOf(false) }
 
     // Derived states from IDs (recomputed after orientation change)
-    val editingTool = toolInstances.find { it.id == editingToolId }
     val selectedToolInstance = toolInstances.find { it.id == selectedToolInstanceId }
     
     // Load tool instances on first composition and when zone changes
@@ -230,12 +229,14 @@ fun ZoneScreen(
     
     // Configuration callbacks
     val onSaveConfig = { config: String ->
-        editingTool?.let { tool ->
+        // Update or create is decided by the saved id: the tool resolved from the list is null
+        // until the list reloads, and a save meanwhile would create a duplicate
+        editingToolId?.let { toolId ->
             // Update existing tool
             coroutineScope.launch {
                 try {
                     coordinator.processUserAction("tools.update", mapOf(
-                        "tool_instance_id" to tool.id,
+                        "tool_instance_id" to toolId,
                         "config_json" to config
                     ))
                     editingToolId = null
@@ -296,12 +297,15 @@ fun ZoneScreen(
             zoneId = zone.id,
             onSave = { onSaveConfig(it) },
             onCancel = onCancelConfig,
-            existingToolId = editingTool?.id,
-            onDelete = editingTool?.let { tool ->
+            // The saved id, not the tool resolved from the list: the list reloads after a
+            // rotation, and the config screen, which loads the tool itself, would otherwise
+            // be handed null meanwhile and switch to creation
+            existingToolId = editingToolId,
+            onDelete = editingToolId?.let { toolId ->
                 {
                     coroutineScope.launch {
                         try {
-                            coordinator.processUserAction("tools.delete", mapOf("tool_instance_id" to tool.id))
+                            coordinator.processUserAction("tools.delete", mapOf("tool_instance_id" to toolId))
                             editingToolId = null
                             showingConfigFor = null
                             preSelectedGroup = null
