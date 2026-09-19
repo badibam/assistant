@@ -1,5 +1,7 @@
 package com.assistant.core.ui.screens
 
+import com.assistant.core.ui.StringListSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,13 +41,17 @@ fun MainScreenConfigScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // State for zone groups
-    var zoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }
+    var zoneGroups by rememberSaveable(stateSaver = StringListSaver) { mutableStateOf<List<String>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Loaded once per screen: after a rotation the restored edits win over the stored groups
+    var groupsLoaded by rememberSaveable { mutableStateOf(false) }
+
     // Load zone groups on first composition
     LaunchedEffect(Unit) {
+        if (groupsLoaded) return@LaunchedEffect
         LogManager.ui("Loading zone groups from app_config", "DEBUG")
         coordinator.executeWithLoading(
             operation = "app_config.get_zone_groups",
@@ -59,6 +65,7 @@ fun MainScreenConfigScreen(
                 ?.filterIsInstance<String>() ?: emptyList()
             LogManager.ui("Loaded ${groups.size} zone groups: $groups", "DEBUG")
             zoneGroups = groups
+            groupsLoaded = true
         }
     }
 

@@ -1,5 +1,6 @@
 package com.assistant.core.ui.selectors
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,10 +50,10 @@ fun DuplicateSelector(
     val coordinator = remember { Coordinator(context) }
 
     // Navigation state
-    var currentStep by remember { mutableStateOf(DuplicateStep.ZONE) }
-    var selectedZoneId by remember { mutableStateOf("") }
-    var selectedZoneName by remember { mutableStateOf("") }
-    var selectedInstanceId by remember { mutableStateOf<String?>(null) }
+    var currentStep by rememberSaveable { mutableStateOf(DuplicateStep.ZONE) }
+    var selectedZoneId by rememberSaveable { mutableStateOf("") }
+    var selectedZoneName by rememberSaveable { mutableStateOf("") }
+    var selectedInstanceId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Data state
     var zones by remember { mutableStateOf<List<ZoneItem>>(emptyList()) }

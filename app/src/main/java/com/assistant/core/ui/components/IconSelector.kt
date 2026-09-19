@@ -1,5 +1,6 @@
 package com.assistant.core.ui.components
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +29,7 @@ fun IconSelector(
     onChange: (String) -> Unit
 ) {
     val context = LocalContext.current
-    var showDialog by remember { mutableStateOf(false) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
     
     // Loading available icons
     val allAvailableIcons by remember { 

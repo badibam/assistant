@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens.settings
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -67,9 +68,9 @@ fun LogsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Filter states
-    var selectedTimeRange by remember { mutableStateOf(LogTimeRange.ONE_HOUR) }
-    var selectedMinLevel by remember { mutableStateOf(LogLevel.DEBUG) }
-    var tagFilter by remember { mutableStateOf("") }
+    var selectedTimeRange by rememberSaveable { mutableStateOf(LogTimeRange.ONE_HOUR) }
+    var selectedMinLevel by rememberSaveable { mutableStateOf(LogLevel.DEBUG) }
+    var tagFilter by rememberSaveable { mutableStateOf("") }
 
     // Logs data
     var logs by remember { mutableStateOf<List<LogEntry>>(emptyList()) }

@@ -1,5 +1,7 @@
 package com.assistant.tools.journal.ui
 
+import com.assistant.core.ui.FieldDefinitionsSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,24 +46,24 @@ fun JournalConfigScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Configuration states - general
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var iconName by remember { mutableStateOf("book-open") }
-    var displayMode by remember { mutableStateOf("EXTENDED") }
-    var management by remember { mutableStateOf("manual") }
-    var validateConfig by remember { mutableStateOf(false) }
-    var validateData by remember { mutableStateOf(false) }
-    var alwaysSend by remember { mutableStateOf(false) }
-    var group by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var iconName by rememberSaveable { mutableStateOf("book-open") }
+    var displayMode by rememberSaveable { mutableStateOf("EXTENDED") }
+    var management by rememberSaveable { mutableStateOf("manual") }
+    var validateConfig by rememberSaveable { mutableStateOf(false) }
+    var validateData by rememberSaveable { mutableStateOf(false) }
+    var alwaysSend by rememberSaveable { mutableStateOf(false) }
+    var group by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Configuration states - journal specific
-    var sortOrder by remember { mutableStateOf("descending") }
-    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
-    var oldCustomFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var sortOrder by rememberSaveable { mutableStateOf("descending") }
+    var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var oldCustomFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Zone change tracking
     val isEditing = existingToolId != null
-    var currentZoneId by remember { mutableStateOf(zoneId) }
+    var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
 
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
@@ -69,8 +71,12 @@ fun JournalConfigScreen(
     var isSaving by remember { mutableStateOf(false) }
 
     // Load existing configuration if editing
+    // Loaded once per screen: after a rotation the restored edits win over the stored config
+    var configLoaded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(existingToolId) {
-        if (existingToolId != null) {
+        if (existingToolId != null && configLoaded) {
+            isLoading = false
+        } else if (existingToolId != null) {
             LogManager.ui("Loading existing journal configuration for ID: $existingToolId")
             val result = coordinator.processUserAction(
                 "tools.get",
@@ -118,6 +124,7 @@ fun JournalConfigScreen(
                 errorMessage = s.tool("error_config_not_found")
             }
             isLoading = false
+            configLoaded = true
         }
     }
 

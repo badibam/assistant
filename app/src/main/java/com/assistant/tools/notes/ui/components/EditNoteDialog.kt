@@ -1,5 +1,7 @@
 package com.assistant.tools.notes.ui.components
 
+import com.assistant.core.ui.FieldValuesSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -45,7 +47,7 @@ fun EditNoteDialog(
     val coordinator = remember { Coordinator(context) }
 
     // State management
-    var content by remember(isVisible) { mutableStateOf(initialContent) }
+    var content by rememberSaveable(isVisible) { mutableStateOf(initialContent) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
@@ -53,7 +55,7 @@ fun EditNoteDialog(
 
     // Custom fields states
     var customFieldsDefinitions by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
-    var customFieldsValues by remember(isVisible, initialCustomFields) {
+    var customFieldsValues by rememberSaveable(isVisible, initialCustomFields, stateSaver = FieldValuesSaver) {
         mutableStateOf(initialCustomFields)
     }
 

@@ -1,5 +1,8 @@
 package com.assistant.core.fields
 
+import com.assistant.core.ui.NullableFieldDefinitionSaver
+import com.assistant.core.ui.NullableFieldConfigSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -41,13 +44,13 @@ fun CustomFieldsEditor(
     val s = Strings.`for`(context = context)
 
     // State for showing the field definition dialog
-    var showDialog by remember { mutableStateOf(false) }
-    var editingField by remember { mutableStateOf<FieldDefinition?>(null) }
-    var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var editingField by rememberSaveable(stateSaver = NullableFieldDefinitionSaver) { mutableStateOf<FieldDefinition?>(null) }
+    var editingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // State for delete confirmation dialog
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
-    var deletingIndex by remember { mutableStateOf<Int?>(null) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
+    var deletingIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -293,11 +296,11 @@ fun FieldDefinitionDialog(
     val isEditing = existingField != null
 
     // Form state
-    var displayName by remember { mutableStateOf(existingField?.displayName ?: "") }
-    var description by remember { mutableStateOf(existingField?.description ?: "") }
-    var fieldType by remember { mutableStateOf(existingField?.type ?: FieldType.TEXT) }
-    var alwaysVisible by remember { mutableStateOf(existingField?.alwaysVisible ?: false) }
-    var config by remember { mutableStateOf(existingField?.config) }
+    var displayName by rememberSaveable { mutableStateOf(existingField?.displayName ?: "") }
+    var description by rememberSaveable { mutableStateOf(existingField?.description ?: "") }
+    var fieldType by rememberSaveable { mutableStateOf(existingField?.type ?: FieldType.TEXT) }
+    var alwaysVisible by rememberSaveable { mutableStateOf(existingField?.alwaysVisible ?: false) }
+    var config by rememberSaveable(stateSaver = NullableFieldConfigSaver) { mutableStateOf(existingField?.config) }
 
     // Generated name preview (for transparency)
     val generatedName = remember(displayName) {
@@ -321,9 +324,9 @@ fun FieldDefinitionDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Warning dialog state (for length change with exceeding data)
-    var showWarningDialog by remember { mutableStateOf(false) }
-    var exceedingDataCount by remember { mutableStateOf(0) }
-    var pendingField by remember { mutableStateOf<FieldDefinition?>(null) }
+    var showWarningDialog by rememberSaveable { mutableStateOf(false) }
+    var exceedingDataCount by rememberSaveable { mutableStateOf(0) }
+    var pendingField by rememberSaveable(stateSaver = NullableFieldDefinitionSaver) { mutableStateOf<FieldDefinition?>(null) }
 
     // Show error toast
     LaunchedEffect(errorMessage) {

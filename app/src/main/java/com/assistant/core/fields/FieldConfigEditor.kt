@@ -1,5 +1,7 @@
 package com.assistant.core.fields
 
+import com.assistant.core.ui.MutableStringListSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -150,11 +152,11 @@ private fun NumericConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var unit by remember { mutableStateOf(config?.get("unit")?.toString() ?: "") }
-    var min by remember { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by remember { mutableStateOf(config?.get("max")?.toString() ?: "") }
-    var decimals by remember { mutableStateOf(config?.get("decimals")?.toString() ?: "") }
-    var step by remember { mutableStateOf(config?.get("step")?.toString() ?: "") }
+    var unit by rememberSaveable { mutableStateOf(config?.get("unit")?.toString() ?: "") }
+    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
+    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
+    var decimals by rememberSaveable { mutableStateOf(config?.get("decimals")?.toString() ?: "") }
+    var step by rememberSaveable { mutableStateOf(config?.get("step")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -232,11 +234,11 @@ private fun ScaleConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var min by remember { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by remember { mutableStateOf(config?.get("max")?.toString() ?: "") }
-    var minLabel by remember { mutableStateOf(config?.get("min_label")?.toString() ?: "") }
-    var maxLabel by remember { mutableStateOf(config?.get("max_label")?.toString() ?: "") }
-    var step by remember { mutableStateOf(config?.get("step")?.toString() ?: "") }
+    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
+    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
+    var minLabel by rememberSaveable { mutableStateOf(config?.get("min_label")?.toString() ?: "") }
+    var maxLabel by rememberSaveable { mutableStateOf(config?.get("max_label")?.toString() ?: "") }
+    var step by rememberSaveable { mutableStateOf(config?.get("step")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -314,13 +316,13 @@ private fun ChoiceConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var options by remember {
+    var options by rememberSaveable(stateSaver = MutableStringListSaver) {
         mutableStateOf(
             (config?.get("options") as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList()
                 ?: mutableListOf("", "")
         )
     }
-    var multiple by remember { mutableStateOf(config?.get("multiple") as? Boolean ?: false) }
+    var multiple by rememberSaveable { mutableStateOf(config?.get("multiple") as? Boolean ?: false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Multiple selection toggle
@@ -405,8 +407,8 @@ private fun BooleanConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var trueLabel by remember { mutableStateOf(config?.get("true_label")?.toString() ?: "") }
-    var falseLabel by remember { mutableStateOf(config?.get("false_label")?.toString() ?: "") }
+    var trueLabel by rememberSaveable { mutableStateOf(config?.get("true_label")?.toString() ?: "") }
+    var falseLabel by rememberSaveable { mutableStateOf(config?.get("false_label")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -448,10 +450,10 @@ private fun RangeConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var unit by remember { mutableStateOf(config?.get("unit")?.toString() ?: "") }
-    var min by remember { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by remember { mutableStateOf(config?.get("max")?.toString() ?: "") }
-    var decimals by remember { mutableStateOf(config?.get("decimals")?.toString() ?: "") }
+    var unit by rememberSaveable { mutableStateOf(config?.get("unit")?.toString() ?: "") }
+    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
+    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
+    var decimals by rememberSaveable { mutableStateOf(config?.get("decimals")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -518,8 +520,8 @@ private fun DateConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var min by remember { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by remember { mutableStateOf(config?.get("max")?.toString() ?: "") }
+    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
+    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -562,7 +564,7 @@ private fun TimeConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var format by remember { mutableStateOf(config?.get("format")?.toString() ?: "") }
+    var format by rememberSaveable { mutableStateOf(config?.get("format")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(
@@ -593,9 +595,9 @@ private fun DateTimeConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var min by remember { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by remember { mutableStateOf(config?.get("max")?.toString() ?: "") }
-    var timeFormat by remember { mutableStateOf(config?.get("time_format")?.toString() ?: "") }
+    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
+    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
+    var timeFormat by rememberSaveable { mutableStateOf(config?.get("time_format")?.toString() ?: "") }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(

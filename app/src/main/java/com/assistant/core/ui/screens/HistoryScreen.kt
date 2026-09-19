@@ -1,5 +1,7 @@
 package com.assistant.core.ui.screens
 
+import com.assistant.core.ui.NullablePeriodSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -52,24 +54,24 @@ fun HistoryScreen(
 
     // Session list
     var sessions by remember { mutableStateOf<List<SessionSummary>>(emptyList()) }
-    var currentPage by remember { mutableStateOf(1) }
+    var currentPage by rememberSaveable { mutableStateOf(1) }
     var totalPages by remember { mutableStateOf(1) }
     var totalEntries by remember { mutableStateOf(0) }
 
     // Filters
-    var searchQuery by remember { mutableStateOf("") }
-    var periodFilter by remember { mutableStateOf(PeriodFilterType.ALL) }
-    var currentPeriod by remember { mutableStateOf<Period?>(null) }
-    var entriesLimit by remember { mutableStateOf(20) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var periodFilter by rememberSaveable { mutableStateOf(PeriodFilterType.ALL) }
+    var currentPeriod by rememberSaveable(stateSaver = NullablePeriodSaver) { mutableStateOf<Period?>(null) }
+    var entriesLimit by rememberSaveable { mutableStateOf(20) }
 
     // Search debounce
     var searchJob by remember { mutableStateOf<Job?>(null) }
 
     // Dialog states
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedSessionId by remember { mutableStateOf<String?>(null) }
-    var selectedSessionName by remember { mutableStateOf("") }
+    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var selectedSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedSessionName by rememberSaveable { mutableStateOf("") }
 
     // Helper to create Period for current time
     fun createCurrentPeriod(periodType: PeriodType): Period {
@@ -84,7 +86,7 @@ fun HistoryScreen(
 
     // Initialize currentPeriod with DAY by default
     LaunchedEffect(Unit) {
-        currentPeriod = createCurrentPeriod(PeriodType.DAY)
+        if (currentPeriod == null) currentPeriod = createCurrentPeriod(PeriodType.DAY)
     }
 
     // Load sessions
@@ -157,9 +159,13 @@ fun HistoryScreen(
         }
     }
 
-    // Reset page when filters change
+    // Reset page when filters change. Compared with the filters last seen, not on every run:
+    // the effect also runs after a rotation, which must keep the restored page.
+    var lastFilters by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(periodFilter, currentPeriod, entriesLimit, searchQuery) {
-        currentPage = 1
+        val filters = "$periodFilter|$currentPeriod|$entriesLimit|$searchQuery"
+        if (lastFilters != null && lastFilters != filters) currentPage = 1
+        lastFilters = filters
     }
 
     // Load sessions when filters/pagination change
@@ -377,7 +383,7 @@ fun HistoryScreen(
 
     // Rename Dialog
     if (showRenameDialog && selectedSessionId != null) {
-        var newName by remember { mutableStateOf(selectedSessionName) }
+        var newName by rememberSaveable { mutableStateOf(selectedSessionName) }
         var renameError by remember { mutableStateOf<String?>(null) }
 
         UI.Dialog(

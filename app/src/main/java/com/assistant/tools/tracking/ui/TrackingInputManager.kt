@@ -1,5 +1,7 @@
 package com.assistant.tools.tracking.ui
 
+import com.assistant.core.ui.PropertiesSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -111,11 +113,11 @@ fun TrackingInputManager(
     }
     
     // Dialog states
-    var showDialog by remember { mutableStateOf(false) }
-    var dialogItemType by remember { mutableStateOf<ItemType?>(null) }
-    var dialogActionType by remember { mutableStateOf(ActionType.CREATE) }
-    var dialogInitialName by remember { mutableStateOf("") }
-    var dialogInitialProperties by remember { mutableStateOf(emptyMap<String, Any>()) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var dialogItemType by rememberSaveable { mutableStateOf<ItemType?>(null) }
+    var dialogActionType by rememberSaveable { mutableStateOf(ActionType.CREATE) }
+    var dialogInitialName by rememberSaveable { mutableStateOf("") }
+    var dialogInitialProperties by rememberSaveable(stateSaver = PropertiesSaver) { mutableStateOf(emptyMap<String, Any>()) }
     
     // Handler for adding items to predefined shortcuts
     val addToPredefined: (String, Map<String, Any>) -> Unit = { itemName, properties ->

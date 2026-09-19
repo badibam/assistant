@@ -342,7 +342,10 @@ private fun UpcomingTab(
     val scope = rememberCoroutineScope()
 
     var occurrences by remember { mutableStateOf<List<Occurrence>>(emptyList()) }
-    var editing by remember { mutableStateOf<Occurrence?>(null) }
+    // The occurrence being edited is kept by id and resolved from the loaded list, so the
+    // edit dialog survives a rotation
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = editingId?.let { id -> occurrences.find { it.id == id } }
 
     LaunchedEffect(toolInstanceId, refreshTrigger) {
         occurrences = loadByStatus(context, coordinator, toolInstanceId, "pending", onError).sortedBy { it.dueAt }
@@ -380,7 +383,7 @@ private fun UpcomingTab(
                         UI.ActionButton(
                             action = ButtonAction.EDIT,
                             display = ButtonDisplay.ICON,
-                            onClick = { editing = occurrence }
+                            onClick = { editingId = occurrence.id }
                         )
                         UI.ActionButton(
                             action = ButtonAction.DELETE,
@@ -409,8 +412,8 @@ private fun UpcomingTab(
         EditOccurrenceDialog(
             toolInstanceId = toolInstanceId,
             occurrence = occurrence,
-            onDismiss = { editing = null },
-            onSaved = { editing = null },
+            onDismiss = { editingId = null },
+            onSaved = { editingId = null },
             onError = onError
         )
     }

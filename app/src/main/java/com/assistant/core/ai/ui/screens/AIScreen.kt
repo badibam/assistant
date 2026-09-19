@@ -1,5 +1,7 @@
 package com.assistant.core.ai.ui.screens
 
+import com.assistant.core.ui.MessageSegmentsSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -242,7 +244,7 @@ private fun ChatMode(
     // Local states
     var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var showStats by remember { mutableStateOf(false) }
+    var showStats by rememberSaveable { mutableStateOf(false) }
 
     // Load SEED message for pre-fill if seedId present
     LaunchedEffect(session.seedId) {
@@ -425,7 +427,7 @@ private fun SeedMode(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Editor states
-    var segments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Composer editing (local temp state)
+    var segments by rememberSaveable(stateSaver = MessageSegmentsSaver) { mutableStateOf<List<MessageSegment>>(emptyList()) } // Composer editing (local temp state)
     var displaySegments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Display from DB (source of truth)
     var scheduleConfig by remember { mutableStateOf<com.assistant.core.utils.ScheduleConfig?>(null) }
     var triggersCount by remember { mutableStateOf(0) }
@@ -433,12 +435,13 @@ private fun SeedMode(
 
     // Track if session needs reload after refresh
     var sessionReloadTrigger by remember { mutableStateOf(0) }
+    var composerLoaded by rememberSaveable { mutableStateOf(false) }
 
     // Dialogs
-    var showScheduleEditor by remember { mutableStateOf(false) }
-    var showTriggersEditor by remember { mutableStateOf(false) }
-    var showEditAutomation by remember { mutableStateOf(false) }
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showScheduleEditor by rememberSaveable { mutableStateOf(false) }
+    var showTriggersEditor by rememberSaveable { mutableStateOf(false) }
+    var showEditAutomation by rememberSaveable { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
 
     // Load automation on mount
     LaunchedEffect(session.id) {
@@ -511,9 +514,13 @@ private fun SeedMode(
                     emptyList()
                 }
 
-                // Update both display (from DB) and composer (for editing)
+                // Update both display (from DB) and composer (for editing). The composer is only
+                // filled on first load or an explicit reload: after a rotation it keeps the edits.
                 displaySegments = loadedSegments
-                segments = loadedSegments
+                if (!composerLoaded || sessionReloadTrigger > 0) {
+                    segments = loadedSegments
+                    composerLoaded = true
+                }
 
                 LogManager.aiUI("SeedMode loaded segments from DB: ${displaySegments.size} segments, messageId=$userMessageId", "DEBUG")
             }
@@ -949,7 +956,7 @@ private fun AutomationMode(
     val scope = rememberCoroutineScope()
 
     // Local state
-    var showChatOptionsDialog by remember { mutableStateOf(false) }
+    var showChatOptionsDialog by rememberSaveable { mutableStateOf(false) }
 
     // Observe AIState from orchestrator
     val aiState by AIOrchestrator.currentState.collectAsState()
@@ -1114,9 +1121,9 @@ private fun ChatHeader(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
-    var showStopConfirmation by remember { mutableStateOf(false) }
-    var showSettingsMenu by remember { mutableStateOf(false) }
-    var showSessionSettings by remember { mutableStateOf(false) }
+    var showStopConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showSettingsMenu by rememberSaveable { mutableStateOf(false) }
+    var showSessionSettings by rememberSaveable { mutableStateOf(false) }
 
     // Stop confirmation dialog
     if (showStopConfirmation) {

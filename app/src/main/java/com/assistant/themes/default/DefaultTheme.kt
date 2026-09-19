@@ -1,5 +1,6 @@
 package com.assistant.themes.default
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.assistant.core.validation.FieldLimits
 import androidx.compose.foundation.background
@@ -302,7 +303,7 @@ object DefaultTheme : ThemeContract {
         onClick: () -> Unit
     ) {
         // État du dialogue de confirmation
-        var showConfirmDialog by remember { mutableStateOf(false) }
+        var showConfirmDialog by rememberSaveable { mutableStateOf(false) }
         
         // Determine default type based on action
         val buttonType = type ?: getDefaultButtonType(action)

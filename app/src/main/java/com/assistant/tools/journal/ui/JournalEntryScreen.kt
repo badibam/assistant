@@ -1,5 +1,6 @@
 package com.assistant.tools.journal.ui
 
+import com.assistant.core.ui.FieldValuesSaver
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -63,19 +64,25 @@ fun JournalEntryScreen(
     var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
 
     // Custom fields values state (definitions loaded automatically by CustomFieldsInput/Display)
-    var customFieldsValues by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+    var customFieldsValues by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf<Map<String, Any?>>(emptyMap()) }
 
     // Date/time picker states
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
 
     // Validation state
     var validationResult by remember { mutableStateOf(ValidationResult.success()) }
 
     // Load entry if not creating
     // Force reload on every composition by resetting custom fields before load
+    // Loaded once per screen: after a rotation the restored edits win over the stored entry
+    var entryLoaded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(entryId, isCreating) {
         LogManager.ui("LaunchedEffect triggered: entryId=$entryId, isCreating=$isCreating")
+        if (entryLoaded) {
+            isLoading = false
+            return@LaunchedEffect
+        }
         if (!isCreating) {
             // Reset custom fields to ensure clean state
             customFieldsValues = emptyMap()
@@ -155,6 +162,7 @@ fun JournalEntryScreen(
             // In creation mode, initialize with current timestamp
             timestamp = System.currentTimeMillis()
         }
+        entryLoaded = true
     }
 
     // Error message display

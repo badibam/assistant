@@ -1,5 +1,6 @@
 package com.assistant.core.ai.ui.components
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,8 +93,8 @@ private fun MultipleChoiceModule(
     }
 
     // Local state for selected option and free text
-    var selectedOption by remember { mutableStateOf<String?>(null) }
-    var freeText by remember { mutableStateOf("") }
+    var selectedOption by rememberSaveable { mutableStateOf<String?>(null) }
+    var freeText by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxWidth(),

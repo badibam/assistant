@@ -1,5 +1,6 @@
 package com.assistant.tools.notes.ui
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -63,9 +64,12 @@ fun NotesScreen(
     var contextMenuNoteId by remember { mutableStateOf<String?>(null) }
 
     // Dialog states
-    var showNoteDialog by remember { mutableStateOf(false) }
-    var dialogNote by remember { mutableStateOf<NoteEntry?>(null) } // null = creation mode
-    var dialogPosition by remember { mutableStateOf<Int?>(null) }
+    var showNoteDialog by rememberSaveable { mutableStateOf(false) }
+    // The note being edited is kept by id and resolved from the loaded notes, so the dialog
+    // survives a rotation. null = creation mode
+    var dialogNoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    val dialogNote = dialogNoteId?.let { id -> notes.find { it.id == id } }
+    var dialogPosition by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // Load tool instance data
     LaunchedEffect(toolInstanceId) {
@@ -193,14 +197,14 @@ fun NotesScreen(
     // Helper functions for dialog management
     fun openEditDialog(note: NoteEntry) {
         contextMenuNoteId = null // Close any open menu
-        dialogNote = note
+        dialogNoteId = note.id
         dialogPosition = null
         showNoteDialog = true
     }
 
     fun openCreateDialog(position: Int) {
         contextMenuNoteId = null // Close any open menu
-        dialogNote = null // null = creation mode
+        dialogNoteId = null // null = creation mode
         dialogPosition = position
         showNoteDialog = true
     }
@@ -356,7 +360,7 @@ fun NotesScreen(
             },
             onCancel = {
                 showNoteDialog = false
-                dialogNote = null
+                dialogNoteId = null
                 dialogPosition = null
             }
         )

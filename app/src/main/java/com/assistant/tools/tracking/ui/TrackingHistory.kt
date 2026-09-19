@@ -1,5 +1,7 @@
 package com.assistant.tools.tracking.ui
 
+import com.assistant.core.ui.NullablePeriodSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.assistant.core.utils.LogManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,16 +61,19 @@ fun TrackingHistory(
     var trackingData by remember { mutableStateOf<List<ToolDataEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var editingEntry by remember { mutableStateOf<ToolDataEntity?>(null) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    // The entry being edited is kept by id and resolved from the loaded data, so the edit
+    // dialog survives a rotation
+    var editingEntryId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editingEntry = editingEntryId?.let { id -> trackingData.find { it.id == id } }
     
     // New filter system state
-    var periodFilter by remember { mutableStateOf(PeriodFilterType.DAY) }
-    var currentPeriod by remember { mutableStateOf<Period?>(null) }
-    var entriesLimit by remember { mutableStateOf(100) }
+    var periodFilter by rememberSaveable { mutableStateOf(PeriodFilterType.DAY) }
+    var currentPeriod by rememberSaveable(stateSaver = NullablePeriodSaver) { mutableStateOf<Period?>(null) }
+    var entriesLimit by rememberSaveable { mutableStateOf(100) }
     
     // Pagination state
-    var currentPage by remember { mutableStateOf(1) }
+    var currentPage by rememberSaveable { mutableStateOf(1) }
     var totalEntries by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(1) }
     
@@ -346,9 +351,13 @@ fun TrackingHistory(
         return
     }
 
-    // Reset page when filters change
+    // Reset page when filters change. Compared with the filters last seen, not on every run:
+    // the effect also runs after a rotation, which must keep the restored page.
+    var lastFilters by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(periodFilter, currentPeriod, entriesLimit) {
-        currentPage = 1
+        val filters = "$periodFilter|$currentPeriod|$entriesLimit"
+        if (lastFilters != null && lastFilters != filters) currentPage = 1
+        lastFilters = filters
     }
     
     // Load data on composition and when filters or pagination change
@@ -509,7 +518,7 @@ fun TrackingHistory(
                     entry = entry,
                     trackingType = trackingType,
                     onEdit = {
-                        editingEntry = entry
+                        editingEntryId = entry.id
                         showEditDialog = true
                     },
                     onDelete = { deleteEntry(entry.id) }
@@ -620,11 +629,11 @@ fun TrackingHistory(
                     LogManager.tracking("TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', dataJson=$dataJson, timestamp=$timestamp")
                     updateEntry(entry.id, name, dataJson, timestamp)
                     showEditDialog = false
-                    editingEntry = null
+                    editingEntryId = null
                 },
                 onCancel = {
                     showEditDialog = false
-                    editingEntry = null
+                    editingEntryId = null
                 }
             )
         }

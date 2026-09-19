@@ -1,5 +1,7 @@
 package com.assistant.core.ai.ui.automation
 
+import com.assistant.core.ui.NullablePeriodSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -66,14 +68,14 @@ fun AutomationScreen(
 
     // Execution list
     var sessions by remember { mutableStateOf<List<ExecutionSummary>>(emptyList()) }
-    var currentPage by remember { mutableStateOf(1) }
+    var currentPage by rememberSaveable { mutableStateOf(1) }
     var totalPages by remember { mutableStateOf(1) }
     var totalEntries by remember { mutableStateOf(0) }
 
     // Filters
-    var periodFilter by remember { mutableStateOf(PeriodFilterType.ALL) }
-    var currentPeriod by remember { mutableStateOf<Period?>(null) }
-    var entriesLimit by remember { mutableStateOf(25) }
+    var periodFilter by rememberSaveable { mutableStateOf(PeriodFilterType.ALL) }
+    var currentPeriod by rememberSaveable(stateSaver = NullablePeriodSaver) { mutableStateOf<Period?>(null) }
+    var entriesLimit by rememberSaveable { mutableStateOf(25) }
     var refreshTrigger by remember { mutableStateOf(0) }
 
     // Helper to create Period for current time
@@ -89,7 +91,7 @@ fun AutomationScreen(
 
     // Initialize currentPeriod with DAY by default
     LaunchedEffect(Unit) {
-        currentPeriod = createCurrentPeriod(PeriodType.DAY)
+        if (currentPeriod == null) currentPeriod = createCurrentPeriod(PeriodType.DAY)
     }
 
     // Load automation metadata and next execution
@@ -253,9 +255,13 @@ fun AutomationScreen(
         }
     }
 
-    // Reset page when filters change
+    // Reset page when filters change. Compared with the filters last seen, not on every run:
+    // the effect also runs after a rotation, which must keep the restored page.
+    var lastFilters by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(periodFilter, currentPeriod, entriesLimit) {
-        currentPage = 1
+        val filters = "$periodFilter|$currentPeriod|$entriesLimit"
+        if (lastFilters != null && lastFilters != filters) currentPage = 1
+        lastFilters = filters
     }
 
     // Load automation metadata on first load

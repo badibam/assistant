@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens.settings
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,28 +41,28 @@ fun FormatSettingsScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Timezone configuration
-    var timezoneOverride by remember { mutableStateOf<String?>(null) }
-    var useSystemTimezone by remember { mutableStateOf(true) }
+    var timezoneOverride by rememberSaveable { mutableStateOf<String?>(null) }
+    var useSystemTimezone by rememberSaveable { mutableStateOf(true) }
 
     // Locale configuration
-    var localeOverride by remember { mutableStateOf<String?>(null) }
-    var useSystemLocale by remember { mutableStateOf(true) }
+    var localeOverride by rememberSaveable { mutableStateOf<String?>(null) }
+    var useSystemLocale by rememberSaveable { mutableStateOf(true) }
 
     // Display formats - nullable until loaded from DB
-    var use24HourFormat by remember { mutableStateOf<Boolean?>(null) }
-    var dateFormatPattern by remember { mutableStateOf<String?>(null) }
-    var timeSeparator by remember { mutableStateOf(FormatDefaults.TIME_SEPARATOR) }
+    var use24HourFormat by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var dateFormatPattern by rememberSaveable { mutableStateOf<String?>(null) }
+    var timeSeparator by rememberSaveable { mutableStateOf(FormatDefaults.TIME_SEPARATOR) }
 
     // Business logic
-    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
-    var weekStartDay by remember { mutableStateOf(FormatDefaults.getWeekStartDayUppercase()) }
+    var dayStartHour by rememberSaveable { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
+    var weekStartDay by rememberSaveable { mutableStateOf(FormatDefaults.getWeekStartDayUppercase()) }
 
     // Relative label limits
-    var hourLimit by remember { mutableStateOf(FormatDefaults.HOUR_LIMIT) }
-    var dayLimit by remember { mutableStateOf(FormatDefaults.DAY_LIMIT) }
-    var weekLimit by remember { mutableStateOf(FormatDefaults.WEEK_LIMIT) }
-    var monthLimit by remember { mutableStateOf(FormatDefaults.MONTH_LIMIT) }
-    var yearLimit by remember { mutableStateOf(FormatDefaults.YEAR_LIMIT) }
+    var hourLimit by rememberSaveable { mutableStateOf(FormatDefaults.HOUR_LIMIT) }
+    var dayLimit by rememberSaveable { mutableStateOf(FormatDefaults.DAY_LIMIT) }
+    var weekLimit by rememberSaveable { mutableStateOf(FormatDefaults.WEEK_LIMIT) }
+    var monthLimit by rememberSaveable { mutableStateOf(FormatDefaults.MONTH_LIMIT) }
+    var yearLimit by rememberSaveable { mutableStateOf(FormatDefaults.YEAR_LIMIT) }
 
     // Available options
     val timezoneOptions = remember {
@@ -101,8 +102,15 @@ fun FormatSettingsScreen(
         listOf("MONDAY", "SUNDAY", "SATURDAY")
     }
 
+    // Loaded once per screen: after a rotation the restored edits win over the stored config
+    var configLoaded by rememberSaveable { mutableStateOf(false) }
+
     // Load configuration
     LaunchedEffect(Unit) {
+        if (configLoaded) {
+            isLoading = false
+            return@LaunchedEffect
+        }
         try {
             val config = AppConfigManager.getDateTimeConfig()
 
@@ -124,6 +132,7 @@ fun FormatSettingsScreen(
             // (Could add getter to AppConfigService if needed)
 
             isLoading = false
+            configLoaded = true
         } catch (e: Exception) {
             errorMessage = s.shared("settings_format_error_load").format(e.message ?: "")
             isLoading = false

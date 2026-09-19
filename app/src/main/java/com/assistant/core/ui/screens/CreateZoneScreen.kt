@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens
 
+import com.assistant.core.ui.StringListSaver
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -54,13 +55,13 @@ fun CreateZoneScreen(
             }
         } ?: emptyList()
     }
-    var toolGroups by remember(initialToolGroups) { mutableStateOf(initialToolGroups) }
+    var toolGroups by rememberSaveable(initialToolGroups, stateSaver = StringListSaver) { mutableStateOf(initialToolGroups) }
 
     // Parse zone group from existing zone, or use preselected group for new zones
     val initialZoneGroup = remember(existingZone, preSelectedGroup) {
         existingZone?.group ?: preSelectedGroup
     }
-    var zoneGroup by remember(initialZoneGroup) { mutableStateOf(initialZoneGroup) }
+    var zoneGroup by rememberSaveable(initialZoneGroup) { mutableStateOf(initialZoneGroup) }
 
     // Load available zone_groups from app_config
     var availableZoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }

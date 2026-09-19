@@ -1,5 +1,6 @@
 package com.assistant.core.ai.providers.ui
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -53,20 +54,24 @@ internal fun ClaudeConfigScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Form states
-    var apiKey by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("") }
-    var maxTokens by remember { mutableStateOf("8000") }
-    var effort by remember { mutableStateOf("") }
+    var apiKey by rememberSaveable { mutableStateOf("") }
+    var selectedModel by rememberSaveable { mutableStateOf("") }
+    var maxTokens by rememberSaveable { mutableStateOf("8000") }
+    var effort by rememberSaveable { mutableStateOf("") }
 
     // Effort is required when the endpoint declares levels, absent otherwise
     val effortLevels = core.api.effortLevels
     val needsEffort = effortLevels.isNotEmpty()
 
     // Track if initial config had a model (to decide auto-selection behavior)
-    var hadInitialModel by remember { mutableStateOf(false) }
+    var hadInitialModel by rememberSaveable { mutableStateOf(false) }
 
-    // Parse and update form states when config changes
+    // Parse and update form states when config changes. Compared with the config last parsed:
+    // the effect also runs after a rotation, where the restored edits must win.
+    var parsedConfig by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(config) {
+        if (parsedConfig == config) return@LaunchedEffect
+        parsedConfig = config
         try {
             val configJson = JSONObject(config)
             apiKey = configJson.optString("api_key", "")

@@ -1,5 +1,8 @@
 package com.assistant.tools.tracking.ui
 
+import com.assistant.core.ui.JsonObjectSaver
+import com.assistant.core.ui.FieldDefinitionsSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -133,15 +136,15 @@ fun TrackingConfigScreen(
     }
     
     // Single config state - source of truth
-    var config by remember { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
+    var config by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
 
     // General config states (for ToolGeneralConfigSection reactivity)
-    var alwaysSend by remember { mutableStateOf(false) }
-    var currentZoneId by remember { mutableStateOf(zoneId) }
+    var alwaysSend by rememberSaveable { mutableStateOf(false) }
+    var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
 
     // Custom fields state
-    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
-    var oldCustomFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var oldCustomFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Derived states from config (only used ones)
     val trackingType by remember { derivedStateOf { config.optString("type", "") } }
@@ -151,8 +154,8 @@ fun TrackingConfigScreen(
     } }
 
     // Track original type for data deletion detection
-    var originalType by remember { mutableStateOf("") }
-    var initialConfigString by remember { mutableStateOf("") }
+    var originalType by rememberSaveable { mutableStateOf("") }
+    var initialConfigString by rememberSaveable { mutableStateOf("") }
 
     // Config update helpers
     fun updateConfig(key: String, value: Any) {
@@ -178,14 +181,19 @@ fun TrackingConfigScreen(
         updateConfig("items", itemsArray)
     }
     
+    // Loaded once per screen, not per composition: after a rotation the restored edits win
+    var configLoaded by rememberSaveable { mutableStateOf(false) }
+
     // Load config: NO FALLBACKS - CRASH IF DB FAILS
     LaunchedEffect(existingToolId) {
         LogManager.tracking("LaunchedEffect triggered - existingToolId: $existingToolId")
+        if (configLoaded) return@LaunchedEffect
 
         if (existingToolId == null) {
             LogManager.tracking("No existingToolId, using default config for creation")
             config = JSONObject(TrackingToolType.getDefaultConfig())
             alwaysSend = config.optBoolean("always_send", false)
+            configLoaded = true
             return@LaunchedEffect
         }
         
@@ -231,19 +239,20 @@ fun TrackingConfigScreen(
                 // Keep empty list on error
             }
         }
+        configLoaded = true
     }
     
     // UI state for item dialog
-    var showItemDialog by remember { mutableStateOf(false) }
-    var editingItemIndex by remember { mutableStateOf<Int?>(null) }
-    var editItemName by remember { mutableStateOf(String()) }
-    var editItemDefaultQuantity by remember { mutableStateOf(String()) }
-    var editItemUnit by remember { mutableStateOf(String()) }
+    var showItemDialog by rememberSaveable { mutableStateOf(false) }
+    var editingItemIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var editItemName by rememberSaveable { mutableStateOf(String()) }
+    var editItemDefaultQuantity by rememberSaveable { mutableStateOf(String()) }
+    var editItemUnit by rememberSaveable { mutableStateOf(String()) }
     
     
     // State for type change confirmation
-    var showTypeChangeWarning by remember { mutableStateOf(false) }
-    var pendingTrackingType by remember { mutableStateOf<String?>(null) }
+    var showTypeChangeWarning by rememberSaveable { mutableStateOf(false) }
+    var pendingTrackingType by rememberSaveable { mutableStateOf<String?>(null) }
     
     
     
@@ -251,19 +260,19 @@ fun TrackingConfigScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     // State for data deletion warning
-    var showDataDeletionWarning by remember { mutableStateOf(false) }
+    var showDataDeletionWarning by rememberSaveable { mutableStateOf(false) }
     
     // State for scale change warning
-    var showScaleChangeWarning by remember { mutableStateOf(false) }
-    var scaleChangeDetails by remember { mutableStateOf<String?>(null) }
+    var showScaleChangeWarning by rememberSaveable { mutableStateOf(false) }
+    var scaleChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
     
     // State for boolean labels change warning
-    var showBooleanChangeWarning by remember { mutableStateOf(false) }
-    var booleanChangeDetails by remember { mutableStateOf<String?>(null) }
+    var showBooleanChangeWarning by rememberSaveable { mutableStateOf(false) }
+    var booleanChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
     
     // State for choice options change warning  
-    var showChoiceChangeWarning by remember { mutableStateOf(false) }
-    var choiceChangeDetails by remember { mutableStateOf<String?>(null) }
+    var showChoiceChangeWarning by rememberSaveable { mutableStateOf(false) }
+    var choiceChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Function to detect scale changes
     val detectScaleChanges = {
@@ -1257,8 +1266,8 @@ private fun TypeSpecificParameters(
     when (trackingType) {
         "scale" -> {
             // Use state variables instead of val to allow real-time updates
-            var minValue by remember { mutableStateOf(config.optInt("min", 1).toString()) }
-            var maxValue by remember { mutableStateOf(config.optInt("max", 10).toString()) }
+            var minValue by rememberSaveable { mutableStateOf(config.optInt("min", 1).toString()) }
+            var maxValue by rememberSaveable { mutableStateOf(config.optInt("max", 10).toString()) }
             val minLabel = config.optString("min_label", "")
             val maxLabel = config.optString("max_label", "")
             

@@ -1,5 +1,6 @@
 package com.assistant.core.fields
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -226,7 +227,7 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.DATE -> {
-            var showPicker by remember { mutableStateOf(false) }
+            var showPicker by rememberSaveable { mutableStateOf(false) }
             val dateStr = value as? String ?: ""
 
             // Convert ISO 8601 to display format dd/MM/yyyy
@@ -264,7 +265,7 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.TIME -> {
-            var showPicker by remember { mutableStateOf(false) }
+            var showPicker by rememberSaveable { mutableStateOf(false) }
             val timeStr = value as? String ?: ""
 
             // ISO 8601 time is already HH:MM format, same as display format
@@ -295,8 +296,8 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.DATETIME -> {
-            var showDatePicker by remember { mutableStateOf(false) }
-            var showTimePicker by remember { mutableStateOf(false) }
+            var showDatePicker by rememberSaveable { mutableStateOf(false) }
+            var showTimePicker by rememberSaveable { mutableStateOf(false) }
             val dateTimeStr = value as? String ?: ""
 
             // Parse ISO 8601 datetime to date and time parts

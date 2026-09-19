@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens.settings
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
@@ -57,9 +58,9 @@ fun DataSettingsScreen(
     // UI states
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var showImportConfirm by remember { mutableStateOf(false) }
-    var showResetConfirm by remember { mutableStateOf(false) }
-    var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var showImportConfirm by rememberSaveable { mutableStateOf(false) }
+    var showResetConfirm by rememberSaveable { mutableStateOf(false) }
+    var pendingImportUri by rememberSaveable { mutableStateOf<android.net.Uri?>(null) }
 
     // Toast for errors
     LaunchedEffect(errorMessage) {

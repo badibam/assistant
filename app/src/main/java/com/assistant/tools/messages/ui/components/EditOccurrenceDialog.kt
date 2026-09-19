@@ -1,5 +1,6 @@
 package com.assistant.tools.messages.ui.components
 
+import com.assistant.core.ui.FieldValuesSaver
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,7 +45,7 @@ fun EditOccurrenceDialog(
 
     var title by rememberSaveable(occurrence.id) { mutableStateOf(occurrence.ownTitle ?: "") }
     var content by rememberSaveable(occurrence.id) { mutableStateOf(occurrence.ownContent ?: "") }
-    var customFields by remember(occurrence.id) { mutableStateOf(occurrence.customFields) }
+    var customFields by rememberSaveable(occurrence.id, stateSaver = FieldValuesSaver) { mutableStateOf(occurrence.customFields) }
     var isSaving by remember { mutableStateOf(false) }
 
     UI.Dialog(

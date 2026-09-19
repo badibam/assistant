@@ -1,5 +1,6 @@
 package com.assistant.core.ui.components
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -282,7 +283,7 @@ fun SinglePeriodSelector(
     }
 
     // State for date selector
-    var showPicker by remember { mutableStateOf(false) }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
 
     // Smart label generation
     val label = remember(period, dayStartHour, weekStartDay, isConfigLoading, useOnlyRelativeLabels) {
@@ -861,8 +862,8 @@ fun CustomDateRangePicker(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
+    var showStartDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showEndDatePicker by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -985,8 +986,8 @@ fun RelativePeriodRangeSelector(
     val s = remember { Strings.`for`(context = context) }
 
     // State for date pickers
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
+    var showStartDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showEndDatePicker by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1327,7 +1328,7 @@ fun PeriodRangeSelector(
                 }
                 else -> {
                     // Custom date picker
-                    var showDatePicker by remember { mutableStateOf(false) }
+                    var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
                     UI.Button(
                         type = ButtonType.DEFAULT,
@@ -1475,7 +1476,7 @@ fun PeriodRangeSelector(
                 }
                 else -> {
                     // Custom date picker
-                    var showDatePicker by remember { mutableStateOf(false) }
+                    var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
                     UI.Button(
                         type = ButtonType.DEFAULT,

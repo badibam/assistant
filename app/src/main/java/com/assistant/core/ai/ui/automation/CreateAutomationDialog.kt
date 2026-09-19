@@ -1,5 +1,6 @@
 package com.assistant.core.ai.ui.automation
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -52,25 +53,25 @@ fun CreateAutomationDialog(
     val isEditMode = automation != null
 
     // Form states - initialize with existing values in EDIT mode
-    var name by remember {
+    var name by rememberSaveable {
         mutableStateOf(
             if (isEditMode) automation?.get("name") as? String ?: ""
             else ""
         )
     }
-    var selectedProvider by remember {
+    var selectedProvider by rememberSaveable {
         mutableStateOf(
             if (isEditMode) automation?.get("provider_id") as? String
             else null
         )
     }
-    var selectedGroup by remember {
+    var selectedGroup by rememberSaveable {
         mutableStateOf(
             if (isEditMode) automation?.get("group") as? String
             else preSelectedGroup
         )
     }
-    var selectedZoneId by remember {
+    var selectedZoneId by rememberSaveable {
         mutableStateOf(
             if (isEditMode) automation?.get("zone_id") as? String ?: zoneId
             else zoneId

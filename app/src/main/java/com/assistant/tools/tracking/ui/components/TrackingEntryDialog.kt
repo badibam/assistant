@@ -1,5 +1,7 @@
 package com.assistant.tools.tracking.ui.components
 
+import com.assistant.core.ui.FieldValuesSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,47 +61,47 @@ fun TrackingEntryDialog(
     onCancel: () -> Unit
 ) {
     // State management
-    var name by remember(isVisible) { mutableStateOf(initialName) }
-    var timestamp by remember(isVisible, initialTimestamp) { mutableStateOf(initialTimestamp) }
-    var addToPredefined by remember(isVisible) { mutableStateOf(false) }
+    var name by rememberSaveable(isVisible) { mutableStateOf(initialName) }
+    var timestamp by rememberSaveable(isVisible, initialTimestamp) { mutableStateOf(initialTimestamp) }
+    var addToPredefined by rememberSaveable(isVisible) { mutableStateOf(false) }
     
     // Type-specific value states
-    var numericQuantity by remember(isVisible) { 
+    var numericQuantity by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["quantity"]?.toString() ?: initialData["default_quantity"]?.toString() ?: "") 
     }
-    var numericUnit by remember(isVisible) { 
+    var numericUnit by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["unit"]?.toString() ?: "") 
     }
     
-    var textValue by remember(isVisible) { 
+    var textValue by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["text"]?.toString() ?: "") 
     }
     
-    var scaleRating by remember(isVisible) { 
+    var scaleRating by rememberSaveable(isVisible) { 
         mutableStateOf((initialData["rating"] as? Number)?.toInt())
     }
     
-    var choiceValue by remember(isVisible) { 
+    var choiceValue by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["selected_option"]?.toString() ?: "") 
     }
     
-    var booleanValue by remember(isVisible) { 
+    var booleanValue by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["state"] as? Boolean ?: false) 
     }
     
-    var counterIncrement by remember(isVisible) { 
+    var counterIncrement by rememberSaveable(isVisible) { 
         mutableStateOf(initialData["increment"]?.toString() ?: initialData["default_increment"]?.toString() ?: "1") 
     }
     
     // Timer: 3 separate H/M/S fields
     val initialSeconds = (initialData["duration_seconds"] as? Number)?.toInt() ?: 0
-    var timerHours by remember(isVisible) { 
+    var timerHours by rememberSaveable(isVisible) { 
         mutableStateOf((initialSeconds / 3600).toString()) 
     }
-    var timerMinutes by remember(isVisible) { 
+    var timerMinutes by rememberSaveable(isVisible) { 
         mutableStateOf(((initialSeconds % 3600) / 60).toString()) 
     }
-    var timerSeconds by remember(isVisible) {
+    var timerSeconds by rememberSaveable(isVisible) {
         mutableStateOf((initialSeconds % 60).toString())
     }
 
@@ -118,21 +120,21 @@ fun TrackingEntryDialog(
         }
     }
 
-    var customFieldsValues by remember(isVisible, initialData) {
+    var customFieldsValues by rememberSaveable(isVisible, initialData, stateSaver = FieldValuesSaver) {
         val values = (initialData["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
         LogManager.tracking("TrackingEntryDialog - Custom fields values: ${values.size} fields, keys=${values.keys}")
         mutableStateOf(values)
     }
 
     // Date/time UI states
-    var dateString by remember(isVisible) { 
+    var dateString by rememberSaveable(isVisible) { 
         mutableStateOf(DateUtils.formatDateForDisplay(timestamp)) 
     }
-    var timeString by remember(isVisible) { 
+    var timeString by rememberSaveable(isVisible) { 
         mutableStateOf(DateUtils.formatTimeForDisplay(timestamp)) 
     }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
 
     // Validation state
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }

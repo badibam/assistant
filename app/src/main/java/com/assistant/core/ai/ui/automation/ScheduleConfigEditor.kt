@@ -1,5 +1,9 @@
 package com.assistant.core.ai.ui.automation
 
+import kotlinx.serialization.builtins.serializer
+import com.assistant.core.ui.StringListSaver
+import com.assistant.core.ui.serializableSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -54,7 +58,7 @@ fun ScheduleConfigEditor(
         "SpecificDates"
     )
 
-    var selectedPatternType by remember {
+    var selectedPatternType by rememberSaveable {
         mutableStateOf(
             existingConfig?.pattern?.let { getPatternTypeName(it) } ?: "None"
         )
@@ -62,43 +66,43 @@ fun ScheduleConfigEditor(
 
     // Pattern-specific states
     // DailyMultiple
-    var dailyTimes by remember {
+    var dailyTimes by rememberSaveable(stateSaver = StringListSaver) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.DailyMultiple)?.times ?: listOf("09:00")
         )
     }
 
     // WeeklySimple
-    var weeklyDays by remember {
+    var weeklyDays by rememberSaveable(stateSaver = serializableSaver(kotlinx.serialization.builtins.ListSerializer(Int.serializer()))) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.WeeklySimple)?.daysOfWeek ?: listOf(1)
         )
     }
-    var weeklyTime by remember {
+    var weeklyTime by rememberSaveable {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.WeeklySimple)?.time ?: "09:00"
         )
     }
 
     // MonthlyRecurrent
-    var monthlyMonths by remember {
+    var monthlyMonths by rememberSaveable(stateSaver = serializableSaver(kotlinx.serialization.builtins.ListSerializer(Int.serializer()))) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.MonthlyRecurrent)?.months ?: listOf(1)
         )
     }
-    var monthlyDay by remember {
+    var monthlyDay by rememberSaveable {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.MonthlyRecurrent)?.dayOfMonth ?: 1
         )
     }
-    var monthlyTime by remember {
+    var monthlyTime by rememberSaveable {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.MonthlyRecurrent)?.time ?: "09:00"
         )
     }
 
     // WeeklyCustom
-    var weeklyCustomMoments by remember {
+    var weeklyCustomMoments by rememberSaveable(stateSaver = serializableSaver(kotlinx.serialization.builtins.ListSerializer(WeekMoment.serializer()))) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.WeeklyCustom)?.moments
                 ?: listOf(WeekMoment(1, "09:00"))
@@ -106,7 +110,7 @@ fun ScheduleConfigEditor(
     }
 
     // YearlyRecurrent
-    var yearlyDates by remember {
+    var yearlyDates by rememberSaveable(stateSaver = serializableSaver(kotlinx.serialization.builtins.ListSerializer(YearlyDate.serializer()))) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.YearlyRecurrent)?.dates
                 ?: listOf(YearlyDate(1, 1, "09:00"))
@@ -114,7 +118,7 @@ fun ScheduleConfigEditor(
     }
 
     // SpecificDates
-    var specificTimestamps by remember {
+    var specificTimestamps by rememberSaveable(stateSaver = serializableSaver(kotlinx.serialization.builtins.ListSerializer(Long.serializer()))) {
         mutableStateOf(
             (existingConfig?.pattern as? SchedulePattern.SpecificDates)?.timestamps
                 ?: listOf(System.currentTimeMillis())
@@ -701,7 +705,7 @@ private fun TimePickerField(
     onChange: (String) -> Unit
 ) {
     val context = LocalContext.current
-    var showPicker by remember { mutableStateOf(false) }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
 
     UI.FormField(
         label = label,
@@ -734,9 +738,9 @@ private fun DateTimePickerField(
     onChange: (Long) -> Unit
 ) {
     val context = LocalContext.current
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var tempDate by remember { mutableStateOf("") }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    var tempDate by rememberSaveable { mutableStateOf("") }
 
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     val dateOnlyFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }

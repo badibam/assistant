@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.ui.components
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -65,11 +66,11 @@ fun PredefinedItemsSection(
     }
     
     // State for custom default timestamp
-    var useCustomTimestamp by remember { mutableStateOf(false) }
-    var customDate by remember { mutableStateOf("") }
-    var customTime by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var useCustomTimestamp by rememberSaveable { mutableStateOf(false) }
+    var customDate by rememberSaveable { mutableStateOf("") }
+    var customTime by rememberSaveable { mutableStateOf("") }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
     
     // Initialize custom fields when toggle is first activated
     LaunchedEffect(useCustomTimestamp) {

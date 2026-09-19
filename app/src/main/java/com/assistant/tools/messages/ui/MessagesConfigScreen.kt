@@ -1,5 +1,7 @@
 package com.assistant.tools.messages.ui
 
+import com.assistant.core.ui.NullableScheduleConfigSaver
+import com.assistant.core.ui.FieldDefinitionsSaver
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -58,15 +60,15 @@ fun MessagesConfigScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // General configuration states (8 base fields from ToolGeneralConfigSection)
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var iconName by remember { mutableStateOf("notification") }
-    var displayMode by remember { mutableStateOf("LINE") }
-    var management by remember { mutableStateOf("manual") }
-    var validateConfig by remember { mutableStateOf(false) }
-    var validateData by remember { mutableStateOf(false) }
-    var alwaysSend by remember { mutableStateOf(false) }
-    var group by remember { mutableStateOf<String?>(null) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var iconName by rememberSaveable { mutableStateOf("notification") }
+    var displayMode by rememberSaveable { mutableStateOf("LINE") }
+    var management by rememberSaveable { mutableStateOf("manual") }
+    var validateConfig by rememberSaveable { mutableStateOf(false) }
+    var validateData by rememberSaveable { mutableStateOf(false) }
+    var alwaysSend by rememberSaveable { mutableStateOf(false) }
+    var group by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Messages-specific configuration states — the template itself
     var enabled by rememberSaveable { mutableStateOf(true) }
@@ -76,16 +78,16 @@ fun MessagesConfigScreen(
     var externalNotifications by rememberSaveable { mutableStateOf(true) }
     var creationHorizonDays by rememberSaveable { mutableStateOf("2") }
     var validityWindowMinutes by rememberSaveable { mutableStateOf("60") }
-    var scheduleConfig by remember { mutableStateOf<ScheduleConfig?>(null) }
+    var scheduleConfig by rememberSaveable(stateSaver = NullableScheduleConfigSaver) { mutableStateOf<ScheduleConfig?>(null) }
     var showScheduleEditor by rememberSaveable { mutableStateOf(false) }
 
     // Custom fields state
-    var customFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
-    var oldCustomFields by remember { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var oldCustomFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
 
     // Zone change tracking
     val isEditing = existingToolId != null
-    var currentZoneId by remember { mutableStateOf(zoneId) }
+    var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
 
     // UI states
     var isLoading by remember { mutableStateOf(existingToolId != null) }
@@ -93,8 +95,12 @@ fun MessagesConfigScreen(
     var isSaving by remember { mutableStateOf(false) }
 
     // Load existing configuration if editing
+    // Loaded once per screen: after a rotation the restored edits win over the stored config
+    var configLoaded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(existingToolId) {
-        if (existingToolId != null) {
+        if (existingToolId != null && configLoaded) {
+            isLoading = false
+        } else if (existingToolId != null) {
             LogManager.ui("Loading existing tool configuration for ID: $existingToolId")
             val result = coordinator.processUserAction(
                 "tools.get",
@@ -160,6 +166,7 @@ fun MessagesConfigScreen(
                 errorMessage = s.tool("error_config_not_found")
             }
             isLoading = false
+            configLoaded = true
         }
     }
 
