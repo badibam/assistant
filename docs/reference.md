@@ -30,4 +30,4 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 
 ## Ressources hors dépôt
 
-- `icons-source/lucide/` — bibliothèque d'icônes Lucide, gitignorée : c'est la source où l'on pioche. Ajouter une icône = copier son SVG dans `app/src/main/java/com/assistant/themes/default/icons/` et inscrire son nom dans `app/src/main/assets/standard_icons.txt` ; `app/build.gradle.kts` génère le drawable au build.
+- `icons-source/lucide/` — bibliothèque d'icônes Lucide, gitignorée : c'est la source où l'on pioche. Ajouter une icône = copier son SVG dans `app/src/main/java/com/assistant/themes/default/icons/` et inscrire son nom dans `app/src/main/assets/standard_icons.txt`, lancer `./gradlew generateThemeResources` (demande `npx`) et commiter le drawable et `GeneratedThemeResources.kt` produits. Le build ne les régénère pas : il doit tourner sans `npx`.
