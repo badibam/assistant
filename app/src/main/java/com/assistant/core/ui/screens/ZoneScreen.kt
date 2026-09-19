@@ -294,7 +294,7 @@ fun ZoneScreen(
     showingConfigFor?.let { toolTypeId ->
         ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
             zoneId = zone.id,
-            onSave = onSaveConfig,
+            onSave = { onSaveConfig(it) },
             onCancel = onCancelConfig,
             existingToolId = editingTool?.id,
             onDelete = editingTool?.let { tool ->

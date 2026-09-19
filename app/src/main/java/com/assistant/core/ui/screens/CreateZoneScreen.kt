@@ -223,7 +223,7 @@ fun CreateZoneScreen(
         UI.FormActions {
             UI.ActionButton(
                 action = if (isEditing) ButtonAction.SAVE else ButtonAction.CREATE,
-                onClick = handleSave
+                onClick = { handleSave() }
             )
 
             UI.ActionButton(

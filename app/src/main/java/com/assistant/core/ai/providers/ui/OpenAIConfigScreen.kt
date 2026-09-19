@@ -234,7 +234,7 @@ internal fun OpenAIConfigScreen(
                         type = ButtonType.PRIMARY,
                         size = Size.M,
                         state = if (apiKey.trim().isNotEmpty()) ComponentState.NORMAL else ComponentState.DISABLED,
-                        onClick = fetchModels
+                        onClick = { fetchModels() }
                     ) {
                         UI.Text(
                             text = s.shared("ai_provider_openai_fetch_models"),
@@ -335,7 +335,7 @@ internal fun OpenAIConfigScreen(
                 UI.ActionButton(
                     action = ButtonAction.RESET,
                     requireConfirmation = true,
-                    onClick = resetConfig
+                    onClick = { resetConfig() }
                 )
             }
         }

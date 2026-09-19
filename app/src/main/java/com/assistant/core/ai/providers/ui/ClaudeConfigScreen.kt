@@ -230,7 +230,7 @@ internal fun ClaudeConfigScreen(
                         type = ButtonType.PRIMARY,
                         size = Size.M,
                         state = if (apiKey.trim().isNotEmpty()) ComponentState.NORMAL else ComponentState.DISABLED,
-                        onClick = fetchModels
+                        onClick = { fetchModels() }
                     ) {
                         UI.Text(
                             text = s.shared("ai_provider_claude_fetch_models"),
@@ -333,7 +333,7 @@ internal fun ClaudeConfigScreen(
                 UI.ActionButton(
                     action = ButtonAction.RESET,
                     requireConfirmation = true,
-                    onClick = resetConfig
+                    onClick = { resetConfig() }
                 )
             }
         }

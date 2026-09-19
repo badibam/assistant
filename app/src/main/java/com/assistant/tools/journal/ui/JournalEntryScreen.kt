@@ -400,12 +400,12 @@ fun JournalEntryScreen(
             ) {
                 UI.ActionButton(
                     action = ButtonAction.CANCEL,
-                    onClick = handleCancel
+                    onClick = { handleCancel() }
                 )
 
                 UI.ActionButton(
                     action = ButtonAction.SAVE,
-                    onClick = handleSave
+                    onClick = { handleSave() }
                 )
             }
         } else {

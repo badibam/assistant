@@ -16,7 +16,7 @@ Point rassurant : les sorties de cette tâche (drawables `default_*.xml` sous `a
 
 ## 2. Reproductibilité du build
 
-- **AGP** : actuellement 8.2.2 (`build.gradle.kts:3`). Passer à ≥ 8.3 pour pouvoir désactiver l'info VCS injectée dans l'APK (`vcsInfo`, cf. doc AGP — probablement via `androidResources { ... }` ou équivalent selon la version exacte, à vérifier au moment du bump).
+- **Info VCS** : AGP 9.3.1 injecte l'état du dépôt dans l'APK ; la désactiver (`vcsInfo`) sur la release.
 - **`cruncherEnabled = false`** : pas déclaré explicitement dans `app/build.gradle.kts`. À ajouter (bloc `androidResources`/`aaptOptions` selon version AGP) pour éliminer la variation de compression PNG d'une machine à l'autre.
 - **NDK / `abiFilters`** : `app/build.gradle.kts` déclare `ndk { abiFilters += listOf(...) }` en debug (`arm64-v8a`, `x86_64`) et en release (`arm64-v8a` seul), alors qu'aucun code natif n'a été trouvé dans le projet (pas de `.so`, pas de `CMakeLists.txt`). À vérifier : si ces filtres n'ont aucun effet réel (pas de lib native à filtrer), les supprimer — sinon, si un usage futur est prévu, épingler `ndkVersion` explicitement comme l'exige la facette.
 - **Invocation** : déjà correct — `run` délègue au wrapper Gradle (`android.md` respecté), jamais à l'IDE.
@@ -59,6 +59,6 @@ Entièrement à créer, aucun contenu existant. Arborescence `fastlane/metadata/
 
 1. Fix build (retrait `generateThemeResources` de `preBuild`) — petit, mécanique, à faire tôt pour ne pas casser un build F-Droid dès la première tentative.
 2. Isolation de l'auto-updater (flavor Gradle) — nécessite de localiser tous les appelants, un peu plus de travail.
-3. Réglages de reproductibilité (AGP, vcsInfo, cruncher, NDK) — à grouper, mécanique.
+3. Réglages de reproductibilité (vcsInfo, cruncher, NDK) — à grouper, mécanique.
 4. Fiche fastlane — au moment de préparer la première release candidate pour soumission.
 5. Grille anti-features — juste avant la soumission réelle, pas avant.

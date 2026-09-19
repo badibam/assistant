@@ -1,14 +1,13 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
-    id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.devtools.ksp")
 }
 
 android {
     namespace = "com.assistant"
-    compileSdk = 34
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.assistant"
@@ -69,37 +68,35 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            // Rename the APK after the version
-            applicationVariants.all {
-                val variant = this
-                variant.outputs
-                    .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
-                    .forEach { output ->
-                        output.outputFileName = "assistant-v${variant.versionName}.apk"
-                    }
-            }
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
-        freeCompilerArgs += "-opt-in=kotlin.ExperimentalUnsignedTypes"
-        freeCompilerArgs += "-XXLanguage:+UnitConversionsOnArbitraryExpressions"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=kotlin.ExperimentalUnsignedTypes")
+    }
+}
+
+// Name the release APK after the version: the release command attaches it by that name
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            (output as com.android.build.api.variant.impl.VariantOutputImpl)
+                .outputFileName.set("assistant-v${output.versionName.get()}.apk")
         }
     }
 }
@@ -385,10 +382,10 @@ tasks.named("preBuild") {
 fun convertSvgToVectorDrawable(svgFile: File, outputFile: File, iconName: String) {
     try {
         // Use Node.js svg2vectordrawable for robust conversion
-        val result = exec {
+        val result = providers.exec {
             commandLine("npx", "svg2vectordrawable", "-i", svgFile.absolutePath, "-o", outputFile.absolutePath)
             isIgnoreExitValue = true
-        }
+        }.result.get()
         
         if (result.exitValue == 0 && outputFile.exists()) {
             // Post-process to add stroke attributes for SVGs that use stroke styling
@@ -541,9 +538,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     
     // Room database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
     
     // JSON
     implementation("com.google.code.gson:gson:2.10.1")

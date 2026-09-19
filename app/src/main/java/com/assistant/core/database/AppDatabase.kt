@@ -395,7 +395,7 @@ abstract class AppDatabase : RoomDatabase() {
                                         (id, tool_instance_id, tooltype, template_data_id, scheduled_time, execution_time,
                                          status, snapshot_data, execution_result, triggered_by, metadata, created_at, updated_at)
                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                                    arrayOf(
+                                    arrayOf<Any?>(
                                         executionId,
                                         toolInstanceId,
                                         "messages",
