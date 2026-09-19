@@ -21,7 +21,7 @@ On passe à la version $1
    - Créer fichier temporaire `release-notes-$1.txt`
    - Style : précis, simple, sans emoji, sans mentionner claude. Uniquement changements depuis dernière version.
    - Présenter pour correction avant release
-8. **Build release** : à nouveau timeout:10min
+8. **Build release** : à nouveau timeout:10min, depuis le tag et un arbre propre — vérifier que `git status --porcelain` ne liste aucun fichier suivi modifié et que `git describe --exact-match` rend `v$1`, sinon s'arrêter : ce qui n'est pas dans le tag ne doit pas être dans l'APK.
 9. **Release GitHub** :
    - Utiliser `gh release create v$1` timeout:10min
    - Ajouter notes de version (fichier corrigé)
