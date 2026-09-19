@@ -10,7 +10,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-- L'écran des formats ne charge pas les limites des labels relatifs (`FormatSettingsScreen.kt:126`) : il part des valeurs par défaut et les réécrit à chaque sauvegarde, effaçant sans le dire celles de l'utilisateur.
 - Une erreur de l'API IA qui ne contient pas « provider » ou « configured » (429, 529, crédit épuisé, délai dépassé) est classée erreur réseau : une automation réessaie alors toutes les 30 s sans fin, prompt complet à chaque fois (`AIEventProcessor.kt:599`, `:648`, `:972`). Pas la cause de l'incident du 2026-09-18, mais le même genre de facture.
 
 Les huit points de `docs/design/post-refactor-audit.md`, partie B, chacun avec son statut (vérifié ou soupçon). Les deux à trancher en priorité :

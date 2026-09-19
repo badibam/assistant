@@ -71,7 +71,8 @@ fun NotesConfigScreen(
     var isSaving by remember { mutableStateOf(false) }
 
     // Load existing configuration if editing
-    // Loaded once per screen: after a rotation the restored edits win over the stored config
+    // Set once the stored config parsed: after a rotation the restored edits win over it, and
+    // save stays off until then, since the defaults shown would overwrite it
     var configLoaded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(existingToolId) {
         if (existingToolId != null && configLoaded) {
@@ -113,6 +114,7 @@ fun NotesConfigScreen(
                         }
 
                         LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
+                        configLoaded = true
                     } catch (e: Exception) {
                         LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
                         errorMessage = s.tool("error_config_load")
@@ -123,7 +125,6 @@ fun NotesConfigScreen(
                 errorMessage = s.tool("error_config_not_found")
             }
             isLoading = false
-            configLoaded = true
         }
     }
 
@@ -305,7 +306,7 @@ fun NotesConfigScreen(
             onSave = handleSave,
             onCancel = onCancel,
             onDelete = onDelete,
-            saveEnabled = !isSaving
+            saveEnabled = !isSaving && (existingToolId == null || configLoaded)
         )
     }
 }

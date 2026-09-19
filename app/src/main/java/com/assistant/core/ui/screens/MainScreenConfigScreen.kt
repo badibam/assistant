@@ -46,7 +46,8 @@ fun MainScreenConfigScreen(
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Loaded once per screen: after a rotation the restored edits win over the stored groups
+    // Set once the stored groups loaded: after a rotation the restored edits win over them, and
+    // save stays off until then, since an empty list would erase them
     var groupsLoaded by rememberSaveable { mutableStateOf(false) }
 
     // Load zone groups on first composition
@@ -144,7 +145,7 @@ fun MainScreenConfigScreen(
             UI.FormActions {
                 UI.ActionButton(
                     action = ButtonAction.SAVE,
-                    enabled = !isSaving,
+                    enabled = !isSaving && groupsLoaded,
                     onClick = { saveZoneGroups() }
                 )
                 UI.ActionButton(

@@ -75,7 +75,8 @@ fun JournalEntryScreen(
 
     // Load entry if not creating
     // Force reload on every composition by resetting custom fields before load
-    // Loaded once per screen: after a rotation the restored edits win over the stored entry
+    // Set once the entry loaded: after a rotation the restored edits win over the stored entry,
+    // and save stays off until then, since the empty form would overwrite it
     var entryLoaded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(entryId, isCreating) {
         LogManager.ui("LaunchedEffect triggered: entryId=$entryId, isCreating=$isCreating")
@@ -153,6 +154,7 @@ fun JournalEntryScreen(
                     LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                     LogManager.ui("Successfully loaded entry: title=$title")
+                    entryLoaded = true
                 }
             } else {
                 errorMessage = s.tool("error_entry_load")
@@ -161,8 +163,8 @@ fun JournalEntryScreen(
         } else {
             // In creation mode, initialize with current timestamp
             timestamp = System.currentTimeMillis()
+            entryLoaded = true
         }
-        entryLoaded = true
     }
 
     // Error message display
@@ -413,6 +415,7 @@ fun JournalEntryScreen(
 
                 UI.ActionButton(
                     action = ButtonAction.SAVE,
+                    enabled = entryLoaded,
                     onClick = { handleSave() }
                 )
             }

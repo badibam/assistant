@@ -61,6 +61,14 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Relative label limits for period display. Required by the format schema: a missing
+     * key is a corrupted config and fails here rather than falling back.
+     */
+    suspend fun getRelativeLabelLimits(): org.json.JSONObject {
+        return getFormatSettings().getJSONObject("relative_label_limits")
+    }
+
+    /**
      * Set relative label limits for period display.
      */
     suspend fun setRelativeLabelLimits(

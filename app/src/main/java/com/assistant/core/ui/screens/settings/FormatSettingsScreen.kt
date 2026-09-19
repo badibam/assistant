@@ -128,8 +128,12 @@ fun FormatSettingsScreen(
             weekStartDay = config.weekStartDay
 
             // Relative label limits are in AppConfig but not in DateTimeConfig
-            // Use defaults for now, will be loaded on first save or if accessed directly
-            // (Could add getter to AppConfigService if needed)
+            val limits = com.assistant.core.services.AppConfigService(context).getRelativeLabelLimits()
+            hourLimit = limits.getInt("hour_limit")
+            dayLimit = limits.getInt("day_limit")
+            weekLimit = limits.getInt("week_limit")
+            monthLimit = limits.getInt("month_limit")
+            yearLimit = limits.getInt("year_limit")
 
             isLoading = false
             configLoaded = true
@@ -437,10 +441,13 @@ fun FormatSettingsScreen(
 
         // Save button
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            // Off unless the stored config loaded: saved otherwise, the defaults shown would
+            // overwrite it
             UI.ActionButton(
                 action = ButtonAction.SAVE,
                 display = ButtonDisplay.LABEL,
                 size = Size.L,
+                enabled = configLoaded,
                 onClick = { saveSettings() }
             )
         }

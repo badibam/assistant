@@ -1002,11 +1002,14 @@ fun TrackingConfigScreen(
         }
 
         // Actions
+        // Save stays off until the stored config is loaded: saved earlier, the defaults
+        // shown meanwhile would overwrite it
         UI.ToolConfigActions(
             isEditing = isEditing,
             onSave = handleSave,
             onCancel = onCancel,
-            onDelete = onDelete
+            onDelete = onDelete,
+            saveEnabled = configLoaded
         )
         
         
