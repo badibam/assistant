@@ -281,9 +281,37 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
         )
     }
 
-    // Extract content
+    // A response cut by max_tokens carries incomplete JSON, unusable by the parser.
+    // Wording contains "provider" so AIEventProcessor classifies it as permanent, not network.
+    val stopReason = jsonObj["stop_reason"]?.jsonPrimitive?.contentOrNull
+    if (stopReason == "max_tokens") {
+        return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Response truncated (stop_reason: max_tokens). Increase max_tokens in provider config.",
+            tokensUsed = 0,
+            cacheWriteTokens = 0,
+            cacheReadTokens = 0,
+            inputTokens = 0
+        )
+    }
+
+    // Extract content from the text block: with thinking enabled, a "thinking" block comes first
     val contentArray = jsonObj["content"]?.jsonArray
-    val content = contentArray?.firstOrNull()?.jsonObject?.get("text")?.jsonPrimitive?.content ?: ""
+    val textBlock = contentArray?.firstOrNull { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "text" }
+    if (textBlock == null) {
+        return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Provider response has no text block (stop_reason: $stopReason).",
+            tokensUsed = 0,
+            cacheWriteTokens = 0,
+            cacheReadTokens = 0,
+            inputTokens = 0
+        )
+    }
+    val content = textBlock.jsonObject["text"]?.jsonPrimitive?.content ?: ""
+
 
     // Extract usage metrics
     val usage = jsonObj["usage"]?.jsonObject
