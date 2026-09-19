@@ -26,6 +26,7 @@ import org.json.JSONObject
  * Displays form with:
  * - API key field (required, password type)
  * - Model selection (dynamic from API)
+ * - Effort selection, only when the endpoint declares effort levels (DeepSeek)
  *
  * Validates configuration against provider schema before saving.
  *
@@ -55,6 +56,11 @@ internal fun ClaudeConfigScreen(
     var apiKey by remember { mutableStateOf("") }
     var selectedModel by remember { mutableStateOf("") }
     var maxTokens by remember { mutableStateOf("8000") }
+    var effort by remember { mutableStateOf("") }
+
+    // Effort is required when the endpoint declares levels, absent otherwise
+    val effortLevels = core.api.effortLevels
+    val needsEffort = effortLevels.isNotEmpty()
 
     // Track if initial config had a model (to decide auto-selection behavior)
     var hadInitialModel by remember { mutableStateOf(false) }
@@ -68,6 +74,7 @@ internal fun ClaudeConfigScreen(
             selectedModel = initialModel
             hadInitialModel = initialModel.isNotEmpty()
             maxTokens = configJson.optInt("max_tokens", 8000).toString()
+            effort = configJson.optString("effort", "")
         } catch (e: Exception) {
             // Invalid JSON, keep defaults
             hadInitialModel = false
@@ -129,11 +136,12 @@ internal fun ClaudeConfigScreen(
             UI.Toast(context, s.shared("ai_provider_claude_no_models"), Duration.SHORT)
         } else {
             // Build config object
-            val configData = mapOf(
-                "api_key" to apiKey.trim(),
-                "model" to selectedModel,
-                "max_tokens" to (maxTokens.toIntOrNull() ?: 8000)
-            )
+            val configData = buildMap<String, Any> {
+                put("api_key", apiKey.trim())
+                put("model", selectedModel)
+                put("max_tokens", maxTokens.toIntOrNull() ?: 8000)
+                if (needsEffort) put("effort", effort)
+            }
 
             // Get schema for validation
             // Schema ID is variant-specific, getAllSchemaIds() returns the correct one
@@ -208,7 +216,7 @@ internal fun ClaudeConfigScreen(
 
                 // API Key field
                 UI.FormField(
-                    label = s.shared("ai_provider_claude_api_key"),
+                    label = s.shared("${core.api.stringPrefix}_api_key"),
                     value = apiKey,
                     onChange = { apiKey = it },
                     fieldType = FieldType.PASSWORD,
@@ -273,6 +281,19 @@ internal fun ClaudeConfigScreen(
                     )
                 }
 
+                // Effort selection: no preselected value, the user picks one explicitly
+                if (availableModels.isNotEmpty() && needsEffort) {
+                    UI.FormSelection(
+                        label = s.shared("ai_provider_claude_effort"),
+                        options = effortLevels.map { s.shared("ai_provider_claude_effort_$it") },
+                        selected = if (effort.isEmpty()) "" else s.shared("ai_provider_claude_effort_$effort"),
+                        onSelect = { label ->
+                            effort = effortLevels.find { s.shared("ai_provider_claude_effort_$it") == label } ?: ""
+                        },
+                        required = true
+                    )
+                }
+
                 // Max tokens field
                 if (availableModels.isNotEmpty()) {
                     UI.FormField(
@@ -287,7 +308,7 @@ internal fun ClaudeConfigScreen(
 
                 // Help text
                 UI.Text(
-                    text = s.shared("ai_provider_claude_help"),
+                    text = s.shared("${core.api.stringPrefix}_help"),
                     type = TextType.CAPTION
                 )
             }
@@ -299,7 +320,7 @@ internal fun ClaudeConfigScreen(
             UI.ActionButton(
                 action = ButtonAction.SAVE,
                 onClick = validateAndSave,
-                enabled = apiKey.trim().isNotEmpty() && selectedModel.isNotEmpty()
+                enabled = apiKey.trim().isNotEmpty() && selectedModel.isNotEmpty() && (!needsEffort || effort.isNotEmpty())
             )
 
             UI.ActionButton(

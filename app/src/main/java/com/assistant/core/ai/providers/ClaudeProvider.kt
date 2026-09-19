@@ -50,7 +50,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other Claude variants
     // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "claude_standard")
+    internal val core = ClaudeProviderCore(context, "claude_standard", MessagesApi.ANTHROPIC)
 
     // ========================================================================================
     // AIProvider Implementation
@@ -126,7 +126,7 @@ class ClaudeEconomicProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other Claude variants
     // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "claude_economic")
+    internal val core = ClaudeProviderCore(context, "claude_economic", MessagesApi.ANTHROPIC)
 
     // ========================================================================================
     // AIProvider Implementation

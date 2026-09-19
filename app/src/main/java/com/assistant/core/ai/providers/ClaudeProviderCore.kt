@@ -20,6 +20,51 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
+ * Endpoint serving the Anthropic Messages API format
+ *
+ * DeepSeek accepts this format on its /anthropic endpoint (x-api-key supported,
+ * anthropic-version ignored), so both vendors share ClaudeProviderCore.
+ * Checked on https://api-docs.deepseek.com/guides/anthropic_api, 2026-09-19.
+ *
+ * @param messagesUrl POST endpoint for queries
+ * @param modelsUrl GET endpoint listing available models
+ * @param stringPrefix Prefix of the vendor-specific strings (API key label, help, schema texts)
+ * @param effortLevels Values accepted for output_config.effort; empty = no effort field in config
+ * @param verifiesAnsweringModel Reject a response whose "model" differs from the requested one
+ */
+internal enum class MessagesApi(
+    val messagesUrl: String,
+    val modelsUrl: String,
+    val stringPrefix: String,
+    val effortLevels: List<String>,
+    val verifiesAnsweringModel: Boolean
+) {
+    ANTHROPIC(
+        messagesUrl = "https://api.anthropic.com/v1/messages",
+        modelsUrl = "https://api.anthropic.com/v1/models",
+        stringPrefix = "ai_provider_claude",
+        effortLevels = emptyList(),
+        // Aliases resolve to dated IDs, so the answering model legitimately differs
+        verifiesAnsweringModel = false
+    ),
+
+    // Real effort levels are low|high|max: the others are aliases (medium/xhigh -> high, ultra -> max),
+    // not exposed since offering an alias misleads. Thinking is enabled by default on DeepSeek,
+    // so the effort is an explicit required choice.
+    // Checked on https://api-docs.deepseek.com/guides/thinking_mode, 2026-09-19.
+    // Model substitution, measured 2026-09-19: an unknown ID gets an explicit error, but claude-*
+    // names are answered by deepseek-flash, which the response "model" field reveals. Valid IDs
+    // come back unchanged, so any mismatch is rejected rather than silently billed as another model.
+    DEEPSEEK(
+        messagesUrl = "https://api.deepseek.com/anthropic/v1/messages",
+        modelsUrl = "https://api.deepseek.com/models",
+        stringPrefix = "ai_provider_deepseek",
+        effortLevels = listOf("low", "high", "max"),
+        verifiesAnsweringModel = true
+    )
+}
+
+/**
  * Core implementation for Claude AI Provider variants
  *
  * Contains all shared logic for Claude API integration:
@@ -30,22 +75,23 @@ import java.util.concurrent.TimeUnit
  * - Response parsing with token metrics
  *
  * This internal class is used by public provider variants:
- * - ClaudeStandardProvider (default model)
- * - ClaudeEconomicProvider (economic model)
+ * - ClaudeStandardProvider, ClaudeEconomicProvider (MessagesApi.ANTHROPIC)
+ * - DeepSeekStandardProvider, DeepSeekEconomicProvider (MessagesApi.DEEPSEEK)
  *
  * Each variant creates its own core instance with a unique variantId,
  * allowing separate configurations while sharing all implementation code.
  *
  * @param context Android context for database and file access
- * @param variantId Unique identifier for this variant (e.g., "claude_standard", "claude_economic")
+ * @param variantId Unique identifier for this variant (e.g., "claude_standard", "deepseek_economic")
+ * @param api Endpoint and vendor specifics for this variant
  */
 internal class ClaudeProviderCore(
     private val context: Context,
-    private val variantId: String
+    private val variantId: String,
+    val api: MessagesApi
 ) : SchemaProvider {
 
     companion object {
-        private const val CLAUDE_API_BASE_URL = "https://api.anthropic.com"
         private const val ANTHROPIC_VERSION = "2023-06-01"
         private const val TIMEOUT_MINUTES = 2L  // 2 minutes timeout per HTTP request
     }
@@ -88,9 +134,10 @@ internal class ClaudeProviderCore(
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (fieldName) {
-            "api_key" -> s.shared("ai_provider_claude_api_key")
+            "api_key" -> s.shared("${api.stringPrefix}_api_key")
             "model" -> s.shared("ai_provider_claude_model")
             "max_tokens" -> s.shared("ai_provider_claude_max_tokens")
+            "effort" -> s.shared("ai_provider_claude_effort")
             else -> fieldName
         }
     }
@@ -102,9 +149,19 @@ internal class ClaudeProviderCore(
      * - api_key: API key for Claude API authentication
      * - model: Model ID (e.g., "claude-sonnet-4-5-20250929")
      * - max_tokens: Maximum response length (optional, default 2000)
+     * - effort: output_config.effort, required when the endpoint declares effort levels
      */
     private fun createClaudeConfigSchema(context: Context): Schema {
         val s = Strings.`for`(context = context)
+        val hasEffort = api.effortLevels.isNotEmpty()
+
+        val effortProperty = if (hasEffort) """,
+                "effort": {
+                    "type": "string",
+                    "enum": [${api.effortLevels.joinToString(", ") { "\"$it\"" }}],
+                    "description": "${s.shared("ai_provider_claude_schema_effort")}"
+                }""" else ""
+        val required = if (hasEffort) "\"api_key\", \"model\", \"effort\"" else "\"api_key\", \"model\""
 
         val content = """
         {
@@ -114,12 +171,12 @@ internal class ClaudeProviderCore(
                     "type": "string",
                     "minLength": 1,
                     "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                    "description": "${s.shared("ai_provider_claude_schema_api_key")}"
+                    "description": "${s.shared("${api.stringPrefix}_schema_api_key")}"
                 },
                 "model": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "${s.shared("ai_provider_claude_schema_model")}"
+                    "description": "${s.shared("${api.stringPrefix}_schema_model")}"
                 },
                 "max_tokens": {
                     "type": "integer",
@@ -127,17 +184,17 @@ internal class ClaudeProviderCore(
                     "maximum": 32000,
                     "default": 8000,
                     "description": "${s.shared("ai_provider_claude_schema_max_tokens")}"
-                }
+                }$effortProperty
             },
-            "required": ["api_key", "model"],
+            "required": [$required],
             "additionalProperties": false
         }
         """.trimIndent()
 
         return Schema(
             id = "ai_provider_${variantId}_config",
-            displayName = s.shared("ai_provider_claude_config_display_name"),
-            description = s.shared("ai_provider_claude_config_description"),
+            displayName = s.shared("${api.stringPrefix}_config_display_name"),
+            description = s.shared("${api.stringPrefix}_config_description"),
             category = SchemaCategory.AI_PROVIDER,
             content = content
         )
@@ -169,13 +226,16 @@ internal class ClaudeProviderCore(
                 }
             }
 
-            // Build request
-            val request = Request.Builder()
-                .url("$CLAUDE_API_BASE_URL/v1/models")
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", ANTHROPIC_VERSION)
-                .get()
-                .build()
+            // Build request: DeepSeek lists models on its OpenAI-format endpoint (Bearer auth)
+            val requestBuilder = Request.Builder().url(api.modelsUrl).get()
+            when (api) {
+                MessagesApi.ANTHROPIC -> requestBuilder
+                    .header("x-api-key", apiKey)
+                    .header("anthropic-version", ANTHROPIC_VERSION)
+                MessagesApi.DEEPSEEK -> requestBuilder
+                    .header("Authorization", "Bearer $apiKey")
+            }
+            val request = requestBuilder.build()
 
             // Execute request
             val response = httpClient.newCall(request).execute()
@@ -219,10 +279,12 @@ internal class ClaudeProviderCore(
             for (i in 0 until dataArray.length()) {
                 val modelObj = dataArray.optJSONObject(i)
                 if (modelObj != null) {
+                    // The OpenAI-format model list (DeepSeek) has no display_name: the ID is the name
+                    val id = modelObj.optString("id", "")
                     models.add(
                         ClaudeModelInfo(
-                            id = modelObj.optString("id", ""),
-                            displayName = modelObj.optString("display_name", ""),
+                            id = id,
+                            displayName = modelObj.optString("display_name", "").ifEmpty { id },
                             createdAt = modelObj.optString("created_at", "")
                         )
                     )
@@ -302,7 +364,7 @@ internal class ClaudeProviderCore(
             // Build HTTP request
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val request = Request.Builder()
-                .url("$CLAUDE_API_BASE_URL/v1/messages")
+                .url(api.messagesUrl)
                 .header("x-api-key", apiKey)
                 .header("anthropic-version", ANTHROPIC_VERSION)
                 .header("content-type", "application/json")
@@ -340,6 +402,24 @@ internal class ClaudeProviderCore(
             LogManager.aiService("Claude API success: ${responseBody.length} characters")
             val jsonResponse = Json.parseToJsonElement(responseBody)
             val aiResponse = jsonResponse.toClaudeAIResponse()
+
+            // Refuse a substituted model. Wording contains "provider" so the error is classified as permanent.
+            if (api.verifiesAnsweringModel && aiResponse.success) {
+                val requestedModel = configJson.getString("model")
+                val answeringModel = jsonResponse.jsonObject["model"]?.jsonPrimitive?.contentOrNull
+                if (answeringModel != requestedModel) {
+                    LogManager.aiService("Model substituted: requested $requestedModel, answered by $answeringModel", "ERROR")
+                    return@withContext AIResponse(
+                        success = false,
+                        content = "",
+                        errorMessage = "Provider answered with model '$answeringModel' instead of '$requestedModel'.",
+                        tokensUsed = 0,
+                        cacheWriteTokens = 0,
+                        cacheReadTokens = 0,
+                        inputTokens = 0
+                    )
+                }
+            }
 
             LogManager.aiService(
                 "Claude tokens - Input: ${aiResponse.inputTokens}, " +

@@ -893,6 +893,19 @@
     <string name="ai_provider_claude_no_models">Aucun modèle disponible</string>
     <string name="ai_provider_claude_fetch_error">Erreur: %1$s</string>
     <string name="ai_provider_claude_enter_api_key_first">Veuillez d\'abord entrer une clé API</string>
+    <string name="ai_provider_claude_effort">Effort de raisonnement</string>
+    <string name="ai_provider_claude_schema_effort">Effort de raisonnement demandé au modèle</string>
+    <string name="ai_provider_claude_effort_low">Faible</string>
+    <string name="ai_provider_claude_effort_high">Élevé</string>
+    <string name="ai_provider_claude_effort_max">Maximal</string>
+
+    <!-- AI PROVIDERS - DeepSeek specific (shares the Claude screen, only vendor texts differ) -->
+    <string name="ai_provider_deepseek_api_key">Clé API DeepSeek</string>
+    <string name="ai_provider_deepseek_help">Obtenez votre clé API sur platform.deepseek.com</string>
+    <string name="ai_provider_deepseek_schema_api_key">Clé API d\'authentification DeepSeek</string>
+    <string name="ai_provider_deepseek_schema_model">Modèle DeepSeek à utiliser</string>
+    <string name="ai_provider_deepseek_config_display_name">Configuration DeepSeek</string>
+    <string name="ai_provider_deepseek_config_description">Configuration pour le provider DeepSeek, via son API compatible Anthropic</string>
 
     <!-- AI PROVIDERS - OpenAI specific -->
     <string name="ai_provider_openai_api_key">Clé API OpenAI</string>

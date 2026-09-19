@@ -39,10 +39,20 @@ internal data class FusedMessage(
 internal fun PromptData.toClaudeJson(config: JSONObject, context: android.content.Context): JsonObject {
     val model = config.getString("model")
     val maxTokens = config.optInt("max_tokens", 32000)
+    // Present only when the endpoint declares effort levels (schema-enforced, see MessagesApi)
+    val effort = config.optString("effort", "")
 
     return buildJsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
+
+        // No "thinking" field alongside: a 400 seen through Claude Code (anthropics/claude-code#65863)
+        // points to the pair being mutually exclusive on DeepSeek (not measured here)
+        if (effort.isNotEmpty()) {
+            putJsonObject("output_config") {
+                put("effort", effort)
+            }
+        }
 
         // System array with 3 cache breakpoints (L1, L2, L3)
         putJsonArray("system") {
@@ -311,7 +321,6 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
         )
     }
     val content = textBlock.jsonObject["text"]?.jsonPrimitive?.content ?: ""
-
 
     // Extract usage metrics
     val usage = jsonObj["usage"]?.jsonObject
