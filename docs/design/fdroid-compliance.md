@@ -4,27 +4,7 @@ Spec d'implémentation pour rendre le dépôt publiable sur F-Droid, au sens de 
 
 Analyse faite le 2026-08-01. À élaguer une fois chaque point traité (le code + les commits deviennent le registre).
 
-## 1. Chaîne de build 100 % libre
-
-**Bloquant réel identifié** : `app/build.gradle.kts:399`, la tâche `generateThemeResources` appelle `npx svg2vectordrawable`. Cette tâche est accrochée à `preBuild` (ligne ~388 : `tasks.named("preBuild") { dependsOn("generateThemeResources", "generateStringResources") }`), donc déclenchée à **chaque** build, y compris `assembleRelease`. Le serveur de build F-Droid n'a ni Node ni npm → échec de build garanti.
-
-Point rassurant : les sorties de cette tâche (drawables `default_*.xml` sous `app/src/main/res/drawable/`, et `GeneratedThemeResources.kt`) sont déjà **committées** dans git. L'appel npx n'est donc utile qu'au développeur qui ajoute/modifie une icône — jamais à la reconstruction depuis les sources déjà versionnées.
-
-- Retirer `generateThemeResources` de la liste `dependsOn` de `preBuild`. La rendre invocable manuellement (`./gradlew generateThemeResources`) pour le développeur qui ajoute une icône.
-- Garder `generateStringResources` dans `preBuild` — elle ne fait aucun appel externe (juste du parsing XML), pas de souci de reproductibilité.
-- Vérifier qu'aucune autre tâche Gradle n'appelle un outil hors de l'arbre (recherche faite : aucun autre `exec(`, `ProcessBuilder` ou appel `npx` trouvé dans `app/build.gradle.kts` / `build.gradle.kts`).
-
-## 2. Reproductibilité du build
-
-- **Info VCS** : AGP 9.3.1 injecte l'état du dépôt dans l'APK ; la désactiver (`vcsInfo`) sur la release.
-- **`cruncherEnabled = false`** : pas déclaré explicitement dans `app/build.gradle.kts`. À ajouter (bloc `androidResources`/`aaptOptions` selon version AGP) pour éliminer la variation de compression PNG d'une machine à l'autre.
-- **NDK / `abiFilters`** : `app/build.gradle.kts` déclare `ndk { abiFilters += listOf(...) }` en debug (`arm64-v8a`, `x86_64`) et en release (`arm64-v8a` seul), alors qu'aucun code natif n'a été trouvé dans le projet (pas de `.so`, pas de `CMakeLists.txt`). À vérifier : si ces filtres n'ont aucun effet réel (pas de lib native à filtrer), les supprimer — sinon, si un usage futur est prévu, épingler `ndkVersion` explicitement comme l'exige la facette.
-- **Invocation** : déjà correct — `run` délègue au wrapper Gradle (`android.md` respecté), jamais à l'IDE.
-- **Signature** : déjà correcte — `signingConfigs.release` dans `app/build.gradle.kts` lit le keystore et les mots de passe hors dépôt (`keystore/`, `.env` gitignorés), pilotée par Gradle (`apksigner` implicite). Rien à changer.
-- **Wrapper Gradle** : déjà versionné (`gradle/wrapper/gradle-wrapper.jar` + `.properties` trackés dans git malgré la présence de `gradle/` dans `.gitignore` — les fichiers déjà trackés ne sont pas affectés par une règle d'ignore ajoutée après coup). Rien à changer, mais noter l'incohérence : la règle `gradle/` dans `.gitignore` (ligne 21) est trompeuse puisque son contenu est en réalité versionné — à nettoyer un jour pour la lisibilité, hors scope fdroid strict.
-- **Timestamps** : gérés par AGP depuis 2.2.2, rien à faire tant qu'on ne réintroduit pas de timestamp custom (aucun trouvé).
-
-## 3. Auto-updater — à désactiver pour la variante F-Droid
+## 1. Auto-updater — à désactiver pour la variante F-Droid
 
 **Bloquant de conception** : `app/src/main/java/com/assistant/core/update/UpdateChecker.kt` interroge l'API GitHub (`api.github.com/repos/badibam/assistant/releases/latest`) et résout une URL de téléchargement d'APK. F-Droid rejette systématiquement les apps qui téléchargent/installent du code exécutable venu d'ailleurs que lui-même — même en usage opt-in explicite côté utilisateur, ce n'est pas couvert par une simple déclaration d'anti-feature dans la grille (`Ads`, `Tracking`, etc.), c'est un motif de rejet direct.
 
@@ -32,13 +12,13 @@ Point rassurant : les sorties de cette tâche (drawables `default_*.xml` sous `a
 - Pour les autres canaux de distribution (GitHub direct, APK hors F-Droid), le mécanisme peut rester actif dans la flavor par défaut.
 - Localiser tous les appelants de `UpdateChecker` avant de trancher le point d'exclusion exact (recherche non faite à ce stade — à faire à l'implémentation).
 
-## 4. Anti-features — à déclarer, pas à corriger
+## 2. Anti-features — à déclarer, pas à corriger
 
 - **`NonFreeNet`** : deux providers IA appellent des API commerciales propriétaires — `ClaudeProviderCore.kt` (`api.anthropic.com`) et `OpenAIProviderCore.kt`. Usage légitime pour un assistant IA (l'utilisateur fournit sa propre clé, rien de codé en dur — vérifié). À déclarer dans la fiche F-Droid au moment de la soumission, aucun changement de code requis.
 - Repasser la grille complète (`Ads`, `DisabledAlgorithm`, `KnownVuln`, `NonFreeAdd`, `NonFreeAssets`, `NonFreeDep`, `NonFreeNet`, `NoSourceSince`, `TetheredNet`, `Tracking`) juste avant la soumission réelle — pas avant, la codebase évolue.
 - `NonFreeAssets` : vérifier la licence des médias embarqués (icônes du thème par défaut, sons éventuels) au moment de la soumission — pas d'audit fait ici.
 
-## 5. Fiche versionnée (fastlane)
+## 3. Fiche versionnée (fastlane)
 
 Entièrement à créer, aucun contenu existant. Arborescence `fastlane/metadata/android/en-US/` (locale de repli obligatoire = `en-US`, cohérent avec `[grand public]` d'`android.md`) :
 
@@ -49,7 +29,7 @@ Entièrement à créer, aucun contenu existant. Arborescence `fastlane/metadata/
 - `images/icon.png`, `images/featureGraphic.png` (paysage), `images/phoneScreenshots/` au minimum.
 - Autres locales = traductions optionnelles, une fois l'anglais complet.
 
-## 6. Discipline de release
+## 4. Discipline de release
 
 - Taguer chaque release sur le commit exact, nom = `versionName` (ex. `v0.3.15`) — pas encore de tag dans l'historique actuel à vérifier/instaurer.
 - Construire depuis le tag, arbre propre, jamais de modification locale non commitée.
@@ -57,8 +37,6 @@ Entièrement à créer, aucun contenu existant. Arborescence `fastlane/metadata/
 
 ## Ordre recommandé
 
-1. Fix build (retrait `generateThemeResources` de `preBuild`) — petit, mécanique, à faire tôt pour ne pas casser un build F-Droid dès la première tentative.
-2. Isolation de l'auto-updater (flavor Gradle) — nécessite de localiser tous les appelants, un peu plus de travail.
-3. Réglages de reproductibilité (vcsInfo, cruncher, NDK) — à grouper, mécanique.
-4. Fiche fastlane — au moment de préparer la première release candidate pour soumission.
-5. Grille anti-features — juste avant la soumission réelle, pas avant.
+1. Isolation de l'auto-updater (flavor Gradle) — nécessite de localiser tous les appelants, un peu plus de travail.
+2. Fiche fastlane — au moment de préparer la première release candidate pour soumission.
+3. Grille anti-features — juste avant la soumission réelle, pas avant.

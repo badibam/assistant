@@ -8,6 +8,9 @@ plugins {
 android {
     namespace = "com.assistant"
     compileSdk = 37
+    // Pinned rather than left to the AGP default: the F-Droid build server must resolve the
+    // same toolchain, or the APKs cannot be compared.
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "com.assistant"
@@ -46,11 +49,6 @@ android {
             applicationIdSuffix = ".debug"
             isDebuggable = true
             isMinifyEnabled = false
-
-            // Include x86_64 for emulators + arm64-v8a for devices
-            ndk {
-                abiFilters += listOf("arm64-v8a", "x86_64")
-            }
         }
 
         release {
@@ -59,10 +57,10 @@ android {
             isDebuggable = false
             signingConfig = signingConfigs.findByName("release")
 
-            // Only arm64-v8a for release to reduce APK size
-            ndk {
-                abiFilters += listOf("arm64-v8a")
-            }
+            // Reproducible release: PNG crunching varies from machine to machine, and VCS info
+            // would embed the state of the working tree.
+            isCrunchPngs = false
+            vcsInfo.include = false
             
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

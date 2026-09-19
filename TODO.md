@@ -5,7 +5,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Chantier en cours
 
 - **Alignement du pipeline TOOL_DATA** — la doc IA (`ai_prompt_chunks.xml`) est une interface que rien ne teste, et chaque divergence doc↔code produit un échec silencieux côté IA. Détail des sept points dans `docs/design/post-refactor-audit.md`, partie A. Le plus grave : l'objet `period: {start, end}` est documenté mais ignoré par le transformer, ce qui peut rendre tout l'historique là où l'IA croit lire un mois.
-- **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. Premier bloquant : la tâche `generateThemeResources` appelle `npx` à chaque build.
+- **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. Premier bloquant : l'auto-updater, qui télécharge des APK depuis GitHub, est à sortir de la variante F-Droid.
 - **Exécutions d'automation manquées** — une automation rattrape sans limite chaque exécution manquée, et résout ses dates relatives sur l'heure actuelle au lieu de l'heure prévue. Spec dans `docs/design/automation-missed-executions.md`, prête à implémenter.
 
 ## Dette constatée
