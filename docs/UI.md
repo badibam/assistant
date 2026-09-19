@@ -183,7 +183,7 @@ Une rotation recrée l'activité : tout `remember` repart de zéro et tout `Laun
 
 **remember** : données rechargées (`entries`, `toolInstance`), indicateurs de chargement et d'envoi (`isSaving`), messages temporaires (`errorMessage`), menus déroulants.
 
-Un type que le Bundle ne sait pas porter passe par un saver de `core/ui/StateSavers.kt` (`JsonObjectSaver`, `FieldDefinitionsSaver`, `FieldValuesSaver`, `NullablePeriodSaver`, `MessageSegmentsSaver`, `serializableSaver(serializer)` pour tout type `@Serializable`…) : `rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(...) }`. Un objet chargé qu'on édite (entité, occurrence) se garde par son id et se retrouve dans la liste chargée. Un type non couvert → ajouter un saver dans ce fichier, pas au site d'appel.
+Un type que le Bundle ne sait pas porter passe par un saver de `core/ui/StateSavers.kt` (`JsonObjectSaver`, `FieldDefinitionsSaver`, `FieldValuesSaver`, `NullablePeriodSaver`, `MessageSegmentsSaver`, `serializableSaver(serializer)` pour tout type `@Serializable`…) : `rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(...) }`. Un objet chargé qu'on édite (entité, occurrence) se garde par son id et se retrouve dans la liste chargée. C'est cet id qu'on transmet à l'écran enfant et qui décide mise à jour ou création, jamais l'objet retrouvé : la liste se recharge après la rotation, et l'objet vaut `null` en attendant. Un type non couvert → ajouter un saver dans ce fichier, pas au site d'appel.
 
 ### 2. Charger le contenu stocké une fois par écran : rememberLoadOnce
 
