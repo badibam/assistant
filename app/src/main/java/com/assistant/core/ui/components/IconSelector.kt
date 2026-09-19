@@ -1,6 +1,8 @@
 package com.assistant.core.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,7 +63,8 @@ fun IconSelector(
             onConfirm = {},
             onCancel = { showDialog = false }
         ) {
-            Column {
+            // The full icon list outgrows any screen: the dialog body scrolls
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 UI.Text(s.shared("tools_config_dialog_choose_icon"), TextType.SUBTITLE)
                 
                 Spacer(modifier = Modifier.height(16.dp))
