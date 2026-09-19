@@ -54,3 +54,6 @@ NOTES.md
 icons-source/
 tmp/
 .claude/settings.local.json
+
+# Rebuilt by preBuild (generateStringResources)
+app/src/main/res/values/strings_generated.xml
