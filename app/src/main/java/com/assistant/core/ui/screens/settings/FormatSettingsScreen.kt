@@ -98,11 +98,7 @@ fun FormatSettingsScreen(
     }
 
     val weekStartOptions = remember {
-        mapOf(
-            "MONDAY" to "Lundi",
-            "SUNDAY" to "Dimanche",
-            "SATURDAY" to "Samedi"
-        )
+        listOf("MONDAY", "SUNDAY", "SATURDAY")
     }
 
     // Load configuration
@@ -129,7 +125,7 @@ fun FormatSettingsScreen(
 
             isLoading = false
         } catch (e: Exception) {
-            errorMessage = "Erreur de chargement: ${e.message}"
+            errorMessage = s.shared("settings_format_error_load").format(e.message ?: "")
             isLoading = false
         }
     }
@@ -182,7 +178,7 @@ fun FormatSettingsScreen(
                 // Close screen after successful save
                 onBack()
             } catch (e: Exception) {
-                errorMessage = "Erreur de sauvegarde: ${e.message}"
+                errorMessage = s.shared("settings_format_error_save").format(e.message ?: "")
             }
         }
     }
@@ -210,7 +206,7 @@ fun FormatSettingsScreen(
         // Header
         UI.PageHeader(
             title = s.shared("settings_format"),
-            subtitle = "Configuration date/heure",
+            subtitle = s.shared("settings_format_subtitle"),
             icon = null,
             leftButton = ButtonAction.BACK,
             rightButton = null,
@@ -226,11 +222,11 @@ fun FormatSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(text = "Fuseau horaire", type = TextType.SUBTITLE)
+                UI.Text(text = s.shared("settings_format_timezone"), type = TextType.SUBTITLE)
 
                 // Use system timezone toggle
                 UI.ToggleField(
-                    label = "Utiliser fuseau système",
+                    label = s.shared("settings_format_use_system_timezone"),
                     checked = useSystemTimezone,
                     onCheckedChange = { useSystemTimezone = it }
                 )
@@ -238,7 +234,7 @@ fun FormatSettingsScreen(
                 // Timezone selector (disabled if using system)
                 if (!useSystemTimezone) {
                     UI.FormSelection(
-                        label = "Fuseau horaire",
+                        label = s.shared("settings_format_timezone"),
                         options = timezoneOptions,
                         selected = timezoneOverride ?: ZoneId.systemDefault().id,
                         onSelect = { timezoneOverride = it },
@@ -246,7 +242,7 @@ fun FormatSettingsScreen(
                     )
                 } else {
                     UI.Text(
-                        text = "Actuel: ${ZoneId.systemDefault().id}",
+                        text = s.shared("settings_format_current_timezone").format(ZoneId.systemDefault().id),
                         type = TextType.CAPTION
                     )
                 }
@@ -261,11 +257,11 @@ fun FormatSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(text = "Langue et région", type = TextType.SUBTITLE)
+                UI.Text(text = s.shared("settings_format_locale_section"), type = TextType.SUBTITLE)
 
                 // Use system locale toggle
                 UI.ToggleField(
-                    label = "Utiliser locale système",
+                    label = s.shared("settings_format_use_system_locale"),
                     checked = useSystemLocale,
                     onCheckedChange = { useSystemLocale = it }
                 )
@@ -273,7 +269,7 @@ fun FormatSettingsScreen(
                 // Locale selector (disabled if using system)
                 if (!useSystemLocale) {
                     UI.FormSelection(
-                        label = "Locale",
+                        label = s.shared("settings_format_locale"),
                         options = localeOptions,
                         selected = localeOverride ?: Locale.getDefault().toLanguageTag(),
                         onSelect = { localeOverride = it },
@@ -281,7 +277,7 @@ fun FormatSettingsScreen(
                     )
                 } else {
                     UI.Text(
-                        text = "Actuelle: ${Locale.getDefault().toLanguageTag()}",
+                        text = s.shared("settings_format_current_locale").format(Locale.getDefault().toLanguageTag()),
                         type = TextType.CAPTION
                     )
                 }
@@ -296,35 +292,35 @@ fun FormatSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(text = "Formats d'affichage", type = TextType.SUBTITLE)
+                UI.Text(text = s.shared("settings_format_display_section"), type = TextType.SUBTITLE)
 
                 // 24h format toggle
                 if (use24HourFormat != null) {
                     UI.ToggleField(
-                        label = "Format 24h (sinon 12h)",
+                        label = s.shared("settings_format_24h"),
                         checked = use24HourFormat!!,
                         onCheckedChange = { use24HourFormat = it }
                     )
                 } else {
-                    UI.Text(text = "Format 24h : ${s.shared("message_loading")}", type = TextType.BODY)
+                    UI.Text(text = s.shared("settings_format_24h_loading").format(s.shared("message_loading")), type = TextType.BODY)
                 }
 
                 // Date format selector
                 if (dateFormatPattern != null) {
                     UI.FormSelection(
-                        label = "Format de date",
+                        label = s.shared("settings_format_date_format"),
                         options = dateFormatOptions,
                         selected = dateFormatPattern!!,
                         onSelect = { dateFormatPattern = it },
                         required = false
                     )
                 } else {
-                    UI.Text(text = "Format de date : ${s.shared("message_loading")}", type = TextType.BODY)
+                    UI.Text(text = s.shared("settings_format_date_format_loading").format(s.shared("message_loading")), type = TextType.BODY)
                 }
 
                 // Time separator selector
                 UI.FormSelection(
-                    label = "Séparateur d'heure",
+                    label = s.shared("app_config_format_time_separator"),
                     options = listOf(":", "h"),
                     selected = timeSeparator,
                     onSelect = { timeSeparator = it },
@@ -341,22 +337,22 @@ fun FormatSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(text = "Logique métier (périodes)", type = TextType.SUBTITLE)
+                UI.Text(text = s.shared("settings_format_business_section"), type = TextType.SUBTITLE)
 
                 // Day start hour
                 UI.SliderField(
-                    label = "Heure de début de journée (périodes quotidiennes)",
+                    label = s.shared("settings_format_day_start_hour"),
                     value = dayStartHour,
                     onValueChange = { dayStartHour = it },
                     range = 0..23,
-                    minLabel = "0h",
-                    maxLabel = "23h"
+                    minLabel = s.shared("settings_format_hour_value").format(0),
+                    maxLabel = s.shared("settings_format_hour_value").format(23)
                 )
 
                 // Week start day
                 UI.FormSelection(
-                    label = "Jour de début de semaine",
-                    options = weekStartOptions.keys.toList(),
+                    label = s.shared("app_config_format_week_start_day"),
+                    options = weekStartOptions,
                     selected = weekStartDay,
                     onSelect = { weekStartDay = it },
                     required = true
@@ -372,15 +368,15 @@ fun FormatSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                UI.Text(text = "Labels relatifs (périodes)", type = TextType.SUBTITLE)
+                UI.Text(text = s.shared("settings_format_relative_section"), type = TextType.SUBTITLE)
                 UI.Text(
-                    text = "Limites pour affichage relatif (\"il y a X heures\", etc.)",
+                    text = s.shared("settings_format_relative_description"),
                     type = TextType.CAPTION
                 )
 
                 // Hour limit
                 UI.SliderField(
-                    label = "Limite heures",
+                    label = s.shared("app_config_format_hour_limit"),
                     value = hourLimit,
                     onValueChange = { hourLimit = it },
                     range = 1..48,
@@ -390,7 +386,7 @@ fun FormatSettingsScreen(
 
                 // Day limit
                 UI.SliderField(
-                    label = "Limite jours",
+                    label = s.shared("app_config_format_day_limit"),
                     value = dayLimit,
                     onValueChange = { dayLimit = it },
                     range = 1..31,
@@ -400,7 +396,7 @@ fun FormatSettingsScreen(
 
                 // Week limit
                 UI.SliderField(
-                    label = "Limite semaines",
+                    label = s.shared("app_config_format_week_limit"),
                     value = weekLimit,
                     onValueChange = { weekLimit = it },
                     range = 1..12,
@@ -410,7 +406,7 @@ fun FormatSettingsScreen(
 
                 // Month limit
                 UI.SliderField(
-                    label = "Limite mois",
+                    label = s.shared("app_config_format_month_limit"),
                     value = monthLimit,
                     onValueChange = { monthLimit = it },
                     range = 1..24,
@@ -420,7 +416,7 @@ fun FormatSettingsScreen(
 
                 // Year limit
                 UI.SliderField(
-                    label = "Limite années",
+                    label = s.shared("app_config_format_year_limit"),
                     value = yearLimit,
                     onValueChange = { yearLimit = it },
                     range = 1..10,

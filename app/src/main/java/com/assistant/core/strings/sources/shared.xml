@@ -835,6 +835,26 @@
 
     <string name="settings_format">Format et dates</string>
     <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
+    <string name="settings_format_subtitle">Configuration date/heure</string>
+    <string name="settings_format_error_load">Erreur de chargement : %1$s</string>
+    <string name="settings_format_error_save">Erreur de sauvegarde : %1$s</string>
+    <string name="settings_format_timezone">Fuseau horaire</string>
+    <string name="settings_format_use_system_timezone">Utiliser le fuseau système</string>
+    <string name="settings_format_current_timezone">Actuel : %1$s</string>
+    <string name="settings_format_locale_section">Langue et région</string>
+    <string name="settings_format_use_system_locale">Utiliser la locale système</string>
+    <string name="settings_format_locale">Locale</string>
+    <string name="settings_format_current_locale">Actuelle : %1$s</string>
+    <string name="settings_format_display_section">Formats d\'affichage</string>
+    <string name="settings_format_24h">Format 24h (sinon 12h)</string>
+    <string name="settings_format_24h_loading">Format 24h : %1$s</string>
+    <string name="settings_format_date_format">Format de date</string>
+    <string name="settings_format_date_format_loading">Format de date : %1$s</string>
+    <string name="settings_format_business_section">Logique métier (périodes)</string>
+    <string name="settings_format_day_start_hour">Heure de début de journée (périodes quotidiennes)</string>
+    <string name="settings_format_hour_value">%1$dh</string>
+    <string name="settings_format_relative_section">Labels relatifs (périodes)</string>
+    <string name="settings_format_relative_description">Limites pour affichage relatif (« il y a X heures », etc.)</string>
 
     <string name="settings_ai_limits">Limites IA</string>
     <string name="settings_ai_limits_description">Configurer les limites des boucles autonomes de l\'IA</string>
