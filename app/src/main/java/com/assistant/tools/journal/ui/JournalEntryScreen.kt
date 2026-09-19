@@ -53,7 +53,6 @@ fun JournalEntryScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // UI states (temporary, don't survive rotation)
-    var isLoading by remember { mutableStateOf(!isCreating) } // Don't load if creating
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
@@ -73,17 +72,10 @@ fun JournalEntryScreen(
     // Validation state
     var validationResult by remember { mutableStateOf(ValidationResult.success()) }
 
-    // Load entry if not creating
-    // Force reload on every composition by resetting custom fields before load
-    // Set once the entry loaded: after a rotation the restored edits win over the stored entry,
-    // and save stays off until then, since the empty form would overwrite it
-    var entryLoaded by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(entryId, isCreating) {
-        LogManager.ui("LaunchedEffect triggered: entryId=$entryId, isCreating=$isCreating")
-        if (entryLoaded) {
-            isLoading = false
-            return@LaunchedEffect
-        }
+    // Load entry if not creating; a new entry starts from the current time
+    val entryLoad = rememberLoadOnce(entryId, isCreating) {
+        LogManager.ui("Loading entry: entryId=$entryId, isCreating=$isCreating")
+        var loaded = false
         if (!isCreating) {
             // Reset custom fields to ensure clean state
             customFieldsValues = emptyMap()
@@ -154,17 +146,17 @@ fun JournalEntryScreen(
                     LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                     LogManager.ui("Successfully loaded entry: title=$title")
-                    entryLoaded = true
+                    loaded = true
                 }
             } else {
                 errorMessage = s.tool("error_entry_load")
             }
-            isLoading = false
         } else {
             // In creation mode, initialize with current timestamp
             timestamp = System.currentTimeMillis()
-            entryLoaded = true
+            loaded = true
         }
+        loaded
     }
 
     // Error message display
@@ -286,7 +278,7 @@ fun JournalEntryScreen(
     }
 
     // Early return for loading state
-    if (isLoading) {
+    if (entryLoad == LoadState.LOADING) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -415,7 +407,7 @@ fun JournalEntryScreen(
 
                 UI.ActionButton(
                     action = ButtonAction.SAVE,
-                    enabled = entryLoaded,
+                    enabled = entryLoad == LoadState.LOADED,
                     onClick = { handleSave() }
                 )
             }

@@ -175,46 +175,38 @@ UI.Card avec type CardType.DEFAULT, contenu en Column avec padding interne 16dp.
 
 ## Changements d'Orientation
 
-### Règle de base : rememberSaveable pour tout état "métier"
-Tout état qui représente une donnée utilisateur, une navigation ou une sélection DOIT utiliser `rememberSaveable` pour survivre aux rotations d'écran.
+Une rotation recrée l'activité : tout `remember` repart de zéro et tout `LaunchedEffect` se rejoue. Trois règles, chacune avec l'outil qui l'applique.
 
-### Pattern de conservation d'état
+### 1. rememberSaveable pour ce que l'utilisateur a produit
 
-**rememberSaveable (survit rotation)** :
-- États de navigation : `navigateToEntryId`, `selectedScreen`, `currentTab`
-- Données de formulaire : `title`, `content`, `timestamp`, `selectedDate`
-- Sélections utilisateur : `selectedPeriod`, `isEditing`, `filterType`
-- Configuration temporaire : `showAdvancedOptions`, `expandedSectionId`
+**rememberSaveable** : saisies de formulaire, sélections, filtres, page courante, onglet, fenêtre ouverte et ce qu'elle édite.
 
-**remember (réinitialisé à la rotation)** :
-- États de chargement : `isLoading`, `isSaving`, `isProcessing`
-- Messages temporaires : `errorMessage`, `successMessage`
-- Données rechargées : `entries`, `toolInstance`, `stats`
-- États UI volatils : `showDialog`, `showDatePicker`
+**remember** : données rechargées (`entries`, `toolInstance`), indicateurs de chargement et d'envoi (`isSaving`), messages temporaires (`errorMessage`), menus déroulants.
 
-### Exemples concrets
+Un type que le Bundle ne sait pas porter passe par un saver de `core/ui/StateSavers.kt` (`JsonObjectSaver`, `FieldDefinitionsSaver`, `FieldValuesSaver`, `NullablePeriodSaver`, `MessageSegmentsSaver`, `serializableSaver(serializer)` pour tout type `@Serializable`…) : `rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(...) }`. Un objet chargé qu'on édite (entité, occurrence) se garde par son id et se retrouve dans la liste chargée. Un type non couvert → ajouter un saver dans ce fichier, pas au site d'appel.
+
+### 2. Charger le contenu stocké une fois par écran : rememberLoadOnce
+
+Un `LaunchedEffect` qui remplit le formulaire se rejoue après la rotation et écrase la saisie restaurée. `rememberLoadOnce(keys) { ...; true }` (`core/ui/LoadState.kt`) ne charge qu'une fois par écran — à nouveau si les clés changent — et rend un `LoadState` :
 
 ```kotlin
-// États formulaire (survie rotation)
-var title by rememberSaveable { mutableStateOf("") }
-var content by rememberSaveable { mutableStateOf("") }
-var isEditing by rememberSaveable { mutableStateOf(false) }
-var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+val configLoad = rememberLoadOnce(existingToolId) {
+    if (existingToolId == null) return@rememberLoadOnce true  // création : rien à charger
+    val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to existingToolId))
+    if (!result.isSuccess) return@rememberLoadOnce false
+    name = ...                                                  // remplit les états saveable
+    true
+}
 
-// États navigation (survie rotation)
-var navigateToDetailId by rememberSaveable { mutableStateOf<String?>(null) }
-var navigateIsCreating by rememberSaveable { mutableStateOf(false) }
-var selectedTab by rememberSaveable { mutableStateOf(0) }
-
-// États temporaires (réinitialisation rotation)
-var isLoading by remember { mutableStateOf(true) }
-var errorMessage by remember { mutableStateOf<String?>(null) }
-var entries by remember { mutableStateOf<List<Entry>>(emptyList()) }
-var toolInstance by remember { mutableStateOf<Map<String, Any>?>(null) }
+if (configLoad == LoadState.LOADING) { /* chargement */ return }
+UI.ToolConfigActions(..., saveEnabled = !isSaving && configLoad == LoadState.LOADED)
 ```
 
-### Pattern ID pour objets complexes
-Types complexes non-sérialisables → sauvegarder l'ID avec `rememberSaveable`, retrouver l'objet via find() dans `LaunchedEffect`.
+### 3. Une action ne travaille que sur une donnée chargée
+
+Avant un chargement ou après son échec, l'écran montre des valeurs par défaut : enregistrées, elles écraseraient le contenu stocké, sans erreur. Enregistrer (et toute action qui lit la donnée chargée) est donc désactivé hors de `LoadState.LOADED`, ou caché tant que l'écran charge.
+
+Pour revenir à la première page quand un filtre change, `OnChangedEffect("$filtre|$periode") { currentPage = 1 }` : un `LaunchedEffect` sur les filtres se déclencherait aussi à la rotation et perdrait la page restaurée.
 
 ## Tableaux et Listes
 

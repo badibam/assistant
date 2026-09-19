@@ -9,5 +9,5 @@ On va implémenter le tooltype [$1] sur la base du fichier de spécification. Tu
 Tu vas t'inspirer des outils existants, notamment : 
 - Structure des fichiers
 - Patterns de navigation 
-- Survie à changement d'orientation
+- Survie à changement d'orientation (`docs/UI.md`, « Changements d'Orientation » : savers, `rememberLoadOnce`, save désactivé hors `LoadState.LOADED`)
 - Pattern de validation.

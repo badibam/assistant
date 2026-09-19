@@ -37,7 +37,6 @@ fun FormatSettingsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Load current configuration
-    var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Timezone configuration
@@ -102,15 +101,8 @@ fun FormatSettingsScreen(
         listOf("MONDAY", "SUNDAY", "SATURDAY")
     }
 
-    // Loaded once per screen: after a rotation the restored edits win over the stored config
-    var configLoaded by rememberSaveable { mutableStateOf(false) }
-
     // Load configuration
-    LaunchedEffect(Unit) {
-        if (configLoaded) {
-            isLoading = false
-            return@LaunchedEffect
-        }
+    val configLoad = rememberLoadOnce(Unit) {
         try {
             val config = AppConfigManager.getDateTimeConfig()
 
@@ -135,11 +127,10 @@ fun FormatSettingsScreen(
             monthLimit = limits.getInt("month_limit")
             yearLimit = limits.getInt("year_limit")
 
-            isLoading = false
-            configLoaded = true
+            true
         } catch (e: Exception) {
             errorMessage = s.shared("settings_format_error_load").format(e.message ?: "")
-            isLoading = false
+            false
         }
     }
 
@@ -196,7 +187,7 @@ fun FormatSettingsScreen(
         }
     }
 
-    if (isLoading) {
+    if (configLoad == LoadState.LOADING) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -441,13 +432,11 @@ fun FormatSettingsScreen(
 
         // Save button
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-            // Off unless the stored config loaded: saved otherwise, the defaults shown would
-            // overwrite it
             UI.ActionButton(
                 action = ButtonAction.SAVE,
                 display = ButtonDisplay.LABEL,
                 size = Size.L,
-                enabled = configLoaded,
+                enabled = configLoad == LoadState.LOADED,
                 onClick = { saveSettings() }
             )
         }

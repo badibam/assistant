@@ -159,14 +159,8 @@ fun HistoryScreen(
         }
     }
 
-    // Reset page when filters change. Compared with the filters last seen, not on every run:
-    // the effect also runs after a rotation, which must keep the restored page.
-    var lastFilters by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(periodFilter, currentPeriod, entriesLimit, searchQuery) {
-        val filters = "$periodFilter|$currentPeriod|$entriesLimit|$searchQuery"
-        if (lastFilters != null && lastFilters != filters) currentPage = 1
-        lastFilters = filters
-    }
+    // Back to the first page when a filter changes
+    OnChangedEffect("$periodFilter|$currentPeriod|$entriesLimit|$searchQuery") { currentPage = 1 }
 
     // Load sessions when filters/pagination change
     LaunchedEffect(periodFilter, currentPeriod, entriesLimit, currentPage) {

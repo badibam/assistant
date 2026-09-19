@@ -42,22 +42,16 @@ fun MainScreenConfigScreen(
 
     // State for zone groups
     var zoneGroups by rememberSaveable(stateSaver = StringListSaver) { mutableStateOf<List<String>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Set once the stored groups loaded: after a rotation the restored edits win over them, and
-    // save stays off until then, since an empty list would erase them
-    var groupsLoaded by rememberSaveable { mutableStateOf(false) }
-
-    // Load zone groups on first composition
-    LaunchedEffect(Unit) {
-        if (groupsLoaded) return@LaunchedEffect
+    // Load zone groups
+    val groupsLoad = rememberLoadOnce(Unit) {
         LogManager.ui("Loading zone groups from app_config", "DEBUG")
         coordinator.executeWithLoading(
             operation = "app_config.get_zone_groups",
             params = emptyMap(),
-            onLoading = { isLoading = it },
+            onLoading = { },
             onError = { error -> errorMessage = error }
         )?.let { result ->
             LogManager.ui("Result from get_zone_groups: ${result.data}", "DEBUG")
@@ -66,8 +60,8 @@ fun MainScreenConfigScreen(
                 ?.filterIsInstance<String>() ?: emptyList()
             LogManager.ui("Loaded ${groups.size} zone groups: $groups", "DEBUG")
             zoneGroups = groups
-            groupsLoaded = true
-        }
+            true
+        } ?: false
     }
 
     // Save function
@@ -111,7 +105,7 @@ fun MainScreenConfigScreen(
         )
 
         // Loading state or content
-        if (isLoading) {
+        if (groupsLoad == LoadState.LOADING) {
             UI.Text(
                 text = s.shared("message_loading"),
                 type = TextType.BODY,
@@ -145,7 +139,7 @@ fun MainScreenConfigScreen(
             UI.FormActions {
                 UI.ActionButton(
                     action = ButtonAction.SAVE,
-                    enabled = !isSaving && groupsLoaded,
+                    enabled = !isSaving && groupsLoad == LoadState.LOADED,
                     onClick = { saveZoneGroups() }
                 )
                 UI.ActionButton(

@@ -9,5 +9,5 @@ Tu vas regarder l'implémentation des tooltypes existants puis tu vas mettre en 
 Tu vas t'inspirer des outils existants : 
 - Structure des fichiers
 - Patterns de navigation 
-- Survie à changement d'orientation
+- Survie à changement d'orientation (`docs/UI.md`, « Changements d'Orientation » : savers, `rememberLoadOnce`, save désactivé hors `LoadState.LOADED`)
 - Pattern de validation.

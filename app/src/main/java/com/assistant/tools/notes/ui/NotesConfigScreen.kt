@@ -66,66 +66,60 @@ fun NotesConfigScreen(
     var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
 
     // UI states
-    var isLoading by remember { mutableStateOf(existingToolId != null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
-    // Load existing configuration if editing
-    // Set once the stored config parsed: after a rotation the restored edits win over it, and
-    // save stays off until then, since the defaults shown would overwrite it
-    var configLoaded by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(existingToolId) {
-        if (existingToolId != null && configLoaded) {
-            isLoading = false
-        } else if (existingToolId != null) {
-            LogManager.ui("Loading existing tool configuration for ID: $existingToolId")
-            val result = coordinator.processUserAction(
-                "tools.get",
-                mapOf("tool_instance_id" to existingToolId)
-            )
+    // Load existing configuration if editing; a new tool has nothing to load
+    val configLoad = rememberLoadOnce(existingToolId) {
+        if (existingToolId == null) return@rememberLoadOnce true
+        var loaded = false
+        LogManager.ui("Loading existing tool configuration for ID: $existingToolId")
+        val result = coordinator.processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to existingToolId)
+        )
 
-            if (result?.isSuccess == true) {
-                val toolData = result.mapSingleData("tool_instance") { map -> map }
-                toolData?.let { data ->
-                    val configJson = data["config_json"] as? String ?: "{}"
-                    try {
-                        val config = JSONObject(configJson)
-                        name = config.optString("name", "")
-                        description = config.optString("description", "")
-                        iconName = config.optString("icon_name", "note")
-                        displayMode = config.optString("display_mode", "EXTENDED")
-                        management = config.optString("management", "manual")
-                        validateConfig = config.optBoolean("validateConfig", false)
-                        validateData = config.optBoolean("validateData", false)
-                        alwaysSend = config.optBoolean("always_send", false)
-                        group = config.optString("group").takeIf { it.isNotEmpty() }
+        if (result?.isSuccess == true) {
+            val toolData = result.mapSingleData("tool_instance") { map -> map }
+            toolData?.let { data ->
+                val configJson = data["config_json"] as? String ?: "{}"
+                try {
+                    val config = JSONObject(configJson)
+                    name = config.optString("name", "")
+                    description = config.optString("description", "")
+                    iconName = config.optString("icon_name", "note")
+                    displayMode = config.optString("display_mode", "EXTENDED")
+                    management = config.optString("management", "manual")
+                    validateConfig = config.optBoolean("validateConfig", false)
+                    validateData = config.optBoolean("validateData", false)
+                    alwaysSend = config.optBoolean("always_send", false)
+                    group = config.optString("group").takeIf { it.isNotEmpty() }
 
-                        // Load custom fields
-                        val customFieldsArray = config.optJSONArray("custom_fields")
-                        if (customFieldsArray != null) {
-                            try {
-                                customFields = customFieldsArray.toFieldDefinitions()
-                                oldCustomFields = customFields.toList() // Save copy for migration comparison
-                                LogManager.ui("Loaded ${customFields.size} custom fields")
-                            } catch (e: Exception) {
-                                LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
-                                // Keep empty list on error
-                            }
+                    // Load custom fields
+                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    if (customFieldsArray != null) {
+                        try {
+                            customFields = customFieldsArray.toFieldDefinitions()
+                            oldCustomFields = customFields.toList() // Save copy for migration comparison
+                            LogManager.ui("Loaded ${customFields.size} custom fields")
+                        } catch (e: Exception) {
+                            LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
+                            // Keep empty list on error
                         }
-
-                        LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
-                        configLoaded = true
-                    } catch (e: Exception) {
-                        LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
-                        errorMessage = s.tool("error_config_load")
                     }
+
+                    LogManager.ui("Successfully loaded tool config: name=$name, description=$description, icon=$iconName, displayMode=$displayMode")
+                    loaded = true
+                } catch (e: Exception) {
+                    LogManager.ui("Error parsing existing config: ${e.message}", "ERROR")
+                    errorMessage = s.tool("error_config_load")
                 }
-            } else {
-                LogManager.ui("Failed to load existing tool", "ERROR")
-                errorMessage = s.tool("error_config_not_found")
             }
-            isLoading = false
+        } else {
+            LogManager.ui("Failed to load existing tool", "ERROR")
+            errorMessage = s.tool("error_config_not_found")
         }
+        loaded
     }
 
     // Note: No validation here - validation happens at save time
@@ -139,7 +133,7 @@ fun NotesConfigScreen(
     }
 
     // Early return for loading state
-    if (isLoading) {
+    if (configLoad == LoadState.LOADING) {
         UI.Text(s.shared("tools_loading_config"), TextType.BODY)
         return
     }
@@ -306,7 +300,7 @@ fun NotesConfigScreen(
             onSave = handleSave,
             onCancel = onCancel,
             onDelete = onDelete,
-            saveEnabled = !isSaving && (existingToolId == null || configLoaded)
+            saveEnabled = !isSaving && configLoad == LoadState.LOADED
         )
     }
 }

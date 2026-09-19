@@ -351,14 +351,8 @@ fun TrackingHistory(
         return
     }
 
-    // Reset page when filters change. Compared with the filters last seen, not on every run:
-    // the effect also runs after a rotation, which must keep the restored page.
-    var lastFilters by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(periodFilter, currentPeriod, entriesLimit) {
-        val filters = "$periodFilter|$currentPeriod|$entriesLimit"
-        if (lastFilters != null && lastFilters != filters) currentPage = 1
-        lastFilters = filters
-    }
+    // Back to the first page when a filter changes
+    OnChangedEffect("$periodFilter|$currentPeriod|$entriesLimit") { currentPage = 1 }
     
     // Load data on composition and when filters or pagination change
     LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, currentPage, refreshTrigger) {

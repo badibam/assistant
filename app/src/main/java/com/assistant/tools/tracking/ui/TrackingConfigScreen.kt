@@ -181,20 +181,15 @@ fun TrackingConfigScreen(
         updateConfig("items", itemsArray)
     }
     
-    // Loaded once per screen, not per composition: after a rotation the restored edits win
-    var configLoaded by rememberSaveable { mutableStateOf(false) }
-
     // Load config: NO FALLBACKS - CRASH IF DB FAILS
-    LaunchedEffect(existingToolId) {
-        LogManager.tracking("LaunchedEffect triggered - existingToolId: $existingToolId")
-        if (configLoaded) return@LaunchedEffect
+    val configLoad = rememberLoadOnce(existingToolId) {
+        LogManager.tracking("Loading config - existingToolId: $existingToolId")
 
         if (existingToolId == null) {
             LogManager.tracking("No existingToolId, using default config for creation")
             config = JSONObject(TrackingToolType.getDefaultConfig())
             alwaysSend = config.optBoolean("always_send", false)
-            configLoaded = true
-            return@LaunchedEffect
+            return@rememberLoadOnce true
         }
         
         LogManager.tracking("Calling coordinator.processUserAction for toolId: $existingToolId")
@@ -239,7 +234,7 @@ fun TrackingConfigScreen(
                 // Keep empty list on error
             }
         }
-        configLoaded = true
+        true
     }
     
     // UI state for item dialog
@@ -1002,14 +997,12 @@ fun TrackingConfigScreen(
         }
 
         // Actions
-        // Save stays off until the stored config is loaded: saved earlier, the defaults
-        // shown meanwhile would overwrite it
         UI.ToolConfigActions(
             isEditing = isEditing,
             onSave = handleSave,
             onCancel = onCancel,
             onDelete = onDelete,
-            saveEnabled = configLoaded
+            saveEnabled = configLoad == LoadState.LOADED
         )
         
         
