@@ -870,7 +870,6 @@
 
     <!-- SETTINGS - Stub placeholders -->
     <string name="settings_stub_coming_soon">Cette fonctionnalité sera disponible prochainement</string>
-    <string name="settings_stub_description">Description détaillée des paramètres configurables :</string>
 
     <!-- BACKUP SYSTEM - Backup and restore operations -->
     <string name="settings_backup">Sauvegarde &amp; Réinitialisation</string>

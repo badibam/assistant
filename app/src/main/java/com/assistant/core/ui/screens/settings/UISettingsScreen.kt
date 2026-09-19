@@ -66,34 +66,6 @@ fun UISettingsScreen(
                     text = s.shared("settings_stub_coming_soon"),
                     type = TextType.TITLE
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Description
-                UI.Text(
-                    text = s.shared("settings_stub_description"),
-                    type = TextType.BODY
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Theme section
-                UI.Text(
-                    text = "Gestion des thèmes :",
-                    type = TextType.SUBTITLE
-                )
-
-                val themeFeatures = listOf(
-                    "• Sélection thème (clair/sombre/auto-système)",
-                    "• Variantes et palettes de thèmes personnalisées",
-                )
-
-                themeFeatures.forEach { feature ->
-                    UI.Text(
-                        text = feature,
-                        type = TextType.BODY
-                    )
-                }
             }
         }
     }
