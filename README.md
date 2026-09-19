@@ -86,7 +86,7 @@ cd assistant
 - **Automations** : Scheduling, triggers, exécution autonome avec limites
 - **Validation** : Hiérarchie App > Zone > Tool > Session > Request
 - **Communication** : Modules MultipleChoice et Validation
-- **Providers** : Abstraction extensible (Claude supporté)
+- **Providers** : Abstraction extensible (Claude, OpenAI, DeepSeek)
 - **Composer** : Architecture multi-blocs avec enrichments alternés, double preview UI/Prompt
 
 ### Outils
