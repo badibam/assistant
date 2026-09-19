@@ -12,4 +12,6 @@
 ! 9b59e58  UpdateManager keeps its 3 values in SharedPreferences; converting to DataStore waits for the updater's move into its own build flavor (F-Droid spec)
 ! fdd9af8  27 loading flags, only 5 disable their action: each to review
 - 9b59e58  screens call the command dispatcher (Coordinator) directly and keep only view state; the dispatcher and its services are the controller layer
-## fdroid @
+## fdroid @ bf72ce6
+! b2320db  the in-app updater downloads APKs from GitHub; it moves to its own build flavor, left out of the F-Droid build (F-Droid spec §1)
+! b2320db  no fastlane store listing yet; en-US text and screenshots come with the English default, before the first submission
