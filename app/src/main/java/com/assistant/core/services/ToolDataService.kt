@@ -212,7 +212,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 existingJson.put(key, newJson.get(key))
             }
 
-            // Enrich data with auto-generated fields (e.g., nextExecutionTime for messages)
+            // Enrich data with auto-generated fields (e.g., raw for tracking)
             enrichDataIfSupported(existingEntity.tooltype, existingEntity.toolInstanceId, existingJson.toString(), name)
         } else {
             existingEntity.data

@@ -9,12 +9,14 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.Automation
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.orchestration.AIOrchestrator
+import com.assistant.core.ai.scheduling.AutomationScheduler
+import com.assistant.core.ai.scheduling.NextExecution
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import com.assistant.core.utils.SchedulePattern
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
+import kotlinx.coroutines.withContext
 
 /**
  * AutomationCard - Display automation in zone list
@@ -39,6 +41,18 @@ fun AutomationCard(
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
+
+    // Next execution, computed by the scheduler itself so the card shows what will actually run
+    var nextExecution by remember { mutableStateOf<NextExecution?>(null) }
+    LaunchedEffect(automation.id, automation.isEnabled, automation.schedule, automation.updatedAt) {
+        nextExecution = if (automation.isEnabled && automation.schedule != null) {
+            withContext(Dispatchers.IO) {
+                AutomationScheduler(context).getNextExecutionForAutomation(automation.id)
+            }
+        } else {
+            null
+        }
+    }
 
     // Observe queued sessions to detect if this automation is queued
     val queuedSessions by AIOrchestrator.queuedSessions.collectAsState()
@@ -127,16 +141,11 @@ fun AutomationCard(
             }
 
             // Next execution time (if scheduled and enabled)
-            automation.schedule?.nextExecutionTime?.let { nextExecution ->
-                if (automation.isEnabled && nextExecution > System.currentTimeMillis()) {
-                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    val formattedDate = dateFormat.format(Date(nextExecution))
-
-                    UI.Text(
-                        text = s.shared("automation_next_execution").format(formattedDate),
-                        type = TextType.CAPTION
-                    )
-                }
+            nextExecution?.let {
+                UI.Text(
+                    text = it.message,
+                    type = TextType.CAPTION
+                )
             }
 
             // Queued badge (if automation is in queue)

@@ -150,8 +150,7 @@ fun ScheduleConfigEditor(
                     pattern = pattern,
                     enabled = true, // Always enabled if schedule is configured
                     startDate = existingConfig?.startDate ?: System.currentTimeMillis(), // Initialize to now on creation, preserve on update
-                    endDate = null,
-                    nextExecutionTime = null // Will be calculated by ScheduleCalculator
+                    endDate = null
                 )
             }
 

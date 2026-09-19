@@ -222,11 +222,6 @@ object ScheduleConfigSchema {
                     "type": ["integer", "null"],
                     "minimum": 0,
                     "description": "${s.shared("schedule_end_date")}"
-                },
-                "nextExecutionTime": {
-                    "type": ["integer", "null"],
-                    "minimum": 0,
-                    "description": "${s.shared("schedule_next_execution")}"
                 }
             },
             "required": ["pattern", "enabled"]

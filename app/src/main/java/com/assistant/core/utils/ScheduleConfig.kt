@@ -14,8 +14,7 @@ data class ScheduleConfig(
     val pattern: SchedulePattern,
     val enabled: Boolean = true,
     val startDate: Long? = null,        // Start executing from this date (null = now)
-    val endDate: Long? = null,          // Stop executing after this date (null = indefinite)
-    val nextExecutionTime: Long? = null // Calculated by system (ScheduleCalculator)
+    val endDate: Long? = null           // Stop executing after this date (null = indefinite)
 )
 
 /**

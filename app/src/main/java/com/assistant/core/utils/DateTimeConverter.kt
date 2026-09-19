@@ -30,7 +30,6 @@ import java.time.format.DateTimeParseException
 object DateTimeConverter {
 
     // Timestamp field names to detect automatically in JSON
-    // NOTE: nextExecutionTime excluded - it's internal to ScheduleConfig and must remain Long
     private val TIMESTAMP_FIELD_NAMES = setOf(
         "timestamp",
         "created_at",

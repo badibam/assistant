@@ -1218,7 +1218,6 @@
     <string name="schedule_enabled">Planning activé</string>
     <string name="schedule_start_date">Date de début d\'exécution (timestamp milliseconds)</string>
     <string name="schedule_end_date">Date de fin d\'exécution (timestamp milliseconds)</string>
-    <string name="schedule_next_execution">Prochaine exécution calculée (timestamp milliseconds)</string>
     <string name="schedule_day_of_week">Jour de la semaine (1=Lundi, 7=Dimanche)</string>
     <string name="schedule_month">Mois (1-12)</string>
     <string name="schedule_day">Jour du mois (1-31)</string>
