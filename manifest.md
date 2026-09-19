@@ -5,5 +5,11 @@
 ! 2142abc  tracking stores its derived 'raw' display text in data; moving it to read time touches every read path (AI queries, backup), deferred to the tracking rewrite
 ! 75da8fc  OpenAI base URL and LiteLLM price list are hardcoded; a configurable host needs a decision on model listing and pricing for unknown hosts
 - f6a60f3  generated files that only a tool outside the repo can rebuild (theme drawables and GeneratedThemeResources.kt, via npx) stay versioned: the build must never need that tool
-## android @
+## android @ bf72ce6
+! 9b59e58  targetSdk stays 34: target 35+ forces edge-to-edge, every screen to rework and check on a phone
+! 9b59e58  string resources default to French; English default and translation of ~1500 strings to do before the first F-Droid release
+! 9b59e58  only 57 of 410 remembered states use rememberSaveable: input is lost on rotation, 353 states to sort
+! 9b59e58  UpdateManager keeps its 3 values in SharedPreferences; converting to DataStore waits for the updater's move into its own build flavor (F-Droid spec)
+! fdd9af8  27 loading flags, only 5 disable their action: each to review
+- 9b59e58  screens call the command dispatcher (Coordinator) directly and keep only view state; the dispatcher and its services are the controller layer
 ## fdroid @
