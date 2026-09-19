@@ -68,7 +68,7 @@ class UpdateChecker(private val context: Context) {
                 throw Exception("HTTP Error: $responseCode")
             }
             
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
+            val reader = BufferedReader(InputStreamReader(connection.inputStream, Charsets.UTF_8))
             val response = reader.use { it.readText() }
             
             JSONObject(response)
