@@ -297,7 +297,7 @@ fun TrackingHistory(
                 val result = coordinator.processUserAction(
                     "tool_data.delete",
                     mapOf(
-                        "tool_type" to "tracking",
+                        "tooltype" to "tracking",
                         "operation" to "delete",
                         "id" to entryId
                     )

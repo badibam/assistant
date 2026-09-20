@@ -64,14 +64,14 @@ class ActionValidator(private val context: Context) {
      * Validate tool configuration (tools.create/update)
      *
      * Expects params to contain:
-     * - tool_type: String (tooltype name)
+     * - tooltype: String (tooltype name)
      * - config_json: String (JSON configuration to validate)
      */
     private fun validateToolConfig(params: Map<String, Any>): ValidationResult {
         try {
-            val toolTypeName = params["tool_type"] as? String
+            val toolTypeName = params["tooltype"] as? String
             if (toolTypeName.isNullOrEmpty()) {
-                LogManager.aiService("Missing tool_type in tools.create/update params", "ERROR")
+                LogManager.aiService("Missing tooltype in tools.create/update params", "ERROR")
                 return ValidationResult.error(s.shared("error_missing_tool_type"))
             }
 

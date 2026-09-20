@@ -87,7 +87,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val zoneId = params.optString("zone_id")
-        val toolType = params.optString("tool_type")
+        val toolType = params.optString("tooltype")
         val configJson = params.optString("config_json", "{}")
 
         if (zoneId.isBlank() || toolType.isBlank()) {
@@ -98,7 +98,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
-            tool_type = toolType,
+            tooltype = toolType,
             config_json = configJson
         )
 
@@ -112,7 +112,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return OperationResult.success(mapOf(
             "tool_instance_id" to newToolInstance.id,
             "zone_id" to newToolInstance.zone_id,
-            "tool_type" to newToolInstance.tool_type
+            "tooltype" to newToolInstance.tooltype
         ))
     }
     
@@ -279,7 +279,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // Create new tool instance in target zone
         val newToolInstance = ToolInstance(
             zone_id = targetZoneId, // Target zone, not source zone
-            tool_type = sourceTool.tool_type,
+            tooltype = sourceTool.tooltype,
             config_json = sourceConfig.toString()
         )
 
@@ -294,7 +294,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "tool_instance_id" to newToolInstance.id,
             "source_tool_instance_id" to toolInstanceId,
             "zone_id" to newToolInstance.zone_id,
-            "tool_type" to newToolInstance.tool_type,
+            "tooltype" to newToolInstance.tooltype,
             "name" to newName
         ))
     }
@@ -334,7 +334,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "zone_id" to tool.zone_id,
                 "name" to name,
                 "description" to description,
-                "tool_type" to tool.tool_type,
+                "tooltype" to tool.tooltype,
                 "order_index" to tool.order_index
             )
 
@@ -384,7 +384,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "zone_id" to tool.zone_id,
                 "name" to name,
                 "description" to description,
-                "tool_type" to tool.tool_type,
+                "tooltype" to tool.tooltype,
                 "order_index" to tool.order_index
             )
 
@@ -430,7 +430,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "id" to toolInstance.id,
                 "zone_id" to toolInstance.zone_id,
                 "name" to name,
-                "tool_type" to toolInstance.tool_type,
+                "tooltype" to toolInstance.tooltype,
                 "config_json" to toolInstance.config_json,
                 "order_index" to toolInstance.order_index,
                 "created_at" to toolInstance.created_at,

@@ -88,7 +88,7 @@ fun ZoneScreen(
                 ToolInstance(
                     id = map["id"] as String,
                     zone_id = map["zone_id"] as String,
-                    tool_type = map["tool_type"] as String,
+                    tooltype = map["tooltype"] as String,
                     config_json = map["config_json"] as String,
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
@@ -152,7 +152,7 @@ fun ZoneScreen(
                                 ToolInstance(
                                     id = map["id"] as String,
                                     zone_id = map["zone_id"] as String,
-                                    tool_type = map["tool_type"] as String,
+                                    tooltype = map["tooltype"] as String,
                                     config_json = map["config_json"] as String,
                                     order_index = (map["order_index"] as Number).toInt(),
                                     created_at = (map["created_at"] as Number).toLong(),
@@ -216,7 +216,7 @@ fun ZoneScreen(
                     ToolInstance(
                         id = map["id"] as String,
                         zone_id = map["zone_id"] as String,
-                        tool_type = map["tool_type"] as String,
+                        tooltype = map["tooltype"] as String,
                         config_json = map["config_json"] as String,
                         order_index = (map["order_index"] as Number).toInt(),
                         created_at = (map["created_at"] as Number).toLong(),
@@ -253,7 +253,7 @@ fun ZoneScreen(
                 try {
                     coordinator.processUserAction("tools.create", mapOf(
                         "zone_id" to zone.id,
-                        "tool_type" to toolTypeId,
+                        "tooltype" to toolTypeId,
                         "config_json" to config
                     ))
                     showingConfigFor = null
@@ -323,7 +323,7 @@ fun ZoneScreen(
     
     // Show tool usage screen if selected
     selectedToolInstance?.let { toolInstance ->
-        ToolTypeManager.getToolType(toolInstance.tool_type)?.getUsageScreen(
+        ToolTypeManager.getToolType(toolInstance.tooltype)?.getUsageScreen(
             toolInstanceId = toolInstance.id,
             configJson = toolInstance.config_json,
             zoneName = zone.name,
@@ -332,7 +332,7 @@ fun ZoneScreen(
             },
             onLongClick = {
                 editingToolId = toolInstance.id
-                showingConfigFor = toolInstance.tool_type
+                showingConfigFor = toolInstance.tooltype
             }
         )
         return // Exit ZoneScreen composition when showing usage screen
@@ -396,7 +396,7 @@ fun ZoneScreen(
                     onToolClick = { toolId -> selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
-                        showingConfigFor = tool.tool_type
+                        showingConfigFor = tool.tooltype
                     },
                     onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
                     onAutomationTest = { automation ->
@@ -509,7 +509,7 @@ fun ZoneScreen(
                     onToolClick = { toolId -> selectedToolInstanceId = toolId },
                     onToolLongClick = { tool ->
                         editingToolId = tool.id
-                        showingConfigFor = tool.tool_type
+                        showingConfigFor = tool.tooltype
                     },
                     onAutomationEdit = { automation -> onNavigateToSeedEditor?.invoke(automation.seedSessionId) },
                     onAutomationTest = { automation ->
@@ -640,7 +640,7 @@ fun ZoneScreen(
                                     ToolInstance(
                                         id = map["id"] as String,
                                         zone_id = map["zone_id"] as String,
-                                        tool_type = map["tool_type"] as String,
+                                        tooltype = map["tooltype"] as String,
                                         config_json = map["config_json"] as String,
                                         order_index = (map["order_index"] as? Number)?.toInt() ?: 0,
                                         created_at = (map["created_at"] as? Number)?.toLong() ?: 0L,

@@ -149,17 +149,17 @@ suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolI
             return@withContext null
         }
 
-        val toolType = toolInstance["tool_type"] as? String
+        val toolType = toolInstance["tooltype"] as? String
         val configJson = toolInstance["config_json"] as? String
 
-        LogManager.schema("RESOLVE: tool_type='$toolType', config_json length=${configJson?.length}")
+        LogManager.schema("RESOLVE: tooltype='$toolType', config_json length=${configJson?.length}")
 
         if (toolType.isNullOrBlank() || configJson.isNullOrBlank()) {
-            LogManager.schema("RESOLVE: Missing tool_type or config_json for $toolInstanceId", "ERROR")
+            LogManager.schema("RESOLVE: Missing tooltype or config_json for $toolInstanceId", "ERROR")
             return@withContext null
         }
 
-        LogManager.schema("RESOLVE: Successfully resolved $toolInstanceId -> tool_type: '$toolType'")
+        LogManager.schema("RESOLVE: Successfully resolved $toolInstanceId -> tooltype: '$toolType'")
         ToolInstanceInfo(toolType, configJson)
 
     } catch (e: Exception) {

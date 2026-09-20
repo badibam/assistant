@@ -522,7 +522,7 @@ class CommandExecutor(private val context: Context) {
 
                 // Name/type fields
                 data["name"]?.let { filtered["name"] = it }
-                data["tool_type"]?.let { filtered["tool_type"] = it }
+                data["tooltype"]?.let { filtered["tooltype"] = it }
                 data["tooltype"]?.let { filtered["tooltype"] = it }
 
                 // Count fields

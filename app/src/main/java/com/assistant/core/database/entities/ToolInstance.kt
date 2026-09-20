@@ -20,7 +20,7 @@ data class ToolInstance(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
     val zone_id: String,
-    val tool_type: String, // "tracking", "objective", etc.
+    val tooltype: String, // "tracking", "objective", etc.
     val config_json: String, // Configuration spécifique à l'outil
     val enabled: Boolean = true,
     val order_index: Int = 0,

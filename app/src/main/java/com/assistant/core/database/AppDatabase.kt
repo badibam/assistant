@@ -40,7 +40,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 23,
+    version = 24,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -65,7 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 23
+        const val VERSION = 24
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -881,6 +881,47 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Rename tool_instances.tool_type to tooltype, the single name the app now uses
+                // for a tool's type. SQLite before 3.25 has no RENAME COLUMN, and minSdk 26 ships
+                // 3.19, so the table is recreated. The foreign key on zone_id is part of the
+                // schema Room checks at open, so the new table carries it.
+                database.execSQL("""
+                    CREATE TABLE tool_instances_new (
+                        id TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        tooltype TEXT NOT NULL,
+                        config_json TEXT NOT NULL,
+                        enabled INTEGER NOT NULL,
+                        order_index INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+
+                database.execSQL("""
+                    INSERT INTO tool_instances_new (
+                        id, zone_id, tooltype, config_json, enabled, order_index, created_at, updated_at
+                    )
+                    SELECT
+                        id, zone_id, tool_type, config_json, enabled, order_index, created_at, updated_at
+                    FROM tool_instances
+                """)
+
+                database.execSQL("DROP TABLE tool_instances")
+                database.execSQL("ALTER TABLE tool_instances_new RENAME TO tool_instances")
+
+                val cursor = database.query("SELECT COUNT(*) FROM tool_instances")
+                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                cursor.close()
+
+                LogManager.database("MIGRATION 23->24: $count tool instance(s) moved to the tooltype column", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -902,7 +943,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_19_20,
                     MIGRATION_20_21,
                     MIGRATION_21_22,
-                    MIGRATION_22_23
+                    MIGRATION_22_23,
+                    MIGRATION_23_24
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -100,7 +100,7 @@ fun DuplicateSelector(
                         id = map["id"] as String,
                         name = map["name"] as String,
                         toolType = if (type == DuplicateType.TOOL) {
-                            map["tool_type"] as? String
+                            map["tooltype"] as? String
                         } else null
                     )
                 }

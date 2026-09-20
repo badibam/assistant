@@ -560,7 +560,7 @@ class AICommandProcessor(private val context: Context) {
         }
 
         val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-        val tooltype = toolInstance?.get("tool_type") as? String  // Note: DB column is "tool_type" not "tooltype"
+        val tooltype = toolInstance?.get("tooltype") as? String  // Note: DB column is "tooltype" not "tooltype"
             ?: return command
 
         // Inject tooltype at root level

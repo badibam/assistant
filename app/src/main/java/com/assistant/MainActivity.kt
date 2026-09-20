@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity() {
             LogManager.coordination("Creating tool instance...")
             val toolResult = coordinator.processUserAction("tools.create", mapOf(
                 "zone_id" to "test-zone-id",
-                "tool_type" to "tracking",
+                "tooltype" to "tracking",
                 "name" to "Test Tracking Tool"
             ))
             LogManager.coordination("Tool creation result: ${toolResult.status}")

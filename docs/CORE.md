@@ -26,7 +26,9 @@ Guide technique de l'architecture système centrale.
 ### Nommage des Paramètres par Service
 Les clés qui traversent le dispatcher sont en snake_case, quelle que soit la ressource : `tool_instance_id`, `zone_id`, `schema_id`. Le camelCase reste interne à Kotlin (noms de variables, propriétés d'entités) et ne franchit pas la frontière.
 
-Unification en cours : `tooltype` et une série de clés de l'IA (`sessionId`, `providerId`, `automationId`, temps et compteurs de tokens) sont encore en camelCase.
+Un mot composé devenu un terme du domaine s'écrit soudé — `tooltype`, comme `timestamp` — et ce nom vaut de la clé jusqu'à la colonne.
+
+Unification en cours : une série de clés de l'IA (`sessionId`, `providerId`, `automationId`, temps et compteurs de tokens) est encore en camelCase.
 
 ### Opérations CRUD Complètes ToolDataService
 **Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete

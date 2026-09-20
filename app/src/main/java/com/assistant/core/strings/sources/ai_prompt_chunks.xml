@@ -274,7 +274,7 @@ Liste les instances d\'outils.
 **Paramètres** :
 
 - `zone_id` (string, optionnel) : Filtrer par zone
-- `tool_type` (string, optionnel) : Filtrer par type d\'outil
+- `tooltype` (string, optionnel) : Filtrer par type d\'outil
 
 ### ZONE_CONFIG
 
@@ -299,7 +299,7 @@ Récupère l\'état global de l\'application (zones + tool instances).
 **Retour** :
 
 - Zones : id, name, description, order_index, created_at, updated_at
-- Tool instances : id, zone_id, name, description, tool_type, order_index, created_at, updated_at
+- Tool instances : id, zone_id, name, description, tooltype, order_index, created_at, updated_at
 
 **Usage** : Utilise cette commande quand tu as besoin de comprendre la structure complète de l\'application (quelles zones existent, quels outils sont configurés avec leurs descriptions).
 Pour obtenir la configuration complète d\'un outil spécifique, utilise TOOL_CONFIG.
@@ -384,7 +384,7 @@ Crée une instance d\'outil.
 **Paramètres** :
 
 - `zone_id` (string, **requis**)
-- `tool_type` (string, **requis**)
+- `tooltype` (string, **requis**)
 - `config` (object, **requis**) : Configuration JSON (doit inclure `schema_id` et `data_schema_id`)
 
 ### UPDATE_TOOL
@@ -716,7 +716,7 @@ Supprime 2 entrées spécifiques.
   "type": "CREATE_TOOL",
   "params": {
     "zone_id": "zone_sante_123",
-    "tool_type": "tracking",
+    "tooltype": "tracking",
     "config": {
       "schema_id": "tracking_config_numeric",
       "data_schema_id": "tracking_data_numeric",
@@ -1101,7 +1101,7 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
       "type": "CREATE_TOOL",
       "params": {
         "zone_id": "zone_sante_id",
-        "tool_type": "tracking",
+        "tooltype": "tracking",
         "config": {
           "schema_id": "tracking_config_numeric",
           "data_schema_id": "tracking_data_numeric",

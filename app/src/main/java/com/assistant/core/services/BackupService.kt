@@ -134,7 +134,7 @@ class BackupService(private val context: Context) : ExecutableService {
                             put(JSONObject().apply {
                                 put("id", instance.id)
                                 put("zone_id", instance.zone_id)
-                                put("tool_type", instance.tool_type)
+                                put("tooltype", instance.tooltype)
                                 put("config_json", instance.config_json)
                                 put("enabled", instance.enabled)
                                 put("order_index", instance.order_index)
@@ -467,7 +467,7 @@ class BackupService(private val context: Context) : ExecutableService {
                     ToolInstance(
                         id = item.getString("id"),
                         zone_id = item.getString("zone_id"),
-                        tool_type = item.getString("tool_type"),
+                        tooltype = item.getString("tooltype"),
                         config_json = item.getString("config_json"),
                         enabled = item.optBoolean("enabled", true),
                         order_index = item.getInt("order_index"),
@@ -634,7 +634,7 @@ class BackupService(private val context: Context) : ExecutableService {
             data.optJSONArray("tool_instances")?.let { array ->
                 for (i in 0 until array.length()) {
                     val instance = array.getJSONObject(i)
-                    val tooltype = instance.getString("tool_type")
+                    val tooltype = instance.getString("tooltype")
                     val configJson = instance.getString("config_json")
 
                     // Apply JSON transformations to config

@@ -280,7 +280,7 @@ class DataNavigator(private val context: Context) {
                 toolInstances.map { toolInstance ->
                     val instanceId = toolInstance["id"] as? String ?: ""
                     val instanceName = toolInstance["name"] as? String ?: ""
-                    val toolType = toolInstance["tool_type"] as? String ?: ""
+                    val toolType = toolInstance["tooltype"] as? String ?: ""
 
                     // Format: "Nom de l'instance (type)" or just type if no name
                     val displayName = if (instanceName.isNotBlank()) {
@@ -319,7 +319,7 @@ class DataNavigator(private val context: Context) {
                 val instance = result.data?.get("tool_instance") as? Map<String, Any>
                 if (instance != null) {
                     val instanceName = instance["name"] as? String ?: ""
-                    val toolType = instance["tool_type"] as? String ?: ""
+                    val toolType = instance["tooltype"] as? String ?: ""
                     ToolInstanceData(
                         id = instance["id"] as? String ?: toolInstanceId,
                         name = instanceName.ifBlank { toolType.replaceFirstChar { it.uppercase() } },

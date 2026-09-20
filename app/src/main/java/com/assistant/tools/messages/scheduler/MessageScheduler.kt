@@ -75,7 +75,7 @@ object MessageScheduler : ToolScheduler {
 
             @Suppress("UNCHECKED_CAST")
             val instances = (instancesResult.data?.get("tool_instances") as? List<Map<String, Any>>) ?: emptyList()
-            val messageInstances = instances.filter { it["tool_type"] == "messages" }
+            val messageInstances = instances.filter { it["tooltype"] == "messages" }
 
             if (messageInstances.isEmpty()) {
                 LogManager.service("No Messages tool instances found", "DEBUG")
