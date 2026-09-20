@@ -478,6 +478,12 @@ class EnrichmentProcessor {
 **Enrichments** : Stockés comme SessionMessage sender=SYSTEM, inclus dans l'historique.
 **RichComposer UI** : Architecture multi-blocs (TextBlock = texte + enrichments), navigation focus-based avec highlight visuel.
 
+### Le L1 est un contrat, à retester à chaque modification
+
+`ai_prompt_chunks.xml` est la seule description que l'IA reçoit de l'API de commandes. Rien ne le compile ni ne le teste : une divergence avec le code ne produit aucune erreur, juste un paramètre ignoré en silence et un résultat faux côté IA.
+
+Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.** À toute modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor.formatResultData`), rejouer les exemples concernés dans une session CHAT réelle. C'est le seul filet.
+
 ### PromptManager.buildPromptData()
 ```kotlin
 suspend fun buildPromptData(sessionId: String): PromptData {
