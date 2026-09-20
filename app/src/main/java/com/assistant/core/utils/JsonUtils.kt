@@ -132,6 +132,29 @@ object JsonUtils {
     }
 
     /**
+     * Convert a JSON array, in any of the forms it arrives in, to a Kotlin List.
+     *
+     * Mirrors toMap for values that are arrays rather than objects: a column holds the string
+     * form, callers get the list. Null and blank both give an empty list, since a column that
+     * was never written and one holding nothing mean the same thing to a caller.
+     */
+    fun toList(value: Any?): List<Any?> {
+        return when (value) {
+            null -> emptyList()
+            is List<*> -> value.map { fromJSONValue(it) }
+            is JSONArray -> (0 until value.length()).map { fromJSONValue(value.get(it)) }
+            is String -> if (value.isBlank()) emptyList() else toList(JSONArray(value))
+            else -> {
+                LogManager.service(
+                    "Unexpected type in toList: ${value.javaClass.name} - returning empty list",
+                    "WARN"
+                )
+                emptyList()
+            }
+        }
+    }
+
+    /**
      * Convert JSONObject to mutable Map recursively
      */
     private fun jsonObjectToMap(jsonObject: JSONObject): MutableMap<String, Any?> {

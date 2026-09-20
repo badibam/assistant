@@ -1,5 +1,6 @@
 package com.assistant.core.services
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
@@ -59,12 +60,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
         val toolGroupsJson = if (params.has("tool_groups")) {
-            val toolGroupsValue = params.opt("tool_groups")
-            when (toolGroupsValue) {
-                is JSONArray -> toolGroupsValue.toString()
-                is String -> toolGroupsValue
-                else -> null
-            }
+            params.optJSONArray("tool_groups")?.toString()
         } else {
             null
         }
@@ -122,12 +118,11 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
         val toolGroupsJson = if (params.has("tool_groups")) {
-            val toolGroupsValue = params.opt("tool_groups")
             // Allow explicit null to clear tool_groups
+            val toolGroupsValue = params.opt("tool_groups")
             when {
                 toolGroupsValue == null || toolGroupsValue == JSONObject.NULL -> null
                 toolGroupsValue is JSONArray -> toolGroupsValue.toString()
-                toolGroupsValue is String -> toolGroupsValue
                 else -> existingZone.tool_groups
             }
         } else {
@@ -223,7 +218,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         // Add tool_groups if present
         if (zone.tool_groups != null) {
-            zoneMap["tool_groups"] = zone.tool_groups
+            zoneMap["tool_groups"] = JsonUtils.toList(zone.tool_groups)
         }
 
         // Add group if present
@@ -256,7 +251,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
             // Add tool_groups if present
             if (zone.tool_groups != null) {
-                zoneMap["tool_groups"] = zone.tool_groups
+                zoneMap["tool_groups"] = JsonUtils.toList(zone.tool_groups)
             }
 
             // Add group if present

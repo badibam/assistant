@@ -68,17 +68,9 @@ fun ToolGeneralConfigSection(
         val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
         if (result.status == CommandStatus.SUCCESS) {
             val zone = result.data?.get("zone") as? Map<*, *>
-            val toolGroupsJson = zone?.get("tool_groups") as? String
-            if (toolGroupsJson != null) {
-                try {
-                    val jsonArray = JSONArray(toolGroupsJson)
-                    availableGroups = (0 until jsonArray.length()).map { jsonArray.getString(it) }
-                } catch (e: Exception) {
-                    availableGroups = emptyList()
-                }
-            } else {
-                availableGroups = emptyList()
-            }
+            availableGroups = (zone?.get("tool_groups") as? List<*>)
+                ?.mapNotNull { it as? String }
+                ?: emptyList()
         }
     }
 

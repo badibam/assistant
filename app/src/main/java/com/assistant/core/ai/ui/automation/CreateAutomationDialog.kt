@@ -104,17 +104,9 @@ fun CreateAutomationDialog(
             val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to selectedZoneId))
             if (result.status == CommandStatus.SUCCESS) {
                 val zoneData = result.data?.get("zone") as? Map<*, *>
-                val toolGroupsJson = zoneData?.get("tool_groups") as? String
-                zoneToolGroups = if (toolGroupsJson != null) {
-                    try {
-                        val jsonArray = org.json.JSONArray(toolGroupsJson)
-                        (0 until jsonArray.length()).map { jsonArray.getString(it) }
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-                } else {
-                    emptyList()
-                }
+                zoneToolGroups = (zoneData?.get("tool_groups") as? List<*>)
+                    ?.mapNotNull { it as? String }
+                    ?: emptyList()
             }
         } catch (e: Exception) {
             LogManager.aiUI("Failed to load zone tool_groups: ${e.message}", "ERROR", e)

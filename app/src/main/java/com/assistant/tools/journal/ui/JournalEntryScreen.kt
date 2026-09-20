@@ -112,23 +112,8 @@ fun JournalEntryScreen(
                     content = parsedData["content"] as? String ?: ""
 
                     // Load custom fields values
-                    val customFieldsData = data["custom_fields"]
-                    val parsedCustomFields = try {
-                        when (customFieldsData) {
-                            is Map<*, *> -> customFieldsData as Map<String, Any?>
-                            is String -> {
-                                val customFieldsJson = JSONObject(customFieldsData)
-                                mutableMapOf<String, Any?>().apply {
-                                    customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
-                                }
-                            }
-                            else -> emptyMap()
-                        }
-                    } catch (e: Exception) {
-                        LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
-                        emptyMap<String, Any?>()
-                    }
-                    customFieldsValues = parsedCustomFields
+                    @Suppress("UNCHECKED_CAST")
+                    customFieldsValues = (data["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
                     LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                     LogManager.ui("Successfully loaded entry: title=$title")

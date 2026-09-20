@@ -118,27 +118,9 @@ fun NotesScreen(
                         val content = parsedData["content"] as? String ?: ""
                         val position = (parsedData["position"] as? Number)?.toInt() ?: 0
 
-                        // Load custom fields from entity column (not from data JSON)
-                        val customFieldsData = map["custom_fields"]
-                        val customFields = try {
-                            when (customFieldsData) {
-                                is Map<*, *> -> customFieldsData as Map<String, Any?>
-                                is String -> {
-                                    if (customFieldsData.isNotEmpty()) {
-                                        val customFieldsJson = JSONObject(customFieldsData)
-                                        mutableMapOf<String, Any?>().apply {
-                                            customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
-                                        }
-                                    } else {
-                                        emptyMap()
-                                    }
-                                }
-                                else -> emptyMap()
-                            }
-                        } catch (e: Exception) {
-                            LogManager.ui("Error parsing custom fields: ${e.message}", "ERROR")
-                            emptyMap<String, Any?>()
-                        }
+                        // Custom fields come from their own column, not from the data object
+                        @Suppress("UNCHECKED_CAST")
+                        val customFields = (map["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
 
                         LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position, customFields=${customFields.size}")
                         NoteEntry(id, content, timestamp, position, customFields)

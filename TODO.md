@@ -8,7 +8,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Trois points dans `docs/design/architecture-audit-debt.md`, tous vérifiés : un chantier transversal (chaînes JSON aux frontières) et deux décisions à prendre plutôt que du code à écrire (format du prompt L1, validation désactivée par défaut).
+Deux points dans `docs/design/architecture-audit-debt.md`, tous deux des décisions à prendre plutôt que du code à écrire : format du prompt L1, validation désactivée par défaut.
 
 ## Divers
 
@@ -28,6 +28,8 @@ Trois points dans `docs/design/architecture-audit-debt.md`, tous vérifiés : un
 - La touche Retour du téléphone ferme l'app depuis l'écran d'un outil, au lieu de revenir à la zone.
 - Le compositeur de message perd sa fenêtre d'enrichissement ouverte à la rotation (le texte, lui, survit) : ses blocs reçoivent de nouveaux identifiants à chaque recréation, et l'état du sélecteur de portée n'a pas de forme sauvegardable.
 - Compte des tokens avant envoi, via `/v1/messages/count_tokens` chez Claude — à voir pour les autres providers. `TokenCalculator` (171 lignes) et son bloc de strings existent déjà mais ne sont appelés de nulle part : soit ce chantier les reprend, soit ils partent.
+- `WaitingContext.dataToJson` sérialise une `Map` en JSON à la main, en concaténant des chaînes avec des guillemets échappés au jugé. Le résultat part dans la colonne `waiting_context_json`. `JsonUtils` fait ça correctement depuis toujours.
+- `tool_data.create` et `.update` acceptent `timestamp` en millisecondes ou en chaîne ISO (`ToolDataService.kt:82` et `:196`). Les deux formes coexistent parce que l'interface envoie l'une et l'IA l'autre ; décider laquelle est le contrat et convertir chez l'appelant, plutôt que de tester le type dans le service.
 - `BackupService.transformBackupData` renvoie les données non transformées quand la transformation échoue, en ne laissant qu'une ligne de log. C'est un repli silencieux, que `docs/reference.md` interdit : l'import continue et écrit en base des données à l'ancien format. Décider entre échouer franchement et exiger une validation explicite.
 - Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste.
 
