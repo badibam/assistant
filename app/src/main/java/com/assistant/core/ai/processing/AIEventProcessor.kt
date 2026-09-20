@@ -1525,12 +1525,12 @@ class AIEventProcessor(
                 )
 
                 if (hasWaitingAutomations) {
-                    val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
-                        aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
-                        automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
-                    )
-
-                    if (sessionScheduler.shouldTimeout(currentState, hasWaitingAutomations = true)) {
+                    if (com.assistant.core.ai.scheduling.SessionSlotPolicy.shouldTimeout(
+                            currentState,
+                            hasWaitingAutomations = true,
+                            currentTime = System.currentTimeMillis()
+                        )
+                    ) {
                         LogManager.aiSession("Heartbeat: CHAT timeout (automation waiting)", "INFO")
                         emit(AIEvent.SessionCompleted(SessionEndReason.TIMEOUT))
                     }
@@ -1543,12 +1543,12 @@ class AIEventProcessor(
                     "DEBUG"
                 )
 
-                val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
-                    aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
-                    automationScheduler = com.assistant.core.ai.scheduling.AutomationScheduler(context)
-                )
-
-                if (sessionScheduler.shouldTimeout(currentState, hasWaitingAutomations = false)) {
+                if (com.assistant.core.ai.scheduling.SessionSlotPolicy.shouldTimeout(
+                        currentState,
+                        hasWaitingAutomations = false,
+                        currentTime = System.currentTimeMillis()
+                    )
+                ) {
                     LogManager.aiSession("Heartbeat: AUTOMATION timeout", "INFO")
                     emit(AIEvent.SessionCompleted(SessionEndReason.TIMEOUT))
                 }

@@ -11,6 +11,7 @@ import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.PromptManager
 import com.assistant.core.ai.providers.AIClient
 import com.assistant.core.ai.scheduling.AISessionScheduler
+import com.assistant.core.ai.scheduling.SessionSlotPolicy
 import com.assistant.core.ai.scheduling.AutomationScheduler
 import com.assistant.core.ai.state.AIMessageRepository
 import com.assistant.core.ai.state.AIStateRepository
@@ -382,11 +383,12 @@ object AIOrchestrator {
         }
 
         // Request activation via scheduler
-        val activationResult = sessionScheduler.requestSession(
+        val activationResult = SessionSlotPolicy.requestSession(
             sessionId = sessionId,
             sessionType = SessionType.CHAT,
             trigger = ExecutionTrigger.MANUAL,
-            currentState = currentState
+            currentState = currentState,
+            currentTime = System.currentTimeMillis()
         )
 
         // Handle result
@@ -461,11 +463,12 @@ object AIOrchestrator {
         val sessionId = createNewChatSession(seedId)
 
         // Step 2: Request activation via scheduler (will enqueue if slot occupied)
-        val activationResult = sessionScheduler.requestSession(
+        val activationResult = SessionSlotPolicy.requestSession(
             sessionId = sessionId,
             sessionType = SessionType.CHAT,
             trigger = ExecutionTrigger.MANUAL,
-            currentState = currentState
+            currentState = currentState,
+            currentTime = System.currentTimeMillis()
         )
 
         // Step 3: Handle activation result
@@ -539,11 +542,12 @@ object AIOrchestrator {
         val currentState = stateRepository.state.value
 
         // Step 2: Request activation via scheduler (same as startNewChatSession)
-        val activationResult = sessionScheduler.requestSession(
+        val activationResult = SessionSlotPolicy.requestSession(
             sessionId = sessionId,
             sessionType = SessionType.CHAT,
             trigger = ExecutionTrigger.MANUAL,
-            currentState = currentState
+            currentState = currentState,
+            currentTime = System.currentTimeMillis()
         )
 
         // Step 3: Handle activation result (identical to startNewChatSession)
@@ -719,11 +723,12 @@ object AIOrchestrator {
 
             // Request activation via scheduler (handles inactivity check + queue logic)
             val currentState = stateRepository.state.value
-            val activationResult = sessionScheduler.requestSession(
+            val activationResult = SessionSlotPolicy.requestSession(
                 sessionId = newSessionId,
                 sessionType = SessionType.AUTOMATION,
                 trigger = ExecutionTrigger.MANUAL,
-                currentState = currentState
+                currentState = currentState,
+                currentTime = System.currentTimeMillis()
             )
 
             // Handle result
