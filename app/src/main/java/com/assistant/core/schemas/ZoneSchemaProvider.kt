@@ -31,9 +31,9 @@ object ZoneSchemaProvider : SchemaProvider {
             "description" -> s.shared("label_description")
             "icon_name" -> s.shared("label_icon")
             "color" -> s.shared("label_color")
-            "validateZoneConfigChanges" -> s.shared("label_validate_zone_config_changes")
-            "validateToolConfigChanges" -> s.shared("label_validate_tool_config_changes")
-            "validateToolDataChanges" -> s.shared("label_validate_tool_data_changes")
+            "validate_zone_config_changes" -> s.shared("label_validate_zone_config_changes")
+            "validate_tool_config_changes" -> s.shared("label_validate_tool_config_changes")
+            "validate_tool_data_changes" -> s.shared("label_validate_tool_data_changes")
             "tool_groups" -> s.shared("label_tool_groups")
             "group" -> s.shared("label_group")
             else -> s.shared("label_field_generic")
@@ -69,17 +69,17 @@ object ZoneSchemaProvider : SchemaProvider {
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.shared("zone_schema_color")}"
                 },
-                "validateZoneConfigChanges": {
+                "validate_zone_config_changes": {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("zone_schema_validate_zone_config_changes")}"
                 },
-                "validateToolConfigChanges": {
+                "validate_tool_config_changes": {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("zone_schema_validate_tool_config_changes")}"
                 },
-                "validateToolDataChanges": {
+                "validate_tool_data_changes": {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("zone_schema_validate_tool_data_changes")}"

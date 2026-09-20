@@ -73,13 +73,13 @@ object ProviderVerifier {
                         return VerificationResult(false, s.shared("ai_error_no_provider_configured"))
                     }
 
-                    val hasActiveProvider = activeResult.data?.get("hasActiveProvider") as? Boolean ?: false
+                    val hasActiveProvider = activeResult.data?.get("has_active_provider") as? Boolean ?: false
                     if (!hasActiveProvider) {
                         LogManager.aiService("verifyProvider: No active provider configured", "WARN")
                         return VerificationResult(false, s.shared("ai_error_no_provider_configured"))
                     }
 
-                    val activeProviderId = activeResult.data?.get("activeProviderId") as? String
+                    val activeProviderId = activeResult.data?.get("active_provider_id") as? String
                     if (activeProviderId.isNullOrEmpty()) {
                         LogManager.aiService("verifyProvider: Active provider ID is empty", "ERROR")
                         return VerificationResult(false, s.shared("ai_error_no_provider_configured"))

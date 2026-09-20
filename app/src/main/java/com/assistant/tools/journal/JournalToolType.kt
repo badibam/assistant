@@ -41,8 +41,8 @@ object JournalToolType : ToolTypeContract {
             "icon_name": "book-open",
             "display_mode": "EXTENDED",
             "management": "manual",
-            "validateConfig": false,
-            "validateData": false,
+            "validate_config": false,
+            "validate_data": false,
             "always_send": false,
             "sort_order": "descending"
         }

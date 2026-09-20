@@ -122,7 +122,7 @@ class Coordinator(context: Context) {
         return try {
             val command = queuedOp.command.copy(
                 params = queuedOp.command.params + mapOf(
-                    "operationId" to queuedOp.operationId,
+                    "operation_id" to queuedOp.operationId,
                     "phase" to queuedOp.phase
                 )
             )

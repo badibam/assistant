@@ -262,8 +262,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("ai_error_param_automation_id_required"))
         val limit = params.optInt("limit", 10)
         val page = params.optInt("page", 1)
-        val startTime = if (params.has("startTime")) params.getLong("startTime") else null
-        val endTime = if (params.has("endTime")) params.getLong("endTime") else null
+        val startTime = if (params.has("start_time")) params.getLong("start_time") else null
+        val endTime = if (params.has("end_time")) params.getLong("end_time") else null
 
         LogManager.aiSession("Listing sessions for automation: automationId=$automationId, limit=$limit, page=$page, startTime=$startTime, endTime=$endTime", "DEBUG")
 
@@ -318,9 +318,9 @@ class AISessionService(private val context: Context) : ExecutableService {
             return OperationResult.success(mapOf(
                 "sessions" to sessions,
                 "pagination" to mapOf(
-                    "currentPage" to page,
-                    "totalPages" to totalPages,
-                    "totalEntries" to totalEntries
+                    "current_page" to page,
+                    "total_pages" to totalPages,
+                    "total_entries" to totalEntries
                 )
             ))
         } catch (e: Exception) {
@@ -454,7 +454,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             if (activeSessionEntity == null) {
                 LogManager.aiSession("No active session found", "DEBUG")
                 return OperationResult.success(mapOf(
-                    "hasActiveSession" to false
+                    "has_active_session" to false
                 ))
             }
 
@@ -464,7 +464,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Found active session: ${activeSessionEntity.id} with ${messageEntities.size} messages", "DEBUG")
 
             return OperationResult.success(mapOf(
-                "hasActiveSession" to true,
+                "has_active_session" to true,
                 "session_id" to activeSessionEntity.id,
                 "session" to mapOf(
                     "id" to activeSessionEntity.id,
@@ -511,7 +511,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             LogManager.aiSession("Successfully stopped active session", "INFO")
             return OperationResult.success(mapOf(
-                "sessionsDeactivated" to true
+                "sessions_deactivated" to true
             ))
 
         } catch (e: Exception) {
@@ -545,13 +545,13 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             // Extract content based on message type
             // richContent is already serialized JSON from RichMessage.toJson()
-            val richContentJson = params.optString("richContent")?.takeIf { it.isNotEmpty() }
+            val richContentJson = params.optString("rich_content")?.takeIf { it.isNotEmpty() }
             val textContent = params.optString("text_content")?.takeIf { it.isNotEmpty() }
             val aiMessageJson = params.optString("ai_message_json")?.takeIf { it.isNotEmpty() }
 
             // Handle SystemMessage if provided
-            val systemMessageJson = if (params.has("systemMessage")) {
-                val systemMessage = params.get("systemMessage") as? SystemMessage
+            val systemMessageJson = if (params.has("system_message")) {
+                val systemMessage = params.get("system_message") as? SystemMessage
                 systemMessage?.toJson()
             } else {
                 null
@@ -595,7 +595,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully created message: $messageId for session $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
-                "messageId" to messageId,
+                "message_id" to messageId,
                 "session_id" to sessionId,
                 "timestamp" to timestamp,
                 "sender" to sender.name
@@ -610,7 +610,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun getMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+        val messageId = params.optString("message_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
 
         LogManager.aiSession("Getting message: $messageId", "DEBUG")
@@ -682,7 +682,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun updateMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+        val messageId = params.optString("message_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
 
         LogManager.aiSession("Updating message: $messageId", "DEBUG")
@@ -712,7 +712,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully updated message: $messageId", "INFO")
 
             return OperationResult.success(mapOf(
-                "messageId" to messageId,
+                "message_id" to messageId,
                 "updated" to true
             ))
         } catch (e: Exception) {
@@ -724,7 +724,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun deleteMessage(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val messageId = params.optString("messageId").takeIf { it.isNotEmpty() }
+        val messageId = params.optString("message_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_message_id_required"))
 
         LogManager.aiSession("Deleting message: $messageId", "DEBUG")
@@ -743,7 +743,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully deleted message: $messageId", "INFO")
 
             return OperationResult.success(mapOf(
-                "messageId" to messageId,
+                "message_id" to messageId,
                 "deleted" to true
             ))
         } catch (e: Exception) {
@@ -784,21 +784,21 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Build map without null values for costs if price unavailable
             val resultMap = buildMap<String, Any> {
                 put("session_id", sessionId)
-                put("modelId", cost.modelId)
-                put("totalUncachedInputTokens", cost.totalUncachedInputTokens)
-                put("totalCacheWriteTokens", cost.totalCacheWriteTokens)
-                put("totalCacheReadTokens", cost.totalCacheReadTokens)
-                put("totalOutputTokens", cost.totalOutputTokens)
-                put("priceAvailable", cost.priceAvailable)
+                put("model_id", cost.modelId)
+                put("total_uncached_input_tokens", cost.totalUncachedInputTokens)
+                put("total_cache_write_tokens", cost.totalCacheWriteTokens)
+                put("total_cache_read_tokens", cost.totalCacheReadTokens)
+                put("total_output_tokens", cost.totalOutputTokens)
+                put("price_available", cost.priceAvailable)
                 put("currency", "USD")
 
                 // Only include cost fields if price is available
                 if (cost.priceAvailable) {
-                    cost.inputCost?.let { put("inputCost", it) }
-                    cost.cacheWriteCost?.let { put("cacheWriteCost", it) }
-                    cost.cacheReadCost?.let { put("cacheReadCost", it) }
-                    cost.outputCost?.let { put("outputCost", it) }
-                    cost.totalCost?.let { put("totalCost", it) }
+                    cost.inputCost?.let { put("input_cost", it) }
+                    cost.cacheWriteCost?.let { put("cache_write_cost", it) }
+                    cost.cacheReadCost?.let { put("cache_read_cost", it) }
+                    cost.outputCost?.let { put("output_cost", it) }
+                    cost.totalCost?.let { put("total_cost", it) }
                 }
             }
 
@@ -930,8 +930,8 @@ class AISessionService(private val context: Context) : ExecutableService {
         val search = params.optString("search").takeIf { it.isNotEmpty() }
         val limit = params.optInt("limit", 20)
         val page = params.optInt("page", 1)
-        val startTime = if (params.has("startTime")) params.getLong("startTime") else null
-        val endTime = if (params.has("endTime")) params.getLong("endTime") else null
+        val startTime = if (params.has("start_time")) params.getLong("start_time") else null
+        val endTime = if (params.has("end_time")) params.getLong("end_time") else null
 
         LogManager.aiSession("Listing CHAT sessions: search=$search, page=$page, limit=$limit, startTime=$startTime, endTime=$endTime", "DEBUG")
 
@@ -971,7 +971,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 val preview = if (firstMessage?.richContentJson != null) {
                     try {
                         val richMessageJson = JSONObject(firstMessage.richContentJson)
-                        val linearText = richMessageJson.optString("linearText", "")
+                        val linearText = richMessageJson.optString("linear_text", "")
                         // Truncate to 60 chars
                         if (linearText.length > 60) {
                             linearText.substring(0, 60) + "..."
@@ -991,17 +991,17 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "name" to session.name,
                     "created_at" to session.createdAt,
                     "last_activity" to session.lastActivity,
-                    "messageCount" to messageCount,
-                    "firstUserMessage" to preview
+                    "message_count" to messageCount,
+                    "first_user_message" to preview
                 )
             }
 
             return OperationResult.success(mapOf(
                 "sessions" to sessions,
                 "pagination" to mapOf(
-                    "currentPage" to page,
-                    "totalPages" to totalPages,
-                    "totalEntries" to total
+                    "current_page" to page,
+                    "total_pages" to totalPages,
+                    "total_entries" to total
                 )
             ))
         } catch (e: Exception) {

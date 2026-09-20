@@ -128,7 +128,7 @@ class ValidationResolver(private val context: Context) {
                     else -> {
                         // UPDATE_ZONE, DELETE_ZONE: Zone exists, check app + zone configs
                         val zoneConfig = loadZoneConfig(zoneId)
-                        val zoneRequires = zoneConfig.optBoolean("validateZoneConfigChanges", false)
+                        val zoneRequires = zoneConfig.optBoolean("validate_zone_config_changes", false)
                         val appRequires = appConfig.validateZoneConfigChanges
 
                         val requiresValidation = appRequires || zoneRequires
@@ -158,7 +158,7 @@ class ValidationResolver(private val context: Context) {
                         val zoneId = action.params["zone_id"] as? String ?: ""
                         val zoneConfig = if (zoneId.isNotEmpty()) loadZoneConfig(zoneId) else JSONObject()
 
-                        val zoneRequires = zoneConfig.optBoolean("validateToolConfigChanges", false)
+                        val zoneRequires = zoneConfig.optBoolean("validate_tool_config_changes", false)
                         val appRequires = appConfig.validateToolConfigChanges
 
                         val requiresValidation = appRequires || zoneRequires
@@ -179,8 +179,8 @@ class ValidationResolver(private val context: Context) {
                         val toolConfig = loadToolConfig(toolInstanceId)
                         val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
-                        val toolRequires = toolConfig.optBoolean("validateConfig", false)
-                        val zoneRequires = zoneConfig.optBoolean("validateToolConfigChanges", false)
+                        val toolRequires = toolConfig.optBoolean("validate_config", false)
+                        val zoneRequires = zoneConfig.optBoolean("validate_tool_config_changes", false)
                         val appRequires = appConfig.validateToolConfigChanges
 
                         val requiresValidation = appRequires || zoneRequires || toolRequires
@@ -206,8 +206,8 @@ class ValidationResolver(private val context: Context) {
                 val toolConfig = loadToolConfig(toolInstanceId)
                 val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
-                val toolRequires = toolConfig.optBoolean("validateData", false)
-                val zoneRequires = zoneConfig.optBoolean("validateToolDataChanges", false)
+                val toolRequires = toolConfig.optBoolean("validate_data", false)
+                val zoneRequires = zoneConfig.optBoolean("validate_tool_data_changes", false)
                 val appRequires = appConfig.validateToolDataChanges
 
                 val requiresValidation = appRequires || zoneRequires || toolRequires

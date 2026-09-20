@@ -633,7 +633,7 @@ object AIOrchestrator {
      * Creates COMMUNICATION_CANCELLED system message and transitions to IDLE.
      */
     fun cancelCommunication() {
-        LogManager.aiSession("cancelCommunication", "INFO")
+        LogManager.aiSession("cancel_communication", "INFO")
 
         // Emit cancellation event asynchronously
         orchestratorScope.launch {

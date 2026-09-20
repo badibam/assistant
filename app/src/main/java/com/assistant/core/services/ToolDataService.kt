@@ -339,8 +339,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_page_without_limit").format(page))
         }
         val offset = (page - 1) * limit
-        val startTime = if (params.has("startTime")) params.optLong("startTime") else null
-        val endTime = if (params.has("endTime")) params.optLong("endTime") else null
+        val startTime = if (params.has("start_time")) params.optLong("start_time") else null
+        val endTime = if (params.has("end_time")) params.optLong("end_time") else null
 
         // Status of the entries to return, for tooltypes whose data has a lifecycle
         // (Messages occurrences and the future active tooltypes). Combines with the time
@@ -438,10 +438,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     }
                 },
                 "pagination" to mapOf(
-                    "currentPage" to page,
-                    "totalPages" to totalPages,
-                    "totalEntries" to totalCount,
-                    "entriesPerPage" to limit
+                    "current_page" to page,
+                    "total_pages" to totalPages,
+                    "total_entries" to totalCount,
+                    "entries_per_page" to limit
                 )
             )
         )
@@ -624,7 +624,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             "created_count" to successCount,
             "failed_count" to failureCount,
             "ids" to createdIds,
-            "toolInstanceName" to toolInstanceId // For CommandExecutor system messages
+            "tool_instance_name" to toolInstanceId // For CommandExecutor system messages
         ))
     }
 
@@ -835,7 +835,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        val fieldName = params.optString("fieldName")
+        val fieldName = params.optString("field_name")
 
         if (toolInstanceId.isEmpty() || fieldName.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, fieldName"))

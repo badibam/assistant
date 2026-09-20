@@ -128,10 +128,10 @@ class EnrichmentProcessor(
     // ========================================================================================
 
     private fun generatePointerSummary(config: JSONObject): String {
-        val path = config.optString("selectedPath", "")
-        val selectionLevel = config.optString("selectionLevel", "")
-        val contextName = config.optString("selectedContext", "GENERIC")
-        val resourcesArray = config.optJSONArray("selectedResources")
+        val path = config.optString("selected_path", "")
+        val selectionLevel = config.optString("selection_level", "")
+        val contextName = config.optString("selected_context", "GENERIC")
+        val resourcesArray = config.optJSONArray("selected_resources")
         val selectedResources = mutableListOf<String>()
         if (resourcesArray != null) {
             for (i in 0 until resourcesArray.length()) {
@@ -168,7 +168,7 @@ class EnrichmentProcessor(
         }
 
         // 3. Period (if present and relevant)
-        val timestampSelection = config.optJSONObject("timestampSelection")
+        val timestampSelection = config.optJSONObject("timestamp_selection")
         if (timestampSelection != null && contextName == "DATA") {
             val periodDesc = formatPointerPeriodDescription(timestampSelection)
             if (periodDesc.isNotEmpty()) {
@@ -191,8 +191,8 @@ class EnrichmentProcessor(
      */
     private fun formatPointerPeriodDescription(timestampSelection: JSONObject): String {
         // Check for relative periods first (AUTOMATION)
-        val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
-        val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
+        val minRelativePeriod = timestampSelection.optJSONObject("min_relative_period")
+        val maxRelativePeriod = timestampSelection.optJSONObject("max_relative_period")
 
         if (minRelativePeriod != null || maxRelativePeriod != null) {
             // Relative period mode (AUTOMATION)
@@ -217,12 +217,12 @@ class EnrichmentProcessor(
         }
 
         // Check for absolute periods, custom dates, or NOW markers (CHAT)
-        val minPeriod = timestampSelection.optJSONObject("minPeriod")
-        val maxPeriod = timestampSelection.optJSONObject("maxPeriod")
-        val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
-        val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
-        val minIsNow = timestampSelection.optBoolean("minIsNow", false)
-        val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
+        val minPeriod = timestampSelection.optJSONObject("min_period")
+        val maxPeriod = timestampSelection.optJSONObject("max_period")
+        val minCustomDateTime = timestampSelection.optLong("min_custom_date_time", -1).takeIf { it != -1L }
+        val maxCustomDateTime = timestampSelection.optLong("max_custom_date_time", -1).takeIf { it != -1L }
+        val minIsNow = timestampSelection.optBoolean("min_is_now", false)
+        val maxIsNow = timestampSelection.optBoolean("max_is_now", false)
 
         val startDate = when {
             minIsNow -> s.shared("period_now_label")  // "Maintenant"
@@ -293,9 +293,9 @@ class EnrichmentProcessor(
     }
 
     private fun generateCreateSummary(config: JSONObject): String {
-        val toolType = config.optString("toolType", "outil")
-        val zoneName = config.optString("zoneName", "")
-        val suggestedName = config.optString("suggestedName", "")
+        val toolType = config.optString("tooltype", "outil")
+        val zoneName = config.optString("zone_name", "")
+        val suggestedName = config.optString("suggested_name", "")
 
         val name = if (suggestedName.isNotEmpty()) suggestedName else toolType
         val zone = if (zoneName.isNotEmpty()) " ${s.shared("ai_enrichment_zone_prefix")} $zoneName" else ""
@@ -313,14 +313,14 @@ class EnrichmentProcessor(
     // TODO: Implement ORGANIZE enrichment type () - lower priority
     // private fun generateOrganizeSummary(config: JSONObject): String {
     // val action = config.optString("action", "organiser")
-    // val elementId = config.optString("elementId", "")
+    // val elementId = config.optString("element_id", "")
     // return "$action $elementId"
     // }
 
     // TODO: Implement DOCUMENT enrichment type () - lower priority
     // private fun generateDocumentSummary(config: JSONObject): String {
-    // val elementType = config.optString("elementType", "element")
-    // val docType = config.optString("docType", "documentation")
+    // val elementType = config.optString("element_type", "element")
+    // val docType = config.optString("doc_type", "documentation")
     // return "$docType $elementType"
     // }
 
@@ -386,10 +386,10 @@ class EnrichmentProcessor(
     ): List<DataCommand> {
         LogManager.aiEnrichment("generatePointerQueries() called with isRelative=$isRelative", "DEBUG")
 
-        val path = config.optString("selectedPath", "")
-        val selectionLevel = config.optString("selectionLevel", "")
-        val contextName = config.optString("selectedContext", "GENERIC")
-        val resourcesArray = config.optJSONArray("selectedResources")
+        val path = config.optString("selected_path", "")
+        val selectionLevel = config.optString("selection_level", "")
+        val contextName = config.optString("selected_context", "GENERIC")
+        val resourcesArray = config.optJSONArray("selected_resources")
         val selectedResources = mutableListOf<String>()
         if (resourcesArray != null) {
             for (i in 0 until resourcesArray.length()) {
@@ -641,7 +641,7 @@ class EnrichmentProcessor(
     ) {
         LogManager.aiEnrichment("addTemporalParams() - CALLED with isRelative=$isRelative, configJson=$configJson", "DEBUG")
 
-        val timestampSelection = configJson?.optJSONObject("timestampSelection")
+        val timestampSelection = configJson?.optJSONObject("timestamp_selection")
         if (timestampSelection == null) {
             LogManager.aiEnrichment("addTemporalParams() - No timestampSelection found in config, RETURNING", "DEBUG")
             return
@@ -654,12 +654,12 @@ class EnrichmentProcessor(
 
             // AUTOMATION mode: can use relative periods, NOW marker, OR absolute custom dates
             // They are mutually exclusive per side (start/end) but can be mixed
-            val minRelativePeriod = timestampSelection.optJSONObject("minRelativePeriod")
-            val maxRelativePeriod = timestampSelection.optJSONObject("maxRelativePeriod")
-            val minCustomDateTime = timestampSelection.optLong("minCustomDateTime", -1).takeIf { it != -1L }
-            val maxCustomDateTime = timestampSelection.optLong("maxCustomDateTime", -1).takeIf { it != -1L }
-            val minIsNow = timestampSelection.optBoolean("minIsNow", false)
-            val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
+            val minRelativePeriod = timestampSelection.optJSONObject("min_relative_period")
+            val maxRelativePeriod = timestampSelection.optJSONObject("max_relative_period")
+            val minCustomDateTime = timestampSelection.optLong("min_custom_date_time", -1).takeIf { it != -1L }
+            val maxCustomDateTime = timestampSelection.optLong("max_custom_date_time", -1).takeIf { it != -1L }
+            val minIsNow = timestampSelection.optBoolean("min_is_now", false)
+            val maxIsNow = timestampSelection.optBoolean("max_is_now", false)
 
             LogManager.aiEnrichment("addTemporalParams() - minRelativePeriod=$minRelativePeriod", "DEBUG")
             LogManager.aiEnrichment("addTemporalParams() - maxRelativePeriod=$maxRelativePeriod", "DEBUG")
@@ -683,7 +683,7 @@ class EnrichmentProcessor(
                 }
                 minCustomDateTime != null -> {
                     // Absolute start: use directly as timestamp
-                    params["startTime"] = minCustomDateTime
+                    params["start_time"] = minCustomDateTime
                     LogManager.aiEnrichment("addTemporalParams() - Added absolute startTime: $minCustomDateTime", "DEBUG")
                 }
             }
@@ -703,7 +703,7 @@ class EnrichmentProcessor(
                 }
                 maxCustomDateTime != null -> {
                     // Absolute end: use directly as timestamp
-                    params["endTime"] = maxCustomDateTime
+                    params["end_time"] = maxCustomDateTime
                     LogManager.aiEnrichment("addTemporalParams() - Added absolute endTime: $maxCustomDateTime", "DEBUG")
                 }
             }
@@ -714,8 +714,8 @@ class EnrichmentProcessor(
         } else {
             LogManager.aiEnrichment("addTemporalParams() - ABSOLUTE mode (CHAT)", "DEBUG")
             // CHAT mode: can use periods, custom dates, OR NOW marker
-            val minIsNow = timestampSelection.optBoolean("minIsNow", false)
-            val maxIsNow = timestampSelection.optBoolean("maxIsNow", false)
+            val minIsNow = timestampSelection.optBoolean("min_is_now", false)
+            val maxIsNow = timestampSelection.optBoolean("max_is_now", false)
 
             // Min timestamp (start of range)
             val startTs = when {
@@ -725,10 +725,10 @@ class EnrichmentProcessor(
                     LogManager.aiEnrichment("addTemporalParams() - Added NOW period_start", "DEBUG")
                     null // Don't add to startTime (CommandTransformer will resolve)
                 }
-                timestampSelection.has("minCustomDateTime") ->
-                    timestampSelection.getLong("minCustomDateTime")
-                timestampSelection.has("minPeriod") -> {
-                    val period = timestampSelection.getJSONObject("minPeriod")
+                timestampSelection.has("min_custom_date_time") ->
+                    timestampSelection.getLong("min_custom_date_time")
+                timestampSelection.has("min_period") -> {
+                    val period = timestampSelection.getJSONObject("min_period")
                     period.getLong("timestamp")  // Start of min period
                 }
                 else -> null
@@ -742,10 +742,10 @@ class EnrichmentProcessor(
                     LogManager.aiEnrichment("addTemporalParams() - Added NOW period_end", "DEBUG")
                     null // Don't add to endTime (CommandTransformer will resolve)
                 }
-                timestampSelection.has("maxCustomDateTime") ->
-                    timestampSelection.getLong("maxCustomDateTime")
-                timestampSelection.has("maxPeriod") -> {
-                    val period = timestampSelection.getJSONObject("maxPeriod")
+                timestampSelection.has("max_custom_date_time") ->
+                    timestampSelection.getLong("max_custom_date_time")
+                timestampSelection.has("max_period") -> {
+                    val period = timestampSelection.getJSONObject("max_period")
                     val periodTimestamp = period.getLong("timestamp")
                     val periodType = com.assistant.core.ui.components.PeriodType.valueOf(period.getString("type"))
                     val periodObj = com.assistant.core.ui.components.Period(periodTimestamp, periodType)
@@ -756,19 +756,19 @@ class EnrichmentProcessor(
             }
 
             if (startTs != null) {
-                params["startTime"] = startTs
+                params["start_time"] = startTs
                 LogManager.aiEnrichment("Added startTime parameter: $startTs", "DEBUG")
             }
             if (endTs != null) {
-                params["endTime"] = endTs
+                params["end_time"] = endTs
                 LogManager.aiEnrichment("Added endTime parameter: $endTs", "DEBUG")
             }
         }
     }
 
     private fun formatPeriodDescription(timestampData: JSONObject): String {
-        val startTs = timestampData.optLong("startTimestamp", 0)
-        val endTs = timestampData.optLong("endTimestamp", 0)
+        val startTs = timestampData.optLong("start_timestamp", 0)
+        val endTs = timestampData.optLong("end_timestamp", 0)
 
         if (startTs == 0L && endTs == 0L) return ""
 

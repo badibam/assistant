@@ -650,8 +650,8 @@ class CommandExecutor(private val context: Context) {
                     headerParts.add(s.shared("ai_data_result_count").format(count))
 
                     // Period info if present
-                    val startTime = command.params["startTime"] as? Long
-                    val endTime = command.params["endTime"] as? Long
+                    val startTime = command.params["start_time"] as? Long
+                    val endTime = command.params["end_time"] as? Long
                     if (startTime != null && endTime != null) {
                         val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
                             .format(java.util.Date(startTime))
@@ -823,7 +823,7 @@ class CommandExecutor(private val context: Context) {
 
                     // Metadata: toolInstanceName, count
                     // Bulk data: entries (with parsed data JSON)
-                    data["toolInstanceName"]?.let { reordered["toolInstanceName"] = it }
+                    data["tool_instance_name"]?.let { reordered["tool_instance_name"] = it }
                     data["count"]?.let { reordered["count"] = it }
 
                     // Parse the JSON-string fields of each entry into objects.
@@ -870,7 +870,7 @@ class CommandExecutor(private val context: Context) {
                     // Config or list
                     data["id"]?.let { reordered["id"] = it }
                     data["name"]?.let { reordered["name"] = it }
-                    data["toolType"]?.let { reordered["toolType"] = it }
+                    data["tooltype"]?.let { reordered["tooltype"] = it }
 
                     // Parse config_json string as JSON for readable prompt formatting
                     val toolInstance = data["tool_instance"] as? Map<*, *>

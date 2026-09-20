@@ -36,7 +36,7 @@ object DateTimeConverter {
         "updated_at",
         "last_activity",
         "scheduled_execution_time",
-        "executionTime",
+        "execution_time",
         "last_event_time",
         "last_user_interaction_time"
     )

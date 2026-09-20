@@ -31,10 +31,10 @@ data class AIMessage(
     fun toJson(): String {
         val json = JSONObject()
 
-        json.put("preText", preText)
+        json.put("pre_text", preText)
 
         // Serialize validationRequest as boolean (or omit if null/false)
-        validationRequest?.let { if (it) json.put("validationRequest", true) }
+        validationRequest?.let { if (it) json.put("validation_request", true) }
 
         dataCommands?.let { commands ->
             val commandsArray = JSONArray()
@@ -43,10 +43,10 @@ data class AIMessage(
                 commandJson.put("id", command.id)
                 commandJson.put("type", command.type)
                 commandJson.put("params", JSONObject(command.params))
-                commandJson.put("isRelative", command.isRelative)
+                commandJson.put("is_relative", command.isRelative)
                 commandsArray.put(commandJson)
             }
-            json.put("dataCommands", commandsArray)
+            json.put("data_commands", commandsArray)
         }
 
         actionCommands?.let { commands ->
@@ -56,22 +56,22 @@ data class AIMessage(
                 commandJson.put("id", command.id)
                 commandJson.put("type", command.type)
                 commandJson.put("params", JSONObject(command.params))
-                commandJson.put("isRelative", command.isRelative)
+                commandJson.put("is_relative", command.isRelative)
                 commandsArray.put(commandJson)
             }
-            json.put("actionCommands", commandsArray)
+            json.put("action_commands", commandsArray)
         }
 
-        postText?.let { json.put("postText", it) }
+        postText?.let { json.put("post_text", it) }
 
         // Serialize keepControl as boolean (or omit if null/false)
-        keepControl?.let { if (it) json.put("keepControl", true) }
+        keepControl?.let { if (it) json.put("keep_control", true) }
 
         communicationModule?.let { module ->
             val moduleJson = JSONObject()
             moduleJson.put("type", module.type)
             moduleJson.put("data", JSONObject(module.data))
-            json.put("communicationModule", moduleJson)
+            json.put("communication_module", moduleJson)
         }
 
         // Serialize completed as boolean (or omit if null/false)
@@ -89,20 +89,20 @@ data class AIMessage(
             return try {
                 val json = JSONObject(jsonString)
 
-                val preText = json.getString("preText")
+                val preText = json.getString("pre_text")
 
                 // Parse validationRequest as boolean (true = validation required)
-                val validationRequest = if (json.has("validationRequest")) {
-                    json.optBoolean("validationRequest", false)
+                val validationRequest = if (json.has("validation_request")) {
+                    json.optBoolean("validation_request", false)
                 } else null
 
-                val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
+                val dataCommands = json.optJSONArray("data_commands")?.let { array ->
                     (0 until array.length()).map { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
                             val type = cmdJson.getString("type")
                             val params = parseParams(cmdJson.getJSONObject("params"))
-                            val isRelative = cmdJson.optBoolean("isRelative", false)
+                            val isRelative = cmdJson.optBoolean("is_relative", false)
 
                             // Generate deterministic ID from command content
                             val id = buildCommandId(type, params, isRelative)
@@ -121,13 +121,13 @@ data class AIMessage(
                     }
                 }
 
-                val actionCommands = json.optJSONArray("actionCommands")?.let { array ->
+                val actionCommands = json.optJSONArray("action_commands")?.let { array ->
                     (0 until array.length()).map { i ->
                         try {
                             val cmdJson = array.getJSONObject(i)
                             val type = cmdJson.getString("type")
                             val params = parseParams(cmdJson.getJSONObject("params"))
-                            val isRelative = cmdJson.optBoolean("isRelative", false)
+                            val isRelative = cmdJson.optBoolean("is_relative", false)
 
                             // Generate deterministic ID from command content
                             val id = buildCommandId(type, params, isRelative)
@@ -146,14 +146,14 @@ data class AIMessage(
                     }
                 }
 
-                val postText = json.optString("postText").takeIf { it.isNotEmpty() }
+                val postText = json.optString("post_text").takeIf { it.isNotEmpty() }
 
                 // Parse keepControl as boolean (true = keep control after successful actions)
-                val keepControl = if (json.has("keepControl")) {
-                    json.optBoolean("keepControl", false)
+                val keepControl = if (json.has("keep_control")) {
+                    json.optBoolean("keep_control", false)
                 } else null
 
-                val communicationModule = json.optJSONObject("communicationModule")?.let { moduleJson ->
+                val communicationModule = json.optJSONObject("communication_module")?.let { moduleJson ->
                     try {
                         val type = moduleJson.getString("type")
                         val data = parseParams(moduleJson.getJSONObject("data"))

@@ -22,6 +22,7 @@ import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
+import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.assistant.core.ai.data.LegacyCatchUp
@@ -40,7 +41,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 26,
+    version = 27,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -65,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 26
+        const val VERSION = 27
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1092,6 +1093,54 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // The columns are in snake_case; the JSON they hold is not yet. A session's waiting
+                // context, a stored AI message, a tool's config and the app settings all carry the
+                // old key names, and the code that reads them now looks for the new ones.
+                // KeyCaseRenames says what became what, and is the same map the backup import uses.
+                val columns = listOf(
+                    Triple("ai_sessions", "id", listOf("waiting_context_json", "tokens_json", "cost_json", "app_state_snapshot")),
+                    Triple("session_messages", "id", listOf("rich_content_json", "ai_message_json", "ai_message_parsed_json", "system_message_json", "execution_metadata_json")),
+                    Triple("automations", "id", listOf("schedule_json")),
+                    Triple("tool_instances", "id", listOf("config_json")),
+                    Triple("tool_data", "id", listOf("data", "custom_fields")),
+                    Triple("app_settings_categories", "category", listOf("settings"))
+                )
+
+                var rewritten = 0
+                for ((table, key, jsonColumns) in columns) {
+                    for (column in jsonColumns) {
+                        val cursor = database.query(
+                            "SELECT $key, $column FROM $table WHERE $column IS NOT NULL AND $column != ''"
+                        )
+                        while (cursor.moveToNext()) {
+                            val rowKey = cursor.getString(0)
+                            val before = cursor.getString(1)
+                            val after = try {
+                                KeyCaseRenames.rename(before)
+                            } catch (e: Exception) {
+                                // A column that does not hold JSON, or holds something malformed:
+                                // leave it exactly as it is rather than write a guess over it.
+                                LogManager.database("MIGRATION 26->27: $table.$column of $rowKey left as is (${e.message})", "WARN")
+                                before
+                            }
+                            if (after != before) {
+                                database.execSQL(
+                                    "UPDATE $table SET $column = ? WHERE $key = ?",
+                                    arrayOf(after, rowKey)
+                                )
+                                rewritten++
+                            }
+                        }
+                        cursor.close()
+                    }
+                }
+
+                LogManager.database("MIGRATION 26->27: $rewritten stored JSON value(s) rewritten with snake_case keys", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1116,7 +1165,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_22_23,
                     MIGRATION_23_24,
                     MIGRATION_24_25,
-                    MIGRATION_25_26
+                    MIGRATION_25_26,
+                    MIGRATION_26_27
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -60,7 +60,7 @@ class AIClient(private val context: Context) {
                         )
                     }
 
-                    val hasActiveProvider = activeResult.data?.get("hasActiveProvider") as? Boolean ?: false
+                    val hasActiveProvider = activeResult.data?.get("has_active_provider") as? Boolean ?: false
                     if (!hasActiveProvider) {
                         LogManager.aiService("No active AI provider configured", "ERROR")
                         return@withContext AIResponse(
@@ -71,7 +71,7 @@ class AIClient(private val context: Context) {
                         )
                     }
 
-                    val activeProviderId = activeResult.data?.get("activeProviderId") as? String
+                    val activeProviderId = activeResult.data?.get("active_provider_id") as? String
                     if (activeProviderId.isNullOrEmpty()) {
                         LogManager.aiService("Active provider ID is empty", "ERROR")
                         return@withContext AIResponse(
@@ -177,7 +177,7 @@ class AIClient(private val context: Context) {
     suspend fun getActiveProviderId(): String? {
         val result = coordinator.processUserAction("ai_provider_config.get_active")
         return if (result.isSuccess) {
-            result.data?.get("activeProviderId") as? String
+            result.data?.get("active_provider_id") as? String
         } else {
             LogManager.aiService("Failed to get active provider: ${result.error}", "ERROR")
             null
@@ -198,40 +198,40 @@ class AIClient(private val context: Context) {
             val json = JSONObject(responseJson)
 
             // Parse required preText
-            val preText = json.getString("preText")
+            val preText = json.getString("pre_text")
 
             // Parse optional validationRequest (boolean: true = validation required)
-            val validationRequest = if (json.has("validationRequest")) {
-                json.optBoolean("validationRequest", false)
+            val validationRequest = if (json.has("validation_request")) {
+                json.optBoolean("validation_request", false)
             } else null
 
-            val dataCommands = json.optJSONArray("dataCommands")?.let { array ->
+            val dataCommands = json.optJSONArray("data_commands")?.let { array ->
                 (0 until array.length()).map { index ->
                     val commandJson = array.getJSONObject(index)
                     DataCommand(
                         id = commandJson.getString("id"),
                         type = commandJson.getString("type"),
                         params = parseParams(commandJson.getJSONObject("params")),
-                        isRelative = commandJson.optBoolean("isRelative", false)
+                        isRelative = commandJson.optBoolean("is_relative", false)
                     )
                 }
             }
 
-            val actionCommands = json.optJSONArray("actionCommands")?.let { array ->
+            val actionCommands = json.optJSONArray("action_commands")?.let { array ->
                 (0 until array.length()).map { index ->
                     val commandJson = array.getJSONObject(index)
                     DataCommand(
                         id = commandJson.getString("id"),
                         type = commandJson.getString("type"),
                         params = parseParams(commandJson.getJSONObject("params")),
-                        isRelative = commandJson.optBoolean("isRelative", false)
+                        isRelative = commandJson.optBoolean("is_relative", false)
                     )
                 }
             }
 
-            val postText = json.optString("postText", "").takeIf { it.isNotEmpty() }
+            val postText = json.optString("post_text", "").takeIf { it.isNotEmpty() }
 
-            val communicationModule = json.optJSONObject("communicationModule")?.let { moduleJson ->
+            val communicationModule = json.optJSONObject("communication_module")?.let { moduleJson ->
                 try {
                     val type = moduleJson.getString("type")
                     val dataJson = moduleJson.getJSONObject("data")

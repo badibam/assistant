@@ -21,7 +21,7 @@ data class SystemMessage(
         json.put("type", type.name)
         json.put("summary", summary)
         if (formattedData != null) {
-            json.put("formattedData", formattedData)
+            json.put("formatted_data", formattedData)
         }
 
         val resultsArray = JSONArray()
@@ -38,10 +38,10 @@ data class SystemMessage(
             if (result.error != null) {
                 resultJson.put("error", result.error)
             }
-            resultJson.put("isActionCommand", result.isActionCommand)
+            resultJson.put("is_action_command", result.isActionCommand)
             resultsArray.put(resultJson)
         }
-        json.put("commandResults", resultsArray)
+        json.put("command_results", resultsArray)
 
         return json.toString()
     }
@@ -56,10 +56,10 @@ data class SystemMessage(
 
                 val type = SystemMessageType.valueOf(json.getString("type"))
                 val summary = json.getString("summary")
-                val formattedData = json.optString("formattedData").takeIf { it.isNotEmpty() }
+                val formattedData = json.optString("formatted_data").takeIf { it.isNotEmpty() }
 
                 val commandResults = mutableListOf<CommandResult>()
-                val resultsArray = json.getJSONArray("commandResults")
+                val resultsArray = json.getJSONArray("command_results")
                 for (i in 0 until resultsArray.length()) {
                     val resultJson = resultsArray.getJSONObject(i)
 
@@ -73,7 +73,7 @@ data class SystemMessage(
                     }
 
                     val error = resultJson.optString("error").takeIf { it.isNotEmpty() }
-                    val isActionCommand = resultJson.optBoolean("isActionCommand", false)
+                    val isActionCommand = resultJson.optBoolean("is_action_command", false)
 
                     commandResults.add(
                         CommandResult(

@@ -59,12 +59,12 @@ object BaseSchemas {
                     "default": "activity",
                     "description": "${s.shared("tools_base_schema_config_icon_name")}"
                 },
-                "validateConfig": {
+                "validate_config": {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("tools_base_schema_config_validate_config")}"
                 },
-                "validateData": {
+                "validate_data": {
                     "type": "boolean",
                     "default": false,
                     "description": "${s.shared("tools_base_schema_config_validate_data")}"
@@ -134,7 +134,7 @@ object BaseSchemas {
                 },
                 "tooltype": {
                     "type": "string",
-                    "systemManaged": true,
+                    "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_tooltype")}"
                 },
                 "name": {
@@ -151,18 +151,18 @@ object BaseSchemas {
                 "created_at": {
                     "type": "integer",
                     "minimum": 0,
-                    "systemManaged": true,
+                    "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_created_at")}"
                 },
                 "updated_at": {
                     "type": "integer",
                     "minimum": 0,
-                    "systemManaged": true,
+                    "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_updated_at")}"
                 },
                 "schema_id": {
                     "type": "string",
-                    "systemManaged": true,
+                    "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_schema_id")}"
                 }
             },
@@ -342,8 +342,8 @@ object BaseSchemas {
             "management" -> s.shared("tools_config_label_management")
             "display_mode" -> s.shared("tools_config_label_display_mode")
             "icon_name" -> s.shared("tools_config_label_icon")
-            "validateConfig" -> s.shared("tools_config_label_validate_config")
-            "validateData" -> s.shared("tools_config_label_validate_data")
+            "validate_config" -> s.shared("tools_config_label_validate_config")
+            "validate_data" -> s.shared("tools_config_label_validate_data")
             "schema_id" -> s.shared("tools_config_label_schema_id")
             "data_schema_id" -> s.shared("tools_config_label_data_schema_id")
             else -> null

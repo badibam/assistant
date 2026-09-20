@@ -88,7 +88,7 @@ object SchemaUtils {
     /**
      * Strips system-managed fields from data entry based on schema
      *
-     * Scans schema for properties marked with "systemManaged": true and removes them
+     * Scans schema for properties marked with "system_managed": true and removes them
      * from the data entry. This prevents AI commands from modifying fields that should
      * only be updated by the scheduler or system.
      *
@@ -109,7 +109,7 @@ object SchemaUtils {
             // Scan all properties for systemManaged flag
             properties.keys().forEach { key ->
                 val property = properties.optJSONObject(key)
-                if (property != null && property.optBoolean("systemManaged", false)) {
+                if (property != null && property.optBoolean("system_managed", false)) {
                     keysToRemove.add(key)
                 }
             }

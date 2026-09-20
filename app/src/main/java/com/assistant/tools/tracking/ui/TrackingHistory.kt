@@ -128,20 +128,20 @@ fun TrackingHistory(
                     PeriodFilterType.HOUR -> {
                         val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
-                        params["startTime"] = periodStart
-                        params["endTime"] = periodEnd
+                        params["start_time"] = periodStart
+                        params["end_time"] = periodEnd
                     }
                     PeriodFilterType.DAY -> {
                         val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
-                        params["startTime"] = periodStart
-                        params["endTime"] = periodEnd
+                        params["start_time"] = periodStart
+                        params["end_time"] = periodEnd
                     }
                     PeriodFilterType.WEEK -> {
                         val periodStart = currentPeriod!!.timestamp
                         val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
-                        params["startTime"] = periodStart
-                        params["endTime"] = periodEnd
+                        params["start_time"] = periodStart
+                        params["end_time"] = periodEnd
                     }
                     PeriodFilterType.MONTH -> {
                         val periodStart = currentPeriod!!.timestamp
@@ -150,8 +150,8 @@ fun TrackingHistory(
                             timeInMillis = periodStart
                             add(Calendar.MONTH, 1)
                         }.timeInMillis
-                        params["startTime"] = periodStart
-                        params["endTime"] = periodEnd
+                        params["start_time"] = periodStart
+                        params["end_time"] = periodEnd
                     }
                     PeriodFilterType.YEAR -> {
                         val periodStart = currentPeriod!!.timestamp
@@ -160,8 +160,8 @@ fun TrackingHistory(
                             timeInMillis = periodStart
                             add(Calendar.YEAR, 1)
                         }.timeInMillis
-                        params["startTime"] = periodStart
-                        params["endTime"] = periodEnd
+                        params["start_time"] = periodStart
+                        params["end_time"] = periodEnd
                     }
                 }
                 
@@ -174,9 +174,9 @@ fun TrackingHistory(
                         
                         // Update pagination data
                         paginationData?.let { pagination ->
-                            totalPages = (pagination["totalPages"] as? Number)?.toInt() ?: 1
-                            totalEntries = (pagination["totalEntries"] as? Number)?.toInt() ?: 0
-                            currentPage = (pagination["currentPage"] as? Number)?.toInt() ?: 1
+                            totalPages = (pagination["total_pages"] as? Number)?.toInt() ?: 1
+                            totalEntries = (pagination["total_entries"] as? Number)?.toInt() ?: 0
+                            currentPage = (pagination["current_page"] as? Number)?.toInt() ?: 1
                         }
                         
                         // Get current timer entry ID for this instance to exclude it

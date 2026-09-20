@@ -61,23 +61,23 @@ sealed class WaitingContext {
             is Validation -> """
                 {
                     "type": "Validation",
-                    "validationContext": ${validationContextToJson(validationContext)}
+                    "validation_context": ${validationContextToJson(validationContext)}
                 }
             """.trimIndent()
 
             is Communication -> """
                 {
                     "type": "Communication",
-                    "communicationModule": ${communicationModuleToJson(communicationModule)},
-                    "aiMessageId": "$aiMessageId"
+                    "communication_module": ${communicationModuleToJson(communicationModule)},
+                    "ai_message_id": "$aiMessageId"
                 }
             """.trimIndent()
 
             is CompletionConfirmation -> """
                 {
                     "type": "CompletionConfirmation",
-                    "aiMessageId": "$aiMessageId",
-                    "scheduledConfirmationTime": $scheduledConfirmationTime
+                    "ai_message_id": "$aiMessageId",
+                    "scheduled_confirmation_time": $scheduledConfirmationTime
                 }
             """.trimIndent()
         }
@@ -99,7 +99,7 @@ sealed class WaitingContext {
          */
         private fun validationContextToJson(context: ValidationContext): String {
             // Simplified serialization - full reconstruction from DB on restart
-            return """{"aiMessageId": "${context.aiMessageId}"}"""
+            return """{"ai_message_id": "${context.aiMessageId}"}"""
         }
 
         /**

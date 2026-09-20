@@ -110,8 +110,8 @@ fun HistoryScreen(
                 "page" to currentPage
             )
             if (searchQuery.isNotEmpty()) params["search"] = searchQuery
-            if (startTime != null) params["startTime"] = startTime
-            if (endTime != null) params["endTime"] = endTime
+            if (startTime != null) params["start_time"] = startTime
+            if (endTime != null) params["end_time"] = endTime
 
             // Call service
             val result = coordinator.processUserAction("ai_sessions.list", params)
@@ -129,8 +129,8 @@ fun HistoryScreen(
                             name = sessionMap["name"] as String,
                             createdAt = sessionMap["created_at"] as? Long ?: 0L,
                             lastActivity = sessionMap["last_activity"] as? Long ?: 0L,
-                            messageCount = sessionMap["messageCount"] as? Int ?: 0,
-                            firstUserMessage = sessionMap["firstUserMessage"] as? String ?: ""
+                            messageCount = sessionMap["message_count"] as? Int ?: 0,
+                            firstUserMessage = sessionMap["first_user_message"] as? String ?: ""
                         )
                     }
 
@@ -138,9 +138,9 @@ fun HistoryScreen(
                     @Suppress("UNCHECKED_CAST")
                     val pagination = data["pagination"] as? Map<String, Any>
                     if (pagination != null) {
-                        currentPage = pagination["currentPage"] as? Int ?: 1
-                        totalPages = pagination["totalPages"] as? Int ?: 1
-                        totalEntries = pagination["totalEntries"] as? Int ?: 0
+                        currentPage = pagination["current_page"] as? Int ?: 1
+                        totalPages = pagination["total_pages"] as? Int ?: 1
+                        totalEntries = pagination["total_entries"] as? Int ?: 0
                     }
                 }
             } else {

@@ -147,19 +147,19 @@ fun TrackingEntryDialog(
     val realValues = remember(trackingType, config, initialData, s) {
         when (trackingType) {
             "scale" -> mapOf(
-                "minValue" to ((initialData["min_value"] as? Number)?.toInt() 
+                "min_value" to ((initialData["min_value"] as? Number)?.toInt() 
                     ?: if (config.has("min")) config.getInt("min") else null),
-                "maxValue" to ((initialData["max_value"] as? Number)?.toInt() 
+                "max_value" to ((initialData["max_value"] as? Number)?.toInt() 
                     ?: if (config.has("max")) config.getInt("max") else null),
-                "minLabel" to ((initialData["min_label"] as? String)
+                "min_label" to ((initialData["min_label"] as? String)
                     ?: if (config.has("min_label")) config.getString("min_label") else null),
-                "maxLabel" to ((initialData["max_label"] as? String)
+                "max_label" to ((initialData["max_label"] as? String)
                     ?: if (config.has("max_label")) config.getString("max_label") else null)
             )
             "boolean" -> mapOf(
-                "trueLabel" to ((initialData["true_label"] as? String)
+                "true_label" to ((initialData["true_label"] as? String)
                     ?: if (config.has("true_label")) config.getString("true_label") else s.tool("config_default_true_label")),
-                "falseLabel" to ((initialData["false_label"] as? String)
+                "false_label" to ((initialData["false_label"] as? String)
                     ?: if (config.has("false_label")) config.getString("false_label") else s.tool("config_default_false_label"))
             )
             "choice" -> mapOf(
@@ -218,10 +218,10 @@ fun TrackingEntryDialog(
             }.toString()
 
             "scale" -> {
-                val minValue = realValues["minValue"] as? Int
-                val maxValue = realValues["maxValue"] as? Int
-                val minLabel = realValues["minLabel"] as? String
-                val maxLabel = realValues["maxLabel"] as? String
+                val minValue = realValues["min_value"] as? Int
+                val maxValue = realValues["max_value"] as? Int
+                val minLabel = realValues["min_label"] as? String
+                val maxLabel = realValues["max_label"] as? String
 
                 JSONObject().apply {
                     put("type", "scale")
@@ -244,8 +244,8 @@ fun TrackingEntryDialog(
             }
 
             "boolean" -> {
-                val trueLabel = realValues["trueLabel"] as? String ?: s.tool("config_default_true_label")
-                val falseLabel = realValues["falseLabel"] as? String ?: s.tool("config_default_false_label")
+                val trueLabel = realValues["true_label"] as? String ?: s.tool("config_default_true_label")
+                val falseLabel = realValues["false_label"] as? String ?: s.tool("config_default_false_label")
 
                 JSONObject().apply {
                     put("type", "boolean")
@@ -428,10 +428,10 @@ fun TrackingEntryDialog(
                     
                     "scale" -> {
                         // Use centralized actual values
-                        val minValue = realValues["minValue"] as? Int
-                        val maxValue = realValues["maxValue"] as? Int
-                        val minLabel = realValues["minLabel"] as? String
-                        val maxLabel = realValues["maxLabel"] as? String
+                        val minValue = realValues["min_value"] as? Int
+                        val maxValue = realValues["max_value"] as? Int
+                        val minLabel = realValues["min_label"] as? String
+                        val maxLabel = realValues["max_label"] as? String
                         
                         LogManager.tracking("Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
                         
@@ -479,8 +479,8 @@ fun TrackingEntryDialog(
                     }
                     
                     "boolean" -> {
-                        val trueLabel = realValues["trueLabel"] as? String ?: s.tool("config_default_true_label")
-                        val falseLabel = realValues["falseLabel"] as? String ?: s.tool("config_default_false_label")
+                        val trueLabel = realValues["true_label"] as? String ?: s.tool("config_default_true_label")
+                        val falseLabel = realValues["false_label"] as? String ?: s.tool("config_default_false_label")
                         
                         UI.ToggleField(
                             label = s.tool("usage_label_state"),

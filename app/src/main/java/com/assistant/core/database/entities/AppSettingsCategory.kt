@@ -59,15 +59,15 @@ object DefaultFormatSettings {
 object DefaultAILimitsSettings {
     const val JSON = """
     {
-        "defaultQueryMaxTokens": 2000,
-        "defaultCharsPerToken": 4.5,
-        "defaultPromptMaxTokens": 15000,
-        "chatMaxDataQueryIterations": 3,
-        "chatMaxActionRetries": 3,
-        "chatMaxAutonomousRoundtrips": 10,
-        "automationMaxDataQueryIterations": 5,
-        "automationMaxActionRetries": 5,
-        "automationMaxAutonomousRoundtrips": 20
+        "default_query_max_tokens": 2000,
+        "default_chars_per_token": 4.5,
+        "default_prompt_max_tokens": 15000,
+        "chat_max_data_query_iterations": 3,
+        "chat_max_action_retries": 3,
+        "chat_max_autonomous_roundtrips": 10,
+        "automation_max_data_query_iterations": 5,
+        "automation_max_action_retries": 5,
+        "automation_max_autonomous_roundtrips": 20
     }
     """
 }
@@ -79,10 +79,10 @@ object DefaultAILimitsSettings {
 object DefaultValidationSettings {
     const val JSON = """
     {
-        "validateAppConfigChanges": false,
-        "validateZoneConfigChanges": false,
-        "validateToolConfigChanges": false,
-        "validateToolDataChanges": false
+        "validate_app_config_changes": false,
+        "validate_zone_config_changes": false,
+        "validate_tool_config_changes": false,
+        "validate_tool_data_changes": false
     }
     """
 }

@@ -755,9 +755,9 @@ class AIEventProcessor(
                 // Rule 1: At most one action type
                 if (actionTypesCount > 1) {
                     val presentTypes = mutableListOf<String>()
-                    if (hasDataCommands) presentTypes.add("dataCommands")
-                    if (hasActionCommands) presentTypes.add("actionCommands")
-                    if (hasCommunicationModule) presentTypes.add("communicationModule")
+                    if (hasDataCommands) presentTypes.add("data_commands")
+                    if (hasActionCommands) presentTypes.add("action_commands")
+                    if (hasCommunicationModule) presentTypes.add("communication_module")
                     formatErrors.add(s.shared("ai_error_validation_multiple_action_types").format(presentTypes.joinToString(", ")))
                 }
 

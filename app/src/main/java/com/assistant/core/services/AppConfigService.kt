@@ -268,8 +268,8 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getAILimits(): AILimitsConfig {
         val settings = getAILimitsSettings()
         return AILimitsConfig(
-            chatMaxAutonomousRoundtrips = settings.optInt("chatMaxAutonomousRoundtrips", Int.MAX_VALUE),
-            automationMaxAutonomousRoundtrips = settings.optInt("automationMaxAutonomousRoundtrips", 20)
+            chatMaxAutonomousRoundtrips = settings.optInt("chat_max_autonomous_roundtrips", Int.MAX_VALUE),
+            automationMaxAutonomousRoundtrips = settings.optInt("automation_max_autonomous_roundtrips", 20)
         )
     }
 
@@ -280,13 +280,13 @@ class AppConfigService(private val context: Context) : ExecutableService {
         val settings = JSONObject().apply {
             // Keep existing token limits
             val currentSettings = getAILimitsSettings()
-            put("defaultQueryMaxTokens", currentSettings.optInt("defaultQueryMaxTokens", 2000))
-            put("defaultCharsPerToken", currentSettings.optDouble("defaultCharsPerToken", 4.5))
-            put("defaultPromptMaxTokens", currentSettings.optInt("defaultPromptMaxTokens", 15000))
+            put("default_query_max_tokens", currentSettings.optInt("default_query_max_tokens", 2000))
+            put("default_chars_per_token", currentSettings.optDouble("default_chars_per_token", 4.5))
+            put("default_prompt_max_tokens", currentSettings.optInt("default_prompt_max_tokens", 15000))
 
             // Set loop limits
-            put("chatMaxAutonomousRoundtrips", limits.chatMaxAutonomousRoundtrips)
-            put("automationMaxAutonomousRoundtrips", limits.automationMaxAutonomousRoundtrips)
+            put("chat_max_autonomous_roundtrips", limits.chatMaxAutonomousRoundtrips)
+            put("automation_max_autonomous_roundtrips", limits.automationMaxAutonomousRoundtrips)
         }
 
         settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())
@@ -332,10 +332,10 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getValidationConfig(): ValidationConfig {
         val settings = getValidationSettings()
         return ValidationConfig(
-            validateAppConfigChanges = settings.optBoolean("validateAppConfigChanges", false),
-            validateZoneConfigChanges = settings.optBoolean("validateZoneConfigChanges", false),
-            validateToolConfigChanges = settings.optBoolean("validateToolConfigChanges", false),
-            validateToolDataChanges = settings.optBoolean("validateToolDataChanges", false)
+            validateAppConfigChanges = settings.optBoolean("validate_app_config_changes", false),
+            validateZoneConfigChanges = settings.optBoolean("validate_zone_config_changes", false),
+            validateToolConfigChanges = settings.optBoolean("validate_tool_config_changes", false),
+            validateToolDataChanges = settings.optBoolean("validate_tool_data_changes", false)
         )
     }
 
@@ -344,10 +344,10 @@ class AppConfigService(private val context: Context) : ExecutableService {
      */
     suspend fun setValidationConfig(config: ValidationConfig) {
         val settings = JSONObject().apply {
-            put("validateAppConfigChanges", config.validateAppConfigChanges)
-            put("validateZoneConfigChanges", config.validateZoneConfigChanges)
-            put("validateToolConfigChanges", config.validateToolConfigChanges)
-            put("validateToolDataChanges", config.validateToolDataChanges)
+            put("validate_app_config_changes", config.validateAppConfigChanges)
+            put("validate_zone_config_changes", config.validateZoneConfigChanges)
+            put("validate_tool_config_changes", config.validateToolConfigChanges)
+            put("validate_tool_data_changes", config.validateToolDataChanges)
         }
 
         settingsDao.updateSettings(AppSettingCategories.VALIDATION_CONFIG, settings.toString())

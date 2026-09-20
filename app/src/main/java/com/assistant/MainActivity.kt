@@ -204,7 +204,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val result = coordinator.processUserAction("icon_preload.preload_theme_icons", mapOf(
-                    "operationId" to "startup_preload_${System.currentTimeMillis()}"
+                    "operation_id" to "startup_preload_${System.currentTimeMillis()}"
                 ))
 
                 LogManager.service("Started icon preloading: ${result.status} - ${result.message}")

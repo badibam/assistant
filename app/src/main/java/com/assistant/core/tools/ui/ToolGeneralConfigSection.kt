@@ -95,8 +95,8 @@ fun ToolGeneralConfigSection(
     val iconName = config.optString("icon_name", "")
     val displayMode = config.optString("display_mode", "")
     val management = config.optString("management", "")
-    val validateConfig = config.optBoolean("validateConfig", false)
-    val validateData = config.optBoolean("validateData", false)
+    val validateConfig = config.optBoolean("validate_config", false)
+    val validateData = config.optBoolean("validate_data", false)
     val alwaysSend = config.optBoolean("always_send", false)
     val group = config.optString("group", "").takeIf { it.isNotBlank() }
 
@@ -192,7 +192,7 @@ fun ToolGeneralConfigSection(
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
                 selected = if (validateConfig) s.shared("tools_config_option_enabled") else s.shared("tools_config_option_disabled"),
                 onSelect = { selectedLabel ->
-                    updateConfig("validateConfig", selectedLabel == s.shared("tools_config_option_enabled"))
+                    updateConfig("validate_config", selectedLabel == s.shared("tools_config_option_enabled"))
                 },
                 required = true
             )
@@ -203,7 +203,7 @@ fun ToolGeneralConfigSection(
                 options = listOf(s.shared("tools_config_option_enabled"), s.shared("tools_config_option_disabled")),
                 selected = if (validateData) s.shared("tools_config_option_enabled") else s.shared("tools_config_option_disabled"),
                 onSelect = { selectedLabel ->
-                    updateConfig("validateData", selectedLabel == s.shared("tools_config_option_enabled"))
+                    updateConfig("validate_data", selectedLabel == s.shared("tools_config_option_enabled"))
                 },
                 required = true
             )

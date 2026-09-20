@@ -471,7 +471,7 @@ class AICommandProcessor(private val context: Context) {
      * Strip root-level system-managed fields from data entries
      *
      * System-managed fields (id, created_at, updated_at, schema_id, tooltype) are:
-     * - Marked with "systemManaged": true in BaseDataSchema
+     * - Marked with "system_managed": true in BaseDataSchema
      * - Only present at the ROOT LEVEL of each entry
      * - Never present in nested objects (e.g., entry.data.schema_id is a DIFFERENT field for variant selection)
      *

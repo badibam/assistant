@@ -54,18 +54,18 @@ object AIMessageSchemas {
         return """
         {
           "type": "object",
-          "required": ["preText"],
+          "required": ["pre_text"],
           "properties": {
-            "preText": {
+            "pre_text": {
               "type": "string",
               "minLength": 1,
               "description": "${s.shared("ai_schema_field_pretext_desc")}"
             },
-            "validationRequest": {
+            "validation_request": {
               "type": "boolean",
               "description": "${s.shared("ai_schema_field_validation_request_desc")}"
             },
-            "dataCommands": {
+            "data_commands": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -85,7 +85,7 @@ object AIMessageSchemas {
               "minItems": 1,
               "description": "${s.shared("ai_schema_field_data_commands_desc")}"
             },
-            "actionCommands": {
+            "action_commands": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -104,16 +104,16 @@ object AIMessageSchemas {
               "minItems": 1,
               "description": "${s.shared("ai_schema_field_action_commands_desc")}"
             },
-            "postText": {
+            "post_text": {
               "type": "string",
               "minLength": 1,
               "description": "${s.shared("ai_schema_field_posttext_desc")}"
             },
-            "keepControl": {
+            "keep_control": {
               "type": "boolean",
               "description": "${s.shared("ai_schema_field_keep_control_desc")}"
             },
-            "communicationModule": {
+            "communication_module": {
               "type": "object",
               "required": ["type", "data"],
               "properties": {

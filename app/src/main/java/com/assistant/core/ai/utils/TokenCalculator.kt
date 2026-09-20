@@ -82,9 +82,9 @@ object TokenCalculator {
             // Example: activeProvider.getMaxTokens() overrides defaults
 
             when {
-                isTotal -> config.optInt("defaultPromptMaxTokens", 15000)
-                isQuery -> config.optInt("defaultQueryMaxTokens", 2000)
-                else -> config.optInt("defaultPromptMaxTokens", 15000)
+                isTotal -> config.optInt("default_prompt_max_tokens", 15000)
+                isQuery -> config.optInt("default_query_max_tokens", 2000)
+                else -> config.optInt("default_prompt_max_tokens", 15000)
             }
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to get token limit: ${e.message}", "ERROR", e)
@@ -137,9 +137,9 @@ object TokenCalculator {
     private fun getCharsPerTokenRatio(config: JSONObject, providerId: String): Double {
         // TODO: Get provider-specific overrides from provider configuration
         // Provider configs should have their own charsPerToken values that override defaults
-        // Example: provider.getConfig().optDouble("charsPerToken", defaultValue)
+        // Example: provider.getConfig().optDouble("chars_per_token", defaultValue)
 
-        return config.optDouble("defaultCharsPerToken", 4.5)
+        return config.optDouble("default_chars_per_token", 4.5)
     }
 }
 

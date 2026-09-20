@@ -38,8 +38,8 @@ object NotesToolType : ToolTypeContract {
             "icon_name": "note",
             "display_mode": "EXTENDED",
             "management": "manual",
-            "validateConfig": false,
-            "validateData": false,
+            "validate_config": false,
+            "validate_data": false,
             "always_send": false
         }
         """.trimIndent()

@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.versioning.JsonTransformers
+import com.assistant.core.versioning.KeyCaseRenames
 import org.json.JSONObject
 import org.json.JSONArray
 import com.assistant.core.ai.data.LegacyCatchUp
@@ -628,7 +629,15 @@ class BackupService(private val context: Context) : ExecutableService {
         toVersion: Int
     ): JSONObject {
         try {
-            val data = jsonData.getJSONObject("data")
+            // Up to schema 26 the keys were written in camelCase, and tool_type named what is
+            // now tooltype. Everything below reads the current names, so the whole document is
+            // normalized first, with the same map the database migration uses.
+            val document = if (fromVersion < 27) {
+                JSONObject(KeyCaseRenames.rename(jsonData.toString()))
+            } else {
+                jsonData
+            }
+            val data = document.getJSONObject("data")
 
             // Transform tool instance configurations
             data.optJSONArray("tool_instances")?.let { array ->
@@ -701,12 +710,12 @@ class BackupService(private val context: Context) : ExecutableService {
             }
 
             // Update metadata to reflect transformed version
-            jsonData.getJSONObject("metadata").apply {
+            document.getJSONObject("metadata").apply {
                 put("export_version", toVersion)
                 put("db_schema_version", AppDatabase.VERSION)
             }
 
-            return jsonData
+            return document
 
         } catch (e: Exception) {
             LogManager.service("Backup transformation failed: ${e.message}", "ERROR", e)

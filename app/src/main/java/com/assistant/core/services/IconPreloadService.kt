@@ -25,7 +25,7 @@ class IconPreloadService(private val context: Context) : ExecutableService {
     }
     
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
-        val operationId = params.optString("operationId")
+        val operationId = params.optString("operation_id")
         val phase = params.optInt("phase", 1)
         
         return when (operation) {
@@ -71,9 +71,9 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                     }
                     
                     tempData[operationId] = mapOf(
-                        "successCount" to successCount,
-                        "errorCount" to errorCount,
-                        "totalCount" to icons.size
+                        "success_count" to successCount,
+                        "error_count" to errorCount,
+                        "total_count" to icons.size
                     )
                     
                     LogManager.service("Phase 2: Preloaded $successCount/${icons.size} icons (${errorCount} errors)")
@@ -88,9 +88,9 @@ class IconPreloadService(private val context: Context) : ExecutableService {
                     
                     tempData.remove(operationId)
                     
-                    val successCount = results["successCount"] ?: 0
-                    val errorCount = results["errorCount"] ?: 0
-                    val totalCount = results["totalCount"] ?: 0
+                    val successCount = results["success_count"] ?: 0
+                    val errorCount = results["error_count"] ?: 0
+                    val totalCount = results["total_count"] ?: 0
                     
                     LogManager.service("Icon preloading completed: $successCount/$totalCount icons loaded successfully")
                     

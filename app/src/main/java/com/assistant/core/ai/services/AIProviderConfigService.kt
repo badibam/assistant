@@ -187,7 +187,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
                     "display_name" to provider.getDisplayName(),
                     "is_configured" to (config?.isConfigured ?: false),
                     "is_active" to (config?.isActive ?: false),
-                    "hasConfig" to (config != null)
+                    "has_config" to (config != null)
                 )
             }
 
@@ -274,7 +274,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             LogManager.aiService("Successfully set active provider: $providerId", "INFO")
 
             return OperationResult.success(mapOf(
-                "activeProviderId" to providerId
+                "active_provider_id" to providerId
             ))
         } catch (e: Exception) {
             LogManager.aiService("Failed to set active provider: ${e.message}", "ERROR", e)
@@ -295,13 +295,13 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             if (activeConfig == null) {
                 LogManager.aiService("No active provider found", "DEBUG")
                 return OperationResult.success(mapOf(
-                    "hasActiveProvider" to false
+                    "has_active_provider" to false
                 ))
             }
 
             return OperationResult.success(mapOf(
-                "hasActiveProvider" to true,
-                "activeProviderId" to activeConfig.providerId,
+                "has_active_provider" to true,
+                "active_provider_id" to activeConfig.providerId,
                 "display_name" to activeConfig.displayName,
                 "is_configured" to activeConfig.isConfigured
             ))

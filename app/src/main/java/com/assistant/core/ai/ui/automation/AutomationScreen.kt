@@ -153,8 +153,8 @@ fun AutomationScreen(
                 "limit" to entriesLimit,
                 "page" to currentPage
             )
-            if (startTime != null) params["startTime"] = startTime
-            if (endTime != null) params["endTime"] = endTime
+            if (startTime != null) params["start_time"] = startTime
+            if (endTime != null) params["end_time"] = endTime
 
             // Call service
             val result = coordinator.processUserAction("ai_sessions.list_sessions_for_automation", params)
@@ -173,10 +173,10 @@ fun AutomationScreen(
                             try {
                                 val json = JSONObject(tokensJson)
                                 SessionTokens(
-                                    totalUncachedInputTokens = json.optInt("totalUncachedInputTokens", 0),
-                                    totalCacheWriteTokens = json.optInt("totalCacheWriteTokens", 0),
-                                    totalCacheReadTokens = json.optInt("totalCacheReadTokens", 0),
-                                    totalOutputTokens = json.optInt("totalOutputTokens", 0)
+                                    totalUncachedInputTokens = json.optInt("total_uncached_input_tokens", 0),
+                                    totalCacheWriteTokens = json.optInt("total_cache_write_tokens", 0),
+                                    totalCacheReadTokens = json.optInt("total_cache_read_tokens", 0),
+                                    totalOutputTokens = json.optInt("total_output_tokens", 0)
                                 )
                             } catch (e: Exception) {
                                 SessionTokens(0, 0, 0, 0)
@@ -190,7 +190,7 @@ fun AutomationScreen(
                         val cost = if (costJson != null) {
                             try {
                                 val json = JSONObject(costJson)
-                                json.optDouble("totalCost", 0.0)
+                                json.optDouble("total_cost", 0.0)
                             } catch (e: Exception) {
                                 null
                             }
@@ -234,9 +234,9 @@ fun AutomationScreen(
                     @Suppress("UNCHECKED_CAST")
                     val pagination = data["pagination"] as? Map<String, Any>
                     if (pagination != null) {
-                        currentPage = pagination["currentPage"] as? Int ?: 1
-                        totalPages = pagination["totalPages"] as? Int ?: 1
-                        totalEntries = pagination["totalEntries"] as? Int ?: 0
+                        currentPage = pagination["current_page"] as? Int ?: 1
+                        totalPages = pagination["total_pages"] as? Int ?: 1
+                        totalEntries = pagination["total_entries"] as? Int ?: 0
                     }
                 }
             } else {

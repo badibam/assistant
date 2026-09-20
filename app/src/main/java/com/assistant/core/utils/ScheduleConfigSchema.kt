@@ -67,7 +67,7 @@ object ScheduleConfigSchema {
                                     "type": "string",
                                     "const": "WeeklySimple"
                                 },
-                                "daysOfWeek": {
+                                "days_of_week": {
                                     "type": "array",
                                     "items": {
                                         "type": "integer",
@@ -83,7 +83,7 @@ object ScheduleConfigSchema {
                                     "description": "${s.shared("schedule_time_format")}"
                                 }
                             },
-                            "required": ["type", "daysOfWeek", "time"]
+                            "required": ["type", "days_of_week", "time"]
                         },
                         {
                             "type": "object",
@@ -102,7 +102,7 @@ object ScheduleConfigSchema {
                                     "minItems": 1,
                                     "description": "${s.shared("schedule_months")}"
                                 },
-                                "dayOfMonth": {
+                                "day_of_month": {
                                     "type": "integer",
                                     "minimum": 1,
                                     "maximum": 31,
@@ -114,7 +114,7 @@ object ScheduleConfigSchema {
                                     "description": "${s.shared("schedule_time_format")}"
                                 }
                             },
-                            "required": ["type", "months", "dayOfMonth", "time"]
+                            "required": ["type", "months", "day_of_month", "time"]
                         },
                         {
                             "type": "object",
@@ -128,7 +128,7 @@ object ScheduleConfigSchema {
                                     "items": {
                                         "type": "object",
                                         "properties": {
-                                            "dayOfWeek": {
+                                            "day_of_week": {
                                                 "type": "integer",
                                                 "minimum": 1,
                                                 "maximum": 7,
@@ -140,7 +140,7 @@ object ScheduleConfigSchema {
                                                 "description": "${s.shared("schedule_time_format")}"
                                             }
                                         },
-                                        "required": ["dayOfWeek", "time"]
+                                        "required": ["day_of_week", "time"]
                                     },
                                     "minItems": 1,
                                     "description": "${s.shared("schedule_weekly_moments")}"
@@ -213,12 +213,12 @@ object ScheduleConfigSchema {
                     "default": true,
                     "description": "${s.shared("schedule_enabled")}"
                 },
-                "startDate": {
+                "start_date": {
                     "type": ["integer", "null"],
                     "minimum": 0,
                     "description": "${s.shared("schedule_start_date")}"
                 },
-                "endDate": {
+                "end_date": {
                     "type": ["integer", "null"],
                     "minimum": 0,
                     "description": "${s.shared("schedule_end_date")}"

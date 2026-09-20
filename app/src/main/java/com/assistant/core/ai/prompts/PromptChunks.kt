@@ -263,7 +263,7 @@ object PromptChunks {
 **AUTOMATION** : Exécution autonome programmée.
 - Communication modules et Validation Request **interdits** (exécution autonome)
 - **DOIT** utiliser `"completed": true` pour terminer
-- `preText` reste obligatoire, `postText` optionnel
+- `pre_text` reste obligatoire, `post_text` optionnel
 """.trimIndent()
     }
 

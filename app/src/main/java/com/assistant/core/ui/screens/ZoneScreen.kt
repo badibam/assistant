@@ -53,7 +53,7 @@ fun ZoneScreen(
     var isLoadingAutomations by remember { mutableStateOf(true) }
     
     // State for showing/hiding available tools list - persiste orientation changes
-    var showAvailableToolsForGroup by rememberSaveable { mutableStateOf<String?>(null) } // null = hidden, "" = ungrouped, "groupName" = specific group
+    var showAvailableToolsForGroup by rememberSaveable { mutableStateOf<String?>(null) } // null = hidden, "" = ungrouped, "group_name" = specific group
 
     // State for tool configuration screen - persiste orientation changes
     var showingConfigFor by rememberSaveable { mutableStateOf<String?>(null) }

@@ -743,63 +743,63 @@ private fun createPointerConfig(
 ): String {
     return JSONObject().apply {
         // Core selection data
-        put("selectedPath", selectionResult.selectedPath)
-        put("selectionLevel", selectionResult.selectionLevel.name)
+        put("selected_path", selectionResult.selectedPath)
+        put("selection_level", selectionResult.selectionLevel.name)
 
         // Context-aware selection
-        put("selectedContext", selectionResult.selectedContext.name)
-        put("selectedResources", JSONArray(selectionResult.selectedResources))
+        put("selected_context", selectionResult.selectedContext.name)
+        put("selected_resources", JSONArray(selectionResult.selectedResources))
 
         // Period selection (from ZoneScopeSelector)
         val timestampSelection = selectionResult.timestampSelection
         if (timestampSelection.isComplete) {
-            put("timestampSelection", JSONObject().apply {
+            put("timestamp_selection", JSONObject().apply {
                 // Store min period (start of range)
-                timestampSelection.minPeriodType?.let { put("minPeriodType", it.name) }
+                timestampSelection.minPeriodType?.let { put("min_period_type", it.name) }
 
                 // Absolute period (CHAT)
                 timestampSelection.minPeriod?.let { period ->
-                    put("minPeriod", JSONObject().apply {
+                    put("min_period", JSONObject().apply {
                         put("timestamp", period.timestamp)
                         put("type", period.type.name)
                     })
                 }
                 // Relative period (AUTOMATION)
                 timestampSelection.minRelativePeriod?.let { relativePeriod ->
-                    put("minRelativePeriod", JSONObject().apply {
+                    put("min_relative_period", JSONObject().apply {
                         put("offset", relativePeriod.offset)
                         put("type", relativePeriod.type.name)
                     })
                 }
                 // Custom date (always absolute)
-                timestampSelection.minCustomDateTime?.let { put("minCustomDateTime", it) }
+                timestampSelection.minCustomDateTime?.let { put("min_custom_date_time", it) }
                 // NOW marker
                 if (timestampSelection.minIsNow) {
-                    put("minIsNow", true)
+                    put("min_is_now", true)
                 }
 
                 // Store max period (end of range)
-                timestampSelection.maxPeriodType?.let { put("maxPeriodType", it.name) }
+                timestampSelection.maxPeriodType?.let { put("max_period_type", it.name) }
 
                 // Absolute period (CHAT)
                 timestampSelection.maxPeriod?.let { period ->
-                    put("maxPeriod", JSONObject().apply {
+                    put("max_period", JSONObject().apply {
                         put("timestamp", period.timestamp)
                         put("type", period.type.name)
                     })
                 }
                 // Relative period (AUTOMATION)
                 timestampSelection.maxRelativePeriod?.let { relativePeriod ->
-                    put("maxRelativePeriod", JSONObject().apply {
+                    put("max_relative_period", JSONObject().apply {
                         put("offset", relativePeriod.offset)
                         put("type", relativePeriod.type.name)
                     })
                 }
                 // Custom date (always absolute)
-                timestampSelection.maxCustomDateTime?.let { put("maxCustomDateTime", it) }
+                timestampSelection.maxCustomDateTime?.let { put("max_custom_date_time", it) }
                 // NOW marker
                 if (timestampSelection.maxIsNow) {
-                    put("maxIsNow", true)
+                    put("max_is_now", true)
                 }
             })
         }
@@ -807,18 +807,18 @@ private fun createPointerConfig(
 
         // Add field-specific data if present
         selectionResult.fieldSpecificData?.let { fieldData ->
-            put("fieldSpecificData", JSONObject().apply {
+            put("field_specific_data", JSONObject().apply {
                 when (fieldData) {
                     is FieldSpecificData.TimestampData -> {
                         put("type", "timestamp")
-                        put("minTimestamp", fieldData.minTimestamp)
-                        put("maxTimestamp", fieldData.maxTimestamp)
+                        put("min_timestamp", fieldData.minTimestamp)
+                        put("max_timestamp", fieldData.maxTimestamp)
                         put("description", fieldData.description)
                     }
                     is FieldSpecificData.NameData -> {
                         put("type", "name")
-                        put("selectedNames", fieldData.selectedNames)
-                        put("availableNames", fieldData.availableNames)
+                        put("selected_names", fieldData.selectedNames)
+                        put("available_names", fieldData.availableNames)
                     }
                     is FieldSpecificData.DataValues -> {
                         put("type", "data")

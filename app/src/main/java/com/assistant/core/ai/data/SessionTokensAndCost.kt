@@ -20,10 +20,10 @@ data class SessionTokens(
      */
     fun toJson(): String {
         return JSONObject().apply {
-            put("totalUncachedInputTokens", totalUncachedInputTokens)
-            put("totalCacheWriteTokens", totalCacheWriteTokens)
-            put("totalCacheReadTokens", totalCacheReadTokens)
-            put("totalOutputTokens", totalOutputTokens)
+            put("total_uncached_input_tokens", totalUncachedInputTokens)
+            put("total_cache_write_tokens", totalCacheWriteTokens)
+            put("total_cache_read_tokens", totalCacheReadTokens)
+            put("total_output_tokens", totalOutputTokens)
         }.toString()
     }
 
@@ -55,10 +55,10 @@ data class SessionTokens(
             return try {
                 val obj = JSONObject(json)
                 SessionTokens(
-                    totalUncachedInputTokens = obj.optInt("totalUncachedInputTokens", 0),
-                    totalCacheWriteTokens = obj.optInt("totalCacheWriteTokens", 0),
-                    totalCacheReadTokens = obj.optInt("totalCacheReadTokens", 0),
-                    totalOutputTokens = obj.optInt("totalOutputTokens", 0)
+                    totalUncachedInputTokens = obj.optInt("total_uncached_input_tokens", 0),
+                    totalCacheWriteTokens = obj.optInt("total_cache_write_tokens", 0),
+                    totalCacheReadTokens = obj.optInt("total_cache_read_tokens", 0),
+                    totalOutputTokens = obj.optInt("total_output_tokens", 0)
                 )
             } catch (e: Exception) {
                 SessionTokens()
@@ -86,12 +86,12 @@ data class SessionCostBreakdown(
      */
     fun toJson(): String {
         return JSONObject().apply {
-            put("modelId", modelId)
-            put("inputCost", inputCost)
-            put("cacheWriteCost", cacheWriteCost)
-            put("cacheReadCost", cacheReadCost)
-            put("outputCost", outputCost)
-            put("totalCost", totalCost)
+            put("model_id", modelId)
+            put("input_cost", inputCost)
+            put("cache_write_cost", cacheWriteCost)
+            put("cache_read_cost", cacheReadCost)
+            put("output_cost", outputCost)
+            put("total_cost", totalCost)
         }.toString()
     }
 
@@ -106,12 +106,12 @@ data class SessionCostBreakdown(
             return try {
                 val obj = JSONObject(json)
                 SessionCostBreakdown(
-                    modelId = obj.optString("modelId", ""),
-                    inputCost = obj.optDouble("inputCost", 0.0),
-                    cacheWriteCost = obj.optDouble("cacheWriteCost", 0.0),
-                    cacheReadCost = obj.optDouble("cacheReadCost", 0.0),
-                    outputCost = obj.optDouble("outputCost", 0.0),
-                    totalCost = obj.optDouble("totalCost", 0.0)
+                    modelId = obj.optString("model_id", ""),
+                    inputCost = obj.optDouble("input_cost", 0.0),
+                    cacheWriteCost = obj.optDouble("cache_write_cost", 0.0),
+                    cacheReadCost = obj.optDouble("cache_read_cost", 0.0),
+                    outputCost = obj.optDouble("output_cost", 0.0),
+                    totalCost = obj.optDouble("total_cost", 0.0)
                 )
             } catch (e: Exception) {
                 null

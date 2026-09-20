@@ -68,7 +68,7 @@ fun SessionCostDisplay(sessionId: String) {
 
     // Display cost data
     costData?.let { data ->
-        val priceAvailable = data["priceAvailable"] as? Boolean ?: false
+        val priceAvailable = data["price_available"] as? Boolean ?: false
 
         UI.Card(type = CardType.DEFAULT) {
             Column(
@@ -94,17 +94,17 @@ fun SessionCostDisplay(sessionId: String) {
                     )
                 } else {
                     // Token counts
-                    val totalUncachedInputTokens = data["totalUncachedInputTokens"] as? Int ?: 0
-                    val totalCacheWriteTokens = data["totalCacheWriteTokens"] as? Int ?: 0
-                    val totalCacheReadTokens = data["totalCacheReadTokens"] as? Int ?: 0
-                    val totalOutputTokens = data["totalOutputTokens"] as? Int ?: 0
+                    val totalUncachedInputTokens = data["total_uncached_input_tokens"] as? Int ?: 0
+                    val totalCacheWriteTokens = data["total_cache_write_tokens"] as? Int ?: 0
+                    val totalCacheReadTokens = data["total_cache_read_tokens"] as? Int ?: 0
+                    val totalOutputTokens = data["total_output_tokens"] as? Int ?: 0
 
                     // Costs (no rounding for calculations, only for display)
-                    val inputCost = data["inputCost"] as? Double ?: 0.0
-                    val cacheWriteCost = data["cacheWriteCost"] as? Double ?: 0.0
-                    val cacheReadCost = data["cacheReadCost"] as? Double ?: 0.0
-                    val outputCost = data["outputCost"] as? Double ?: 0.0
-                    val totalCost = data["totalCost"] as? Double ?: 0.0
+                    val inputCost = data["input_cost"] as? Double ?: 0.0
+                    val cacheWriteCost = data["cache_write_cost"] as? Double ?: 0.0
+                    val cacheReadCost = data["cache_read_cost"] as? Double ?: 0.0
+                    val outputCost = data["output_cost"] as? Double ?: 0.0
+                    val totalCost = data["total_cost"] as? Double ?: 0.0
 
                     // Input row (uncached tokens, only if > 0)
                     if (totalUncachedInputTokens > 0) {

@@ -64,7 +64,7 @@ Le système gère automatiquement les interruptions et tu reprendras exactement 
 
 ```json
 {
-  "preText": "Analyse terminée. Toutes les tâches ont été accomplies : données collectées, rapport créé et graphiques générés.",
+  "pre_text": "Analyse terminée. Toutes les tâches ont été accomplies : données collectées, rapport créé et graphiques générés.",
   "completed": true
 }
 ```
@@ -95,24 +95,24 @@ Tu dois **obligatoirement** répondre avec une structure JSON valide selon ce sc
     <!-- B.2 Règles de Validation [DEGRÉ 1] -->
     <string name="ai_chunk_response_rules"><![CDATA[## Points Clés du Format
 
-- `preText` est **toujours requis** : explique ce que tu vas faire ou ta réponse
-- **Exclusivité mutuelle** : un seul parmi `dataCommands`, `actionCommands` ou `communicationModule` par réponse
-- `validationRequest`, `postText` et `keepControl` : uniquement avec `actionCommands`]]></string>
+- `pre_text` est **toujours requis** : explique ce que tu vas faire ou ta réponse
+- **Exclusivité mutuelle** : un seul parmi `data_commands`, `action_commands` ou `communication_module` par réponse
+- `validation_request`, `post_text` et `keep_control` : uniquement avec `action_commands`]]></string>
 
     <!-- B.3 ValidationRequest [DEGRÉ 1] -->
     <string name="ai_chunk_response_validation_request"><![CDATA[## ValidationRequest - Validation Explicite
 
 ### Format
 
-`validationRequest` est un **Boolean** : `true` pour demander validation, `false` ou absent sinon.
+`validation_request` est un **Boolean** : `true` pour demander validation, `false` ou absent sinon.
 
 **Format correct** :
 
 ```json
 {
-  "preText": "Je vais créer une zone...",
-  "validationRequest": true,
-  "actionCommands": [...]
+  "pre_text": "Je vais créer une zone...",
+  "validation_request": true,
+  "action_commands": [...]
 }
 ```
 
@@ -161,8 +161,8 @@ Structure : {{SCHEMA:communication_module_validation}}
 
 ```json
 {
-  "preText": "Je récupère la liste de tes zones.",
-  "dataCommands": [
+  "pre_text": "Je récupère la liste de tes zones.",
+  "data_commands": [
     { "type": "ZONES", "params": {} }
   ]
 }
@@ -172,9 +172,9 @@ Structure : {{SCHEMA:communication_module_validation}}
 
 ```json
 {
-  "preText": "Je vais créer une zone Finances avec l\'icône euro. Cette zone contiendra tes outils de suivi budgétaire.",
-  "validationRequest": true,
-  "actionCommands": [
+  "pre_text": "Je vais créer une zone Finances avec l\'icône euro. Cette zone contiendra tes outils de suivi budgétaire.",
+  "validation_request": true,
+  "action_commands": [
     {
       "type": "CREATE_ZONE",
       "params": {
@@ -184,7 +184,7 @@ Structure : {{SCHEMA:communication_module_validation}}
       }
     }
   ],
-  "postText": "La zone Finances est prête à accueillir tes outils de suivi."
+  "post_text": "La zone Finances est prête à accueillir tes outils de suivi."
 }
 ```
 
@@ -192,8 +192,8 @@ Structure : {{SCHEMA:communication_module_validation}}
 
 ```json
 {
-  "preText": "Plusieurs zones portent le nom \'Sport\'. Laquelle veux-tu supprimer ?",
-  "communicationModule": {
+  "pre_text": "Plusieurs zones portent le nom \'Sport\'. Laquelle veux-tu supprimer ?",
+  "communication_module": {
     "type": "MultipleChoice",
     "data": {
       "question": "Choisis la zone à supprimer",
@@ -443,8 +443,8 @@ Supprime une zone.
 
 Les queries retournent un **SystemMessage** de type `DATA_ADDED` contenant :
 
-- `commandResults` : Liste des résultats avec status SUCCESS/FAILED pour chaque commande
-- `formattedData` : Données JSON formatées et prêtes à analyser
+- `command_results` : Liste des résultats avec status SUCCESS/FAILED pour chaque commande
+- `formatted_data` : Données JSON formatées et prêtes à analyser
 
 **Exemple de retour ZONES** :
 
@@ -471,10 +471,10 @@ Les queries retournent un **SystemMessage** de type `DATA_ADDED` contenant :
 
 Les actions retournent un **SystemMessage** de type `ACTIONS_EXECUTED` contenant :
 
-- `commandResults` : Liste avec status et details pour chaque action
+- `command_results` : Liste avec status et details pour chaque action
 - `summary` : Résumé textuel des actions exécutées
 
-Si toutes les actions réussissent, ton `postText` est affiché automatiquement.]]></string>
+Si toutes les actions réussissent, ton `post_text` est affiché automatiquement.]]></string>
 
     <!-- C.4 Custom Fields [DEGRÉ 1] -->
     <string name="ai_chunk_custom_fields"><![CDATA[## Champs Personnalisés
@@ -581,10 +581,10 @@ Retourne jusqu\'à 50 entrées incluant custom_fields si définis :
     }
   ],
   "pagination": {
-    "currentPage": 1,
-    "totalPages": 3,
-    "totalEntries": 127,
-    "entriesPerPage": 50
+    "current_page": 1,
+    "total_pages": 3,
+    "total_entries": 127,
+    "entries_per_page": 50
   }
 }
 ```
@@ -851,7 +851,7 @@ Cette approche garantit que tes actions seront toujours acceptées par le systè
 
 ### Identification
 
-Dans les schémas JSON, ces champs sont marqués `"systemManaged": true`.
+Dans les schémas JSON, ces champs sont marqués `"system_managed": true`.
 
 ### Application
 
@@ -1021,7 +1021,7 @@ Si la demande de l\'utilisateur est imprécise ou manque d\'informations critiqu
 
 ### Expliquer les enjeux
 
-Ton `preText` doit permettre à l\'utilisateur de comprendre :
+Ton `pre_text` doit permettre à l\'utilisateur de comprendre :
 
 - Ce que tu vas faire
 - Pourquoi tu le fais de cette manière
@@ -1037,7 +1037,7 @@ Tu es libre de choisir le niveau de validation approprié :
 
 **CommunicationModule** : Pour obtenir des informations manquantes avant d\'agir
 
-L\'important est que l\'utilisateur comprenne et puisse anticiper tes actions grâce à ton `preText`.]]></string>
+L\'important est que l\'utilisateur comprenne et puisse anticiper tes actions grâce à ton `pre_text`.]]></string>
 
     <!-- ================================================================ -->
     <!-- PARTIE I : EXEMPLES DE FLOWS                                     -->
@@ -1052,8 +1052,8 @@ L\'important est que l\'utilisateur comprenne et puisse anticiper tes actions gr
 
 ```json
 {
-  "preText": "Je vais récupérer la liste de tes zones.",
-  "dataCommands": [
+  "pre_text": "Je vais récupérer la liste de tes zones.",
+  "data_commands": [
     { "type": "ZONES", "params": {} }
   ]
 }
@@ -1065,7 +1065,7 @@ L\'important est que l\'utilisateur comprenne et puisse anticiper tes actions gr
 
 ```json
 {
-  "preText": "Tu as 3 zones configurées : Santé, Productivité et Loisirs."
+  "pre_text": "Tu as 3 zones configurées : Santé, Productivité et Loisirs."
 }
 ```
 
@@ -1080,8 +1080,8 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 
 ```json
 {
-  "preText": "Je vais d\'abord vérifier que la zone Santé existe et récupérer les schémas nécessaires.",
-  "dataCommands": [
+  "pre_text": "Je vais d\'abord vérifier que la zone Santé existe et récupérer les schémas nécessaires.",
+  "data_commands": [
     { "type": "ZONES", "params": {} },
     { "type": "SCHEMA", "params": { "id": "tracking_config_numeric" } },
     { "type": "SCHEMA", "params": { "id": "tracking_data_numeric" } }
@@ -1095,8 +1095,8 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 
 ```json
 {
-  "preText": "Parfait, la zone Santé existe. Je vais créer le suivi de poids avec les paramètres appropriés.",
-  "actionCommands": [
+  "pre_text": "Parfait, la zone Santé existe. Je vais créer le suivi de poids avec les paramètres appropriés.",
+  "action_commands": [
     {
       "type": "CREATE_TOOL",
       "params": {
@@ -1111,7 +1111,7 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
       }
     }
   ],
-  "postText": "Ton suivi de poids quotidien est maintenant actif. Tu peux y enregistrer tes mesures."
+  "post_text": "Ton suivi de poids quotidien est maintenant actif. Tu peux y enregistrer tes mesures."
 }
 ```
 
@@ -1126,8 +1126,8 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 
 ```json
 {
-  "preText": "Je vais d\'abord vérifier que la zone Travail existe.",
-  "dataCommands": [
+  "pre_text": "Je vais d\'abord vérifier que la zone Travail existe.",
+  "data_commands": [
     { "type": "ZONES", "params": {} }
   ]
 }
@@ -1139,8 +1139,8 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 
 ```json
 {
-  "preText": "La zone \'Travail\' n\'existe pas dans ton système. Tes zones actuelles sont : Santé, Productivité, Loisirs. Veux-tu supprimer l\'une de ces zones ?",
-  "communicationModule": {
+  "pre_text": "La zone \'Travail\' n\'existe pas dans ton système. Tes zones actuelles sont : Santé, Productivité, Loisirs. Veux-tu supprimer l\'une de ces zones ?",
+  "communication_module": {
     "type": "MultipleChoice",
     "data": {
       "question": "Quelle zone veux-tu supprimer ?",
@@ -1156,15 +1156,15 @@ Le flow s\'arrête, l\'utilisateur a sa réponse.]]></string>
 
 ```json
 {
-  "preText": "Je vais supprimer la zone Productivité. Cette action supprimera également tous les outils qu\'elle contient.",
-  "validationRequest": true,
-  "actionCommands": [
+  "pre_text": "Je vais supprimer la zone Productivité. Cette action supprimera également tous les outils qu\'elle contient.",
+  "validation_request": true,
+  "action_commands": [
     {
       "type": "DELETE_ZONE",
       "params": { "zone_id": "zone_productivite_id" }
     }
   ],
-  "postText": "La zone Productivité et ses outils ont été supprimés."
+  "post_text": "La zone Productivité et ses outils ont été supprimés."
 }
 ```
 

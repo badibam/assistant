@@ -28,7 +28,7 @@ Les clés qui traversent le dispatcher sont en snake_case, quelle que soit la re
 
 Un mot composé devenu un terme du domaine s'écrit soudé — `tooltype`, comme `timestamp` — et ce nom vaut de la clé jusqu'à la colonne.
 
-La règle vaut pour tout le projet et vit dans `docs/reference.md` ; le reliquat en camelCase, surtout côté IA, est listé et gardé par `./scripts/check_key_case.py`.
+La règle vaut pour tout le projet et vit dans `docs/reference.md`, gardée par `./scripts/check_key_case.py`. Le JSON écrit avant elle est converti par la migration 26→27, qui lit sa table de correspondance dans `KeyCaseRenames` — la même que l'import de sauvegarde.
 
 ### Opérations CRUD Complètes ToolDataService
 **Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete

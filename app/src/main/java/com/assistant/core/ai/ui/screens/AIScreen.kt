@@ -102,7 +102,7 @@ fun AIScreen(
                             name = sessionData["name"] as String,
                             type = SessionType.valueOf(sessionData["type"] as String),
                             requireValidation = sessionData["require_validation"] as? Boolean ?: false,
-                            waitingStateJson = sessionData["waitingStateJson"] as? String,
+                            waitingStateJson = sessionData["waiting_state_json"] as? String,
                             automationId = sessionData["automation_id"] as? String,
                             seedId = sessionData["seed_id"] as? String,
                             scheduledExecutionTime = (sessionData["scheduled_execution_time"] as? Number)?.toLong(),
@@ -860,7 +860,7 @@ private fun SeedMode(
                                 val updateResult = coordinator.processUserAction(
                                     "ai_sessions.update_message",
                                     mapOf(
-                                        "messageId" to userMessageId!!,
+                                        "message_id" to userMessageId!!,
                                         "rich_content_json" to richMessage.toJson()
                                     )
                                 )
@@ -899,7 +899,7 @@ private fun SeedMode(
                                     val updateMsgResult = coordinator.processUserAction(
                                         "ai_sessions.update_message",
                                         mapOf(
-                                            "messageId" to userMessageId!!,
+                                            "message_id" to userMessageId!!,
                                             "rich_content_json" to richMessage.toJson()
                                         )
                                     )

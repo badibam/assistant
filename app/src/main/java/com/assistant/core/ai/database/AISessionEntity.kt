@@ -69,7 +69,7 @@ data class AISessionEntity(
     /**
      * Token usage breakdown (JSON serialized)
      * Always available from API responses
-     * Format: {"totalUncachedInputTokens": 15234, "totalCacheWriteTokens": 8932, ...}
+     * Format: {"total_uncached_input_tokens": 15234, "total_cache_write_tokens": 8932, ...}
      * Updated incrementally as AI messages are added
      */
     @ColumnInfo(name = "tokens_json") val tokensJson: String? = null,
@@ -77,7 +77,7 @@ data class AISessionEntity(
     /**
      * Cost breakdown (JSON serialized)
      * Only available if model prices are known
-     * Format: {"modelId": "claude-sonnet-...", "inputCost": 0.0457, "totalCost": 0.1121, ...}
+     * Format: {"model_id": "claude-sonnet-...", "input_cost": 0.0457, "total_cost": 0.1121, ...}
      * Updated incrementally as AI messages are added
      */
     @ColumnInfo(name = "cost_json") val costJson: String? = null,

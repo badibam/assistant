@@ -47,8 +47,8 @@ fun SessionMessageEntity.toDomain(): SessionMessage {
         try {
             val obj = org.json.JSONObject(json)
             com.assistant.core.ai.data.ExecutionMetadata(
-                ruleId = obj.getString("ruleId"),
-                triggeredAt = obj.getLong("triggeredAt"),
+                ruleId = obj.getString("rule_id"),
+                triggeredAt = obj.getLong("triggered_at"),
                 feedback = obj.optJSONObject("feedback")?.let { feedbackJson ->
                     com.assistant.core.ai.data.ExecutionFeedback(
                         comment = feedbackJson.getString("comment"),

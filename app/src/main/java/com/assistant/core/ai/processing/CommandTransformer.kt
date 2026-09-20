@@ -307,16 +307,16 @@ object CommandTransformer {
 
         val periodStart = command.params["period_start"] as? String
         if (periodStart != null) {
-            params["startTime"] = resolvePeriodBound(periodStart, isEnd = false, s = s, reference = reference)
+            params["start_time"] = resolvePeriodBound(periodStart, isEnd = false, s = s, reference = reference)
         } else {
-            command.params["startTime"]?.let { params["startTime"] = requireTimestamp(it, "startTime", s) }
+            command.params["start_time"]?.let { params["start_time"] = requireTimestamp(it, "start_time", s) }
         }
 
         val periodEnd = command.params["period_end"] as? String
         if (periodEnd != null) {
-            params["endTime"] = resolvePeriodBound(periodEnd, isEnd = true, s = s, reference = reference)
+            params["end_time"] = resolvePeriodBound(periodEnd, isEnd = true, s = s, reference = reference)
         } else {
-            command.params["endTime"]?.let { params["endTime"] = requireTimestamp(it, "endTime", s) }
+            command.params["end_time"]?.let { params["end_time"] = requireTimestamp(it, "end_time", s) }
         }
 
         LogManager.aiPrompt("applyTemporalParameters() - EXIT with params=$params", "DEBUG")

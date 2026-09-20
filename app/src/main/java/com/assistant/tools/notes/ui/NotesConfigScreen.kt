@@ -90,8 +90,8 @@ fun NotesConfigScreen(
                     iconName = config.optString("icon_name", "note")
                     displayMode = config.optString("display_mode", "EXTENDED")
                     management = config.optString("management", "manual")
-                    validateConfig = config.optBoolean("validateConfig", false)
-                    validateData = config.optBoolean("validateData", false)
+                    validateConfig = config.optBoolean("validate_config", false)
+                    validateData = config.optBoolean("validate_data", false)
                     alwaysSend = config.optBoolean("always_send", false)
                     group = config.optString("group").takeIf { it.isNotEmpty() }
 
@@ -161,8 +161,8 @@ fun NotesConfigScreen(
                     put("icon_name", iconName)
                     put("display_mode", displayMode)
                     put("management", management)
-                    put("validateConfig", validateConfig)
-                    put("validateData", validateData)
+                    put("validate_config", validateConfig)
+                    put("validate_data", validateData)
                     put("always_send", alwaysSend)
                     group?.let { put("group", it) }
                 }
@@ -178,8 +178,8 @@ fun NotesConfigScreen(
                     "icon_name" -> iconName = value as String
                     "display_mode" -> displayMode = value as String
                     "management" -> management = value as String
-                    "validateConfig" -> validateConfig = value as Boolean
-                    "validateData" -> validateData = value as Boolean
+                    "validate_config" -> validateConfig = value as Boolean
+                    "validate_data" -> validateData = value as Boolean
                     "always_send" -> alwaysSend = value as Boolean
                     "group" -> group = value as? String
                 }
@@ -227,8 +227,8 @@ fun NotesConfigScreen(
                             "icon_name" to iconName,
                             "display_mode" to displayMode,
                             "management" to management,
-                            "validateConfig" to validateConfig,
-                            "validateData" to validateData,
+                            "validate_config" to validateConfig,
+                            "validate_data" to validateData,
                             "always_send" to alwaysSend
                         )
                         // Add group if present

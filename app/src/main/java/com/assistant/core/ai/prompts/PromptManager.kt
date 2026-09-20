@@ -208,7 +208,7 @@ object PromptManager {
     private fun parseRichMessage(json: String): RichMessage {
         // Stub for now - provider only needs linearText
         val jsonObj = org.json.JSONObject(json)
-        val linearText = jsonObj.optString("linearText", "")
+        val linearText = jsonObj.optString("linear_text", "")
 
         return RichMessage(
             segments = emptyList(), // Provider doesn't need segments
@@ -248,10 +248,10 @@ object PromptManager {
         }
 
         val summary = jsonObj.optString("summary", "")
-        val formattedData = jsonObj.optString("formattedData", null)
+        val formattedData = jsonObj.optString("formatted_data", null)
 
         // Parse commandResults
-        val commandResultsArray = jsonObj.optJSONArray("commandResults")
+        val commandResultsArray = jsonObj.optJSONArray("command_results")
         val commandResults = mutableListOf<CommandResult>()
         if (commandResultsArray != null) {
             for (i in 0 until commandResultsArray.length()) {

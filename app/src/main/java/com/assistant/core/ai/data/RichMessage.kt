@@ -39,10 +39,10 @@ data class RichMessage(
                 }
                 is MessageSegment.EnrichmentBlock -> {
                     segmentJson.put("type", "enrichment")
-                    segmentJson.put("enrichmentType", segment.type.name)
+                    segmentJson.put("enrichment_type", segment.type.name)
                     segmentJson.put("config", segment.config)
                     segmentJson.put("preview", segment.preview)
-                    segmentJson.put("promptPreview", segment.promptPreview)
+                    segmentJson.put("prompt_preview", segment.promptPreview)
                 }
             }
             segmentsArray.put(segmentJson)
@@ -50,7 +50,7 @@ data class RichMessage(
         json.put("segments", segmentsArray)
 
         // Store computed fields for convenience (can be regenerated)
-        json.put("linearText", linearText)
+        json.put("linear_text", linearText)
 
         // Note: dataCommands are NOT stored as they should be regenerated from enrichments
         // during prompt building to ensure fresh data
@@ -82,14 +82,14 @@ data class RichMessage(
                             )
                         }
                         "enrichment" -> {
-                            val enrichmentTypeStr = segmentJson.getString("enrichmentType")
+                            val enrichmentTypeStr = segmentJson.getString("enrichment_type")
                             val enrichmentType = EnrichmentType.valueOf(enrichmentTypeStr)
 
                             MessageSegment.EnrichmentBlock(
                                 type = enrichmentType,
                                 config = segmentJson.getString("config"),
                                 preview = segmentJson.getString("preview"),
-                                promptPreview = segmentJson.getString("promptPreview")
+                                promptPreview = segmentJson.getString("prompt_preview")
                             )
                         }
                         else -> null
@@ -99,7 +99,7 @@ data class RichMessage(
                 }
 
                 // Get linearText (for display purposes - could be regenerated)
-                val linearText = json.optString("linearText", "")
+                val linearText = json.optString("linear_text", "")
 
                 // dataCommands will be regenerated during prompt building
                 // so we don't parse them here
