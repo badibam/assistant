@@ -302,7 +302,8 @@ fun FieldDefinitionDialog(
     var alwaysVisible by rememberSaveable { mutableStateOf(existingField?.alwaysVisible ?: false) }
     var config by rememberSaveable(stateSaver = NullableFieldConfigSaver) { mutableStateOf(existingField?.config) }
 
-    // Generated name preview (for transparency)
+    // Preview of the name the service will assign, shown so the choice is not hidden.
+    // It is a preview only: the form does not send it.
     val generatedName = remember(displayName) {
         if (displayName.isNotEmpty()) {
             // Filter out the field being edited to avoid false collision detection
@@ -352,7 +353,10 @@ fun FieldDefinitionDialog(
             }
 
             val fieldDef = FieldDefinition(
-                name = existingField?.name ?: generatedName, // Keep existing name if editing
+                // Editing keeps the technical name, which is the field's identity. Creating
+                // sends none: the service assigns it, so that no caller -- this form or the AI
+                // -- ever picks one, and a name can therefore never be changed into another.
+                name = existingField?.name ?: "",
                 displayName = displayName.trim(),
                 description = description.trim().ifEmpty { null },
                 type = fieldType,
@@ -367,7 +371,9 @@ fun FieldDefinitionDialog(
             if (schema != null) {
                 // Build validation map matching schema structure
                 val fieldDefMap = buildMap<String, Any> {
-                    put("name", fieldDef.name)
+                    if (fieldDef.name.isNotEmpty()) {
+                        put("name", fieldDef.name)
+                    }
                     put("display_name", fieldDef.displayName)
                     put("type", fieldDef.type.name)
                     put("always_visible", fieldDef.alwaysVisible)

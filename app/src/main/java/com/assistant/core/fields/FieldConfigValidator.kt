@@ -35,16 +35,18 @@ object FieldConfigValidator {
     fun validate(fieldDef: FieldDefinition, existingFields: List<FieldDefinition>, context: Context): ValidationResult {
         val s = Strings.`for`(context = context)
 
-        // Validate name format
-        val nameValidation = validateNameFormat(fieldDef.name, s)
-        if (!nameValidation.isValid) {
-            return nameValidation
-        }
+        // A field that has no technical name yet is one being created: the service assigns it,
+        // from the display name and clear of the names already taken. Nothing to check here.
+        if (fieldDef.name.isNotEmpty()) {
+            val nameValidation = validateNameFormat(fieldDef.name, s)
+            if (!nameValidation.isValid) {
+                return nameValidation
+            }
 
-        // Validate name uniqueness
-        val uniquenessValidation = validateNameUniqueness(fieldDef.name, existingFields, s)
-        if (!uniquenessValidation.isValid) {
-            return uniquenessValidation
+            val uniquenessValidation = validateNameUniqueness(fieldDef.name, existingFields, s)
+            if (!uniquenessValidation.isValid) {
+                return uniquenessValidation
+            }
         }
 
         // Validate display name is not empty

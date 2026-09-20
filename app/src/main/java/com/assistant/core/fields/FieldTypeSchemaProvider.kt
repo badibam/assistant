@@ -163,7 +163,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "description": "Configuration spécifique au type (voir schéma field_type_* correspondant)"
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -243,7 +243,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "description": "${s.shared("field_type_schema_default_value_description")}"
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -305,7 +305,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -367,7 +367,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type", "config"],
+            "required": ["display_name", "type", "config"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -437,7 +437,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type", "config"],
+            "required": ["display_name", "type", "config"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -489,7 +489,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -555,7 +555,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -605,7 +605,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -651,7 +651,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -707,7 +707,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                     "additionalProperties": false
                 }
             },
-            "required": ["name", "display_name", "type"],
+            "required": ["display_name", "type"],
             "additionalProperties": false
         }
         """.trimIndent()
