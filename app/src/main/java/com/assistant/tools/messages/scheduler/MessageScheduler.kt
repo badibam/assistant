@@ -12,6 +12,7 @@ import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.validation.SchemaValidator
 import kotlinx.serialization.json.Json
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.time.ZoneId
 
@@ -459,10 +460,10 @@ object MessageScheduler : ToolScheduler {
         return entries.mapNotNull { entry ->
             val id = entry["id"] as? String ?: return@mapNotNull null
             val iso = entry["timestamp"] as? String ?: return@mapNotNull null
-            val dataJson = entry["data"] as? String ?: return@mapNotNull null
+            val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
 
             try {
-                val data = JSONObject(dataJson)
+                val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
                 PendingOccurrence(
                     id = id,
                     dueAt = DateTimeConverter.isoToTimestamp(iso, timezone),

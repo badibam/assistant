@@ -29,6 +29,7 @@ import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.SinglePeriodSelector
 import com.assistant.core.ui.components.normalizeTimestampWithConfig
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.util.*
 
@@ -213,10 +214,14 @@ fun TrackingHistory(
                                         tooltype = entryMap["tooltype"] as? String ?: "tracking",
                                         timestamp = timestamp,
                                         name = entryMap["name"] as? String,
-                                        data = entryMap["data"] as? String ?: "",
+                                        data = (entryMap["data"] as? Map<*, *>)?.let {
+                                            JsonUtils.toJSONObject(it.entries.associate { (k, v) -> k.toString() to v }).toString()
+                                        } ?: "{}",
                                         createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
                                         updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L,
-                                        customFields = entryMap["custom_fields"] as? String
+                                        customFields = (entryMap["custom_fields"] as? Map<*, *>)?.let {
+                                            JsonUtils.toJSONObject(it.entries.associate { (k, v) -> k.toString() to v }).toString()
+                                        }
                                     )
                                 } catch (e: Exception) {
                                     LogManager.tracking("Failed to map entry", "ERROR", e)

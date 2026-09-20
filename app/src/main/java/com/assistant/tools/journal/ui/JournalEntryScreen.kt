@@ -105,23 +105,9 @@ fun JournalEntryScreen(
                         System.currentTimeMillis()
                     }
 
-                    // Parse data field
-                    val dataValue = data["data"]
-                    val parsedData = try {
-                        when (dataValue) {
-                            is Map<*, *> -> dataValue as Map<String, Any>
-                            is String -> {
-                                val dataJson = JSONObject(dataValue)
-                                mutableMapOf<String, Any>().apply {
-                                    dataJson.keys().forEach { key -> put(key, dataJson.get(key)) }
-                                }
-                            }
-                            else -> emptyMap()
-                        }
-                    } catch (e: Exception) {
-                        LogManager.ui("Error parsing journal entry data: ${e.message}", "ERROR")
-                        emptyMap<String, Any>()
-                    }
+                    // The service hands out an object; the string form stays at the database edge.
+                    @Suppress("UNCHECKED_CAST")
+                    val parsedData = (data["data"] as? Map<String, Any>) ?: emptyMap()
 
                     content = parsedData["content"] as? String ?: ""
 

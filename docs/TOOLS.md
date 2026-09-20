@@ -247,12 +247,8 @@ val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
 
 ## Patterns de Parsing Robuste
 
-### entity.data peut être String ou Map
-Parsing robuste avec try/catch :
-- Si Map : cast direct
-- Si String : conversion via JSONObject
-- Sinon : emptyMap()
-- Log d'erreur si exception
+### entity.data est un objet
+`tool_data.*` rend `data` et `custom_fields` en `Map`, jamais en chaîne : la sérialisation JSON ne vit qu'au bord de la base. Un appelant lit ses clés directement, sans parsing ni try/catch.
 
 ### LaunchedEffect avec Dépendances Complètes
 Inclure TOUTES les variables vérifiées dans le scope comme dépendances pour éviter les états obsolètes.

@@ -209,13 +209,12 @@ class DataNavigator(private val context: Context) {
                 // For data.* fields, navigate into the data JSON
                 if (fieldPath.startsWith("data.")) {
                     val dataField = fieldPath.substringAfter("data.")
-                    val dataJson = entryMap["data"]?.toString()
-                    if (dataJson != null) {
+                    val dataMap = entryMap["data"] as? Map<*, *>
+                    if (dataMap != null) {
                         try {
-                            val jsonObject = JSONObject(dataJson)
-                            jsonObject.opt(dataField)?.toString()
+                            dataMap[dataField]?.toString()
                         } catch (e: Exception) {
-                            LogManager.coordination("Error parsing data JSON for field $dataField: ${e.message}", "WARN")
+                            LogManager.coordination("Error reading data field $dataField: ${e.message}", "WARN")
                             null
                         }
                     } else null

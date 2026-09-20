@@ -102,23 +102,9 @@ fun JournalScreen(
                         }
                         val title = map["name"] as? String ?: ""
 
-                        // Parse data field (can be String or Map)
-                        val dataValue = map["data"]
-                        val parsedData = try {
-                            when (dataValue) {
-                                is Map<*, *> -> dataValue as Map<String, Any>
-                                is String -> {
-                                    val dataJson = JSONObject(dataValue)
-                                    mutableMapOf<String, Any>().apply {
-                                        dataJson.keys().forEach { key -> put(key, dataJson.get(key)) }
-                                    }
-                                }
-                                else -> emptyMap()
-                            }
-                        } catch (e: Exception) {
-                            LogManager.ui("Error parsing journal data: ${e.message}", "ERROR")
-                            emptyMap<String, Any>()
-                        }
+                        // The service hands out an object; the string form stays at the database edge.
+                        @Suppress("UNCHECKED_CAST")
+                        val parsedData = (map["data"] as? Map<String, Any>) ?: emptyMap()
 
                         val content = parsedData["content"] as? String ?: ""
 

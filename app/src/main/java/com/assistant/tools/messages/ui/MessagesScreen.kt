@@ -25,6 +25,7 @@ import com.assistant.tools.messages.ui.components.EditOccurrenceDialog
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -454,11 +455,13 @@ private suspend fun loadByStatus(
     return entries.mapNotNull { entry ->
         val id = entry["id"] as? String ?: return@mapNotNull null
         val iso = entry["timestamp"] as? String ?: return@mapNotNull null
-        val dataJson = entry["data"] as? String ?: return@mapNotNull null
+        val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
 
         try {
-            val data = JSONObject(dataJson)
-            val customFields = (entry["custom_fields"] as? String)?.let { JSONObject(it).toValueMap() } ?: emptyMap()
+            val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
+            val customFields = (entry["custom_fields"] as? Map<*, *>)
+                ?.entries?.associate { (k, v) -> k.toString() to v }
+                ?: emptyMap()
 
             Occurrence(
                 id = id,

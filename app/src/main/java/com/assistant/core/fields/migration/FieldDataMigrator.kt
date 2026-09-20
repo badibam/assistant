@@ -132,18 +132,11 @@ object FieldDataMigrator {
                     return@forEach
                 }
 
-                // Extract custom_fields (can be String JSON, Map, or null)
-                val customFieldsRaw = entry["custom_fields"]
-                LogManager.service(
-                    "DEBUG Entry $entryId: custom_fields type=${customFieldsRaw?.javaClass?.simpleName}, value=$customFieldsRaw",
-                    "DEBUG"
-                )
-
-                // Parse custom_fields using JsonUtils (handles String JSON, JSONObject, Map, or null)
+                // custom_fields comes as an object, or is absent
                 val customFields = try {
-                    JsonUtils.toMap(customFieldsRaw)
+                    JsonUtils.toMap(entry["custom_fields"])
                 } catch (e: Exception) {
-                    LogManager.service("Entry $entryId: Error parsing custom_fields: ${e.message}", "ERROR", e)
+                    LogManager.service("Entry $entryId: Error reading custom_fields: ${e.message}", "ERROR", e)
                     null
                 }
 

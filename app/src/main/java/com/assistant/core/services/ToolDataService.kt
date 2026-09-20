@@ -13,6 +13,7 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
@@ -406,16 +407,17 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             data = mapOf(
                 "entries" to entries.map { entity ->
-                    // Convert timestamps → ISO in data (recursive)
-                    val dataWithISO = JSONObject(entity.data).let { dataObj ->
-                        DateTimeConverter.timestampsToISO(dataObj, appTimezone).toString()
-                    }
+                    // Convert timestamps → ISO in data (recursive), and hand out an object:
+                    // the string form belongs to the database, not to the callers.
+                    val dataWithISO = JsonUtils.toMap(
+                        DateTimeConverter.timestampsToISO(JSONObject(entity.data), appTimezone)
+                    )
 
                     // Convert timestamps → ISO in custom_fields (recursive)
                     val customFieldsWithISO = entity.customFields?.let { cf ->
-                        JSONObject(cf).let { customFieldsObj ->
-                            DateTimeConverter.timestampsToISO(customFieldsObj, appTimezone).toString()
-                        }
+                        JsonUtils.toMap(
+                            DateTimeConverter.timestampsToISO(JSONObject(cf), appTimezone)
+                        )
                     }
 
                     val fullEntry = mapOf(
@@ -469,9 +471,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Convert timestamps → ISO in custom_fields (recursive)
         val customFieldsWithISO = entity.customFields?.let { cf ->
-            JSONObject(cf).let { customFieldsObj ->
-                DateTimeConverter.timestampsToISO(customFieldsObj, appTimezone).toString()
-            }
+            JsonUtils.toMap(
+                DateTimeConverter.timestampsToISO(JSONObject(cf), appTimezone)
+            )
         }
 
         return OperationResult.success(
@@ -1076,7 +1078,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Keep only the requested keys of one JSON-string field of an entry.
+     * Keep only the requested keys of one object field of an entry.
      *
      * Returns null when nothing was requested inside that field or the entry does not carry it,
      * so the caller leaves the field out of the result entirely.
@@ -1085,27 +1087,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         entry: Map<String, Any?>,
         fieldName: String,
         requestedKeys: List<String>
-    ): String? {
+    ): Map<String, Any?>? {
         if (requestedKeys.isEmpty()) return null
-        val jsonStr = entry[fieldName] as? String ?: return null
 
-        return try {
-            val json = JSONObject(jsonStr)
-            val filteredJson = JSONObject()
-            for (key in requestedKeys) {
-                if (json.has(key)) {
-                    filteredJson.put(key, json.get(key))
-                }
-            }
-            filteredJson.toString()
-        } catch (e: Exception) {
-            LogManager.service(
-                "Failed to filter $fieldName: ${e.message}",
-                "WARN",
-                e
-            )
-            // Include the original content on error
-            jsonStr
-        }
+        @Suppress("UNCHECKED_CAST")
+        val source = entry[fieldName] as? Map<String, Any?> ?: return null
+
+        return source.filterKeys { it in requestedKeys }
     }
 }

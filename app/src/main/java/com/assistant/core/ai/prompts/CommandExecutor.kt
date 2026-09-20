@@ -826,27 +826,7 @@ class CommandExecutor(private val context: Context) {
                     data["tool_instance_name"]?.let { reordered["tool_instance_name"] = it }
                     data["count"]?.let { reordered["count"] = it }
 
-                    // Parse the JSON-string fields of each entry into objects.
-                    // Both travel as strings from the DB; left as such, the prompt shows the AI
-                    // an escaped string where the documented examples show an object.
-                    val entries = data["entries"] as? List<*>
-                    if (entries != null) {
-                        val parsedEntries = entries.map { entry ->
-                            val entryMap = entry as? Map<*, *> ?: return@map entry
-                            val modifiedEntry = entryMap.toMutableMap()
-                            for (field in listOf("data", "custom_fields")) {
-                                val fieldStr = entryMap[field] as? String ?: continue
-                                try {
-                                    modifiedEntry[field] = org.json.JSONObject(fieldStr)
-                                } catch (e: Exception) {
-                                    // If parsing fails, keep as string
-                                    LogManager.aiPrompt("Failed to parse $field in entry: ${e.message}", "WARN", e)
-                                }
-                            }
-                            modifiedEntry
-                        }
-                        reordered["entries"] = parsedEntries
-                    }
+                    data["entries"]?.let { reordered["entries"] = it }
 
                     // Add pagination if present
                     data["pagination"]?.let { reordered["pagination"] = it }
