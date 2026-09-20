@@ -92,14 +92,7 @@ internal fun PromptData.toOpenAIJson(config: JSONObject, context: android.conten
             }
 
             // Add current datetime as final message
-            val s = com.assistant.core.strings.Strings.`for`(context = context)
-            val now = System.currentTimeMillis()
-
-            // Use app's configured locale
-            val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
-            val dateStr = dateFormat.format(java.util.Date(now))
-            val datetimeText = s.shared("ai_prompt_current_datetime").format(dateStr, now)
+            val datetimeText = this@toOpenAIJson.buildDatetimeMessage(context)
 
             addJsonObject {
                 put("role", "user")

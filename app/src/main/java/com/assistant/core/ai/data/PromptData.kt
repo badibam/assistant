@@ -11,5 +11,9 @@ data class PromptData(
     val level1Content: String,     // System documentation (with AI limits)
     val level2Content: String,     // User data (always_send tools)
     val level3Content: String,     // APP_STATE snapshot (zones + tool instances, frozen at first message)
-    val sessionMessages: List<SessionMessage>  // Raw messages for history
+    val sessionMessages: List<SessionMessage>,  // Raw messages for history
+    // For AUTOMATION: the time this run was scheduled for, which may be well in the past when
+    // the app reopens after an absence. Sent next to the current time so the AI can tell the
+    // data it is reading (anchored on this) from what it does now (anchored on the clock).
+    val scheduledExecutionTime: Long? = null
 )

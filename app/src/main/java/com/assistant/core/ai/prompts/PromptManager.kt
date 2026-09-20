@@ -130,7 +130,12 @@ object PromptManager {
             level1Content = level1Content,
             level2Content = level2Content,
             level3Content = level3Content,
-            sessionMessages = sessionMessages
+            sessionMessages = sessionMessages,
+            scheduledExecutionTime = if (sessionType == SessionType.AUTOMATION) {
+                sessionData["scheduledExecutionTime"] as? Long
+            } else {
+                null
+            }
         )
     }
 
