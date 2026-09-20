@@ -249,11 +249,10 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
   - **Champs data** : `"data.value"`, `"data.text"`, `"data.quantity"`, etc. (selon le type d\'outil)
   - **Champs custom** : `"custom_fields.notes"`, `"custom_fields.mood"`, etc. (selon la config)
   - **Pas de wildcard** : chaque champ doit être listé individuellement
-- `period` (object, optionnel) : Filtre temporel
-  - `start` (number) : timestamp début
-  - `end` (number) : timestamp fin
-- `limit` (number, optionnel) : Nombre maximum d\'entrées
-- `offset` (number, optionnel) : Décalage pour pagination
+- `period_start` (string, optionnel) : Début du filtre temporel, à la racine des params (pas dans un objet `period`). Formats en Partie E.
+- `period_end` (string, optionnel) : Fin du filtre temporel, à la racine des params. Indépendant de `period_start`.
+- `limit` (number, optionnel) : Nombre maximum d\'entrées par page
+- `page` (number, optionnel) : Numéro de page, à partir de 1
 
 **Config extract automatique** : Chaque réponse TOOL_DATA inclut un `config_extract` avec les champs de configuration pertinents pour interpréter les données (type, min/max, options, custom_fields, etc.). Utilise ces informations pour comprendre le contexte des valeurs retournées.
 
@@ -556,10 +555,8 @@ Retourne la config JSON complète incluant les custom_fields définis :
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id", "timestamp", "data.value", "custom_fields.notes"],
-    "period": {
-      "start": "2024-01-01T00:00:00+01:00",
-      "end": "2024-02-01T00:00:00+01:00"
-    },
+    "period_start": "2024-01-01T00:00:00+01:00",
+    "period_end": "2024-02-01T00:00:00+01:00",
     "limit": 50
   }
 }
@@ -626,10 +623,8 @@ Retourne tous les outils configurés dans la zone Santé.
   "params": {
     "id": "tracking_weight_123",
     "fields": ["id"],
-    "period": {
-      "start": "2024-01-01T00:00:00+01:00",
-      "end": "2024-02-01T00:00:00+01:00"
-    }
+    "period_start": "2024-01-01T00:00:00+01:00",
+    "period_end": "2024-02-01T00:00:00+01:00"
   }
 }
 ```

@@ -56,6 +56,23 @@ class AICommandProcessor(private val context: Context) {
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
                 }
+
+                // Parameters the prompt used to document and the transformer never read.
+                // They were dropped in silence: a nested 'period' left the query unfiltered over
+                // the whole history, which an AI reading the old delete example took for one month.
+                // The shapes may have been learned in past sessions, so they are named and refused.
+                if (command.params.containsKey("period")) {
+                    val errorMsg = s.shared("ai_error_command_prefix")
+                        .format(index, command.type, s.shared("ai_error_param_period_object"))
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                }
+                if (command.params.containsKey("offset")) {
+                    val errorMsg = s.shared("ai_error_command_prefix")
+                        .format(index, command.type, s.shared("ai_error_param_offset"))
+                    validationErrors.add(errorMsg)
+                    LogManager.aiService(errorMsg, "WARN")
+                }
             }
         }
 
