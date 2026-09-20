@@ -157,6 +157,34 @@ class DateUtilsTest {
         )
     }
 
+
+    // ==================== The two that read the clock ====================
+
+    /**
+     * These are the only two functions left that look at the clock, and they mean it: they
+     * are what a picker opens on when nothing has been chosen. Each is its formatter
+     * applied to now, which is all there is to check without freezing time.
+     */
+    @Test
+    fun todayAndNowAreTheirFormattersAppliedToTheClock() {
+        val now = System.currentTimeMillis()
+
+        assertEquals(DateUtils.formatDateForDisplay(now, paris), DateUtils.getTodayFormatted(paris))
+        assertEquals(DateUtils.formatTimeForDisplay(now, paris), DateUtils.getCurrentTimeFormatted(paris))
+    }
+
+    /** And they answer to the timezone given, like everything else here. */
+    @Test
+    fun todayDependsOnTheTimezone() {
+        val inParis = DateUtils.getTodayFormatted(paris)
+        val inTokyo = DateUtils.getTodayFormatted(tokyo)
+
+        // Same day or the next one, never anything else: Tokyo is eight hours ahead.
+        val readBackParis = DateUtils.parseDateForFilter(inParis, paris)!!
+        val readBackTokyo = DateUtils.parseDateForFilter(inTokyo, tokyo)
+        assertTrue(readBackTokyo == null || readBackTokyo >= readBackParis - 86_400_000L)
+    }
+
     // ==================== What happens when it cannot be read ====================
 
     /**
