@@ -30,7 +30,7 @@ class MessageService(private val context: Context) : ExecutableService {
     private val s = Strings.`for`(tool = "messages", context = context)
     private val coordinator = Coordinator(context)
 
-    override fun verbalize(
+    override suspend fun verbalize(
         operation: String,
         params: JSONObject,
         context: Context

@@ -279,7 +279,7 @@ class SchemaService(private val context: Context) : ExecutableService {
     /**
      * Verbalize schema operation
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
 
         return when (operation) {

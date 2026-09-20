@@ -549,7 +549,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * Format: substantive form (e.g., "Modification de la configuration de l'application")
      * Usage: (a) UI validation display, (b) SystemMessage feedback
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (operation) {
             "get" -> {

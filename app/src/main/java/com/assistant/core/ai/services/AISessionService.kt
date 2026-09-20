@@ -1108,7 +1108,7 @@ class AISessionService(private val context: Context) : ExecutableService {
      * Verbalize AI session operation
      * AI session management is typically not exposed to AI actions
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return s.shared("action_verbalize_unknown")
     }

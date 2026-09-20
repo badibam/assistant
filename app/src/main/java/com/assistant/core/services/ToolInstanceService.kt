@@ -25,7 +25,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 
 /**
@@ -445,7 +444,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      * Format: substantive form (e.g., "Création de l'outil \"Poids\" dans la zone \"Santé\"")
      * Usage: (a) UI validation display, (b) SystemMessage feedback
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (operation) {
             "create" -> {
@@ -480,20 +479,17 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
     /**
      * Helper to retrieve tool name by ID
-     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
      */
-    private fun getToolName(toolInstanceId: String, context: Context): String? {
+    private suspend fun getToolName(toolInstanceId: String, context: Context): String? {
         if (toolInstanceId.isBlank()) return null
-        return runBlocking {
-            val coordinator = Coordinator(context)
-            val result = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-            if (result.status == CommandStatus.SUCCESS) {
-                val tool = result.data?.get("tool_instance") as? Map<*, *>
-                tool?.get("name") as? String
-            } else null
-        }
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction("tools.get", mapOf(
+            "tool_instance_id" to toolInstanceId
+        ))
+        return if (result.status == CommandStatus.SUCCESS) {
+            val tool = result.data?.get("tool_instance") as? Map<*, *>
+            tool?.get("name") as? String
+        } else null
     }
 
     /**
@@ -730,17 +726,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
     /**
      * Helper to retrieve zone name by ID
-     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
      */
-    private fun getZoneName(zoneId: String, context: Context): String? {
+    private suspend fun getZoneName(zoneId: String, context: Context): String? {
         if (zoneId.isBlank()) return null
-        return runBlocking {
-            val coordinator = Coordinator(context)
-            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
-            if (result.status == CommandStatus.SUCCESS) {
-                val zone = result.data?.get("zone") as? Map<*, *>
-                zone?.get("name") as? String
-            } else null
-        }
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+        return if (result.status == CommandStatus.SUCCESS) {
+            val zone = result.data?.get("zone") as? Map<*, *>
+            zone?.get("name") as? String
+        } else null
     }
 }

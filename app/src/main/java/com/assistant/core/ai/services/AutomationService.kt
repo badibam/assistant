@@ -590,7 +590,7 @@ class AutomationService(private val context: Context) : ExecutableService {
     /**
      * Verbalize automation operations (not exposed to AI typically)
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return s.shared("action_verbalize_unknown")
     }

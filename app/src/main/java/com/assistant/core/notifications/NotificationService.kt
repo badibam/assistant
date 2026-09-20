@@ -198,7 +198,7 @@ class NotificationService(private val context: Context) : ExecutableService {
      * @param context Android context
      * @return Human-readable description
      */
-    override fun verbalize(
+    override suspend fun verbalize(
         operation: String,
         params: JSONObject,
         context: Context

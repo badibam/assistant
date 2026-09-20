@@ -30,7 +30,7 @@ interface ExecutableService {
      * @param context Android context for string resources
      * @return Human-readable description in substantive form
      */
-    fun verbalize(
+    suspend fun verbalize(
         operation: String,
         params: JSONObject,
         context: Context

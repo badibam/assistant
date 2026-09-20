@@ -719,7 +719,7 @@ class BackupService(private val context: Context) : ExecutableService {
      * Verbalize backup operation
      * Backup operations are typically not exposed to AI
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (operation) {
             "export" -> "Export des données"

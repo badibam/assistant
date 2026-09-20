@@ -13,7 +13,6 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.tools.ToolTypeManager
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
@@ -897,7 +896,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
      * Format: substantive form (e.g., "Utilisation de l'outil \"Poids\" (zone \"Santé\") : ajout de 10 entrée(s)")
      * Usage: (a) UI validation display, (b) SystemMessage feedback
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
 
         return when (operation) {
@@ -1011,9 +1010,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
     /**
      * Helper to retrieve tool and zone information
-     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
      */
-    private fun getToolInfo(toolInstanceId: String, context: Context): ToolInfo {
+    private suspend fun getToolInfo(toolInstanceId: String, context: Context): ToolInfo {
         val s = Strings.`for`(context = context)
         val defaultName = s.shared("content_unnamed")
 
@@ -1021,35 +1019,33 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return ToolInfo(defaultName, defaultName)
         }
 
-        return runBlocking {
-            val coordinator = Coordinator(context)
+        val coordinator = Coordinator(context)
 
-            // Get tool instance
-            val toolResult = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
+        // Get tool instance
+        val toolResult = coordinator.processUserAction("tools.get", mapOf(
+            "tool_instance_id" to toolInstanceId
+        ))
 
-            val toolName = if (toolResult.status == CommandStatus.SUCCESS) {
-                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
-                tool?.get("name") as? String ?: defaultName
+        val toolName = if (toolResult.status == CommandStatus.SUCCESS) {
+            val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
+            tool?.get("name") as? String ?: defaultName
+        } else defaultName
+
+        // Get zone name
+        val zoneId = if (toolResult.status == CommandStatus.SUCCESS) {
+            val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
+            tool?.get("zone_id") as? String
+        } else null
+
+        val zoneName = if (zoneId != null) {
+            val zoneResult = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+            if (zoneResult.status == CommandStatus.SUCCESS) {
+                val zone = zoneResult.data?.get("zone") as? Map<*, *>
+                zone?.get("name") as? String ?: defaultName
             } else defaultName
+        } else defaultName
 
-            // Get zone name
-            val zoneId = if (toolResult.status == CommandStatus.SUCCESS) {
-                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
-                tool?.get("zone_id") as? String
-            } else null
-
-            val zoneName = if (zoneId != null) {
-                val zoneResult = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
-                if (zoneResult.status == CommandStatus.SUCCESS) {
-                    val zone = zoneResult.data?.get("zone") as? Map<*, *>
-                    zone?.get("name") as? String ?: defaultName
-                } else defaultName
-            } else defaultName
-
-            ToolInfo(toolName, zoneName)
-        }
+        return ToolInfo(toolName, zoneName)
     }
 
     /**

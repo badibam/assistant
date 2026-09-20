@@ -429,7 +429,7 @@ class CommandExecutor(private val context: Context) {
      * Get verbalized description from service for action command
      * Returns substantive form description (e.g., "Création de la zone \"Santé\"")
      */
-    private fun getVerbalizedDescription(command: ExecutableCommand): String {
+    private suspend fun getVerbalizedDescription(command: ExecutableCommand): String {
         return try {
             val serviceRegistry = ServiceRegistry(context)
             val service = serviceRegistry.getService(command.resource)

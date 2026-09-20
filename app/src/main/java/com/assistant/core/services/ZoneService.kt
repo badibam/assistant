@@ -9,7 +9,6 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.json.JSONArray
 import com.assistant.core.utils.LogManager
@@ -279,7 +278,7 @@ class ZoneService(private val context: Context) : ExecutableService {
      * Format: substantive form (e.g., "Création de la zone \"Santé\"")
      * Usage: (a) UI validation display, (b) SystemMessage feedback
      */
-    override fun verbalize(operation: String, params: JSONObject, context: Context): String {
+    override suspend fun verbalize(operation: String, params: JSONObject, context: Context): String {
         val s = Strings.`for`(context = context)
         return when (operation) {
             "create" -> {
@@ -306,17 +305,14 @@ class ZoneService(private val context: Context) : ExecutableService {
 
     /**
      * Helper to retrieve zone name by ID
-     * Note: Uses runBlocking since verbalize() is not suspend but needs DB access
      */
-    private fun getZoneName(zoneId: String, context: Context): String? {
+    private suspend fun getZoneName(zoneId: String, context: Context): String? {
         if (zoneId.isBlank()) return null
-        return runBlocking {
-            val coordinator = Coordinator(context)
-            val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
-            if (result.status == CommandStatus.SUCCESS) {
-                val zone = result.data?.get("zone") as? Map<*, *>
-                zone?.get("name") as? String
-            } else null
-        }
+        val coordinator = Coordinator(context)
+        val result = coordinator.processUserAction("zones.get", mapOf("zone_id" to zoneId))
+        return if (result.status == CommandStatus.SUCCESS) {
+            val zone = result.data?.get("zone") as? Map<*, *>
+            zone?.get("name") as? String
+        } else null
     }
 }
