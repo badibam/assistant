@@ -34,7 +34,11 @@ data class FieldDefinition(
  */
 fun FieldDefinition.toJson(): JSONObject {
     return JSONObject().apply {
-        put("name", name)
+        // A field that has not been named yet leaves the key out: the schema allows an absent
+        // name, since the service assigns it, but an empty one fails its pattern and minLength.
+        if (name.isNotEmpty()) {
+            put("name", name)
+        }
         put("display_name", displayName)
         if (description != null) {
             put("description", description)
@@ -55,7 +59,7 @@ fun FieldDefinition.toJson(): JSONObject {
 fun JSONObject.toFieldDefinition(): FieldDefinition {
     return try {
         FieldDefinition(
-            name = getString("name"),
+            name = optString("name"),
             displayName = getString("display_name"),
             description = optString("description").takeIf { it.isNotEmpty() },
             type = try {
