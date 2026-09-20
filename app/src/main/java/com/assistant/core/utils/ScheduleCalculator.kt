@@ -12,6 +12,15 @@ import java.time.temporal.TemporalAdjusters
 object ScheduleCalculator {
 
     /**
+     * How far ahead a yearly schedule is searched before giving up.
+     *
+     * Eight is the longest a date can go without coming round: 29 February skips the
+     * centuries that are not leap years, so 1896 is followed by 1904 and 2096 by 2104.
+     * Anything shorter would make such a schedule stop rather than wait.
+     */
+    private const val YEARS_SEARCHED_AHEAD = 8
+
+    /**
      * Calculate next execution time for a schedule
      *
      * @param pattern The schedule pattern to evaluate
@@ -239,38 +248,30 @@ object ScheduleCalculator {
     ): ZonedDateTime? {
         if (pattern.dates.isEmpty()) return null
 
-        val currentYear = from.year
         val sortedDates = pattern.dates.sortedWith(compareBy({ it.month }, { it.day }, { it.time }))
 
-        // Try current year
-        for (date in sortedDates) {
-            val (hour, minute) = parseTime(date.time) ?: continue
-            // Check if day exists in month (e.g., Feb 30 is invalid)
-            val daysInMonth = YearMonth.of(currentYear, date.month).lengthOfMonth()
-            if (date.day > daysInMonth) continue
+        // Walk forward year by year, trying every date each year. The current year is not a
+        // special case: a candidate in it only counts if it is still ahead, and one in a
+        // later year always is.
+        for (year in from.year..(from.year + YEARS_SEARCHED_AHEAD)) {
+            for (date in sortedDates) {
+                val (hour, minute) = parseTime(date.time) ?: continue
+                // Skip a day the month does not have that year: 29 February outside a leap
+                // year, or 31 in a thirty-day month.
+                if (date.day > YearMonth.of(year, date.month).lengthOfMonth()) continue
 
-            val candidate = ZonedDateTime.of(
-                LocalDate.of(currentYear, date.month, date.day),
-                LocalTime.of(hour, minute),
-                zoneId
-            )
-            if (candidate.isAfter(from)) {
-                return candidate
+                val candidate = ZonedDateTime.of(
+                    LocalDate.of(year, date.month, date.day),
+                    LocalTime.of(hour, minute),
+                    zoneId
+                )
+                if (candidate.isAfter(from)) {
+                    return candidate
+                }
             }
         }
 
-        // No match this year, return first date next year
-        val firstDate = sortedDates.first()
-        val nextYear = currentYear + 1
-        val daysInMonth = YearMonth.of(nextYear, firstDate.month).lengthOfMonth()
-        if (firstDate.day > daysInMonth) return null // Invalid date
-
-        val (hour, minute) = parseTime(firstDate.time) ?: return null
-        return ZonedDateTime.of(
-            LocalDate.of(nextYear, firstDate.month, firstDate.day),
-            LocalTime.of(hour, minute),
-            zoneId
-        )
+        return null
     }
 
     /**

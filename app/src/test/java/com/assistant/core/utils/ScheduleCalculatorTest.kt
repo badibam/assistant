@@ -176,20 +176,40 @@ class ScheduleCalculatorTest {
         assertEquals(at(2026, 12, 25, 8, 0), next(pattern, from = at(2025, 12, 26, 10, 0)))
     }
 
-    /**
-     * A 29 February schedule stops after the leap year it was set in.
-     *
-     * This states what the code does today. The current year is searched, and the date is
-     * passed over when February is short; the fallback then looks at the following year
-     * only, finds it short too, and gives up -- rather than carrying on to the next leap
-     * year. So the schedule fires in 2024 and never again.
-     */
+    /** A 29 February schedule waits for the next leap year rather than stopping. */
     @Test
-    fun yearly_stopsAfterALeapDayRatherThanWaitingForTheNextLeapYear() {
+    fun yearly_waitsForTheNextLeapYear() {
         val pattern = SchedulePattern.YearlyRecurrent(listOf(YearlyDate(2, 29, "08:00")))
 
         assertEquals(at(2024, 2, 29, 8, 0), next(pattern, from = at(2024, 1, 15, 10, 0)))
-        assertNull(next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(at(2028, 2, 29, 8, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(at(2028, 2, 29, 8, 0), next(pattern, from = at(2024, 3, 1, 10, 0)))
+    }
+
+    /**
+     * A year that skips a leap day is still found: 2100 is not a leap year, so the eight
+     * year gap from 2096 to 2104 is the longest a date can go without coming round, and the
+     * search has to outlast it.
+     */
+    @Test
+    fun yearly_crossesACenturyThatIsNotALeapYear() {
+        val pattern = SchedulePattern.YearlyRecurrent(listOf(YearlyDate(2, 29, "08:00")))
+
+        assertEquals(at(2104, 2, 29, 8, 0), next(pattern, from = at(2096, 3, 1, 10, 0)))
+    }
+
+    /**
+     * With several dates, one of them being impossible this year does not stop the others.
+     * The old fallback only ever looked at the first date of the list.
+     */
+    @Test
+    fun yearly_doesNotLetOneImpossibleDateHideTheRest() {
+        val pattern = SchedulePattern.YearlyRecurrent(
+            listOf(YearlyDate(2, 29, "08:00"), YearlyDate(12, 25, "08:00"))
+        )
+
+        // Past Christmas in a non-leap year: the next one is Christmas again, not nothing.
+        assertEquals(at(2026, 12, 25, 8, 0), next(pattern, from = at(2025, 12, 26, 10, 0)))
     }
 
     // ==================== Type 6: fixed dates, once each ====================
