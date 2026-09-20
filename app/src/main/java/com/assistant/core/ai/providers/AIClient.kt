@@ -102,7 +102,7 @@ class AIClient(private val context: Context) {
 
                 // Get provider configuration via coordinator
                 val configResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
-                    "providerId" to effectiveProviderId
+                    "provider_id" to effectiveProviderId
                 ))
 
                 if (!configResult.isSuccess) {
@@ -116,7 +116,7 @@ class AIClient(private val context: Context) {
                 }
 
                 val providerConfig = configResult.data?.get("config") as? String ?: "{}"
-                val isConfigured = configResult.data?.get("isConfigured") as? Boolean ?: false
+                val isConfigured = configResult.data?.get("is_configured") as? Boolean ?: false
 
                 if (!isConfigured) {
                     LogManager.aiService("Provider not configured: $effectiveProviderId", "ERROR")
@@ -160,9 +160,9 @@ class AIClient(private val context: Context) {
                 val providerMap = item as? Map<*, *> ?: return@mapNotNull null
                 AIProviderInfo(
                     id = providerMap["id"] as? String ?: return@mapNotNull null,
-                    displayName = providerMap["displayName"] as? String ?: "",
-                    isConfigured = providerMap["isConfigured"] as? Boolean ?: false,
-                    isActive = providerMap["isActive"] as? Boolean ?: false
+                    displayName = providerMap["display_name"] as? String ?: "",
+                    isConfigured = providerMap["is_configured"] as? Boolean ?: false,
+                    isActive = providerMap["is_active"] as? Boolean ?: false
                 )
             }
         } else {

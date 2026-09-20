@@ -91,7 +91,7 @@ object ProviderVerifier {
 
                 SessionType.AUTOMATION -> {
                     // For AUTOMATION: use provider configured in automation
-                    val providerId = sessionData["providerId"] as? String
+                    val providerId = sessionData["provider_id"] as? String
                     if (providerId.isNullOrEmpty()) {
                         LogManager.aiService("verifyProvider: AUTOMATION session has no providerId", "ERROR")
                         return VerificationResult(false, s.shared("ai_error_no_provider_configured"))
@@ -116,7 +116,7 @@ object ProviderVerifier {
 
             // Verify provider is configured
             val providerResult = coordinator.processUserAction("ai_provider_config.get", mapOf(
-                "providerId" to providerIdToVerify
+                "provider_id" to providerIdToVerify
             ))
 
             if (!providerResult.isSuccess) {
@@ -124,7 +124,7 @@ object ProviderVerifier {
                 return VerificationResult(false, s.shared("ai_error_provider_not_found").format(providerIdToVerify))
             }
 
-            val isConfigured = providerResult.data?.get("isConfigured") as? Boolean ?: false
+            val isConfigured = providerResult.data?.get("is_configured") as? Boolean ?: false
             if (!isConfigured) {
                 LogManager.aiService("verifyProvider: Provider '$providerIdToVerify' not configured", "ERROR")
                 return VerificationResult(false, s.shared("ai_error_provider_not_configured").format(providerIdToVerify))

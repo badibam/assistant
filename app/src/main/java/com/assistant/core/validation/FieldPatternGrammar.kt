@@ -4,7 +4,7 @@ package com.assistant.core.validation
  * Single source for the grammar of the field paths a TOOL_DATA query asks for.
  *
  * A query names its fields one by one, with no wildcard. Three shapes exist:
- * - a root field, with no dot: "id", "timestamp", "name", "createdAt"
+ * - a root field, with no dot: "id", "timestamp", "name", "created_at"
  * - a data field: "data.value", "data.text"
  * - a custom field: "custom_fields.notes", "custom_fields.mood"
  *

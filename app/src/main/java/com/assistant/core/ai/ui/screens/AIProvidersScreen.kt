@@ -68,9 +68,9 @@ fun AIProvidersScreen(
             providers = result.mapData("providers") { map ->
                 ProviderInfo(
                     id = map["id"] as String,
-                    displayName = map["displayName"] as String,
-                    isConfigured = map["isConfigured"] as Boolean,
-                    isActive = map["isActive"] as Boolean
+                    displayName = map["display_name"] as String,
+                    isConfigured = map["is_configured"] as Boolean,
+                    isActive = map["is_active"] as Boolean
                 )
             }
 
@@ -81,7 +81,7 @@ fun AIProvidersScreen(
             if (!hasActiveProvider && firstConfigured != null) {
                 coordinator.processUserAction(
                     "ai_provider_config.set_active",
-                    mapOf("providerId" to firstConfigured.id)
+                    mapOf("provider_id" to firstConfigured.id)
                 )
                 // Reload to reflect the change
                 coordinator.executeWithLoading(
@@ -92,9 +92,9 @@ fun AIProvidersScreen(
                     providers = reloadResult.mapData("providers") { map ->
                         ProviderInfo(
                             id = map["id"] as String,
-                            displayName = map["displayName"] as String,
-                            isConfigured = map["isConfigured"] as Boolean,
-                            isActive = map["isActive"] as Boolean
+                            displayName = map["display_name"] as String,
+                            isConfigured = map["is_configured"] as Boolean,
+                            isActive = map["is_active"] as Boolean
                         )
                     }
                 }
@@ -113,9 +113,9 @@ fun AIProvidersScreen(
                 providers = result.mapData("providers") { map ->
                     ProviderInfo(
                         id = map["id"] as String,
-                        displayName = map["displayName"] as String,
-                        isConfigured = map["isConfigured"] as Boolean,
-                        isActive = map["isActive"] as Boolean
+                        displayName = map["display_name"] as String,
+                        isConfigured = map["is_configured"] as Boolean,
+                        isActive = map["is_active"] as Boolean
                     )
                 }
             }
@@ -135,7 +135,7 @@ fun AIProvidersScreen(
             LaunchedEffect(providerId) {
                 coordinator.executeWithLoading(
                     operation = "ai_provider_config.get",
-                    params = mapOf("providerId" to providerId),
+                    params = mapOf("provider_id" to providerId),
                     onLoading = { },
                     onError = { /* Provider not configured yet, that's ok */ }
                 )?.let { result ->
@@ -153,7 +153,7 @@ fun AIProvidersScreen(
                             val result = coordinator.processUserAction(
                                 "ai_provider_config.set",
                                 mapOf(
-                                    "providerId" to providerId,
+                                    "provider_id" to providerId,
                                     "config" to configJson
                                 )
                             )
@@ -175,7 +175,7 @@ fun AIProvidersScreen(
                         coroutineScope.launch {
                             val result = coordinator.processUserAction(
                                 "ai_provider_config.delete",
-                                mapOf("providerId" to providerId)
+                                mapOf("provider_id" to providerId)
                             )
 
                             if (result.status == CommandStatus.SUCCESS) {
@@ -277,7 +277,7 @@ fun AIProvidersScreen(
                                                     coroutineScope.launch {
                                                         coordinator.processUserAction(
                                                             "ai_provider_config.set_active",
-                                                            mapOf("providerId" to provider.id)
+                                                            mapOf("provider_id" to provider.id)
                                                         )
                                                         reloadProviders()
                                                     }

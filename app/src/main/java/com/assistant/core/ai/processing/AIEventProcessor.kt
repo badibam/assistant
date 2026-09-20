@@ -487,7 +487,7 @@ class AIEventProcessor(
 
                 if (sessionResult.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
                     val sessionData = sessionResult.data?.get("session") as? Map<*, *>
-                    val sessionProviderId = sessionData?.get("providerId") as? String
+                    val sessionProviderId = sessionData?.get("provider_id") as? String
                     LogManager.aiSession("callAI: AUTOMATION session using provider '$sessionProviderId'", "DEBUG")
                     sessionProviderId
                 } else {

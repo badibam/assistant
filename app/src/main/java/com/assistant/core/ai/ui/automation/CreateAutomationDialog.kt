@@ -139,7 +139,7 @@ fun CreateAutomationDialog(
 
                 // Filter only configured providers
                 providers = allProviders.filter { provider ->
-                    provider["isConfigured"] as? Boolean ?: false
+                    provider["is_configured"] as? Boolean ?: false
                 }
 
                 // Auto-select first provider if available
@@ -213,7 +213,7 @@ fun CreateAutomationDialog(
                                 "ai_sessions.update_session",
                                 mapOf(
                                     "sessionId" to seedSessionId,
-                                    "providerId" to selectedProvider!!
+                                    "provider_id" to selectedProvider!!
                                 )
                             )
 
@@ -235,7 +235,7 @@ fun CreateAutomationDialog(
                             mapOf(
                                 "name" to sessionName,
                                 "type" to "SEED",
-                                "providerId" to selectedProvider!!
+                                "provider_id" to selectedProvider!!
                             )
                         )
 
@@ -330,11 +330,11 @@ fun CreateAutomationDialog(
                 )
             } else {
                 val providerNames = providers.map {
-                    (it["displayName"] as? String) ?: (it["id"] as? String) ?: "Unknown"
+                    (it["display_name"] as? String) ?: (it["id"] as? String) ?: "Unknown"
                 }
                 val selectedProviderName = selectedProvider?.let { id ->
                     providers.find { (it["id"] as? String) == id }
-                        ?.let { (it["displayName"] as? String) ?: id }
+                        ?.let { (it["display_name"] as? String) ?: id }
                 } ?: providerNames.firstOrNull()
 
                 UI.FormSelection(

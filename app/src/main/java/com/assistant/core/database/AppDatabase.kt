@@ -40,7 +40,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 24,
+    version = 25,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -65,7 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 24
+        const val VERSION = 25
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -922,6 +922,48 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // ai_provider_configs moves its columns to snake_case, the naming rule the whole
+                // project follows. No RENAME COLUMN before SQLite 3.25 and minSdk 26 ships 3.19,
+                // so the table is recreated; its two indices are recreated under the names Room
+                // derives from the new column names.
+                database.execSQL("""
+                    CREATE TABLE ai_provider_configs_new (
+                        provider_id TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        config_json TEXT NOT NULL,
+                        is_configured INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(provider_id)
+                    )
+                """)
+
+                database.execSQL("""
+                    INSERT INTO ai_provider_configs_new (
+                        provider_id, display_name, config_json, is_configured, is_active, created_at, updated_at
+                    )
+                    SELECT
+                        providerId, displayName, configJson, isConfigured, isActive, createdAt, updatedAt
+                    FROM ai_provider_configs
+                """)
+
+                database.execSQL("DROP TABLE ai_provider_configs")
+                database.execSQL("ALTER TABLE ai_provider_configs_new RENAME TO ai_provider_configs")
+
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_ai_provider_configs_provider_id ON ai_provider_configs(provider_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_provider_configs_is_active ON ai_provider_configs(is_active)")
+
+                val cursor = database.query("SELECT COUNT(*) FROM ai_provider_configs")
+                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                cursor.close()
+
+                LogManager.database("MIGRATION 24->25: $count provider config(s) moved to snake_case columns", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -944,7 +986,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_20_21,
                     MIGRATION_21_22,
                     MIGRATION_22_23,
-                    MIGRATION_23_24
+                    MIGRATION_23_24,
+                    MIGRATION_24_25
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

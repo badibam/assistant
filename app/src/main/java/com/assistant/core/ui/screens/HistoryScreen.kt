@@ -127,7 +127,7 @@ fun HistoryScreen(
                         SessionSummary(
                             id = sessionMap["id"] as String,
                             name = sessionMap["name"] as String,
-                            createdAt = sessionMap["createdAt"] as? Long ?: 0L,
+                            createdAt = sessionMap["created_at"] as? Long ?: 0L,
                             lastActivity = sessionMap["lastActivity"] as? Long ?: 0L,
                             messageCount = sessionMap["messageCount"] as? Int ?: 0,
                             firstUserMessage = sessionMap["firstUserMessage"] as? String ?: ""

@@ -70,7 +70,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         params: JSONObject,
         token: CancellationToken
     ): OperationResult {
-        val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Getting config for provider: $providerId")
@@ -85,13 +85,13 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             }
 
             return OperationResult.success(mapOf(
-                "providerId" to configEntity.providerId,
-                "displayName" to configEntity.displayName,
+                "provider_id" to configEntity.providerId,
+                "display_name" to configEntity.displayName,
                 "config" to configEntity.configJson,
-                "isConfigured" to configEntity.isConfigured,
-                "isActive" to configEntity.isActive,
-                "createdAt" to configEntity.createdAt,
-                "updatedAt" to configEntity.updatedAt
+                "is_configured" to configEntity.isConfigured,
+                "is_active" to configEntity.isActive,
+                "created_at" to configEntity.createdAt,
+                "updated_at" to configEntity.updatedAt
             ))
         } catch (e: Exception) {
             LogManager.aiService("Failed to get provider config: ${e.message}", "ERROR", e)
@@ -103,7 +103,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         params: JSONObject,
         token: CancellationToken
     ): OperationResult {
-        val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
         val configJson = params.optString("config").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
@@ -154,9 +154,9 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             LogManager.aiService("Successfully set config for provider: $providerId", "INFO")
 
             return OperationResult.success(mapOf(
-                "providerId" to providerId,
-                "isConfigured" to true,
-                "updatedAt" to now
+                "provider_id" to providerId,
+                "is_configured" to true,
+                "updated_at" to now
             ))
         } catch (e: Exception) {
             LogManager.aiService("Failed to set provider config: ${e.message}", "ERROR", e)
@@ -184,9 +184,9 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
 
                 mapOf(
                     "id" to provider.getProviderId(),
-                    "displayName" to provider.getDisplayName(),
-                    "isConfigured" to (config?.isConfigured ?: false),
-                    "isActive" to (config?.isActive ?: false),
+                    "display_name" to provider.getDisplayName(),
+                    "is_configured" to (config?.isConfigured ?: false),
+                    "is_active" to (config?.isActive ?: false),
                     "hasConfig" to (config != null)
                 )
             }
@@ -206,7 +206,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         params: JSONObject,
         token: CancellationToken
     ): OperationResult {
-        val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Deleting config for provider: $providerId")
@@ -232,7 +232,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             LogManager.aiService("Successfully deleted provider config: $providerId", "INFO")
 
             return OperationResult.success(mapOf(
-                "providerId" to providerId,
+                "provider_id" to providerId,
                 "deleted" to true
             ))
         } catch (e: Exception) {
@@ -245,7 +245,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
         params: JSONObject,
         token: CancellationToken
     ): OperationResult {
-        val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiService("Setting active provider: $providerId")
@@ -302,8 +302,8 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             return OperationResult.success(mapOf(
                 "hasActiveProvider" to true,
                 "activeProviderId" to activeConfig.providerId,
-                "displayName" to activeConfig.displayName,
-                "isConfigured" to activeConfig.isConfigured
+                "display_name" to activeConfig.displayName,
+                "is_configured" to activeConfig.isConfigured
             ))
         } catch (e: Exception) {
             LogManager.aiService("Failed to get active provider: ${e.message}", "ERROR", e)

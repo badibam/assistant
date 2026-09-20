@@ -94,7 +94,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("ai_error_param_name_required"))
         val type = params.optString("type").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_type_required"))
-        val providerId = params.optString("providerId").takeIf { it.isNotEmpty() }
+        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
 
         LogManager.aiSession("Creating AI session: name=$name, type=$type, providerId=$providerId", "DEBUG")
@@ -157,8 +157,8 @@ class AISessionService(private val context: Context) : ExecutableService {
                 "sessionId" to sessionId,
                 "name" to name,
                 "type" to type,
-                "providerId" to providerId,
-                "createdAt" to now
+                "provider_id" to providerId,
+                "created_at" to now
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to create session: ${e.message}", "ERROR", e)
@@ -197,11 +197,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "automationId" to sessionEntity.automationId,
                     "seedId" to sessionEntity.seedId,
                     "scheduledExecutionTime" to sessionEntity.scheduledExecutionTime,
-                    "providerId" to sessionEntity.providerId,
+                    "provider_id" to sessionEntity.providerId,
                     "providerSessionId" to sessionEntity.providerSessionId,
-                    "createdAt" to sessionEntity.createdAt,
+                    "created_at" to sessionEntity.createdAt,
                     "lastActivity" to sessionEntity.lastActivity,
-                    "isActive" to sessionEntity.isActive
+                    "is_active" to sessionEntity.isActive
                 ),
                 "messages" to messageEntities.map { msg ->
                     mapOf(
@@ -238,10 +238,10 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to session.id,
                     "name" to session.name,
                     "type" to session.type.name,
-                    "providerId" to session.providerId,
-                    "createdAt" to session.createdAt,
+                    "provider_id" to session.providerId,
+                    "created_at" to session.createdAt,
                     "lastActivity" to session.lastActivity,
-                    "isActive" to session.isActive
+                    "is_active" to session.isActive
                 )
             }
 
@@ -302,11 +302,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "type" to session.type.name,
                     "automationId" to session.automationId,
                     "scheduledExecutionTime" to session.scheduledExecutionTime,
-                    "providerId" to session.providerId,
+                    "provider_id" to session.providerId,
                     "providerSessionId" to session.providerSessionId,
-                    "createdAt" to session.createdAt,
+                    "created_at" to session.createdAt,
                     "lastActivity" to session.lastActivity,
-                    "isActive" to session.isActive,
+                    "is_active" to session.isActive,
                     "phase" to session.phase,
                     "endReason" to session.endReason,
                     "totalRoundtrips" to session.totalRoundtrips,
@@ -362,7 +362,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             return OperationResult.success(mapOf(
                 "sessionId" to sessionId,
                 "name" to updatedEntity.name,
-                "updatedAt" to now
+                "updated_at" to now
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to update session: ${e.message}", "ERROR", e)
@@ -434,7 +434,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             return OperationResult.success(mapOf(
                 "sessionId" to sessionId,
-                "isActive" to true
+                "is_active" to true
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to set active session: ${e.message}", "ERROR", e)
@@ -471,11 +471,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "name" to activeSessionEntity.name,
                     "type" to activeSessionEntity.type.name, // Convert enum to string
                     "requireValidation" to activeSessionEntity.requireValidation,
-                    "providerId" to activeSessionEntity.providerId,
+                    "provider_id" to activeSessionEntity.providerId,
                     "providerSessionId" to activeSessionEntity.providerSessionId,
-                    "createdAt" to activeSessionEntity.createdAt,
+                    "created_at" to activeSessionEntity.createdAt,
                     "lastActivity" to activeSessionEntity.lastActivity,
-                    "isActive" to activeSessionEntity.isActive
+                    "is_active" to activeSessionEntity.isActive
                 ),
                 "messages" to messageEntities.map { msg ->
                     mapOf(
@@ -989,7 +989,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 mapOf(
                     "id" to session.id,
                     "name" to session.name,
-                    "createdAt" to session.createdAt,
+                    "created_at" to session.createdAt,
                     "lastActivity" to session.lastActivity,
                     "messageCount" to messageCount,
                     "firstUserMessage" to preview

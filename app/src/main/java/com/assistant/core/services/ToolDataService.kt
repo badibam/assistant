@@ -122,7 +122,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             data = mapOf(
                 "id" to entity.id,
-                "createdAt" to entity.createdAt
+                "created_at" to entity.createdAt
             )
         )
     }
@@ -278,7 +278,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             data = mapOf(
                 "id" to updatedEntity.id,
-                "updatedAt" to updatedEntity.updatedAt
+                "updated_at" to updatedEntity.updatedAt
             )
         )
     }
@@ -426,8 +426,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         "name" to entity.name,
                         "data" to dataWithISO,
                         "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
-                        "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
-                        "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
+                        "created_at" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
+                        "updated_at" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
                     )
 
                     // Apply fields filter if provided
@@ -484,8 +484,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "name" to entity.name,
                     "data" to dataWithISO,
                     "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
-                    "createdAt" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
-                    "updatedAt" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
+                    "created_at" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
+                    "updated_at" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
                 )
             )
         )

@@ -207,7 +207,7 @@ fun AutomationScreen(
                         }
 
                         // Calculate duration
-                        val createdAtValue = sessionMap["createdAt"] as? Long ?: 0L
+                        val createdAtValue = sessionMap["created_at"] as? Long ?: 0L
                         val lastActivity = sessionMap["lastActivity"] as? Long ?: createdAtValue
                         val duration = lastActivity - createdAtValue
 

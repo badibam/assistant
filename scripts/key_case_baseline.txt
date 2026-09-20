@@ -23,7 +23,6 @@ chatMaxDataQueryIterations
 commandResults
 communicationModule
 costJson
-createdAt
 currentPage
 dataCommands
 dayOfMonth
@@ -32,7 +31,6 @@ daysOfWeek
 defaultCharsPerToken
 defaultPromptMaxTokens
 defaultQueryMaxTokens
-displayName
 docType
 elementId
 elementType
@@ -58,7 +56,6 @@ inputCost
 inputTokens
 isActionCommand
 isActive
-isConfigured
 isEnabled
 isRelative
 keepControl
@@ -92,7 +89,6 @@ postText
 preText
 priceAvailable
 promptPreview
-providerId
 providerSessionId
 requireValidation
 richContent
@@ -133,7 +129,6 @@ totalRoundtrips
 totalUncachedInputTokens
 triggeredAt
 trueLabel
-updatedAt
 validateAppConfigChanges
 validateConfig
 validateData

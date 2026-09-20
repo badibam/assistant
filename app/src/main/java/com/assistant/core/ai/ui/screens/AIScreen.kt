@@ -106,12 +106,12 @@ fun AIScreen(
                             automationId = sessionData["automationId"] as? String,
                             seedId = sessionData["seedId"] as? String,
                             scheduledExecutionTime = (sessionData["scheduledExecutionTime"] as? Number)?.toLong(),
-                            providerId = sessionData["providerId"] as String,
+                            providerId = sessionData["provider_id"] as String,
                             providerSessionId = sessionData["providerSessionId"] as String,
-                            createdAt = (sessionData["createdAt"] as Number).toLong(),
+                            createdAt = (sessionData["created_at"] as Number).toLong(),
                             lastActivity = (sessionData["lastActivity"] as Number).toLong(),
                             messages = emptyList(),
-                            isActive = sessionData["isActive"] as? Boolean ?: false
+                            isActive = sessionData["is_active"] as? Boolean ?: false
                         )
                         LogManager.aiUI("AIScreen loaded non-active session from DB: ${session?.name} (type=${session?.type})")
                     } else {

@@ -214,8 +214,8 @@ fun TrackingHistory(
                                         timestamp = timestamp,
                                         name = entryMap["name"] as? String,
                                         data = entryMap["data"] as? String ?: "",
-                                        createdAt = (entryMap["createdAt"] as? Number)?.toLong() ?: 0L,
-                                        updatedAt = (entryMap["updatedAt"] as? Number)?.toLong() ?: 0L,
+                                        createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
+                                        updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L,
                                         customFields = entryMap["custom_fields"] as? String
                                     )
                                 } catch (e: Exception) {
