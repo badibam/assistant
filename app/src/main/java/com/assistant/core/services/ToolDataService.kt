@@ -989,7 +989,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
             val configJson = if (toolResult.status == CommandStatus.SUCCESS) {
                 val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
-                tool?.get("config_json") as? String
+                @Suppress("UNCHECKED_CAST")
+                (tool?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it).toString() }
             } else null
 
             // Call enrichData() - default implementation returns data unchanged

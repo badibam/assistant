@@ -7,6 +7,7 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.ValidationResult
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -75,17 +76,11 @@ class ActionValidator(private val context: Context) {
                 return ValidationResult.error(s.shared("error_missing_tool_type"))
             }
 
-            val configJson = params["config_json"] as? String
-            if (configJson.isNullOrEmpty()) {
-                LogManager.aiService("Missing config_json in tools.create/update params", "ERROR")
+            @Suppress("UNCHECKED_CAST")
+            val configData = params["config"] as? Map<String, Any?>
+            if (configData.isNullOrEmpty()) {
+                LogManager.aiService("Missing config in tools.create/update params", "ERROR")
                 return ValidationResult.error(s.shared("error_missing_config"))
-            }
-
-            // Parse config JSON to Map
-            val configData = JSONObject(configJson).let { json ->
-                json.keys().asSequence().associateWith { key ->
-                    json.get(key)
-                }
             }
 
             // Get ToolType via ToolTypeManager
@@ -112,7 +107,7 @@ class ActionValidator(private val context: Context) {
             }
 
             // Validate via SchemaValidator
-            val validationResult = SchemaValidator.validate(schema, configData, context)
+            val validationResult = SchemaValidator.validate(schema, configData.mapValues { (_, v) -> v ?: "" }, context)
 
             if (validationResult.isValid) {
                 LogManager.aiService("Tool config validation successful for $toolTypeName", "DEBUG")

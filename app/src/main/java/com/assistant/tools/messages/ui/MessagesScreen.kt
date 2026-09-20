@@ -113,7 +113,7 @@ fun MessagesScreen(
     }
 
     val config = remember(toolInstance) {
-        val configJson = toolInstance?.get("config_json") as? String ?: "{}"
+        val configJson = JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap()).toString()
         try {
             JSONObject(configJson)
         } catch (e: Exception) {

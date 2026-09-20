@@ -19,6 +19,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -74,12 +75,7 @@ fun TrackingScreen(
 
     // Parse configuration
     val config = remember(toolInstance) {
-        val configJson = toolInstance?.get("config_json") as? String ?: "{}"
-        try { 
-            JSONObject(configJson) 
-        } catch (e: Exception) { 
-            JSONObject() 
-        }
+        JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap())
     }
     
     Column(

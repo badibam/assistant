@@ -23,6 +23,7 @@ import com.assistant.core.fields.CustomFieldsInput
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.toFieldDefinitions
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -69,9 +70,9 @@ fun EditNoteDialog(
         if (configResult?.isSuccess == true) {
             val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
             toolData?.let { data ->
-                val configJson = data["config_json"] as? String ?: "{}"
+                val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
-                    val config = JSONObject(configJson)
+                    val config = configJson
                     val customFieldsArray = config.optJSONArray("custom_fields")
                     if (customFieldsArray != null) {
                         customFieldsDefinitions = customFieldsArray.toFieldDefinitions()

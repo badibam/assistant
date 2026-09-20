@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking.ui
 
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.ui.PropertiesSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
@@ -147,13 +148,13 @@ fun TrackingInputManager(
                 currentItems.put(newItem)
                 
                 // Update tool instance configuration
-                val updatedConfigJson = config.apply {
+                val updatedConfig = JsonUtils.toMap(config.apply {
                     put("items", currentItems)
-                }.toString()
-                
+                })
+
                 val params = mapOf(
                     "tool_instance_id" to toolInstanceId,
-                    "config_json" to updatedConfigJson
+                    "config" to updatedConfig
                 )
                 
                 LogManager.tracking("Updating config with new item: $params")

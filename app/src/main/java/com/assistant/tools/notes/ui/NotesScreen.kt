@@ -23,6 +23,7 @@ import com.assistant.core.utils.DataChangeEvent
 import com.assistant.tools.notes.ui.components.NoteCard
 import com.assistant.tools.notes.ui.components.EditNoteDialog
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -173,12 +174,7 @@ fun NotesScreen(
 
     // Parse configuration
     val config = remember(toolInstance) {
-        val configJson = toolInstance?.get("config_json") as? String ?: "{}"
-        try {
-            JSONObject(configJson)
-        } catch (e: Exception) {
-            JSONObject()
-        }
+        JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap())
     }
 
     // Helper functions for dialog management

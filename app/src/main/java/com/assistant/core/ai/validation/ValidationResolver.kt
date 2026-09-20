@@ -1,5 +1,6 @@
 package com.assistant.core.ai.validation
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.commands.CommandStatus
@@ -353,11 +354,12 @@ class ValidationResolver(private val context: Context) {
             ))
 
             if (result.status == CommandStatus.SUCCESS) {
-                // tools.get returns "tool_instance" map containing config_json
+                // tools.get returns "tool_instance" map containing config
                 val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-                val configJson = toolInstance?.get("config_json") as? String
-                if (configJson != null) {
-                    JSONObject(configJson)
+                @Suppress("UNCHECKED_CAST")
+                val configMap = toolInstance?.get("config") as? Map<String, Any?>
+                if (configMap != null) {
+                    JsonUtils.toJSONObject(configMap)
                 } else {
                     LogManager.aiService("ValidationResolver: Tool $toolInstanceId has no config", "WARN")
                     JSONObject()

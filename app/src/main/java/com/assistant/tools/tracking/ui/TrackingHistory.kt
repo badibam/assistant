@@ -95,9 +95,9 @@ fun TrackingHistory(
         if (configResult.isSuccess) {
             val toolData = configResult.data?.get("tool_instance") as? Map<*, *>
             toolData?.let { data ->
-                val configJson = data["config_json"] as? String ?: "{}"
+                val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
-                    toolConfig = JSONObject(configJson)
+                    toolConfig = configJson
                     LogManager.tracking("TrackingHistory - Loaded tool config with ${toolConfig.optJSONArray("custom_fields")?.length() ?: 0} custom fields")
                 } catch (e: Exception) {
                     LogManager.tracking("Error parsing tool config: ${e.message}", "ERROR")

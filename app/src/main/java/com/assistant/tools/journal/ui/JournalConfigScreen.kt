@@ -22,6 +22,7 @@ import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toJsonArray
 import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -82,9 +83,9 @@ fun JournalConfigScreen(
         if (result?.isSuccess == true) {
             val toolData = result.mapSingleData("tool_instance") { map -> map }
             toolData?.let { data ->
-                val configJson = data["config_json"] as? String ?: "{}"
+                val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
-                    val config = JSONObject(configJson)
+                    val config = configJson
                     name = config.optString("name", "")
                     description = config.optString("description", "")
                     iconName = config.optString("icon_name", "book-open")

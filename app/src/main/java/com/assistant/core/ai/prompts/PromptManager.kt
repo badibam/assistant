@@ -1,5 +1,6 @@
 package com.assistant.core.ai.prompts
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.processing.UserCommandProcessor
@@ -354,10 +355,10 @@ object PromptManager {
             if (toolInstanceMap !is Map<*, *>) continue
 
             val toolInstanceId = toolInstanceMap["id"] as? String ?: continue
-            val configJson = toolInstanceMap["config_json"] as? String ?: continue
+            val config = (toolInstanceMap["config"] as? Map<String, Any?>)
+                ?.let { JsonUtils.toJSONObject(it) } ?: continue
 
             try {
-                val config = org.json.JSONObject(configJson)
                 val alwaysSend = config.optBoolean("always_send", false)
 
                 if (alwaysSend) {

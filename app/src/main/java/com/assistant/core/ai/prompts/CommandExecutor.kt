@@ -1,5 +1,6 @@
 package com.assistant.core.ai.prompts
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.coordinator.Coordinator
@@ -852,22 +853,7 @@ class CommandExecutor(private val context: Context) {
                     data["name"]?.let { reordered["name"] = it }
                     data["tooltype"]?.let { reordered["tooltype"] = it }
 
-                    // Parse config_json string as JSON for readable prompt formatting
-                    val toolInstance = data["tool_instance"] as? Map<*, *>
-                    val configJsonStr = toolInstance?.get("config_json") as? String
-                    if (configJsonStr != null) {
-                        try {
-                            val parsedConfig = org.json.JSONObject(configJsonStr)
-                            // Replace the string with parsed JSON in tool_instance
-                            val modifiedToolInstance = toolInstance.toMutableMap()
-                            modifiedToolInstance["config_json"] = parsedConfig
-                            reordered["tool_instance"] = modifiedToolInstance
-                        } catch (e: Exception) {
-                            // If parsing fails, keep as string
-                            LogManager.aiPrompt("Failed to parse config_json in tools: ${e.message}", "WARN", e)
-                            data["tool_instance"]?.let { reordered["tool_instance"] = it }
-                        }
-                    }
+                    data["tool_instance"]?.let { reordered["tool_instance"] = it }
 
                     // Add remaining fields (except tool_instance if already processed)
                     data.forEach { (key, value) ->
@@ -929,13 +915,15 @@ class CommandExecutor(private val context: Context) {
 
             // Extract config_json and tooltype
             val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-            val configJsonStr = toolInstance?.get("config_json") as? String
+            @Suppress("UNCHECKED_CAST")
+            val configMap = toolInstance?.get("config") as? Map<String, Any?>
             val tooltype = toolInstance?.get("tooltype") as? String
 
-            if (configJsonStr == null || tooltype == null) {
-                LogManager.aiPrompt("Missing config_json or tooltype for tool instance $toolInstanceId", "WARN")
+            if (configMap == null || tooltype == null) {
+                LogManager.aiPrompt("Missing config or tooltype for tool instance $toolInstanceId", "WARN")
                 return null
             }
+            val configJsonStr = JsonUtils.toJSONObject(configMap).toString()
 
             // Get ToolType to determine relevant fields
             val toolType = com.assistant.core.tools.ToolTypeManager.getToolType(tooltype)
@@ -1062,14 +1050,15 @@ class CommandExecutor(private val context: Context) {
 
                 // Extract config_json and parse data_schema_id
                 val toolInstance = configResult.data?.get("tool_instance") as? Map<*, *>
-                val configJsonStr = toolInstance?.get("config_json") as? String
+                @Suppress("UNCHECKED_CAST")
+                val configMap = toolInstance?.get("config") as? Map<String, Any?>
 
-                if (configJsonStr == null) {
-                    LogManager.aiPrompt("No config_json found for tool instance $toolInstanceId", "WARN")
+                if (configMap == null) {
+                    LogManager.aiPrompt("No config found for tool instance $toolInstanceId", "WARN")
                     continue
                 }
 
-                val configJson = JSONObject(configJsonStr)
+                val configJson = JsonUtils.toJSONObject(configMap)
                 val dataSchemaId = configJson.optString("data_schema_id")
 
                 if (dataSchemaId.isEmpty()) {

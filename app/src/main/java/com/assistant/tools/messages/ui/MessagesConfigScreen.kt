@@ -29,6 +29,7 @@ import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.utils.SchedulePattern
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -106,9 +107,9 @@ fun MessagesConfigScreen(
         if (result?.isSuccess == true) {
             val toolData = result.mapSingleData("tool_instance") { map -> map }
             toolData?.let { data ->
-                val configJson = data["config_json"] as? String ?: "{}"
+                val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
-                    val config = JSONObject(configJson)
+                    val config = configJson
                     // Load general config
                     name = config.optString("name", "")
                     description = config.optString("description", "")

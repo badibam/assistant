@@ -247,8 +247,8 @@ val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
 
 ## Patterns de Parsing Robuste
 
-### entity.data est un objet
-`tool_data.*` rend `data` et `custom_fields` en `Map`, jamais en chaîne : la sérialisation JSON ne vit qu'au bord de la base. Un appelant lit ses clés directement, sans parsing ni try/catch.
+### les services rendent des objets
+`tool_data.*` rend `data` et `custom_fields` en `Map`, et `tools.*` prend et rend `config` en objet — jamais en chaîne. La sérialisation JSON ne vit qu'au bord de la base, où `tool_instances.config_json` garde son nom parce que la colonne, elle, contient bien une chaîne. Un appelant lit ses clés directement, sans parsing ni try/catch.
 
 ### LaunchedEffect avec Dépendances Complètes
 Inclure TOUTES les variables vérifiées dans le scope comme dépendances pour éviter les états obsolètes.

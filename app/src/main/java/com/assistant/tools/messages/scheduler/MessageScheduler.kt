@@ -113,12 +113,12 @@ object MessageScheduler : ToolScheduler {
         instance: Map<String, Any>,
         now: Long
     ) {
-        val configJson = instance["config_json"] as? String
+        val configJson = (instance["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
         if (configJson == null) {
             LogManager.service("Message template $toolInstanceId has no config, skipping", "WARN")
             return
         }
-        val config = JSONObject(configJson)
+        val config = configJson
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         val schedule = parseSchedule(config)

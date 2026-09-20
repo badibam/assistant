@@ -10,6 +10,7 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.LogManager
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -210,7 +211,7 @@ class AICommandProcessor(private val context: Context) {
 
             // Tool instance actions
             "CREATE_TOOL" -> {
-                val transformedParams = transformToolParams(command.params)
+                val transformedParams = command.params
                 ExecutableCommand(
                     resource = "tools",
                     operation = "create",
@@ -219,7 +220,7 @@ class AICommandProcessor(private val context: Context) {
                 )
             }
             "UPDATE_TOOL" -> {
-                val transformedParams = transformToolParams(command.params)
+                val transformedParams = command.params
                 ExecutableCommand(
                     resource = "tools",
                     operation = "update",
@@ -292,7 +293,7 @@ class AICommandProcessor(private val context: Context) {
 
             // Tool instance actions
             "CREATE_TOOL" -> {
-                val transformedParams = transformToolParams(command.params)
+                val transformedParams = command.params
                 ExecutableCommand(
                     resource = "tools",
                     operation = "create",
@@ -301,7 +302,7 @@ class AICommandProcessor(private val context: Context) {
                 )
             }
             "UPDATE_TOOL" -> {
-                val transformedParams = transformToolParams(command.params)
+                val transformedParams = command.params
                 ExecutableCommand(
                     resource = "tools",
                     operation = "update",
@@ -379,7 +380,7 @@ class AICommandProcessor(private val context: Context) {
                 return params
             }
 
-            // tools.get returns { "tool_instance": { "config_json": "...", ... } }
+            // tools.get returns { "tool_instance": { "config": { ... }, ... } }
             val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
             if (toolInstance == null) {
                 LogManager.aiService(
@@ -389,16 +390,14 @@ class AICommandProcessor(private val context: Context) {
                 return params
             }
 
-            val configJson = toolInstance["config_json"] as? String
-            if (configJson.isNullOrEmpty()) {
+            val config = (toolInstance["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+            if (config == null || config.length() == 0) {
                 LogManager.aiService(
-                    "Tool instance $toolInstanceId has no config_json",
+                    "Tool instance $toolInstanceId has no config",
                     "ERROR"
                 )
                 return params
             }
-
-            val config = JSONObject(configJson)
             val dataSchemaId = config.optString("data_schema_id")
 
             if (dataSchemaId.isEmpty()) {
@@ -572,37 +571,4 @@ class AICommandProcessor(private val context: Context) {
         return command.copy(params = enrichedParams)
     }
 
-    /**
-     * Transform tool params from AI format to service format
-     * Converts "config" object to "config_json" string for ToolInstanceService
-     *
-     * @param params Original params from AI command with "config" as object
-     * @return Transformed params with "config_json" as JSON string
-     */
-    private fun transformToolParams(params: Map<String, Any>): Map<String, Any> {
-        val config = params["config"]
-
-        if (config == null) {
-            LogManager.aiService("CREATE_TOOL/UPDATE_TOOL missing config parameter", "WARN")
-            return params
-        }
-
-        return params.toMutableMap().apply {
-            // Remove "config" key
-            remove("config")
-
-            // Add "config_json" key with JSON string
-            val configJson = when (config) {
-                is Map<*, *> -> JSONObject(config as Map<String, Any>).toString()
-                is String -> config  // Already a JSON string
-                else -> {
-                    LogManager.aiService("Unexpected config type: ${config::class.java.simpleName}", "WARN")
-                    config.toString()
-                }
-            }
-            put("config_json", configJson)
-
-            LogManager.aiService("Transformed config object to config_json string", "DEBUG")
-        }
-    }
 }

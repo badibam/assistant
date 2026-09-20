@@ -34,6 +34,7 @@ import com.assistant.core.fields.toJsonArray
 import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -207,15 +208,15 @@ fun TrackingConfigScreen(
         val toolInstanceData = result.mapSingleData("tool_instance") { it }
             ?: throw RuntimeException("CONFIGDEBUG: No tool_instance in result.data: ${result.data}")
             
-        val configString = toolInstanceData["config_json"] as? String
-            ?: throw RuntimeException("CONFIGDEBUG: No config_json in toolInstanceData: $toolInstanceData")
-            
-        LogManager.tracking("Config string from DB: $configString")
-        val newConfig = JSONObject(configString)
+        val loadedConfig = (toolInstanceData["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+            ?: throw RuntimeException("CONFIGDEBUG: No config in toolInstanceData: $toolInstanceData")
+
+        LogManager.tracking("Config loaded: $loadedConfig")
+        val newConfig = loadedConfig
         LogManager.tracking("New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
-        
+
         // Capture original config and type before updating
-        initialConfigString = configString
+        initialConfigString = loadedConfig.toString()
         originalType = newConfig.optString("type", "")
         LogManager.tracking("Original type captured: $originalType")
 

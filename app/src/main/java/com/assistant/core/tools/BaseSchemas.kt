@@ -1,5 +1,6 @@
 package com.assistant.core.tools
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
@@ -302,16 +303,18 @@ object BaseSchemas {
             return mergedSchema
         }
 
-        // tools.get returns { "tool_instance": { "config_json": "...", ... } }
+        // tools.get returns { "tool_instance": { "config": { ... }, ... } }
         val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-        val configJson = toolInstance?.get("config_json") as? String
-        if (configJson == null) {
+        @Suppress("UNCHECKED_CAST")
+        val configMap = toolInstance?.get("config") as? Map<String, Any?>
+        if (configMap == null) {
             LogManager.schema(
-                "Tool instance config_json is null for custom fields enrichment (toolInstanceId=$toolInstanceId)",
+                "Tool instance config is null for custom fields enrichment (toolInstanceId=$toolInstanceId)",
                 "WARN"
             )
             return mergedSchema
         }
+        val configJson = JsonUtils.toJSONObject(configMap).toString()
 
         // Step 3: Enrich with custom fields
         return try {

@@ -7,6 +7,7 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -348,12 +349,8 @@ class EnrichmentProcessor(
         val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
             ?: throw IllegalStateException("Tool instance $toolInstanceId not found in response")
 
-        val configJson = toolInstance["config_json"] as? String
-        if (configJson.isNullOrBlank()) {
-            throw IllegalStateException("Tool instance $toolInstanceId has no config_json")
-        }
-
-        val config = JSONObject(configJson)
+        val config = (toolInstance["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+            ?: throw IllegalStateException("Tool instance $toolInstanceId has no config")
         val configSchemaId = config.optString("schema_id", "")
         val dataSchemaId = config.optString("data_schema_id", "")
 

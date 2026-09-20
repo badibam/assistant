@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -88,7 +89,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         val zoneId = params.optString("zone_id")
         val toolType = params.optString("tooltype")
-        val configJson = params.optString("config_json", "{}")
+        // config travels as an object; it becomes a string only on its way into the column.
+        val configJson = (params.optJSONObject("config") ?: JSONObject()).toString()
 
         if (zoneId.isBlank() || toolType.isBlank()) {
             return OperationResult.error(s.shared("service_error_zone_id_tool_type_required"))
@@ -129,7 +131,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        var configJson = params.optString("config_json")
+        var configJson = params.optJSONObject("config")?.toString() ?: ""
         val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
 
         if (toolInstanceId.isBlank()) {
@@ -329,7 +331,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             }
 
             // Build result map - minimal version
-            val resultMap = mutableMapOf(
+            val resultMap = mutableMapOf<String, Any?>(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
                 "name" to name,
@@ -340,7 +342,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             // Conditionally add config_json and timestamps based on include_config parameter
             if (includeConfig) {
-                resultMap["config_json"] = tool.config_json
+                resultMap["config"] = JsonUtils.toMap(tool.config_json)
                 resultMap["created_at"] = tool.created_at
                 resultMap["updated_at"] = tool.updated_at
             }
@@ -379,7 +381,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             }
 
             // Build result map - minimal version
-            val resultMap = mutableMapOf(
+            val resultMap = mutableMapOf<String, Any?>(
                 "id" to tool.id,
                 "zone_id" to tool.zone_id,
                 "name" to name,
@@ -390,7 +392,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             // Conditionally add config_json and timestamps based on include_config parameter
             if (includeConfig) {
-                resultMap["config_json"] = tool.config_json
+                resultMap["config"] = JsonUtils.toMap(tool.config_json)
                 resultMap["created_at"] = tool.created_at
                 resultMap["updated_at"] = tool.updated_at
             }
@@ -431,7 +433,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 "zone_id" to toolInstance.zone_id,
                 "name" to name,
                 "tooltype" to toolInstance.tooltype,
-                "config_json" to toolInstance.config_json,
+                "config" to JsonUtils.toMap(toolInstance.config_json),
                 "order_index" to toolInstance.order_index,
                 "created_at" to toolInstance.created_at,
                 "updated_at" to toolInstance.updated_at
@@ -449,12 +451,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return when (operation) {
             "create" -> {
                 // For create, name is directly in params
-                val configJson = params.optString("config_json", "{}")
-                val toolName = try {
-                    JSONObject(configJson).optString("name", s.shared("content_unnamed"))
-                } catch (e: Exception) {
-                    s.shared("content_unnamed")
-                }
+                val toolName = params.optJSONObject("config")
+                    ?.optString("name", s.shared("content_unnamed"))
+                    ?: s.shared("content_unnamed")
                 val zoneId = params.optString("zone_id")
                 val zoneName = getZoneName(zoneId, context) ?: s.shared("content_unnamed")
                 s.shared("action_verbalize_create_tool").format(toolName, zoneName)

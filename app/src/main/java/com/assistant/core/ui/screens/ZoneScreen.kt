@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens
 
+import com.assistant.core.utils.JsonUtils
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -89,7 +90,7 @@ fun ZoneScreen(
                     id = map["id"] as String,
                     zone_id = map["zone_id"] as String,
                     tooltype = map["tooltype"] as String,
-                    config_json = map["config_json"] as String,
+                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
                     updated_at = (map["updated_at"] as Number).toLong()
@@ -153,7 +154,7 @@ fun ZoneScreen(
                                     id = map["id"] as String,
                                     zone_id = map["zone_id"] as String,
                                     tooltype = map["tooltype"] as String,
-                                    config_json = map["config_json"] as String,
+                                    config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
                                     order_index = (map["order_index"] as Number).toInt(),
                                     created_at = (map["created_at"] as Number).toLong(),
                                     updated_at = (map["updated_at"] as Number).toLong()
@@ -217,7 +218,7 @@ fun ZoneScreen(
                         id = map["id"] as String,
                         zone_id = map["zone_id"] as String,
                         tooltype = map["tooltype"] as String,
-                        config_json = map["config_json"] as String,
+                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
                         order_index = (map["order_index"] as Number).toInt(),
                         created_at = (map["created_at"] as Number).toLong(),
                         updated_at = (map["updated_at"] as Number).toLong()
@@ -237,7 +238,7 @@ fun ZoneScreen(
                 try {
                     coordinator.processUserAction("tools.update", mapOf(
                         "tool_instance_id" to toolId,
-                        "config_json" to config
+                        "config" to JsonUtils.toMap(config)
                     ))
                     editingToolId = null
                     showingConfigFor = null
@@ -254,7 +255,7 @@ fun ZoneScreen(
                     coordinator.processUserAction("tools.create", mapOf(
                         "zone_id" to zone.id,
                         "tooltype" to toolTypeId,
-                        "config_json" to config
+                        "config" to JsonUtils.toMap(config)
                     ))
                     showingConfigFor = null
                     preSelectedGroup = null
@@ -641,7 +642,7 @@ fun ZoneScreen(
                                         id = map["id"] as String,
                                         zone_id = map["zone_id"] as String,
                                         tooltype = map["tooltype"] as String,
-                                        config_json = map["config_json"] as String,
+                                        config_json = JsonUtils.toJSONObject(map["config"] as Map<String, Any?>).toString(),
                                         order_index = (map["order_index"] as? Number)?.toInt() ?: 0,
                                         created_at = (map["created_at"] as? Number)?.toLong() ?: 0L,
                                         updated_at = (map["updated_at"] as? Number)?.toLong() ?: 0L

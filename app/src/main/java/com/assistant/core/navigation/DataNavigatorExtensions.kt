@@ -8,6 +8,7 @@ import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandResult
@@ -150,17 +151,17 @@ suspend fun resolveToolInstance(toolInstanceId: String, context: Context): ToolI
         }
 
         val toolType = toolInstance["tooltype"] as? String
-        val configJson = toolInstance["config_json"] as? String
+        val config = (toolInstance["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
 
-        LogManager.schema("RESOLVE: tooltype='$toolType', config_json length=${configJson?.length}")
+        LogManager.schema("RESOLVE: tooltype='$toolType', config keys=${config?.length() ?: 0}")
 
-        if (toolType.isNullOrBlank() || configJson.isNullOrBlank()) {
-            LogManager.schema("RESOLVE: Missing tooltype or config_json for $toolInstanceId", "ERROR")
+        if (toolType.isNullOrBlank() || config == null) {
+            LogManager.schema("RESOLVE: Missing tooltype or config for $toolInstanceId", "ERROR")
             return@withContext null
         }
 
         LogManager.schema("RESOLVE: Successfully resolved $toolInstanceId -> tooltype: '$toolType'")
-        ToolInstanceInfo(toolType, configJson)
+        ToolInstanceInfo(toolType, config.toString())
 
     } catch (e: Exception) {
         LogManager.schema("Error resolving tool instance $toolInstanceId: ${e.message}", "ERROR", e)

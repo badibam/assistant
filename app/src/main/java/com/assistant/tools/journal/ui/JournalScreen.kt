@@ -20,6 +20,7 @@ import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
 import com.assistant.tools.journal.ui.components.JournalCard
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
@@ -117,7 +118,7 @@ fun JournalScreen(
                 }
 
                 // Sort entries according to config
-                val configJson = toolInstance?.get("config_json") as? String ?: "{}"
+                val configJson = JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap()).toString()
                 val config = try { JSONObject(configJson) } catch (e: Exception) { JSONObject() }
                 val sortOrder = config.optString("sort_order", "descending")
 
@@ -152,12 +153,7 @@ fun JournalScreen(
 
     // Parse configuration
     val config = remember(toolInstance) {
-        val configJson = toolInstance?.get("config_json") as? String ?: "{}"
-        try {
-            JSONObject(configJson)
-        } catch (e: Exception) {
-            JSONObject()
-        }
+        JsonUtils.toJSONObject(toolInstance?.get("config") as? Map<String, Any?> ?: emptyMap())
     }
 
     // Error message display

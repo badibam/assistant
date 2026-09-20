@@ -1,5 +1,6 @@
 package com.assistant.core.navigation
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
@@ -323,7 +324,8 @@ class DataNavigator(private val context: Context) {
                         id = instance["id"] as? String ?: toolInstanceId,
                         name = instanceName.ifBlank { toolType.replaceFirstChar { it.uppercase() } },
                         toolType = toolType,
-                        config = instance["config_json"] as? String ?: "{}"
+                        config = (instance["config"] as? Map<String, Any?>)
+                            ?.let { JsonUtils.toJSONObject(it).toString() } ?: "{}"
                     )
                 } else {
                     LogManager.coordination("Tool instance not found in response: $toolInstanceId", "ERROR")

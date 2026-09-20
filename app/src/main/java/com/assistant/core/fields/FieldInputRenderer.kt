@@ -1,5 +1,6 @@
 package com.assistant.core.fields
 
+import com.assistant.core.utils.JsonUtils
 import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
 import androidx.compose.foundation.layout.*
@@ -581,10 +582,11 @@ private fun loadFieldDefinitionsFromConfig(
 
             if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
                 val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-                val configJson = toolInstance?.get("config_json") as? String
+                @Suppress("UNCHECKED_CAST")
+                val configMap = toolInstance?.get("config") as? Map<String, Any?>
 
-                if (configJson != null) {
-                    val config = org.json.JSONObject(configJson)
+                if (configMap != null) {
+                    val config = JsonUtils.toJSONObject(configMap)
                     val customFieldsArray = config.optJSONArray("custom_fields")
 
                     // Convert JSONArray to List<FieldDefinition>
