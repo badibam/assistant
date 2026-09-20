@@ -2,26 +2,25 @@ package com.assistant.core.ai.domain
 
 import com.assistant.core.ai.data.CommandStatus
 import com.assistant.core.ai.data.SessionEndReason
+import com.assistant.core.ai.data.SessionType
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Measures where the autonomous roundtrip limit actually stops an AUTOMATION session.
+ * Covers where the autonomous roundtrip limit stops an AUTOMATION session.
  *
- * The limit exists to stop an AUTOMATION that loops. AIState.totalRoundtrips is incremented
- * by several transitions, but limits.maxAutonomousRoundtrips is read by only one of them.
- * These tests pin which loops the limit closes and which ones it lets run, so that a change
- * either way shows up as a failing test rather than as unexplained API spend.
+ * Seven transitions increment AIState.totalRoundtrips, and the limit is read once, on the
+ * way out of transition(), at the moment a call would go out. Each loop that can reach the
+ * provider is checked here, since the point of the guard being in one place is that no path
+ * escapes it -- and the four that did escape are the reason it moved there.
  */
 class AIStateMachineRoundtripLimitTest {
 
-    // ==================== The path that enforces the limit ====================
+    // ==================== The productive loop ====================
 
     /**
-     * ActionsExecuted is the transition that reads the limit. Reaching it closes the
-     * session with LIMIT_REACHED, which is the behaviour the limit was written for.
+     * Actions that succeed send the automation back to the provider, and that is the loop
+     * the limit was written for: reaching it closes the session with LIMIT_REACHED.
      */
     @Test
     fun actionsExecuted_closesTheSessionOnceTheLimitIsReached() {
@@ -95,103 +94,113 @@ class AIStateMachineRoundtripLimitTest {
         assertEquals(ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED, state.continuationReason)
     }
 
-    // ==================== The loops that do not consult the limit ====================
+    // ==================== The loops that used to walk past it ====================
 
     /**
-     * A malformed AI response loops CALLING_AI -> PARSING_AI_RESPONSE -> ParseErrorOccurred
-     * -> RETRYING_AFTER_FORMAT_ERROR -> RetryScheduled -> CALLING_AI. The cycle never passes
-     * through ActionsExecuted, so it never reaches the one transition that reads the limit.
-     *
-     * This test states what the machine does today, not what it should do: the counter runs
-     * far past maxAutonomousRoundtrips and the session stays open. Outside the state machine
-     * the watchdog still closes it on AUTOMATION_GLOBAL_TIMEOUT (AISessionScheduler), so the
-     * backstop here is wall-clock time, not the roundtrip count.
+     * A malformed reply loops CALLING_AI -> PARSING_AI_RESPONSE -> ParseErrorOccurred ->
+     * RETRYING_AFTER_FORMAT_ERROR -> RetryScheduled -> CALLING_AI. It never passes through
+     * ActionsExecuted, so for a long time it never met the limit at all and ran until the
+     * watchdog's ten minutes of wall clock. It is now stopped on the count, like any other.
      */
     @Test
-    fun parseErrorLoop_runsPastTheLimitWithoutClosingTheSession() {
+    fun parseErrorLoop_isStoppedOnTheCount() {
         var state = automationAt(Phase.CALLING_AI)
 
         repeat(CYCLES_WELL_PAST_THE_LIMIT) {
+            if (state.phase != Phase.CALLING_AI) return@repeat
+
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.PARSING_AI_RESPONSE),
                 event = AIEvent.ParseErrorOccurred("unparseable response"),
                 limits = testLimits,
                 currentTime = T0
             )
-            assertEquals(Phase.RETRYING_AFTER_FORMAT_ERROR, state.phase)
-
-            state = AIStateMachine.transition(
-                state = state,
-                event = AIEvent.RetryScheduled,
-                limits = testLimits,
-                currentTime = T0
-            )
-            assertEquals(Phase.CALLING_AI, state.phase)
+            state = AIStateMachine.transition(state, AIEvent.RetryScheduled, testLimits, T0)
         }
 
-        assertEquals(CYCLES_WELL_PAST_THE_LIMIT, state.totalRoundtrips)
-        assertTrue(
-            "the counter runs past the limit it is measured against",
-            state.totalRoundtrips > testLimits.maxAutonomousRoundtrips
-        )
-        assertNotEquals(Phase.CLOSED, state.phase)
-        assertNotEquals(Phase.AWAITING_SESSION_CLOSURE, state.phase)
-        assertEquals(null, state.endReason)
+        assertEquals(testLimits.maxAutonomousRoundtrips, state.totalRoundtrips)
+        assertEquals(SessionEndReason.LIMIT_REACHED, state.endReason)
+        assertEquals(Phase.AWAITING_SESSION_CLOSURE, state.phase)
     }
 
-    /**
-     * Same shape for a failing action: ActionFailureOccurred goes to
-     * RETRYING_AFTER_ACTION_FAILURE, then RetryScheduled returns to CALLING_AI. The successful
-     * path (ActionsExecuted) is the one that checks the limit; the failing path bypasses it.
-     */
+    /** Same for an action that keeps failing. */
     @Test
-    fun actionFailureLoop_runsPastTheLimitWithoutClosingTheSession() {
+    fun actionFailureLoop_isStoppedOnTheCount() {
         var state = automationAt(Phase.EXECUTING_ACTIONS)
 
         repeat(CYCLES_WELL_PAST_THE_LIMIT) {
+            if (state.phase != Phase.CALLING_AI && state.totalRoundtrips > 0) return@repeat
+
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.EXECUTING_ACTIONS),
                 event = AIEvent.ActionFailureOccurred(errors = listOf(commandResult(CommandStatus.FAILED))),
                 limits = testLimits,
                 currentTime = T0
             )
-            assertEquals(Phase.RETRYING_AFTER_ACTION_FAILURE, state.phase)
-
-            state = AIStateMachine.transition(
-                state = state,
-                event = AIEvent.RetryScheduled,
-                limits = testLimits,
-                currentTime = T0
-            )
-            assertEquals(Phase.CALLING_AI, state.phase)
+            state = AIStateMachine.transition(state, AIEvent.RetryScheduled, testLimits, T0)
         }
 
-        assertEquals(CYCLES_WELL_PAST_THE_LIMIT, state.totalRoundtrips)
-        assertNotEquals(Phase.CLOSED, state.phase)
-        assertEquals(null, state.endReason)
+        assertEquals(testLimits.maxAutonomousRoundtrips, state.totalRoundtrips)
+        assertEquals(SessionEndReason.LIMIT_REACHED, state.endReason)
     }
 
-    /**
-     * An AUTOMATION that answers without any command is sent to PREPARING_CONTINUATION to be
-     * guided, and ContinuationReady brings it back to CALLING_AI. That transition increments
-     * the counter too, and also without reading the limit.
-     */
+    /** And for an automation that keeps answering without any command. */
     @Test
-    fun continuationLoop_runsPastTheLimitWithoutClosingTheSession() {
+    fun continuationLoop_isStoppedOnTheCount() {
         var state = automationAt(Phase.PREPARING_CONTINUATION)
 
         repeat(CYCLES_WELL_PAST_THE_LIMIT) {
+            if (state.endReason != null) return@repeat
+
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.PREPARING_CONTINUATION),
                 event = AIEvent.ContinuationReady,
                 limits = testLimits,
                 currentTime = T0
             )
-            assertEquals(Phase.CALLING_AI, state.phase)
         }
 
-        assertEquals(CYCLES_WELL_PAST_THE_LIMIT, state.totalRoundtrips)
-        assertNotEquals(Phase.CLOSED, state.phase)
+        assertEquals(testLimits.maxAutonomousRoundtrips, state.totalRoundtrips)
+        assertEquals(SessionEndReason.LIMIT_REACHED, state.endReason)
+    }
+
+    /**
+     * The guard catches the moment a call would go out, so a phase that only leads there is
+     * let through and caught one transition later -- after the guidance is prepared, before
+     * anything is sent.
+     */
+    @Test
+    fun aPhaseLeadingToACallIsCaughtOnItsWayThrough() {
+        val atTheLimit = automationAt(
+            Phase.EXECUTING_ACTIONS,
+            roundtrips = testLimits.maxAutonomousRoundtrips - 1,
+            awaitingCompletionConfirmation = true
+        )
+
+        // Reaching the limit while going to prepare a continuation: not stopped yet.
+        val preparing = AIStateMachine.transition(
+            state = atTheLimit,
+            event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = null),
+            limits = testLimits,
+            currentTime = T0
+        )
+        assertEquals(Phase.PREPARING_CONTINUATION, preparing.phase)
+        assertEquals(null, preparing.endReason)
+
+        // The step that would place the call is.
+        val stopped = AIStateMachine.transition(preparing, AIEvent.ContinuationReady, testLimits, T0)
+        assertEquals(SessionEndReason.LIMIT_REACHED, stopped.endReason)
+    }
+
+    /** A CHAT is not limited, so the guard never fires on one however long it runs. */
+    @Test
+    fun aChatIsNeverStoppedOnTheCount() {
+        val chatLimits = AILimitsConfig.default().getLimitsForSessionType(SessionType.CHAT)
+        var state = chatAt(Phase.PREPARING_CONTINUATION, roundtrips = 1_000)
+
+        state = AIStateMachine.transition(state, AIEvent.ContinuationReady, chatLimits, T0)
+
+        assertEquals(Phase.CALLING_AI, state.phase)
         assertEquals(null, state.endReason)
     }
 

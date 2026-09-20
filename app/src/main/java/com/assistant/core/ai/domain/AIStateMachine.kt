@@ -35,7 +35,7 @@ object AIStateMachine {
         limits: SessionLimits,
         currentTime: Long
     ): AIState {
-        return when (event) {
+        val next = when (event) {
             // ==================== Session Lifecycle ====================
 
             is AIEvent.SessionActivationRequested -> {
@@ -337,6 +337,36 @@ object AIStateMachine {
                 )
             }
         }
+
+        return stopIfOutOfRoundtrips(next, limits, currentTime)
+    }
+
+    /**
+     * Stop a session that has used up its autonomous roundtrips.
+     *
+     * The check lives here, once, rather than in each transition that increments the
+     * counter. Seven of them do, and only one used to check: the loops on a malformed
+     * reply, on a failed action, on an answer with no command and on a returning data query
+     * all incremented and walked past, leaving the watchdog's ten minutes of wall clock as
+     * the only thing that stopped them.
+     *
+     * CALLING_AI is the phase to catch, being the one moment a call actually goes out. A
+     * phase that leads there, such as PREPARING_CONTINUATION, is caught on its way through
+     * a transition later, before anything is sent.
+     */
+    private fun stopIfOutOfRoundtrips(
+        state: AIState,
+        limits: SessionLimits,
+        currentTime: Long
+    ): AIState {
+        if (state.phase != Phase.CALLING_AI) return state
+        if (state.totalRoundtrips < limits.maxAutonomousRoundtrips) return state
+
+        LogManager.aiSession(
+            "Roundtrip limit reached: ${state.totalRoundtrips}/${limits.maxAutonomousRoundtrips}",
+            "INFO"
+        )
+        return transitionToCompletion(state, currentTime, SessionEndReason.LIMIT_REACHED)
     }
 
     /**
@@ -499,17 +529,8 @@ object AIStateMachine {
         limits: SessionLimits,
         currentTime: Long
     ): AIState {
-        // Check total roundtrips limit first
+        // The limit is enforced on the way out of transition(), for every path at once.
         val newTotalRoundtrips = state.totalRoundtrips + 1
-        if (newTotalRoundtrips >= limits.maxAutonomousRoundtrips) {
-            return transitionToCompletion(
-                state = state.copy(
-                    totalRoundtrips = newTotalRoundtrips
-                ),
-                currentTime = currentTime,
-                endReason = SessionEndReason.LIMIT_REACHED
-            )
-        }
 
         if (event.allSuccess) {
             // All actions succeeded

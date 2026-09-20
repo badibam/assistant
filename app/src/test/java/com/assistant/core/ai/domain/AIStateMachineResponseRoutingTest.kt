@@ -216,14 +216,11 @@ class AIStateMachineResponseRoutingTest {
     }
 
     /**
-     * That call is not checked against the limit, unlike the one after actions.
-     *
-     * This states what the machine does today. A session that only ever queries can run
-     * past maxAutonomousRoundtrips, and is stopped by the watchdog rather than the counter
-     * -- the same gap AIStateMachineRoundtripLimitTest measures on the retry loops.
+     * That call answers to the limit like any other. A session that only ever queries used
+     * to walk past it, this transition incrementing the counter without reading it.
      */
     @Test
-    fun dataQueriesExecuted_doesNotConsultTheLimit() {
+    fun dataQueriesExecuted_isStoppedOnceTheLimitIsReached() {
         val state = AIStateMachine.transition(
             state = automationAt(Phase.EXECUTING_DATA_QUERIES, roundtrips = testLimits.maxAutonomousRoundtrips),
             event = AIEvent.DataQueriesExecuted(results = emptyList()),
@@ -231,7 +228,7 @@ class AIStateMachineResponseRoutingTest {
             currentTime = T1
         )
 
-        assertEquals(Phase.CALLING_AI, state.phase)
-        assertNull(state.endReason)
+        assertEquals(com.assistant.core.ai.data.SessionEndReason.LIMIT_REACHED, state.endReason)
+        assertEquals(Phase.AWAITING_SESSION_CLOSURE, state.phase)
     }
 }
