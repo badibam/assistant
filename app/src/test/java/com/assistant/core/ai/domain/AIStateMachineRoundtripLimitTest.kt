@@ -1,9 +1,7 @@
 package com.assistant.core.ai.domain
 
-import com.assistant.core.ai.data.CommandResult
 import com.assistant.core.ai.data.CommandStatus
 import com.assistant.core.ai.data.SessionEndReason
-import com.assistant.core.ai.data.SessionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -12,38 +10,12 @@ import org.junit.Test
 /**
  * Measures where the autonomous roundtrip limit actually stops an AUTOMATION session.
  *
- * AIStateMachine is a pure function of (state, event, limits, currentTime), so every case
- * here is built by hand and needs no mock, no database and no Android context.
- *
  * The limit exists to stop an AUTOMATION that loops. AIState.totalRoundtrips is incremented
  * by several transitions, but limits.maxAutonomousRoundtrips is read by only one of them.
  * These tests pin which loops the limit closes and which ones it lets run, so that a change
  * either way shows up as a failing test rather than as unexplained API spend.
  */
 class AIStateMachineRoundtripLimitTest {
-
-    private val limits = SessionLimits(maxAutonomousRoundtrips = 3)
-
-    /** A running AUTOMATION session, at the phase a given loop cycles through. */
-    private fun automationAt(phase: Phase, roundtrips: Int = 0) = AIState(
-        sessionId = "session-under-test",
-        phase = phase,
-        sessionType = SessionType.AUTOMATION,
-        automationId = "automation-under-test",
-        totalRoundtrips = roundtrips,
-        sessionCreatedAt = T0,
-        lastNetworkAvailableTime = T0,
-        lastEventTime = T0
-    )
-
-    private fun failedAction() = CommandResult(
-        command = "tool_data.create",
-        status = CommandStatus.FAILED,
-        details = null,
-        data = null,
-        error = "rejected by the service",
-        isActionCommand = true
-    )
 
     // ==================== The path that enforces the limit ====================
 
@@ -57,7 +29,7 @@ class AIStateMachineRoundtripLimitTest {
         val stillRunning = AIStateMachine.transition(
             state = automationAt(Phase.EXECUTING_ACTIONS, roundtrips = 1),
             event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = null),
-            limits = limits,
+            limits = testLimits,
             currentTime = T0
         )
         assertEquals(Phase.CALLING_AI, stillRunning.phase)
@@ -67,12 +39,60 @@ class AIStateMachineRoundtripLimitTest {
         val stopped = AIStateMachine.transition(
             state = automationAt(Phase.EXECUTING_ACTIONS, roundtrips = 2),
             event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = null),
-            limits = limits,
+            limits = testLimits,
             currentTime = T0
         )
         assertEquals(3, stopped.totalRoundtrips)
         assertEquals(SessionEndReason.LIMIT_REACHED, stopped.endReason)
         assertEquals(Phase.AWAITING_SESSION_CLOSURE, stopped.phase)
+    }
+
+    /**
+     * A CHAT reaching the same transition hands control back instead of closing, because a
+     * CHAT never closes itself. Its limit is Int.MAX_VALUE, so in practice only an explicit
+     * keepControl=false brings it here.
+     */
+    @Test
+    fun actionsExecuted_returnsControlInAChatRatherThanClosing() {
+        val state = AIStateMachine.transition(
+            state = chatAt(Phase.EXECUTING_ACTIONS, roundtrips = 2),
+            event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = false),
+            limits = testLimits,
+            currentTime = T0
+        )
+
+        assertEquals(Phase.IDLE, state.phase)
+        assertEquals(null, state.endReason)
+    }
+
+    /** keepControl=true keeps a CHAT working without handing control back between rounds. */
+    @Test
+    fun actionsExecuted_keepsGoingInAChatWhenAskedTo() {
+        val state = AIStateMachine.transition(
+            state = chatAt(Phase.EXECUTING_ACTIONS),
+            event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = true),
+            limits = testLimits,
+            currentTime = T0
+        )
+
+        assertEquals(Phase.CALLING_AI, state.phase)
+    }
+
+    /**
+     * Actions that succeeded while a completion claim was pending settle the claim: the
+     * confirmation is asked for now that the work is actually done.
+     */
+    @Test
+    fun actionsExecuted_asksForConfirmationWhenCompletionWasClaimed() {
+        val state = AIStateMachine.transition(
+            state = automationAt(Phase.EXECUTING_ACTIONS, awaitingCompletionConfirmation = true),
+            event = AIEvent.ActionsExecuted(results = emptyList(), allSuccess = true, keepControl = null),
+            limits = testLimits,
+            currentTime = T0
+        )
+
+        assertEquals(Phase.PREPARING_CONTINUATION, state.phase)
+        assertEquals(ContinuationReason.COMPLETION_CONFIRMATION_REQUIRED, state.continuationReason)
     }
 
     // ==================== The loops that do not consult the limit ====================
@@ -95,7 +115,7 @@ class AIStateMachineRoundtripLimitTest {
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.PARSING_AI_RESPONSE),
                 event = AIEvent.ParseErrorOccurred("unparseable response"),
-                limits = limits,
+                limits = testLimits,
                 currentTime = T0
             )
             assertEquals(Phase.RETRYING_AFTER_FORMAT_ERROR, state.phase)
@@ -103,7 +123,7 @@ class AIStateMachineRoundtripLimitTest {
             state = AIStateMachine.transition(
                 state = state,
                 event = AIEvent.RetryScheduled,
-                limits = limits,
+                limits = testLimits,
                 currentTime = T0
             )
             assertEquals(Phase.CALLING_AI, state.phase)
@@ -112,7 +132,7 @@ class AIStateMachineRoundtripLimitTest {
         assertEquals(CYCLES_WELL_PAST_THE_LIMIT, state.totalRoundtrips)
         assertTrue(
             "the counter runs past the limit it is measured against",
-            state.totalRoundtrips > limits.maxAutonomousRoundtrips
+            state.totalRoundtrips > testLimits.maxAutonomousRoundtrips
         )
         assertNotEquals(Phase.CLOSED, state.phase)
         assertNotEquals(Phase.AWAITING_SESSION_CLOSURE, state.phase)
@@ -131,8 +151,8 @@ class AIStateMachineRoundtripLimitTest {
         repeat(CYCLES_WELL_PAST_THE_LIMIT) {
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.EXECUTING_ACTIONS),
-                event = AIEvent.ActionFailureOccurred(errors = listOf(failedAction())),
-                limits = limits,
+                event = AIEvent.ActionFailureOccurred(errors = listOf(commandResult(CommandStatus.FAILED))),
+                limits = testLimits,
                 currentTime = T0
             )
             assertEquals(Phase.RETRYING_AFTER_ACTION_FAILURE, state.phase)
@@ -140,7 +160,7 @@ class AIStateMachineRoundtripLimitTest {
             state = AIStateMachine.transition(
                 state = state,
                 event = AIEvent.RetryScheduled,
-                limits = limits,
+                limits = testLimits,
                 currentTime = T0
             )
             assertEquals(Phase.CALLING_AI, state.phase)
@@ -164,7 +184,7 @@ class AIStateMachineRoundtripLimitTest {
             state = AIStateMachine.transition(
                 state = state.copy(phase = Phase.PREPARING_CONTINUATION),
                 event = AIEvent.ContinuationReady,
-                limits = limits,
+                limits = testLimits,
                 currentTime = T0
             )
             assertEquals(Phase.CALLING_AI, state.phase)
@@ -175,10 +195,23 @@ class AIStateMachineRoundtripLimitTest {
         assertEquals(null, state.endReason)
     }
 
-    companion object {
-        /** Any fixed instant: none of these transitions branch on the clock. */
-        private const val T0 = 1_700_000_000_000L
+    /** Entering the guidance phase clears the reason that sent it there. */
+    @Test
+    fun continuationReady_clearsTheReasonItWasGuidedFor() {
+        val guided = automationAt(Phase.PREPARING_CONTINUATION)
+            .copy(continuationReason = ContinuationReason.AUTOMATION_NO_COMMANDS)
 
+        val state = AIStateMachine.transition(
+            state = guided,
+            event = AIEvent.ContinuationReady,
+            limits = testLimits,
+            currentTime = T0
+        )
+
+        assertEquals(null, state.continuationReason)
+    }
+
+    companion object {
         /** Enough cycles that a limit of 3 could not be missed by chance. */
         private const val CYCLES_WELL_PAST_THE_LIMIT = 10
     }
