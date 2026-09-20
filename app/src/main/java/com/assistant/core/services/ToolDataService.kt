@@ -328,8 +328,17 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         // Filtering and pagination parameters
-        val limit = if (params.has("limit")) params.optInt("limit") else Int.MAX_VALUE
+        val hasLimit = params.has("limit")
+        val limit = if (hasLimit) params.optInt("limit") else Int.MAX_VALUE
         val page = params.optInt("page", 1)
+
+        // Without a limit everything is on page 1, so asking for another one is a contradiction.
+        // It used to be answered: (page - 1) * Int.MAX_VALUE gives an offset past any table on
+        // page 2, and overflows to a negative one on page 3, which SQLite reads as no offset --
+        // so page 3 returned page 1 and page 2 returned nothing, both without a word.
+        if (!hasLimit && page != 1) {
+            return OperationResult.error(s.shared("service_error_page_without_limit").format(page))
+        }
         val offset = (page - 1) * limit
         val startTime = if (params.has("startTime")) params.optLong("startTime") else null
         val endTime = if (params.has("endTime")) params.optLong("endTime") else null

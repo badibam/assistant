@@ -45,6 +45,5 @@ Pattern `dao.getByStatus(...).size` (3 chargements complets pour 3 entiers) au l
 
 ## B.8 Mentions rapides
 
-- `limit` par défaut `Int.MAX_VALUE` → `(page-1)*limit` déborde dès page 2 (ToolDataService/getEntries et équivalents).
 - Filtres de requête mutuellement exclusifs (status OU période OU template) là où la doc suggère qu'ils se combinent.
 - `validateConfig`/`validateData` par défaut `false` : l'IA modifie sans validation par défaut. Posture probablement délibérée — à re-choisir consciemment un jour, pas par défaut hérité.

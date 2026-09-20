@@ -155,6 +155,9 @@
     <string name="ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
     <string name="ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
 
+    <!-- Tool data - Pagination -->
+    <string name="service_error_page_without_limit">Page %1$d demandée sans \'limit\' : sans limite par page, tout tient sur la page 1. Précise \'limit\' pour paginer.</string>
+
     <!-- Automations - Catch-up settings -->
     <string name="automation_catch_up_title">Si l\'app n\'a pas tourné à l\'heure prévue</string>
     <string name="automation_catch_up_window">Rattraper jusqu\'à</string>
