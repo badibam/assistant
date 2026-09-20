@@ -23,6 +23,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "app" / "src" / "main" / "java"
 BASELINE = Path(__file__).resolve().parent / "key_case_baseline.txt"
 
+# The one file whose job is to hold the old names: it records what each key became, so its
+# camelCase strings are history, not keys anything reads.
+EXCLUDED = {"core/versioning/KeyCaseRenames.kt"}
+
 # JSON Schema keywords. Not ours to rename, so not violations.
 FOREIGN = {
     "additionalProperties", "allOf", "anyOf", "contentEncoding", "contentMediaType",
@@ -40,6 +44,8 @@ def collect():
     found = {}
     for path in sorted(SOURCES.rglob("*")):
         if path.suffix not in (".kt", ".xml") or not path.is_file():
+            continue
+        if any(path.as_posix().endswith(excluded) for excluded in EXCLUDED):
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         for key in KEY.findall(text):
