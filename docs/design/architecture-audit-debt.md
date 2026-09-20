@@ -1,15 +1,8 @@
-# Dette constatée à l'audit post-refonte
+# Dette constatée à l'audit d'architecture
 
-**Origine** : audit architecture 2026-06-10/11.
-**Périmètre** : tout ce qui a été constaté pendant l'audit et qui ne fait PAS partie de la refonte executions.
+Constats faits en passant pendant l'audit du 2026-06-10/11, classés par taxe estimée sur le projet. Rien ici n'est urgent : ce sont des choix à arbitrer, pas des pannes.
 
-La partie A (alignement du pipeline TOOL_DATA) est implémentée et a été retirée : le code et les commits en sont le registre. Le critère qui la fermait — chaque exemple du L1 exécutable tel quel — vit désormais dans `docs/AI.md`.
-
----
-
-# Dette constatée / choix discutables (à arbitrer, pas urgents)
-
-Constats faits en passant pendant l'audit. Classés par taxe estimée sur le projet. Ce qui restait à l'état de soupçon a été vérifié ; ce qui a été traité ou s'est révélé sans objet est sorti d'ici, les commits en étant le registre.
+Ce qui restait à l'état de soupçon a été vérifié. Ce qui a été traité, ou s'est révélé sans objet, est sorti d'ici — les commits en sont le registre. La numérotation d'origine est conservée pour que les trous se lisent comme des points fermés.
 
 ## B.1 JSON-string aux frontières, institutionnalisé — vérifié
 
@@ -19,7 +12,7 @@ Constats faits en passant pendant l'audit. Classés par taxe estimée sur le pro
 
 ## B.2 Conventions de nommage gérées par avertissement — vérifié
 
-CORE.md : « ATTENTION : chaque service utilise ses propres conventions » (`tool_instance_id` vs `toolInstanceId`, `tool_type` vs `tooltype`). Documenter un piège au lieu de l'unifier le normalise — et il a mordu (commentaire-rustine dans CommandExecutor, bug snake_case/camelCase du pipeline executions).
+`CORE.md:27` : « ATTENTION : chaque service utilise ses propres conventions » (`tool_instance_id` vs `toolInstanceId`, `tool_type` vs `tooltype`). Documenter un piège au lieu de l'unifier le normalise — et il a déjà mordu, au moins une fois sous la forme d'un commentaire-rustine dans `CommandExecutor`.
 
 **Recommandation** : unifier (une seule convention pour les params de service), en une passe dédiée. Ingrat, fort rendement.
 
@@ -33,11 +26,10 @@ Le prompt L1 vit dans `ai_prompt_chunks.xml`, traité comme de l'i18n alors que 
 
 `ExecutableService.verbalize(operation, params, context): String` est synchrone ; pour résoudre des noms d'outil ou de zone, le service fait `runBlocking { coordinator.processUserAction(...) }`, avec un `Coordinator(context)` instancié à la volée. Appel bloquant imbriqué dans des contextes coroutine.
 
-Quatre sites, dans trois services qui tous survivent à la refonte : `ToolDataService.kt:1024`, `ToolInstanceService.kt:487` et `:737`, `ZoneService.kt:313`. Le pattern est donc bien installé, pas isolé au service disparu.
+Quatre sites, dans trois services : `ToolDataService.kt:1024`, `ToolInstanceService.kt:487` et `:737`, `ZoneService.kt:313`. Le pattern est donc installé, pas isolé.
 
 **Recommandation** : passer `verbalize` en `suspend` dans l'interface, et retirer les quatre `runBlocking`.
 
-## B.8 Mentions rapides
+## B.8 Mention rapide
 
-- Filtres de requête mutuellement exclusifs (status OU période OU template) là où la doc suggère qu'ils se combinent.
-- `validateConfig`/`validateData` par défaut `false` : l'IA modifie sans validation par défaut. Posture probablement délibérée — à re-choisir consciemment un jour, pas par défaut hérité.
+- `validateConfig`/`validateData` par défaut `false` (`ValidationResolver.kt:182`, `:209`) : l'IA modifie sans validation par défaut. Posture probablement délibérée — à re-choisir consciemment un jour, pas à subir comme un défaut hérité.
