@@ -24,11 +24,24 @@ object LogManager {
     private var context: Context? = null
 
     /**
-     * Maximum number of logs to keep in database
-     * Reduced to prevent CursorWindow overflow and memory saturation
-     * When this limit is exceeded, oldest logs are purged
+     * The levels that make the noise, and how many of them are kept.
+     *
+     * They are counted and purged on their own, because they are what fills the table: a busy
+     * two minutes wrote 230 DEBUG lines against 4 of everything else. Kept together with the
+     * rest, that noise pushes an error out of the table within the minute, which is exactly
+     * when an error is worth reading.
      */
-    private const val MAX_LOG_COUNT = 300
+    private val CHATTY_LEVELS = listOf("VERBOSE", "DEBUG")
+    private const val MAX_CHATTY_LOGS = 10_000
+
+    /**
+     * The levels worth keeping, and how many.
+     *
+     * Far fewer arrive, so this budget holds a long stretch of use. Measured at the same
+     * moment: 18.7 KB for 252 rows, so neither ceiling is what threatens the database.
+     */
+    private val KEPT_LEVELS = listOf("INFO", "WARN", "ERROR")
+    private const val MAX_KEPT_LOGS = 2_000
 
     /**
      * Maximum message length (chars)
@@ -41,12 +54,6 @@ object LogManager {
      * Stack traces can be very long, limit them to prevent DB bloat
      */
     private const val MAX_THROWABLE_LENGTH = 5000
-
-    /**
-     * Purge threshold - start purging when we reach this many logs
-     * Set lower than MAX_LOG_COUNT to delete in batches efficiently
-     */
-    private const val PURGE_THRESHOLD = 250
 
     /**
      * Check purge every N insertions (probabilistic to reduce DB queries)
@@ -210,32 +217,34 @@ object LogManager {
     }
 
     /**
-     * Purge old logs if count exceeds threshold
-     * Uses efficient SQL query to find cutoff timestamp without loading all logs
-     * This prevents CursorWindow overflow when there are many large log entries
+     * Bring each class of log back under its own ceiling.
+     *
+     * The cutoff is found with an OFFSET query rather than by loading the rows, so the purge
+     * costs the same whatever the table holds.
      */
     private suspend fun purgeOldLogsIfNeeded(database: AppDatabase) {
         try {
-            val count = database.logDao().getLogCount()
-            if (count > PURGE_THRESHOLD) {
-                // Find the timestamp of the PURGE_THRESHOLD-th most recent log
-                // This is our cutoff point - delete everything older
-                // Uses OFFSET query to avoid loading all logs into memory
-                val cutoffTimestamp = database.logDao().getTimestampAtOffset(PURGE_THRESHOLD - 1)
-
-                if (cutoffTimestamp != null) {
-                    // Delete all logs older than the cutoff
-                    database.logDao().deleteLogsOlderThan(cutoffTimestamp)
-                    val remaining = database.logDao().getLogCount()
-                    println("LogManager: Purged old logs. Deleted ${count - remaining} entries. Kept $remaining logs.")
-                } else {
-                    println("LogManager: Purge skipped - could not determine cutoff timestamp")
-                }
-            }
+            purgeLevels(database, CHATTY_LEVELS, MAX_CHATTY_LOGS)
+            purgeLevels(database, KEPT_LEVELS, MAX_KEPT_LOGS)
         } catch (e: Exception) {
             // Silent failure - don't log errors from logging system to avoid infinite loop
             println("LogManager: Failed to purge old logs: ${e.message}")
         }
+    }
+
+    private suspend fun purgeLevels(database: AppDatabase, levels: List<String>, ceiling: Int) {
+        val count = database.logDao().getLogCountForLevels(levels)
+        if (count <= ceiling) return
+
+        val cutoffTimestamp = database.logDao().getTimestampAtOffsetForLevels(levels, ceiling - 1)
+        if (cutoffTimestamp == null) {
+            println("LogManager: Purge skipped for $levels - could not determine cutoff timestamp")
+            return
+        }
+
+        database.logDao().deleteLogsOlderThanForLevels(levels, cutoffTimestamp)
+        val remaining = database.logDao().getLogCountForLevels(levels)
+        println("LogManager: Purged $levels. Deleted ${count - remaining} entries. Kept $remaining.")
     }
 
     /**

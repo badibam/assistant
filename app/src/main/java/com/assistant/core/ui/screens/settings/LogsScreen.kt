@@ -37,6 +37,14 @@ enum class LogTimeRange(val durationMillis: Long) {
  * Log level enum with ordinal-based filtering
  * Higher ordinal = more severe (VERBOSE < DEBUG < INFO < WARN < ERROR)
  */
+/**
+ * How many rows a single view loads at most.
+ *
+ * The table is allowed to hold far more than a screen can show, so the read is bounded rather
+ * than the retention: loading everything is what used to force the table to stay tiny.
+ */
+private const val MAX_LOGS_SHOWN = 500
+
 enum class LogLevel(val displayName: String) {
     VERBOSE("Verbose"),
     DEBUG("Debug"),
@@ -92,13 +100,18 @@ fun LogsScreen(
                 // Tag pattern: empty = all (%), otherwise add % for LIKE query
                 val tagPattern = if (tagFilter.isBlank()) "%" else "%${tagFilter}%"
 
-                val allLogs = database.logDao().getLogsFiltered(sinceTimestamp, tagPattern)
+                // The level filter belongs in the query: filtering after a LIMIT would cut the
+                // rows on their way in, and asking for errors alone would return almost none.
+                val levels = LogLevel.entries
+                    .filter { it.ordinal >= selectedMinLevel.ordinal }
+                    .map { it.name }
 
-                // Filter by level in memory (Room query doesn't support enum ordinal comparison)
-                logs = allLogs.filter { log ->
-                    val logLevel = LogLevel.valueOf(log.level)
-                    logLevel.ordinal >= selectedMinLevel.ordinal
-                }
+                logs = database.logDao().getLogsFiltered(
+                    sinceTimestamp = sinceTimestamp,
+                    tagPattern = tagPattern,
+                    levels = levels,
+                    limit = MAX_LOGS_SHOWN
+                )
 
                 isLoading = false
             } catch (e: Exception) {

@@ -35,51 +35,45 @@ interface LogDao {
         SELECT * FROM log_entries
         WHERE timestamp >= :sinceTimestamp
           AND LOWER(tag) LIKE LOWER(:tagPattern)
+          AND level IN (:levels)
         ORDER BY timestamp DESC
+        LIMIT :limit
     """)
-    suspend fun getLogsFiltered(sinceTimestamp: Long, tagPattern: String): List<LogEntry>
-
-    /**
-     * Get all logs (no time filter)
-     *
-     * @return List of all logs ordered by timestamp DESC (newest first)
-     */
-    @Query("SELECT * FROM log_entries ORDER BY timestamp DESC")
-    suspend fun getAllLogs(): List<LogEntry>
-
-    /**
-     * Delete logs older than specified timestamp
-     * Useful for cleanup/retention policy
-     *
-     * @param olderThan Timestamp threshold (delete logs older than this)
-     */
-    @Query("DELETE FROM log_entries WHERE timestamp < :olderThan")
-    suspend fun deleteLogsOlderThan(olderThan: Long)
+    suspend fun getLogsFiltered(
+        sinceTimestamp: Long,
+        tagPattern: String,
+        levels: List<String>,
+        limit: Int
+    ): List<LogEntry>
 
     /**
      * Delete all logs
      * For testing or manual cleanup
      */
-    @Query("DELETE FROM log_entries")
-    suspend fun deleteAllLogs()
 
     /**
-     * Count total logs
-     */
-    @Query("SELECT COUNT(*) FROM log_entries")
-    suspend fun getLogCount(): Int
-
-    /**
-     * Get timestamp of the Nth most recent log (for efficient purging)
-     * Uses LIMIT with OFFSET to find the cutoff timestamp without loading all logs
+     * Count the logs of the given levels.
      *
-     * @param offset Number of logs to skip (e.g., 300 to get the 301st log)
-     * @return Timestamp of the Nth log, or null if fewer logs exist
+     * The chatty levels and the ones worth keeping are purged against separate ceilings, so a
+     * busy minute of DEBUG cannot push yesterday's error out of the table.
+     */
+    @Query("SELECT COUNT(*) FROM log_entries WHERE level IN (:levels)")
+    suspend fun getLogCountForLevels(levels: List<String>): Int
+
+    /**
+     * Timestamp of the nth most recent log of the given levels, used as a purge cutoff.
      */
     @Query("""
         SELECT timestamp FROM log_entries
+        WHERE level IN (:levels)
         ORDER BY timestamp DESC
         LIMIT 1 OFFSET :offset
     """)
-    suspend fun getTimestampAtOffset(offset: Int): Long?
+    suspend fun getTimestampAtOffsetForLevels(levels: List<String>, offset: Int): Long?
+
+    @Query("DELETE FROM log_entries WHERE level IN (:levels) AND timestamp < :olderThan")
+    suspend fun deleteLogsOlderThanForLevels(levels: List<String>, olderThan: Long)
+
+    @Query("DELETE FROM log_entries")
+    suspend fun deleteAllLogs()
 }
