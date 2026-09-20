@@ -195,8 +195,9 @@ object UI {
         type: DialogType,
         onConfirm: () -> Unit,
         onCancel: () -> Unit = { },
+        confirmEnabled: Boolean = true,
         content: @Composable () -> Unit
-    ) = CurrentTheme.current.Dialog(type, onConfirm, onCancel, content)
+    ) = CurrentTheme.current.Dialog(type, onConfirm, onCancel, confirmEnabled, content)
     
     @Composable
     fun DatePicker(

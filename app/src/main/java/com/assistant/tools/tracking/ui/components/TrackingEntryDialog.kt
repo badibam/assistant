@@ -139,6 +139,13 @@ fun TrackingEntryDialog(
     // Validation state
     var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
 
+    // A numeric entry carries a number, so the form refuses to submit anything else rather than
+    // letting the schema say "string found, number expected" to someone who left a field empty.
+    val canConfirm = when (trackingType) {
+        "numeric" -> numericQuantity.trim().toDoubleOrNull() != null
+        else -> true
+    }
+
     // Get Android context for string resources
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
@@ -210,7 +217,9 @@ fun TrackingEntryDialog(
         val dataJson = when (trackingType) {
             "numeric" -> JSONObject().apply {
                 put("type", "numeric")
-                put("quantity", numericQuantity.trim()) // Keep as string per schema
+                // The schema asks for a number, and the confirm button stays disabled until
+                // the field holds one, so the conversion here cannot fail.
+                put("quantity", numericQuantity.trim().toDouble())
                 put("unit", numericUnit.trim())
             }.toString()
 
@@ -333,6 +342,7 @@ fun TrackingEntryDialog(
     if (isVisible) {
         UI.Dialog(
             type = DialogType.CONFIRM,
+            confirmEnabled = canConfirm,
             onConfirm = {
                 LogManager.tracking("=== OnConfirm called ===")
                 validateForm()

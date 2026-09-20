@@ -1,5 +1,6 @@
 package com.assistant.tools.tracking
 
+import com.assistant.core.utils.LogManager
 import org.json.JSONObject
 
 /**
@@ -11,33 +12,26 @@ object TrackingUtils {
     
     
     /**
-     * Convert JSON data object to validation format
-     * Ensures consistent type conversion for schema validation
-     * 
-     * @param dataJson The JSON string with user input format
+     * Reads the entry's data into the Map form the schema validator takes.
+     *
+     * Each dialog writes the types its schema declares, so nothing is converted here. A failure
+     * means the dialog built something that is not a JSON object, which is a fault in the code
+     * rather than in what the user typed, so it is logged rather than passed on silently.
+     *
+     * @param dataJson The JSON string the entry dialog built
      * @param trackingType The tracking type (numeric, text, etc.)
-     * @return Map with proper types for validation
+     * @return The data as a Map, or an empty one if it could not be read
      */
     fun convertToValidationFormat(dataJson: String, trackingType: String): Map<String, Any> {
         return try {
             val dataJsonObj = JSONObject(dataJson)
-            val map = mutableMapOf<String, Any>()
-            
-            dataJsonObj.keys().forEach { key ->
-                val value = dataJsonObj.get(key)
-                // Convert quantity to number for numeric tracking types to match schema
-                if (key == "quantity" && trackingType == "numeric" && value is String) {
-                    try {
-                        map[key] = value.toDouble()
-                    } catch (e: NumberFormatException) {
-                        map[key] = value
-                    }
-                } else {
-                    map[key] = value
-                }
-            }
-            map
+            dataJsonObj.keys().asSequence().associateWith { key -> dataJsonObj.get(key) }
         } catch (e: Exception) {
+            LogManager.tracking(
+                "Unreadable $trackingType entry data, validation will see nothing: ${e.message}",
+                "ERROR",
+                e
+            )
             emptyMap()
         }
     }

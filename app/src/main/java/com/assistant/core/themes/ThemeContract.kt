@@ -151,6 +151,7 @@ interface ThemeContract {
         type: DialogType,
         onConfirm: () -> Unit,
         onCancel: () -> Unit,
+        confirmEnabled: Boolean,
         content: @Composable () -> Unit
     )
     

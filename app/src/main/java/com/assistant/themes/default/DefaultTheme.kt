@@ -352,7 +352,8 @@ object DefaultTheme : ThemeContract {
                 },
                 onCancel = {
                     showConfirmDialog = false
-                }
+                },
+                confirmEnabled = true
             ) {
                 androidx.compose.material3.Text(
                     confirmMessage ?: getDefaultConfirmMessage(action),
@@ -790,6 +791,7 @@ object DefaultTheme : ThemeContract {
         type: DialogType,
         onConfirm: () -> Unit,
         onCancel: () -> Unit,
+        confirmEnabled: Boolean,
         content: @Composable () -> Unit
     ) {
         val (confirmText, cancelText) = when (type) {
@@ -809,6 +811,7 @@ object DefaultTheme : ThemeContract {
                 {
                     androidx.compose.material3.Button(
                         onClick = onConfirm,
+                        enabled = confirmEnabled,
                         colors = if (type == DialogType.DANGER) {
                             ButtonDefaults.buttonColors(
                                 containerColor = CurrentTheme.getCurrentColorScheme().error,
