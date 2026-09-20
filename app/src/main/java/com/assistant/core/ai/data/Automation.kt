@@ -15,7 +15,17 @@ data class Automation(
     val seedSessionId: String,              // Points to SEED session with initial message
     val schedule: ScheduleConfig?,          // null = no time-based triggering
     val triggerIds: List<String>,           // Empty = no event-based triggering
-    val dismissOlderInstances: Boolean = false,  // Skip older instances if newer exists in queue
+    /**
+     * How late a scheduled occurrence may be and still run, in minutes. Null = no limit.
+     *
+     * Beyond it the occurrence is skipped: it leaves a log line and no session, since the
+     * history is made of sessions and an empty "skipped" one would be a shape to handle
+     * everywhere. Same notion as the Messages tooltype's validity_window_minutes.
+     */
+    val catchUpWindowMinutes: Long? = null,
+
+    /** Among the occurrences that are due, run only the most recent one instead of each */
+    val dismissOlderInstances: Boolean = false,
     val providerId: String,                 // AI provider to use for execution
     val isEnabled: Boolean,
     val group: String? = null,              // Group within zone (null = ungrouped)
@@ -33,3 +43,16 @@ data class Automation(
  * - schedule == null && triggerIds.isNotEmpty() → TRIGGER only (event-based, OR between triggers)
  * - schedule != null && triggerIds.isNotEmpty() → HYBRID (schedule OR any trigger)
  */
+
+/**
+ * What a scheduled automation saved before catch-up settings existed is read as.
+ *
+ * No window and the most recent occurrence only: back from a long absence it starts once,
+ * and the user adjusts from there. This is a reading rule for old data, applied by the
+ * database migration and by the import of a backup that predates the field. It is not a
+ * "needs configuring" state, which the scheduler and the screen would then have to carry.
+ */
+object LegacyCatchUp {
+    val WINDOW_MINUTES: Long? = null
+    const val DISMISS_OLDER = true
+}

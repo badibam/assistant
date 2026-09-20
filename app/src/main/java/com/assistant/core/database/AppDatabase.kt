@@ -24,6 +24,7 @@ import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.assistant.core.ai.data.LegacyCatchUp
 
 @Database(
     entities = [
@@ -39,7 +40,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 22,
+    version = 23,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -844,6 +845,42 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration 22 -> 23: Add catchUpWindowMinutes to automations
+         *
+         * A scheduled automation used to catch up on every occurrence it had missed, with no
+         * limit: reopened after 47 days, a daily one ran 47 times in a row. The window says how
+         * late an occurrence may be and still run; null means no limit.
+         *
+         * Existing automations are read by the LegacyCatchUp rule: no window, most recent
+         * occurrence only. The column is nullable, so the window needs no statement -- an added
+         * column is NULL everywhere. dismissOlderInstances does: it has been stored all along
+         * with a value nothing could set, and left at false it would keep the old behaviour
+         * under the new setting. Only scheduled automations are touched, since the two settings
+         * mean nothing for a manual or event-driven one.
+         */
+        private val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    ALTER TABLE automations
+                    ADD COLUMN catchUpWindowMinutes INTEGER DEFAULT NULL
+                """)
+
+                val dismissOlder = if (LegacyCatchUp.DISMISS_OLDER) 1 else 0
+                database.execSQL("""
+                    UPDATE automations
+                    SET dismissOlderInstances = $dismissOlder
+                    WHERE scheduleJson IS NOT NULL
+                """)
+
+                val cursor = database.query("SELECT COUNT(*) FROM automations WHERE scheduleJson IS NOT NULL")
+                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+                cursor.close()
+
+                LogManager.database("MIGRATION 22->23: $count scheduled automation(s) read as unlimited window, most recent only", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -864,7 +901,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_18_19,
                     MIGRATION_19_20,
                     MIGRATION_20_21,
-                    MIGRATION_21_22
+                    MIGRATION_21_22,
+                    MIGRATION_22_23
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

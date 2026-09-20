@@ -15,6 +15,7 @@ import com.assistant.core.ai.data.SessionType
 import com.assistant.core.versioning.JsonTransformers
 import org.json.JSONObject
 import org.json.JSONArray
+import com.assistant.core.ai.data.LegacyCatchUp
 
 /**
  * Backup service - handles export, import and reset operations
@@ -244,6 +245,9 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("seed_session_id", automation.seedSessionId)
                                 put("schedule_json", automation.scheduleJson)
                                 put("trigger_ids_json", automation.triggerIdsJson)
+                                if (automation.catchUpWindowMinutes != null) {
+                                    put("catch_up_window_minutes", automation.catchUpWindowMinutes)
+                                }
                                 put("dismiss_older_instances", automation.dismissOlderInstances)
                                 put("provider_id", automation.providerId)
                                 put("is_enabled", automation.isEnabled)
@@ -573,6 +577,7 @@ class BackupService(private val context: Context) : ExecutableService {
         data.optJSONArray("automations")?.let { array ->
             for (i in 0 until array.length()) {
                 val item = array.getJSONObject(i)
+                val hasCatchUpWindow = item.has("catch_up_window_minutes")
                 database.aiDao().insertAutomation(
                     AutomationEntity(
                         id = item.getString("id"),
@@ -581,7 +586,19 @@ class BackupService(private val context: Context) : ExecutableService {
                         seedSessionId = item.getString("seed_session_id"),
                         scheduleJson = item.optString("schedule_json", null),
                         triggerIdsJson = item.optString("trigger_ids_json", "[]"),
-                        dismissOlderInstances = item.optBoolean("dismiss_older_instances", false),
+                        // The presence of the window is what tells a backup written since the
+                        // catch-up settings from one written before. Without it, both settings
+                        // are read by the rule the database migration applies -- including
+                        // dismissOlderInstances, which older backups do carry but with a value
+                        // nothing could set, so reading it would restore "every missed run".
+                        catchUpWindowMinutes = if (hasCatchUpWindow)
+                            item.getLong("catch_up_window_minutes")
+                        else
+                            LegacyCatchUp.WINDOW_MINUTES,
+                        dismissOlderInstances = if (hasCatchUpWindow)
+                            item.optBoolean("dismiss_older_instances", false)
+                        else
+                            LegacyCatchUp.DISMISS_OLDER,
                         providerId = item.getString("provider_id"),
                         isEnabled = item.getBoolean("is_enabled"),
                         createdAt = item.getLong("created_at"),

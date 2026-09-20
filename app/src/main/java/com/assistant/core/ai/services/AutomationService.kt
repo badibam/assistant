@@ -130,6 +130,10 @@ class AutomationService(private val context: Context) : ExecutableService {
             seedSessionId = seedSessionId,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
+            catchUpWindowMinutes = if (params.has("catch_up_window_minutes") && !params.isNull("catch_up_window_minutes"))
+                params.getLong("catch_up_window_minutes")
+            else
+                null,
             dismissOlderInstances = params.optBoolean("dismiss_older_instances", false),
             providerId = providerId,
             isEnabled = params.optBoolean("is_enabled", true),
@@ -202,6 +206,12 @@ class AutomationService(private val context: Context) : ExecutableService {
         else
             entity.dismissOlderInstances
 
+        // An explicit null clears the window (no limit); an absent key keeps what is stored
+        val catchUpWindowMinutes = if (params.has("catch_up_window_minutes"))
+            if (params.isNull("catch_up_window_minutes")) null else params.getLong("catch_up_window_minutes")
+        else
+            entity.catchUpWindowMinutes
+
         // Parse optional group (allow updating)
         val group = if (params.has("group")) {
             params.optString("group").takeIf { it.isNotEmpty() }
@@ -218,6 +228,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             providerId = providerId,
             scheduleJson = schedule?.let { json.encodeToString(it) },
             triggerIdsJson = json.encodeToString(triggerIds),
+            catchUpWindowMinutes = catchUpWindowMinutes,
             dismissOlderInstances = dismissOlderInstances,
             group = group,
             updatedAt = System.currentTimeMillis()
@@ -539,6 +550,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             seedSessionId = entity.seedSessionId,
             schedule = entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) },
             triggerIds = json.decodeFromString<List<String>>(entity.triggerIdsJson),
+            catchUpWindowMinutes = entity.catchUpWindowMinutes,
             dismissOlderInstances = entity.dismissOlderInstances,
             providerId = entity.providerId,
             isEnabled = entity.isEnabled,
@@ -563,6 +575,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             "seed_session_id" to automation.seedSessionId,
             "schedule" to automation.schedule?.let { json.encodeToString(it) },
             "trigger_ids" to automation.triggerIds,
+            "catch_up_window_minutes" to automation.catchUpWindowMinutes,
             "dismiss_older_instances" to automation.dismissOlderInstances,
             "provider_id" to automation.providerId,
             "is_enabled" to automation.isEnabled,

@@ -23,6 +23,7 @@ data class AutomationEntity(
     val seedSessionId: String,
     val scheduleJson: String?,              // JSON of ScheduleConfig
     val triggerIdsJson: String,             // JSON array of trigger IDs
+    val catchUpWindowMinutes: Long?,        // Null = no limit on how late an occurrence may run
     val dismissOlderInstances: Boolean,
     val providerId: String,
     val isEnabled: Boolean,
