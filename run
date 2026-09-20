@@ -81,7 +81,7 @@ def gradle_tests(*args):
 
 
 def test_tally(not_before):
-    """Return (tests, failures, errors) from gradle's JUnit XML, or None if it is stale.
+    """Return (tests, failures, errors, fresh) from gradle's JUnit XML, or None if absent.
 
     A green run prints BUILD SUCCESSFUL whether it ran two hundred tests or none at all --
     and it prints the same thing when gradle skips the task as up to date. Counting the
@@ -89,12 +89,15 @@ def test_tally(not_before):
 
     The results stay on disk from the run before, so a build that fails on its way to the
     tests -- a type error, a broken annotation processor -- would otherwise be reported with
-    the last run's count beside its BUILD FAILED, which reads as a suite that passed.
-    Anything not written since this run started is therefore no answer at all.
+    the last run's count beside its BUILD FAILED, which reads as a suite that passed. Hence
+    `fresh`: whether anything was written since this run started. Results that are not are
+    still worth reporting when the build succeeded, because gradle skipping the task as up
+    to date is a legitimate pass -- neither the code nor the tests moved -- but the caller
+    has to say so rather than present them as a run that just happened.
     """
     if not TEST_RESULTS.is_dir():
         return None
-    reports = [r for r in TEST_RESULTS.glob("*.xml") if r.stat().st_mtime >= not_before]
+    reports = list(TEST_RESULTS.glob("*.xml"))
     if not reports:
         return None
     tests = failures = errors = 0
@@ -103,7 +106,8 @@ def test_tally(not_before):
         tests += int(root.get("tests", 0))
         failures += int(root.get("failures", 0))
         errors += int(root.get("errors", 0))
-    return tests, failures, errors
+    fresh = any(r.stat().st_mtime >= not_before for r in reports)
+    return tests, failures, errors, fresh
 
 
 def attached_devices():
@@ -220,12 +224,17 @@ def task_test():
     started = time.time() - 1
     code = gradle_tests("testDebugUnitTest")
     tally = test_tally(not_before=started)
-    if tally is None:
+
+    # Nothing written by this run: trustworthy only if the build got through, in which case
+    # gradle skipped the task because nothing had changed. Otherwise there is no answer.
+    if tally is None or (not tally[3] and code != 0):
         print("no results from this run -- it did not get as far as the tests")
         return code or 1
-    tests, failures, errors = tally
+
+    tests, failures, errors, fresh = tally
     bad = failures + errors
-    print(f"{tests} tests, {bad} failed")
+    unchanged = "" if fresh else ", unchanged since the last run"
+    print(f"{tests} tests, {bad} failed{unchanged}")
     if bad:
         print(f"report: {TEST_REPORT}")
     return code
