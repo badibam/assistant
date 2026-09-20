@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -79,17 +80,25 @@ def gradle_tests(*args):
     return process.wait()
 
 
-def test_tally():
-    """Return (tests, failures, errors) read from gradle's JUnit XML, or None.
+def test_tally(not_before):
+    """Return (tests, failures, errors) from gradle's JUnit XML, or None if it is stale.
 
     A green run prints BUILD SUCCESSFUL whether it ran two hundred tests or none at all --
     and it prints the same thing when gradle skips the task as up to date. Counting the
     cases turns the verdict into something that says what was actually checked.
+
+    The results stay on disk from the run before, so a build that fails on its way to the
+    tests -- a type error, a broken annotation processor -- would otherwise be reported with
+    the last run's count beside its BUILD FAILED, which reads as a suite that passed.
+    Anything not written since this run started is therefore no answer at all.
     """
     if not TEST_RESULTS.is_dir():
         return None
+    reports = [r for r in TEST_RESULTS.glob("*.xml") if r.stat().st_mtime >= not_before]
+    if not reports:
+        return None
     tests = failures = errors = 0
-    for report in TEST_RESULTS.glob("*.xml"):
+    for report in reports:
         root = ElementTree.parse(report).getroot()
         tests += int(root.get("tests", 0))
         failures += int(root.get("failures", 0))
@@ -206,10 +215,13 @@ def task_test():
     each case here is a check that would otherwise mean installing the build on a phone
     and reproducing the situation by hand.
     """
+    # Noted before the run, so that results left by the run before cannot be read as this
+    # one's. A filesystem timestamp can lag by a second, hence the margin.
+    started = time.time() - 1
     code = gradle_tests("testDebugUnitTest")
-    tally = test_tally()
+    tally = test_tally(not_before=started)
     if tally is None:
-        print("no test results on disk -- the run did not get as far as the tests")
+        print("no results from this run -- it did not get as far as the tests")
         return code or 1
     tests, failures, errors = tally
     bad = failures + errors
