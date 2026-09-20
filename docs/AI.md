@@ -298,6 +298,19 @@ tick() {
 
 **AutomationScheduler** : Helper pur de calcul. Trouve sessions incomplètes (endReason null/NETWORK_ERROR/SUSPENDED) OU prochaine execution depuis historique.
 
+### Exécutions manquées
+
+Quand l'app n'a pas tourné à l'heure prévue, deux réglages par automation programmée, tous deux dans l'éditeur sous le planning :
+
+- **`catchUpWindowMinutes`** : jusqu'où rattraper. Au-delà de ce retard, l'occurrence est sautée — une ligne de log, pas de session (l'historique est fait de sessions ; une session vide « sautée » serait une forme de plus à gérer partout). `null` = sans limite. Obligatoire à la saisie, sans valeur par défaut.
+- **`dismissOlderInstances`** : parmi les occurrences dues, ne lancer que la plus récente. Ne se déduit pas de la fenêtre.
+
+La recherche de la prochaine occurrence démarre au plus tôt à `maintenant − fenêtre` (`AutomationScheduler.searchStart`). La plus récente due se trouve par dichotomie sur le départ de la recherche (`lastDueOccurrence`) : le calculateur ne répond que « la première après cet instant », et cette réponse ne décroît jamais quand l'instant grandit.
+
+**Résolution temporelle** : une session AUTOMATION résout ses périodes relatives et le marqueur `NOW` sur son `scheduledExecutionTime`, pas sur l'horloge — sinon toutes les exécutions de rattrapage lisent le même jour. L'instant est choisi par `AIEventProcessor.periodReference()` et traverse `UserCommandProcessor`/`AICommandProcessor` jusqu'à `CommandTransformer`. `resolveRelativePeriod` l'exige, sans valeur par défaut. Le prompt porte les deux dates (cf. §8) : les données lues sont ancrées sur la date prévue, ce que l'IA fait reste au présent.
+
+**Données antérieures** : une automation programmée enregistrée avant ces réglages est lue « sans limite, la plus récente seulement » (`LegacyCatchUp`) — règle appliquée par la migration 22→23 et par l'import d'une sauvegarde qui ne porte pas le champ.
+
 ### Spécificités AUTOMATION vs CHAT
 
 **Flag completed** : IA signale fin avec `completed: true` → phase `WAITING_COMPLETION_CONFIRMATION` → `CompletionConfirmed` event → `endReason=COMPLETED`.

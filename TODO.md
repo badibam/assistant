@@ -5,7 +5,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 ## Chantier en cours
 
 - **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. Premier bloquant : l'auto-updater, qui télécharge des APK depuis GitHub, est à sortir de la variante F-Droid.
-- **Exécutions d'automation manquées** — une automation rattrape sans limite chaque exécution manquée, et résout ses dates relatives sur l'heure actuelle au lieu de l'heure prévue. Spec dans `docs/design/automation-missed-executions.md`, prête à implémenter.
 
 ## Dette constatée
 
@@ -25,3 +24,4 @@ Les huit points de `docs/design/post-refactor-audit.md`, chacun avec son statut 
 ## À vérifier sur l'appareil
 
 - Rejouer les exemples du prompt L1 dans une session CHAT réelle : la règle est posée dans `docs/AI.md`, mais les exemples corrigés (périodes ISO, pagination par page, grammaire des champs) n'ont été vérifiés que sur lecture du code.
+- Exécutions d'automation manquées : vérifier sur l'appareil le passage en base 22→23, la saisie de la fenêtre dans l'éditeur, et un rattrapage réel (automation programmée, app fermée plusieurs jours).
