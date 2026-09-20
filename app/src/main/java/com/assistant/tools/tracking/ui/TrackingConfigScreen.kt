@@ -68,25 +68,33 @@ private fun allFieldsEmpty(name: String, properties: Map<String, Any>): Boolean 
  */
 
 /**
- * Clears all type-specific configuration fields when changing tracking type
- * This prevents validation errors from leftover fields of the previous type
+ * Every field that belongs to one tracking type rather than to all of them.
+ *
+ * A config schema accepts only the properties of its own type, so a field left behind by the
+ * previous type makes the new one refuse the config. The list follows the root properties of
+ * the schemas in TrackingToolType: scale carries min, max and their labels, counter carries
+ * allow_decrement, choice carries options, and every type but choice carries items.
  */
-private fun clearTypeSpecificFields(config: JSONObject) {
-    // Scale-specific fields
-    config.remove("min")
-    config.remove("max")
-    config.remove("min_label")
-    config.remove("max_label")
-    
-    // Counter-specific fields
-    config.remove("allow_decrement")
-    
-    // Boolean-specific fields  
-    config.remove("true_label")
-    config.remove("false_label")
-    
-    // Note: items is already cleared in the calling code
-    // Note: choice-specific "options" would go here if it existed in schema
+private val TYPE_SPECIFIC_FIELDS = listOf(
+    "min", "max", "min_label", "max_label",   // scale
+    "allow_decrement",                         // counter
+    "options",                                 // choice
+    "items"                                    // every type but choice
+)
+
+/** Types whose schema declares items; choice describes its values with options instead. */
+private fun usesItems(trackingType: String): Boolean = trackingType != "choice"
+
+/**
+ * Drops the fields of the type being left, and gives the new type the empty items list it
+ * expects, so the config never carries a field its own schema refuses. The caller sets the
+ * type itself, through updateConfig, which is also what redraws the screen.
+ */
+private fun clearFieldsOfOtherTypes(config: JSONObject, newType: String) {
+    TYPE_SPECIFIC_FIELDS.forEach { config.remove(it) }
+    if (usesItems(newType)) {
+        config.put("items", JSONArray())
+    }
 }
 
 /**
@@ -565,12 +573,8 @@ fun TrackingConfigScreen(
             type = DialogType.DANGER,
             onConfirm = {
                 pendingTrackingType?.let { newType ->
-                    // Clear all type-specific fields before setting new type
-                    clearTypeSpecificFields(config)
-                    
-                    // Set new type and reset items
+                    clearFieldsOfOtherTypes(config, newType)
                     updateConfig("type", newType)
-                    updateConfig("items", JSONArray())
                 }
                 showTypeChangeWarning = false
                 pendingTrackingType = null
@@ -821,8 +825,10 @@ fun TrackingConfigScreen(
                             // Show warning if there are existing items
                             pendingTrackingType = newType
                             showTypeChangeWarning = true
-                        } else {
-                            // No items or same type, change directly
+                        } else if (trackingType != newType) {
+                            // No items to lose, but the fields of the type being left still go:
+                            // a choice tracking has no items and would otherwise keep its options.
+                            clearFieldsOfOtherTypes(config, newType)
                             updateConfig("type", newType)
                         }
                         
