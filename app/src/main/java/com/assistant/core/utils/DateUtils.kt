@@ -10,6 +10,10 @@ import java.util.*
  *
  * IMPORTANT: All operations use the timezone configured in AppConfig, NOT the system timezone.
  * This ensures consistency across the application regardless of device timezone changes.
+ *
+ * Every function takes that timezone as a parameter defaulting to the configured one, so a
+ * caller can compute in a stated zone rather than the app's. Production passes nothing and
+ * gets the configured zone; the default is read per call, never cached.
  */
 object DateUtils {
 
@@ -29,57 +33,53 @@ object DateUtils {
     private fun getConfiguredZone(): ZoneId {
         return AppConfigManager.getDateTimeConfig().getZoneId()
     }
-    
+
     /**
      * Format timestamp for date display (dd/MM/yyyy)
-     * Uses configured timezone from AppConfig
      */
-    fun formatDateForDisplay(timestamp: Long): String {
+    fun formatDateForDisplay(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val instant = Instant.ofEpochMilli(timestamp)
-        val zonedDateTime = ZonedDateTime.ofInstant(instant, getConfiguredZone())
+        val zonedDateTime = ZonedDateTime.ofInstant(instant, zone)
         return displayDateFormatter.format(zonedDateTime)
     }
 
     /**
      * Format timestamp for time display (HH:mm)
-     * Uses configured timezone from AppConfig
      */
-    fun formatTimeForDisplay(timestamp: Long): String {
+    fun formatTimeForDisplay(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val instant = Instant.ofEpochMilli(timestamp)
-        val zonedDateTime = ZonedDateTime.ofInstant(instant, getConfiguredZone())
+        val zonedDateTime = ZonedDateTime.ofInstant(instant, zone)
         return displayTimeFormatter.format(zonedDateTime)
     }
 
     /**
      * Format timestamp for full date-time display (dd/MM/yy HH:mm)
-     * Uses configured timezone from AppConfig
      */
-    fun formatFullDateTime(timestamp: Long): String {
+    fun formatFullDateTime(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val instant = Instant.ofEpochMilli(timestamp)
-        val zonedDateTime = ZonedDateTime.ofInstant(instant, getConfiguredZone())
+        val zonedDateTime = ZonedDateTime.ofInstant(instant, zone)
         return fullDateTimeFormatter.format(zonedDateTime)
     }
 
     /**
      * Parse date string back to timestamp for filtering (dd/MM/yyyy)
-     * Uses configured timezone from AppConfig
+     *
+     * Returns the current time when the string cannot be read.
      */
-    fun parseDateForFilter(dateString: String): Long {
+    fun parseDateForFilter(dateString: String, zone: ZoneId = getConfiguredZone()): Long {
         return try {
             val localDate = LocalDate.parse(dateString, displayDateFormatter)
-            val zonedDateTime = localDate.atStartOfDay(getConfiguredZone())
+            val zonedDateTime = localDate.atStartOfDay(zone)
             zonedDateTime.toInstant().toEpochMilli()
         } catch (e: Exception) {
             System.currentTimeMillis()
         }
     }
-    
+
     /**
      * Check if two timestamps are on the same day
-     * Uses configured timezone from AppConfig
      */
-    fun isOnSameDay(timestamp1: Long, timestamp2: Long): Boolean {
-        val zone = getConfiguredZone()
+    fun isOnSameDay(timestamp1: Long, timestamp2: Long, zone: ZoneId = getConfiguredZone()): Boolean {
         val date1 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp1), zone).toLocalDate()
         val date2 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp2), zone).toLocalDate()
         return date1 == date2
@@ -87,18 +87,15 @@ object DateUtils {
 
     /**
      * Get today's date formatted for display
-     * Uses configured timezone from AppConfig
      */
-    fun getTodayFormatted(): String {
-        return formatDateForDisplay(System.currentTimeMillis())
+    fun getTodayFormatted(zone: ZoneId = getConfiguredZone()): String {
+        return formatDateForDisplay(System.currentTimeMillis(), zone)
     }
 
     /**
      * Get start of day timestamp (00:00:00) for a given date
-     * Uses configured timezone from AppConfig
      */
-    fun getStartOfDay(timestamp: Long): Long {
-        val zone = getConfiguredZone()
+    fun getStartOfDay(timestamp: Long, zone: ZoneId = getConfiguredZone()): Long {
         val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
         val startOfDay = zonedDateTime.toLocalDate().atStartOfDay(zone)
         return startOfDay.toInstant().toEpochMilli()
@@ -106,27 +103,26 @@ object DateUtils {
 
     /**
      * Get end of day timestamp (23:59:59.999) for a given date
-     * Uses configured timezone from AppConfig
      */
-    fun getEndOfDay(timestamp: Long): Long {
-        val zone = getConfiguredZone()
+    fun getEndOfDay(timestamp: Long, zone: ZoneId = getConfiguredZone()): Long {
         val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
         val endOfDay = zonedDateTime.toLocalDate().atTime(23, 59, 59, 999_999_999).atZone(zone)
         return endOfDay.toInstant().toEpochMilli()
     }
-    
+
     /**
      * Get current time formatted for display (HH:mm)
-     * Uses configured timezone from AppConfig
      */
-    fun getCurrentTimeFormatted(): String {
-        return formatTimeForDisplay(System.currentTimeMillis())
+    fun getCurrentTimeFormatted(zone: ZoneId = getConfiguredZone()): String {
+        return formatTimeForDisplay(System.currentTimeMillis(), zone)
     }
 
     /**
      * Parse time string to hour and minute (HH:mm)
+     *
+     * Returns the current hour and minute when the string cannot be read.
      */
-    fun parseTime(timeString: String): Pair<Int, Int> {
+    fun parseTime(timeString: String, zone: ZoneId = getConfiguredZone()): Pair<Int, Int> {
         return try {
             val parts = timeString.split(":")
             if (parts.size == 2) {
@@ -134,12 +130,10 @@ object DateUtils {
                 val minute = parts[1].toInt()
                 Pair(hour, minute)
             } else {
-                val zone = getConfiguredZone()
                 val now = ZonedDateTime.now(zone)
                 Pair(now.hour, now.minute)
             }
         } catch (e: Exception) {
-            val zone = getConfiguredZone()
             val now = ZonedDateTime.now(zone)
             Pair(now.hour, now.minute)
         }
@@ -147,14 +141,15 @@ object DateUtils {
 
     /**
      * Combine date string (dd/MM/yyyy) and time string (HH:mm) into timestamp
-     * Uses configured timezone from AppConfig
+     *
+     * Returns the current time when the date cannot be read.
      */
-    fun combineDateTime(dateString: String, timeString: String): Long {
+    fun combineDateTime(dateString: String, timeString: String, zone: ZoneId = getConfiguredZone()): Long {
         return try {
             val localDate = LocalDate.parse(dateString, displayDateFormatter)
-            val (hour, minute) = parseTime(timeString)
+            val (hour, minute) = parseTime(timeString, zone)
             val localDateTime = localDate.atTime(hour, minute, 0, 0)
-            val zonedDateTime = localDateTime.atZone(getConfiguredZone())
+            val zonedDateTime = localDateTime.atZone(zone)
             zonedDateTime.toInstant().toEpochMilli()
         } catch (e: Exception) {
             System.currentTimeMillis()
@@ -168,12 +163,13 @@ object DateUtils {
     /**
      * Parse ISO 8601 date string to timestamp (YYYY-MM-DD → Long)
      * Used for custom fields DATE type
-     * Uses configured timezone from AppConfig
+     *
+     * Returns the current time when the string cannot be read.
      */
-    fun parseIso8601Date(dateStr: String): Long {
+    fun parseIso8601Date(dateStr: String, zone: ZoneId = getConfiguredZone()): Long {
         return try {
             val localDate = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
-            val zonedDateTime = localDate.atStartOfDay(getConfiguredZone())
+            val zonedDateTime = localDate.atStartOfDay(zone)
             zonedDateTime.toInstant().toEpochMilli()
         } catch (e: Exception) {
             System.currentTimeMillis()
@@ -183,12 +179,12 @@ object DateUtils {
     /**
      * Parse ISO 8601 time string to timestamp (HH:MM → Long, today's date)
      * Used for custom fields TIME type
-     * Uses configured timezone from AppConfig
+     *
+     * Returns the current time when the string cannot be read.
      */
-    fun parseIso8601Time(timeStr: String): Long {
+    fun parseIso8601Time(timeStr: String, zone: ZoneId = getConfiguredZone()): Long {
         return try {
             val localTime = LocalTime.parse(timeStr, DateTimeFormatter.ISO_LOCAL_TIME)
-            val zone = getConfiguredZone()
             val today = LocalDate.now(zone)
             val zonedDateTime = ZonedDateTime.of(today, localTime, zone)
             zonedDateTime.toInstant().toEpochMilli()
@@ -200,12 +196,13 @@ object DateUtils {
     /**
      * Parse ISO 8601 datetime string to timestamp (YYYY-MM-DDTHH:MM:SS → Long)
      * Used for custom fields DATETIME type
-     * Uses configured timezone from AppConfig
+     *
+     * Returns the current time when the string cannot be read.
      */
-    fun parseIso8601DateTime(dateTimeStr: String): Long {
+    fun parseIso8601DateTime(dateTimeStr: String, zone: ZoneId = getConfiguredZone()): Long {
         return try {
             val localDateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val zonedDateTime = localDateTime.atZone(getConfiguredZone())
+            val zonedDateTime = localDateTime.atZone(zone)
             zonedDateTime.toInstant().toEpochMilli()
         } catch (e: Exception) {
             System.currentTimeMillis()
@@ -215,10 +212,8 @@ object DateUtils {
     /**
      * Convert timestamp to ISO 8601 date string (Long → YYYY-MM-DD)
      * Used for custom fields DATE type
-     * Uses configured timezone from AppConfig
      */
-    fun timestampToIso8601Date(timestamp: Long): String {
-        val zone = getConfiguredZone()
+    fun timestampToIso8601Date(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
         return zonedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
@@ -226,10 +221,8 @@ object DateUtils {
     /**
      * Convert timestamp to ISO 8601 time string (Long → HH:MM)
      * Used for custom fields TIME type
-     * Uses configured timezone from AppConfig
      */
-    fun timestampToIso8601Time(timestamp: Long): String {
-        val zone = getConfiguredZone()
+    fun timestampToIso8601Time(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
         return zonedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
     }
@@ -237,10 +230,8 @@ object DateUtils {
     /**
      * Convert timestamp to ISO 8601 datetime string (Long → YYYY-MM-DDTHH:MM:SS)
      * Used for custom fields DATETIME type
-     * Uses configured timezone from AppConfig
      */
-    fun timestampToIso8601DateTime(timestamp: Long): String {
-        val zone = getConfiguredZone()
+    fun timestampToIso8601DateTime(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
         val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
         return zonedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
     }
