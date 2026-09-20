@@ -111,20 +111,27 @@ fun calculatePeriodOffset(
  * and which instant is a decision of the caller: the clock for anything the user is looking at,
  * the scheduled time for an automation run, which may be catching up on a day long past.
  * Reading the clock here by default is what made 47 catch-up runs read the same day's data.
+ *
+ * The day's start hour and the week's first day are parameters defaulting to the configured
+ * ones, so a caller can resolve against stated settings rather than the app's.
  */
-fun resolveRelativePeriod(relativePeriod: RelativePeriod, reference: Long): Period {
-    val dayStartHour = AppConfigManager.getDayStartHour()
-    val weekStartDay = AppConfigManager.getWeekStartDay()
-
-    val currentNormalized = normalizeTimestampWithConfig(reference, relativePeriod.type)
+fun resolveRelativePeriod(
+    relativePeriod: RelativePeriod,
+    reference: Long,
+    dayStartHour: Int = AppConfigManager.getDayStartHour(),
+    weekStartDay: String = AppConfigManager.getWeekStartDay()
+): Period {
+    val currentNormalized = normalizeTimestampWithConfig(
+        reference, relativePeriod.type, dayStartHour, weekStartDay
+    )
     var targetPeriod = Period(currentNormalized, relativePeriod.type)
 
     // Apply offset by navigating periods
     repeat(kotlin.math.abs(relativePeriod.offset)) {
         targetPeriod = if (relativePeriod.offset < 0) {
-            getPreviousPeriod(targetPeriod)
+            getPreviousPeriod(targetPeriod, dayStartHour, weekStartDay)
         } else {
-            getNextPeriod(targetPeriod)
+            getNextPeriod(targetPeriod, dayStartHour, weekStartDay)
         }
     }
 
@@ -134,9 +141,13 @@ fun resolveRelativePeriod(relativePeriod: RelativePeriod, reference: Long): Peri
 /**
  * Get the end timestamp of a period (last millisecond of the period)
  */
-fun getPeriodEndTimestamp(period: Period): Long {
+fun getPeriodEndTimestamp(
+    period: Period,
+    dayStartHour: Int = AppConfigManager.getDayStartHour(),
+    weekStartDay: String = AppConfigManager.getWeekStartDay()
+): Long {
     // Get the start of the next period
-    val nextPeriodStart = getNextPeriod(period).timestamp
+    val nextPeriodStart = getNextPeriod(period, dayStartHour, weekStartDay).timestamp
     // End of current period is 1ms before start of next period
     return nextPeriodStart - 1
 }
@@ -152,10 +163,12 @@ fun Period.getEndTimestamp(): Long {
 /**
  * Normalizes a timestamp according to period type with configuration parameters
  */
-fun normalizeTimestampWithConfig(timestamp: Long, type: PeriodType): Long {
-    val dayStartHour = AppConfigManager.getDayStartHour()
-    val weekStartDay = AppConfigManager.getWeekStartDay()
-
+fun normalizeTimestampWithConfig(
+    timestamp: Long,
+    type: PeriodType,
+    dayStartHour: Int = AppConfigManager.getDayStartHour(),
+    weekStartDay: String = AppConfigManager.getWeekStartDay()
+): Long {
     val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
     
     return when (type) {
@@ -679,7 +692,11 @@ private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, use
 /**
  * Calculates previous period with normalization
  */
-private fun getPreviousPeriod(period: Period): Period {
+private fun getPreviousPeriod(
+    period: Period,
+    dayStartHour: Int = AppConfigManager.getDayStartHour(),
+    weekStartDay: String = AppConfigManager.getWeekStartDay()
+): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
 
     when (period.type) {
@@ -691,13 +708,20 @@ private fun getPreviousPeriod(period: Period): Period {
     }
 
     // Normalize timestamp after calculation with configuration parameters
-    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type), period.type)
+    return Period(
+        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay),
+        period.type
+    )
 }
 
 /**
  * Calculates next period with normalization
  */
-private fun getNextPeriod(period: Period): Period {
+private fun getNextPeriod(
+    period: Period,
+    dayStartHour: Int = AppConfigManager.getDayStartHour(),
+    weekStartDay: String = AppConfigManager.getWeekStartDay()
+): Period {
     val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
 
     when (period.type) {
@@ -709,7 +733,10 @@ private fun getNextPeriod(period: Period): Period {
     }
 
     // Normalize timestamp after calculation with configuration parameters
-    return Period(normalizeTimestampWithConfig(cal.timeInMillis, period.type), period.type)
+    return Period(
+        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay),
+        period.type
+    )
 }
 
 /**
