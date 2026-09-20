@@ -16,6 +16,7 @@ import com.assistant.core.tools.ToolTypeManager
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
+import com.assistant.core.validation.FieldPatternGrammar
 
 /**
  * Centralized service for all tool_data operations
@@ -1044,10 +1045,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
     /**
      * Filter entry fields according to requested fields list
      *
-     * Supports three field types:
-     * - Root fields: "id", "timestamp", "name", "createdAt", "updatedAt", "toolInstanceId", "tooltype"
-     * - Data fields: "data.value", "data.text", "data.quantity", etc.
-     * - Custom fields: "custom_fields.notes", "custom_fields.mood", etc.
+     * Where each path points is decided by FieldPatternGrammar, which is also what the
+     * validation reads, so both ends agree on what a path means.
      *
      * @param entry Full entry map with all fields
      * @param requestedFields List of field paths to include
@@ -1055,81 +1054,52 @@ class ToolDataService(private val context: Context) : ExecutableService {
      */
     private fun filterEntryFields(entry: Map<String, Any?>, requestedFields: List<String>): Map<String, Any?> {
         val filtered = mutableMapOf<String, Any?>()
-
-        // Separate fields by type
-        val rootFields = mutableListOf<String>()
-        val dataFields = mutableListOf<String>()
-        val customFields = mutableListOf<String>()
-
-        for (field in requestedFields) {
-            when {
-                field.startsWith("data.") -> dataFields.add(field.removePrefix("data."))
-                field.startsWith("custom_fields.") -> customFields.add(field.removePrefix("custom_fields."))
-                else -> rootFields.add(field)
-            }
-        }
+        val parsed = FieldPatternGrammar.parse(requestedFields)
 
         // Include requested root fields
-        for (field in rootFields) {
+        for (field in parsed.root) {
             if (entry.containsKey(field)) {
                 filtered[field] = entry[field]
             }
         }
 
-        // Filter data fields if requested
-        if (dataFields.isNotEmpty()) {
-            val dataJsonStr = entry["data"] as? String
-            if (dataJsonStr != null) {
-                try {
-                    val dataJson = JSONObject(dataJsonStr)
-                    val filteredDataJson = JSONObject()
-
-                    for (field in dataFields) {
-                        if (dataJson.has(field)) {
-                            filteredDataJson.put(field, dataJson.get(field))
-                        }
-                    }
-
-                    filtered["data"] = filteredDataJson.toString()
-                } catch (e: Exception) {
-                    com.assistant.core.utils.LogManager.service(
-                        "Failed to filter data fields: ${e.message}",
-                        "WARN",
-                        e
-                    )
-                    // Include original data on error
-                    filtered["data"] = dataJsonStr
-                }
-            }
-        }
-
-        // Filter custom_fields if requested
-        if (customFields.isNotEmpty()) {
-            val customFieldsJsonStr = entry["custom_fields"] as? String
-            if (customFieldsJsonStr != null) {
-                try {
-                    val customFieldsJson = JSONObject(customFieldsJsonStr)
-                    val filteredCustomFieldsJson = JSONObject()
-
-                    for (field in customFields) {
-                        if (customFieldsJson.has(field)) {
-                            filteredCustomFieldsJson.put(field, customFieldsJson.get(field))
-                        }
-                    }
-
-                    filtered["custom_fields"] = filteredCustomFieldsJson.toString()
-                } catch (e: Exception) {
-                    com.assistant.core.utils.LogManager.service(
-                        "Failed to filter custom_fields: ${e.message}",
-                        "WARN",
-                        e
-                    )
-                    // Include original custom_fields on error
-                    filtered["custom_fields"] = customFieldsJsonStr
-                }
-            }
-        }
+        filterJsonField(entry, "data", parsed.data)?.let { filtered["data"] = it }
+        filterJsonField(entry, "custom_fields", parsed.custom)?.let { filtered["custom_fields"] = it }
 
         return filtered
+    }
+
+    /**
+     * Keep only the requested keys of one JSON-string field of an entry.
+     *
+     * Returns null when nothing was requested inside that field or the entry does not carry it,
+     * so the caller leaves the field out of the result entirely.
+     */
+    private fun filterJsonField(
+        entry: Map<String, Any?>,
+        fieldName: String,
+        requestedKeys: List<String>
+    ): String? {
+        if (requestedKeys.isEmpty()) return null
+        val jsonStr = entry[fieldName] as? String ?: return null
+
+        return try {
+            val json = JSONObject(jsonStr)
+            val filteredJson = JSONObject()
+            for (key in requestedKeys) {
+                if (json.has(key)) {
+                    filteredJson.put(key, json.get(key))
+                }
+            }
+            filteredJson.toString()
+        } catch (e: Exception) {
+            com.assistant.core.utils.LogManager.service(
+                "Failed to filter $fieldName: ${e.message}",
+                "WARN",
+                e
+            )
+            // Include the original content on error
+            jsonStr
+        }
     }
 }

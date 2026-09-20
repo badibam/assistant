@@ -249,6 +249,7 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
   - **Champs data** : `"data.value"`, `"data.text"`, `"data.quantity"`, etc. (selon le type d\'outil)
   - **Champs custom** : `"custom_fields.notes"`, `"custom_fields.mood"`, etc. (selon la config)
   - **Pas de wildcard** : chaque champ doit être listé individuellement
+  - **Refusés** : `"data"` et `"custom_fields"` seuls. Ce sont des conteneurs : nomme un champ dedans (`"data.value"`). Tout autre chemin contenant un point est refusé aussi.
 - `period_start` (string, optionnel) : Début du filtre temporel, à la racine des params (pas dans un objet `period`). Formats en Partie E.
 - `period_end` (string, optionnel) : Fin du filtre temporel, à la racine des params. Indépendant de `period_start`.
 - `limit` (number, optionnel) : Nombre maximum d\'entrées par page

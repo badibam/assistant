@@ -7,6 +7,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.LogManager
 import org.json.JSONObject
@@ -50,11 +51,21 @@ class AICommandProcessor(private val context: Context) {
                         .format(index, command.type, s.shared("ai_error_tool_data_fields_missing"))
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
-                } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
+                } else if (fields !is List<*> || fields.isEmpty()) {
                     val errorMsg = s.shared("ai_error_command_prefix")
                         .format(index, command.type, s.shared("ai_error_tool_data_fields_not_array"))
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
+                } else {
+                    // Field paths are read through the same grammar the filtering uses, so a path
+                    // that passes here cannot be dropped in silence when the result is built.
+                    val invalid = FieldPatternGrammar.parse(fields.map { it.toString() }).invalid
+                    for (path in invalid) {
+                        val errorMsg = s.shared("ai_error_command_prefix")
+                            .format(index, command.type, s.shared("ai_error_field_invalid_pattern").format(path))
+                        validationErrors.add(errorMsg)
+                        LogManager.aiService(errorMsg, "WARN")
+                    }
                 }
 
                 // Parameters the prompt used to document and the transformer never read.
