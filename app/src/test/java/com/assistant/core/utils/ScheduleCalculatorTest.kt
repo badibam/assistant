@@ -1,0 +1,292 @@
+package com.assistant.core.utils
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
+/**
+ * Covers the next-execution calculation for all six schedule patterns.
+ *
+ * Every case fixes both the clock and the timezone. That is the whole point of testing this
+ * here: TODO.md still carries "check a real catch-up on the device, automation scheduled,
+ * app closed for several days", and a scheduling question that costs days to observe by
+ * hand costs milliseconds with fromTimestamp set by hand.
+ *
+ * Europe/Paris throughout, because the interesting cases are the ones a timezone with
+ * daylight saving produces, and because it is the zone this app is actually used in.
+ */
+class ScheduleCalculatorTest {
+
+    private val paris: ZoneId = ZoneId.of("Europe/Paris")
+
+    /** A wall-clock moment in Paris, as the epoch milliseconds the calculator deals in. */
+    private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long =
+        ZonedDateTime.of(LocalDate.of(year, month, day), LocalTime.of(hour, minute), paris)
+            .toInstant().toEpochMilli()
+
+    private fun next(
+        pattern: SchedulePattern,
+        from: Long,
+        startDate: Long? = null,
+        endDate: Long? = null
+    ): Long? = ScheduleCalculator.calculateNextExecution(pattern, startDate, endDate, from, paris)
+
+    // ==================== Type 1: several times a day ====================
+
+    /** The next time today, when there is one still to come. */
+    @Test
+    fun daily_takesTheNextTimeStillToComeToday() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00", "14:00", "18:00"))
+
+        assertEquals(at(2025, 1, 15, 14, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(at(2025, 1, 15, 18, 0), next(pattern, from = at(2025, 1, 15, 14, 30)))
+    }
+
+    /** Once the day's times have all gone by, the first one tomorrow. */
+    @Test
+    fun daily_rollsOverToTomorrow() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00", "14:00", "18:00"))
+
+        assertEquals(at(2025, 1, 16, 9, 0), next(pattern, from = at(2025, 1, 15, 20, 0)))
+    }
+
+    /**
+     * Tomorrow's first time is picked by sorting the strings, not the times. With hours
+     * written without a leading zero, "14:00" sorts before "9:00", and the rollover lands
+     * on the afternoon instead of the morning.
+     *
+     * This states what the code does today. Nothing in the app writes unpadded times -- the
+     * editor produces HH:mm -- but nothing rejects them either, and a schedule arriving from
+     * the AI or from a restored backup would be read this way. The times that still come
+     * today are unaffected: those are compared as moments, not as strings.
+     */
+    @Test
+    fun daily_sortsTomorrowsTimesAsTextRatherThanAsTimes() {
+        val padded = SchedulePattern.DailyMultiple(listOf("09:00", "14:00"))
+        val unpadded = SchedulePattern.DailyMultiple(listOf("9:00", "14:00"))
+        val afterBothHaveGone = at(2025, 1, 15, 20, 0)
+
+        assertEquals(at(2025, 1, 16, 9, 0), next(padded, from = afterBothHaveGone))
+        assertEquals(at(2025, 1, 16, 14, 0), next(unpadded, from = afterBothHaveGone))
+    }
+
+    /** No times, nothing to schedule. */
+    @Test
+    fun daily_withNoTimes_hasNoNextExecution() {
+        assertNull(next(SchedulePattern.DailyMultiple(emptyList()), from = at(2025, 1, 15, 10, 0)))
+    }
+
+    /** A time that is not a time schedules nothing, rather than being rounded into one. */
+    @Test
+    fun daily_withAnImpossibleTime_hasNoNextExecution() {
+        assertNull(next(SchedulePattern.DailyMultiple(listOf("25:00")), from = at(2025, 1, 15, 10, 0)))
+    }
+
+    // ==================== Type 2: certain days, one time ====================
+
+    /** 2025-01-15 is a Wednesday, so day 3 of the week. */
+    private val mondayWednesdayFriday = SchedulePattern.WeeklySimple(listOf(1, 3, 5), "09:00")
+
+    /** Today counts when its time has not gone by. */
+    @Test
+    fun weekly_takesTodayWhenTheTimeIsStillAhead() {
+        assertEquals(
+            at(2025, 1, 15, 9, 0),
+            next(mondayWednesdayFriday, from = at(2025, 1, 15, 8, 0))
+        )
+    }
+
+    /** Once it has gone by, the next day in the list. */
+    @Test
+    fun weekly_movesToTheNextDayInTheList() {
+        assertEquals(
+            at(2025, 1, 17, 9, 0),
+            next(mondayWednesdayFriday, from = at(2025, 1, 15, 10, 0))
+        )
+    }
+
+    /** With no day left this week, it wraps to the first one of the next. */
+    @Test
+    fun weekly_wrapsToNextWeek() {
+        val mondaysOnly = SchedulePattern.WeeklySimple(listOf(1), "09:00")
+
+        assertEquals(at(2025, 1, 20, 9, 0), next(mondaysOnly, from = at(2025, 1, 15, 10, 0)))
+    }
+
+    // ==================== Type 3: certain months, a fixed day ====================
+
+    /** The current month counts when the day and time are still ahead. */
+    @Test
+    fun monthly_takesTheCurrentMonthWhenItIsStillAhead() {
+        val pattern = SchedulePattern.MonthlyRecurrent(listOf(1, 3, 6), dayOfMonth = 15, time = "10:00")
+
+        assertEquals(at(2025, 1, 15, 10, 0), next(pattern, from = at(2025, 1, 15, 9, 0)))
+        assertEquals(at(2025, 3, 15, 10, 0), next(pattern, from = at(2025, 1, 15, 11, 0)))
+    }
+
+    /** A month too short for the day is passed over, not clamped to its last day. */
+    @Test
+    fun monthly_skipsAMonthTooShortForTheDay() {
+        val pattern = SchedulePattern.MonthlyRecurrent(listOf(2, 3), dayOfMonth = 31, time = "10:00")
+
+        assertEquals(at(2025, 3, 31, 10, 0), next(pattern, from = at(2025, 1, 1, 0, 0)))
+    }
+
+    /** A day no listed month ever has schedules nothing at all. */
+    @Test
+    fun monthly_withADayNoListedMonthHas_hasNoNextExecution() {
+        val pattern = SchedulePattern.MonthlyRecurrent(listOf(2), dayOfMonth = 31, time = "10:00")
+
+        assertNull(next(pattern, from = at(2025, 1, 1, 0, 0)))
+    }
+
+    // ==================== Type 4: a time per day ====================
+
+    /** Several moments on the same day are taken in order. */
+    @Test
+    fun weeklyCustom_takesTheDaysMomentsInOrder() {
+        val pattern = SchedulePattern.WeeklyCustom(
+            listOf(WeekMoment(3, "09:00"), WeekMoment(3, "14:00"), WeekMoment(5, "17:00"))
+        )
+
+        assertEquals(at(2025, 1, 15, 14, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(at(2025, 1, 17, 17, 0), next(pattern, from = at(2025, 1, 15, 15, 0)))
+    }
+
+    /** And wrap to the first moment of the following week. */
+    @Test
+    fun weeklyCustom_wrapsToNextWeek() {
+        val pattern = SchedulePattern.WeeklyCustom(listOf(WeekMoment(1, "09:00"), WeekMoment(3, "09:00")))
+
+        assertEquals(at(2025, 1, 20, 9, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+    }
+
+    // ==================== Type 5: the same dates every year ====================
+
+    /** This year when the date is still ahead, next year once it has gone. */
+    @Test
+    fun yearly_takesThisYearThenTheNext() {
+        val pattern = SchedulePattern.YearlyRecurrent(listOf(YearlyDate(12, 25, "08:00")))
+
+        assertEquals(at(2025, 12, 25, 8, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(at(2026, 12, 25, 8, 0), next(pattern, from = at(2025, 12, 26, 10, 0)))
+    }
+
+    /**
+     * A 29 February schedule stops after the leap year it was set in.
+     *
+     * This states what the code does today. The current year is searched, and the date is
+     * passed over when February is short; the fallback then looks at the following year
+     * only, finds it short too, and gives up -- rather than carrying on to the next leap
+     * year. So the schedule fires in 2024 and never again.
+     */
+    @Test
+    fun yearly_stopsAfterALeapDayRatherThanWaitingForTheNextLeapYear() {
+        val pattern = SchedulePattern.YearlyRecurrent(listOf(YearlyDate(2, 29, "08:00")))
+
+        assertEquals(at(2024, 2, 29, 8, 0), next(pattern, from = at(2024, 1, 15, 10, 0)))
+        assertNull(next(pattern, from = at(2025, 1, 15, 10, 0)))
+    }
+
+    // ==================== Type 6: fixed dates, once each ====================
+
+    /** The next one still ahead, then nothing. */
+    @Test
+    fun specificDates_runOnceEachAndThenStop() {
+        val first = at(2025, 3, 15, 14, 30)
+        val second = at(2025, 4, 20, 10, 0)
+        val pattern = SchedulePattern.SpecificDates(listOf(second, first))
+
+        assertEquals(first, next(pattern, from = at(2025, 1, 1, 0, 0)))
+        assertEquals(second, next(pattern, from = first))
+        assertNull(next(pattern, from = second))
+    }
+
+    // ==================== The window the schedule runs in ====================
+
+    /** Before the start date, the schedule is computed from the start date instead. */
+    @Test
+    fun startDate_pushesTheFirstExecutionForward() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
+        val startsInFebruary = at(2025, 2, 1, 0, 0)
+
+        assertEquals(at(2025, 1, 16, 9, 0), next(pattern, from = at(2025, 1, 15, 10, 0)))
+        assertEquals(
+            at(2025, 2, 1, 9, 0),
+            next(pattern, from = at(2025, 1, 15, 10, 0), startDate = startsInFebruary)
+        )
+    }
+
+    /** Past the end date there is nothing left to run. */
+    @Test
+    fun endDate_stopsTheSchedule() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
+
+        assertNull(
+            next(pattern, from = at(2025, 1, 15, 10, 0), endDate = at(2025, 1, 15, 23, 0))
+        )
+    }
+
+    /** An execution falling exactly on the end date still counts: the bound is inclusive. */
+    @Test
+    fun endDate_includesAnExecutionFallingExactlyOnIt() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
+        val exactly = at(2025, 1, 16, 9, 0)
+
+        assertEquals(exactly, next(pattern, from = at(2025, 1, 15, 10, 0), endDate = exactly))
+    }
+
+    // ==================== Clocks that move ====================
+
+    /**
+     * On the night the clocks go forward, 02:30 does not exist in Paris. The schedule is
+     * not skipped: it lands at 03:30, the same instant the missing half hour would have
+     * been. Java's own rule for a gap, pinned here because a schedule silently moving by an
+     * hour once a year is the sort of thing nobody notices.
+     */
+    @Test
+    fun springForward_movesATimeThatDoesNotExistToTheEndOfTheGap() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("02:30"))
+
+        assertEquals(
+            at(2024, 3, 31, 3, 30),
+            next(pattern, from = at(2024, 3, 30, 12, 0))
+        )
+    }
+
+    /**
+     * On the night they go back, 02:30 happens twice. The earlier one is taken, so the
+     * schedule runs once rather than twice.
+     */
+    @Test
+    fun fallBack_takesTheFirstOfTwoIdenticalTimes() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("02:30"))
+        val beforeTheChange = ZonedDateTime.of(
+            LocalDate.of(2024, 10, 27), LocalTime.of(1, 0), paris
+        ).withEarlierOffsetAtOverlap().toInstant().toEpochMilli()
+
+        val result = next(pattern, from = beforeTheChange)!!
+
+        // The earlier 02:30 is still on summer time, an hour ahead of the later one.
+        val earlier = ZonedDateTime.of(LocalDate.of(2024, 10, 27), LocalTime.of(2, 30), paris)
+            .withEarlierOffsetAtOverlap().toInstant().toEpochMilli()
+        assertEquals(earlier, result)
+    }
+
+    /** The zone is what the wall-clock time is read in, so it changes the instant produced. */
+    @Test
+    fun theZone_decidesWhichInstantAWallClockTimeMeans() {
+        val pattern = SchedulePattern.DailyMultiple(listOf("09:00"))
+        val from = at(2025, 1, 15, 10, 0)
+
+        val inParis = ScheduleCalculator.calculateNextExecution(pattern, null, null, from, paris)
+        val inUtc = ScheduleCalculator.calculateNextExecution(pattern, null, null, from, ZoneId.of("UTC"))
+
+        // Paris is an hour ahead of UTC in January, so its 09:00 comes an hour earlier.
+        assertEquals(3_600_000L, inUtc!! - inParis!!)
+    }
+}
