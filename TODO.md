@@ -8,7 +8,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Cinq points dans `docs/design/architecture-audit-debt.md`, tous vérifiés. Le seul qui soit à la fois petit et mécanique : `verbalize()` est synchrone dans l'interface, et quatre sites ouvrent un `runBlocking` dedans pour résoudre un nom. Les autres sont soit transversaux (chaînes JSON aux frontières, conventions de nommage des params de service), soit des décisions à prendre plutôt que du code à écrire.
+Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, aucun mécanique : deux sont transversaux (chaînes JSON aux frontières, conventions de nommage des params de service), deux sont des décisions à prendre plutôt que du code à écrire (format du prompt L1, validation désactivée par défaut).
 
 
 ## Divers

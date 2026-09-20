@@ -22,14 +22,6 @@ Le prompt L1 vit dans `ai_prompt_chunks.xml`, traité comme de l'i18n alors que 
 
 **Recommandation** : le re-test manuel à chaque modif du L1 est désormais une règle de `docs/AI.md` — c'est le minimum, et il repose sur la discipline. À terme, envisager un format dédié (markdown source → génération) avec exemples extraits et exécutables automatiquement.
 
-## B.5 `verbalize()` synchrone forçant `runBlocking` — vérifié, répandu
-
-`ExecutableService.verbalize(operation, params, context): String` est synchrone ; pour résoudre des noms d'outil ou de zone, le service fait `runBlocking { coordinator.processUserAction(...) }`, avec un `Coordinator(context)` instancié à la volée. Appel bloquant imbriqué dans des contextes coroutine.
-
-Quatre sites, dans trois services : `ToolDataService.kt:1024`, `ToolInstanceService.kt:487` et `:737`, `ZoneService.kt:313`. Le pattern est donc installé, pas isolé.
-
-**Recommandation** : passer `verbalize` en `suspend` dans l'interface, et retirer les quatre `runBlocking`.
-
 ## B.8 Mention rapide
 
 - `validateConfig`/`validateData` par défaut `false` (`ValidationResolver.kt:182`, `:209`) : l'IA modifie sans validation par défaut. Posture probablement délibérée — à re-choisir consciemment un jour, pas à subir comme un défaut hérité.
