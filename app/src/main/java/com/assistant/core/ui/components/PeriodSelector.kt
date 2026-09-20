@@ -18,6 +18,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.launch
 import java.util.*
+import com.assistant.core.utils.LogManager
 
 /**
  * Reusable period filter types
@@ -276,7 +277,7 @@ fun SinglePeriodSelector(
         } catch (e: Exception) {
             // Log error but keep initial state values (FormatDefaults)
             // No silent fallback - config should always load from DB after first launch
-            com.assistant.core.utils.LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
+            LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
         } finally {
             isConfigLoading = false
         }
@@ -1188,7 +1189,7 @@ fun PeriodRangeSelector(
         } catch (e: Exception) {
             // Log error but keep initial state values (FormatDefaults)
             // No silent fallback - config should always load from DB after first launch
-            com.assistant.core.utils.LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
+            LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
         } finally {
             isConfigLoading = false
         }

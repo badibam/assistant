@@ -14,6 +14,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
 import org.json.JSONObject
 import org.json.JSONArray
+import com.assistant.core.utils.LogManager
 
 /**
  * Reusable general settings section for all tool types
@@ -222,7 +223,7 @@ fun ToolGeneralConfigSection(
                 availableGroups = availableGroups,
                 selectedGroup = group,
                 onGroupSelected = { newGroup ->
-                    com.assistant.core.utils.LogManager.ui("ToolGeneralConfigSection - Group changed to: '$newGroup'", "DEBUG")
+                    LogManager.ui("ToolGeneralConfigSection - Group changed to: '$newGroup'", "DEBUG")
                     if (newGroup != null) {
                         updateConfig("group", newGroup)
                     } else {

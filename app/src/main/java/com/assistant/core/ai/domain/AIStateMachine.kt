@@ -2,6 +2,7 @@ package com.assistant.core.ai.domain
 
 import com.assistant.core.ai.data.SessionEndReason
 import com.assistant.core.ai.data.SessionType
+import com.assistant.core.utils.LogManager
 
 /**
  * Pure state machine for AI execution.
@@ -362,7 +363,7 @@ object AIStateMachine {
 
             // If dataCommands present: illogical, ignore queries and go to confirmation
             if (hasDataCommands) {
-                com.assistant.core.utils.LogManager.aiSession(
+                LogManager.aiSession(
                     "completed=true with dataCommands ignored, going to confirmation",
                     "WARN"
                 )

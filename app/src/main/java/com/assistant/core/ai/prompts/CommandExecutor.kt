@@ -137,7 +137,6 @@ class CommandExecutor(private val context: Context) {
                 // Return SCHEMA_REQUIRED message without executing tool_data commands
                 val formattedDataContent = schemasJson.toString()
                 LogManager.aiPrompt("SCHEMA_REQUIRED formattedData length: ${formattedDataContent.length}", "DEBUG")
-                LogManager.aiPrompt("SCHEMA_REQUIRED formattedData preview: ${formattedDataContent.take(500)}", "DEBUG")
 
                 // Create CommandResults for each schema provided (for deduplication tracking)
                 // Get verbalization from SchemaService for consistency with DATA_ADDED
@@ -1101,15 +1100,9 @@ class CommandExecutor(private val context: Context) {
                 // Generate deduplication key (composite for data schemas)
                 val deduplicationKey = getSchemaDeduplicationKey(dataSchemaId, toolInstanceId)
 
-                LogManager.aiPrompt("Checking schema availability:", "DEBUG")
-                LogManager.aiPrompt("  - deduplicationKey: $deduplicationKey", "DEBUG")
-                LogManager.aiPrompt("  - historicalSchemas contains: ${deduplicationKey in historicalSchemas}", "DEBUG")
-                LogManager.aiPrompt("  - currentBatchSchemas contains: ${deduplicationKey in currentBatchSchemas}", "DEBUG")
-                LogManager.aiPrompt("  - historicalSchemas: $historicalSchemas", "DEBUG")
-                LogManager.aiPrompt("  - currentBatchSchemas: $currentBatchSchemas", "DEBUG")
-
                 // Check if schema is available (historical or current batch)
                 val isAvailable = deduplicationKey in historicalSchemas || deduplicationKey in currentBatchSchemas
+                LogManager.aiPrompt("Schema availability for $deduplicationKey: historical=${deduplicationKey in historicalSchemas}, currentBatch=${deduplicationKey in currentBatchSchemas}", "DEBUG")
 
                 if (!isAvailable) {
                     LogManager.aiPrompt("Schema $deduplicationKey is missing for tool instance $toolInstanceId", "DEBUG")
@@ -1216,7 +1209,7 @@ class CommandExecutor(private val context: Context) {
                                 schemaKeys.add(deduplicationKey)
                                 LogManager.aiPrompt("Found historical schema: $deduplicationKey", "VERBOSE")
                             } else {
-                                LogManager.aiPrompt("    WARNING: schema_id is null! data=${commandResult.data}", "WARN")
+                                LogManager.aiPrompt("schema.get returned no schema_id, data keys=${commandResult.data?.keys}", "WARN")
                             }
                         }
                     }

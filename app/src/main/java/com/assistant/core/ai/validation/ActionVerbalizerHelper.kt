@@ -8,6 +8,7 @@ import com.assistant.core.ai.processing.CommandTransformer
 import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.services.ExecutableService
 import org.json.JSONObject
+import com.assistant.core.utils.LogManager
 
 /**
  * Helper for verbalizing actions via services
@@ -73,7 +74,7 @@ object ActionVerbalizerHelper {
             }
         } catch (e: Exception) {
             // Fallback on error (log and return generic description)
-            com.assistant.core.utils.LogManager.aiService(
+            LogManager.aiService(
                 "Failed to verbalize action ${action.type}: ${e.message}",
                 "ERROR",
                 e

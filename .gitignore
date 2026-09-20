@@ -56,3 +56,6 @@ tmp/
 
 # Rebuilt by preBuild (generateStringResources)
 app/src/main/res/values/strings_generated.xml
+
+# Kotlin incremental build state
+.kotlin/

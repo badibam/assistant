@@ -19,6 +19,7 @@ import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import com.assistant.core.utils.LogManager
 
 /**
  * Screen for creating/editing a zone
@@ -128,7 +129,7 @@ fun CreateZoneScreen(
                                 updateParams["group"] = org.json.JSONObject.NULL
                             }
 
-                            com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Updating zone with params: $updateParams", "DEBUG")
+                            LogManager.ui("CreateZoneScreen - Updating zone with params: $updateParams", "DEBUG")
 
                             val result = coordinator.processUserAction("zones.update", updateParams)
                             onUpdate?.invoke()
@@ -147,7 +148,7 @@ fun CreateZoneScreen(
                             // Add group to create params
                             zoneGroup?.let { createParams["group"] = it }
 
-                            com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Creating zone with params: $createParams", "DEBUG")
+                            LogManager.ui("CreateZoneScreen - Creating zone with params: $createParams", "DEBUG")
 
                             val result = coordinator.processUserAction("zones.create", createParams)
                             onCreate?.invoke()
@@ -207,7 +208,7 @@ fun CreateZoneScreen(
             availableGroups = availableZoneGroups,
             selectedGroup = zoneGroup,
             onGroupSelected = { newGroup ->
-                com.assistant.core.utils.LogManager.ui("CreateZoneScreen - Zone group changed to: '$newGroup'", "DEBUG")
+                LogManager.ui("CreateZoneScreen - Zone group changed to: '$newGroup'", "DEBUG")
                 zoneGroup = newGroup
             },
             label = s.shared("label_group")

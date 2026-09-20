@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.assistant.core.ui.UI
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.LogManager
 
 /**
  * Reusable component for selecting a group from available groups
@@ -48,17 +49,17 @@ fun GroupSelector(
     // Find current selection label
     val selectedLabel = selectedGroup ?: noGroupLabel
 
-    com.assistant.core.utils.LogManager.ui("GroupSelector - selectedGroup: '$selectedGroup', selectedLabel: '$selectedLabel', noGroupLabel: '$noGroupLabel'", "DEBUG")
+    LogManager.ui("GroupSelector - selectedGroup: '$selectedGroup', selectedLabel: '$selectedLabel', noGroupLabel: '$noGroupLabel'", "DEBUG")
 
     UI.FormSelection(
         label = label,
         options = options,
         selected = selectedLabel,
         onSelect = { selectedLabelClicked ->
-            com.assistant.core.utils.LogManager.ui("GroupSelector - User selected: '$selectedLabelClicked', noGroupLabel: '$noGroupLabel'", "DEBUG")
+            LogManager.ui("GroupSelector - User selected: '$selectedLabelClicked', noGroupLabel: '$noGroupLabel'", "DEBUG")
             // If selected label is "No group" -> null, else actual group name
             val newGroup = if (selectedLabelClicked == noGroupLabel) null else selectedLabelClicked
-            com.assistant.core.utils.LogManager.ui("GroupSelector - Calling onGroupSelected with: '$newGroup'", "DEBUG")
+            LogManager.ui("GroupSelector - Calling onGroupSelected with: '$newGroup'", "DEBUG")
             onGroupSelected(newGroup)
         },
         required = false

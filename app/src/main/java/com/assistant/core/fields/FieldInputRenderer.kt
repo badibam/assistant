@@ -11,6 +11,7 @@ import com.assistant.core.ui.UI
 import com.assistant.core.ui.TextType
 import com.assistant.core.ui.FieldType as UIFieldType
 import com.assistant.core.utils.DateUtils
+import com.assistant.core.utils.LogManager
 
 /**
  * Renders a single custom field input component.
@@ -586,7 +587,7 @@ private fun loadFieldDefinitionsFromConfig(
                 }
             }
         } catch (e: Exception) {
-            com.assistant.core.utils.LogManager.ui("Failed to load custom fields from config: ${e.message}", "ERROR", e)
+            LogManager.ui("Failed to load custom fields from config: ${e.message}", "ERROR", e)
             fields = emptyList()
         }
     }

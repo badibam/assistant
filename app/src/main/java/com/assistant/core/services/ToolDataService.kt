@@ -17,6 +17,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
+import com.assistant.core.utils.LogManager
 
 /**
  * Centralized service for all tool_data operations
@@ -228,7 +229,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
             val newCustomFields = JSONObject(customFieldsJson)
 
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "DEBUG updateEntry: Merging custom_fields - existing=$existingCustomFields, new=$newCustomFields",
                 "DEBUG"
             )
@@ -240,7 +241,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 // Use isNull() to detect JSON null values (handles both JSONObject.NULL and parsed null)
                 if (newCustomFields.isNull(key)) {
                     // Remove field explicitly set to null
-                    com.assistant.core.utils.LogManager.service("DEBUG updateEntry: Removing field '$key' (null value)", "DEBUG")
+                    LogManager.service("DEBUG updateEntry: Removing field '$key' (null value)", "DEBUG")
                     existingCustomFields.remove(key)
                 } else {
                     // Update/add field
@@ -249,7 +250,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 }
             }
 
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "DEBUG updateEntry: Result custom_fields=$existingCustomFields",
                 "DEBUG"
             )
@@ -315,14 +316,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         // Debug logging
-        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - Received params: $params")
+        LogManager.service("ToolDataService.getEntries - Received params: $params")
 
         val toolInstanceId = params.optString("toolInstanceId")
-        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - toolInstanceId='$toolInstanceId' (length=${toolInstanceId.length})")
-        com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - params keys: ${params.keys().asSequence().toList()}")
+        LogManager.service("ToolDataService.getEntries - toolInstanceId='$toolInstanceId' (length=${toolInstanceId.length})")
+        LogManager.service("ToolDataService.getEntries - params keys: ${params.keys().asSequence().toList()}")
 
         if (toolInstanceId.isEmpty()) {
-            com.assistant.core.utils.LogManager.service("ToolDataService.getEntries - toolInstanceId is empty, returning error", "ERROR")
+            LogManager.service("ToolDataService.getEntries - toolInstanceId is empty, returning error", "ERROR")
             return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
 
@@ -386,12 +387,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
             for (i in 0 until fieldsArray.length()) {
                 list.add(fieldsArray.getString(i))
             }
-            com.assistant.core.utils.LogManager.service("ToolDataService.get: fieldsFilter = $list", "DEBUG")
+            LogManager.service("ToolDataService.get: fieldsFilter = $list", "DEBUG")
             list
         }
 
         if (fieldsFilter == null) {
-            com.assistant.core.utils.LogManager.service("ToolDataService.get: No fields filter provided (backward compatibility mode)", "DEBUG")
+            LogManager.service("ToolDataService.get: No fields filter provided (backward compatibility mode)", "DEBUG")
         }
 
         return OperationResult.success(
@@ -575,18 +576,18 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (result.success) {
                     result.data?.get("id")?.let { createdIds.add(it.toString()) }
                     successCount++
-                    com.assistant.core.utils.LogManager.service("Batch entry $i created successfully", "DEBUG")
+                    LogManager.service("Batch entry $i created successfully", "DEBUG")
                 } else {
                     val error = "Entry $i: ${result.error ?: "unknown error"}"
                     failures.add(error)
                     failureCount++
-                    com.assistant.core.utils.LogManager.service("Batch create failed for entry $i: ${result.error}", "WARN")
+                    LogManager.service("Batch create failed for entry $i: ${result.error}", "WARN")
                 }
             } catch (e: Exception) {
                 val error = "Entry $i: ${e.message}"
                 failures.add(error)
                 failureCount++
-                com.assistant.core.utils.LogManager.service("Batch create exception for entry $i: ${e.message}", "ERROR", e)
+                LogManager.service("Batch create exception for entry $i: ${e.message}", "ERROR", e)
             }
         }
 
@@ -605,7 +606,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Log warning if partial failures occurred
         if (failureCount > 0) {
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Batch create completed with partial failures: $successCount succeeded, $failureCount failed",
                 "WARN"
             )
@@ -649,7 +650,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (entryId.isEmpty()) {
                     val error = "Entry $i: missing id"
                     failures.add(error)
-                    com.assistant.core.utils.LogManager.service(
+                    LogManager.service(
                         "Batch update failed for entry $i: missing id",
                         "WARN"
                     )
@@ -674,7 +675,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 } else {
                     val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
                     failures.add(error)
-                    com.assistant.core.utils.LogManager.service(
+                    LogManager.service(
                         "Batch update failed for entry $i (id=$entryId): ${result.error}",
                         "WARN"
                     )
@@ -683,7 +684,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             } catch (e: Exception) {
                 val error = "Entry $i: ${e.message}"
                 failures.add(error)
-                com.assistant.core.utils.LogManager.service(
+                LogManager.service(
                     "Batch update exception for entry $i: ${e.message}",
                     "ERROR",
                     e
@@ -707,7 +708,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Log warning if partial failures occurred
         if (failureCount > 0) {
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Batch update completed with partial failures: $successCount succeeded, $failureCount failed",
                 "WARN"
             )
@@ -747,7 +748,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 if (entryId.isEmpty()) {
                     val error = "Entry $i: missing id"
                     failures.add(error)
-                    com.assistant.core.utils.LogManager.service(
+                    LogManager.service(
                         "Batch delete failed for entry $i: missing id",
                         "WARN"
                     )
@@ -768,7 +769,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 } else {
                     val error = "Entry $i (id=$entryId): ${result.error ?: "unknown error"}"
                     failures.add(error)
-                    com.assistant.core.utils.LogManager.service(
+                    LogManager.service(
                         "Batch delete failed for entry $i (id=$entryId): ${result.error}",
                         "WARN"
                     )
@@ -777,7 +778,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             } catch (e: Exception) {
                 val error = "Entry $i: ${e.message}"
                 failures.add(error)
-                com.assistant.core.utils.LogManager.service(
+                LogManager.service(
                     "Batch delete exception for entry $i: ${e.message}",
                     "ERROR",
                     e
@@ -801,7 +802,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Log warning if partial failures occurred
         if (failureCount > 0) {
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Batch delete completed with partial failures: $successCount succeeded, $failureCount failed",
                 "WARN"
             )
@@ -852,7 +853,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "SELECT changes()"
             ).simpleQueryForLong()
 
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Removed custom field '$fieldName' from $affectedCount entries in tool instance $toolInstanceId"
             )
 
@@ -866,7 +867,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 "updated_count" to affectedCount.toInt()
             ))
         } catch (e: Exception) {
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Failed to remove custom field: ${e.message}",
                 "ERROR",
                 e
@@ -985,7 +986,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             toolType.enrichData(dataJson, name, configJson)
         } catch (e: Exception) {
             // Log error but return original data (enrichment is not critical for data creation)
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Failed to enrich data for tooltype=$tooltype: ${e.message}",
                 "WARN",
                 e
@@ -1093,7 +1094,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
             filteredJson.toString()
         } catch (e: Exception) {
-            com.assistant.core.utils.LogManager.service(
+            LogManager.service(
                 "Failed to filter $fieldName: ${e.message}",
                 "WARN",
                 e

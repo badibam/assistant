@@ -26,6 +26,7 @@ import com.assistant.core.ai.ui.chat.AIFloatingChat
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DataChangeEvent
 import kotlinx.coroutines.launch
+import com.assistant.core.utils.LogManager
 
 /**
  * Main screen - entry point of the application
@@ -87,7 +88,7 @@ fun MainScreen() {
                     tool_groups = map["tool_groups"] as? String,
                     group = map["group"] as? String
                 ).also { zone ->
-                    com.assistant.core.utils.LogManager.ui("MainScreen - Loaded zone '${zone.name}' with group: '${zone.group}'", "DEBUG")
+                    LogManager.ui("MainScreen - Loaded zone '${zone.name}' with group: '${zone.group}'", "DEBUG")
                 }
             }
         }
@@ -501,7 +502,7 @@ private fun ZoneGroupSection(
             // Ungrouped section: null group OR orphaned groups (not in configured list)
             zone.group == null || (zone.group?.isNotBlank() == true && zone.group !in configuredGroups)
         }
-        com.assistant.core.utils.LogManager.ui("ZoneGroupSection - Zone '${zone.name}' (group='${zone.group}') matches groupName='$groupName': $matches", "DEBUG")
+        LogManager.ui("ZoneGroupSection - Zone '${zone.name}' (group='${zone.group}') matches groupName='$groupName': $matches", "DEBUG")
         matches
     }
 

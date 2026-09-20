@@ -3,6 +3,7 @@ package com.assistant.core.ai.providers
 import com.assistant.core.ai.data.*
 import kotlinx.serialization.json.*
 import org.json.JSONObject
+import com.assistant.core.utils.LogManager
 
 /**
  * OpenAI-specific extensions for PromptData transformation and response parsing
@@ -210,7 +211,7 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
     // Check status - reject non-completed responses (incomplete JSON is unusable)
     val status = jsonObj["status"]?.jsonPrimitive?.content
     if (status != "completed") {
-        com.assistant.core.utils.LogManager.aiService(
+        LogManager.aiService(
             "OpenAI response status '$status'. This typically means max_output_tokens limit was reached. " +
             "Increase max_output_tokens in provider configuration to allow longer responses.",
             "ERROR"
@@ -230,26 +231,26 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
     // OpenAI returns multiple output elements: reasoning (optional) + message
     // We need to find the element with type="message"
     val outputArray = jsonObj["output"]?.jsonArray
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - outputArray size: ${outputArray?.size}")
+    LogManager.aiService("OpenAI parsing - outputArray size: ${outputArray?.size}")
 
     // Find the message element (not reasoning)
     val messageOutput = outputArray?.firstOrNull { element ->
         (element as? JsonObject)?.get("type")?.jsonPrimitive?.content == "message"
     } as? JsonObject
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - messageOutput found: ${messageOutput != null}")
+    LogManager.aiService("OpenAI parsing - messageOutput found: ${messageOutput != null}")
 
     val contentArray = messageOutput?.get("content")?.jsonArray
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - contentArray size: ${contentArray?.size}")
+    LogManager.aiService("OpenAI parsing - contentArray size: ${contentArray?.size}")
 
     // Find the text content (type="output_text")
     val textContent = contentArray?.firstOrNull { element ->
         (element as? JsonObject)?.get("type")?.jsonPrimitive?.content == "output_text"
     } as? JsonObject
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - textContent found: ${textContent != null}")
+    LogManager.aiService("OpenAI parsing - textContent found: ${textContent != null}")
 
     val text = textContent?.get("text")?.jsonPrimitive?.content ?: ""
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - extracted text length: ${text.length}")
-    com.assistant.core.utils.LogManager.aiService("OpenAI parsing - text preview: ${text.take(200)}")
+    LogManager.aiService("OpenAI parsing - extracted text length: ${text.length}")
+    LogManager.aiService("OpenAI parsing - text preview: ${text.take(200)}")
 
     // Extract usage metrics
     // Use safe cast to handle JsonNull elements gracefully

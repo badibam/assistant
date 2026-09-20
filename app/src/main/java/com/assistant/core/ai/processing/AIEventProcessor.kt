@@ -57,14 +57,14 @@ class AIEventProcessor(
      */
     fun initialize() {
         if (initialized) {
-            com.assistant.core.utils.LogManager.aiSession(
+            LogManager.aiSession(
                 "AIEventProcessor.initialize() called but already initialized, ignoring",
                 "DEBUG"
             )
             return
         }
 
-        com.assistant.core.utils.LogManager.aiSession(
+        LogManager.aiSession(
             "AIEventProcessor.initialize() starting event loop",
             "INFO"
         )
@@ -1707,7 +1707,7 @@ class AIEventProcessor(
     }
 
     fun shutdown() {
-        com.assistant.core.utils.LogManager.aiSession(
+        LogManager.aiSession(
             "AIEventProcessor.shutdown() called, canceling all jobs",
             "INFO"
         )

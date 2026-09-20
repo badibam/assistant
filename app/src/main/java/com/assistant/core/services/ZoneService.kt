@@ -12,6 +12,7 @@ import com.assistant.core.utils.DataChangeNotifier
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.json.JSONArray
+import com.assistant.core.utils.LogManager
 
 /**
  * Zone Service - Core service for zone operations
@@ -72,7 +73,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         // Parse group if provided (zone group assignment for MainScreen organization)
         val group = params.optString("group").takeIf { it.isNotBlank() }
 
-        com.assistant.core.utils.LogManager.service("ZoneService.handleCreate - params has group: ${params.has("group")}, group value: '$group'", "DEBUG")
+        LogManager.service("ZoneService.handleCreate - params has group: ${params.has("group")}, group value: '$group'", "DEBUG")
 
         // Get current max order_index for proper ordering
         if (token.isCancelled) return OperationResult.cancelled()
@@ -88,7 +89,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             group = group
         )
 
-        com.assistant.core.utils.LogManager.service("ZoneService.handleCreate - Created zone with group: '${newZone.group}'", "DEBUG")
+        LogManager.service("ZoneService.handleCreate - Created zone with group: '${newZone.group}'", "DEBUG")
 
         if (token.isCancelled) return OperationResult.cancelled()
 
@@ -146,7 +147,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             existingZone.group // Keep existing value if not provided
         }
 
-        com.assistant.core.utils.LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
+        LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
 
         val updatedZone = existingZone.copy(
             name = params.optString("name").takeIf { it.isNotBlank() } ?: existingZone.name,
@@ -156,7 +157,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             updated_at = System.currentTimeMillis()
         )
 
-        com.assistant.core.utils.LogManager.service("ZoneService.handleUpdate - Updated zone with group: '${updatedZone.group}'", "DEBUG")
+        LogManager.service("ZoneService.handleUpdate - Updated zone with group: '${updatedZone.group}'", "DEBUG")
 
         zoneDao.updateZone(updatedZone)
 
