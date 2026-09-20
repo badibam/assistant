@@ -46,14 +46,13 @@ class AICommandProcessor(private val context: Context) {
             if (command.type == "TOOL_DATA") {
                 val fields = command.params["fields"]
                 if (fields == null) {
-                    val errorMsg = "Command[$index] (TOOL_DATA): missing required 'fields' parameter. " +
-                        "TOOL_DATA queries must explicitly specify which fields to retrieve. " +
-                        "Example: \"fields\": [\"id\", \"timestamp\", \"name\", \"data.value\", \"custom_fields.notes\"]"
+                    val errorMsg = s.shared("ai_error_command_prefix")
+                        .format(index, command.type, s.shared("ai_error_tool_data_fields_missing"))
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
                 } else if (fields !is List<*> || (fields as List<*>).isEmpty()) {
-                    val errorMsg = "Command[$index] (TOOL_DATA): 'fields' must be a non-empty array. " +
-                        "Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]"
+                    val errorMsg = s.shared("ai_error_command_prefix")
+                        .format(index, command.type, s.shared("ai_error_tool_data_fields_not_array"))
                     validationErrors.add(errorMsg)
                     LogManager.aiService(errorMsg, "WARN")
                 }
@@ -124,14 +123,15 @@ class AICommandProcessor(private val context: Context) {
                 // THIRD: Transform to executable command
                 val executableCommand = transformActionCommand(enrichedCommand)
                 if (executableCommand == null) {
-                    errors.add("Command[$index] (${command.type}): transformation returned null")
+                    errors.add(s.shared("ai_error_command_prefix")
+                        .format(index, command.type, s.shared("ai_error_command_transformation_null")))
                 } else {
                     executableCommands.add(executableCommand)
                 }
             } catch (e: Exception) {
-                val error = e.message ?: "Unknown error"
+                val error = e.message ?: s.shared("ai_error_command_unexpected")
                 LogManager.aiService("Failed to transform action command ${command.type}: $error", "ERROR", e)
-                errors.add("Command[$index] (${command.type}): $error")
+                errors.add(s.shared("ai_error_command_prefix").format(index, command.type, error))
             }
         }
 

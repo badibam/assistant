@@ -3,6 +3,7 @@ package com.assistant.core.ai.processing
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
 
 /**
@@ -40,6 +41,7 @@ object CommandTransformer {
     ): TransformationResult {
         LogManager.aiPrompt("CommandTransformer transforming ${commands.size} commands", "DEBUG")
 
+        val s = Strings.`for`(context = context)
         val executableCommands = mutableListOf<ExecutableCommand>()
         val errors = mutableListOf<String>()
 
@@ -63,9 +65,9 @@ object CommandTransformer {
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
                     "CURRENT_DATETIME" -> transformCurrentDatetimeCommand(command)
                     else -> {
-                        val error = "Type inconnu: ${command.type}"
+                        val error = s.shared("ai_error_command_unknown_type").format(command.type)
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
-                        errors.add("Command[$index] (${command.type}): $error")
+                        errors.add(s.shared("ai_error_command_prefix").format(index, command.type, error))
                         null
                     }
                 }
@@ -73,15 +75,15 @@ object CommandTransformer {
                 if (executableCommand == null && command.type != "APP_STATE") {
                     // Command returned null (validation failed inside transform function)
                     // Error already logged by the specific transform function
-                    errors.add("Command[$index] (${command.type}): paramètres invalides ou manquants")
+                    errors.add(s.shared("ai_error_command_prefix").format(index, command.type, s.shared("ai_error_command_invalid_params")))
                 } else {
                     executableCommand?.let { executableCommands.add(it) }
                 }
 
             } catch (e: Exception) {
-                val error = e.message ?: "Unknown error"
+                val error = e.message ?: s.shared("ai_error_command_unexpected")
                 LogManager.aiPrompt("Failed to transform command ${command.type}: $error", "ERROR", e)
-                errors.add("Command[$index] (${command.type}): $error")
+                errors.add(s.shared("ai_error_command_prefix").format(index, command.type, error))
             }
         }
 

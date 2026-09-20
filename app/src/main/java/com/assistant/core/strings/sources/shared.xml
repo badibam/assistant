@@ -155,6 +155,15 @@
     <string name="ai_error_validation_request_without_actions">validationRequest présent sans actionCommands. validationRequest n\'est autorisé qu\'avec actionCommands.</string>
     <string name="ai_error_posttext_without_actions">postText présent sans actionCommands. postText n\'est autorisé qu\'avec actionCommands.</string>
 
+    <!-- AI Errors - Command transformation -->
+    <string name="ai_error_command_prefix">Commande[%1$d] (%2$s) : %3$s</string>
+    <string name="ai_error_command_unknown_type">Type de commande inconnu : %1$s</string>
+    <string name="ai_error_command_invalid_params">Paramètres invalides ou manquants</string>
+    <string name="ai_error_command_transformation_null">La transformation n\'a produit aucune commande exécutable</string>
+    <string name="ai_error_command_unexpected">Erreur inattendue</string>
+    <string name="ai_error_tool_data_fields_missing">Paramètre \'fields\' obligatoire manquant. Une requête TOOL_DATA doit lister explicitement les champs à récupérer. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\", \"custom_fields.notes\"]</string>
+    <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
+
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
     <string name="ai_data_tool">données outil</string>
