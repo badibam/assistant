@@ -87,7 +87,7 @@ fun NotesScreen(
     LaunchedEffect(toolInstance, refreshTrigger) {
         if (toolInstance != null) {
             val params = mapOf(
-                "toolInstanceId" to toolInstanceId,
+                "tool_instance_id" to toolInstanceId,
                 "limit" to 100
             )
 
@@ -389,7 +389,7 @@ private suspend fun moveNoteUp(
         // Update note position in database
         val params = mutableMapOf<String, Any>(
             "id" to note.id,
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
             "data" to JSONObject().apply {
                 put("content", note.content)
                 put("position", newPosition)
@@ -404,7 +404,7 @@ private suspend fun moveNoteUp(
             // Update target note position
             val targetParams = mutableMapOf<String, Any>(
                 "id" to targetNote.id,
-                "toolInstanceId" to toolInstanceId,
+                "tool_instance_id" to toolInstanceId,
                 "data" to JSONObject().apply {
                     put("content", targetNote.content)
                     put("position", targetNewPosition)
@@ -452,7 +452,7 @@ private suspend fun moveNoteDown(
         // Update note position in database
         val params = mutableMapOf<String, Any>(
             "id" to note.id,
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
             "data" to JSONObject().apply {
                 put("content", note.content)
                 put("position", newPosition)
@@ -467,7 +467,7 @@ private suspend fun moveNoteDown(
             // Update target note position
             val targetParams = mutableMapOf<String, Any>(
                 "id" to targetNote.id,
-                "toolInstanceId" to toolInstanceId,
+                "tool_instance_id" to toolInstanceId,
                 "data" to JSONObject().apply {
                     put("content", targetNote.content)
                     put("position", targetNewPosition)
@@ -506,7 +506,7 @@ private suspend fun createNote(
     onSuccess: () -> Unit
 ) {
     val params = mutableMapOf<String, Any>(
-        "toolInstanceId" to toolInstanceId,
+        "tool_instance_id" to toolInstanceId,
         "tooltype" to "notes",
         "name" to "Note",
         "timestamp" to System.currentTimeMillis(),
@@ -539,7 +539,7 @@ private suspend fun updateNote(
 ) {
     val params = mutableMapOf<String, Any>(
         "id" to note.id,
-        "toolInstanceId" to note.id, // Will be corrected by backend
+        "tool_instance_id" to note.id, // Will be corrected by backend
         "data" to JSONObject().apply {
             put("content", newContent.trim())
             put("position", note.position)

@@ -476,7 +476,7 @@ fun TrackingConfigScreen(
                     val deleteResult = coordinator.processUserAction(
                         "tool_data.delete_all",
                         mapOf(
-                            "toolInstanceId" to existingToolId
+                            "tool_instance_id" to existingToolId
                         )
                     )
                     LogManager.tracking("Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")

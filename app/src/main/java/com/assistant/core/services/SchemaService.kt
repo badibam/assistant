@@ -58,7 +58,7 @@ class SchemaService(private val context: Context) : ExecutableService {
             return OperationResult.error("Schema ID is required")
         }
 
-        val toolInstanceId = params.optString("toolInstanceId", null)
+        val toolInstanceId = params.optString("tool_instance_id", null)
         LogManager.service("SchemaService.get() called with schemaId='$schemaId', toolInstanceId='$toolInstanceId'")
 
         val schema = getSchemaById(schemaId, toolInstanceId)
@@ -83,7 +83,7 @@ class SchemaService(private val context: Context) : ExecutableService {
 
             // Include toolInstanceId if provided (needed for deduplication key in loadHistoricalSchemas)
             if (toolInstanceId != null) {
-                resultData["toolInstanceId"] = toolInstanceId
+                resultData["tool_instance_id"] = toolInstanceId
             }
 
             return OperationResult.success(resultData)

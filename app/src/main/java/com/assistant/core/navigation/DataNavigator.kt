@@ -154,7 +154,7 @@ class DataNavigator(private val context: Context) {
             val coordinator = Coordinator(context)
             val result = coordinator.processUserAction(
                 action = "tool_data.get",
-                params = mapOf("toolInstanceId" to toolInstanceId)
+                params = mapOf("tool_instance_id" to toolInstanceId)
             )
 
             if (result.status != CommandStatus.SUCCESS) {

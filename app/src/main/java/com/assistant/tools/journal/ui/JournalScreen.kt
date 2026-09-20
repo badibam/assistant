@@ -78,7 +78,7 @@ fun JournalScreen(
     LaunchedEffect(toolInstance, refreshTrigger) {
         if (toolInstance != null) {
             val params = mapOf(
-                "toolInstanceId" to toolInstanceId,
+                "tool_instance_id" to toolInstanceId,
                 "limit" to 100
             )
 
@@ -296,7 +296,7 @@ fun JournalScreen(
                             // Create entry immediately in DB with default values
                             // Note: content is optional
                             val params = mapOf(
-                                "toolInstanceId" to toolInstanceId,
+                                "tool_instance_id" to toolInstanceId,
                                 "tooltype" to "journal",
                                 "schema_id" to "journal_data",
                                 "name" to s.tool("placeholder_untitled"),

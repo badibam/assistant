@@ -135,7 +135,7 @@ class ActionValidator(private val context: Context) {
      * Validate tool data (tool_data.create/update/batch_*)
      *
      * Expects params to contain:
-     * - toolInstanceId: String (tool instance ID)
+     * - tool_instance_id: String (tool instance ID)
      * - tooltype: String (tooltype name)
      * - schema_id: String (schema ID for validation)
      * - data: JSONObject or Map (for single operations)
@@ -247,7 +247,7 @@ class ActionValidator(private val context: Context) {
         val fullDataMap = mutableMapOf<String, Any>()
 
         // Add base fields from params
-        params["toolInstanceId"]?.let { fullDataMap["tool_instance_id"] = it }
+        params["tool_instance_id"]?.let { fullDataMap["tool_instance_id"] = it }
         params["tooltype"]?.let { fullDataMap["tooltype"] = it }
         params["name"]?.let { fullDataMap["name"] = it }
         params["timestamp"]?.let { fullDataMap["timestamp"] = it }
@@ -292,7 +292,7 @@ class ActionValidator(private val context: Context) {
         }
 
         // Get base fields from params (shared across all entries)
-        val toolInstanceId = params["toolInstanceId"]
+        val toolInstanceId = params["tool_instance_id"]
         val tooltype = params["tooltype"]
 
         // Validate each entry in batch

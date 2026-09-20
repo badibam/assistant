@@ -245,7 +245,7 @@ Récupère les données d\'un outil spécifique (templates/configurations dans t
 
 - `id` (string, **requis**) : tool_instance_id
 - `fields` (array, **requis**) : Liste des champs à récupérer. **TOUS les champs doivent être explicitement demandés**.
-  - **Champs système** : `"id"`, `"timestamp"`, `"name"`, `"createdAt"`, `"updatedAt"`, `"toolInstanceId"`, `"tooltype"`
+  - **Champs système** : `"id"`, `"timestamp"`, `"name"`, `"createdAt"`, `"updatedAt"`, `"tool_instance_id"`, `"tooltype"`
   - **Champs data** : `"data.value"`, `"data.text"`, `"data.quantity"`, etc. (selon le type d\'outil)
   - **Champs custom** : `"custom_fields.notes"`, `"custom_fields.mood"`, etc. (selon la config)
   - **Pas de wildcard** : chaque champ doit être listé individuellement
@@ -337,7 +337,7 @@ Crée des données en batch.
 
 **Paramètres** :
 
-- `toolInstanceId` (string, **requis**)
+- `tool_instance_id` (string, **requis**)
 - `tooltype` (string, **requis**)
 - `entries` (array, **requis**) : Liste des entrées à créer
   - Chaque entrée : `{ name?, timestamp?, data }`
@@ -353,7 +353,7 @@ Met à jour des données en batch.
 
 **Paramètres** :
 
-- `toolInstanceId` (string, **requis**)
+- `tool_instance_id` (string, **requis**)
 - `tooltype` (string, **requis**)
 - `entries` (array, **requis**) : Liste des entrées à modifier
   - Chaque entrée : `{ id, data?, name?, timestamp? }`
@@ -373,7 +373,7 @@ Supprime des données en batch.
 
 **Paramètres** :
 
-- `toolInstanceId` (string, **requis**)
+- `tool_instance_id` (string, **requis**)
 - `tooltype` (string, **requis**)
 - `ids` (array, **requis**) : Liste des IDs à supprimer
 
@@ -591,7 +591,7 @@ Retourne jusqu\'à 50 entrées incluant custom_fields si définis :
 
 ### Exemple 4 : Récupérer un schéma
 
-**Config schema** (toolInstanceId optionnel) :
+**Config schema** (tool_instance_id optionnel) :
 ```json
 {
   "type": "SCHEMA",
@@ -601,18 +601,18 @@ Retourne jusqu\'à 50 entrées incluant custom_fields si définis :
 }
 ```
 
-**Data schema** (toolInstanceId requis pour custom_fields) :
+**Data schema** (tool_instance_id requis pour custom_fields) :
 ```json
 {
   "type": "SCHEMA",
   "params": {
     "id": "journal_data",
-    "toolInstanceId": "tools_abc123"
+    "tool_instance_id": "tools_abc123"
   }
 }
 ```
 
-Retourne le schéma JSON complet avec tous les champs, contraintes et custom_fields (si toolInstanceId fourni).
+Retourne le schéma JSON complet avec tous les champs, contraintes et custom_fields (si tool_instance_id fourni).
 
 ### Exemple 5 : Outils d\'une zone spécifique
 
@@ -652,7 +652,7 @@ Retourne toutes les entrées de la période. Ensuite, extrait uniquement les IDs
 {
   "type": "CREATE_DATA",
   "params": {
-    "toolInstanceId": "tracking_weight_123",
+    "tool_instance_id": "tracking_weight_123",
     "tooltype": "tracking",
     "entries": [
       {
@@ -678,7 +678,7 @@ Crée 2 entrées de poids avec custom_fields. Le schema_id est automatiquement d
 {
   "type": "UPDATE_DATA",
   "params": {
-    "toolInstanceId": "tracking_weight_123",
+    "tool_instance_id": "tracking_weight_123",
     "tooltype": "tracking",
     "entries": [
       {
@@ -700,7 +700,7 @@ Seuls les champs fournis sont mis à jour.
 {
   "type": "DELETE_DATA",
   "params": {
-    "toolInstanceId": "tracking_weight_123",
+    "tool_instance_id": "tracking_weight_123",
     "tooltype": "tracking",
     "ids": ["entry_456", "entry_789"]
   }
@@ -767,7 +767,7 @@ Format : `{tooltype}_data_{variant}` (ex: `tracking_data_numeric`)
 
 ### Récupération des schémas
 
-**Config schemas** (toolInstanceId optionnel) :
+**Config schemas** (tool_instance_id optionnel) :
 ```json
 {
   "type": "SCHEMA",
@@ -775,18 +775,18 @@ Format : `{tooltype}_data_{variant}` (ex: `tracking_data_numeric`)
 }
 ```
 
-**Data schemas** (toolInstanceId **requis**) :
+**Data schemas** (tool_instance_id **requis**) :
 ```json
 {
   "type": "SCHEMA",
   "params": {
     "id": "journal_data",
-    "toolInstanceId": "tools_abc123"
+    "tool_instance_id": "tools_abc123"
   }
 }
 ```
 
-Le `toolInstanceId` enrichit le schéma avec les custom fields de l\'instance. Le schéma retourné contient la structure JSON complète avec tous les champs requis, optionnels et leurs contraintes.]]></string>
+Le `tool_instance_id` enrichit le schéma avec les custom fields de l\'instance. Le schéma retourné contient la structure JSON complète avec tous les champs requis, optionnels et leurs contraintes.]]></string>
 
     <!-- D.2 Relation IDs [DEGRÉ 2] -->
     <string name="ai_chunk_validation_schema_relation"><![CDATA[## Relation entre schema_id et data_schema_id

@@ -94,7 +94,7 @@ class MessageService(private val context: Context) : ExecutableService {
         }
 
         val createResult = coordinator.processUserAction("tool_data.create", mapOf(
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
             "tooltype" to "messages",
             "schema_id" to "messages_data",
             "name" to params.optString("name", ""),

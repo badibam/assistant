@@ -459,7 +459,7 @@ class ValidationResolver(private val context: Context) {
      */
     private fun extractToolInstanceId(action: DataCommand): String {
         return action.params["tool_instance_id"] as? String
-            ?: action.params["toolInstanceId"] as? String
+            ?: action.params["tool_instance_id"] as? String
             ?: action.params["id"] as? String
             ?: ""
     }

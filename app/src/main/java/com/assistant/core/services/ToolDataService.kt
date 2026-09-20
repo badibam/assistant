@@ -52,7 +52,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun createEntry(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         val tooltype = params.optString("tooltype")
         val name = params.optString("name", null)
         val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
@@ -317,7 +317,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Debug logging
         LogManager.service("ToolDataService.getEntries - Received params: $params")
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         LogManager.service("ToolDataService.getEntries - toolInstanceId='$toolInstanceId' (length=${toolInstanceId.length})")
         LogManager.service("ToolDataService.getEntries - params keys: ${params.keys().asSequence().toList()}")
 
@@ -420,7 +420,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
                     val fullEntry = mapOf(
                         "id" to entity.id,
-                        "toolInstanceId" to entity.toolInstanceId,
+                        "tool_instance_id" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
                         "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
                         "name" to entity.name,
@@ -478,7 +478,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             data = mapOf(
                 "entry" to mapOf(
                     "id" to entity.id,
-                    "toolInstanceId" to entity.toolInstanceId,
+                    "tool_instance_id" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
                     "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
                     "name" to entity.name,
@@ -494,7 +494,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun getStats(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         if (toolInstanceId.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
@@ -513,7 +513,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun deleteAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         if (toolInstanceId.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_tool_instance_id"))
         }
@@ -536,7 +536,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         return OperationResult.success(mapOf(
             "deleted_count" to deletedCount,
-            "toolInstanceId" to toolInstanceId
+            "tool_instance_id" to toolInstanceId
         ))
     }
 
@@ -547,7 +547,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun batchCreateEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         val tooltype = params.optString("tooltype")
         val entriesArray = params.optJSONArray("entries")
 
@@ -570,7 +570,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
                 // Build params for single create
                 val singleParams = JSONObject().apply {
-                    put("toolInstanceId", toolInstanceId)
+                    put("tool_instance_id", toolInstanceId)
                     put("tooltype", tooltype)
                     put("data", entryJson.optJSONObject("data") ?: JSONObject())
                     if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
@@ -834,7 +834,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
     private suspend fun removeCustomFieldFromAllEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val toolInstanceId = params.optString("toolInstanceId")
+        val toolInstanceId = params.optString("tool_instance_id")
         val fieldName = params.optString("fieldName")
 
         if (toolInstanceId.isEmpty() || fieldName.isEmpty()) {
@@ -901,7 +901,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         return when (operation) {
             "create", "batch_create" -> {
-                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInstanceId = params.optString("tool_instance_id")
                 val toolInfo = getToolInfo(toolInstanceId, context)
 
                 val count = if (operation == "batch_create") {
@@ -915,7 +915,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 )
             }
             "update", "batch_update" -> {
-                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInstanceId = params.optString("tool_instance_id")
                 val toolInfo = getToolInfo(toolInstanceId, context)
 
                 val count = if (operation == "batch_update") {
@@ -929,7 +929,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 )
             }
             "delete", "batch_delete" -> {
-                val toolInstanceId = params.optString("toolInstanceId")
+                val toolInstanceId = params.optString("tool_instance_id")
                 val toolInfo = getToolInfo(toolInstanceId, context)
 
                 val count = if (operation == "batch_delete") {

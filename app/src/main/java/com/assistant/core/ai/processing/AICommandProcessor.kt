@@ -176,11 +176,6 @@ class AICommandProcessor(private val context: Context) {
     /**
      * Transform action command types to executable commands
      * Maps abstract AI action types to concrete resource.operation format
-     *
-     * Note: Parameter naming inconsistency exists between services:
-     * - tools.* uses tool_instance_id (snake_case)
-     * - tool_data.* uses toolInstanceId (camelCase)
-     * This will be unified in a future refactoring
      */
     private suspend fun transformActionCommand(command: DataCommand): ExecutableCommand? {
         return when (command.type) {
@@ -361,10 +356,10 @@ class AICommandProcessor(private val context: Context) {
      * @return Enriched params with schema_id added to each entry
      */
     private suspend fun enrichWithSchemaId(params: Map<String, Any>): Map<String, Any> {
-        val toolInstanceId = params["toolInstanceId"] as? String
+        val toolInstanceId = params["tool_instance_id"] as? String
 
         if (toolInstanceId.isNullOrEmpty()) {
-            LogManager.aiService("Cannot enrich schema_id: toolInstanceId missing", "ERROR")
+            LogManager.aiService("Cannot enrich schema_id: tool_instance_id missing", "ERROR")
             return params
         }
 
@@ -550,7 +545,7 @@ class AICommandProcessor(private val context: Context) {
      * @return Command with tooltype injected at root level
      */
     private suspend fun injectTooltypeIfNeeded(command: DataCommand): DataCommand {
-        val toolInstanceId = command.params["toolInstanceId"] as? String
+        val toolInstanceId = command.params["tool_instance_id"] as? String
             ?: return command
 
         // Fetch tool instance to get tooltype

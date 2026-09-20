@@ -110,7 +110,7 @@ object JournalToolType : ToolTypeContract {
      * - name: Entry title (required via BaseSchemas)
      * - timestamp: Entry date/time (modifiable, required)
      * - data.content: Text content without length limit (optional)
-     * - custom_fields: Custom fields defined in tool instance config (if toolInstanceId provided)
+     * - custom_fields: Custom fields defined in tool instance config (if tool_instance_id provided)
      */
     private fun createJournalDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "journal", context = context)

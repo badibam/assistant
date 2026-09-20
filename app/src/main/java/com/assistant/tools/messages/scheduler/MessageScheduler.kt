@@ -272,7 +272,7 @@ object MessageScheduler : ToolScheduler {
         }
 
         val result = coordinator.processUserAction("tool_data.create", mapOf(
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
             "tooltype" to "messages",
             "schema_id" to "messages_data",
             "name" to name,
@@ -444,7 +444,7 @@ object MessageScheduler : ToolScheduler {
         timezone: ZoneId
     ): List<PendingOccurrence> {
         val result = coordinator.processUserAction("tool_data.get", mapOf(
-            "toolInstanceId" to toolInstanceId,
+            "tool_instance_id" to toolInstanceId,
             "status" to "pending"
         ))
 

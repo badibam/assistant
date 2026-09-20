@@ -145,9 +145,9 @@ object CommandTransformer {
         val params = mutableMapOf<String, Any>("id" to schemaId)
 
         // Add toolInstanceId if present (required for data/execution schemas with custom fields)
-        command.params["toolInstanceId"]?.let {
-            params["toolInstanceId"] = it
-            LogManager.aiPrompt("SCHEMA command includes toolInstanceId for enrichment", "VERBOSE")
+        command.params["tool_instance_id"]?.let {
+            params["tool_instance_id"] = it
+            LogManager.aiPrompt("SCHEMA command includes tool_instance_id for enrichment", "VERBOSE")
         }
 
         return ExecutableCommand(
@@ -182,7 +182,7 @@ object CommandTransformer {
             return null
         }
 
-        val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
+        val params = mutableMapOf<String, Any>("tool_instance_id" to toolInstanceId)
 
         // Apply temporal parameter resolution
         applyTemporalParameters(params, command, s, reference)

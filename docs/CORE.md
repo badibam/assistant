@@ -24,9 +24,9 @@ Guide technique de l'architecture système centrale.
 3. **Execute** : service.execute("create", params, token)
 
 ### Nommage des Paramètres par Service
-**ATTENTION** : Chaque service utilise ses propres conventions :
-- **tools.*** (ToolInstanceService) : tool_instance_id (underscore)
-- **tool_data.*** (ToolDataService) : toolInstanceId (camelCase)
+Les clés qui traversent le dispatcher sont en snake_case, quelle que soit la ressource : `tool_instance_id`, `zone_id`, `schema_id`. Le camelCase reste interne à Kotlin (noms de variables, propriétés d'entités) et ne franchit pas la frontière.
+
+Unification en cours : `tooltype` et une série de clés de l'IA (`sessionId`, `providerId`, `automationId`, temps et compteurs de tokens) sont encore en camelCase.
 
 ### Opérations CRUD Complètes ToolDataService
 **Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete
@@ -289,7 +289,7 @@ LogManager.schema(), .coordination(), .tracking(), .database() etc. avec niveau 
 ### Guide de Debugging Service Resolution
 **Problèmes courants** :
 1. **"Service not found"** : Ajouter logs dans service
-2. **"Tool instance ID is required"** : Vérifier tool_instance_id vs toolInstanceId
+2. **"Tool instance ID is required"** : Vérifier que la clé est bien `tool_instance_id`
 3. **Mauvais routing** : CommandDispatcher logs automatiquement
 4. **LaunchedEffect ne se redéclenche pas** : Ajouter TOUTES les variables vérifiées aux dépendances
 

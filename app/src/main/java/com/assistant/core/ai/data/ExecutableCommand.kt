@@ -11,7 +11,7 @@ package com.assistant.core.ai.data
  *
  * Examples:
  * - resource="zones", operation="create", params=mapOf("name" to "Santé")
- * - resource="tool_data", operation="get", params=mapOf("toolInstanceId" to "123")
+ * - resource="tool_data", operation="get", params=mapOf("tool_instance_id" to "123")
  * - resource="tools", operation="list", params=mapOf("zone_id" to "456")
  */
 data class ExecutableCommand(

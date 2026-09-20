@@ -286,7 +286,7 @@ class EnrichmentProcessor(
     }
 
     private fun generateUseSummary(config: JSONObject): String {
-        val toolInstanceId = config.optString("toolInstanceId", "")
+        val toolInstanceId = config.optString("tool_instance_id", "")
         val operation = config.optString("operation", "modifier")
         // TODO: resolve tool instance name from ID for better readability
         return "$operation entrées $toolInstanceId"
@@ -304,7 +304,7 @@ class EnrichmentProcessor(
     }
 
     private fun generateModifyConfigSummary(config: JSONObject): String {
-        val toolInstanceId = config.optString("toolInstanceId", "")
+        val toolInstanceId = config.optString("tool_instance_id", "")
         val aspect = config.optString("aspect", "configuration")
         // TODO: resolve tool instance name from ID for better readability
         return "modifier $aspect de $toolInstanceId"
@@ -509,11 +509,11 @@ class EnrichmentProcessor(
                         // Data schema resource (requires toolInstanceId for custom fields enrichment)
                         if ("data_schema" in selectedResources && dataSchemaId.isNotEmpty()) {
                             queries.add(DataCommand(
-                                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId, "toolInstanceId" to toolInstanceId)),
+                                id = buildQueryId("schema_data", mapOf("id" to dataSchemaId, "tool_instance_id" to toolInstanceId)),
                                 type = "SCHEMA",
                                 params = mapOf(
                                     "id" to dataSchemaId,
-                                    "toolInstanceId" to toolInstanceId
+                                    "tool_instance_id" to toolInstanceId
                                 ),
                                 isRelative = isRelative
                             ))
@@ -536,7 +536,7 @@ class EnrichmentProcessor(
     ): List<DataCommand> {
         LogManager.aiEnrichment("generateUseQueries() called with isRelative=$isRelative", "DEBUG")
 
-        val toolInstanceId = config.optString("toolInstanceId", "")
+        val toolInstanceId = config.optString("tool_instance_id", "")
         if (toolInstanceId.isEmpty()) return emptyList()
 
         val queries = mutableListOf<DataCommand>()
@@ -598,7 +598,7 @@ class EnrichmentProcessor(
     private suspend fun generateModifyConfigQueries(config: JSONObject, isRelative: Boolean): List<DataCommand> {
         LogManager.aiEnrichment("generateModifyConfigQueries() called with isRelative=$isRelative", "DEBUG")
 
-        val toolInstanceId = config.optString("toolInstanceId", "")
+        val toolInstanceId = config.optString("tool_instance_id", "")
         if (toolInstanceId.isEmpty()) return emptyList()
 
         val queries = mutableListOf<DataCommand>()

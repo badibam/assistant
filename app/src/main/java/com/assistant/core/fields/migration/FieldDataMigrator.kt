@@ -87,7 +87,7 @@ object FieldDataMigrator {
             val loadResult = coordinator.processUserAction(
                 "tool_data.get",
                 mapOf(
-                    "toolInstanceId" to toolInstanceId
+                    "tool_instance_id" to toolInstanceId
                     // No pagination in V1 - load all entries
                 )
             )
@@ -208,7 +208,7 @@ object FieldDataMigrator {
             val updateResult = coordinator.processUserAction(
                 "tool_data.batch_update",
                 mapOf(
-                    "toolInstanceId" to toolInstanceId,
+                    "tool_instance_id" to toolInstanceId,
                     "entries" to entriesToUpdate  // batch_update expects "entries" parameter
                     // partialValidation=true is applied automatically for batch_update
                 )

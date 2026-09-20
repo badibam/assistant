@@ -144,7 +144,7 @@ class CommandExecutor(private val context: Context) {
                 val schemaCommandResults = missingSchemas.map { schema ->
                     val params = org.json.JSONObject().apply {
                         put("id", schema.schemaId)
-                        schema.toolInstanceId?.let { put("toolInstanceId", it) }
+                        schema.toolInstanceId?.let { put("tool_instance_id", it) }
                     }
                     val details = schemaService.verbalize("get", params, context)
 
@@ -154,7 +154,7 @@ class CommandExecutor(private val context: Context) {
                         details = details,
                         data = mapOf(
                             "schema_id" to schema.schemaId,
-                            "toolInstanceId" to schema.toolInstanceId
+                            "tool_instance_id" to schema.toolInstanceId
                         ),
                         error = null,
                         isActionCommand = false
@@ -196,7 +196,7 @@ class CommandExecutor(private val context: Context) {
             // Check for schema deduplication BEFORE execution
             if (command.resource == "schemas" && command.operation == "get" && sessionId != null) {
                 val schemaId = command.params["id"] as? String
-                val toolInstanceId = command.params["toolInstanceId"] as? String
+                val toolInstanceId = command.params["tool_instance_id"] as? String
 
                 if (schemaId != null) {
                     // Generate composite key for data/execution schemas (includes toolInstanceId)
@@ -497,18 +497,18 @@ class CommandExecutor(private val context: Context) {
      * Filter query result data to essential metadata (avoid DB bloat)
      *
      * Removes large content fields while keeping identifiers needed for deduplication:
-     * - schemas: keep schema_id + toolInstanceId (for data/execution schema deduplication)
+     * - schemas: keep schema_id + tool_instance_id (for data/execution schema deduplication)
      * - tools/zones: keep id, name, count fields
      * - Remove large nested objects and arrays
      */
     private fun filterQueryResultData(resource: String, data: Map<String, Any>): Map<String, Any>? {
         return when (resource) {
             "schemas" -> {
-                // Schemas: keep schema_id + toolInstanceId for deduplication, remove large 'content'
-                // toolInstanceId is needed for data/execution schemas (custom_fields enrichment)
+                // Schemas: keep schema_id + tool_instance_id for deduplication, remove large 'content'
+                // tool_instance_id is needed for data/execution schemas (custom_fields enrichment)
                 val filtered = mutableMapOf<String, Any>()
                 data["schema_id"]?.let { filtered["schema_id"] = it }
-                data["toolInstanceId"]?.let { filtered["toolInstanceId"] = it }
+                data["tool_instance_id"]?.let { filtered["tool_instance_id"] = it }
                 if (filtered.isEmpty()) null else filtered
             }
             "zones", "tools", "tool_data" -> {
@@ -620,11 +620,11 @@ class CommandExecutor(private val context: Context) {
             when (command.resource) {
                 "tool_data" -> {
                     // Resolve tool instance name from ID in command params
-                    // Note: UserCommandProcessor transforms "id" → "toolInstanceId"
+                    // Note: UserCommandProcessor transforms "id" → "tool_instance_id"
                     LogManager.aiPrompt("tool_data command params keys: ${command.params.keys}", "VERBOSE")
-                    LogManager.aiPrompt("toolInstanceId=${command.params["toolInstanceId"]}, id=${command.params["id"]}", "VERBOSE")
+                    LogManager.aiPrompt("tool_instance_id=${command.params["tool_instance_id"]}, id=${command.params["id"]}", "VERBOSE")
 
-                    val toolInstanceId = command.params["toolInstanceId"] as? String
+                    val toolInstanceId = command.params["tool_instance_id"] as? String
                         ?: command.params["id"] as? String
 
                     LogManager.aiPrompt("Resolved toolInstanceId: $toolInstanceId", "VERBOSE")
@@ -933,7 +933,7 @@ class CommandExecutor(private val context: Context) {
     private suspend fun buildConfigExtract(command: ExecutableCommand): Map<String, Any>? {
         return try {
             // Extract toolInstanceId from command params
-            val toolInstanceId = command.params["toolInstanceId"] as? String
+            val toolInstanceId = command.params["tool_instance_id"] as? String
                 ?: command.params["id"] as? String
                 ?: return null
 
@@ -1051,7 +1051,7 @@ class CommandExecutor(private val context: Context) {
         val schemaCommands = commands.filter { it.resource == "schemas" && it.operation == "get" }
         for (schemaCommand in schemaCommands) {
             val schemaId = schemaCommand.params["id"] as? String
-            val toolInstanceId = schemaCommand.params["toolInstanceId"] as? String
+            val toolInstanceId = schemaCommand.params["tool_instance_id"] as? String
             if (schemaId != null) {
                 val key = getSchemaDeduplicationKey(schemaId, toolInstanceId)
                 currentBatchSchemas.add(key)
@@ -1060,7 +1060,7 @@ class CommandExecutor(private val context: Context) {
         }
 
         for (command in toolDataCommands) {
-            val toolInstanceId = command.params["toolInstanceId"] as? String
+            val toolInstanceId = command.params["tool_instance_id"] as? String
                 ?: command.params["id"] as? String
 
             if (toolInstanceId == null || toolInstanceId in checkedInstances) {
@@ -1110,7 +1110,7 @@ class CommandExecutor(private val context: Context) {
                     // Fetch the schema content immediately
                     val schemaResult = coordinator.processUserAction("schemas.get", mapOf(
                         "id" to dataSchemaId,
-                        "toolInstanceId" to toolInstanceId
+                        "tool_instance_id" to toolInstanceId
                     ))
 
                     LogManager.aiPrompt("Schema fetch result: isSuccess=${schemaResult.isSuccess}, data keys=${schemaResult.data?.keys}, error=${schemaResult.error}", "DEBUG")
@@ -1200,7 +1200,7 @@ class CommandExecutor(private val context: Context) {
                             commandResult.status == com.assistant.core.ai.data.CommandStatus.SUCCESS) {
                             // Extract schema_id and toolInstanceId from result data
                             val schemaId = commandResult.data?.get("schema_id") as? String
-                            val toolInstanceId = commandResult.data?.get("toolInstanceId") as? String
+                            val toolInstanceId = commandResult.data?.get("tool_instance_id") as? String
                             LogManager.aiPrompt("    schema.get found, schema_id=$schemaId, toolInstanceId=$toolInstanceId, data keys=${commandResult.data?.keys}", "DEBUG")
 
                             if (schemaId != null) {

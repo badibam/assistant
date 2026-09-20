@@ -221,7 +221,7 @@ fun JournalEntryScreen(
                 try {
                     val params = mutableMapOf<String, Any>(
                         "id" to entryId,
-                        "toolInstanceId" to toolInstanceId,
+                        "tool_instance_id" to toolInstanceId,
                         "schema_id" to "journal_data",
                         "name" to title,
                         "timestamp" to timestamp,

@@ -115,7 +115,7 @@ fun TrackingHistory(
                 // Prepare parameters according to period filter
                 val params = mutableMapOf<String, Any>(
                     "operation" to "get_entries",
-                    "toolInstanceId" to toolInstanceId,
+                    "tool_instance_id" to toolInstanceId,
                     "limit" to entriesLimit,
                     "page" to currentPage
                 )
@@ -209,7 +209,7 @@ fun TrackingHistory(
                                     LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(timestamp, context)})")
                                     ToolDataEntity(
                                         id = entryId,
-                                        toolInstanceId = entryMap["toolInstanceId"] as? String ?: "",
+                                        toolInstanceId = entryMap["tool_instance_id"] as? String ?: "",
                                         tooltype = entryMap["tooltype"] as? String ?: "tracking",
                                         timestamp = timestamp,
                                         name = entryMap["name"] as? String,
