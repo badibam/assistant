@@ -9,8 +9,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-- Une erreur de l'API IA qui ne contient pas « provider » ou « configured » (429, 529, crédit épuisé, délai dépassé) est classée erreur réseau : une automation réessaie alors toutes les 30 s sans fin, prompt complet à chaque fois (`AIEventProcessor.kt:599`, `:648`, `:972`). Pas la cause de l'incident du 2026-09-18, mais le même genre de facture.
-
 Les huit points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vérifié ou soupçon). Les deux à trancher en priorité :
 
 - Vérifier si l'event sourcing existe réellement : `docs/DATA.md` l'annonce obligatoire, aucun event store n'a été trouvé dans les chemins d'écriture lus. Si c'est une aspiration, corriger la doc.

@@ -235,7 +235,8 @@ object AIStateMachine {
             // ==================== Errors & Retry ====================
 
             is AIEvent.ProviderErrorOccurred -> {
-                // Provider error - permanent failure (not configured, invalid config, etc.)
+                // The provider was reached and the call will not succeed by being repeated:
+                // bad config, or a refusal for now (rate limit, overload, exhausted credit).
                 // CHAT: return to IDLE (session stays active, user can configure provider)
                 // AUTOMATION: close session with ERROR reason
                 if (state.sessionType == SessionType.AUTOMATION) {

@@ -55,7 +55,8 @@ class AIClient(private val context: Context) {
                         return@withContext AIResponse(
                             success = false,
                             content = "",
-                            errorMessage = s.shared("ai_error_no_provider_configured")
+                            errorMessage = s.shared("ai_error_no_provider_configured"),
+                            failure = AIFailure.CONFIG
                         )
                     }
 
@@ -65,7 +66,8 @@ class AIClient(private val context: Context) {
                         return@withContext AIResponse(
                             success = false,
                             content = "",
-                            errorMessage = s.shared("ai_error_no_provider_configured")
+                            errorMessage = s.shared("ai_error_no_provider_configured"),
+                            failure = AIFailure.CONFIG
                         )
                     }
 
@@ -75,7 +77,8 @@ class AIClient(private val context: Context) {
                         return@withContext AIResponse(
                             success = false,
                             content = "",
-                            errorMessage = s.shared("ai_error_no_provider_configured")
+                            errorMessage = s.shared("ai_error_no_provider_configured"),
+                            failure = AIFailure.CONFIG
                         )
                     }
 
@@ -90,7 +93,8 @@ class AIClient(private val context: Context) {
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_found").format(effectiveProviderId)
+                        errorMessage = s.shared("ai_error_provider_not_found").format(effectiveProviderId),
+                        failure = AIFailure.CONFIG
                     )
                 }
 
@@ -106,7 +110,8 @@ class AIClient(private val context: Context) {
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId)
+                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId),
+                        failure = AIFailure.CONFIG
                     )
                 }
 
@@ -118,7 +123,8 @@ class AIClient(private val context: Context) {
                     return@withContext AIResponse(
                         success = false,
                         content = "",
-                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId)
+                        errorMessage = s.shared("ai_error_provider_not_configured").format(effectiveProviderId),
+                        failure = AIFailure.CONFIG
                     )
                 }
 
@@ -135,7 +141,8 @@ class AIClient(private val context: Context) {
                 AIResponse(
                     success = false,
                     content = "",
-                    errorMessage = s.shared("ai_error_ai_query_failed").format(e.message ?: "")
+                    errorMessage = s.shared("ai_error_ai_query_failed").format(e.message ?: ""),
+                    failure = aiFailureOf(e)
                 )
             }
         }
@@ -305,6 +312,9 @@ data class AIResponse(
     val success: Boolean,
     val content: String,
     val errorMessage: String? = null,
+    // Why the call failed, when it did. Null on success. Read by AIEventProcessor to decide
+    // between waiting for the network and stopping the session.
+    val failure: AIFailure? = null,
     val tokensUsed: Int = 0,
     // Cache metrics (generic, supported by multiple providers, 0 if not supported)
     val cacheWriteTokens: Int = 0,  // Cache write/creation tokens (Claude, OpenAI, etc.)

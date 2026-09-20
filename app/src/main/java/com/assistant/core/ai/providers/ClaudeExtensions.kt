@@ -280,10 +280,13 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     val errorObj = jsonObj["error"]?.jsonObject
     if (errorObj != null) {
         val errorMessage = errorObj["message"]?.jsonPrimitive?.content ?: "Unknown error"
+        // An error object inside a 200 body: the call was answered, so it is a refusal, not a
+        // network problem. The status-based classification does not apply here.
         return AIResponse(
             success = false,
             content = "",
             errorMessage = errorMessage,
+            failure = AIFailure.REFUSED,
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,
@@ -292,13 +295,13 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     }
 
     // A response cut by max_tokens carries incomplete JSON, unusable by the parser.
-    // Wording contains "provider" so AIEventProcessor classifies it as permanent, not network.
     val stopReason = jsonObj["stop_reason"]?.jsonPrimitive?.contentOrNull
     if (stopReason == "max_tokens") {
         return AIResponse(
             success = false,
             content = "",
             errorMessage = "Response truncated (stop_reason: max_tokens). Increase max_tokens in provider config.",
+            failure = AIFailure.CONFIG,
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,
@@ -314,6 +317,7 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
             success = false,
             content = "",
             errorMessage = "Provider response has no text block (stop_reason: $stopReason).",
+            failure = AIFailure.CONFIG,
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,

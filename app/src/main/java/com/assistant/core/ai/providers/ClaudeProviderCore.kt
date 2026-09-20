@@ -391,6 +391,7 @@ internal class ClaudeProviderCore(
                     success = false,
                     content = "",
                     errorMessage = errorMessage,
+                    failure = aiFailureOf(response.code),
                     tokensUsed = 0,
                     cacheWriteTokens = 0,
                     cacheReadTokens = 0,
@@ -403,7 +404,7 @@ internal class ClaudeProviderCore(
             val jsonResponse = Json.parseToJsonElement(responseBody)
             val aiResponse = jsonResponse.toClaudeAIResponse()
 
-            // Refuse a substituted model. Wording contains "provider" so the error is classified as permanent.
+            // Refuse a substituted model: what comes back is not what the config asked for.
             if (api.verifiesAnsweringModel && aiResponse.success) {
                 val requestedModel = configJson.getString("model")
                 val answeringModel = jsonResponse.jsonObject["model"]?.jsonPrimitive?.contentOrNull
@@ -413,6 +414,7 @@ internal class ClaudeProviderCore(
                         success = false,
                         content = "",
                         errorMessage = "Provider answered with model '$answeringModel' instead of '$requestedModel'.",
+                        failure = AIFailure.CONFIG,
                         tokensUsed = 0,
                         cacheWriteTokens = 0,
                         cacheReadTokens = 0,
@@ -436,6 +438,7 @@ internal class ClaudeProviderCore(
                 success = false,
                 content = "",
                 errorMessage = "Claude API error: ${e.message}",
+                failure = aiFailureOf(e),
                 tokensUsed = 0,
                 cacheWriteTokens = 0,
                 cacheReadTokens = 0,

@@ -4,6 +4,8 @@ import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.domain.*
 import com.assistant.core.ai.providers.AIClient
+import com.assistant.core.ai.providers.AIFailure
+import com.assistant.core.ai.providers.aiFailureOf
 import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.PromptManager
 import com.assistant.core.ai.state.AIMessageRepository
@@ -593,15 +595,11 @@ class AIEventProcessor(
 
             } else {
                 val errorMessage = response.errorMessage ?: "Unknown error"
-                LogManager.aiSession("callAI: AI provider error: $errorMessage", "ERROR")
+                val failure = response.failure ?: AIFailure.REFUSED
+                LogManager.aiSession("callAI: AI provider error ($failure): $errorMessage", "ERROR")
 
-                // Detect provider configuration errors (permanent failures)
-                val isProviderError = errorMessage.contains("provider", ignoreCase = true) ||
-                                     errorMessage.contains("configuré", ignoreCase = true) ||
-                                     errorMessage.contains("configured", ignoreCase = true)
-
-                if (isProviderError) {
-                    // Provider not configured or invalid config - permanent error
+                if (failure != AIFailure.NETWORK) {
+                    // The provider was reached: retrying on a timer would bill the same call again
                     // Create system message (visible in UI, excluded from prompt)
                     val systemErrorMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
@@ -624,7 +622,7 @@ class AIEventProcessor(
 
                     emit(AIEvent.ProviderErrorOccurred(errorMessage))
                 } else {
-                    // Network/temporary error
+                    // Nothing reached the provider: waiting for the network costs nothing
                     // Create system message (visible in UI, excluded from prompt)
                     val networkErrorMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
@@ -652,6 +650,10 @@ class AIEventProcessor(
         } catch (e: Exception) {
             LogManager.aiSession("callAI failed: ${e.message}", "ERROR", e)
 
+            // The HTTP call has its own catch inside the client, so what lands here comes from
+            // our own handling around it. Only an I/O error is worth waiting on.
+            val failure = aiFailureOf(e)
+
             // Create system message (visible in UI, excluded from prompt)
             val exceptionErrorMessage = SessionMessage(
                 id = java.util.UUID.randomUUID().toString(),
@@ -662,7 +664,7 @@ class AIEventProcessor(
                 aiMessage = null,
                 aiMessageJson = null,
                 systemMessage = com.assistant.core.ai.data.SystemMessage(
-                    type = SystemMessageType.NETWORK_ERROR,
+                    type = if (failure == AIFailure.NETWORK) SystemMessageType.NETWORK_ERROR else SystemMessageType.PROVIDER_ERROR,
                     commandResults = emptyList(),
                     summary = "${s.shared("ai_error_network_call_failed")}: ${e.message}",
                     formattedData = null
@@ -672,7 +674,11 @@ class AIEventProcessor(
             )
             messageRepository.storeMessage(sessionId, exceptionErrorMessage)
 
-            emit(AIEvent.NetworkErrorOccurred(0))
+            if (failure == AIFailure.NETWORK) {
+                emit(AIEvent.NetworkErrorOccurred(0))
+            } else {
+                emit(AIEvent.ProviderErrorOccurred(e.message ?: "Unknown error"))
+            }
         }
     }
 

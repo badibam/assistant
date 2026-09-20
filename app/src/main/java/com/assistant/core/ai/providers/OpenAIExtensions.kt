@@ -197,10 +197,13 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
     val errorObj = jsonObj["error"] as? JsonObject
     if (errorObj != null) {
         val errorMessage = errorObj["message"]?.jsonPrimitive?.content ?: "Unknown error"
+        // An error object inside a 200 body: the call was answered, so it is a refusal, not a
+        // network problem. The status-based classification does not apply here.
         return AIResponse(
             success = false,
             content = "",
             errorMessage = errorMessage,
+            failure = AIFailure.REFUSED,
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,
@@ -220,6 +223,7 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
             success = false,
             content = "",
             errorMessage = "Response incomplete (status: $status). Increase max_output_tokens in provider config.",
+            failure = AIFailure.CONFIG,
             tokensUsed = 0,
             cacheWriteTokens = 0,
             cacheReadTokens = 0,

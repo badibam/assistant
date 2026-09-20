@@ -418,9 +418,11 @@ Event NetworkErrorOccurred:
 
 **Timeout HTTP** : 2 minutes (OkHttp config providers).
 
+**Nature de l'échec** : `AIResponse.failure` (`AIFailure`), posé par le provider là où l'échec se produit — jamais déduit du texte du message. `NETWORK` (rien n'a atteint le provider) = retry ; `REFUSED` (429, 529, crédit épuisé) et `CONFIG` (clé, modèle, requête) = `ProviderErrorOccurred`, la session s'arrête. Un provider ne formule donc plus ses messages d'erreur pour tomber du bon côté d'un test de chaîne.
+
 **AUTOMATION** :
 - Check réseau avant appel → offline = phase `WAITING_NETWORK_RETRY`
-- Delay 30s + retry infini
+- Delay 30s + retry infini, réservé aux échecs `NETWORK` : tant que rien ne part, rien n'est facturé
 - Watchdog ne timeout pas pendant retry réseau
 - Retry jusqu'à réseau disponible OU user STOP
 
