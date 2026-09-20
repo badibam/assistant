@@ -2,6 +2,7 @@ package com.assistant.core.ai.scheduling
 
 import android.content.Context
 import com.assistant.core.ai.database.AISessionEntity
+import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
@@ -132,24 +133,15 @@ class AutomationScheduler(private val context: Context) {
                 // Get last completed session to calculate next execution time
                 val lastCompletedSession = aiDao.getLastCompletedAutomationSession(automation.id)
 
-                // Calculate next execution time
-                // Reference time = max(lastExecutionTime, updatedAt) to skip executions that occurred before config/schedule changes
-                // Priority: max(last completed execution, updatedAt) > schedule startDate > now
-                val lastExecutionTime = lastCompletedSession?.scheduledExecutionTime ?: 0L
-                val referenceTime = maxOf(lastExecutionTime, automation.updatedAt)
-
-                val fromTimestamp = if (referenceTime > 0) {
-                    referenceTime
-                } else {
-                    schedule.startDate ?: System.currentTimeMillis()
-                }
+                val now = System.currentTimeMillis()
+                val fromTimestamp = searchStart(automation, schedule, lastCompletedSession, now)
 
                 LogManager.aiSession(
                     "AutomationScheduler: Calculating next execution for automation ${automation.id} " +
                     "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
                     "updatedAt=${formatTimestamp(automation.updatedAt)}, " +
-                    "referenceTime=${formatTimestamp(referenceTime)}, " +
                     "startDate=${schedule.startDate?.let { formatTimestamp(it) }}, " +
+                    "catchUpWindowMinutes=${automation.catchUpWindowMinutes ?: "unlimited"}, " +
                     "fromTimestamp=${formatTimestamp(fromTimestamp)})",
                     "DEBUG"
                 )
@@ -167,16 +159,30 @@ class AutomationScheduler(private val context: Context) {
                 }
 
                 // Check if execution time has passed
-                val now = System.currentTimeMillis()
                 if (nextExecutionTime <= now) {
+                    // Among the occurrences that are due, run the most recent one or the oldest
+                    val dueTime = if (automation.dismissOlderInstances) {
+                        lastDueOccurrence(schedule, fromTimestamp, now, nextExecutionTime)
+                    } else {
+                        nextExecutionTime
+                    }
+
+                    if (dueTime != nextExecutionTime) {
+                        LogManager.aiSession(
+                            "AutomationScheduler: Automation ${automation.id} set to the most recent due occurrence " +
+                            "(${formatTimestamp(dueTime)} instead of ${formatTimestamp(nextExecutionTime)}); the ones in between are dropped",
+                            "INFO"
+                        )
+                    }
+
                     LogManager.aiSession(
-                        "AutomationScheduler: Automation ${automation.id} is due (next=${formatTimestamp(nextExecutionTime)}, now=${formatTimestamp(now)})",
+                        "AutomationScheduler: Automation ${automation.id} is due (scheduled=${formatTimestamp(dueTime)}, now=${formatTimestamp(now)})",
                         "INFO"
                     )
                     candidates.add(
                         ScheduleCandidate(
                             automationId = automation.id,
-                            scheduledTime = nextExecutionTime,
+                            scheduledTime = dueTime,
                             action = CandidateAction.CREATE,
                             sessionId = null
                         )
@@ -215,6 +221,80 @@ class AutomationScheduler(private val context: Context) {
             LogManager.aiSession("AutomationScheduler: Error calculating next session: ${e.message}", "ERROR", e)
             return NextSession.None
         }
+    }
+
+    /**
+     * Where the search for the next occurrence starts.
+     *
+     * The base is the last completed run, or the automation's last modification, whichever is
+     * later: a config change must not drag it back through occurrences that predate the change.
+     * With neither, the schedule's start date, or now.
+     *
+     * The catch-up window then pulls that start forward. An occurrence older than the window is
+     * skipped, so starting before it would mean walking to each one only to drop it -- which is
+     * how 47 days of missed runs became 47 sessions. Skipped occurrences leave this log line and
+     * nothing else: the history is made of sessions, and an empty "skipped" one would be a shape
+     * to handle in every screen that reads it.
+     */
+    private fun searchStart(
+        automation: AutomationEntity,
+        schedule: ScheduleConfig,
+        lastCompletedSession: AISessionEntity?,
+        now: Long
+    ): Long {
+        val lastExecutionTime = lastCompletedSession?.scheduledExecutionTime ?: 0L
+        val referenceTime = maxOf(lastExecutionTime, automation.updatedAt)
+        val base = if (referenceTime > 0) referenceTime else (schedule.startDate ?: now)
+
+        val windowMinutes = automation.catchUpWindowMinutes ?: return base
+        val windowStart = now - windowMinutes * 60_000L
+        if (windowStart <= base) return base
+
+        LogManager.aiSession(
+            "AutomationScheduler: Automation ${automation.id} skips what is older than its catch-up window " +
+            "of $windowMinutes min (search starts at ${formatTimestamp(windowStart)} instead of ${formatTimestamp(base)})",
+            "INFO"
+        )
+        return windowStart
+    }
+
+    /**
+     * The most recent occurrence that is already due, for an automation set to run only the
+     * latest one it missed.
+     *
+     * Found by bisecting on the start of the search rather than by walking occurrence by
+     * occurrence: the schedule calculator only ever answers "the first one after this instant",
+     * and a minute-by-minute automation missing a month has tens of thousands of them. What
+     * makes the bisection valid is that this answer never decreases as its argument grows, so
+     * "the next one after t is still due" is true up to some t and false after it. Forty-odd
+     * probes cover any delay, whatever the pattern.
+     *
+     * @param firstDue the occurrence the caller already found due, returned when the bisection
+     *   lands back on it
+     */
+    private fun lastDueOccurrence(
+        schedule: ScheduleConfig,
+        fromTimestamp: Long,
+        now: Long,
+        firstDue: Long
+    ): Long {
+        fun nextAfter(t: Long): Long? = ScheduleCalculator.calculateNextExecution(
+            pattern = schedule.pattern,
+            startDate = schedule.startDate,
+            endDate = schedule.endDate,
+            fromTimestamp = t
+        )
+
+        // Invariant: nextAfter(low) is due; nextAfter(high) is not, or does not exist
+        var low = fromTimestamp
+        var high = now
+        while (high - low > 1) {
+            val mid = low + (high - low) / 2
+            val candidate = nextAfter(mid)
+            if (candidate != null && candidate <= now) low = mid else high = mid
+        }
+
+        return nextAfter(low) ?: firstDue
     }
 
     /**
@@ -278,21 +358,14 @@ class AutomationScheduler(private val context: Context) {
             // Get last completed session to calculate next execution time
             val lastCompletedSession = aiDao.getLastCompletedAutomationSession(automationId)
 
-            // Calculate next execution time (same logic as getNextSession)
-            val lastExecutionTime = lastCompletedSession?.scheduledExecutionTime ?: 0L
-            val referenceTime = maxOf(lastExecutionTime, automation.updatedAt)
-
-            val fromTimestamp = if (referenceTime > 0) {
-                referenceTime
-            } else {
-                schedule.startDate ?: System.currentTimeMillis()
-            }
+            // Same start of search as getNextSession, so the screen announces the run that
+            // will actually happen and not one the window has already ruled out
+            val fromTimestamp = searchStart(automation, schedule, lastCompletedSession, System.currentTimeMillis())
 
             LogManager.aiSession(
                 "AutomationScheduler: Calculating next execution for automation $automationId " +
                 "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
                 "updatedAt=${formatTimestamp(automation.updatedAt)}, " +
-                "referenceTime=${formatTimestamp(referenceTime)}, " +
                 "fromTimestamp=${formatTimestamp(fromTimestamp)})",
                 "DEBUG"
             )
