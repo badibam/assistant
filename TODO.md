@@ -13,6 +13,8 @@ Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, au
 
 ## Divers
 
+- Limite d'aller-retours d'une automation : décider si le compteur doit arrêter toutes les boucles ou seulement celle qui produit quelque chose. Aujourd'hui `maxAutonomousRoundtrips` n'est lu que sur `ActionsExecuted` ; les boucles d'erreur de format, d'échec d'action et de relance l'ignorent et ne sont coupées que par le chien de garde, au bout de dix minutes de temps actif. Mesuré par `AIStateMachineRoundtripLimitTest` — les tests constatent, ils ne tranchent pas.
+- Étendre la suite de tests, dans cet ordre : le reste de `AIStateMachine` (26 événements) et `AISessionScheduler` ; `ScheduleCalculator` (ce qui vide la vérification de rattrapage ci-dessous) ; `FieldConfigComparator` et `MigrationStrategy` (la migration rename-aware) ; `DateUtils` et `DateTimeConverter` ; un corpus de vraies réponses IA figées pour `JsonNormalizer` → `CommandTransformer` → `ActionValidator`. Les migrations Room sont le seul cas qui justifie de l'instrumenté (`MigrationTestHelper`) : 14 migrations enchaînées, aucune testée, et elles tournent une fois sur des données réelles.
 - Journal : « Annuler » en modification repasse en consultation sans recharger l'entrée, qui affiche alors la saisie abandonnée jusqu'à la sortie de l'écran (`JournalEntryScreen.kt`, `handleCancel`). Rien n'est enregistré.
 - La touche Retour du téléphone ferme l'app depuis l'écran d'un outil, au lieu de revenir à la zone.
 - Le compositeur de message perd sa fenêtre d'enrichissement ouverte à la rotation (le texte, lui, survit) : ses blocs reçoivent de nouveaux identifiants à chaque recréation, et l'état du sélecteur de portée n'a pas de forme sauvegardable.
