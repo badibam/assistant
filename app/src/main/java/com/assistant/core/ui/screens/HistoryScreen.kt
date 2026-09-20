@@ -128,7 +128,7 @@ fun HistoryScreen(
                             id = sessionMap["id"] as String,
                             name = sessionMap["name"] as String,
                             createdAt = sessionMap["created_at"] as? Long ?: 0L,
-                            lastActivity = sessionMap["lastActivity"] as? Long ?: 0L,
+                            lastActivity = sessionMap["last_activity"] as? Long ?: 0L,
                             messageCount = sessionMap["messageCount"] as? Int ?: 0,
                             firstUserMessage = sessionMap["firstUserMessage"] as? String ?: ""
                         )
@@ -449,7 +449,7 @@ fun HistoryScreen(
 
                                 val result = withContext(Dispatchers.IO) {
                                     coordinator.processUserAction("ai_sessions.rename", mapOf(
-                                        "sessionId" to selectedSessionId!!,
+                                        "session_id" to selectedSessionId!!,
                                         "name" to newName
                                     ))
                                 }
@@ -480,7 +480,7 @@ fun HistoryScreen(
                 scope.launch {
                     val result = withContext(Dispatchers.IO) {
                         coordinator.processUserAction("ai_sessions.delete", mapOf(
-                            "sessionId" to selectedSessionId!!
+                            "session_id" to selectedSessionId!!
                         ))
                     }
 

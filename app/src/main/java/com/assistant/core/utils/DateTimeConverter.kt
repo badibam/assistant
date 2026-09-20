@@ -34,11 +34,11 @@ object DateTimeConverter {
         "timestamp",
         "created_at",
         "updated_at",
-        "lastActivity",
-        "scheduledExecutionTime",
+        "last_activity",
+        "scheduled_execution_time",
         "executionTime",
-        "lastEventTime",
-        "lastUserInteractionTime"
+        "last_event_time",
+        "last_user_interaction_time"
     )
 
     /**

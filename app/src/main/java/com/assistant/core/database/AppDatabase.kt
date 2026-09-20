@@ -40,7 +40,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -65,7 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 25
+        const val VERSION = 26
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -964,6 +964,134 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // The three remaining AI tables move their columns to snake_case, the naming rule
+                // the whole project follows. SQLite before 3.25 has no RENAME COLUMN and minSdk 26
+                // ships 3.19, so each table is recreated with its indices. ai_sessions comes first
+                // and session_messages last, so the foreign key between them lands on the final
+                // table; Room defers foreign key checks to the end of the migration transaction.
+
+                database.execSQL("""
+                    CREATE TABLE ai_sessions_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        require_validation INTEGER NOT NULL,
+                        phase TEXT NOT NULL,
+                        waiting_context_json TEXT,
+                        total_roundtrips INTEGER NOT NULL,
+                        last_event_time INTEGER NOT NULL,
+                        last_user_interaction_time INTEGER NOT NULL,
+                        automation_id TEXT,
+                        seed_id TEXT,
+                        scheduled_execution_time INTEGER,
+                        provider_id TEXT NOT NULL,
+                        provider_session_id TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        last_activity INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        end_reason TEXT,
+                        tokens_json TEXT,
+                        cost_json TEXT,
+                        app_state_snapshot TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO ai_sessions_new
+                    SELECT id, name, type, requireValidation, phase, waitingContextJson,
+                           totalRoundtrips, lastEventTime, lastUserInteractionTime,
+                           automationId, seedId, scheduledExecutionTime, providerId,
+                           providerSessionId, createdAt, lastActivity, isActive, endReason,
+                           tokensJson, costJson, appStateSnapshot
+                    FROM ai_sessions
+                """)
+                database.execSQL("DROP TABLE ai_sessions")
+                database.execSQL("ALTER TABLE ai_sessions_new RENAME TO ai_sessions")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_is_active ON ai_sessions(is_active)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_type ON ai_sessions(type)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_last_activity ON ai_sessions(last_activity)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_automation_id ON ai_sessions(automation_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_end_reason ON ai_sessions(end_reason)")
+
+                database.execSQL("""
+                    CREATE TABLE automations_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        seed_session_id TEXT NOT NULL,
+                        schedule_json TEXT,
+                        trigger_ids_json TEXT NOT NULL,
+                        catch_up_window_minutes INTEGER,
+                        dismiss_older_instances INTEGER NOT NULL,
+                        provider_id TEXT NOT NULL,
+                        is_enabled INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        last_execution_id TEXT,
+                        execution_history_json TEXT NOT NULL,
+                        `group` TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO automations_new
+                    SELECT id, name, zoneId, seedSessionId, scheduleJson, triggerIdsJson,
+                           catchUpWindowMinutes, dismissOlderInstances, providerId, isEnabled,
+                           createdAt, updatedAt, lastExecutionId, executionHistoryJson, `group`
+                    FROM automations
+                """)
+                database.execSQL("DROP TABLE automations")
+                database.execSQL("ALTER TABLE automations_new RENAME TO automations")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_zone_id ON automations(zone_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_is_enabled ON automations(is_enabled)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_seed_session_id ON automations(seed_session_id)")
+
+                database.execSQL("""
+                    CREATE TABLE session_messages_new (
+                        id TEXT NOT NULL,
+                        session_id TEXT NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        sender TEXT NOT NULL,
+                        rich_content_json TEXT,
+                        text_content TEXT,
+                        ai_message_json TEXT,
+                        ai_message_parsed_json TEXT,
+                        system_message_json TEXT,
+                        execution_metadata_json TEXT,
+                        exclude_from_prompt INTEGER NOT NULL,
+                        input_tokens INTEGER NOT NULL,
+                        cache_write_tokens INTEGER NOT NULL,
+                        cache_read_tokens INTEGER NOT NULL,
+                        output_tokens INTEGER NOT NULL,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(session_id) REFERENCES ai_sessions(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO session_messages_new
+                    SELECT id, sessionId, timestamp, sender, richContentJson, textContent,
+                           aiMessageJson, aiMessageParsedJson, systemMessageJson,
+                           executionMetadataJson, excludeFromPrompt, inputTokens,
+                           cacheWriteTokens, cacheReadTokens, outputTokens
+                    FROM session_messages
+                """)
+                database.execSQL("DROP TABLE session_messages")
+                database.execSQL("ALTER TABLE session_messages_new RENAME TO session_messages")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_session_messages_session_id ON session_messages(session_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_session_messages_timestamp ON session_messages(timestamp)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_session_messages_sender ON session_messages(sender)")
+
+                val cursor = database.query("SELECT (SELECT COUNT(*) FROM ai_sessions), (SELECT COUNT(*) FROM automations), (SELECT COUNT(*) FROM session_messages)")
+                val counts = if (cursor.moveToFirst()) "${cursor.getInt(0)} session(s), ${cursor.getInt(1)} automation(s), ${cursor.getInt(2)} message(s)" else "no row"
+                cursor.close()
+
+                LogManager.database("MIGRATION 25->26: $counts moved to snake_case columns", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -987,7 +1115,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_21_22,
                     MIGRATION_22_23,
                     MIGRATION_23_24,
-                    MIGRATION_24_25
+                    MIGRATION_24_25,
+                    MIGRATION_25_26
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

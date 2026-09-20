@@ -19,19 +19,19 @@ import com.assistant.core.ai.data.SessionType
 @Entity(
     tableName = "ai_sessions",
     indices = [
-        Index(value = ["isActive"]),
+        Index(value = ["is_active"]),
         Index(value = ["type"]),
-        Index(value = ["lastActivity"]),
-        Index(value = ["automationId"]),
+        Index(value = ["last_activity"]),
+        Index(value = ["automation_id"]),
         Index(value = ["phase"]),
-        Index(value = ["endReason"])
+        Index(value = ["end_reason"])
     ]
 )
 data class AISessionEntity(
     @PrimaryKey val id: String,
     val name: String,
     val type: SessionType,
-    val requireValidation: Boolean = false,  // Session-level validation toggle
+    @ColumnInfo(name = "require_validation") val requireValidation: Boolean = false,  // Session-level validation toggle
 
     // ==================== Event-Driven State (V2) ====================
 
@@ -39,32 +39,32 @@ data class AISessionEntity(
     val phase: String = "IDLE",
 
     /** Serialized WaitingContext (validation, communication, completion) - null if not waiting */
-    val waitingContextJson: String? = null,
+    @ColumnInfo(name = "waiting_context_json") val waitingContextJson: String? = null,
 
     // ==================== Loop Counters ====================
 
     /** Total autonomous roundtrips count (never reset during session) */
-    val totalRoundtrips: Int = 0,
+    @ColumnInfo(name = "total_roundtrips") val totalRoundtrips: Int = 0,
 
     // ==================== Timestamps ====================
 
     /** Timestamp of last event processed (any event) */
-    val lastEventTime: Long = 0L,
+    @ColumnInfo(name = "last_event_time") val lastEventTime: Long = 0L,
 
     /** Timestamp of last user interaction (message, validation, response) */
-    val lastUserInteractionTime: Long = 0L,
+    @ColumnInfo(name = "last_user_interaction_time") val lastUserInteractionTime: Long = 0L,
 
     // ==================== Session Metadata ====================
 
-    val automationId: String?,              // null for CHAT/SEED, automation ID for AUTOMATION
-    val seedId: String? = null,             // null except for CHAT created from automation button (ID of SEED to pre-fill)
-    val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
-    val providerId: String,                 // Fixed for the session
-    val providerSessionId: String,          // Provider API session ID
-    val createdAt: Long,
-    val lastActivity: Long,
-    val isActive: Boolean,
-    val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
+    @ColumnInfo(name = "automation_id") val automationId: String?,              // null for CHAT/SEED, automation ID for AUTOMATION
+    @ColumnInfo(name = "seed_id") val seedId: String? = null,             // null except for CHAT created from automation button (ID of SEED to pre-fill)
+    @ColumnInfo(name = "scheduled_execution_time") val scheduledExecutionTime: Long?,      // For AUTOMATION: scheduled time (not actual execution time)
+    @ColumnInfo(name = "provider_id") val providerId: String,                 // Fixed for the session
+    @ColumnInfo(name = "provider_session_id") val providerSessionId: String,          // Provider API session ID
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "last_activity") val lastActivity: Long,
+    @ColumnInfo(name = "is_active") val isActive: Boolean,
+    @ColumnInfo(name = "end_reason") val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
 
     /**
      * Token usage breakdown (JSON serialized)
@@ -72,7 +72,7 @@ data class AISessionEntity(
      * Format: {"totalUncachedInputTokens": 15234, "totalCacheWriteTokens": 8932, ...}
      * Updated incrementally as AI messages are added
      */
-    val tokensJson: String? = null,
+    @ColumnInfo(name = "tokens_json") val tokensJson: String? = null,
 
     /**
      * Cost breakdown (JSON serialized)
@@ -80,7 +80,7 @@ data class AISessionEntity(
      * Format: {"modelId": "claude-sonnet-...", "inputCost": 0.0457, "totalCost": 0.1121, ...}
      * Updated incrementally as AI messages are added
      */
-    val costJson: String? = null,
+    @ColumnInfo(name = "cost_json") val costJson: String? = null,
 
     /**
      * APP_STATE snapshot JSON taken at first user message
@@ -88,7 +88,7 @@ data class AISessionEntity(
      * Format: {"timestamp": Long, "zones": [...], "tool_instances": [...]}
      * null = not yet captured (before first message)
      */
-    val appStateSnapshot: String? = null
+    @ColumnInfo(name = "app_state_snapshot") val appStateSnapshot: String? = null
 )
 
 /**

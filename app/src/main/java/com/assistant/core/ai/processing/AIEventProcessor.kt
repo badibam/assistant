@@ -482,7 +482,7 @@ class AIEventProcessor(
                 // Get session to retrieve providerId
                 val coordinator = com.assistant.core.coordinator.Coordinator(context)
                 val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
-                    "sessionId" to sessionId
+                    "session_id" to sessionId
                 ))
 
                 if (sessionResult.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
@@ -983,10 +983,10 @@ class AIEventProcessor(
         }
 
         val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
-            "sessionId" to sessionId
+            "session_id" to sessionId
         ))
         val sessionData = (sessionResult.data?.get("session") as? Map<*, *>)
-        val scheduled = sessionData?.get("scheduledExecutionTime") as? Long
+        val scheduled = sessionData?.get("scheduled_execution_time") as? Long
 
         if (scheduled == null) {
             // An AUTOMATION session always carries one; without it the periods would silently

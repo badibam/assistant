@@ -520,7 +520,7 @@ object AIOrchestrator {
         LogManager.aiSession("resumeChatSession called (sessionId=$sessionId)", "INFO")
 
         // Step 1: Load and validate session
-        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
         if (result.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
             LogManager.aiSession("resumeChatSession: Session not found: $sessionId", "ERROR")
             return

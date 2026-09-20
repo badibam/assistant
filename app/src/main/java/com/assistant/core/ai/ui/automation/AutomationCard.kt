@@ -69,7 +69,7 @@ fun AutomationCard(
                 // Load session from DB to get automationId
                 val result = coordinator.processUserAction("ai_sessions.get", mapOf("id" to queued.sessionId))
                 if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
-                    val sessionAutomationId = result.data?.get("automationId") as? String
+                    val sessionAutomationId = result.data?.get("automation_id") as? String
                     if (sessionAutomationId == automation.id) {
                         queuedAutomationSession = queued
                         break

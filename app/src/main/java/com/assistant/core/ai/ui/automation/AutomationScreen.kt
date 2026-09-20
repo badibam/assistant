@@ -149,7 +149,7 @@ fun AutomationScreen(
 
             // Build params
             val params = mutableMapOf<String, Any>(
-                "automationId" to automationId,
+                "automation_id" to automationId,
                 "limit" to entriesLimit,
                 "page" to currentPage
             )
@@ -168,7 +168,7 @@ fun AutomationScreen(
 
                     sessions = sessionsList.map { sessionMap ->
                         // Parse tokens JSON
-                        val tokensJson = sessionMap["tokensJson"] as? String
+                        val tokensJson = sessionMap["tokens_json"] as? String
                         val tokens = if (tokensJson != null) {
                             try {
                                 val json = JSONObject(tokensJson)
@@ -186,7 +186,7 @@ fun AutomationScreen(
                         }
 
                         // Parse cost JSON
-                        val costJson = sessionMap["costJson"] as? String
+                        val costJson = sessionMap["cost_json"] as? String
                         val cost = if (costJson != null) {
                             try {
                                 val json = JSONObject(costJson)
@@ -208,7 +208,7 @@ fun AutomationScreen(
 
                         // Calculate duration
                         val createdAtValue = sessionMap["created_at"] as? Long ?: 0L
-                        val lastActivity = sessionMap["lastActivity"] as? Long ?: createdAtValue
+                        val lastActivity = sessionMap["last_activity"] as? Long ?: createdAtValue
                         val duration = lastActivity - createdAtValue
 
                         // Calculate total tokens
@@ -219,12 +219,12 @@ fun AutomationScreen(
 
                         ExecutionSummary(
                             sessionId = sessionMap["id"] as String,
-                            scheduledExecutionTime = sessionMap["scheduledExecutionTime"] as? Long,
+                            scheduledExecutionTime = sessionMap["scheduled_execution_time"] as? Long,
                             createdAt = createdAtValue,
                             phase = phase,
-                            endReason = sessionMap["endReason"] as? String,
+                            endReason = sessionMap["end_reason"] as? String,
                             duration = duration,
-                            totalRoundtrips = sessionMap["totalRoundtrips"] as? Int ?: 0,
+                            totalRoundtrips = sessionMap["total_roundtrips"] as? Int ?: 0,
                             totalTokens = totalTokens,
                             cost = cost
                         )

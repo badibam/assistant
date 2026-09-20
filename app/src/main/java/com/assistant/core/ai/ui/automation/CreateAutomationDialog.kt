@@ -212,7 +212,7 @@ fun CreateAutomationDialog(
                             val updateSessionResult = coordinator.processUserAction(
                                 "ai_sessions.update_session",
                                 mapOf(
-                                    "sessionId" to seedSessionId,
+                                    "session_id" to seedSessionId,
                                     "provider_id" to selectedProvider!!
                                 )
                             )
@@ -245,7 +245,7 @@ fun CreateAutomationDialog(
                             return@launch
                         }
 
-                        val seedSessionId = createSessionResult.data?.get("sessionId") as? String
+                        val seedSessionId = createSessionResult.data?.get("session_id") as? String
                         if (seedSessionId == null) {
                             errorMessage = s.shared("ai_error_create_session").format("No session ID returned")
                             LogManager.aiUI("No session ID returned from create", "ERROR")

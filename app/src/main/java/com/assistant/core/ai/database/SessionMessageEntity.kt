@@ -14,37 +14,37 @@ import com.assistant.core.ai.data.MessageSender
         ForeignKey(
             entity = AISessionEntity::class,
             parentColumns = ["id"],
-            childColumns = ["sessionId"],
+            childColumns = ["session_id"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index(value = ["sessionId"]),
+        Index(value = ["session_id"]),
         Index(value = ["timestamp"]),
         Index(value = ["sender"])
     ]
 )
 data class SessionMessageEntity(
     @PrimaryKey val id: String,
-    val sessionId: String,
+    @ColumnInfo(name = "session_id") val sessionId: String,
     val timestamp: Long,
     val sender: MessageSender,
 
     // Complex structures as JSON
-    val richContentJson: String?,      // RichMessage serialized
-    val textContent: String?,          // Simple text content
-    val aiMessageJson: String?,        // Original AI JSON for prompt consistency
-    val aiMessageParsedJson: String?,  // Parsed AIMessage for UI
-    val systemMessageJson: String?,    // SystemMessage serialized
-    val executionMetadataJson: String?, // ExecutionMetadata for automations
-    val excludeFromPrompt: Boolean = false, // Exclude from prompt generation (UI-only messages)
+    @ColumnInfo(name = "rich_content_json") val richContentJson: String?,      // RichMessage serialized
+    @ColumnInfo(name = "text_content") val textContent: String?,          // Simple text content
+    @ColumnInfo(name = "ai_message_json") val aiMessageJson: String?,        // Original AI JSON for prompt consistency
+    @ColumnInfo(name = "ai_message_parsed_json") val aiMessageParsedJson: String?,  // Parsed AIMessage for UI
+    @ColumnInfo(name = "system_message_json") val systemMessageJson: String?,    // SystemMessage serialized
+    @ColumnInfo(name = "execution_metadata_json") val executionMetadataJson: String?, // ExecutionMetadata for automations
+    @ColumnInfo(name = "exclude_from_prompt") val excludeFromPrompt: Boolean = false, // Exclude from prompt generation (UI-only messages)
 
     // Token usage metrics (for AI messages only, 0 for USER/SYSTEM)
     // Note: API providers return inputTokens as UNCACHED only. Total input = inputTokens + cacheWriteTokens + cacheReadTokens
-    val inputTokens: Int = 0,           // Uncached input tokens (from API, already excludes cache tokens)
-    val cacheWriteTokens: Int = 0,      // Cache write tokens (generic, all providers)
-    val cacheReadTokens: Int = 0,       // Cache read tokens (generic, all providers)
-    val outputTokens: Int = 0           // Output tokens generated
+    @ColumnInfo(name = "input_tokens") val inputTokens: Int = 0,           // Uncached input tokens (from API, already excludes cache tokens)
+    @ColumnInfo(name = "cache_write_tokens") val cacheWriteTokens: Int = 0,      // Cache write tokens (generic, all providers)
+    @ColumnInfo(name = "cache_read_tokens") val cacheReadTokens: Int = 0,       // Cache read tokens (generic, all providers)
+    @ColumnInfo(name = "output_tokens") val outputTokens: Int = 0           // Output tokens generated
 )
 
 /**

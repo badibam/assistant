@@ -48,7 +48,7 @@ object ProviderVerifier {
         try {
             // Get session to retrieve providerId
             val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
-                "sessionId" to sessionId
+                "session_id" to sessionId
             ))
 
             if (!sessionResult.isSuccess) {

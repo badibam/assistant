@@ -107,8 +107,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             id = sessionId,
             name = name,
             type = SessionType.valueOf(type),
-            automationId = params.optString("automationId").takeIf { it.isNotEmpty() }, // null for CHAT
-            scheduledExecutionTime = if (params.has("scheduledExecutionTime")) params.getLong("scheduledExecutionTime") else null,
+            automationId = params.optString("automation_id").takeIf { it.isNotEmpty() }, // null for CHAT
+            scheduledExecutionTime = if (params.has("scheduled_execution_time")) params.getLong("scheduled_execution_time") else null,
             providerId = providerId,
             providerSessionId = "",
             createdAt = now,
@@ -154,7 +154,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             }
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "name" to name,
                 "type" to type,
                 "provider_id" to providerId,
@@ -169,7 +169,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun getSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Getting AI session: $sessionId", "DEBUG")
@@ -193,14 +193,14 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to sessionEntity.id,
                     "name" to sessionEntity.name,
                     "type" to sessionEntity.type.name, // Convert enum to string
-                    "requireValidation" to sessionEntity.requireValidation,
-                    "automationId" to sessionEntity.automationId,
-                    "seedId" to sessionEntity.seedId,
-                    "scheduledExecutionTime" to sessionEntity.scheduledExecutionTime,
+                    "require_validation" to sessionEntity.requireValidation,
+                    "automation_id" to sessionEntity.automationId,
+                    "seed_id" to sessionEntity.seedId,
+                    "scheduled_execution_time" to sessionEntity.scheduledExecutionTime,
                     "provider_id" to sessionEntity.providerId,
-                    "providerSessionId" to sessionEntity.providerSessionId,
+                    "provider_session_id" to sessionEntity.providerSessionId,
                     "created_at" to sessionEntity.createdAt,
-                    "lastActivity" to sessionEntity.lastActivity,
+                    "last_activity" to sessionEntity.lastActivity,
                     "is_active" to sessionEntity.isActive
                 ),
                 "messages" to messageEntities.map { msg ->
@@ -208,11 +208,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "id" to msg.id,
                         "timestamp" to msg.timestamp,
                         "sender" to msg.sender.name, // Convert enum to string
-                        "richContentJson" to msg.richContentJson,
-                        "textContent" to msg.textContent,
-                        "aiMessageJson" to msg.aiMessageJson,
-                        "systemMessageJson" to msg.systemMessageJson,
-                        "excludeFromPrompt" to msg.excludeFromPrompt
+                        "rich_content_json" to msg.richContentJson,
+                        "text_content" to msg.textContent,
+                        "ai_message_json" to msg.aiMessageJson,
+                        "system_message_json" to msg.systemMessageJson,
+                        "exclude_from_prompt" to msg.excludeFromPrompt
                     )
                 }
             ))
@@ -240,7 +240,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "type" to session.type.name,
                     "provider_id" to session.providerId,
                     "created_at" to session.createdAt,
-                    "lastActivity" to session.lastActivity,
+                    "last_activity" to session.lastActivity,
                     "is_active" to session.isActive
                 )
             }
@@ -258,7 +258,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun listSessionsForAutomation(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val automationId = params.optString("automationId").takeIf { it.isNotEmpty() }
+        val automationId = params.optString("automation_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_automation_id_required"))
         val limit = params.optInt("limit", 10)
         val page = params.optInt("page", 1)
@@ -300,18 +300,18 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to session.id,
                     "name" to session.name,
                     "type" to session.type.name,
-                    "automationId" to session.automationId,
-                    "scheduledExecutionTime" to session.scheduledExecutionTime,
+                    "automation_id" to session.automationId,
+                    "scheduled_execution_time" to session.scheduledExecutionTime,
                     "provider_id" to session.providerId,
-                    "providerSessionId" to session.providerSessionId,
+                    "provider_session_id" to session.providerSessionId,
                     "created_at" to session.createdAt,
-                    "lastActivity" to session.lastActivity,
+                    "last_activity" to session.lastActivity,
                     "is_active" to session.isActive,
                     "phase" to session.phase,
-                    "endReason" to session.endReason,
-                    "totalRoundtrips" to session.totalRoundtrips,
-                    "tokensJson" to session.tokensJson,
-                    "costJson" to session.costJson
+                    "end_reason" to session.endReason,
+                    "total_roundtrips" to session.totalRoundtrips,
+                    "tokens_json" to session.tokensJson,
+                    "cost_json" to session.costJson
                 )
             }
 
@@ -332,7 +332,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun updateSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Updating session: $sessionId", "DEBUG")
@@ -360,7 +360,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully updated session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "name" to updatedEntity.name,
                 "updated_at" to now
             ))
@@ -373,7 +373,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun deleteSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Deleting session: $sessionId", "DEBUG")
@@ -396,7 +396,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully deleted session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "deleted" to true
             ))
         } catch (e: Exception) {
@@ -408,7 +408,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun setActiveSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Setting active session: $sessionId", "DEBUG")
@@ -433,7 +433,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully set active session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "is_active" to true
             ))
         } catch (e: Exception) {
@@ -465,16 +465,16 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             return OperationResult.success(mapOf(
                 "hasActiveSession" to true,
-                "sessionId" to activeSessionEntity.id,
+                "session_id" to activeSessionEntity.id,
                 "session" to mapOf(
                     "id" to activeSessionEntity.id,
                     "name" to activeSessionEntity.name,
                     "type" to activeSessionEntity.type.name, // Convert enum to string
-                    "requireValidation" to activeSessionEntity.requireValidation,
+                    "require_validation" to activeSessionEntity.requireValidation,
                     "provider_id" to activeSessionEntity.providerId,
-                    "providerSessionId" to activeSessionEntity.providerSessionId,
+                    "provider_session_id" to activeSessionEntity.providerSessionId,
                     "created_at" to activeSessionEntity.createdAt,
-                    "lastActivity" to activeSessionEntity.lastActivity,
+                    "last_activity" to activeSessionEntity.lastActivity,
                     "is_active" to activeSessionEntity.isActive
                 ),
                 "messages" to messageEntities.map { msg ->
@@ -482,11 +482,11 @@ class AISessionService(private val context: Context) : ExecutableService {
                         "id" to msg.id,
                         "timestamp" to msg.timestamp,
                         "sender" to msg.sender.name, // Convert enum to string
-                        "richContentJson" to msg.richContentJson,
-                        "textContent" to msg.textContent,
-                        "aiMessageJson" to msg.aiMessageJson,
-                        "systemMessageJson" to msg.systemMessageJson,
-                        "excludeFromPrompt" to msg.excludeFromPrompt
+                        "rich_content_json" to msg.richContentJson,
+                        "text_content" to msg.textContent,
+                        "ai_message_json" to msg.aiMessageJson,
+                        "system_message_json" to msg.systemMessageJson,
+                        "exclude_from_prompt" to msg.excludeFromPrompt
                     )
                 }
             ))
@@ -524,7 +524,7 @@ class AISessionService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         // Extract required parameters
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
         val senderString = params.optString("sender").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_sender_required"))
@@ -546,8 +546,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             // Extract content based on message type
             // richContent is already serialized JSON from RichMessage.toJson()
             val richContentJson = params.optString("richContent")?.takeIf { it.isNotEmpty() }
-            val textContent = params.optString("textContent")?.takeIf { it.isNotEmpty() }
-            val aiMessageJson = params.optString("aiMessageJson")?.takeIf { it.isNotEmpty() }
+            val textContent = params.optString("text_content")?.takeIf { it.isNotEmpty() }
+            val aiMessageJson = params.optString("ai_message_json")?.takeIf { it.isNotEmpty() }
 
             // Handle SystemMessage if provided
             val systemMessageJson = if (params.has("systemMessage")) {
@@ -558,13 +558,13 @@ class AISessionService(private val context: Context) : ExecutableService {
             }
 
             // Get excludeFromPrompt flag
-            val excludeFromPrompt = params.optBoolean("excludeFromPrompt", false)
+            val excludeFromPrompt = params.optBoolean("exclude_from_prompt", false)
 
             // Extract token usage metrics (for AI messages only, 0 for USER/SYSTEM)
-            val inputTokens = params.optInt("inputTokens", 0)
-            val cacheWriteTokens = params.optInt("cacheWriteTokens", 0)
-            val cacheReadTokens = params.optInt("cacheReadTokens", 0)
-            val outputTokens = params.optInt("outputTokens", 0)
+            val inputTokens = params.optInt("input_tokens", 0)
+            val cacheWriteTokens = params.optInt("cache_write_tokens", 0)
+            val cacheReadTokens = params.optInt("cache_read_tokens", 0)
+            val outputTokens = params.optInt("output_tokens", 0)
 
             // Create message entity
             val messageEntity = SessionMessageEntity(
@@ -596,7 +596,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             return OperationResult.success(mapOf(
                 "messageId" to messageId,
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "timestamp" to timestamp,
                 "sender" to sender.name
             ))
@@ -627,13 +627,13 @@ class AISessionService(private val context: Context) : ExecutableService {
             return OperationResult.success(mapOf(
                 "message" to mapOf(
                     "id" to messageEntity.id,
-                    "sessionId" to messageEntity.sessionId,
+                    "session_id" to messageEntity.sessionId,
                     "timestamp" to messageEntity.timestamp,
                     "sender" to messageEntity.sender.name,
-                    "richContentJson" to messageEntity.richContentJson,
-                    "textContent" to messageEntity.textContent,
-                    "aiMessageJson" to messageEntity.aiMessageJson,
-                    "systemMessageJson" to messageEntity.systemMessageJson
+                    "rich_content_json" to messageEntity.richContentJson,
+                    "text_content" to messageEntity.textContent,
+                    "ai_message_json" to messageEntity.aiMessageJson,
+                    "system_message_json" to messageEntity.systemMessageJson
                 )
             ))
         } catch (e: Exception) {
@@ -645,7 +645,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun listMessages(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Listing messages for session: $sessionId", "DEBUG")
@@ -661,17 +661,17 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to msg.id,
                     "timestamp" to msg.timestamp,
                     "sender" to msg.sender.name,
-                    "richContentJson" to msg.richContentJson,
-                    "textContent" to msg.textContent,
-                    "aiMessageJson" to msg.aiMessageJson,
-                    "systemMessageJson" to msg.systemMessageJson
+                    "rich_content_json" to msg.richContentJson,
+                    "text_content" to msg.textContent,
+                    "ai_message_json" to msg.aiMessageJson,
+                    "system_message_json" to msg.systemMessageJson
                 )
             }
 
             return OperationResult.success(mapOf(
                 "messages" to messages,
                 "count" to messages.size,
-                "sessionId" to sessionId
+                "session_id" to sessionId
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to list messages: ${e.message}", "ERROR", e)
@@ -697,9 +697,9 @@ class AISessionService(private val context: Context) : ExecutableService {
             }
 
             // Extract fields to update
-            val richContentJson = params.optString("richContentJson")
-            val textContent = params.optString("textContent")
-            val aiMessageJson = params.optString("aiMessageJson")
+            val richContentJson = params.optString("rich_content_json")
+            val textContent = params.optString("text_content")
+            val aiMessageJson = params.optString("ai_message_json")
 
             val updatedEntity = messageEntity.copy(
                 richContentJson = if (richContentJson.isNotEmpty()) richContentJson else messageEntity.richContentJson,
@@ -759,7 +759,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun getSessionCost(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("error_session_id_required"))
 
         LogManager.aiSession("Getting cost for session: $sessionId", "DEBUG")
@@ -783,7 +783,7 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             // Build map without null values for costs if price unavailable
             val resultMap = buildMap<String, Any> {
-                put("sessionId", sessionId)
+                put("session_id", sessionId)
                 put("modelId", cost.modelId)
                 put("totalUncachedInputTokens", cost.totalUncachedInputTokens)
                 put("totalCacheWriteTokens", cost.totalCacheWriteTokens)
@@ -816,9 +816,9 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun toggleValidation(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
-        val requireValidation = params.optBoolean("requireValidation", false)
+        val requireValidation = params.optBoolean("require_validation", false)
 
         LogManager.aiSession("Toggling validation for session $sessionId: $requireValidation", "DEBUG")
 
@@ -840,8 +840,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully toggled validation for session $sessionId: $requireValidation", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
-                "requireValidation" to requireValidation
+                "session_id" to sessionId,
+                "require_validation" to requireValidation
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to toggle validation for session $sessionId: ${e.message}", "ERROR", e)
@@ -856,9 +856,9 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun setEndReason(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
-        val endReasonString = params.optString("endReason").takeIf { it.isNotEmpty() }
+        val endReasonString = params.optString("end_reason").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error("Parameter 'endReason' is required")
 
         LogManager.aiSession("Updating session end reason for $sessionId: $endReasonString", "DEBUG")
@@ -881,8 +881,8 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully updated session end reason for $sessionId: $endReasonString", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
-                "endReason" to endReasonString
+                "session_id" to sessionId,
+                "end_reason" to endReasonString
             ))
         } catch (e: Exception) {
             LogManager.aiSession("Failed to update session end reason for $sessionId: ${e.message}", "ERROR", e)
@@ -990,7 +990,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "id" to session.id,
                     "name" to session.name,
                     "created_at" to session.createdAt,
-                    "lastActivity" to session.lastActivity,
+                    "last_activity" to session.lastActivity,
                     "messageCount" to messageCount,
                     "firstUserMessage" to preview
                 )
@@ -1016,7 +1016,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun renameSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
         val name = params.optString("name").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_name_required"))
@@ -1045,7 +1045,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully renamed session $sessionId to: $name", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "name" to name
             ))
         } catch (e: Exception) {
@@ -1061,7 +1061,7 @@ class AISessionService(private val context: Context) : ExecutableService {
     private suspend fun deleteChatSession(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val sessionId = params.optString("sessionId").takeIf { it.isNotEmpty() }
+        val sessionId = params.optString("session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_session_id_required"))
 
         LogManager.aiSession("Deleting CHAT session: $sessionId", "DEBUG")
@@ -1088,7 +1088,7 @@ class AISessionService(private val context: Context) : ExecutableService {
             LogManager.aiSession("Successfully deleted CHAT session: $sessionId", "INFO")
 
             return OperationResult.success(mapOf(
-                "sessionId" to sessionId,
+                "session_id" to sessionId,
                 "deleted" to true
             ))
         } catch (e: Exception) {

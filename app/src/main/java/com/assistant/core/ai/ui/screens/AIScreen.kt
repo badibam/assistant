@@ -92,7 +92,7 @@ fun AIScreen(
             // Non-active session: load from DB
             try {
                 isLoadingSession = true
-                val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
                 if (result.status == CommandStatus.SUCCESS) {
                     @Suppress("UNCHECKED_CAST")
                     val sessionData = result.data?.get("session") as? Map<String, Any>
@@ -101,15 +101,15 @@ fun AIScreen(
                             id = sessionData["id"] as String,
                             name = sessionData["name"] as String,
                             type = SessionType.valueOf(sessionData["type"] as String),
-                            requireValidation = sessionData["requireValidation"] as? Boolean ?: false,
+                            requireValidation = sessionData["require_validation"] as? Boolean ?: false,
                             waitingStateJson = sessionData["waitingStateJson"] as? String,
-                            automationId = sessionData["automationId"] as? String,
-                            seedId = sessionData["seedId"] as? String,
-                            scheduledExecutionTime = (sessionData["scheduledExecutionTime"] as? Number)?.toLong(),
+                            automationId = sessionData["automation_id"] as? String,
+                            seedId = sessionData["seed_id"] as? String,
+                            scheduledExecutionTime = (sessionData["scheduled_execution_time"] as? Number)?.toLong(),
                             providerId = sessionData["provider_id"] as String,
-                            providerSessionId = sessionData["providerSessionId"] as String,
+                            providerSessionId = sessionData["provider_session_id"] as String,
                             createdAt = (sessionData["created_at"] as Number).toLong(),
-                            lastActivity = (sessionData["lastActivity"] as Number).toLong(),
+                            lastActivity = (sessionData["last_activity"] as Number).toLong(),
                             messages = emptyList(),
                             isActive = sessionData["is_active"] as? Boolean ?: false
                         )
@@ -134,11 +134,11 @@ fun AIScreen(
                 var dbSeedId: String? = null
                 if (aiState.sessionType == SessionType.CHAT) {
                     try {
-                        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+                        val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
                         if (result.status == CommandStatus.SUCCESS) {
                             @Suppress("UNCHECKED_CAST")
                             val sessionData = result.data?.get("session") as? Map<String, Any>
-                            dbSeedId = sessionData?.get("seedId") as? String
+                            dbSeedId = sessionData?.get("seed_id") as? String
                             LogManager.aiUI("AIScreen active session: loaded seedId from DB: $dbSeedId", "DEBUG")
                         }
                     } catch (e: Exception) {
@@ -509,7 +509,7 @@ private fun SeedMode(
     // Load segments from DB (display state = source of truth)
     LaunchedEffect(session.id, sessionReloadTrigger) {
         try {
-            val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to session.id))
+            val result = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to session.id))
             if (result.status == CommandStatus.SUCCESS) {
                 @Suppress("UNCHECKED_CAST")
                 val messagesList = result.data?.get("messages") as? List<Map<String, Any>> ?: emptyList()
@@ -518,7 +518,7 @@ private fun SeedMode(
                 // Store USER message ID for updates
                 userMessageId = firstUserMessage?.get("id") as? String
 
-                val richContentJson = firstUserMessage?.get("richContentJson") as? String
+                val richContentJson = firstUserMessage?.get("rich_content_json") as? String
 
                 val loadedSegments = if (richContentJson != null) {
                     com.assistant.core.ai.data.RichMessage.fromJson(richContentJson)?.segments ?: emptyList()
@@ -861,7 +861,7 @@ private fun SeedMode(
                                     "ai_sessions.update_message",
                                     mapOf(
                                         "messageId" to userMessageId!!,
-                                        "richContentJson" to richMessage.toJson()
+                                        "rich_content_json" to richMessage.toJson()
                                     )
                                 )
 
@@ -900,7 +900,7 @@ private fun SeedMode(
                                         "ai_sessions.update_message",
                                         mapOf(
                                             "messageId" to userMessageId!!,
-                                            "richContentJson" to richMessage.toJson()
+                                            "rich_content_json" to richMessage.toJson()
                                         )
                                     )
 
@@ -1212,8 +1212,8 @@ private fun ChatHeader(
                     val result = coordinator.processUserAction(
                         "ai_sessions.update_validation",
                         mapOf(
-                            "sessionId" to session.id,
-                            "requireValidation" to enabled
+                            "session_id" to session.id,
+                            "require_validation" to enabled
                         )
                     )
 

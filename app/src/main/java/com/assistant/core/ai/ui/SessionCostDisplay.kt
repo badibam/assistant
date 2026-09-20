@@ -38,7 +38,7 @@ fun SessionCostDisplay(sessionId: String) {
     LaunchedEffect(sessionId) {
         isLoading = true
         val result = coordinator.processUserAction("ai_sessions.get_cost", mapOf(
-            "sessionId" to sessionId
+            "session_id" to sessionId
         ))
 
         if (result.isSuccess) {

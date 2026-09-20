@@ -10,10 +10,10 @@ interface AIDao {
 
     // === Sessions ===
 
-    @Query("SELECT * FROM ai_sessions ORDER BY lastActivity DESC")
+    @Query("SELECT * FROM ai_sessions ORDER BY last_activity DESC")
     suspend fun getAllSessions(): List<AISessionEntity>
 
-    @Query("SELECT * FROM ai_sessions WHERE isActive = 1 ORDER BY lastActivity DESC LIMIT 1")
+    @Query("SELECT * FROM ai_sessions WHERE is_active = 1 ORDER BY last_activity DESC LIMIT 1")
     suspend fun getActiveSession(): AISessionEntity?
 
     @Query("SELECT * FROM ai_sessions WHERE id = :sessionId")
@@ -25,25 +25,25 @@ interface AIDao {
     @Update
     suspend fun updateSession(session: AISessionEntity)
 
-    @Query("UPDATE ai_sessions SET isActive = 0")
+    @Query("UPDATE ai_sessions SET is_active = 0")
     suspend fun deactivateAllSessions()
 
-    @Query("UPDATE ai_sessions SET isActive = 0 WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET is_active = 0 WHERE id = :sessionId")
     suspend fun deactivateSession(sessionId: String)
 
-    @Query("UPDATE ai_sessions SET isActive = 1 WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET is_active = 1 WHERE id = :sessionId")
     suspend fun activateSession(sessionId: String)
 
-    @Query("UPDATE ai_sessions SET lastActivity = :timestamp WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET last_activity = :timestamp WHERE id = :sessionId")
     suspend fun updateSessionActivity(sessionId: String, timestamp: Long)
 
-    @Query("UPDATE ai_sessions SET endReason = :endReason WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET end_reason = :endReason WHERE id = :sessionId")
     suspend fun updateSessionEndReason(sessionId: String, endReason: String?)
 
-    @Query("UPDATE ai_sessions SET tokensJson = :tokensJson, costJson = :costJson WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET tokens_json = :tokensJson, cost_json = :costJson WHERE id = :sessionId")
     suspend fun updateSessionTokensAndCost(sessionId: String, tokensJson: String?, costJson: String?)
 
-    @Query("UPDATE ai_sessions SET appStateSnapshot = :snapshot WHERE id = :sessionId")
+    @Query("UPDATE ai_sessions SET app_state_snapshot = :snapshot WHERE id = :sessionId")
     suspend fun updateAppStateSnapshot(sessionId: String, snapshot: String)
 
     @Delete
@@ -51,7 +51,7 @@ interface AIDao {
 
     // === Messages ===
 
-    @Query("SELECT * FROM session_messages WHERE sessionId = :sessionId ORDER BY timestamp ASC")
+    @Query("SELECT * FROM session_messages WHERE session_id = :sessionId ORDER BY timestamp ASC")
     suspend fun getMessagesForSession(sessionId: String): List<SessionMessageEntity>
 
     @Query("SELECT * FROM session_messages WHERE id = :messageId")
@@ -66,7 +66,7 @@ interface AIDao {
     @Delete
     suspend fun deleteMessage(message: SessionMessageEntity)
 
-    @Query("DELETE FROM session_messages WHERE sessionId = :sessionId")
+    @Query("DELETE FROM session_messages WHERE session_id = :sessionId")
     suspend fun deleteMessagesForSession(sessionId: String)
 
     // === Utility queries ===
@@ -74,7 +74,7 @@ interface AIDao {
     @Query("SELECT COUNT(*) FROM ai_sessions WHERE type = :type")
     suspend fun getSessionCountByType(type: String): Int
 
-    @Query("SELECT COUNT(*) FROM session_messages WHERE sessionId = :sessionId")
+    @Query("SELECT COUNT(*) FROM session_messages WHERE session_id = :sessionId")
     suspend fun getMessageCountForSession(sessionId: String): Int
 
     // === Provider Configurations ===
@@ -111,16 +111,16 @@ interface AIDao {
     @Query("SELECT * FROM automations WHERE id = :id")
     suspend fun getAutomationById(id: String): AutomationEntity?
 
-    @Query("SELECT * FROM automations WHERE zoneId = :zoneId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM automations WHERE zone_id = :zoneId ORDER BY created_at DESC")
     suspend fun getAutomationsByZone(zoneId: String): List<AutomationEntity>
 
-    @Query("SELECT * FROM automations WHERE seedSessionId = :seedSessionId")
+    @Query("SELECT * FROM automations WHERE seed_session_id = :seedSessionId")
     suspend fun getAutomationBySeedSession(seedSessionId: String): AutomationEntity?
 
-    @Query("SELECT * FROM automations ORDER BY createdAt DESC")
+    @Query("SELECT * FROM automations ORDER BY created_at DESC")
     suspend fun getAllAutomations(): List<AutomationEntity>
 
-    @Query("SELECT * FROM automations WHERE isEnabled = 1")
+    @Query("SELECT * FROM automations WHERE is_enabled = 1")
     suspend fun getAllEnabledAutomations(): List<AutomationEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -132,10 +132,10 @@ interface AIDao {
     @Query("DELETE FROM automations WHERE id = :id")
     suspend fun deleteAutomationById(id: String)
 
-    @Query("UPDATE automations SET isEnabled = :enabled, updatedAt = :updatedAt WHERE id = :id")
+    @Query("UPDATE automations SET is_enabled = :enabled, updated_at = :updatedAt WHERE id = :id")
     suspend fun setAutomationEnabled(id: String, enabled: Boolean, updatedAt: Long)
 
-    @Query("UPDATE automations SET lastExecutionId = :executionId WHERE id = :id")
+    @Query("UPDATE automations SET last_execution_id = :executionId WHERE id = :id")
     suspend fun updateAutomationLastExecution(id: String, executionId: String)
 
     // === History Queries ===
@@ -147,17 +147,17 @@ interface AIDao {
      */
     @Query("""
         SELECT DISTINCT s.* FROM ai_sessions s
-        LEFT JOIN session_messages m ON m.sessionId = s.id
+        LEFT JOIN session_messages m ON m.session_id = s.id
         WHERE s.type = 'CHAT'
-          AND s.endReason IS NOT NULL
+          AND s.end_reason IS NOT NULL
           AND (:search IS NULL OR :search = '' OR
                s.name LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.richContentJson LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.textContent LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.aiMessageJson LIKE '%' || :search || '%' COLLATE NOCASE)
-          AND (:startTime IS NULL OR s.createdAt >= :startTime)
-          AND (:endTime IS NULL OR s.createdAt <= :endTime)
-        ORDER BY s.createdAt DESC
+               m.rich_content_json LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.text_content LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.ai_message_json LIKE '%' || :search || '%' COLLATE NOCASE)
+          AND (:startTime IS NULL OR s.created_at >= :startTime)
+          AND (:endTime IS NULL OR s.created_at <= :endTime)
+        ORDER BY s.created_at DESC
         LIMIT :limit OFFSET :offset
     """)
     suspend fun getChatSessionsWithSearch(
@@ -174,16 +174,16 @@ interface AIDao {
      */
     @Query("""
         SELECT COUNT(DISTINCT s.id) FROM ai_sessions s
-        LEFT JOIN session_messages m ON m.sessionId = s.id
+        LEFT JOIN session_messages m ON m.session_id = s.id
         WHERE s.type = 'CHAT'
-          AND s.endReason IS NOT NULL
+          AND s.end_reason IS NOT NULL
           AND (:search IS NULL OR :search = '' OR
                s.name LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.richContentJson LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.textContent LIKE '%' || :search || '%' COLLATE NOCASE OR
-               m.aiMessageJson LIKE '%' || :search || '%' COLLATE NOCASE)
-          AND (:startTime IS NULL OR s.createdAt >= :startTime)
-          AND (:endTime IS NULL OR s.createdAt <= :endTime)
+               m.rich_content_json LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.text_content LIKE '%' || :search || '%' COLLATE NOCASE OR
+               m.ai_message_json LIKE '%' || :search || '%' COLLATE NOCASE)
+          AND (:startTime IS NULL OR s.created_at >= :startTime)
+          AND (:endTime IS NULL OR s.created_at <= :endTime)
     """)
     suspend fun countChatSessionsWithSearch(
         search: String?,
@@ -197,7 +197,7 @@ interface AIDao {
      */
     @Query("""
         SELECT * FROM session_messages
-        WHERE sessionId = :sessionId AND sender = 'USER'
+        WHERE session_id = :sessionId AND sender = 'USER'
         ORDER BY timestamp ASC
         LIMIT 1
     """)
@@ -227,9 +227,9 @@ interface AIDao {
     @Query("""
         SELECT * FROM ai_sessions
         WHERE type = 'AUTOMATION'
-          AND (endReason IS NULL OR endReason IN ('NETWORK_ERROR', 'SUSPENDED'))
-          AND isActive = 0
-        ORDER BY scheduledExecutionTime ASC
+          AND (end_reason IS NULL OR end_reason IN ('NETWORK_ERROR', 'SUSPENDED'))
+          AND is_active = 0
+        ORDER BY scheduled_execution_time ASC
     """)
     suspend fun getAllIncompleteAutomationSessions(): List<AISessionEntity>
 
@@ -240,11 +240,11 @@ interface AIDao {
      */
     @Query("""
         SELECT * FROM ai_sessions
-        WHERE automationId = :automationId
+        WHERE automation_id = :automationId
           AND type = 'AUTOMATION'
-          AND (endReason IS NULL OR endReason IN ('NETWORK_ERROR', 'SUSPENDED'))
-          AND isActive = 0
-        ORDER BY scheduledExecutionTime DESC
+          AND (end_reason IS NULL OR end_reason IN ('NETWORK_ERROR', 'SUSPENDED'))
+          AND is_active = 0
+        ORDER BY scheduled_execution_time DESC
         LIMIT 1
     """)
     suspend fun getIncompleteAutomationSession(automationId: String): AISessionEntity?
@@ -256,10 +256,10 @@ interface AIDao {
      */
     @Query("""
         SELECT * FROM ai_sessions
-        WHERE automationId = :automationId
+        WHERE automation_id = :automationId
           AND type = 'AUTOMATION'
-          AND endReason IN ('COMPLETED', 'CANCELLED', 'TIMEOUT', 'ERROR')
-        ORDER BY scheduledExecutionTime DESC
+          AND end_reason IN ('COMPLETED', 'CANCELLED', 'TIMEOUT', 'ERROR')
+        ORDER BY scheduled_execution_time DESC
         LIMIT 1
     """)
     suspend fun getLastCompletedAutomationSession(automationId: String): AISessionEntity?
@@ -271,11 +271,11 @@ interface AIDao {
      */
     @Query("""
         SELECT * FROM ai_sessions
-        WHERE automationId = :automationId
+        WHERE automation_id = :automationId
           AND type = 'AUTOMATION'
-          AND (:startTime IS NULL OR createdAt >= :startTime)
-          AND (:endTime IS NULL OR createdAt <= :endTime)
-        ORDER BY scheduledExecutionTime DESC
+          AND (:startTime IS NULL OR created_at >= :startTime)
+          AND (:endTime IS NULL OR created_at <= :endTime)
+        ORDER BY scheduled_execution_time DESC
         LIMIT :limit OFFSET :offset
     """)
     suspend fun getSessionsForAutomationPaginated(
@@ -292,10 +292,10 @@ interface AIDao {
      */
     @Query("""
         SELECT COUNT(*) FROM ai_sessions
-        WHERE automationId = :automationId
+        WHERE automation_id = :automationId
           AND type = 'AUTOMATION'
-          AND (:startTime IS NULL OR createdAt >= :startTime)
-          AND (:endTime IS NULL OR createdAt <= :endTime)
+          AND (:startTime IS NULL OR created_at >= :startTime)
+          AND (:endTime IS NULL OR created_at <= :endTime)
     """)
     suspend fun countSessionsForAutomation(
         automationId: String,

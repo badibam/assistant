@@ -11,26 +11,26 @@ import androidx.room.*
 @Entity(
     tableName = "automations",
     indices = [
-        Index(value = ["zoneId"]),
-        Index(value = ["isEnabled"]),
-        Index(value = ["seedSessionId"])
+        Index(value = ["zone_id"]),
+        Index(value = ["is_enabled"]),
+        Index(value = ["seed_session_id"])
     ]
 )
 data class AutomationEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val zoneId: String,
-    val seedSessionId: String,
-    val scheduleJson: String?,              // JSON of ScheduleConfig
-    val triggerIdsJson: String,             // JSON array of trigger IDs
-    val catchUpWindowMinutes: Long?,        // Null = no limit on how late an occurrence may run
-    val dismissOlderInstances: Boolean,
-    val providerId: String,
-    val isEnabled: Boolean,
-    val createdAt: Long,
-    val updatedAt: Long,                    // Last modification timestamp (config change, enable/disable)
-    val lastExecutionId: String?,
-    val executionHistoryJson: String,       // JSON array of execution session IDs
+    @ColumnInfo(name = "zone_id") val zoneId: String,
+    @ColumnInfo(name = "seed_session_id") val seedSessionId: String,
+    @ColumnInfo(name = "schedule_json") val scheduleJson: String?,              // JSON of ScheduleConfig
+    @ColumnInfo(name = "trigger_ids_json") val triggerIdsJson: String,             // JSON array of trigger IDs
+    @ColumnInfo(name = "catch_up_window_minutes") val catchUpWindowMinutes: Long?,        // Null = no limit on how late an occurrence may run
+    @ColumnInfo(name = "dismiss_older_instances") val dismissOlderInstances: Boolean,
+    @ColumnInfo(name = "provider_id") val providerId: String,
+    @ColumnInfo(name = "is_enabled") val isEnabled: Boolean,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,                    // Last modification timestamp (config change, enable/disable)
+    @ColumnInfo(name = "last_execution_id") val lastExecutionId: String?,
+    @ColumnInfo(name = "execution_history_json") val executionHistoryJson: String,       // JSON array of execution session IDs
 
     /**
      * Group assignment for this automation (nullable string)

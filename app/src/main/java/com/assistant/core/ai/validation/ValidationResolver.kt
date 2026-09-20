@@ -302,12 +302,12 @@ class ValidationResolver(private val context: Context) {
     private suspend fun loadSessionRequiresValidation(sessionId: String): Boolean {
         return try {
             val result = coordinator.processUserAction("ai_sessions.get_session", mapOf(
-                "sessionId" to sessionId
+                "session_id" to sessionId
             ))
 
             if (result.status == CommandStatus.SUCCESS) {
                 val sessionData = result.data?.get("session") as? Map<*, *>
-                (sessionData?.get("requireValidation") as? Boolean) ?: false
+                (sessionData?.get("require_validation") as? Boolean) ?: false
             } else {
                 LogManager.aiService("ValidationResolver: Failed to load session: ${result.error}", "WARN")
                 false
@@ -450,7 +450,7 @@ class ValidationResolver(private val context: Context) {
     private fun extractZoneId(action: DataCommand): String {
         return action.params["zone_id"] as? String
             ?: action.params["id"] as? String
-            ?: action.params["zoneId"] as? String
+            ?: action.params["zone_id"] as? String
             ?: ""
     }
 

@@ -36,7 +36,7 @@ object PromptManager {
         val userCommandProcessor = UserCommandProcessor(context)
 
         // 1. Load session to determine type and get snapshot
-        val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("sessionId" to sessionId))
+        val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf("session_id" to sessionId))
         if (!sessionResult.isSuccess) {
             LogManager.aiPrompt("Failed to load session: ${sessionResult.error}", "ERROR")
             throw IllegalStateException("Failed to load session $sessionId: ${sessionResult.error}")
@@ -47,7 +47,7 @@ object PromptManager {
 
         val sessionTypeStr = sessionData["type"] as? String ?: "CHAT"
         val sessionType = SessionType.valueOf(sessionTypeStr)
-        val existingSnapshot = sessionData["appStateSnapshot"] as? String
+        val existingSnapshot = sessionData["app_state_snapshot"] as? String
 
         // 2. Build Level 1 (DOC + limits) using PromptChunks
         LogManager.aiPrompt("Building Level 1 (DOC)", "DEBUG")
@@ -132,7 +132,7 @@ object PromptManager {
             level3Content = level3Content,
             sessionMessages = sessionMessages,
             scheduledExecutionTime = if (sessionType == SessionType.AUTOMATION) {
-                sessionData["scheduledExecutionTime"] as? Long
+                sessionData["scheduled_execution_time"] as? Long
             } else {
                 null
             }
@@ -157,7 +157,7 @@ object PromptManager {
             }
 
             // Parse richContent if present
-            val richContent = (msg["richContentJson"] as? String)?.let { json ->
+            val richContent = (msg["rich_content_json"] as? String)?.let { json ->
                 try {
                     parseRichMessage(json)
                 } catch (e: Exception) {
@@ -167,7 +167,7 @@ object PromptManager {
             }
 
             // Parse aiMessage if present
-            val aiMessage = (msg["aiMessageJson"] as? String)?.let { json ->
+            val aiMessage = (msg["ai_message_json"] as? String)?.let { json ->
                 try {
                     parseAIMessage(json)
                 } catch (e: Exception) {
@@ -177,7 +177,7 @@ object PromptManager {
             }
 
             // Parse systemMessage if present
-            val systemMessage = (msg["systemMessageJson"] as? String)?.let { json ->
+            val systemMessage = (msg["system_message_json"] as? String)?.let { json ->
                 try {
                     parseSystemMessage(json)
                 } catch (e: Exception) {
@@ -191,12 +191,12 @@ object PromptManager {
                 timestamp = timestamp,
                 sender = sender,
                 richContent = richContent,
-                textContent = msg["textContent"] as? String,
+                textContent = msg["text_content"] as? String,
                 aiMessage = aiMessage,
-                aiMessageJson = msg["aiMessageJson"] as? String,
+                aiMessageJson = msg["ai_message_json"] as? String,
                 systemMessage = systemMessage,
                 executionMetadata = null, // TODO: Parse when implementing automation
-                excludeFromPrompt = msg["excludeFromPrompt"] as? Boolean ?: false
+                excludeFromPrompt = msg["exclude_from_prompt"] as? Boolean ?: false
             )
         }
     }
