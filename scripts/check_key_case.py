@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Ratchet on the project's naming rule for string keys.
 
-The rule: a key written inside a string is snake_case -- service parameter, result key,
-schema field, setting name, column. camelCase belongs to Kotlin identifiers only. The one
-exception is vocabulary the project did not write: JSON Schema's own keywords.
+The rule: a key is snake_case -- service parameter, result key, schema field, setting name,
+column. camelCase belongs to Kotlin identifiers only. The one exception is vocabulary the
+project did not write: JSON Schema's own keywords.
+
+A key is usually written inside a string, but not always: a property of a @Serializable class
+names a JSON field too, so it is checked as well.
 
 The rule holds only if something checks it, so this script counts the keys that still break
 it and compares them to a versioned baseline. A key absent from the baseline fails the check:
@@ -38,6 +41,11 @@ FOREIGN = {
 # A string literal holding a single identifier with an inner capital: "toolInstanceId".
 KEY = re.compile(r'[`"]([a-z][a-zA-Z0-9]*[A-Z][a-zA-Z0-9]*)[`"]')
 
+# A property of a @Serializable class is a key too, written in Kotlin rather than in a string:
+# kotlinx names the JSON field after the property unless @SerialName says otherwise. Missing
+# that is how schedule configs came to be written with one spelling and read with another.
+PROPERTY = re.compile(r'^\s*(?:val|var)\s+([a-z][a-zA-Z0-9]*[A-Z][a-zA-Z0-9]*)\s*:')
+
 
 def collect():
     """Every camelCase key found in the sources, mapped to the files holding it."""
@@ -48,10 +56,18 @@ def collect():
         if any(path.as_posix().endswith(excluded) for excluded in EXCLUDED):
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
+        where = path.relative_to(ROOT).as_posix()
         for key in KEY.findall(text):
             if key in FOREIGN:
                 continue
-            found.setdefault(key, set()).add(path.relative_to(ROOT).as_posix())
+            found.setdefault(key, set()).add(where)
+        if "@Serializable" in text:
+            for line in text.splitlines():
+                if "@SerialName" in line:
+                    continue
+                match = PROPERTY.match(line)
+                if match and match.group(1) not in FOREIGN:
+                    found.setdefault(match.group(1), set()).add(where)
     return found
 
 

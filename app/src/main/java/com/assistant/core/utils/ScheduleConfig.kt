@@ -13,8 +13,8 @@ import kotlinx.serialization.SerialName
 data class ScheduleConfig(
     val pattern: SchedulePattern,
     val enabled: Boolean = true,
-    val startDate: Long? = null,        // Start executing from this date (null = now)
-    val endDate: Long? = null           // Stop executing after this date (null = indefinite)
+    @SerialName("start_date") val startDate: Long? = null,  // Start executing from this date (null = now)
+    @SerialName("end_date") val endDate: Long? = null       // Stop executing after this date (null = indefinite)
 )
 
 /**
@@ -48,7 +48,7 @@ sealed class SchedulePattern {
     @Serializable
     @SerialName("WeeklySimple")
     data class WeeklySimple(
-        val daysOfWeek: List<Int>,  // 1-7
+        @SerialName("days_of_week") val daysOfWeek: List<Int>,  // 1-7
         val time: String             // "09:00"
     ) : SchedulePattern()
 
@@ -67,7 +67,7 @@ sealed class SchedulePattern {
     @SerialName("MonthlyRecurrent")
     data class MonthlyRecurrent(
         val months: List<Int>,       // 1-12
-        val dayOfMonth: Int,         // 1-31
+        @SerialName("day_of_month") val dayOfMonth: Int,  // 1-31
         val time: String
     ) : SchedulePattern()
 
@@ -113,7 +113,7 @@ sealed class SchedulePattern {
  */
 @Serializable
 data class WeekMoment(
-    val dayOfWeek: Int,  // 1=Monday, 7=Sunday
+    @SerialName("day_of_week") val dayOfWeek: Int,  // 1=Monday, 7=Sunday
     val time: String     // HH:mm format
 )
 

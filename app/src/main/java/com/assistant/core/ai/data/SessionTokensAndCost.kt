@@ -1,5 +1,6 @@
 package com.assistant.core.ai.data
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.json.JSONObject
 
@@ -10,10 +11,10 @@ import org.json.JSONObject
  */
 @Serializable
 data class SessionTokens(
-    val totalUncachedInputTokens: Int = 0,
-    val totalCacheWriteTokens: Int = 0,
-    val totalCacheReadTokens: Int = 0,
-    val totalOutputTokens: Int = 0
+    @SerialName("total_uncached_input_tokens") val totalUncachedInputTokens: Int = 0,
+    @SerialName("total_cache_write_tokens") val totalCacheWriteTokens: Int = 0,
+    @SerialName("total_cache_read_tokens") val totalCacheReadTokens: Int = 0,
+    @SerialName("total_output_tokens") val totalOutputTokens: Int = 0
 ) {
     /**
      * Serialize to JSON string for database storage
@@ -74,12 +75,12 @@ data class SessionTokens(
  */
 @Serializable
 data class SessionCostBreakdown(
-    val modelId: String,
-    val inputCost: Double,
-    val cacheWriteCost: Double,
-    val cacheReadCost: Double,
-    val outputCost: Double,
-    val totalCost: Double
+    @SerialName("model_id") val modelId: String,
+    @SerialName("input_cost") val inputCost: Double,
+    @SerialName("cache_write_cost") val cacheWriteCost: Double,
+    @SerialName("cache_read_cost") val cacheReadCost: Double,
+    @SerialName("output_cost") val outputCost: Double,
+    @SerialName("total_cost") val totalCost: Double
 ) {
     /**
      * Serialize to JSON string for database storage

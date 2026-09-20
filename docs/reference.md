@@ -12,7 +12,7 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - Commentaires et debug en anglais.
 - Le système de strings est obligatoire : `s.tool()`, `s.shared()`. Aucune string affichée en dur dans le code.
 - Jamais de mécanisme de repli (fallback) sans validation explicite. Un échec est explicite ou n'est pas.
-- Une clé écrite dans une chaîne s'écrit en snake_case — paramètre de service, clé de résultat, champ de schéma, nom de réglage, colonne. Le camelCase est réservé aux identifiants Kotlin. Seule exception : le vocabulaire JSON Schema (`additionalProperties`, `minLength`…), qui n'est pas le nôtre. `./scripts/check_key_case.py` la garde : il ne reste aucune clé en camelCase, et le contrôle échoue dès qu'une nouvelle apparaît.
+- Une clé s'écrit en snake_case — paramètre de service, clé de résultat, champ de schéma, nom de réglage, colonne. Le camelCase est réservé aux identifiants Kotlin. Une clé vit le plus souvent dans une chaîne, mais pas toujours : une propriété de classe `@Serializable` nomme aussi un champ JSON, et porte donc un `@SerialName` en snake_case — comme `@ColumnInfo` pour une colonne Room. Seule exception : le vocabulaire JSON Schema (`additionalProperties`, `minLength`…), qui n'est pas le nôtre. `./scripts/check_key_case.py` la garde : il ne reste aucune clé en camelCase, et le contrôle échoue dès qu'une nouvelle apparaît.
 - Vérifier le pattern dans la doc avant d'implémenter.
 - Aucun code legacy laissé derrière : ce qui est remplacé est supprimé dans le même geste.
 - Commenter abondamment, pour la relecture ultérieure.
