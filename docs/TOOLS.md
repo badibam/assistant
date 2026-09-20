@@ -25,10 +25,18 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l'uti
 **Structure** :
 - **Définitions** : Dans `custom_fields` array de la config (name, display_name, type, always_visible)
 - **Valeurs** : Dans `custom_fields` object des données (clé = name du champ)
-- **Types** : V1 supporte `TEXT_UNLIMITED` uniquement (source unique : `FieldType` enum)
+- **Types** : source unique `FieldType` — TEXT, NUMERIC, SCALE, CHOICE, BOOLEAN, RANGE, DATE, TIME, DATETIME
 - **Validation** : Intégrée automatiquement dans les schémas data enrichis
 
 **Pattern** : Les schémas data nécessitent `toolInstanceId` pour enrichissement avec custom fields.
+
+#### `name` est attribué, jamais choisi
+
+`name` est l'identifiant technique : la clé sous laquelle les valeurs sont stockées. Il est attribué par `ToolInstanceService.processCustomFields` à partir de `display_name`, et par lui seul — ni l'écran de configuration ni l'IA n'en fournissent un. Un champ nouveau arrive donc **sans** `name` ; `display_name` reste librement modifiable.
+
+Conséquence : un `name` envoyé dans une mise à jour de config doit désigner un champ existant, sinon la mise à jour est refusée. C'est ce qui rend un renommage inexprimable plutôt que détecté après coup — les champs sont comparés par leur `name`, donc un renommage ressortirait comme une suppression suivie d'un ajout, et la suppression efface le champ de toutes les entrées.
+
+Retirer un champ de la liste reste une suppression ordinaire : ses valeurs sont effacées, c'est ce que ça veut dire.
 
 ## Architecture Outil
 

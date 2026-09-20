@@ -10,7 +10,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 Les points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vérifié ou soupçon). À trancher en priorité :
 
-- Renommer un custom field détruit les valeurs historiques (`Removed + Added` → `STRIP_FIELD`). Migration rename-aware à écrire avant que ça morde sur des données réelles.
 
 ## Divers
 
@@ -24,3 +23,4 @@ Les points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vér
 
 - Rejouer les exemples du prompt L1 dans une session CHAT réelle : la règle est posée dans `docs/AI.md`, mais les exemples corrigés (périodes ISO, pagination par page, grammaire des champs) n'ont été vérifiés que sur lecture du code.
 - Exécutions d'automation manquées : vérifier sur l'appareil le passage en base 22→23, la saisie de la fenêtre dans l'éditeur, et un rattrapage réel (automation programmée, app fermée plusieurs jours).
+- Champs personnalisés : vérifier la création d'un champ depuis l'écran de configuration, maintenant que le nom technique est attribué par le service et non plus envoyé par le formulaire.
