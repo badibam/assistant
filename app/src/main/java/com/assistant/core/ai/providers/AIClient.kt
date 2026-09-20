@@ -1,5 +1,6 @@
 package com.assistant.core.ai.providers
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.providers.AIProvider
@@ -115,7 +116,9 @@ class AIClient(private val context: Context) {
                     )
                 }
 
-                val providerConfig = configResult.data?.get("config") as? String ?: "{}"
+                @Suppress("UNCHECKED_CAST")
+                val providerConfig = (configResult.data?.get("config") as? Map<String, Any?>)
+                    ?.let { JsonUtils.toJSONObject(it).toString() } ?: "{}"
                 val isConfigured = configResult.data?.get("is_configured") as? Boolean ?: false
 
                 if (!isConfigured) {

@@ -1,5 +1,6 @@
 package com.assistant.core.ai.services
 
+import com.assistant.core.utils.JsonUtils
 import android.content.Context
 import com.assistant.core.ai.database.AIProviderConfigEntity
 import com.assistant.core.ai.providers.AIProviderRegistry
@@ -87,7 +88,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             return OperationResult.success(mapOf(
                 "provider_id" to configEntity.providerId,
                 "display_name" to configEntity.displayName,
-                "config" to configEntity.configJson,
+                "config" to JsonUtils.toMap(configEntity.configJson),
                 "is_configured" to configEntity.isConfigured,
                 "is_active" to configEntity.isActive,
                 "created_at" to configEntity.createdAt,
@@ -105,7 +106,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
     ): OperationResult {
         val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("ai_error_param_provider_id_required"))
-        val configJson = params.optString("config").takeIf { it.isNotEmpty() }
+        val configJson = params.optJSONObject("config")?.toString()
             ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
 
         LogManager.aiService("Setting config for provider: $providerId")

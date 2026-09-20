@@ -1,5 +1,6 @@
 package com.assistant.core.ai.ui.screens
 
+import com.assistant.core.utils.JsonUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -139,7 +140,9 @@ fun AIProvidersScreen(
                     onLoading = { },
                     onError = { /* Provider not configured yet, that's ok */ }
                 )?.let { result ->
-                    existingConfig = result.data?.get("config") as? String ?: "{}"
+                    @Suppress("UNCHECKED_CAST")
+                    existingConfig = (result.data?.get("config") as? Map<String, Any?>)
+                        ?.let { JsonUtils.toJSONObject(it).toString() } ?: "{}"
                 }
                 isLoadingConfig = false
             }
@@ -154,7 +157,7 @@ fun AIProvidersScreen(
                                 "ai_provider_config.set",
                                 mapOf(
                                     "provider_id" to providerId,
-                                    "config" to configJson
+                                    "config" to JsonUtils.toMap(configJson)
                                 )
                             )
 
