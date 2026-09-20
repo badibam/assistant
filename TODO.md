@@ -8,7 +8,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Les points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vérifié ou soupçon). À trancher en priorité :
+Cinq points dans `docs/design/architecture-audit-debt.md`, tous vérifiés. Le seul qui soit à la fois petit et mécanique : `verbalize()` est synchrone dans l'interface, et quatre sites ouvrent un `runBlocking` dedans pour résoudre un nom. Les autres sont soit transversaux (chaînes JSON aux frontières, conventions de nommage des params de service), soit des décisions à prendre plutôt que du code à écrire.
 
 
 ## Divers
