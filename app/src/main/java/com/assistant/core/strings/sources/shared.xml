@@ -164,6 +164,12 @@
     <string name="ai_error_tool_data_fields_missing">Paramètre \'fields\' obligatoire manquant. Une requête TOOL_DATA doit lister explicitement les champs à récupérer. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\", \"custom_fields.notes\"]</string>
     <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
+    <!-- AI Errors - Temporal parameters -->
+    <string name="ai_error_period_invalid_iso">Date ISO 8601 illisible : %1$s. Format attendu : 2025-11-23T09:00:00+01:00</string>
+    <string name="ai_error_period_unknown_format">Période illisible : %1$s. Formats acceptés : période relative (offset_TYPE, ex. -7_DAY), marqueur NOW, ou date ISO 8601.</string>
+    <string name="ai_error_period_unknown_type">Type de période inconnu : %1$s. Types acceptés : %2$s</string>
+    <string name="ai_error_timestamp_not_a_number">Le paramètre %1$s doit être un timestamp en millisecondes, reçu : %2$s</string>
+
     <!-- AI Data Types - Enrichment descriptions -->
     <string name="ai_data_zone">données zone</string>
     <string name="ai_data_tool">données outil</string>

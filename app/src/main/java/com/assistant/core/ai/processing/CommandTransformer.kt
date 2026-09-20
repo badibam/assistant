@@ -4,6 +4,13 @@ import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
 import com.assistant.core.strings.Strings
+import com.assistant.core.strings.StringsContext
+import com.assistant.core.ui.components.PeriodType
+import com.assistant.core.ui.components.RelativePeriod
+import com.assistant.core.ui.components.getPeriodEndTimestamp
+import com.assistant.core.ui.components.resolveRelativePeriod
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 
 /**
@@ -57,7 +64,7 @@ object CommandTransformer {
                 val executableCommand = when (command.type) {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
-                    "TOOL_DATA" -> transformToolDataCommand(command)
+                    "TOOL_DATA" -> transformToolDataCommand(command, s)
                     "TOOL_STATS" -> transformToolStatsCommand(command)
                     "TOOL_DATA_SAMPLE" -> transformToolDataSampleCommand(command)
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
@@ -162,7 +169,7 @@ object CommandTransformer {
         )
     }
 
-    private fun transformToolDataCommand(command: DataCommand): ExecutableCommand? {
+    private fun transformToolDataCommand(command: DataCommand, s: StringsContext): ExecutableCommand? {
         LogManager.aiPrompt("transformToolDataCommand() - routing to tool_data.get", "VERBOSE")
 
         val toolInstanceId = command.params["id"] as? String
@@ -174,7 +181,7 @@ object CommandTransformer {
         val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
 
         // Apply temporal parameter resolution
-        applyTemporalParameters(params, command)
+        applyTemporalParameters(params, command, s)
 
         // Add pagination if specified
         command.params["limit"]?.let { params["limit"] = it }
@@ -197,7 +204,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_STATS command to tool_data.stats call
         // - Similar to TOOL_DATA but with aggregate functions
         // - Generate appropriate groupBy and functions parameters
-        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command)
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s)
 
         return null
     }
@@ -208,7 +215,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
         // - Add default limit for sampling (e.g., limit: 10)
         // - Use recent data ordering (orderBy: timestamp DESC)
-        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command)
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s)
 
         return null
     }
@@ -277,90 +284,101 @@ object CommandTransformer {
 
     /**
      * Apply temporal parameters to command params
-     * Handles relative periods (period_start/period_end), absolute timestamps (startTime/endTime), and NOW marker
+     * Handles period_start/period_end (the documented form) and absolute startTime/endTime
      *
-     * For relative periods:
-     * - Format: "offset_PeriodType" (e.g., "-7_DAY" = 7 days ago, "0_WEEK" = current week)
-     * - Automatically applies user's dayStartHour and weekStartDay configuration
-     * - AI doesn't need to handle timezones or calendar calculations
+     * Three formats are accepted for period_start/period_end, as documented in the AI prompt (Part E):
+     * - Relative period: "offset_PeriodType" (e.g. "-7_DAY" = 7 days ago, "0_WEEK" = current week).
+     *   Applies the user's dayStartHour and weekStartDay, so the AI never handles calendars.
+     * - NOW marker: the exact current instant, not a period, so no period normalization.
+     * - ISO 8601: a fixed date, with or without offset, resolved in the app timezone.
      *
-     * For NOW marker:
-     * - String "NOW" in period_start or period_end
-     * - Resolves to current timestamp (System.currentTimeMillis())
-     * - Universal instant, no period normalization
+     * For absolute timestamps (startTime/endTime): milliseconds, as a number. Rare, and never
+     * produced by the AI, whose commands are all marked relative.
      *
-     * For absolute timestamps:
-     * - Direct Long values in milliseconds
-     * - Used only when explicitly provided (less common)
+     * Anything else throws: an unreadable period must reach the AI as an error, never as a
+     * silently missing filter, which would widen the query to the whole history.
      */
-    private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand) {
+    private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand, s: StringsContext) {
         LogManager.aiPrompt("applyTemporalParameters() - CALLED with command.isRelative=${command.isRelative}, command.params=${command.params}", "DEBUG")
 
-        // Handle start time - can be relative, NOW, OR absolute
         val periodStart = command.params["period_start"] as? String
-        val startTimeAbsolute = command.params["startTime"]
-
         if (periodStart != null) {
-            when {
-                periodStart == "NOW" -> {
-                    // NOW marker: use current timestamp
-                    val nowTimestamp = System.currentTimeMillis()
-                    params["startTime"] = nowTimestamp
-                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_start=NOW to startTime=$nowTimestamp", "DEBUG")
-                }
-                else -> {
-                    // Relative start period: resolve to absolute timestamp
-                    LogManager.aiPrompt("applyTemporalParameters() - Found relative period_start: $periodStart", "DEBUG")
-                    val (offset, type) = periodStart.split("_")
-                    val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
-                        offset = offset.toInt(),
-                        type = com.assistant.core.ui.components.PeriodType.valueOf(type)
-                    )
-                    val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
-                    val startTime = resolvedPeriod.timestamp
-                    params["startTime"] = startTime
-                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_start to startTime=$startTime", "DEBUG")
-                }
-            }
-        } else if (startTimeAbsolute != null) {
-            // Absolute start timestamp: use directly
-            params["startTime"] = startTimeAbsolute
-            LogManager.aiPrompt("applyTemporalParameters() - Using absolute startTime=$startTimeAbsolute", "DEBUG")
+            params["startTime"] = resolvePeriodBound(periodStart, isEnd = false, s = s)
+        } else {
+            command.params["startTime"]?.let { params["startTime"] = requireTimestamp(it, "startTime", s) }
         }
 
-        // Handle end time - can be relative, NOW, OR absolute
         val periodEnd = command.params["period_end"] as? String
-        val endTimeAbsolute = command.params["endTime"]
-
         if (periodEnd != null) {
-            when {
-                periodEnd == "NOW" -> {
-                    // NOW marker: use current timestamp
-                    val nowTimestamp = System.currentTimeMillis()
-                    params["endTime"] = nowTimestamp
-                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_end=NOW to endTime=$nowTimestamp", "DEBUG")
-                }
-                else -> {
-                    // Relative end period: resolve to absolute timestamp
-                    LogManager.aiPrompt("applyTemporalParameters() - Found relative period_end: $periodEnd", "DEBUG")
-                    val (offset, type) = periodEnd.split("_")
-                    val relativePeriod = com.assistant.core.ui.components.RelativePeriod(
-                        offset = offset.toInt(),
-                        type = com.assistant.core.ui.components.PeriodType.valueOf(type)
-                    )
-                    val resolvedPeriod = com.assistant.core.ui.components.resolveRelativePeriod(relativePeriod)
-                    val endTime = com.assistant.core.ui.components.getPeriodEndTimestamp(resolvedPeriod)
-                    params["endTime"] = endTime
-                    LogManager.aiPrompt("applyTemporalParameters() - Resolved period_end to endTime=$endTime", "DEBUG")
-                }
-            }
-        } else if (endTimeAbsolute != null) {
-            // Absolute end timestamp: use directly
-            params["endTime"] = endTimeAbsolute
-            LogManager.aiPrompt("applyTemporalParameters() - Using absolute endTime=$endTimeAbsolute", "DEBUG")
+            params["endTime"] = resolvePeriodBound(periodEnd, isEnd = true, s = s)
+        } else {
+            command.params["endTime"]?.let { params["endTime"] = requireTimestamp(it, "endTime", s) }
         }
 
         LogManager.aiPrompt("applyTemporalParameters() - EXIT with params=$params", "DEBUG")
+    }
+
+    /**
+     * Resolve one bound of a temporal filter to a UTC timestamp.
+     *
+     * isEnd selects which edge of a relative period is taken: a relative start is the first
+     * instant of the period, a relative end is its last one, so "-1_DAY" on both bounds
+     * covers all of yesterday.
+     *
+     * @throws IllegalArgumentException if the value matches none of the three documented formats
+     */
+    private fun resolvePeriodBound(value: String, isEnd: Boolean, s: StringsContext): Long {
+        if (value == "NOW") {
+            return System.currentTimeMillis()
+        }
+
+        if (DateTimeConverter.looksLikeISO8601(value)) {
+            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+            return try {
+                DateTimeConverter.isoToTimestamp(value, timezone)
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException(s.shared("ai_error_period_invalid_iso").format(value), e)
+            }
+        }
+
+        // Relative period: "offset_PeriodType"
+        val parts = value.split("_")
+        if (parts.size != 2) {
+            throw IllegalArgumentException(s.shared("ai_error_period_unknown_format").format(value))
+        }
+        val offset = parts[0].toIntOrNull()
+            ?: throw IllegalArgumentException(s.shared("ai_error_period_unknown_format").format(value))
+        val type = try {
+            PeriodType.valueOf(parts[1])
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException(
+                s.shared("ai_error_period_unknown_type")
+                    .format(parts[1], PeriodType.entries.joinToString(", ") { it.name }),
+                e
+            )
+        }
+
+        val resolved = resolveRelativePeriod(RelativePeriod(offset = offset, type = type))
+        return if (isEnd) getPeriodEndTimestamp(resolved) else resolved.timestamp
+    }
+
+    /**
+     * Read an absolute startTime/endTime as a millisecond timestamp.
+     *
+     * A non-numeric value used to travel through untouched and be read further down as 0,
+     * producing a wrong time range with no error anywhere.
+     *
+     * @throws IllegalArgumentException if the value is not a number
+     */
+    private fun requireTimestamp(value: Any, paramName: String, s: StringsContext): Long {
+        return when (value) {
+            is Long -> value
+            is Int -> value.toLong()
+            is Double -> value.toLong()
+            else -> throw IllegalArgumentException(
+                s.shared("ai_error_timestamp_not_a_number").format(paramName, value.toString())
+            )
+        }
     }
 
 }

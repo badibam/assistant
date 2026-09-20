@@ -232,7 +232,7 @@ object DateTimeConverter {
      * - "2025-03-15T14:30:00+01:00"
      * - "2025-03-15T14:30:00Z"
      */
-    private fun looksLikeISO8601(value: String): Boolean {
+    fun looksLikeISO8601(value: String): Boolean {
         // ISO 8601 datetime pattern: YYYY-MM-DDTHH:MM:SS[.mmm][Z|±HH:MM]
         // Simplified regex for detection (not strict validation)
         val iso8601Pattern = Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}""")
