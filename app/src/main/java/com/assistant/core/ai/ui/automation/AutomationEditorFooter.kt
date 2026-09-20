@@ -32,6 +32,11 @@ fun AutomationEditorFooter(
     onSegmentsChange: (List<MessageSegment>) -> Unit,
     scheduleConfig: ScheduleConfig?,
     onConfigureSchedule: () -> Unit,
+    catchUpWindowMinutes: Long?,
+    catchUpUnitChosen: Boolean,
+    onCatchUpWindowChange: (minutes: Long?, unitChosen: Boolean) -> Unit,
+    runEveryMissed: Boolean,
+    onRunEveryMissedChange: (Boolean) -> Unit,
     triggersCount: Int,
     onConfigureTriggers: () -> Unit,
     onRefresh: () -> Unit,  // Refresh message from composer (update DB + reload preview)
@@ -110,6 +115,18 @@ fun AutomationEditorFooter(
                     }
                 }
             }
+        }
+
+        // Catch-up settings, only meaningful once there is a schedule to miss
+        if (scheduleConfig != null) {
+            CatchUpSettings(
+                automationId = automation?.id,
+                windowMinutes = catchUpWindowMinutes,
+                unitChosen = catchUpUnitChosen,
+                onWindowChange = onCatchUpWindowChange,
+                runEveryMissed = runEveryMissed,
+                onRunEveryMissedChange = onRunEveryMissedChange
+            )
         }
 
         // Form actions

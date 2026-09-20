@@ -430,6 +430,12 @@ private fun SeedMode(
     var segments by rememberSaveable(stateSaver = MessageSegmentsSaver) { mutableStateOf<List<MessageSegment>>(emptyList()) } // Composer editing (local temp state)
     var displaySegments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Display from DB (source of truth)
     var scheduleConfig by remember { mutableStateOf<com.assistant.core.utils.ScheduleConfig?>(null) }
+    // Catch-up window, in minutes; null means no limit. catchUpUnitChosen tells that null apart
+    // from "nothing picked yet", which is the state a newly scheduled automation starts in and
+    // which the save refuses: the setting is required and has no sensible default.
+    var catchUpWindowMinutes by remember { mutableStateOf<Long?>(null) }
+    var catchUpUnitChosen by remember { mutableStateOf(false) }
+    var runEveryMissed by remember { mutableStateOf(false) }
     var triggersCount by remember { mutableStateOf(0) }
     var userMessageId by remember { mutableStateOf<String?>(null) } // ID of the USER message in SEED session
 
@@ -467,6 +473,7 @@ private fun SeedMode(
                             kotlinx.serialization.json.Json.decodeFromString(it)
                         },
                         triggerIds = (automationMap["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+                        catchUpWindowMinutes = (automationMap["catch_up_window_minutes"] as? Number)?.toLong(),
                         dismissOlderInstances = automationMap["dismiss_older_instances"] as? Boolean ?: false,
                         providerId = automationMap["provider_id"] as String,
                         isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
@@ -478,6 +485,11 @@ private fun SeedMode(
 
                     // Initialize states from automation
                     scheduleConfig = automation?.schedule
+                    catchUpWindowMinutes = automation?.catchUpWindowMinutes
+                    // An automation already carrying a schedule has been through this form, so a
+                    // null window is a deliberate "no limit"; one without has never been asked.
+                    catchUpUnitChosen = automation?.schedule != null
+                    runEveryMissed = automation?.dismissOlderInstances == false
                     triggersCount = automation?.triggerIds?.size ?: 0
 
                     LogManager.aiUI("SeedMode loaded automation: ${automation?.id}", "DEBUG")
@@ -812,6 +824,14 @@ private fun SeedMode(
                     onSegmentsChange = { segments = it },
                     scheduleConfig = scheduleConfig,
                     onConfigureSchedule = { showScheduleEditor = true },
+                    catchUpWindowMinutes = catchUpWindowMinutes,
+                    catchUpUnitChosen = catchUpUnitChosen,
+                    onCatchUpWindowChange = { minutes, chosen ->
+                        catchUpWindowMinutes = minutes
+                        catchUpUnitChosen = chosen
+                    },
+                    runEveryMissed = runEveryMissed,
+                    onRunEveryMissedChange = { runEveryMissed = it },
                     triggersCount = triggersCount,
                     onConfigureTriggers = { showTriggersEditor = true },
                     onRefresh = {
@@ -899,6 +919,18 @@ private fun SeedMode(
                                         com.assistant.core.utils.ScheduleConfig.serializer(),
                                         it
                                     )
+                                }
+
+                                if (scheduleConfig != null) {
+                                    if (!catchUpUnitChosen) {
+                                        errorMessage = s.shared("automation_catch_up_required")
+                                        return@launch
+                                    }
+                                    // JSONObject.NULL is how an explicit "no limit" travels; a
+                                    // missing key would mean "keep what is stored" instead.
+                                    updateParams["catch_up_window_minutes"] =
+                                        catchUpWindowMinutes ?: org.json.JSONObject.NULL
+                                    updateParams["dismiss_older_instances"] = !runEveryMissed
                                 }
 
                                 val result = coordinator.processUserAction("automations.update", updateParams)
