@@ -361,7 +361,7 @@ class AIEventProcessor(
 
             // 4. Transform commands via UserCommandProcessor
             val processor = UserCommandProcessor(context)
-            val executableCommands = processor.processCommands(allDataCommands)
+            val executableCommands = processor.processCommands(allDataCommands, periodReference(state, sessionId))
 
             // 5. Execute via CommandExecutor with sessionId for schema deduplication
             val executor = commandExecutor
@@ -968,6 +968,38 @@ class AIEventProcessor(
     }
 
     /**
+     * The instant this session's relative periods resolve against.
+     *
+     * An AUTOMATION reads the data of the run it was scheduled for, not of the moment it finally
+     * got to run: reopened after a long absence, a daily automation catching up on the 3rd of
+     * August must read the 3rd of August. Everything else resolves against the clock.
+     *
+     * The scheduled time is read from the session rather than carried in the state, so a resumed
+     * session gets the same answer as the run that started it.
+     */
+    private suspend fun periodReference(state: AIState, sessionId: String): Long {
+        if (state.sessionType != SessionType.AUTOMATION) {
+            return System.currentTimeMillis()
+        }
+
+        val sessionResult = coordinator.processUserAction("ai_sessions.get_session", mapOf(
+            "sessionId" to sessionId
+        ))
+        val sessionData = (sessionResult.data?.get("session") as? Map<*, *>)
+        val scheduled = sessionData?.get("scheduledExecutionTime") as? Long
+
+        if (scheduled == null) {
+            // An AUTOMATION session always carries one; without it the periods would silently
+            // move to today, which is the bug this exists to prevent.
+            LogManager.aiSession("periodReference: AUTOMATION session $sessionId has no scheduledExecutionTime, falling back to now (data error)", "ERROR")
+            return System.currentTimeMillis()
+        }
+
+        LogManager.aiSession("periodReference: AUTOMATION session $sessionId resolves periods on its scheduled time", "DEBUG")
+        return scheduled
+    }
+
+    /**
      * Schedule network retry with 30s delay.
      */
     private fun scheduleNetworkRetry(state: AIState) {
@@ -1033,7 +1065,7 @@ class AIEventProcessor(
 
             // Process via AICommandProcessor
             val processor = AICommandProcessor(context)
-            val transformationResult = processor.processDataCommands(dataCommands)
+            val transformationResult = processor.processDataCommands(dataCommands, periodReference(state, sessionId))
 
             // Check if all commands were successfully transformed
             if (transformationResult.errors.isNotEmpty()) {

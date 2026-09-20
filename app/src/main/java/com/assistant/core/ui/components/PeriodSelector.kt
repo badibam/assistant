@@ -105,14 +105,18 @@ fun calculatePeriodOffset(
 
 /**
  * Resolve relative period to absolute Period
- * Applies offset from current period
+ * Applies offset from the period containing [reference]
+ *
+ * [reference] is mandatory on purpose. "Yesterday" only means something against some instant,
+ * and which instant is a decision of the caller: the clock for anything the user is looking at,
+ * the scheduled time for an automation run, which may be catching up on a day long past.
+ * Reading the clock here by default is what made 47 catch-up runs read the same day's data.
  */
-fun resolveRelativePeriod(relativePeriod: RelativePeriod): Period {
+fun resolveRelativePeriod(relativePeriod: RelativePeriod, reference: Long): Period {
     val dayStartHour = AppConfigManager.getDayStartHour()
     val weekStartDay = AppConfigManager.getWeekStartDay()
 
-    val now = System.currentTimeMillis()
-    val currentNormalized = normalizeTimestampWithConfig(now, relativePeriod.type)
+    val currentNormalized = normalizeTimestampWithConfig(reference, relativePeriod.type)
     var targetPeriod = Period(currentNormalized, relativePeriod.type)
 
     // Apply offset by navigating periods

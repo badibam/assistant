@@ -36,9 +36,11 @@ class AICommandProcessor(private val context: Context) {
      * - AI doesn't need to handle timestamps, timezones, or calendar calculations
      *
      * @param commands List of DataCommands from AI for data retrieval
+     * @param reference Instant relative periods resolve against: an automation's scheduled time,
+     *   so a run catching up on a past day reads that day; the clock for a chat.
      * @return TransformationResult with executable commands and transformation errors
      */
-    fun processDataCommands(commands: List<DataCommand>): TransformationResult {
+    fun processDataCommands(commands: List<DataCommand>, reference: Long): TransformationResult {
         LogManager.aiService("AICommandProcessor processing ${commands.size} data commands from AI", "DEBUG")
 
         // VALIDATION: Check that TOOL_DATA commands include 'fields' parameter
@@ -110,7 +112,7 @@ class AICommandProcessor(private val context: Context) {
         LogManager.aiService("Marked ${relativeCommands.size} AI dataCommands as relative", "DEBUG")
 
         // Delegate transformation to shared CommandTransformer
-        val result = CommandTransformer.transformToExecutable(relativeCommands, context)
+        val result = CommandTransformer.transformToExecutable(relativeCommands, context, reference)
 
         LogManager.aiService("AICommandProcessor generated ${result.executableCommands.size} executable data commands, ${result.errors.size} errors", "DEBUG")
         return result

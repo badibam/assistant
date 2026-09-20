@@ -22,13 +22,15 @@ class UserCommandProcessor(private val context: Context) {
      * Process user commands from enrichment blocks into executable commands
      *
      * @param commands List of DataCommands from user enrichments
+     * @param reference Instant relative periods resolve against. The clock for a query a user
+     *   is building; an automation's scheduled time for the enrichments of its starting message.
      * @return List of ExecutableCommands ready for coordinator dispatch (errors logged but not returned for user commands)
      */
-    fun processCommands(commands: List<DataCommand>): List<ExecutableCommand> {
+    fun processCommands(commands: List<DataCommand>, reference: Long): List<ExecutableCommand> {
         LogManager.aiPrompt("UserCommandProcessor processing ${commands.size} user commands", "DEBUG")
 
         // Delegate to shared transformer
-        val result = CommandTransformer.transformToExecutable(commands, context)
+        val result = CommandTransformer.transformToExecutable(commands, context, reference)
 
         // Log errors for user commands (user can see results directly, no retry mechanism)
         if (result.errors.isNotEmpty()) {

@@ -49,7 +49,8 @@ object ActionVerbalizerHelper {
                 val processor = AICommandProcessor(context)
                 processor.transformActionForVerbalization(action)
             } else {
-                val result = CommandTransformer.transformToExecutable(listOf(action), context)
+                // Verbalization is shown to the user as they read it, so periods resolve now
+                val result = CommandTransformer.transformToExecutable(listOf(action), context, System.currentTimeMillis())
                 result.executableCommands.firstOrNull()
             }
 

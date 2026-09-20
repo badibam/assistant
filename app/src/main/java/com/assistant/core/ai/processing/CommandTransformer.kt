@@ -40,11 +40,15 @@ object CommandTransformer {
      *
      * @param commands List of DataCommands to transform
      * @param context Android context for period resolution
+     * @param reference Instant the relative periods and the NOW marker resolve against.
+     *   The clock for anything a user is watching; an automation's scheduled time for its run,
+     *   so a run catching up on a past day reads that day and not today.
      * @return TransformationResult with executable commands and errors
      */
     fun transformToExecutable(
         commands: List<DataCommand>,
-        context: Context
+        context: Context,
+        reference: Long
     ): TransformationResult {
         LogManager.aiPrompt("CommandTransformer transforming ${commands.size} commands", "DEBUG")
 
@@ -64,7 +68,7 @@ object CommandTransformer {
                 val executableCommand = when (command.type) {
                     "SCHEMA" -> transformSchemaCommand(command)
                     "TOOL_CONFIG" -> transformToolConfigCommand(command)
-                    "TOOL_DATA" -> transformToolDataCommand(command, s)
+                    "TOOL_DATA" -> transformToolDataCommand(command, s, reference)
                     "TOOL_STATS" -> transformToolStatsCommand(command)
                     "TOOL_DATA_SAMPLE" -> transformToolDataSampleCommand(command)
                     "ZONE_CONFIG" -> transformZoneConfigCommand(command)
@@ -169,7 +173,7 @@ object CommandTransformer {
         )
     }
 
-    private fun transformToolDataCommand(command: DataCommand, s: StringsContext): ExecutableCommand? {
+    private fun transformToolDataCommand(command: DataCommand, s: StringsContext, reference: Long): ExecutableCommand? {
         LogManager.aiPrompt("transformToolDataCommand() - routing to tool_data.get", "VERBOSE")
 
         val toolInstanceId = command.params["id"] as? String
@@ -181,7 +185,7 @@ object CommandTransformer {
         val params = mutableMapOf<String, Any>("toolInstanceId" to toolInstanceId)
 
         // Apply temporal parameter resolution
-        applyTemporalParameters(params, command, s)
+        applyTemporalParameters(params, command, s, reference)
 
         // Add pagination if specified
         command.params["limit"]?.let { params["limit"] = it }
@@ -204,7 +208,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_STATS command to tool_data.stats call
         // - Similar to TOOL_DATA but with aggregate functions
         // - Generate appropriate groupBy and functions parameters
-        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s)
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s, reference)
 
         return null
     }
@@ -215,7 +219,7 @@ object CommandTransformer {
         // TODO: Transform TOOL_DATA_SAMPLE command to tool_data.get with sampling
         // - Add default limit for sampling (e.g., limit: 10)
         // - Use recent data ordering (orderBy: timestamp DESC)
-        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s)
+        // - IMPORTANT: Apply temporal parameters via applyTemporalParameters(params, command, s, reference)
 
         return null
     }
@@ -289,7 +293,7 @@ object CommandTransformer {
      * Three formats are accepted for period_start/period_end, as documented in the AI prompt (Part E):
      * - Relative period: "offset_PeriodType" (e.g. "-7_DAY" = 7 days ago, "0_WEEK" = current week).
      *   Applies the user's dayStartHour and weekStartDay, so the AI never handles calendars.
-     * - NOW marker: the exact current instant, not a period, so no period normalization.
+     * - NOW marker: [reference] itself, not a period, so no period normalization.
      * - ISO 8601: a fixed date, with or without offset, resolved in the app timezone.
      *
      * For absolute timestamps (startTime/endTime): milliseconds, as a number. Rare, and never
@@ -298,19 +302,19 @@ object CommandTransformer {
      * Anything else throws: an unreadable period must reach the AI as an error, never as a
      * silently missing filter, which would widen the query to the whole history.
      */
-    private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand, s: StringsContext) {
+    private fun applyTemporalParameters(params: MutableMap<String, Any>, command: DataCommand, s: StringsContext, reference: Long) {
         LogManager.aiPrompt("applyTemporalParameters() - CALLED with command.isRelative=${command.isRelative}, command.params=${command.params}", "DEBUG")
 
         val periodStart = command.params["period_start"] as? String
         if (periodStart != null) {
-            params["startTime"] = resolvePeriodBound(periodStart, isEnd = false, s = s)
+            params["startTime"] = resolvePeriodBound(periodStart, isEnd = false, s = s, reference = reference)
         } else {
             command.params["startTime"]?.let { params["startTime"] = requireTimestamp(it, "startTime", s) }
         }
 
         val periodEnd = command.params["period_end"] as? String
         if (periodEnd != null) {
-            params["endTime"] = resolvePeriodBound(periodEnd, isEnd = true, s = s)
+            params["endTime"] = resolvePeriodBound(periodEnd, isEnd = true, s = s, reference = reference)
         } else {
             command.params["endTime"]?.let { params["endTime"] = requireTimestamp(it, "endTime", s) }
         }
@@ -321,15 +325,17 @@ object CommandTransformer {
     /**
      * Resolve one bound of a temporal filter to a UTC timestamp.
      *
+     * Everything resolves against [reference], never the clock: see resolveRelativePeriod.
+     *
      * isEnd selects which edge of a relative period is taken: a relative start is the first
      * instant of the period, a relative end is its last one, so "-1_DAY" on both bounds
      * covers all of yesterday.
      *
      * @throws IllegalArgumentException if the value matches none of the three documented formats
      */
-    private fun resolvePeriodBound(value: String, isEnd: Boolean, s: StringsContext): Long {
+    private fun resolvePeriodBound(value: String, isEnd: Boolean, s: StringsContext, reference: Long): Long {
         if (value == "NOW") {
-            return System.currentTimeMillis()
+            return reference
         }
 
         if (DateTimeConverter.looksLikeISO8601(value)) {
@@ -358,7 +364,7 @@ object CommandTransformer {
             )
         }
 
-        val resolved = resolveRelativePeriod(RelativePeriod(offset = offset, type = type))
+        val resolved = resolveRelativePeriod(RelativePeriod(offset = offset, type = type), reference)
         return if (isEnd) getPeriodEndTimestamp(resolved) else resolved.timestamp
     }
 

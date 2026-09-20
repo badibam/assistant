@@ -66,7 +66,8 @@ object PromptManager {
         // 3. Build Level 2 (USER DATA - always_send tools)
         LogManager.aiPrompt("Building Level 2 (USER DATA)", "DEBUG")
         val level2Commands = buildLevel2Commands(context)
-        val level2Executable = userCommandProcessor.processCommands(level2Commands)
+        // L2 commands name a tool instance and carry no period, so the reference never applies
+        val level2Executable = userCommandProcessor.processCommands(level2Commands, System.currentTimeMillis())
         val level2Result = commandExecutor.executeCommands(
             commands = level2Executable,
             messageType = SystemMessageType.DATA_ADDED,
@@ -394,7 +395,8 @@ object PromptManager {
         )
 
         val userCommandProcessor = UserCommandProcessor(context)
-        val executable = userCommandProcessor.processCommands(listOf(appStateCommand))
+        // APP_STATE carries no period, so the reference never applies
+        val executable = userCommandProcessor.processCommands(listOf(appStateCommand), System.currentTimeMillis())
 
         // Execute commands to get zones + tool instances
         val result = coordinator.processUserAction(executable[0].resource + "." + executable[0].operation, executable[0].params)
