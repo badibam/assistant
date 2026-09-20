@@ -11,6 +11,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, aucun mécanique : deux sont transversaux (chaînes JSON aux frontières, conventions de nommage des params de service), deux sont des décisions à prendre plutôt que du code à écrire (format du prompt L1, validation désactivée par défaut).
 
 
+- **Clés en snake_case** — la règle est posée dans `docs/reference.md` et gardée par `./scripts/check_key_case.py` ; 144 clés restent à renommer, listées dans `scripts/key_case_baseline.txt`. Par étapes : les quatre tables IA et leurs clés de service d'abord (48 colonnes camelCase, migration à prévoir), l'enveloppe de réponse du modèle (`preText`, `dataCommands`, `actionCommands`…) en dernier, avec son test en session réelle. Brancher aussi le contrôle sur `./run` une fois la tâche de tests stabilisée.
+
 ## Divers
 
 - Limite d'aller-retours d'une automation : décider si le compteur doit arrêter toutes les boucles ou seulement celle qui produit quelque chose. `maxAutonomousRoundtrips` n'est lu que sur `ActionsExecuted` ; les boucles d'erreur de format, d'échec d'action, de relance, et le retour de requêtes de données l'ignorent — quatre chemins, coupés seulement par le chien de garde au bout de dix minutes de temps actif. Mesuré par `AIStateMachineRoundtripLimitTest` et `AIStateMachineResponseRoutingTest`.
@@ -29,3 +31,4 @@ Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, au
 - Rejouer les exemples du prompt L1 dans une session CHAT réelle : la règle est posée dans `docs/AI.md`, mais les exemples corrigés (périodes ISO, pagination par page, grammaire des champs) n'ont été vérifiés que sur lecture du code.
 - Exécutions d'automation manquées : vérifier sur l'appareil le passage en base 22→23, la saisie de la fenêtre dans l'éditeur, et un rattrapage réel (automation programmée, app fermée plusieurs jours).
 - Champs personnalisés : vérifier la création d'un champ depuis l'écran de configuration, maintenant que le nom technique est attribué par le service et non plus envoyé par le formulaire.
+- Passage en base 23→24 : la table `tool_instances` est recréée pour renommer sa colonne en `tooltype`. Vérifier sur l'appareil que les outils survivent à la montée de version, y compris la suppression en cascade d'une zone (clé étrangère recréée à la main).

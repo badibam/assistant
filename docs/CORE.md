@@ -28,7 +28,7 @@ Les clés qui traversent le dispatcher sont en snake_case, quelle que soit la re
 
 Un mot composé devenu un terme du domaine s'écrit soudé — `tooltype`, comme `timestamp` — et ce nom vaut de la clé jusqu'à la colonne.
 
-Unification en cours : une série de clés de l'IA (`sessionId`, `providerId`, `automationId`, temps et compteurs de tokens) est encore en camelCase.
+La règle vaut pour tout le projet et vit dans `docs/reference.md` ; le reliquat en camelCase, surtout côté IA, est listé et gardé par `./scripts/check_key_case.py`.
 
 ### Opérations CRUD Complètes ToolDataService
 **Opérations disponibles** : create, update, delete, get (avec pagination), get_single (par ID), stats, delete_all, batch_create, batch_update, batch_delete
