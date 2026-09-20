@@ -827,30 +827,24 @@ class CommandExecutor(private val context: Context) {
                     data["toolInstanceName"]?.let { reordered["toolInstanceName"] = it }
                     data["count"]?.let { reordered["count"] = it }
 
-                    // Parse data field in each entry from string to JSON
+                    // Parse the JSON-string fields of each entry into objects.
+                    // Both travel as strings from the DB; left as such, the prompt shows the AI
+                    // an escaped string where the documented examples show an object.
                     val entries = data["entries"] as? List<*>
                     if (entries != null) {
                         val parsedEntries = entries.map { entry ->
-                            val entryMap = entry as? Map<*, *>
-                            if (entryMap != null) {
-                                val dataStr = entryMap["data"] as? String
-                                if (dataStr != null) {
-                                    try {
-                                        val parsedData = org.json.JSONObject(dataStr)
-                                        val modifiedEntry = entryMap.toMutableMap()
-                                        modifiedEntry["data"] = parsedData
-                                        modifiedEntry
-                                    } catch (e: Exception) {
-                                        // If parsing fails, keep as string
-                                        LogManager.aiPrompt("Failed to parse data field in entry: ${e.message}", "WARN", e)
-                                        entryMap
-                                    }
-                                } else {
-                                    entryMap
+                            val entryMap = entry as? Map<*, *> ?: return@map entry
+                            val modifiedEntry = entryMap.toMutableMap()
+                            for (field in listOf("data", "custom_fields")) {
+                                val fieldStr = entryMap[field] as? String ?: continue
+                                try {
+                                    modifiedEntry[field] = org.json.JSONObject(fieldStr)
+                                } catch (e: Exception) {
+                                    // If parsing fails, keep as string
+                                    LogManager.aiPrompt("Failed to parse $field in entry: ${e.message}", "WARN", e)
                                 }
-                            } else {
-                                entry
                             }
+                            modifiedEntry
                         }
                         reordered["entries"] = parsedEntries
                     }
