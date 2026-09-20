@@ -59,13 +59,13 @@ abstract class AppDatabase : RoomDatabase() {
         /**
          * Database schema version
          *
-         * MUST match @Database(version = X) annotation above (line 45)
+         * MUST match @Database(version = X) annotation above
          * Change BOTH when incrementing database version
          *
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 22
+        const val VERSION = 23
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
