@@ -22,7 +22,13 @@ import org.json.JSONObject
  * Usage:
  * - Call normalizeParams() on Map<String, Any> from parseParams()
  * - Handles arbitrary nesting depth
- * - Preserves all data, only changes types
+ * - Preserves all data, only changes types, with one exception below
+ *
+ * The exception is a null at the top level: normalizeParams drops its key, where a null
+ * nested in an object or a list is kept. Keeping it would mean declaring the result
+ * Map<String, Any?>, and that type runs on through DataCommand.params into eighty-odd
+ * places, so it is a decision rather than a fix. Until it is taken, a command emptying a
+ * top-level field arrives as one that never mentioned it.
  */
 object JsonNormalizer {
 
@@ -84,7 +90,10 @@ object JsonNormalizer {
             value.javaClass.name.startsWith("org.json.JSONArray") -> {
                 // Reconstruct a new JSONArray from the anonymous subclass
                 val sourceArray = JSONArray(value.toString())
-                (0 until sourceArray.length()).mapNotNull { i ->
+                // Keep nulls, like the Kotlin list branch below: dropping them shortened the
+                // list and moved everything after the hole down a place, so the same data
+                // came out differently depending only on which form it arrived in.
+                (0 until sourceArray.length()).map { i ->
                     normalizeValue(sourceArray.get(i))
                 }
             }

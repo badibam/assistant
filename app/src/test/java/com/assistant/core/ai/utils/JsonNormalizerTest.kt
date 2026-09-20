@@ -147,15 +147,12 @@ class JsonNormalizerTest {
     }
 
     /**
-     * And a null inside a JSON array is dropped, which shortens the list and moves
-     * everything after it down one place.
-     *
-     * This states what the code does today, and it is the same data treated two ways: the
-     * JSON array path filters, the Kotlin list path just below it keeps. A list that
-     * reached here already converted keeps its holes; one still in JSON form loses them.
+     * A null inside a list is kept, whichever form the list arrived in. Dropping it
+     * shortened the list and moved everything after the hole down a place, so the same data
+     * came out differently depending only on whether it was still JSON.
      */
     @Test
-    fun aNullInsideAJsonArray_isDroppedWhileAKotlinListKeepsIt() {
+    fun aNullInsideAList_isKeptWhicheverFormItArrivedIn() {
         val fromJson = JsonNormalizer.normalizeParams(
             mapOf<String, Any>("values" to JSONArray("""[1, null, 2]"""))
         )
@@ -163,8 +160,20 @@ class JsonNormalizerTest {
             mapOf<String, Any>("values" to listOf(1, null, 2))
         )
 
-        assertEquals(listOf(1, 2), fromJson["values"])
+        assertEquals(listOf(1, null, 2), fromJson["values"])
         assertEquals(listOf(1, null, 2), fromKotlin["values"])
+    }
+
+    /** Positions are what a null in a list protects: the values after it do not move. */
+    @Test
+    fun aNullInAListDoesNotShiftWhatFollowsIt() {
+        val result = JsonNormalizer.normalizeParams(
+            mapOf<String, Any>("values" to JSONArray("""["a", null, "b"]"""))
+        )
+
+        val values = result["values"] as List<*>
+        assertEquals(3, values.size)
+        assertEquals("b", values[2])
     }
 
     // ==================== Nothing to do ====================
