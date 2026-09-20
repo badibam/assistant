@@ -499,15 +499,14 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     /**
      * Processes custom fields changes during tool instance config update.
      *
-     * This function handles the complete custom fields migration workflow for AI-driven updates:
-     * 1. Detecting structural changes (additions, removals, type changes, option removals)
-     * 2. Validating forbidden changes (name changes, type changes)
-     * 3. Executing data migration silently (field removals, conditional removals)
-     * 4. Generating technical names for new fields
+     * Runs on every config update, whatever the caller:
+     * 1. Refusing technical names this service never assigned (invented names, renames)
+     * 2. Assigning a technical name to each field that arrives without one
+     * 3. Refusing type changes, which would make stored values invalid
+     * 4. Detecting structural changes and migrating the data accordingly
      * 5. Validating all field definitions
      *
      * Migration is automatic and silent for AI updates (no user confirmation).
-     * Forbidden changes (name/type) return errors and block the update.
      *
      * @param toolInstanceId ID of the tool instance being updated
      * @param oldConfigJson Previous configuration JSON
@@ -576,14 +575,26 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
                 newFieldsList.add(newFieldsArray.getJSONObject(i).toFieldDefinition())
             }
 
-            // Phase 1: Generate names for new fields (fields without 'name' or with empty 'name')
+            // Phase 0: A technical name is assigned here and nowhere else, so the only names a
+            // caller may send are the ones this service handed out. A name matching no existing
+            // field is either an invented one or a rename; the second silently destroys every
+            // value stored under the old key, and nothing tells the two apart. Both are refused.
+            val oldNames = oldFields.map { it.name }.toSet()
+            val unknownNames = newFieldsList.map { it.name }.filter { it.isNotEmpty() && it !in oldNames }
+            if (unknownNames.isNotEmpty()) {
+                val message = s.shared("error_field_name_unknown").format(unknownNames.joinToString(", "))
+                LogManager.service("Tool config sent unknown field name(s): ${unknownNames.joinToString(", ")}", "ERROR")
+                return OperationResult.error(message)
+            }
+
+            // Phase 1: Assign a technical name to each new field (the ones sent without one).
+            // Names already assigned during this pass count as taken, so two fields created
+            // together under the same display name do not land on the same key.
+            val takenNames = newFieldsList.map { it.name }.filter { it.isNotEmpty() }.toMutableList()
             val processedFields = newFieldsList.map { field ->
                 if (field.name.isEmpty()) {
-                    // Generate name from displayName
-                    val generatedName = FieldNameGenerator.generateName(
-                        field.displayName,
-                        newFieldsList.filter { it.name.isNotEmpty() }
-                    )
+                    val generatedName = FieldNameGenerator.generateName(field.displayName, takenNames)
+                    takenNames.add(generatedName)
                     field.copy(name = generatedName)
                 } else {
                     field
@@ -594,7 +605,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             // Phase 2: Migration validation and execution
             // Validate no forbidden changes (type changes only - removals are legitimate)
-            // Note: Name changes cannot be detected (name is the identifier)
             val typeValidation = FieldConfigValidator.validateNoTypeChanges(
                 oldFields = oldFields,
                 newFields = processedFields,

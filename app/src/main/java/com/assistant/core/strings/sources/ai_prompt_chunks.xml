@@ -493,6 +493,12 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l\'ut
 ]
 ```
 
+**`name` ne se choisit pas.** C\'est l\'identifiant technique sous lequel les valeurs sont stockées. L\'app l\'attribue à la création, à partir de `display_name`, et il ne change jamais ensuite.
+- **Ajouter un champ** : omets `name`. L\'app le génère.
+- **Modifier un champ existant** : reprends son `name` tel quel. C\'est lui qui dit de quel champ tu parles.
+- **Renommer** : modifie `display_name`, jamais `name`. Un `name` qui ne correspond à aucun champ existant est refusé — il effacerait les valeurs déjà enregistrées sous l\'ancienne clé.
+- **Supprimer un champ** : retire-le de la liste. Ses valeurs sont effacées, c\'est voulu.
+
 **Structure dans données** (valeurs) :
 ```json
 {

@@ -312,7 +312,7 @@ fun FieldDefinitionDialog(
             } else {
                 existingFields
             }
-            FieldNameGenerator.generateName(displayName, otherFields)
+            FieldNameGenerator.generateName(displayName, otherFields.map { it.name })
         } else {
             ""
         }

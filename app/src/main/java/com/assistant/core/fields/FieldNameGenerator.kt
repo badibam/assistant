@@ -24,12 +24,15 @@ object FieldNameGenerator {
     /**
      * Generates a unique field name from a display name.
      *
+     * Takes the names rather than the definitions holding them, so that a pass assigning
+     * several new fields in a row can count what it has just handed out.
+     *
      * @param displayName The user-facing name to convert
-     * @param existingFields List of fields already defined (to detect collisions)
+     * @param takenNames Names already in use
      * @return A unique, normalized field name
      */
-    fun generateName(displayName: String, existingFields: List<FieldDefinition>): String {
-        val existingNames = existingFields.map { it.name }.toSet()
+    fun generateName(displayName: String, takenNames: List<String>): String {
+        val existingNames = takenNames.toSet()
 
         // Normalize the display name
         val normalized = normalize(displayName)
