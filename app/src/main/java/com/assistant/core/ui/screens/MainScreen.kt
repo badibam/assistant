@@ -1,5 +1,6 @@
 package com.assistant.core.ui.screens
 
+import com.assistant.core.utils.JsonUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -85,7 +86,8 @@ fun MainScreen() {
                     order_index = (map["order_index"] as Number).toInt(),
                     created_at = (map["created_at"] as Number).toLong(),
                     updated_at = (map["updated_at"] as Number).toLong(),
-                    tool_groups = map["tool_groups"] as? String,
+                    tool_groups = (map["tool_groups"] as? List<*>)
+                        ?.let { JsonUtils.toJSONArray(it).toString() },
                     group = map["group"] as? String
                 ).also { zone ->
                     LogManager.ui("MainScreen - Loaded zone '${zone.name}' with group: '${zone.group}'", "DEBUG")
@@ -123,7 +125,8 @@ fun MainScreen() {
                                 order_index = (map["order_index"] as Number).toInt(),
                                 created_at = (map["created_at"] as Number).toLong(),
                                 updated_at = (map["updated_at"] as Number).toLong(),
-                                tool_groups = map["tool_groups"] as? String,
+                                tool_groups = (map["tool_groups"] as? List<*>)
+                        ?.let { JsonUtils.toJSONArray(it).toString() },
                                 group = map["group"] as? String
                             )
                         }
@@ -162,7 +165,8 @@ fun MainScreen() {
                         order_index = (map["order_index"] as Number).toInt(),
                         created_at = (map["created_at"] as Number).toLong(),
                         updated_at = (map["updated_at"] as Number).toLong(),
-                        tool_groups = map["tool_groups"] as? String,
+                        tool_groups = (map["tool_groups"] as? List<*>)
+                        ?.let { JsonUtils.toJSONArray(it).toString() },
                         group = map["group"] as? String
                     )
                 }

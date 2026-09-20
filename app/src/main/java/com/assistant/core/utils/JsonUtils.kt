@@ -132,6 +132,16 @@ object JsonUtils {
     }
 
     /**
+     * Convert a Kotlin List to a JSONArray, for the two edges that still speak in strings:
+     * a database column and an entity rebuilt from a service result.
+     */
+    fun toJSONArray(list: List<Any?>): JSONArray {
+        return JSONArray().apply {
+            list.forEach { put(toJSONValue(it)) }
+        }
+    }
+
+    /**
      * Convert a JSON array, in any of the forms it arrives in, to a Kotlin List.
      *
      * Mirrors toMap for values that are arrays rather than objects: a column holds the string

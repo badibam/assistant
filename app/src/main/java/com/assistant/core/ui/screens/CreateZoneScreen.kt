@@ -87,7 +87,7 @@ fun CreateZoneScreen(
 
         // Add tool_groups if not empty
         if (toolGroups.isNotEmpty()) {
-            zoneData["tool_groups"] = JSONArray(toolGroups)
+            zoneData["tool_groups"] = toolGroups
         }
 
         // Add group only if selected (null = no group, field not included in validation)
@@ -115,7 +115,7 @@ fun CreateZoneScreen(
 
                             // Add tool_groups to update params
                             if (toolGroups.isNotEmpty()) {
-                                updateParams["tool_groups"] = JSONArray(toolGroups).toString()
+                                updateParams["tool_groups"] = toolGroups
                             } else {
                                 // Explicitly set to null to clear tool_groups
                                 updateParams["tool_groups"] = org.json.JSONObject.NULL
@@ -142,7 +142,7 @@ fun CreateZoneScreen(
 
                             // Add tool_groups to create params
                             if (toolGroups.isNotEmpty()) {
-                                createParams["tool_groups"] = JSONArray(toolGroups).toString()
+                                createParams["tool_groups"] = toolGroups
                             }
 
                             // Add group to create params
