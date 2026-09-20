@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parent
 GRADLEW = ROOT / "gradlew"
@@ -27,6 +28,10 @@ SIGNING = Path.home() / ".config" / "assistant" / "signing.env"
 
 # What the compiler says that is worth reading: the errors, and the verdict.
 BUILD_LINES = ("e:", "Error:", "ERROR:", "BUILD SUCCESSFUL", "BUILD FAILED")
+
+# Where gradle leaves the machine-readable test results, and the report for a human.
+TEST_RESULTS = ROOT / "app" / "build" / "test-results" / "testDebugUnitTest"
+TEST_REPORT = ROOT / "app" / "build" / "reports" / "tests" / "testDebugUnitTest" / "index.html"
 
 
 def gradle(*args):
@@ -54,6 +59,42 @@ def gradle_filtered(*args):
         if line.startswith(BUILD_LINES):
             print(line, end="")
     return process.wait()
+
+
+def gradle_tests(*args):
+    """Run gradle and print the compiler errors, the failing tests, and the verdict.
+
+    The compile filter alone is not enough here: a failing test prints
+    "SomeTest > someCase FAILED" and its exception, none of which starts with the prefixes
+    a type error uses. Filtering on those alone would report BUILD FAILED without ever
+    saying which test broke, which is the one thing wanted from a test run.
+    """
+    process = subprocess.Popen(
+        [str(GRADLEW), *args], cwd=ROOT,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    for line in process.stdout:
+        if line.startswith(BUILD_LINES) or " FAILED" in line:
+            print(line, end="")
+    return process.wait()
+
+
+def test_tally():
+    """Return (tests, failures, errors) read from gradle's JUnit XML, or None.
+
+    A green run prints BUILD SUCCESSFUL whether it ran two hundred tests or none at all --
+    and it prints the same thing when gradle skips the task as up to date. Counting the
+    cases turns the verdict into something that says what was actually checked.
+    """
+    if not TEST_RESULTS.is_dir():
+        return None
+    tests = failures = errors = 0
+    for report in TEST_RESULTS.glob("*.xml"):
+        root = ElementTree.parse(report).getroot()
+        tests += int(root.get("tests", 0))
+        failures += int(root.get("failures", 0))
+        errors += int(root.get("errors", 0))
+    return tests, failures, errors
 
 
 def attached_devices():
@@ -154,6 +195,28 @@ def running(application_id):
 def task_compile():
     """Type-check the sources without building anything installable."""
     return gradle_filtered("compileDebugKotlin")
+
+
+def task_test():
+    """Run the unit tests and say how many ran.
+
+    These are the JVM tests under app/src/test: pure decision logic -- the AI state
+    machine, the schedule calculator, the field migration comparison -- with no device,
+    no emulator and no database behind them. A run takes seconds, which is the point:
+    each case here is a check that would otherwise mean installing the build on a phone
+    and reproducing the situation by hand.
+    """
+    code = gradle_tests("testDebugUnitTest")
+    tally = test_tally()
+    if tally is None:
+        print("no test results on disk -- the run did not get as far as the tests")
+        return code or 1
+    tests, failures, errors = tally
+    bad = failures + errors
+    print(f"{tests} tests, {bad} failed")
+    if bad:
+        print(f"report: {TEST_REPORT}")
+    return code
 
 
 def task_strings():
@@ -296,6 +359,7 @@ def task_clean():
 
 ACTIONS = {
     "compile": task_compile,
+    "test": task_test,
     "strings": task_strings,
     "build": task_build,
     "install": task_install,
@@ -309,6 +373,7 @@ ACTIONS = {
 
 LABELS = {
     "compile": "compile    type-check the sources, errors and verdict only",
+    "test": "test       run the unit tests, failures and count only",
     "strings": "strings    regenerate the string resources",
     "build": "build      assemble the debug APK",
     "install": "install    assemble, install and start the debug build",
