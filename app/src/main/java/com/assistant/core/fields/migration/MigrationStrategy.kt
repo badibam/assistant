@@ -64,14 +64,10 @@ enum class MigrationStrategy {
      * Block the configuration change with an error.
      *
      * Applied to:
-     * - FieldChange.NameChanged: Field name is the stable ID, cannot change
-     * - FieldChange.TypeChanged: Type changes would corrupt existing values
+     * - FieldChange.TypeChanged: type changes would create invalid data,
+     *   such as text stored in a numeric field
      *
      * Result: Configuration save is rejected with an error message
-     *
-     * Rationale:
-     * - Name changes: Would lose all data (name is the identifier)
-     * - Type changes: Would create invalid data (e.g., text in numeric field)
      */
     ERROR
 }

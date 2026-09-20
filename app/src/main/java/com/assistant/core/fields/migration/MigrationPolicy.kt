@@ -13,7 +13,6 @@ import com.assistant.core.strings.Strings
  * Strategy mapping:
  * - Added → NONE (no migration needed)
  * - Removed → STRIP_FIELD (remove from all entries)
- * - NameChanged → ERROR (forbidden)
  * - TypeChanged → ERROR (forbidden)
  * - ChoiceOptionsRemoved → STRIP_FIELD_IF_VALUE (conditional removal)
  * - CosmeticChange → NONE (no migration needed)
@@ -44,9 +43,6 @@ object MigrationPolicy {
 
                 // Remove field from all entries when field is deleted
                 is FieldChange.Removed -> MigrationStrategy.STRIP_FIELD
-
-                // Forbid name changes (name is the stable identifier)
-                is FieldChange.NameChanged -> MigrationStrategy.ERROR
 
                 // Forbid type changes (would corrupt existing values)
                 is FieldChange.TypeChanged -> MigrationStrategy.ERROR
@@ -121,9 +117,6 @@ object MigrationPolicy {
             // List specific errors
             changes.filter { strategies[it] == MigrationStrategy.ERROR }.forEach { change ->
                 val errorMessage = when (change) {
-                    is FieldChange.NameChanged ->
-                        s.shared("error_field_name_changed")
-
                     is FieldChange.TypeChanged ->
                         s.shared("error_field_type_changed")
 

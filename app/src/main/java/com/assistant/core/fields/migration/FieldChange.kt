@@ -35,19 +35,6 @@ sealed class FieldChange {
     data class Removed(val name: String) : FieldChange()
 
     /**
-     * A field's name was changed.
-     * Strategy: ERROR (renaming not allowed - name is the stable ID)
-     *
-     * Note: Field name is the stable identifier and cannot be changed.
-     * This change is actually impossible to detect directly (name is the identifier),
-     * but appears as Removed + Added in practice.
-     *
-     * @param oldName The original field name
-     * @param newName The new field name
-     */
-    data class NameChanged(val oldName: String, val newName: String) : FieldChange()
-
-    /**
      * A field's type was changed.
      * Strategy: ERROR (type changes not allowed - would corrupt existing values)
      *

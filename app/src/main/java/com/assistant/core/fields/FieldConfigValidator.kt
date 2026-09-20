@@ -17,7 +17,7 @@ import java.time.format.DateTimeParseException
  * - Type/config coherence (required config for certain types)
  * - Inter-field constraints (min < max for numeric types)
  * - Name format validation (snake_case, ASCII)
- * - Migration constraints (no name changes, no type changes)
+ * - Migration constraints (no type changes)
  *
  * Philosophy: Single validation point with full trust.
  * No re-validation during schema generation.
@@ -471,47 +471,6 @@ object FieldConfigValidator {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_datetime_min_max_order")
-            )
-        }
-
-        return ValidationResult(isValid = true)
-    }
-
-    /**
-     * Validates that no field names have changed between old and new configurations.
-     *
-     * This validation is required for AI-driven configuration updates to prevent
-     * data loss. Field names are stable identifiers and cannot be changed.
-     *
-     * A name change would appear as:
-     * - FieldChange.Removed (old name not in new config)
-     * - FieldChange.Added (new name not in old config)
-     *
-     * This could be a legitimate removal + addition, or a renaming attempt.
-     * Since we cannot distinguish, we treat any removal as forbidden in this context.
-     *
-     * @param oldFields Previous field configuration
-     * @param newFields New field configuration
-     * @param context Android context for string translation
-     * @return ValidationResult with success if no name changes detected
-     */
-    fun validateNoNameChanges(
-        oldFields: List<FieldDefinition>,
-        newFields: List<FieldDefinition>,
-        context: Context
-    ): ValidationResult {
-        val s = Strings.`for`(context = context)
-
-        // Detect all changes using comparator
-        val changes = FieldConfigComparator.compare(oldFields, newFields)
-
-        // Check for removed fields (potential name change or legitimate removal)
-        val removedChanges = changes.filterIsInstance<FieldChange.Removed>()
-        if (removedChanges.isNotEmpty()) {
-            val removedNames = removedChanges.joinToString(", ") { it.name }
-            return ValidationResult(
-                isValid = false,
-                errorMessage = "${s.shared("error_field_name_changed")}: $removedNames"
             )
         }
 
