@@ -15,7 +15,9 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - Vérifier le pattern dans la doc avant d'implémenter.
 - Aucun code legacy laissé derrière : ce qui est remplacé est supprimé dans le même geste.
 - Commenter abondamment, pour la relecture ultérieure.
-- Compiler avec `./gradlew compileDebugKotlin` et lire la sortie via `grep '^e:|^Error:|^ERROR:|BUILD SUCCESSFUL|BUILD FAILED'`.
+- Compiler avec `./run compile` — type-check seul, qui n'affiche que les erreurs et le verdict.
+- Lancer les tests avec `./run test`, et laisser la suite verte avant de committer. Un test mérite d'exister s'il remplace une vérification sur l'appareil : c'est le critère, pas un taux de couverture.
+- Quand une spec de `docs/design/` est élaguée, ses garanties deviennent des tests. Le code dit comment ; le test dit ce qui avait été promis, et c'est la seule forme de documentation qui ne peut pas mentir.
 - Générer les strings avec `./gradlew generateStringResources`.
 - Respecter l'architecture décrite dans les docs ci-dessous.
 
