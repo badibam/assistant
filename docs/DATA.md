@@ -252,15 +252,9 @@ object ValidationHelper {
 ```
 
 ##
-## Event Sourcing
+## Propagation des modifications
 
-Toutes les modifications passent par des événements pour garantir cohérence et traçabilité.
-
-### Avantages
-
-- Logging automatique des modifications possible
-- Cohérence sans synchronisation manuelle
-- Historique pour IA et audit
+Une écriture passe par le service, qui écrit en base via son DAO puis signale le changement avec `DataChangeNotifier` — les écrans qui en dépendent se rechargent. Il n'y a pas de journal d'événements : aucune table n'enregistre les modifications, et l'état en base est la seule source. Ce que l'utilisateur et l'IA lisent comme un historique, ce sont les entrées elles-mêmes et les sessions, pas une suite d'événements rejouable.
 
 ### Schémas Auto-descriptifs
 
@@ -438,7 +432,7 @@ private fun transformTrackingConfig(json: JSONObject, version: Int): JSONObject 
 - ToolTypes implémentent `getSchema(schemaId, context): Schema?`
 
 #### Data Consistency
-- Event sourcing obligatoire pour modifications
+- Écriture par le service, puis notification via `DataChangeNotifier` (pas de journal d'événements)
 - Validation centralisée via objets Schema explicites
 - Schémas autonomes avec ID déterministes
 

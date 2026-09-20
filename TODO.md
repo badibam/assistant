@@ -8,9 +8,8 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Les huit points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vérifié ou soupçon). Les deux à trancher en priorité :
+Les points de `docs/design/post-refactor-audit.md`, chacun avec son statut (vérifié ou soupçon). À trancher en priorité :
 
-- Vérifier si l'event sourcing existe réellement : `docs/DATA.md` l'annonce obligatoire, aucun event store n'a été trouvé dans les chemins d'écriture lus. Si c'est une aspiration, corriger la doc.
 - Renommer un custom field détruit les valeurs historiques (`Removed + Added` → `STRIP_FIELD`). Migration rename-aware à écrire avant que ça morde sur des données réelles.
 
 ## Divers

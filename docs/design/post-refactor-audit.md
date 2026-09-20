@@ -43,10 +43,6 @@ L'interface `verbalize(operation, params, context): String` est synchrone ; pour
 
 Pattern `dao.getByStatus(...).size` (3 chargements complets pour 3 entiers) au lieu de requêtes `COUNT`. Vu dans getStats executions (meurt avec la refonte) — vérifier si le réflexe existe ailleurs.
 
-## B.7 Event sourcing : doc vs réalité — soupçon, à vérifier en priorité
-
-DATA.md affirme « Event sourcing obligatoire pour modifications ». Dans tous les chemins d'écriture lus pendant l'audit : écritures directes via DAO, verbalisation par templates, DataChangeNotifier — **aucun event store croisé**. Soit il vit dans une couche non lue, soit la doc décrit une aspiration comme un acquis. Dix minutes de vérification ; si aspiration → corriger DATA.md (une doc d'architecture qui sur-promet est exactement ce qui a piégé le pipeline).
-
 ## B.8 Mentions rapides
 
 - `limit` par défaut `Int.MAX_VALUE` → `(page-1)*limit` déborde dès page 2 (ToolDataService/getEntries et équivalents).
