@@ -41,7 +41,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 27,
+    version = 28,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -66,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
          * This constant is needed because @Database annotation value
          * is not accessible as a constant at runtime
          */
-        const val VERSION = 27
+        const val VERSION = 28
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1141,6 +1141,54 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Migration 26->27 left behind every document that does not begin with a brace.
+                // A model's reply is stored exactly as it came and usually arrives wrapped in a
+                // markdown fence, so those rows kept their old key names while the prompt asks
+                // for the new ones -- the model then reads its own past replies in one spelling
+                // and is told to answer in another. KeyCaseRenames now converts a wrapped
+                // document too, so the same columns are passed over again.
+                val columns = listOf(
+                    Triple("ai_sessions", "id", listOf("waiting_context_json", "tokens_json", "cost_json", "app_state_snapshot")),
+                    Triple("session_messages", "id", listOf("rich_content_json", "ai_message_json", "ai_message_parsed_json", "system_message_json", "execution_metadata_json")),
+                    Triple("automations", "id", listOf("schedule_json")),
+                    Triple("tool_instances", "id", listOf("config_json")),
+                    Triple("tool_data", "id", listOf("data", "custom_fields")),
+                    Triple("app_settings_categories", "category", listOf("settings"))
+                )
+
+                var rewritten = 0
+                for ((table, key, jsonColumns) in columns) {
+                    for (column in jsonColumns) {
+                        val cursor = database.query(
+                            "SELECT $key, $column FROM $table WHERE $column IS NOT NULL AND $column != ''"
+                        )
+                        while (cursor.moveToNext()) {
+                            val rowKey = cursor.getString(0)
+                            val before = cursor.getString(1)
+                            val after = try {
+                                KeyCaseRenames.rename(before)
+                            } catch (e: Exception) {
+                                LogManager.database("MIGRATION 27->28: $table.$column of $rowKey left as is (${e.message})", "WARN")
+                                before
+                            }
+                            if (after != before) {
+                                database.execSQL(
+                                    "UPDATE $table SET $column = ? WHERE $key = ?",
+                                    arrayOf(after, rowKey)
+                                )
+                                rewritten++
+                            }
+                        }
+                        cursor.close()
+                    }
+                }
+
+                LogManager.database("MIGRATION 27->28: $rewritten wrapped JSON value(s) rewritten with snake_case keys", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1166,7 +1214,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_23_24,
                     MIGRATION_24_25,
                     MIGRATION_25_26,
-                    MIGRATION_26_27
+                    MIGRATION_26_27,
+                    MIGRATION_27_28
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

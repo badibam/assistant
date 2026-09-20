@@ -177,13 +177,35 @@ object KeyCaseRenames {
 
     /**
      * Rewrites the keys of a JSON document, at every depth, and leaves the values alone.
-     * Anything that is not an object or an array comes back untouched.
+     *
+     * The document is not always bare: a model's reply is stored exactly as it came, and it
+     * often arrives wrapped in a markdown fence. Such a document is still converted, and
+     * whatever surrounds it is put back untouched, so the stored reply stays what was said.
+     * Text holding no JSON at all comes back as it was.
      */
-    fun rename(json: String): String = when {
-        json.isBlank() -> json
-        json.trimStart().startsWith("{") -> renameObject(JSONObject(json)).toString()
-        json.trimStart().startsWith("[") -> renameArray(JSONArray(json)).toString()
-        else -> json
+    fun rename(json: String): String {
+        if (json.isBlank()) return json
+
+        val trimmed = json.trimStart()
+        if (trimmed.startsWith("{")) return renameObject(JSONObject(json)).toString()
+        if (trimmed.startsWith("[")) return renameArray(JSONArray(json)).toString()
+
+        val start = json.indexOfFirst { it == '{' || it == '[' }
+        if (start < 0) return json
+        val end = json.indexOfLast { it == '}' || it == ']' }
+        if (end <= start) return json
+
+        val embedded = json.substring(start, end + 1)
+        val converted = try {
+            if (embedded.startsWith("{")) {
+                renameObject(JSONObject(embedded)).toString()
+            } else {
+                renameArray(JSONArray(embedded)).toString()
+            }
+        } catch (e: Exception) {
+            return json
+        }
+        return json.substring(0, start) + converted + json.substring(end + 1)
     }
 
     private fun renameObject(source: JSONObject): JSONObject {

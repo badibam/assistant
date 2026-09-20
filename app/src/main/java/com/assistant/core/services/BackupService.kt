@@ -629,10 +629,11 @@ class BackupService(private val context: Context) : ExecutableService {
         toVersion: Int
     ): JSONObject {
         try {
-            // Up to schema 26 the keys were written in camelCase, and tool_type named what is
-            // now tooltype. Everything below reads the current names, so the whole document is
-            // normalized first, with the same map the database migration uses.
-            val document = if (fromVersion < 27) {
+            // Up to schema 27 the keys could still be written in camelCase: before 26 across the
+            // board, and at 27 inside any document a model wrapped in a markdown fence. tool_type
+            // also named what is now tooltype. Everything below reads the current names, so the
+            // whole document is normalized first, with the same map the database migration uses.
+            val document = if (fromVersion < 28) {
                 JSONObject(KeyCaseRenames.rename(jsonData.toString()))
             } else {
                 jsonData

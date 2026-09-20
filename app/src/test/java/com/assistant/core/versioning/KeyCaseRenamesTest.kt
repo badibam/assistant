@@ -69,6 +69,25 @@ class KeyCaseRenamesTest {
     }
 
     @Test
+    fun `converts a document wrapped in a markdown fence and keeps the wrapper`() {
+        // How a model's reply is stored: exactly as it came, fence included.
+        val stored = "```json\n{\"preText\": \"hello\"}\n```"
+
+        val result = KeyCaseRenames.rename(stored)
+
+        assertTrue("the fence is kept", result.startsWith("```json"))
+        assertTrue("the fence is kept", result.trimEnd().endsWith("```"))
+        assertTrue("the key is converted", result.contains("pre_text"))
+        assertTrue("nothing of the old key is left", !result.contains("preText"))
+    }
+
+    @Test
+    fun `leaves text alone when what it wraps is not JSON`() {
+        val stored = "see {this} and nothing else"
+        assertEquals(stored, KeyCaseRenames.rename(stored))
+    }
+
+    @Test
     fun `maps every entry to a name that is already snake_case`() {
         val wrong = KeyCaseRenames.MAP.values.filter { it.any(Char::isUpperCase) }
         assertEquals(emptyList<String>(), wrong)
