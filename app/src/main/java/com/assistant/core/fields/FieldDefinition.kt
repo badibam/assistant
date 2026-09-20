@@ -267,13 +267,10 @@ private fun formatRangeValue(value: Any?, config: Map<String, Any>?, s: StringsC
 private fun formatDateValue(value: Any?, s: StringsContext): String {
     val dateStr = value as? String ?: return s.shared("no_value")
 
-    return try {
-        // Parse ISO 8601 → timestamp → format using DateUtils
-        val timestamp = com.assistant.core.utils.DateUtils.parseIso8601Date(dateStr)
-        com.assistant.core.utils.DateUtils.formatDateForDisplay(timestamp)
-    } catch (e: Exception) {
-        dateStr // Fallback to raw string if parsing fails
-    }
+    // A value that is not a date is shown as it was stored, rather than as some other
+    // date: the reader sees what is actually recorded.
+    val timestamp = com.assistant.core.utils.DateUtils.parseIso8601Date(dateStr) ?: return dateStr
+    return com.assistant.core.utils.DateUtils.formatDateForDisplay(timestamp)
 }
 
 /**
@@ -307,7 +304,7 @@ private fun formatTimeValue(value: Any?, config: Map<String, Any>?, s: StringsCo
         } else {
             // 24h format - use DateUtils for consistency
             val timestamp = com.assistant.core.utils.DateUtils.parseIso8601Time(timeStr)
-            com.assistant.core.utils.DateUtils.formatTimeForDisplay(timestamp)
+            if (timestamp == null) timeStr else com.assistant.core.utils.DateUtils.formatTimeForDisplay(timestamp)
         }
     } catch (e: Exception) {
         timeStr // Fallback to raw string if parsing fails
@@ -333,7 +330,8 @@ private fun formatDateTimeValue(value: Any?, config: Map<String, Any>?, s: Strin
             if (parts.size == 2) {
                 // Format date part using DateUtils
                 val dateTimestamp = com.assistant.core.utils.DateUtils.parseIso8601Date(parts[0])
-                val formattedDate = com.assistant.core.utils.DateUtils.formatDateForDisplay(dateTimestamp)
+                val formattedDate = if (dateTimestamp == null) parts[0]
+                    else com.assistant.core.utils.DateUtils.formatDateForDisplay(dateTimestamp)
 
                 // Format time part as 12h
                 val timeStr = parts[1].substringBefore(":") + ":" + parts[1].split(":").getOrNull(1)
@@ -358,7 +356,7 @@ private fun formatDateTimeValue(value: Any?, config: Map<String, Any>?, s: Strin
             }
         } else {
             // 24h format - use DateUtils
-            com.assistant.core.utils.DateUtils.formatFullDateTime(timestamp)
+            if (timestamp == null) dateTimeStr else com.assistant.core.utils.DateUtils.formatFullDateTime(timestamp)
         }
     } catch (e: Exception) {
         dateTimeStr // Fallback to raw string if parsing fails

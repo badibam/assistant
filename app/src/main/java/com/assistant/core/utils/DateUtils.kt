@@ -2,6 +2,7 @@ package com.assistant.core.utils
 
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.*
 
 /**
@@ -64,15 +65,15 @@ object DateUtils {
     /**
      * Parse date string back to timestamp for filtering (dd/MM/yyyy)
      *
-     * Returns the current time when the string cannot be read.
+     * @return the start of that day, or null if the string is not a dd/MM/yyyy date
      */
-    fun parseDateForFilter(dateString: String, zone: ZoneId = getConfiguredZone()): Long {
+    fun parseDateForFilter(dateString: String, zone: ZoneId = getConfiguredZone()): Long? {
         return try {
             val localDate = LocalDate.parse(dateString, displayDateFormatter)
             val zonedDateTime = localDate.atStartOfDay(zone)
             zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+        } catch (e: DateTimeParseException) {
+            null
         }
     }
 
@@ -120,40 +121,35 @@ object DateUtils {
     /**
      * Parse time string to hour and minute (HH:mm)
      *
-     * Returns the current hour and minute when the string cannot be read.
+     * The range is checked here rather than left to whoever uses the pair: an hour of 99
+     * parses as an integer and only fails further along, where it is no longer obvious that
+     * the time string was the problem.
+     *
+     * @return the hour and minute, or null if the string is not a valid HH:mm time
      */
-    fun parseTime(timeString: String, zone: ZoneId = getConfiguredZone()): Pair<Int, Int> {
-        return try {
-            val parts = timeString.split(":")
-            if (parts.size == 2) {
-                val hour = parts[0].toInt()
-                val minute = parts[1].toInt()
-                Pair(hour, minute)
-            } else {
-                val now = ZonedDateTime.now(zone)
-                Pair(now.hour, now.minute)
-            }
-        } catch (e: Exception) {
-            val now = ZonedDateTime.now(zone)
-            Pair(now.hour, now.minute)
-        }
+    fun parseTime(timeString: String, zone: ZoneId = getConfiguredZone()): Pair<Int, Int>? {
+        val parts = timeString.split(":")
+        if (parts.size != 2) return null
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+        if (hour !in 0..23 || minute !in 0..59) return null
+        return Pair(hour, minute)
     }
 
     /**
      * Combine date string (dd/MM/yyyy) and time string (HH:mm) into timestamp
      *
-     * Returns the current time when the date cannot be read.
+     * @return that moment, or null if either string cannot be read
      */
-    fun combineDateTime(dateString: String, timeString: String, zone: ZoneId = getConfiguredZone()): Long {
-        return try {
-            val localDate = LocalDate.parse(dateString, displayDateFormatter)
-            val (hour, minute) = parseTime(timeString, zone)
-            val localDateTime = localDate.atTime(hour, minute, 0, 0)
-            val zonedDateTime = localDateTime.atZone(zone)
-            zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+    fun combineDateTime(dateString: String, timeString: String, zone: ZoneId = getConfiguredZone()): Long? {
+        val localDate = try {
+            LocalDate.parse(dateString, displayDateFormatter)
+        } catch (e: DateTimeParseException) {
+            return null
         }
+        val (hour, minute) = parseTime(timeString, zone) ?: return null
+        val localDateTime = localDate.atTime(hour, minute, 0, 0)
+        return localDateTime.atZone(zone).toInstant().toEpochMilli()
     }
 
     // ================================================================
@@ -164,15 +160,15 @@ object DateUtils {
      * Parse ISO 8601 date string to timestamp (YYYY-MM-DD → Long)
      * Used for custom fields DATE type
      *
-     * Returns the current time when the string cannot be read.
+     * @return the start of that day, or null if the string is not an ISO 8601 date
      */
-    fun parseIso8601Date(dateStr: String, zone: ZoneId = getConfiguredZone()): Long {
+    fun parseIso8601Date(dateStr: String, zone: ZoneId = getConfiguredZone()): Long? {
         return try {
             val localDate = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
             val zonedDateTime = localDate.atStartOfDay(zone)
             zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+        } catch (e: DateTimeParseException) {
+            null
         }
     }
 
@@ -180,16 +176,16 @@ object DateUtils {
      * Parse ISO 8601 time string to timestamp (HH:MM → Long, today's date)
      * Used for custom fields TIME type
      *
-     * Returns the current time when the string cannot be read.
+     * @return that time today, or null if the string is not an ISO 8601 time
      */
-    fun parseIso8601Time(timeStr: String, zone: ZoneId = getConfiguredZone()): Long {
+    fun parseIso8601Time(timeStr: String, zone: ZoneId = getConfiguredZone()): Long? {
         return try {
             val localTime = LocalTime.parse(timeStr, DateTimeFormatter.ISO_LOCAL_TIME)
             val today = LocalDate.now(zone)
             val zonedDateTime = ZonedDateTime.of(today, localTime, zone)
             zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+        } catch (e: DateTimeParseException) {
+            null
         }
     }
 
@@ -197,15 +193,15 @@ object DateUtils {
      * Parse ISO 8601 datetime string to timestamp (YYYY-MM-DDTHH:MM:SS → Long)
      * Used for custom fields DATETIME type
      *
-     * Returns the current time when the string cannot be read.
+     * @return that moment, or null if the string is not an ISO 8601 datetime
      */
-    fun parseIso8601DateTime(dateTimeStr: String, zone: ZoneId = getConfiguredZone()): Long {
+    fun parseIso8601DateTime(dateTimeStr: String, zone: ZoneId = getConfiguredZone()): Long? {
         return try {
             val localDateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val zonedDateTime = localDateTime.atZone(zone)
             zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
+        } catch (e: DateTimeParseException) {
+            null
         }
     }
 

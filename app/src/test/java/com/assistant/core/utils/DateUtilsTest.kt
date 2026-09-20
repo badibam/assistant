@@ -2,6 +2,7 @@ package com.assistant.core.utils
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -16,10 +17,9 @@ import java.time.ZonedDateTime
  * like once displayed, what a displayed date means once read back, and where a day starts
  * and ends -- all of which depend on the timezone, which is why it is a parameter.
  *
- * The second is what happens when the parsing fails, and that part is not reassuring: seven
- * functions answer an unreadable date with the current time. Those cases are written as
- * measurements. docs/reference.md says a failure is explicit or it is not, and these are
- * not; the tests state what is there so that removing it is a visible change.
+ * The second is what happens when the parsing fails. Every parser answers null, and these
+ * cases hold it there: docs/reference.md says a failure is explicit or it is not, and a
+ * date that silently became the current moment was not.
  */
 class DateUtilsTest {
 
@@ -29,10 +29,6 @@ class DateUtilsTest {
     private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int, zone: ZoneId = paris): Long =
         ZonedDateTime.of(LocalDate.of(year, month, day), LocalTime.of(hour, minute), zone)
             .toInstant().toEpochMilli()
-
-    /** True when the value is the current time, to within a generous margin. */
-    private fun isRoughlyNow(timestamp: Long): Boolean =
-        Math.abs(System.currentTimeMillis() - timestamp) < 10_000L
 
     // ==================== Showing a timestamp ====================
 
@@ -72,7 +68,7 @@ class DateUtilsTest {
     @Test
     fun showingThenReadingADateKeepsTheDay() {
         val instant = at(2025, 3, 15, 14, 30)
-        val readBack = DateUtils.parseDateForFilter(DateUtils.formatDateForDisplay(instant, paris), paris)
+        val readBack = DateUtils.parseDateForFilter(DateUtils.formatDateForDisplay(instant, paris), paris)!!
 
         assertTrue(DateUtils.isOnSameDay(instant, readBack, paris))
     }
@@ -120,7 +116,7 @@ class DateUtilsTest {
     /** A date field's value out and back in the same timezone. */
     @Test
     fun anIsoDateSurvivesTheRoundTrip() {
-        val timestamp = DateUtils.parseIso8601Date("2025-03-15", paris)
+        val timestamp = DateUtils.parseIso8601Date("2025-03-15", paris)!!
 
         assertEquals(at(2025, 3, 15, 0, 0), timestamp)
         assertEquals("2025-03-15", DateUtils.timestampToIso8601Date(timestamp, paris))
@@ -129,7 +125,7 @@ class DateUtilsTest {
     /** A datetime field's value, likewise. */
     @Test
     fun anIsoDateTimeSurvivesTheRoundTrip() {
-        val timestamp = DateUtils.parseIso8601DateTime("2025-03-15T14:30:00", paris)
+        val timestamp = DateUtils.parseIso8601DateTime("2025-03-15T14:30:00", paris)!!
 
         assertEquals(at(2025, 3, 15, 14, 30), timestamp)
         assertEquals("2025-03-15T14:30:00", DateUtils.timestampToIso8601DateTime(timestamp, paris))
@@ -138,7 +134,7 @@ class DateUtilsTest {
     /** A time field has no date of its own: it is read as that time today. */
     @Test
     fun anIsoTimeIsReadAsThatTimeToday() {
-        val timestamp = DateUtils.parseIso8601Time("14:30", paris)
+        val timestamp = DateUtils.parseIso8601Time("14:30", paris)!!
 
         assertEquals("14:30", DateUtils.timestampToIso8601Time(timestamp, paris))
         assertTrue(DateUtils.isOnSameDay(timestamp, System.currentTimeMillis(), paris))
@@ -164,55 +160,56 @@ class DateUtilsTest {
     // ==================== What happens when it cannot be read ====================
 
     /**
-     * Every parser answers an unreadable value with the current time.
+     * Every parser answers an unreadable value with null rather than with a date.
      *
-     * This states what the code does today. docs/reference.md says a failure is explicit or
-     * it is not, and none of these is: nothing distinguishes "the string was nonsense" from
-     * "the date really is today", at the call site or afterwards in the data.
-     *
-     * combineDateTime is the one that bites. It is what sets the timestamp of an entry in
-     * JournalEntryScreen and in TrackingEntryDialog, so a date it cannot read files the
-     * entry under the present moment instead of the day chosen, and says nothing.
+     * The alternative, which these functions used to do, was to return the current time:
+     * nothing afterwards could then tell "the string was nonsense" from "the date really is
+     * today". combineDateTime is the one that mattered, being what sets the timestamp of an
+     * entry in JournalEntryScreen and in TrackingEntryDialog.
      */
     @Test
-    fun anUnreadableValue_becomesTheCurrentTime() {
-        val unreadable = listOf("", "not a date", "2025-03-15", "32/13/2025")
+    fun anUnreadableValue_isRefused() {
+        val unreadable = listOf("", "not a date", "2025-03-15", "32/13/2025", "15/03/2025 14:30")
 
         for (bad in unreadable) {
-            assertTrue("parseDateForFilter(\"$bad\")", isRoughlyNow(DateUtils.parseDateForFilter(bad, paris)))
-            assertTrue("combineDateTime(\"$bad\")", isRoughlyNow(DateUtils.combineDateTime(bad, "14:30", paris)))
+            assertNull("parseDateForFilter(\"$bad\")", DateUtils.parseDateForFilter(bad, paris))
+            assertNull("combineDateTime(\"$bad\")", DateUtils.combineDateTime(bad, "14:30", paris))
         }
 
-        assertTrue(isRoughlyNow(DateUtils.parseIso8601Date("15/03/2025", paris)))
-        assertTrue(isRoughlyNow(DateUtils.parseIso8601Time("not a time", paris)))
-        assertTrue(isRoughlyNow(DateUtils.parseIso8601DateTime("2025-03-15", paris)))
+        assertNull(DateUtils.parseIso8601Date("15/03/2025", paris))
+        assertNull(DateUtils.parseIso8601Time("not a time", paris))
+        assertNull(DateUtils.parseIso8601DateTime("2025-03-15", paris))
+    }
+
+    /** An unreadable time is refused too, rather than becoming the current hour. */
+    @Test
+    fun anUnreadableTime_isRefused() {
+        val unreadable = listOf("", "half past two", "14", "14:30:00", "abc:def")
+
+        for (bad in unreadable) {
+            assertNull("parseTime(\"$bad\")", DateUtils.parseTime(bad, paris))
+        }
     }
 
     /**
-     * An unreadable time answers with the current hour and minute, which for a good part of
-     * any day is indistinguishable from a time somebody meant to enter.
+     * A time outside the clock is refused where it is read, not left for whatever comes
+     * next. It used to come back as written -- 99:99 as Pair(99, 99) -- and only failed one
+     * call later inside combineDateTime, where the time string was no longer in sight.
      */
     @Test
-    fun anUnreadableTime_becomesTheCurrentHourAndMinute() {
-        val now = ZonedDateTime.now(paris)
-        val expected = Pair(now.hour, now.minute)
+    fun anOutOfRangeTime_isRefusedWhereItIsRead() {
+        assertNull(DateUtils.parseTime("99:99", paris))
+        assertNull(DateUtils.parseTime("24:00", paris))
+        assertNull(DateUtils.parseTime("12:60", paris))
+        assertNull(DateUtils.parseTime("-1:30", paris))
 
-        assertEquals(expected, DateUtils.parseTime("", paris))
-        assertEquals(expected, DateUtils.parseTime("half past two", paris))
-        assertEquals(expected, DateUtils.parseTime("14:30:00", paris))
+        assertNull(DateUtils.combineDateTime("15/03/2025", "99:99", paris))
     }
 
-    /**
-     * A time out of range is not refused either, and does not fall back: it is returned as
-     * written, for whatever comes next to deal with.
-     *
-     * combineDateTime is what comes next, and it passes the pair to LocalDate.atTime, which
-     * throws -- caught by its own handler, so an hour of 99 also ends up as the current
-     * time, by a different route than the one above.
-     */
+    /** The bounds of the clock are themselves valid. */
     @Test
-    fun anOutOfRangeTime_isReturnedAsWrittenAndThenSwallowed() {
-        assertEquals(Pair(99, 99), DateUtils.parseTime("99:99", paris))
-        assertTrue(isRoughlyNow(DateUtils.combineDateTime("15/03/2025", "99:99", paris)))
+    fun theEdgesOfTheClockAreAccepted() {
+        assertEquals(Pair(0, 0), DateUtils.parseTime("00:00", paris))
+        assertEquals(Pair(23, 59), DateUtils.parseTime("23:59", paris))
     }
 }

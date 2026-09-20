@@ -380,6 +380,7 @@ fun SinglePeriodSelector(
                         }.get(Calendar.MINUTE)
                         
                         val newDate = DateUtils.parseDateForFilter(selectedDate)
+                            ?: return@DatePicker
                         val combinedTimestamp = Calendar.getInstance().apply {
                             timeInMillis = newDate
                             set(Calendar.HOUR_OF_DAY, existingHour)
@@ -400,8 +401,10 @@ fun SinglePeriodSelector(
                 UI.DatePicker(
                     selectedDate = DateUtils.formatDateForDisplay(period.timestamp),
                     onDateSelected = { selectedDate ->
-                        val newTimestamp = normalizeTimestampWithConfig(DateUtils.parseDateForFilter(selectedDate), period.type)
-                        onPeriodChange(Period(newTimestamp, period.type))
+                        DateUtils.parseDateForFilter(selectedDate)?.let { picked ->
+                            val newTimestamp = normalizeTimestampWithConfig(picked, period.type)
+                            onPeriodChange(Period(newTimestamp, period.type))
+                        }
                     },
                     onDismiss = { showPicker = false }
                 )
@@ -934,8 +937,9 @@ fun CustomDateRangePicker(
         UI.DatePicker(
             selectedDate = startDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
             onDateSelected = { dateString ->
-                val timestamp = DateUtils.parseDateForFilter(dateString)
-                onStartDateChange(timestamp)
+                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                // rather than clearing it or moving it to today.
+                DateUtils.parseDateForFilter(dateString)?.let { onStartDateChange(it) }
             },
             onDismiss = { showStartDatePicker = false }
         )
@@ -945,8 +949,9 @@ fun CustomDateRangePicker(
         UI.DatePicker(
             selectedDate = endDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
             onDateSelected = { dateString ->
-                val timestamp = DateUtils.parseDateForFilter(dateString)
-                onEndDateChange(timestamp)
+                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                // rather than clearing it or moving it to today.
+                DateUtils.parseDateForFilter(dateString)?.let { onEndDateChange(it) }
             },
             onDismiss = { showEndDatePicker = false }
         )
@@ -1116,8 +1121,9 @@ fun RelativePeriodRangeSelector(
         UI.DatePicker(
             selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
             onDateSelected = { dateString ->
-                val timestamp = DateUtils.parseDateForFilter(dateString)
-                onStartCustomDateChange(timestamp)
+                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                // rather than clearing it or moving it to today.
+                DateUtils.parseDateForFilter(dateString)?.let { onStartCustomDateChange(it) }
                 showStartDatePicker = false
             },
             onDismiss = { showStartDatePicker = false }
@@ -1128,8 +1134,9 @@ fun RelativePeriodRangeSelector(
         UI.DatePicker(
             selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
             onDateSelected = { dateString ->
-                val timestamp = DateUtils.parseDateForFilter(dateString)
-                onEndCustomDateChange(timestamp)
+                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                // rather than clearing it or moving it to today.
+                DateUtils.parseDateForFilter(dateString)?.let { onEndCustomDateChange(it) }
                 showEndDatePicker = false
             },
             onDismiss = { showEndDatePicker = false }
@@ -1352,8 +1359,9 @@ fun PeriodRangeSelector(
                         UI.DatePicker(
                             selectedDate = startCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
                             onDateSelected = { dateString ->
-                                val timestamp = DateUtils.parseDateForFilter(dateString)
-                                onStartCustomDateChange(timestamp)
+                                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                                // rather than clearing it or moving it to today.
+                                DateUtils.parseDateForFilter(dateString)?.let { onStartCustomDateChange(it) }
                             },
                             onDismiss = { showDatePicker = false }
                         )
@@ -1500,8 +1508,9 @@ fun PeriodRangeSelector(
                         UI.DatePicker(
                             selectedDate = endCustomDate?.let { DateUtils.formatDateForDisplay(it) } ?: "",
                             onDateSelected = { dateString ->
-                                val timestamp = DateUtils.parseDateForFilter(dateString)
-                                onEndCustomDateChange(timestamp)
+                                // The picker gives back dd/MM/yyyy; anything else leaves the date as it was,
+                                // rather than clearing it or moving it to today.
+                                DateUtils.parseDateForFilter(dateString)?.let { onEndCustomDateChange(it) }
                             },
                             onDismiss = { showDatePicker = false }
                         )

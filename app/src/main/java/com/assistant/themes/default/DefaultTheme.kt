@@ -1334,8 +1334,9 @@ object DefaultTheme : ThemeContract {
         onDateSelected: (String) -> Unit,
         onDismiss: () -> Unit
     ) {
-        // Convert local date to UTC for DatePicker compatibility (uses AppConfig timezone)
-        val selectedDateMs = DateUtils.parseDateForFilter(selectedDate)
+        // Which day the picker opens on. Callers pass "" to mean nothing is chosen yet, so
+        // that case opens on today by contract, not as a fallback hiding a failure.
+        val selectedDateMs = DateUtils.parseDateForFilter(selectedDate) ?: System.currentTimeMillis()
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         val offsetMs = timezone.rules.getOffset(java.time.Instant.ofEpochMilli(selectedDateMs)).totalSeconds * 1000L
         val utcDate = selectedDateMs + offsetMs
@@ -1395,7 +1396,10 @@ object DefaultTheme : ThemeContract {
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
         
+        // Same contract for the time: "" means nothing chosen, and the picker opens on now.
         val (hour, minute) = DateUtils.parseTime(selectedTime)
+            ?: java.time.ZonedDateTime.now(AppConfigManager.getDateTimeConfig().getZoneId())
+                .let { Pair(it.hour, it.minute) }
         
         // Use key() to recreate state on orientation change
         val timePickerState = key(isLandscape) {

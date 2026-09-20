@@ -496,7 +496,9 @@ fun JournalEntryScreen(
             onDateSelected = { newDate ->
                 // Update date part of timestamp, keep time part
                 val currentTime = DateUtils.formatTimeForDisplay(timestamp)
-                timestamp = DateUtils.combineDateTime(newDate, currentTime)
+                // Both halves were produced by DateUtils a line ago. If they cannot be read
+                // back, the entry keeps the moment it had rather than jumping to now.
+                DateUtils.combineDateTime(newDate, currentTime)?.let { timestamp = it }
                 showDatePicker = false
                 showTimePicker = true // Chain to time picker
             },
@@ -512,7 +514,7 @@ fun JournalEntryScreen(
             onTimeSelected = { newTime ->
                 // Update time part of timestamp, keep date part
                 val currentDate = DateUtils.formatDateForDisplay(timestamp)
-                timestamp = DateUtils.combineDateTime(currentDate, newTime)
+                DateUtils.combineDateTime(currentDate, newTime)?.let { timestamp = it }
                 showTimePicker = false
             },
             onDismiss = { showTimePicker = false }

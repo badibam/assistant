@@ -191,7 +191,9 @@ fun TrackingEntryDialog(
 
     // Sync date/time with timestamp
     LaunchedEffect(dateString, timeString) {
-        timestamp = DateUtils.combineDateTime(dateString, timeString)
+        // The two strings come from the pickers. An unreadable pair leaves the entry on the
+        // moment it already had, rather than filing it under the present one unannounced.
+        DateUtils.combineDateTime(dateString, timeString)?.let { timestamp = it }
     }
 
     // Reset validation errors when dialog opens

@@ -234,7 +234,7 @@ fun FieldInput(
             // Convert ISO 8601 to display format dd/MM/yyyy
             val displayDate = if (dateStr.isNotEmpty()) {
                 val timestamp = DateUtils.parseIso8601Date(dateStr)
-                DateUtils.formatDateForDisplay(timestamp)
+                if (timestamp == null) dateStr else DateUtils.formatDateForDisplay(timestamp)
             } else {
                 ""
             }
@@ -254,10 +254,11 @@ fun FieldInput(
                 UI.DatePicker(
                     selectedDate = displayDate.ifEmpty { DateUtils.getTodayFormatted() },
                     onDateSelected = { newDateDisplay ->
-                        // Convert display format to ISO 8601
-                        val timestamp = DateUtils.parseDateForFilter(newDateDisplay)
-                        val isoDate = DateUtils.timestampToIso8601Date(timestamp)
-                        onChange(isoDate)
+                        // The picker gives back dd/MM/yyyy. Anything else is a bug upstream,
+                        // and the field keeps what it had rather than recording today.
+                        DateUtils.parseDateForFilter(newDateDisplay)?.let { timestamp ->
+                            onChange(DateUtils.timestampToIso8601Date(timestamp))
+                        }
                         showPicker = false
                     },
                     onDismiss = { showPicker = false }
@@ -304,9 +305,16 @@ fun FieldInput(
             // Parse ISO 8601 datetime to date and time parts
             val (displayDate, displayTime) = if (dateTimeStr.isNotEmpty()) {
                 val timestamp = DateUtils.parseIso8601DateTime(dateTimeStr)
-                val date = DateUtils.formatDateForDisplay(timestamp)
-                val time = DateUtils.formatTimeForDisplay(timestamp)
-                Pair(date, time)
+                if (timestamp == null) {
+                    // Not a datetime: shown as stored, in the date box, rather than split
+                    // into a day and an hour it does not have.
+                    Pair(dateTimeStr, "")
+                } else {
+                    Pair(
+                        DateUtils.formatDateForDisplay(timestamp),
+                        DateUtils.formatTimeForDisplay(timestamp)
+                    )
+                }
             } else {
                 Pair("", "")
             }
@@ -349,10 +357,11 @@ fun FieldInput(
                 UI.DatePicker(
                     selectedDate = displayDate.ifEmpty { DateUtils.getTodayFormatted() },
                     onDateSelected = { newDateDisplay ->
-                        // Combine new date with existing time
-                        val combinedTimestamp = DateUtils.combineDateTime(newDateDisplay, displayTime.ifEmpty { "00:00" })
-                        val isoDateTime = DateUtils.timestampToIso8601DateTime(combinedTimestamp)
-                        onChange(isoDateTime)
+                        // Combine new date with existing time; an unreadable pair leaves the
+                        // field as it was rather than recording the present moment.
+                        DateUtils.combineDateTime(newDateDisplay, displayTime.ifEmpty { "00:00" })?.let {
+                            onChange(DateUtils.timestampToIso8601DateTime(it))
+                        }
                         showDatePicker = false
                     },
                     onDismiss = { showDatePicker = false }
@@ -363,10 +372,10 @@ fun FieldInput(
                 UI.TimePicker(
                     selectedTime = displayTime.ifEmpty { DateUtils.getCurrentTimeFormatted() },
                     onTimeSelected = { newTimeDisplay ->
-                        // Combine existing date with new time
-                        val combinedTimestamp = DateUtils.combineDateTime(displayDate.ifEmpty { DateUtils.getTodayFormatted() }, newTimeDisplay)
-                        val isoDateTime = DateUtils.timestampToIso8601DateTime(combinedTimestamp)
-                        onChange(isoDateTime)
+                        // Same here: nothing is recorded unless both halves read.
+                        DateUtils.combineDateTime(displayDate.ifEmpty { DateUtils.getTodayFormatted() }, newTimeDisplay)?.let {
+                            onChange(DateUtils.timestampToIso8601DateTime(it))
+                        }
                         showTimePicker = false
                     },
                     onDismiss = { showTimePicker = false }
