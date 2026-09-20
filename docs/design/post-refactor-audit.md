@@ -3,13 +3,13 @@
 **Origine** : audit architecture 2026-06-10/11.
 **Périmètre** : tout ce qui a été constaté pendant l'audit et qui ne fait PAS partie de la refonte executions.
 
-La partie A (alignement du pipeline TOOL_DATA) est implémentée et a été retirée : le code et les commits en sont le registre. Le critère qui la fermait — chaque exemple du L1 exécutable tel quel — vit désormais dans `docs/AI.md`. Reste la partie B.
+La partie A (alignement du pipeline TOOL_DATA) est implémentée et a été retirée : le code et les commits en sont le registre. Le critère qui la fermait — chaque exemple du L1 exécutable tel quel — vit désormais dans `docs/AI.md`.
 
 ---
 
 # Dette constatée / choix discutables (à arbitrer, pas urgents)
 
-Constats faits en passant pendant l'audit. Classés par taxe estimée sur le projet. Statut indiqué : **vérifié** (lu dans le code/docs) ou **soupçon** (à confirmer avant d'agir).
+Constats faits en passant pendant l'audit. Classés par taxe estimée sur le projet. Ce qui restait à l'état de soupçon a été vérifié ; ce qui a été traité ou s'est révélé sans objet est sorti d'ici, les commits en étant le registre.
 
 ## B.1 JSON-string aux frontières, institutionnalisé — vérifié
 
@@ -29,19 +29,13 @@ Le prompt L1 vit dans `ai_prompt_chunks.xml`, traité comme de l'i18n alors que 
 
 **Recommandation** : le re-test manuel à chaque modif du L1 est désormais une règle de `docs/AI.md` — c'est le minimum, et il repose sur la discipline. À terme, envisager un format dédié (markdown source → génération) avec exemples extraits et exécutables automatiquement.
 
-## B.4 Renommer un custom field = perte de données — vérifié (design doc)
+## B.5 `verbalize()` synchrone forçant `runBlocking` — vérifié, répandu
 
-`custom-fields-migration.md` : un renommage est détecté comme `Removed + Added`, et `Removed → STRIP_FIELD` → renommer un champ (intention cosmétique) **supprime les valeurs historiques** (avec dialogue, mais destructif). `NameChanged → ERROR` interdit l'autre chemin. Aucun moyen sûr de renommer.
+`ExecutableService.verbalize(operation, params, context): String` est synchrone ; pour résoudre des noms d'outil ou de zone, le service fait `runBlocking { coordinator.processUserAction(...) }`, avec un `Coordinator(context)` instancié à la volée. Appel bloquant imbriqué dans des contextes coroutine.
 
-**Recommandation** : migration rename-aware (copie de clé `old_name → new_name` dans toutes les entrées). Simple, élimine un piège réel avant qu'il ne morde sur des données réelles.
+Quatre sites, dans trois services qui tous survivent à la refonte : `ToolDataService.kt:1024`, `ToolInstanceService.kt:487` et `:737`, `ZoneService.kt:313`. Le pattern est donc bien installé, pas isolé au service disparu.
 
-## B.5 `verbalize()` synchrone forçant `runBlocking` — vérifié sur un service, soupçon ailleurs
-
-L'interface `verbalize(operation, params, context): String` est synchrone ; pour résoudre noms d'outil/zone, le service fait `runBlocking { coordinator.processUserAction(...) }` (+ `Coordinator(context)` instancié à la volée). Appel bloquant imbriqué dans des contextes coroutine. Vu dans ToolExecutionService (qui meurt avec la refonte) — **vérifier les autres services** : si le pattern est répandu, passer l'interface en `suspend`.
-
-## B.6 Compter en chargeant les lignes — vérifié localement, soupçon ailleurs
-
-Pattern `dao.getByStatus(...).size` (3 chargements complets pour 3 entiers) au lieu de requêtes `COUNT`. Vu dans getStats executions (meurt avec la refonte) — vérifier si le réflexe existe ailleurs.
+**Recommandation** : passer `verbalize` en `suspend` dans l'interface, et retirer les quatre `runBlocking`.
 
 ## B.8 Mentions rapides
 
