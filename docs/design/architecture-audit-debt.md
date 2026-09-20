@@ -10,12 +10,6 @@ Ce qui restait à l'état de soupçon a été vérifié. Ce qui a été traité,
 
 **Recommandation** : convention unique — les services parlent en objets ; la sérialisation n'existe qu'au bord DB. Chantier transversal, à faire par couche.
 
-## B.2 Conventions de nommage gérées par avertissement — vérifié
-
-`CORE.md:27` : « ATTENTION : chaque service utilise ses propres conventions » (`tool_instance_id` vs `toolInstanceId`, `tool_type` vs `tooltype`). Documenter un piège au lieu de l'unifier le normalise — et il a déjà mordu, au moins une fois sous la forme d'un commentaire-rustine dans `CommandExecutor`.
-
-**Recommandation** : unifier (une seule convention pour les params de service), en une passe dédiée. Ingrat, fort rendement.
-
 ## B.3 Doc IA dans le système de strings — discutable par nature
 
 Le prompt L1 vit dans `ai_prompt_chunks.xml`, traité comme de l'i18n alors que c'est un **contrat d'interface** — le seul du projet ni compilé ni testé. Conséquences : échappement bruyant, diffs illisibles, et les divergences doc↔code du pipeline TOOL_DATA installées sans bruit.

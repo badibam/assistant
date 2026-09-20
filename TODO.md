@@ -8,7 +8,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, aucun mécanique : deux sont transversaux (chaînes JSON aux frontières, conventions de nommage des params de service), deux sont des décisions à prendre plutôt que du code à écrire (format du prompt L1, validation désactivée par défaut).
+Trois points dans `docs/design/architecture-audit-debt.md`, tous vérifiés : un chantier transversal (chaînes JSON aux frontières) et deux décisions à prendre plutôt que du code à écrire (format du prompt L1, validation désactivée par défaut).
 
 ## Divers
 
@@ -33,4 +33,3 @@ Quatre points dans `docs/design/architecture-audit-debt.md`, tous vérifiés, au
 - Exécutions d'automation manquées : vérifier sur l'appareil le passage en base 22→23, la saisie de la fenêtre dans l'éditeur, et un rattrapage réel (automation programmée, app fermée plusieurs jours). `ScheduleCalculatorTest` couvre le calcul de la prochaine échéance, pas la logique de rattrapage elle-même, qui vit dans `AutomationScheduler` : l'item reste entier tant que celle-ci n'est pas testée.
 - Dates refusées plutôt que remplacées par aujourd'hui : vérifier sur l'appareil que les sélecteurs de date et d'heure se comportent normalement dans les quatre écrans touchés — entrée de journal, entrée de tracking, champs personnalisés DATE et DATETIME, sélecteur de période. Le cas d'échec ne devrait jamais se produire (un sélecteur rend toujours du dd/MM/yyyy), mais les 21 sites d'appel ont changé de forme et seul l'appareil dit que rien n'a bougé pour l'utilisateur.
 - Champs personnalisés : vérifier la création d'un champ depuis l'écran de configuration, maintenant que le nom technique est attribué par le service et non plus envoyé par le formulaire.
-- Montées de base 23→28 : vérifiées jusqu'à 27 sur l'appareil le 2026-09-20 — cinq tables recréées, rien de perdu (5 zones, 12 outils, 45 entrées, 18 sessions, 103 messages, 4 automations), et tout le JSON converti sauf les réponses du modèle entourées d'une clôture markdown. La 27→28 les rattrape et **n'a pas encore tourné** : réinstaller, puis vérifier qu'aucune ligne ne contient plus `"preText"`. Restent à vérifier de toute façon : les deux cascades (zone supprimée → outils, session supprimée → messages) et une vraie session CHAT pour l'enveloppe renommée.
