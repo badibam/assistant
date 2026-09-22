@@ -719,9 +719,12 @@ class BackupService(private val context: Context) : ExecutableService {
             return document
 
         } catch (e: Exception) {
+            // The import wipes every table before inserting, so handing back the untransformed
+            // document would destroy what is there and replace it with data in a format the
+            // current schema does not read. Failing here happens before the wipe, and leaves the
+            // database exactly as it was.
             LogManager.service("Backup transformation failed: ${e.message}", "ERROR", e)
-            // Return original data on error (fail-safe)
-            return jsonData
+            throw IllegalStateException("Backup transformation failed: ${e.message}", e)
         }
     }
 

@@ -59,8 +59,10 @@ object JsonTransformers {
 
             return transformed.toString()
         } catch (e: Exception) {
+            // Not fail-safe: handing back the untransformed config would write it into a
+            // database that has already been wiped, in a format nothing reads any more.
             LogManager.service("Config transformation failed for $tooltype from v$fromVersion to v$toVersion: ${e.message}", "ERROR", e)
-            return json // Return original on error (fail-safe)
+            throw IllegalStateException("Config transformation failed for $tooltype from v$fromVersion to v$toVersion: ${e.message}", e)
         }
     }
 
@@ -116,7 +118,7 @@ object JsonTransformers {
             return transformed.toString()
         } catch (e: Exception) {
             LogManager.service("Data transformation failed for $tooltype from v$fromVersion to v$toVersion: ${e.message}", "ERROR", e)
-            return json // Return original on error (fail-safe)
+            throw IllegalStateException("Data transformation failed for $tooltype from v$fromVersion to v$toVersion: ${e.message}", e)
         }
     }
 
@@ -152,7 +154,7 @@ object JsonTransformers {
             return transformed.toString()
         } catch (e: Exception) {
             LogManager.service("App config transformation failed from v$fromVersion to v$toVersion: ${e.message}", "ERROR", e)
-            return json // Return original on error (fail-safe)
+            throw IllegalStateException("App config transformation failed from v$fromVersion to v$toVersion: ${e.message}", e)
         }
     }
 
@@ -189,6 +191,7 @@ object JsonTransformers {
             }
         } catch (e: Exception) {
             LogManager.service("JSON Transform 19->20: Failed to fill null format values: ${e.message}", "ERROR", e)
+            throw IllegalStateException("JSON Transform 19->20: failed to fill null format values: ${e.message}", e)
         }
         return json
     }
@@ -407,6 +410,7 @@ object JsonTransformers {
             LogManager.service("Transformed custom_fields for v25→v26", "DEBUG")
         } catch (e: Exception) {
             LogManager.service("Failed to transform custom_fields: ${e.message}", "ERROR", e)
+            throw IllegalStateException("Failed to transform custom_fields: ${e.message}", e)
         }
 
         return json
