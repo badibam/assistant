@@ -38,6 +38,10 @@ TEST_REPORT = ROOT / "app" / "build" / "reports" / "tests" / "testDebugUnitTest"
 # task of its own: a task one has to remember is exactly what the ratchet replaces.
 KEY_CASE_CHECK = ROOT / "scripts" / "check_key_case.py"
 
+# The same idea applied to the L1 prompt: it is the project's only interface contract that is
+# neither compiled nor tested, so its examples are read against the code they describe.
+PROMPT_CHECK = ROOT / "scripts" / "check_prompt_examples.py"
+
 
 def gradle(*args):
     """Delegate to the wrapper, never to a system-wide gradle."""
@@ -223,6 +227,15 @@ def key_case_check():
     return process.returncode
 
 
+def prompt_check():
+    """Report any promise the L1 prompt makes that the code no longer keeps.
+
+    Returns the script's exit code, 0 when the examples and the code agree.
+    """
+    process = subprocess.run([sys.executable, str(PROMPT_CHECK)], cwd=ROOT)
+    return process.returncode
+
+
 def task_test():
     """Run the unit tests and say how many ran, after checking the naming rule.
 
@@ -232,11 +245,12 @@ def task_test():
     each case here is a check that would otherwise mean installing the build on a phone
     and reproducing the situation by hand.
 
-    The key-case check comes first and costs a fraction of a second. It is not a test --
-    it reads the sources rather than running them -- but it answers the same question:
-    is this tree fit to commit.
+    The key-case and prompt checks come first and cost a fraction of a second. They are not
+    tests -- they read the sources rather than running them -- but they answer the same
+    question: is this tree fit to commit.
     """
     key_case = key_case_check()
+    prompt = prompt_check()
     # Noted before the run, so that results left by the run before cannot be read as this
     # one's. A filesystem timestamp can lag by a second, hence the margin.
     started = time.time() - 1
@@ -247,7 +261,7 @@ def task_test():
     # gradle skipped the task because nothing had changed. Otherwise there is no answer.
     if tally is None or (not tally[3] and code != 0):
         print("no results from this run -- it did not get as far as the tests")
-        return code or key_case or 1
+        return code or key_case or prompt or 1
 
     tests, failures, errors, fresh = tally
     bad = failures + errors
@@ -255,7 +269,7 @@ def task_test():
     print(f"{tests} tests, {bad} failed{unchanged}")
     if bad:
         print(f"report: {TEST_REPORT}")
-    return code or key_case
+    return code or key_case or prompt
 
 
 def task_strings():

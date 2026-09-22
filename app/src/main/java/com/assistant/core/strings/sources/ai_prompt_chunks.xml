@@ -487,7 +487,8 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l\'ut
   {
     "name": "mood_before",
     "display_name": "Humeur avant",
-    "type": "TEXT_UNLIMITED",
+    "type": "TEXT",
+    "config": {"length": "UNLIMITED"},
     "always_visible": true
   }
 ]
@@ -510,7 +511,7 @@ Tous les tooltypes supportent des **champs supplémentaires** définis par l\'ut
 
 **Types supportés** : {{CUSTOM_FIELD_TYPES}}
 
-**Schémas détaillés** : Pour connaître la structure exacte d\'un type de field, utilise `SCHEMA` avec l\'ID `field_type_{TYPE}` (ex: `field_type_TEXT_UNLIMITED`).
+**Schémas détaillés** : Pour connaître la structure exacte d\'un type de field, utilise `SCHEMA` avec l\'ID `field_type_{TYPE}` (ex: `field_type_TEXT`).
 
 **Comportement** :
 - Tous les custom_fields sont **optionnels**
@@ -549,7 +550,7 @@ Retourne la config JSON complète incluant les custom_fields définis :
   "type": "numeric",
   "unit": "kg",
   "custom_fields": [
-    {"name": "mood", "display_name": "Humeur", "type": "TEXT_UNLIMITED"}
+    {"name": "mood", "display_name": "Humeur", "type": "TEXT", "config": {"length": "UNLIMITED"}}
   ]
 }
 ```
