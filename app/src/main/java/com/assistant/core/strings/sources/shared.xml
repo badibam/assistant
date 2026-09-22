@@ -216,7 +216,6 @@
 
     <!-- AI Errors - Orchestration -->
     <string name="ai_error_store_user_message">Échec de la sauvegarde du message utilisateur: %1$s</string>
-    <string name="ai_error_token_limit_exceeded">Limite de tokens dépassée: %1$d tokens</string>
     <string name="ai_error_ai_query_failed">Échec de la requête IA: %1$s</string>
     <string name="ai_error_orchestration">Erreur d\'orchestration: %1$s</string>
     <string name="ai_error_store_ai_response">Échec de la sauvegarde de la réponse IA: %1$s</string>
@@ -837,9 +836,6 @@
     <string name="ai_prompt_scheduled_datetime">Date prévue pour cette exécution : %1$s (timestamp: %2$d). Les données relatives (hier, cette semaine) sont résolues sur cette date, pas sur l\'heure actuelle. Ce que tu fais ou dis reste au présent. Si tu écris une donnée qui appartient à la date prévue plutôt qu\'à aujourd\'hui, passe son timestamp explicitement : sans timestamp, l\'entrée est datée du moment où cette exécution tourne.</string>
 
     <!-- AI TOKEN STATUS - Affichage statut tokens (TokenCalculator) -->
-    <string name="ai_token_exceeded">Dépassement: %1$d tokens (limite: %2$d) - %3$s%%</string>
-    <string name="ai_token_near_limit">Proche limite: %1$d tokens (limite: %2$d) - %3$s%%</string>
-    <string name="ai_token_within_limit">Dans limite: %1$d tokens (limite: %2$d) - %3$s%%</string>
 
     <!-- DATA NAVIGATION - Explorateur de données et navigation -->
     <string name="data_navigator_entry_name_field">Nom de l\'entrée</string>
