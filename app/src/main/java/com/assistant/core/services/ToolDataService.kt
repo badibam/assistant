@@ -384,29 +384,25 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             data = mapOf(
                 "entries" to entries.map { entity ->
-                    // Convert timestamps → ISO in data (recursive), and hand out an object:
-                    // the string form belongs to the database, not to the callers.
-                    val dataWithISO = JsonUtils.toMap(
-                        DateTimeConverter.timestampsToISO(JSONObject(entity.data), appTimezone)
-                    )
+                    // Milliseconds, as stored. The ISO the model reads is produced where the
+                    // model is spoken to, in CommandExecutor. Handed out as an object: the
+                    // string form belongs to the database, not to the callers.
+                    val entryData = JsonUtils.toMap(JSONObject(entity.data))
 
-                    // Convert timestamps → ISO in custom_fields (recursive)
-                    val customFieldsWithISO = entity.customFields?.let { cf ->
-                        JsonUtils.toMap(
-                            DateTimeConverter.timestampsToISO(JSONObject(cf), appTimezone)
-                        )
+                    val entryCustomFields = entity.customFields?.let { cf ->
+                        JsonUtils.toMap(JSONObject(cf))
                     }
 
                     val fullEntry = mapOf(
                         "id" to entity.id,
                         "tool_instance_id" to entity.toolInstanceId,
                         "tooltype" to entity.tooltype,
-                        "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
+                        "timestamp" to entity.timestamp,
                         "name" to entity.name,
-                        "data" to dataWithISO,
-                        "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
-                        "created_at" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
-                        "updated_at" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
+                        "data" to entryData,
+                        "custom_fields" to entryCustomFields,  // Use underscore for consistency with DB and configs
+                        "created_at" to entity.createdAt,
+                        "updated_at" to entity.updatedAt
                     )
 
                     // Apply fields filter if provided
@@ -439,18 +435,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
         // Get app timezone for timestamp → ISO conversion
-        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
-
-        // Convert timestamps → ISO in data (recursive)
-        val dataWithISO = JSONObject(entity.data).let { dataObj ->
-            DateTimeConverter.timestampsToISO(dataObj, appTimezone).toString()
-        }
-
-        // Convert timestamps → ISO in custom_fields (recursive)
-        val customFieldsWithISO = entity.customFields?.let { cf ->
-            JsonUtils.toMap(
-                DateTimeConverter.timestampsToISO(JSONObject(cf), appTimezone)
-            )
+        // Milliseconds, as stored. The ISO the model reads is produced in CommandExecutor.
+        val entryCustomFields = entity.customFields?.let { cf ->
+            JsonUtils.toMap(JSONObject(cf))
         }
 
         return OperationResult.success(
@@ -459,12 +446,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     "id" to entity.id,
                     "tool_instance_id" to entity.toolInstanceId,
                     "tooltype" to entity.tooltype,
-                    "timestamp" to entity.timestamp?.let { DateTimeConverter.timestampToISO(it, appTimezone) },
+                    "timestamp" to entity.timestamp,
                     "name" to entity.name,
-                    "data" to dataWithISO,
-                    "custom_fields" to customFieldsWithISO,  // Use underscore for consistency with DB and configs
-                    "created_at" to DateTimeConverter.timestampToISO(entity.createdAt, appTimezone),
-                    "updated_at" to DateTimeConverter.timestampToISO(entity.updatedAt, appTimezone)
+                    "data" to entity.data,
+                    "custom_fields" to entryCustomFields,  // Use underscore for consistency with DB and configs
+                    "created_at" to entity.createdAt,
+                    "updated_at" to entity.updatedAt
                 )
             )
         )

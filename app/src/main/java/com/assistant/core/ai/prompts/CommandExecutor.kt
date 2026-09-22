@@ -7,7 +7,11 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.ExecutableService
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.strings.Strings
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -21,6 +25,19 @@ data class PromptCommandResult(
     val dataTitle: String,         // Title/header for data section in prompt
     val formattedData: String      // JSON formatted data for prompt
 )
+
+/**
+ * What a tool's config says about one data result: the fields worth showing beside it, and the
+ * names of its DATETIME fields, which decide what turns into ISO on the way to the model.
+ */
+private data class DataResultContext(
+    val configExtract: Map<String, Any>?,
+    val dateTimeFieldNames: Set<String>
+) {
+    companion object {
+        val EMPTY = DataResultContext(configExtract = null, dateTimeFieldNames = emptySet())
+    }
+}
 
 /**
  * Complete execution result including prompt data and system message
@@ -812,14 +829,17 @@ class CommandExecutor(private val context: Context) {
     private fun formatResultData(command: ExecutableCommand, data: Map<String, Any>): String {
         return try {
             val reordered = mutableMapOf<String, Any>()
+            // Filled by the tool_data branch, which is the only one that knows a tool's fields.
+            var dateFieldNames: Set<String> = emptySet()
 
             // Extract metadata keys first based on command type
             when (command.resource) {
                 "tool_data" -> {
                     // LOGIQUE 2: Build config_extract with relevant config fields
-                    val configExtract = runBlocking { buildConfigExtract(command) }
-                    if (configExtract != null) {
-                        reordered["config_extract"] = configExtract
+                    val toolConfig = runBlocking { buildDataResultContext(command) }
+                    dateFieldNames = toolConfig.dateTimeFieldNames
+                    if (toolConfig.configExtract != null) {
+                        reordered["config_extract"] = toolConfig.configExtract
                     }
 
                     // Metadata: toolInstanceName, count
@@ -880,7 +900,16 @@ class CommandExecutor(private val context: Context) {
                 if (key !in reordered) reordered[key] = value
             }
 
-            org.json.JSONObject(reordered as Map<*, *>).toString(2)
+            // This is where a result becomes the text the model reads, so this is where the
+            // milliseconds everything else speaks turn into the ISO 8601 the model does
+            // (docs/design/date-boundary.md). The tool's DATETIME fields are named here because
+            // their names are the user's, and no fixed list can hold them.
+            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+            DateTimeConverter.timestampsToISO(
+                org.json.JSONObject(reordered as Map<*, *>),
+                timezone,
+                dateFieldNames
+            ).toString(2)
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
             org.json.JSONObject(data).toString(2)
@@ -896,12 +925,12 @@ class CommandExecutor(private val context: Context) {
      * @param command The tool_data command being executed
      * @return Map with relevant config fields, or null if extraction fails
      */
-    private suspend fun buildConfigExtract(command: ExecutableCommand): Map<String, Any>? {
+    private suspend fun buildDataResultContext(command: ExecutableCommand): DataResultContext {
         return try {
             // Extract toolInstanceId from command params
             val toolInstanceId = command.params["tool_instance_id"] as? String
                 ?: command.params["id"] as? String
-                ?: return null
+                ?: return DataResultContext.EMPTY
 
             // Fetch tool instance config
             val configResult = coordinator.processUserAction("tools.get", mapOf(
@@ -910,7 +939,7 @@ class CommandExecutor(private val context: Context) {
 
             if (!configResult.isSuccess) {
                 LogManager.aiPrompt("Failed to fetch config for config_extract: ${configResult.error}", "WARN")
-                return null
+                return DataResultContext.EMPTY
             }
 
             // Extract config_json and tooltype
@@ -921,7 +950,7 @@ class CommandExecutor(private val context: Context) {
 
             if (configMap == null || tooltype == null) {
                 LogManager.aiPrompt("Missing config or tooltype for tool instance $toolInstanceId", "WARN")
-                return null
+                return DataResultContext.EMPTY
             }
             val configJsonStr = JsonUtils.toJSONObject(configMap).toString()
 
@@ -929,7 +958,7 @@ class CommandExecutor(private val context: Context) {
             val toolType = com.assistant.core.tools.ToolTypeManager.getToolType(tooltype)
             if (toolType == null) {
                 LogManager.aiPrompt("ToolType not found for tooltype=$tooltype", "WARN")
-                return null
+                return DataResultContext.EMPTY
             }
 
             // Get list of relevant config fields
@@ -962,13 +991,26 @@ class CommandExecutor(private val context: Context) {
                 }
             }
 
-            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields for tool instance $toolInstanceId", "DEBUG")
+            // The tool's DATETIME fields, named so the result's values can be turned into ISO
+            // on the way to the model. Their names are the user's, chosen when the field was
+            // created, so they are read from the config rather than from any list.
+            val dateTimeFieldNames = configJson.optJSONArray("custom_fields")
+                ?.toFieldDefinitions()
+                ?.filter { it.type == FieldType.DATETIME }
+                ?.map { it.name }
+                ?.toSet()
+                ?: emptySet()
 
-            if (configExtract.isEmpty()) null else configExtract
+            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields and ${dateTimeFieldNames.size} datetime fields for tool instance $toolInstanceId", "DEBUG")
+
+            DataResultContext(
+                configExtract = if (configExtract.isEmpty()) null else configExtract,
+                dateTimeFieldNames = dateTimeFieldNames
+            )
 
         } catch (e: Exception) {
             LogManager.aiPrompt("Error building config_extract: ${e.message}", "ERROR", e)
-            null
+            DataResultContext.EMPTY
         }
     }
 

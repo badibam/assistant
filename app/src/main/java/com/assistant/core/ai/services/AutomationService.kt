@@ -154,7 +154,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             "automation_id" to automationId,
             "name" to name,
             "zone_id" to zoneId,
-            "created_at" to DateTimeConverter.timestampToISO(now, timezone)
+            "created_at" to now
         ))
     }
 
@@ -387,7 +387,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             "name" to newName,
             "zone_id" to newAutomation.zoneId,
             "seed_session_id" to newSeedSessionId,
-            "created_at" to DateTimeConverter.timestampToISO(now, timezone)
+            "created_at" to now
         ))
     }
 
@@ -579,8 +579,8 @@ class AutomationService(private val context: Context) : ExecutableService {
             "dismiss_older_instances" to automation.dismissOlderInstances,
             "provider_id" to automation.providerId,
             "is_enabled" to automation.isEnabled,
-            "created_at" to DateTimeConverter.timestampToISO(automation.createdAt, timezone),
-            "updated_at" to DateTimeConverter.timestampToISO(automation.updatedAt, timezone),
+            "created_at" to automation.createdAt,
+            "updated_at" to automation.updatedAt,
             "last_execution_id" to automation.lastExecutionId,
             "execution_history" to automation.executionHistory,
             "group" to automation.group

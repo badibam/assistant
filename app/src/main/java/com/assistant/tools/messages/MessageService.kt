@@ -98,7 +98,7 @@ class MessageService(private val context: Context) : ExecutableService {
             "tooltype" to "messages",
             "schema_id" to "messages_data",
             "name" to params.optString("name", ""),
-            "timestamp" to DateTimeConverter.timestampToISO(now, timezone),
+            "timestamp" to now,
             "data" to data
         ))
 

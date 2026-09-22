@@ -193,20 +193,11 @@ fun TrackingHistory(
                                         return@mapNotNull null
                                     }
                                     
-                                    // Parse ISO timestamp from service
-                                    val timestampString = entryMap["timestamp"] as? String
-                                    val timestamp = if (timestampString != null) {
-                                        try {
-                                            com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
-                                                timestampString,
-                                                com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                                            )
-                                        } catch (e: Exception) {
-                                            System.currentTimeMillis()
-                                        }
-                                    } else {
-                                        System.currentTimeMillis()
-                                    }
+                                    // Milliseconds from the service, as stored. An entry
+                                    // without one is skipped rather than shown at the present
+                                    // moment, which would read as an entry recorded just now.
+                                    val timestamp = (entryMap["timestamp"] as? Number)?.toLong()
+                                        ?: return@mapNotNull null
                                     LogManager.tracking("Entry ${entryMap["id"]}: timestamp=$timestamp (${com.assistant.core.utils.DateTimeFormatter.formatForDisplay(timestamp, context)})")
                                     ToolDataEntity(
                                         id = entryId,

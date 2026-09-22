@@ -277,7 +277,7 @@ object MessageScheduler : ToolScheduler {
             "tooltype" to "messages",
             "schema_id" to "messages_data",
             "name" to name,
-            "timestamp" to DateTimeConverter.timestampToISO(dueAt, timezone),
+            "timestamp" to dueAt,
             "data" to data
         ))
 
@@ -459,14 +459,14 @@ object MessageScheduler : ToolScheduler {
 
         return entries.mapNotNull { entry ->
             val id = entry["id"] as? String ?: return@mapNotNull null
-            val iso = entry["timestamp"] as? String ?: return@mapNotNull null
+            val dueAtMillis = (entry["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
             val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
 
             try {
                 val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
                 PendingOccurrence(
                     id = id,
-                    dueAt = DateTimeConverter.isoToTimestamp(iso, timezone),
+                    dueAt = dueAtMillis,
                     triggeredBy = data.optString("triggered_by", "MANUAL"),
                     data = data
                 )

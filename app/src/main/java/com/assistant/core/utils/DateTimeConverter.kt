@@ -120,12 +120,12 @@ object DateTimeConverter {
      * @param appTimezone App timezone from config
      * @return New JSONObject with ISO strings instead of timestamps (Long)
      */
-    fun timestampsToISO(json: JSONObject, appTimezone: ZoneId): JSONObject {
+    fun timestampsToISO(json: JSONObject, appTimezone: ZoneId, alsoNamed: Set<String> = emptySet()): JSONObject {
         val result = JSONObject()
 
         json.keys().forEach { key ->
             val value = json.get(key)
-            result.put(key, convertValueTimestampToISO(key, value, appTimezone))
+            result.put(key, convertValueTimestampToISO(key, value, appTimezone, alsoNamed))
         }
 
         return result
@@ -162,13 +162,13 @@ object DateTimeConverter {
      * Convert a single value from timestamp to ISO recursively.
      * Handles objects, arrays, and primitive values.
      */
-    private fun convertValueTimestampToISO(key: String, value: Any, appTimezone: ZoneId): Any {
+    private fun convertValueTimestampToISO(key: String, value: Any, appTimezone: ZoneId, alsoNamed: Set<String>): Any {
         return when (value) {
-            is JSONObject -> timestampsToISO(value, appTimezone)
-            is JSONArray -> convertArrayTimestampToISO(value, appTimezone)
+            is JSONObject -> timestampsToISO(value, appTimezone, alsoNamed)
+            is JSONArray -> convertArrayTimestampToISO(value, appTimezone, alsoNamed)
             is Long -> {
                 // Convert if key is a known timestamp field
-                if (isTimestampField(key)) {
+                if (isTimestampField(key, alsoNamed)) {
                     timestampToISO(value, appTimezone)
                 } else {
                     value
@@ -176,7 +176,7 @@ object DateTimeConverter {
             }
             is Int -> {
                 // Convert if key is a known timestamp field (int might be truncated timestamp)
-                if (isTimestampField(key)) {
+                if (isTimestampField(key, alsoNamed)) {
                     timestampToISO(value.toLong(), appTimezone)
                 } else {
                     value
@@ -201,11 +201,11 @@ object DateTimeConverter {
     /**
      * Convert array elements recursively (timestamp to ISO).
      */
-    private fun convertArrayTimestampToISO(array: JSONArray, appTimezone: ZoneId): JSONArray {
+    private fun convertArrayTimestampToISO(array: JSONArray, appTimezone: ZoneId, alsoNamed: Set<String>): JSONArray {
         val result = JSONArray()
         for (i in 0 until array.length()) {
             val value = array.get(i)
-            result.put(convertValueTimestampToISO("", value, appTimezone))
+            result.put(convertValueTimestampToISO("", value, appTimezone, alsoNamed))
         }
         return result
     }
@@ -219,10 +219,14 @@ object DateTimeConverter {
     }
 
     /**
-     * Check if a key is a known timestamp field name.
+     * Check if a key names a timestamp: one of the app's own, or one the caller names.
+     *
+     * A caller names the extra ones because only it knows them. A DATETIME custom field is a
+     * timestamp whose name the user chose, so no fixed list can hold it -- the tool's schema is
+     * what says which fields are dates.
      */
-    private fun isTimestampField(key: String): Boolean {
-        return key in TIMESTAMP_FIELD_NAMES
+    private fun isTimestampField(key: String, alsoNamed: Set<String> = emptySet()): Boolean {
+        return key in TIMESTAMP_FIELD_NAMES || key in alsoNamed
     }
 
     /**

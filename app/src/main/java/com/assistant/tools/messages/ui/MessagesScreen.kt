@@ -454,7 +454,7 @@ private suspend fun loadByStatus(
 
     return entries.mapNotNull { entry ->
         val id = entry["id"] as? String ?: return@mapNotNull null
-        val iso = entry["timestamp"] as? String ?: return@mapNotNull null
+        val dueAtMillis = (entry["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
         val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
 
         try {
@@ -465,7 +465,7 @@ private suspend fun loadByStatus(
 
             Occurrence(
                 id = id,
-                dueAt = DateTimeConverter.isoToTimestamp(iso, timezone),
+                dueAt = dueAtMillis,
                 status = data.optString("status", "pending"),
                 commonTitle = data.optString("common_title").takeIf { it.isNotEmpty() },
                 commonContent = data.optString("common_content").takeIf { it.isNotEmpty() },

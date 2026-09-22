@@ -100,16 +100,8 @@ fun NotesScreen(
                     try {
                         val map = entry as? Map<*, *> ?: return@mapNotNull null
                         val id = map["id"] as? String ?: return@mapNotNull null
-                        // Parse ISO timestamp from service
-                        val timestampString = map["timestamp"] as? String ?: return@mapNotNull null
-                        val timestamp = try {
-                            com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
-                                timestampString,
-                                com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                            )
-                        } catch (e: Exception) {
-                            return@mapNotNull null
-                        }
+                        // Milliseconds from the service, as stored
+                        val timestamp = (map["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
 
                         // The service hands out an object; the string form stays at the database edge.
                         @Suppress("UNCHECKED_CAST")

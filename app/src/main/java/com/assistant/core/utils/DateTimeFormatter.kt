@@ -52,13 +52,8 @@ object DateTimeFormatter {
 
         // Convert to ZonedDateTime
         val zonedDateTime = when (value) {
-            is Long -> Instant.ofEpochMilli(value).atZone(timezone)
-            is String -> {
-                // Parse ISO and convert to user's timezone
-                val timestamp = DateTimeConverter.isoToTimestamp(value, timezone)
-                Instant.ofEpochMilli(timestamp).atZone(timezone)
-            }
-            else -> throw IllegalArgumentException("Value must be Long timestamp or String ISO, got: ${value::class.simpleName}")
+            is Number -> Instant.ofEpochMilli(value.toLong()).atZone(timezone)
+            else -> throw IllegalArgumentException("Value must be a timestamp in milliseconds, got: ${value::class.simpleName}")
         }
 
         // Build formatted string
@@ -95,19 +90,6 @@ object DateTimeFormatter {
      */
     fun formatTimeOnly(value: Any, context: Context): String {
         return formatForDisplay(value, context, includeTime = true, includeDate = false)
-    }
-
-    /**
-     * Get current time as ISO 8601 string with user timezone.
-     *
-     * @param context Android context for config access
-     * @return ISO 8601 string with timezone offset (e.g., "2025-03-15T14:30:00+01:00")
-     */
-    fun nowISO(context: Context): String {
-        val config = AppConfigManager.getDateTimeConfig()
-        val timezone = config.getZoneId()
-        val timestamp = System.currentTimeMillis()
-        return DateTimeConverter.timestampToISO(timestamp, timezone)
     }
 
     /**

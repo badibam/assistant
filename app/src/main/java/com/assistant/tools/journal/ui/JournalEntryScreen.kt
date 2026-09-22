@@ -90,20 +90,9 @@ fun JournalEntryScreen(
                 val entryData = result.data?.get("entry") as? Map<*, *>
                 entryData?.let { data ->
                     title = data["name"] as? String ?: ""
-                    // Parse ISO timestamp from service
-                    val timestampString = data["timestamp"] as? String
-                    timestamp = if (timestampString != null) {
-                        try {
-                            com.assistant.core.utils.DateTimeConverter.isoToTimestamp(
-                                timestampString,
-                                com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                            )
-                        } catch (e: Exception) {
-                            System.currentTimeMillis()
-                        }
-                    } else {
-                        System.currentTimeMillis()
-                    }
+                    // Milliseconds from the service, as stored. An entry with none keeps the
+                    // present moment, which is what a new entry starts from anyway.
+                    timestamp = (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
 
                     // The service hands out an object; the string form stays at the database edge.
                     @Suppress("UNCHECKED_CAST")
