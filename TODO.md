@@ -40,6 +40,7 @@ Deux points dans `docs/design/architecture-audit-debt.md`, tous deux des décisi
 
 ## À vérifier sur l'appareil
 
+- Historique de tracking : retrouver le symptôme du mauvais timestamp. Noté sur le téléphone sans détail, donc à revoir avant de chercher la cause — le fuseau pris sur la machine plutôt que sur le réglage de l'app est un candidat, pas une conclusion.
 - Écran des journaux, après le passage à deux plafonds : qu'il s'ouvre normalement, et qu'en filtrant sur « Error » les erreurs anciennes apparaissent, et plus seulement celles de la minute.
 - Rejouer les exemples du prompt L1 dans une session CHAT réelle : la règle est posée dans `docs/AI.md`, mais les exemples corrigés (périodes ISO, pagination par page, grammaire des champs) n'ont été vérifiés que sur lecture du code.
 - Exécutions d'automation manquées : vérifier sur l'appareil le passage en base 22→23, la saisie de la fenêtre dans l'éditeur, et un rattrapage réel (automation programmée, app fermée plusieurs jours). `ScheduleCalculatorTest` couvre le calcul de la prochaine échéance, pas la logique de rattrapage elle-même, qui vit dans `AutomationScheduler` : l'item reste entier tant que celle-ci n'est pas testée.
