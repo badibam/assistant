@@ -281,6 +281,10 @@ object CustomFieldsSchemaGenerator {
                     // than an instant.
                     put("type", "number")
                     put("minimum", 0)
+                    // Marks the property as an instant, which is what lets the view handed to
+                    // the model show it as ISO while the stored form stays a number. A plain
+                    // NUMBER field carries no such mark and stays a number on both sides.
+                    put("format", "epoch-millis")
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }

@@ -142,7 +142,7 @@ class CommandExecutor(private val context: Context) {
                     schemasJson.appendLine("```json")
                     // Parse and pretty-print the schema
                     try {
-                        val parsedSchema = JSONObject(schema.schemaContent)
+                        val parsedSchema = SchemaModelView.forModel(JSONObject(schema.schemaContent))
                         schemasJson.appendLine(parsedSchema.toString(2))
                     } catch (e: Exception) {
                         // If parsing fails, include as-is
@@ -860,7 +860,7 @@ class CommandExecutor(private val context: Context) {
                     val contentStr = data["content"] as? String
                     if (contentStr != null) {
                         try {
-                            reordered["content"] = org.json.JSONObject(contentStr)
+                            reordered["content"] = SchemaModelView.forModel(org.json.JSONObject(contentStr))
                         } catch (e: Exception) {
                             // If parsing fails, keep as string
                             reordered["content"] = contentStr

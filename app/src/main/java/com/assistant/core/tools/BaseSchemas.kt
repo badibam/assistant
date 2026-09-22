@@ -147,17 +147,20 @@ object BaseSchemas {
                 "timestamp": {
                     "type": "number",
                     "minimum": 0,
+                    "format": "epoch-millis",
                     "description": "${s.shared("tools_base_schema_data_timestamp")}"
                 },
                 "created_at": {
                     "type": "integer",
                     "minimum": 0,
+                    "format": "epoch-millis",
                     "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_created_at")}"
                 },
                 "updated_at": {
                     "type": "integer",
                     "minimum": 0,
+                    "format": "epoch-millis",
                     "system_managed": true,
                     "description": "${s.shared("tools_base_schema_data_updated_at")}"
                 },
