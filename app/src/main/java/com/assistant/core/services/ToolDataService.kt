@@ -62,34 +62,19 @@ class ToolDataService(private val context: Context) : ExecutableService {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
         }
 
-        // Get app timezone for ISO ↔ timestamp conversion
+        // Get app timezone for the timestamps handed back on read
         val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-        // Convert ISO → timestamps in data (recursive)
-        val dataJson = params.optJSONObject("data")?.let { dataObj ->
-            DateTimeConverter.isoToTimestamps(dataObj, appTimezone).toString()
-        } ?: "{}"
-
-        // Convert ISO → timestamps in custom_fields (recursive)
-        val customFieldsJson = params.optJSONObject("custom_fields")?.let { customFieldsObj ->
-            DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
-        }
+        // Payloads arrive in milliseconds from every caller, so they are stored as they come.
+        val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
+        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
 
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double
-        // included, since JSON decides the width on its own. Anything else is refused: a type
-        // nobody expected used to be answered with the present moment, and no caller could tell
-        // that apart from an entry genuinely recorded now.
+        // included, since JSON decides the width on its own. Anything else is refused.
         val timestamp = when {
             !params.has("timestamp") -> System.currentTimeMillis()
             params.opt("timestamp") is Number -> (params.opt("timestamp") as Number).toLong()
-            params.opt("timestamp") is String -> {
-                try {
-                    DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
-                } catch (e: IllegalArgumentException) {
-                    return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
-                }
-            }
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
@@ -183,30 +168,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Get app timezone for ISO ↔ timestamp conversion
         val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-        // Convert ISO → timestamps in data (recursive)
-        val dataJson = params.optJSONObject("data")?.let { dataObj ->
-            DateTimeConverter.isoToTimestamps(dataObj, appTimezone).toString()
-        }
-
-        // Convert ISO → timestamps in custom_fields (recursive)
-        val customFieldsJson = params.optJSONObject("custom_fields")?.let { customFieldsObj ->
-            DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
-        }
+        // Payloads arrive in milliseconds from every caller, so they are stored as they come.
+        val dataJson = params.optJSONObject("data")?.toString()
+        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
 
         // Milliseconds are the contract. An absent timestamp leaves the recorded one alone;
-        // any number is taken as milliseconds. Anything else is refused: an unreadable type used
-        // to be dropped here, so an update meant to move an entry in time did nothing and said
-        // nothing.
+        // any number is taken as milliseconds. Anything else is refused.
         val timestamp = when {
             !params.has("timestamp") -> null
             params.opt("timestamp") is Number -> (params.opt("timestamp") as Number).toLong()
-            params.opt("timestamp") is String -> {
-                try {
-                    DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
-                } catch (e: IllegalArgumentException) {
-                    return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
-                }
-            }
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
