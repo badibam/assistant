@@ -274,8 +274,13 @@ object CustomFieldsSchemaGenerator {
 
             FieldType.DATETIME -> {
                 JSONObject().apply {
-                    put("type", "string")
-                    put("format", "date-time")
+                    // Milliseconds, like every other instant the app stores. An ISO string
+                    // written without an offset is wall-clock time: the same text would mean
+                    // different moments in different timezones, and would sort wrong across a
+                    // clock change. DATE and TIME stay strings, being a day and an hour rather
+                    // than an instant.
+                    put("type", "number")
+                    put("minimum", 0)
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }

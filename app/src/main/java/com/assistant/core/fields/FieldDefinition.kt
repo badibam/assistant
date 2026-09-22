@@ -316,55 +316,33 @@ private fun formatTimeValue(value: Any?, config: Map<String, Any>?, s: StringsCo
 }
 
 /**
- * Format DATETIME value (ISO 8601 YYYY-MM-DDTHH:MM:SS → short format dd/MM/yyyy HH:MM)
- * Uses DateUtils for consistent formatting with rest of app
+ * Format DATETIME value for display. The value is milliseconds, as the field's schema says.
  */
 private fun formatDateTimeValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
-    val dateTimeStr = value as? String ?: return s.shared("no_value")
+    val timestamp = (value as? Number)?.toLong() ?: return s.shared("no_value")
 
-    return try {
-        // Parse ISO 8601 → timestamp
-        val timestamp = com.assistant.core.utils.DateUtils.parseIso8601DateTime(dateTimeStr)
-
-        val timeFormat = config?.get("time_format") as? String ?: "24h"
-
-        if (timeFormat == "12h") {
-            // Custom format for 12h mode (DateUtils only does 24h)
-            val parts = dateTimeStr.split("T")
-            if (parts.size == 2) {
-                // Format date part using DateUtils
-                val dateTimestamp = com.assistant.core.utils.DateUtils.parseIso8601Date(parts[0])
-                val formattedDate = if (dateTimestamp == null) parts[0]
-                    else com.assistant.core.utils.DateUtils.formatDateForDisplay(dateTimestamp)
-
-                // Format time part as 12h
-                val timeStr = parts[1].substringBefore(":") + ":" + parts[1].split(":").getOrNull(1)
-                val timeParts = timeStr.split(":")
-                if (timeParts.size == 2) {
-                    val hour24 = timeParts[0].toInt()
-                    val minute = timeParts[1]
-
-                    val period = if (hour24 < 12) "AM" else "PM"
-                    val hour12 = when {
-                        hour24 == 0 -> 12
-                        hour24 <= 12 -> hour24
-                        else -> hour24 - 12
-                    }
-
-                    "$formattedDate $hour12:$minute $period"
-                } else {
-                    dateTimeStr
-                }
-            } else {
-                dateTimeStr
-            }
-        } else {
-            // 24h format - use DateUtils
-            if (timestamp == null) dateTimeStr else com.assistant.core.utils.DateUtils.formatFullDateTime(timestamp)
-        }
-    } catch (e: Exception) {
-        dateTimeStr // Fallback to raw string if parsing fails
+    val timeFormat = config?.get("time_format") as? String ?: "24h"
+    if (timeFormat != "12h") {
+        return com.assistant.core.utils.DateUtils.formatFullDateTime(timestamp)
     }
+
+    // DateUtils only writes 24h, so the two halves are taken apart and the hour recast.
+    val formattedDate = com.assistant.core.utils.DateUtils.formatDateForDisplay(timestamp)
+    val timeParts = com.assistant.core.utils.DateUtils.formatTimeForDisplay(timestamp).split(":")
+    if (timeParts.size != 2) {
+        return com.assistant.core.utils.DateUtils.formatFullDateTime(timestamp)
+    }
+
+    val hour24 = timeParts[0].toInt()
+    val minute = timeParts[1]
+    val period = if (hour24 < 12) "AM" else "PM"
+    val hour12 = when {
+        hour24 == 0 -> 12
+        hour24 <= 12 -> hour24
+        else -> hour24 - 12
+    }
+
+    return "$formattedDate $hour12:$minute $period"
 }
 
 /**

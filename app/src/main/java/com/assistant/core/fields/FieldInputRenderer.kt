@@ -301,21 +301,15 @@ fun FieldInput(
         com.assistant.core.fields.FieldType.DATETIME -> {
             var showDatePicker by rememberSaveable { mutableStateOf(false) }
             var showTimePicker by rememberSaveable { mutableStateOf(false) }
-            val dateTimeStr = value as? String ?: ""
+            // Milliseconds, as the field's schema says. Nothing to parse, so nothing that can
+            // fail to parse.
+            val timestamp = (value as? Number)?.toLong()
 
-            // Parse ISO 8601 datetime to date and time parts
-            val (displayDate, displayTime) = if (dateTimeStr.isNotEmpty()) {
-                val timestamp = DateUtils.parseIso8601DateTime(dateTimeStr)
-                if (timestamp == null) {
-                    // Not a datetime: shown as stored, in the date box, rather than split
-                    // into a day and an hour it does not have.
-                    Pair(dateTimeStr, "")
-                } else {
-                    Pair(
-                        DateUtils.formatDateForDisplay(timestamp),
-                        DateUtils.formatTimeForDisplay(timestamp)
-                    )
-                }
+            val (displayDate, displayTime) = if (timestamp != null) {
+                Pair(
+                    DateUtils.formatDateForDisplay(timestamp),
+                    DateUtils.formatTimeForDisplay(timestamp)
+                )
             } else {
                 Pair("", "")
             }
@@ -361,7 +355,7 @@ fun FieldInput(
                         // Combine new date with existing time; an unreadable pair leaves the
                         // field as it was rather than recording the present moment.
                         DateUtils.combineDateTime(newDateDisplay, displayTime.ifEmpty { "00:00" })?.let {
-                            onChange(DateUtils.timestampToIso8601DateTime(it))
+                            onChange(it)
                         }
                         showDatePicker = false
                     },
@@ -375,7 +369,7 @@ fun FieldInput(
                     onTimeSelected = { newTimeDisplay ->
                         // Same here: nothing is recorded unless both halves read.
                         DateUtils.combineDateTime(displayDate.ifEmpty { DateUtils.getTodayFormatted() }, newTimeDisplay)?.let {
-                            onChange(DateUtils.timestampToIso8601DateTime(it))
+                            onChange(it)
                         }
                         showTimePicker = false
                     },

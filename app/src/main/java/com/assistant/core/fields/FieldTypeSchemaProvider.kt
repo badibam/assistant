@@ -680,22 +680,22 @@ object FieldTypeSchemaProvider : SchemaProvider {
             "properties": {
                 $commonProps,
                 "default_value": {
-                    "type": "string",
-                    "format": "date-time",
+                    "type": "number",
+                    "minimum": 0,
                     "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {
                     "type": "object",
                     "properties": {
                         "min": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Date-heure minimale (ISO 8601 YYYY-MM-DDTHH:MM:SS)"
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Date-heure minimale, en millisecondes depuis epoch"
                         },
                         "max": {
-                            "type": "string",
-                            "format": "date-time",
-                            "description": "Date-heure maximale (ISO 8601 YYYY-MM-DDTHH:MM:SS)"
+                            "type": "number",
+                            "minimum": 0,
+                            "description": "Date-heure maximale, en millisecondes depuis epoch"
                         },
                         "time_format": {
                             "type": "string",

@@ -5,7 +5,6 @@ import com.assistant.core.fields.migration.FieldChange
 import com.assistant.core.fields.migration.FieldConfigComparator
 import com.assistant.core.strings.Strings
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -440,34 +439,25 @@ object FieldConfigValidator {
             )
         }
 
-        // Validate min and max are valid ISO 8601 datetimes
-        val minStr = config["min"] as? String
-        val maxStr = config["max"] as? String
-
-        val minDateTime = if (minStr != null) {
-            try {
-                LocalDateTime.parse(minStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            } catch (e: DateTimeParseException) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_datetime_min_max_format")
-                )
-            }
+        // The bounds are milliseconds, like the value they bound. A present key of any other
+        // type is refused rather than ignored: a bound silently dropped would let through the
+        // values it exists to keep out.
+        val minDateTime = if (config.containsKey("min")) {
+            (config["min"] as? Number)?.toLong() ?: return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_datetime_min_max_format")
+            )
         } else null
 
-        val maxDateTime = if (maxStr != null) {
-            try {
-                LocalDateTime.parse(maxStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            } catch (e: DateTimeParseException) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_datetime_min_max_format")
-                )
-            }
+        val maxDateTime = if (config.containsKey("max")) {
+            (config["max"] as? Number)?.toLong() ?: return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_datetime_min_max_format")
+            )
         } else null
 
         // Validate min <= max
-        if (minDateTime != null && maxDateTime != null && minDateTime.isAfter(maxDateTime)) {
+        if (minDateTime != null && maxDateTime != null && minDateTime > maxDateTime) {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_datetime_min_max_order")

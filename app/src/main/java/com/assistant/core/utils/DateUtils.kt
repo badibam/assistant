@@ -190,22 +190,6 @@ object DateUtils {
     }
 
     /**
-     * Parse ISO 8601 datetime string to timestamp (YYYY-MM-DDTHH:MM:SS → Long)
-     * Used for custom fields DATETIME type
-     *
-     * @return that moment, or null if the string is not an ISO 8601 datetime
-     */
-    fun parseIso8601DateTime(dateTimeStr: String, zone: ZoneId = getConfiguredZone()): Long? {
-        return try {
-            val localDateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val zonedDateTime = localDateTime.atZone(zone)
-            zonedDateTime.toInstant().toEpochMilli()
-        } catch (e: DateTimeParseException) {
-            null
-        }
-    }
-
-    /**
      * Convert timestamp to ISO 8601 date string (Long → YYYY-MM-DD)
      * Used for custom fields DATE type
      */
@@ -223,12 +207,4 @@ object DateUtils {
         return zonedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
     }
 
-    /**
-     * Convert timestamp to ISO 8601 datetime string (Long → YYYY-MM-DDTHH:MM:SS)
-     * Used for custom fields DATETIME type
-     */
-    fun timestampToIso8601DateTime(timestamp: Long, zone: ZoneId = getConfiguredZone()): String {
-        val zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone)
-        return zonedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-    }
 }

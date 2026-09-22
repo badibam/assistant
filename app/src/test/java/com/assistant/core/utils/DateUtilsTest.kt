@@ -122,15 +122,6 @@ class DateUtilsTest {
         assertEquals("2025-03-15", DateUtils.timestampToIso8601Date(timestamp, paris))
     }
 
-    /** A datetime field's value, likewise. */
-    @Test
-    fun anIsoDateTimeSurvivesTheRoundTrip() {
-        val timestamp = DateUtils.parseIso8601DateTime("2025-03-15T14:30:00", paris)!!
-
-        assertEquals(at(2025, 3, 15, 14, 30), timestamp)
-        assertEquals("2025-03-15T14:30:00", DateUtils.timestampToIso8601DateTime(timestamp, paris))
-    }
-
     /** A time field has no date of its own: it is read as that time today. */
     @Test
     fun anIsoTimeIsReadAsThatTimeToday() {
@@ -206,7 +197,6 @@ class DateUtilsTest {
 
         assertNull(DateUtils.parseIso8601Date("15/03/2025", paris))
         assertNull(DateUtils.parseIso8601Time("not a time", paris))
-        assertNull(DateUtils.parseIso8601DateTime("2025-03-15", paris))
     }
 
     /** An unreadable time is refused too, rather than becoming the current hour. */
