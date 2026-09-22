@@ -590,18 +590,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
                 },
                 "config": {
                     "type": "object",
-                    "properties": {
-                        "min": {
-                            "type": "string",
-                            "format": "date",
-                            "description": "Date minimale (ISO 8601 YYYY-MM-DD)"
-                        },
-                        "max": {
-                            "type": "string",
-                            "format": "date",
-                            "description": "Date maximale (ISO 8601 YYYY-MM-DD)"
-                        }
-                    },
+                    "properties": {},
                     "additionalProperties": false
                 }
             },
@@ -687,16 +676,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                 "config": {
                     "type": "object",
                     "properties": {
-                        "min": {
-                            "type": "number",
-                            "minimum": 0,
-                            "description": "Date-heure minimale, en millisecondes depuis epoch"
-                        },
-                        "max": {
-                            "type": "number",
-                            "minimum": 0,
-                            "description": "Date-heure maximale, en millisecondes depuis epoch"
-                        },
                         "time_format": {
                             "type": "string",
                             "enum": ["24h", "12h"],

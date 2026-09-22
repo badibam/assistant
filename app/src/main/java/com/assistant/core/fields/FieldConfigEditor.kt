@@ -80,9 +80,8 @@ fun FieldConfigEditor(
                 RangeConfigEditor(config, onConfigChange, context)
             }
 
-            FieldType.DATE -> {
-                DateConfigEditor(config, onConfigChange, context)
-            }
+            // DATE has nothing to configure since its bounds went.
+            FieldType.DATE -> {}
 
             FieldType.TIME -> {
                 TimeConfigEditor(config, onConfigChange, context)
@@ -507,50 +506,6 @@ private fun RangeConfigEditor(
 }
 
 /**
- * Configuration editor for DATE type.
- * Config: {min?, max?}
- * Values are ISO 8601 date strings (YYYY-MM-DD)
- */
-@Composable
-private fun DateConfigEditor(
-    config: Map<String, Any>?,
-    onConfigChange: (Map<String, Any>?) -> Unit,
-    context: Context
-) {
-    val s = Strings.`for`(context = context)
-    val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
-
-    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        UI.FormField(
-            label = s.shared("field_config_min"),
-            value = min,
-            onChange = {
-                min = it
-                if (it.isNotEmpty()) mutableConfig["min"] = it else mutableConfig.remove("min")
-                onConfigChange(mutableConfig.ifEmpty { null })
-            },
-            fieldType = UIFieldType.TEXT,
-            required = false
-        )
-
-        UI.FormField(
-            label = s.shared("field_config_max"),
-            value = max,
-            onChange = {
-                max = it
-                if (it.isNotEmpty()) mutableConfig["max"] = it else mutableConfig.remove("max")
-                onConfigChange(mutableConfig.ifEmpty { null })
-            },
-            fieldType = UIFieldType.TEXT,
-            required = false
-        )
-    }
-}
-
-/**
  * Configuration editor for TIME type.
  * Config: {format?}
  * Format is always 24h (HH:MM) in storage
@@ -583,8 +538,8 @@ private fun TimeConfigEditor(
 
 /**
  * Configuration editor for DATETIME type.
- * Config: {min?, max?, time_format?}
- * Values are ISO 8601 datetime strings (YYYY-MM-DDTHH:MM:SS)
+ * Config: {time_format?}
+ * Values are timestamps in milliseconds
  */
 @Composable
 private fun DateTimeConfigEditor(
@@ -595,45 +550,18 @@ private fun DateTimeConfigEditor(
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
 
-    var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
-    var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
     var timeFormat by rememberSaveable { mutableStateOf(config?.get("time_format")?.toString() ?: "") }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        UI.FormField(
-            label = s.shared("field_config_min"),
-            value = min,
-            onChange = {
-                min = it
-                if (it.isNotEmpty()) mutableConfig["min"] = it else mutableConfig.remove("min")
-                onConfigChange(mutableConfig.ifEmpty { null })
-            },
-            fieldType = UIFieldType.TEXT,
-            required = false
-        )
-
-        UI.FormField(
-            label = s.shared("field_config_max"),
-            value = max,
-            onChange = {
-                max = it
-                if (it.isNotEmpty()) mutableConfig["max"] = it else mutableConfig.remove("max")
-                onConfigChange(mutableConfig.ifEmpty { null })
-            },
-            fieldType = UIFieldType.TEXT,
-            required = false
-        )
-
-        UI.FormField(
-            label = s.shared("field_config_time_format"),
-            value = timeFormat,
-            onChange = {
-                timeFormat = it
-                if (it.isNotEmpty()) mutableConfig["time_format"] = it else mutableConfig.remove("time_format")
-                onConfigChange(mutableConfig.ifEmpty { null })
-            },
-            fieldType = UIFieldType.TEXT,
-            required = false
-        )
-    }
+    UI.FormField(
+        label = s.shared("field_config_time_format"),
+        value = timeFormat,
+        onChange = {
+            timeFormat = it
+            if (it.isNotEmpty()) mutableConfig["time_format"] = it else mutableConfig.remove("time_format")
+            onConfigChange(mutableConfig.ifEmpty { null })
+        },
+        fieldType = UIFieldType.TEXT,
+        required = false
+    )
 }
+

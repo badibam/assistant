@@ -353,6 +353,17 @@ object JsonTransformers {
      * @return Transformed JSONObject with updated custom_fields
      */
     private fun transformCustomFields(json: JSONObject, version: Int): JSONObject {
+        // v28 → v29: the dead min/max bounds of a DATE or DATETIME field leave the config, as
+        // they do from the installed database. Same code both ways round, so an imported backup
+        // and an upgraded install end up with the same config.
+        if (version == 28) {
+            val removed = DateFieldBounds.strip(json)
+            if (removed > 0) {
+                LogManager.service("Removed $removed dead date bound(s) for v28→v29", "DEBUG")
+            }
+            return json
+        }
+
         // Only apply for v25 → v26 migration
         if (version != 25) return json
 

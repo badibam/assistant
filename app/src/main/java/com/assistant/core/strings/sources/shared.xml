@@ -1135,14 +1135,10 @@
     <string name="field_validation_range_decimals">Le nombre de décimales doit être supérieur ou égal à 0</string>
     <string name="field_validation_range_default_incomplete">La valeur par défaut doit contenir start et end</string>
     <string name="field_validation_range_default_order">Dans la valeur par défaut, start doit être inférieur ou égal à end</string>
-    <string name="field_validation_date_min_max_format">Les dates min et max doivent être au format ISO 8601 (YYYY-MM-DD)</string>
-    <string name="field_validation_date_min_max_order">La date minimale doit être antérieure ou égale à la date maximale</string>
     <string name="field_validation_date_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DD)</string>
     <string name="field_validation_date_default_range">La valeur par défaut doit être comprise entre min et max</string>
     <string name="field_validation_time_format">Le format doit être 24h ou 12h</string>
     <string name="field_validation_time_default_format">La valeur par défaut doit être au format HH:MM</string>
-    <string name="field_validation_datetime_min_max_format">Les dates min et max doivent être au format ISO 8601 (YYYY-MM-DDTHH:MM:SS)</string>
-    <string name="field_validation_datetime_min_max_order">La date minimale doit être antérieure ou égale à la date maximale</string>
     <string name="field_validation_datetime_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DDTHH:MM:SS)</string>
     <string name="field_validation_datetime_default_range">La valeur par défaut doit être comprise entre min et max</string>
     <string name="field_validation_datetime_format">Le format d\'heure doit être 24h ou 12h</string>

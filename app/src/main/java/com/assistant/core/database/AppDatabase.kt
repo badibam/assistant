@@ -22,6 +22,7 @@ import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
+import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -41,7 +42,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 28,
+    version = 29,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -1189,6 +1190,39 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // The min/max bounds of a DATE or DATETIME custom field never constrained a
+                // value, and they are gone from the schema. They have to leave the stored
+                // configs with it: the config schema refuses a property it does not declare, so
+                // a config carrying one would stop passing the validation it used to pass.
+                var removed = 0
+                val cursor = database.query(
+                    "SELECT id, config_json FROM tool_instances WHERE config_json IS NOT NULL AND config_json != ''"
+                )
+                while (cursor.moveToNext()) {
+                    val rowId = cursor.getString(0)
+                    val before = cursor.getString(1)
+                    try {
+                        val config = org.json.JSONObject(before)
+                        val stripped = DateFieldBounds.strip(config)
+                        if (stripped > 0) {
+                            database.execSQL(
+                                "UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf(config.toString(), rowId)
+                            )
+                            removed += stripped
+                        }
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 28->29: tool_instances.config_json of $rowId left as is (${e.message})", "WARN")
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 28->29: $removed dead date bound(s) removed", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1215,7 +1249,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_24_25,
                     MIGRATION_25_26,
                     MIGRATION_26_27,
-                    MIGRATION_27_28
+                    MIGRATION_27_28,
+                    MIGRATION_28_29
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

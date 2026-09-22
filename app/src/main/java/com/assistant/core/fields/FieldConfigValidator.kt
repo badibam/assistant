@@ -4,9 +4,6 @@ import android.content.Context
 import com.assistant.core.fields.migration.FieldChange
 import com.assistant.core.fields.migration.FieldConfigComparator
 import com.assistant.core.strings.Strings
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 /**
  * Validates field definitions for custom fields.
@@ -362,43 +359,7 @@ object FieldConfigValidator {
      * Config: {min?, max?}
      */
     private fun validateDateConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
-        // Config is optional for DATE
-        if (config == null) return ValidationResult(isValid = true)
-
-        // Validate min and max are valid ISO 8601 dates
-        val minStr = config["min"] as? String
-        val maxStr = config["max"] as? String
-
-        val minDate = if (minStr != null) {
-            try {
-                LocalDate.parse(minStr, DateTimeFormatter.ISO_LOCAL_DATE)
-            } catch (e: DateTimeParseException) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_date_min_max_format")
-                )
-            }
-        } else null
-
-        val maxDate = if (maxStr != null) {
-            try {
-                LocalDate.parse(maxStr, DateTimeFormatter.ISO_LOCAL_DATE)
-            } catch (e: DateTimeParseException) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_date_min_max_format")
-                )
-            }
-        } else null
-
-        // Validate min <= max
-        if (minDate != null && maxDate != null && minDate.isAfter(maxDate)) {
-            return ValidationResult(
-                isValid = false,
-                errorMessage = s.shared("field_validation_date_min_max_order")
-            )
-        }
-
+        // DATE has nothing to configure: the schema declares an empty config object.
         return ValidationResult(isValid = true)
     }
 
@@ -430,37 +391,11 @@ object FieldConfigValidator {
         // Config is optional for DATETIME
         if (config == null) return ValidationResult(isValid = true)
 
-        // Validate time_format is "24h" or "12h"
         val timeFormat = config["time_format"] as? String
         if (timeFormat != null && timeFormat !in listOf("24h", "12h")) {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_datetime_format")
-            )
-        }
-
-        // The bounds are milliseconds, like the value they bound. A present key of any other
-        // type is refused rather than ignored: a bound silently dropped would let through the
-        // values it exists to keep out.
-        val minDateTime = if (config.containsKey("min")) {
-            (config["min"] as? Number)?.toLong() ?: return ValidationResult(
-                isValid = false,
-                errorMessage = s.shared("field_validation_datetime_min_max_format")
-            )
-        } else null
-
-        val maxDateTime = if (config.containsKey("max")) {
-            (config["max"] as? Number)?.toLong() ?: return ValidationResult(
-                isValid = false,
-                errorMessage = s.shared("field_validation_datetime_min_max_format")
-            )
-        } else null
-
-        // Validate min <= max
-        if (minDateTime != null && maxDateTime != null && minDateTime > maxDateTime) {
-            return ValidationResult(
-                isValid = false,
-                errorMessage = s.shared("field_validation_datetime_min_max_order")
             )
         }
 
