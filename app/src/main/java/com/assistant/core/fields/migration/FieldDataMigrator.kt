@@ -242,8 +242,11 @@ object FieldDataMigrator {
      * @param changes List of detected configuration changes
      * @param strategies Map of migration strategies for each change
      * @return Transformed custom_fields map
+     *
+     * Visible to the tests: this is where a configuration change meets real entries, and what it
+     * does to them cannot be read off the strategies alone.
      */
-    private fun applyMigrationStrategies(
+    internal fun applyMigrationStrategies(
         customFields: Map<String, Any?>,
         changes: List<FieldChange>,
         strategies: Map<FieldChange, MigrationStrategy>
@@ -255,11 +258,14 @@ object FieldDataMigrator {
 
             when (strategy) {
                 MigrationStrategy.STRIP_FIELD -> {
-                    // Remove field from map completely
+                    // Remove the field from the entry, whatever made the strategy apply: the
+                    // field being deleted, a scale whose range no longer means the same thing,
+                    // a choice that changed between one value and a list. The dialog tells the
+                    // user their data will be erased for all three, so all three erase it.
                     when (change) {
-                        is FieldChange.Removed -> {
-                            result.remove(change.name)
-                        }
+                        is FieldChange.Removed -> result.remove(change.name)
+                        is FieldChange.ScaleRangeChanged -> result.remove(change.name)
+                        is FieldChange.ChoiceMultipleChanged -> result.remove(change.name)
                         else -> {} // Strategy mismatch, should not happen
                     }
                 }
