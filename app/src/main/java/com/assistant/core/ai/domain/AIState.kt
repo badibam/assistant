@@ -52,11 +52,17 @@ data class AIState(
     val sessionCreatedAt: Long = 0L,
 
     /**
-     * Timestamp when network last became available.
-     * Used to exclude network downtime from global timeout calculation.
-     * Initialized to sessionCreatedAt, updated on NetworkAvailable event.
+     * When the outage the session is currently sitting out began, or 0 when the network is fine.
+     * Set on entering WAITING_NETWORK_RETRY, cleared on leaving it.
      */
-    val lastNetworkAvailableTime: Long = 0L,
+    val networkLostAt: Long = 0L,
+
+    /**
+     * How long this session has spent waiting for the network, added up across outages.
+     * Subtracted from the global timeout so an automation gets its ten minutes of working time
+     * rather than ten minutes of wall clock.
+     */
+    val networkDownTime: Long = 0L,
 
     /**
      * Timestamp of last event processed (any event).
@@ -134,3 +140,12 @@ data class AIState(
         )
     }
 }
+
+/**
+ * How long the outage currently under way has lasted, or zero when the network is fine.
+ *
+ * Kept beside the accumulator so the two transitions that end a wait bank the same thing, and so
+ * the timeout can count an outage that has not ended yet.
+ */
+fun AIState.currentOutage(currentTime: Long): Long =
+    if (networkLostAt == 0L) 0L else currentTime - networkLostAt

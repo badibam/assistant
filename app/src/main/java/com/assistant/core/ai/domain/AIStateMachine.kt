@@ -57,7 +57,6 @@ object AIStateMachine {
                         sessionType = event.sessionType,
                         phase = nextPhase,
                         sessionCreatedAt = currentTime,
-                        lastNetworkAvailableTime = currentTime,
                         lastEventTime = currentTime,
                         lastUserInteractionTime = currentTime // Initialize for CHAT inactivity calculation
                     )
@@ -261,6 +260,9 @@ object AIStateMachine {
                 if (state.sessionType == SessionType.AUTOMATION) {
                     state.copy(
                         phase = Phase.WAITING_NETWORK_RETRY,
+                        // An outage already under way keeps its own start, so a retry that fails
+                        // again does not restart the clock and lose the time already waited.
+                        networkLostAt = if (state.networkLostAt == 0L) currentTime else state.networkLostAt,
                         lastEventTime = currentTime
                     )
                 } else {
@@ -296,16 +298,20 @@ object AIStateMachine {
                 // (network retry scheduled, will check again after delay)
                 state.copy(
                     phase = Phase.CALLING_AI,
+                    networkDownTime = state.networkDownTime + state.currentOutage(currentTime),
+                    networkLostAt = 0L,
                     lastEventTime = currentTime
                 )
             }
 
             is AIEvent.NetworkAvailable -> {
-                // Transition from WAITING_NETWORK_RETRY to CALLING_AI
-                // Update lastNetworkAvailableTime to exclude downtime from global timeout
+                // Transition from WAITING_NETWORK_RETRY to CALLING_AI.
+                // The outage that just ended is banked, so it does not count against the
+                // session's working time.
                 state.copy(
                     phase = Phase.CALLING_AI,
-                    lastNetworkAvailableTime = currentTime,
+                    networkDownTime = state.networkDownTime + state.currentOutage(currentTime),
+                    networkLostAt = 0L,
                     lastEventTime = currentTime
                 )
             }

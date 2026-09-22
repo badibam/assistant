@@ -223,34 +223,63 @@ class SessionSlotPolicyTest {
     }
 
     /**
-     * An outage that is over is charged to the automation all the same.
+     * An outage that is over is not charged to the automation.
      *
-     * This states what the code does today, not what it was meant to do. AIState documents
-     * lastNetworkAvailableTime as being there "to exclude network downtime from global
-     * timeout calculation", and calculateActiveTime does subtract that downtime -- but only
-     * when the phase is WAITING_NETWORK_RETRY, which shouldTimeout has already returned on
-     * a few lines earlier. The subtraction is therefore unreachable, and the global budget
-     * is plain wall-clock time since the session started.
-     *
-     * So an automation that spent eight of its first nine minutes offline is stopped on the
-     * global timeout shortly after coming back, having had about one minute of working time.
+     * The ten-minute budget is working time, not wall clock: an automation that spent eight of
+     * its first nine minutes offline comes back with its budget nearly intact. Reading the
+     * downtime off the current phase used to make the subtraction unreachable, since the only
+     * phase carrying one is the phase shouldTimeout returns on.
      */
     @Test
-    fun automation_isChargedForAnOutageItHasComeBackFrom() {
+    fun automation_isNotChargedForAnOutageItHasComeBackFrom() {
         val start = T0
-        val cameBackOnline = start + 8 * 60_000L
-        val justPastTheBudget = start + SessionSlotPolicy.AUTOMATION_GLOBAL_TIMEOUT + 1_000L
+        val outage = 8 * 60_000L
+        val justPastTheWallClockBudget = start + SessionSlotPolicy.AUTOMATION_GLOBAL_TIMEOUT + 1_000L
 
         val resumed = automationAt(Phase.CALLING_AI).copy(
             sessionCreatedAt = start,
-            lastNetworkAvailableTime = cameBackOnline,
-            lastEventTime = justPastTheBudget
+            networkDownTime = outage,
+            lastEventTime = justPastTheWallClockBudget
         )
 
-        // Were the downtime discounted, active time would be about two minutes, well inside
-        // the ten-minute budget. It is not: the session is stopped.
+        assertFalse(
+            SessionSlotPolicy.shouldTimeout(resumed, hasWaitingAutomations = false, currentTime = justPastTheWallClockBudget)
+        )
+    }
+
+    /** Once it has actually worked for ten minutes, outages aside, it is stopped. */
+    @Test
+    fun automation_isStoppedAfterTenMinutesOfWorkingTime() {
+        val start = T0
+        val outage = 8 * 60_000L
+        val past = start + outage + SessionSlotPolicy.AUTOMATION_GLOBAL_TIMEOUT + 1_000L
+
+        val resumed = automationAt(Phase.CALLING_AI).copy(
+            sessionCreatedAt = start,
+            networkDownTime = outage,
+            lastEventTime = past
+        )
+
         assertTrue(
-            SessionSlotPolicy.shouldTimeout(resumed, hasWaitingAutomations = false, currentTime = justPastTheBudget)
+            SessionSlotPolicy.shouldTimeout(resumed, hasWaitingAutomations = false, currentTime = past)
+        )
+    }
+
+    /** Several outages add up, rather than only the last one counting. */
+    @Test
+    fun automation_addsUpTheOutagesItHasSatOut() {
+        val start = T0
+        val outages = 3 * 60_000L + 4 * 60_000L
+        val currentTime = start + outages + 9 * 60_000L
+
+        val resumed = automationAt(Phase.CALLING_AI).copy(
+            sessionCreatedAt = start,
+            networkDownTime = outages,
+            lastEventTime = currentTime
+        )
+
+        assertFalse(
+            SessionSlotPolicy.shouldTimeout(resumed, hasWaitingAutomations = false, currentTime = currentTime)
         )
     }
 }

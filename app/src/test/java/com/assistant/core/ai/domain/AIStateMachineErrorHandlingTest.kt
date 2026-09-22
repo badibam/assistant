@@ -95,21 +95,45 @@ class AIStateMachineErrorHandlingTest {
     }
 
     /**
-     * The network coming back cuts the wait short, and moves lastNetworkAvailableTime.
-     * That timestamp is what keeps an outage from counting against the global timeout: the
-     * watchdog measures active time from it, not from when the session started.
+     * The network coming back cuts the wait short and banks the outage it ends, so that time
+     * does not count against the automation's ten minutes of working time.
      */
     @Test
-    fun networkAvailable_callsAgainAndDiscountsTheOutage() {
-        val state = AIStateMachine.transition(
-            state = automationAt(Phase.WAITING_NETWORK_RETRY),
-            event = AIEvent.NetworkAvailable,
+    fun networkAvailable_callsAgainAndBanksTheOutage() {
+        val offline = AIStateMachine.transition(
+            state = automationAt(Phase.CALLING_AI),
+            event = AIEvent.NetworkErrorOccurred(0),
             limits = testLimits,
             currentTime = T1
         )
+        assertEquals(T1, offline.networkLostAt)
 
-        assertEquals(Phase.CALLING_AI, state.phase)
-        assertEquals(T1, state.lastNetworkAvailableTime)
+        val backOnline = AIStateMachine.transition(
+            state = offline,
+            event = AIEvent.NetworkAvailable,
+            limits = testLimits,
+            currentTime = T1 + 60_000L
+        )
+
+        assertEquals(Phase.CALLING_AI, backOnline.phase)
+        assertEquals(60_000L, backOnline.networkDownTime)
+        assertEquals("the outage is over", 0L, backOnline.networkLostAt)
+    }
+
+    /** A retry that fails again keeps the outage running rather than restarting its clock. */
+    @Test
+    fun aFailedRetry_keepsTheSameOutageRunning() {
+        var state = AIStateMachine.transition(
+            state = automationAt(Phase.CALLING_AI),
+            event = AIEvent.NetworkErrorOccurred(0),
+            limits = testLimits,
+            currentTime = T1
+        )
+        state = AIStateMachine.transition(state, AIEvent.NetworkRetryScheduled, testLimits, T1 + 30_000L)
+        state = AIStateMachine.transition(state, AIEvent.NetworkErrorOccurred(0), testLimits, T1 + 31_000L)
+
+        assertEquals("the first thirty seconds are banked", 30_000L, state.networkDownTime)
+        assertEquals("and a new outage is running", T1 + 31_000L, state.networkLostAt)
     }
 
     /** Retrying is not a roundtrip: the counter moves on answers, not on attempts. */

@@ -4,6 +4,7 @@ import com.assistant.core.ai.data.ExecutionTrigger
 import com.assistant.core.ai.data.SessionEndReason
 import com.assistant.core.ai.data.SessionType
 import com.assistant.core.ai.domain.AIState
+import com.assistant.core.ai.domain.currentOutage
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.utils.LogManager
 
@@ -277,14 +278,13 @@ object SessionSlotPolicy {
     private fun calculateActiveTime(state: AIState, currentTime: Long): Long {
         val totalTime = currentTime - state.sessionCreatedAt
 
-        // Subtract network downtime if currently waiting for network
-        val networkDownTime = if (state.phase == Phase.WAITING_NETWORK_RETRY) {
-            currentTime - state.lastNetworkAvailableTime
-        } else {
-            0L
-        }
+        // The outages already waited out, plus the one under way if there is one. Reading it off
+        // the current phase was the bug: the only phase that carried a downtime to subtract was
+        // the one shouldTimeout returns on a few lines above, so the subtraction never ran and
+        // an automation that had spent eight minutes offline was stopped two minutes later.
+        val downTime = state.networkDownTime + state.currentOutage(currentTime)
 
-        return totalTime - networkDownTime
+        return totalTime - downTime
     }
 }
 
