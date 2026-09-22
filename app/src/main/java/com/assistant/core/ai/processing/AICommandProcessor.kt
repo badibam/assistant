@@ -9,9 +9,12 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.validation.SchemaUtils
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
+import java.time.ZoneId
 
 /**
  * AI command processor for validating and processing commands from AI responses
@@ -184,7 +187,7 @@ class AICommandProcessor(private val context: Context) {
             // Schema ID enrichment: automatically inject data_schema_id from tool instance config
             "CREATE_DATA" -> {
                 LogManager.aiService("CREATE_DATA original params keys: ${command.params.keys}", "DEBUG")
-                val enrichedParams = enrichWithSchemaId(command.params)
+                val enrichedParams = enrichWithSchemaId(resolveDatesToMilliseconds(command.params))
                 LogManager.aiService("CREATE_DATA enriched params keys: ${enrichedParams.keys}", "DEBUG")
                 ExecutableCommand(
                     resource = "tool_data",
@@ -194,7 +197,7 @@ class AICommandProcessor(private val context: Context) {
                 )
             }
             "UPDATE_DATA" -> {
-                val enrichedParams = enrichWithSchemaId(command.params)
+                val enrichedParams = enrichWithSchemaId(resolveDatesToMilliseconds(command.params))
                 ExecutableCommand(
                     resource = "tool_data",
                     operation = "batch_update",
@@ -356,6 +359,65 @@ class AICommandProcessor(private val context: Context) {
      * @param params Original params from AI command
      * @return Enriched params with schema_id added to each entry
      */
+    /**
+     * Turn the dates the model writes into milliseconds, the form everything past this point
+     * speaks (docs/design/date-boundary.md). ISO 8601 is the model's form, and this is the last
+     * place it is understood: the dispatcher, the services and the database see numbers only.
+     *
+     * Reaches what the service used to reach -- the data and custom_fields payloads and the
+     * timestamp beside them -- and reaches it inside each entry of a batch as well, which the
+     * service never could: batchCreateEntries reads an entry's timestamp with getLong, so an ISO
+     * string sent in a batch failed there rather than converting.
+     *
+     * An unreadable date throws, and processActionCommands turns that into an error the model
+     * reads. Refusing is the point: a date silently left as text would reach the database as a
+     * string in a column of numbers.
+     */
+    private fun resolveDatesToMilliseconds(params: Map<String, Any>): Map<String, Any> {
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+        val resolved = params.toMutableMap()
+
+        convertPayloadDates(resolved, timezone)
+
+        (params["entries"] as? List<*>)?.let { entries ->
+            resolved["entries"] = entries.map { entry ->
+                if (entry is Map<*, *>) {
+                    @Suppress("UNCHECKED_CAST")
+                    val singleEntry = (entry as Map<String, Any>).toMutableMap()
+                    convertPayloadDates(singleEntry, timezone)
+                    singleEntry
+                } else {
+                    entry
+                }
+            }
+        }
+
+        return resolved
+    }
+
+    /**
+     * Convert the date-bearing parts of one entry in place: the two payloads recursively, and the
+     * timestamp that sits beside them.
+     */
+    private fun convertPayloadDates(entry: MutableMap<String, Any>, timezone: ZoneId) {
+        for (key in listOf("data", "custom_fields")) {
+            val payload = entry[key] ?: continue
+            val json = when (payload) {
+                is JSONObject -> payload
+                is Map<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    JsonUtils.toJSONObject(payload as Map<String, Any?>)
+                }
+                else -> continue
+            }
+            entry[key] = JsonUtils.toMap(DateTimeConverter.isoToTimestamps(json, timezone))
+        }
+
+        (entry["timestamp"] as? String)?.let { iso ->
+            entry["timestamp"] = DateTimeConverter.isoToTimestamp(iso, timezone)
+        }
+    }
+
     private suspend fun enrichWithSchemaId(params: Map<String, Any>): Map<String, Any> {
         val toolInstanceId = params["tool_instance_id"] as? String
 
