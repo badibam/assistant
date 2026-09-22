@@ -3,6 +3,7 @@ package com.assistant.core.fields.migration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import com.assistant.core.fields.FieldType
 import org.junit.Test
 
 /**
@@ -113,5 +114,97 @@ class FieldDataMigratorTest {
 
         assertEquals(1, result.size)
         assertTrue(result.containsKey("weight"))
+    }
+
+    // ==================== A config that restricts what is allowed ====================
+
+    /** A number below the new floor no longer fits, so it goes. */
+    @Test
+    fun aNumberOutsideTheNewBoundsGoes() {
+        val result = migrate(
+            mapOf("weight" to 5),
+            FieldChange.ConfigRestricted("weight", FieldType.NUMERIC, mapOf("min" to 10, "max" to 300))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertFalse(result.containsKey("weight"))
+    }
+
+    /** A number still inside them keeps its meaning and stays: 75 kg is 75 kg either way. */
+    @Test
+    fun aNumberInsideTheNewBoundsStays() {
+        val result = migrate(
+            mapOf("weight" to 75),
+            FieldChange.ConfigRestricted("weight", FieldType.NUMERIC, mapOf("min" to 10, "max" to 300))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertEquals(75, result["weight"])
+    }
+
+    /** Widening a bound reaches here as well, and takes nothing. */
+    @Test
+    fun awidenedBoundTakesNothing() {
+        val result = migrate(
+            mapOf("weight" to 5),
+            FieldChange.ConfigRestricted("weight", FieldType.NUMERIC, mapOf("min" to 0, "max" to 500))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertEquals(5, result["weight"])
+    }
+
+    /** A value carrying more decimals than the config now allows cannot be written back. */
+    @Test
+    fun aNumberWithTooManyDecimalsGoes() {
+        val result = migrate(
+            mapOf("dose" to 2.75),
+            FieldChange.ConfigRestricted("dose", FieldType.NUMERIC, mapOf("decimals" to 1))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertFalse(result.containsKey("dose"))
+    }
+
+    /** A whole number passes a config that allows no decimals. */
+    @Test
+    fun awholeNumberPassesAConfigWithoutDecimals() {
+        val result = migrate(
+            mapOf("dose" to 3.0),
+            FieldChange.ConfigRestricted("dose", FieldType.NUMERIC, mapOf("decimals" to 0))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertEquals(3.0, result["dose"])
+    }
+
+    /** A text longer than the new limit goes; the shorter one beside it stays. */
+    @Test
+    fun aTextLongerThanTheNewLimitGoes() {
+        val change = FieldChange.ConfigRestricted("note", FieldType.TEXT, mapOf("length" to "SHORT"))
+
+        val long = migrate(
+            mapOf("note" to "x".repeat(200)),
+            change to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+        val short = migrate(
+            mapOf("note" to "court"),
+            change to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertFalse(long.containsKey("note"))
+        assertEquals("court", short["note"])
+    }
+
+    /** An unlimited length takes nothing, whatever was written. */
+    @Test
+    fun anUnlimitedLengthTakesNothing() {
+        val result = migrate(
+            mapOf("note" to "x".repeat(5000)),
+            FieldChange.ConfigRestricted("note", FieldType.TEXT, mapOf("length" to "UNLIMITED"))
+                to MigrationStrategy.STRIP_FIELD_IF_VALUE
+        )
+
+        assertTrue(result.containsKey("note"))
     }
 }

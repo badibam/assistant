@@ -113,6 +113,26 @@ object FieldConfigComparator {
                 }
             }
 
+            // A key the type declares as restricting changed: the entries that no longer fit
+            // lose the field, the others keep it. Asked of every type, so one added later is
+            // covered by declaring its keys rather than by a branch above.
+            val restrictingKeys = newField.type.restrictingConfigKeys
+            if (restrictingKeys.isNotEmpty()) {
+                val changed = restrictingKeys.any { key ->
+                    oldField.config?.get(key) != newField.config?.get(key)
+                }
+                if (changed) {
+                    changes.add(
+                        FieldChange.ConfigRestricted(
+                            name = name,
+                            fieldType = newField.type,
+                            newConfig = newField.config
+                        )
+                    )
+                    return@forEach
+                }
+            }
+
             // Check for cosmetic changes only (display_name, description, always_visible)
             if (isCosmeticChange(oldField, newField)) {
                 changes.add(FieldChange.CosmeticChange(name))

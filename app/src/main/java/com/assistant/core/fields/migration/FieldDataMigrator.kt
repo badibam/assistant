@@ -295,6 +295,13 @@ object FieldDataMigrator {
                                 result.remove(change.name)
                             }
                         }
+                        is FieldChange.ConfigRestricted -> {
+                            // The type says whether the stored value still fits. A widened bound
+                            // reaches here too, and keeps everything.
+                            if (!change.fieldType.permits(result[change.name], change.newConfig)) {
+                                result.remove(change.name)
+                            }
+                        }
                         else -> {} // Strategy mismatch, should not happen
                     }
                 }

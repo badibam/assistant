@@ -130,6 +130,67 @@ enum class FieldType {
         }
     }
 
+    /**
+     * The config keys whose change restricts which values are allowed, without changing what a
+     * stored value means. Narrowing one of them leaves the entries that still fit and takes only
+     * the ones that no longer do.
+     *
+     * A key that redefines the meaning of a value is not listed here: a SCALE's range is the unit
+     * its values are read against, and a CHOICE's multiple flag decides whether a value is one
+     * thing or a list. Those changes take every value, and their own FieldChange says so.
+     *
+     * A field type added later answers this question instead of asking for a detector of its own.
+     */
+    val restrictingConfigKeys: Set<String>
+        get() = when (this) {
+            TEXT -> setOf("length")
+            NUMERIC -> setOf("min", "max", "decimals")
+            else -> emptySet()
+        }
+
+    /**
+     * Whether a stored value still fits a config.
+     *
+     * Asked of each entry when a restricting key changed, so that widening a bound touches
+     * nothing and narrowing one takes only what falls outside. A type with no restricting keys is
+     * never asked.
+     */
+    fun permits(value: Any?, config: Map<String, Any>?): Boolean {
+        if (value == null) return true
+
+        return when (this) {
+            TEXT -> {
+                val length = TextLength.fromString(config?.get("length") as? String)
+                length == TextLength.UNLIMITED || (value as? String)?.length?.let { it <= length.getLimit() } ?: true
+            }
+
+            NUMERIC -> {
+                val number = (value as? Number)?.toDouble() ?: return true
+                val min = (config?.get("min") as? Number)?.toDouble()
+                val max = (config?.get("max") as? Number)?.toDouble()
+                val decimals = (config?.get("decimals") as? Number)?.toInt() ?: 0
+
+                when {
+                    min != null && number < min -> false
+                    max != null && number > max -> false
+                    // More decimals than the config allows: the value cannot be written back
+                    // as it stands, so it no longer fits.
+                    decimalsOf(number) > decimals -> false
+                    else -> true
+                }
+            }
+
+            else -> true
+        }
+    }
+
+    /** How many decimals a number actually carries, trailing zeros not counted. */
+    private fun decimalsOf(value: Double): Int {
+        val text = java.math.BigDecimal(value.toString()).stripTrailingZeros().toPlainString()
+        val dot = text.indexOf('.')
+        return if (dot < 0) 0 else text.length - dot - 1
+    }
+
     companion object {
         /**
          * Get all available field types.

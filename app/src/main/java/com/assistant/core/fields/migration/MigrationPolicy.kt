@@ -60,6 +60,9 @@ object MigrationPolicy {
 
                 // No action needed for cosmetic changes
                 is FieldChange.CosmeticChange -> MigrationStrategy.NONE
+
+                // Remove the field only from the entries whose value no longer fits the config
+                is FieldChange.ConfigRestricted -> MigrationStrategy.STRIP_FIELD_IF_VALUE
             }
         }
     }
@@ -111,6 +114,11 @@ object MigrationPolicy {
 
         if (choiceOptionsRemovedCount > 0) {
             lines.add(s.shared("migration_choice_options_removed").format(choiceOptionsRemovedCount))
+        }
+
+        val configRestrictedCount = changes.count { it is FieldChange.ConfigRestricted }
+        if (configRestrictedCount > 0) {
+            lines.add(s.shared("migration_config_restricted").format(configRestrictedCount))
         }
 
         if (errorCount > 0) {

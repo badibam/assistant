@@ -116,4 +116,23 @@ sealed class FieldChange {
      * @param name The field name
      */
     data class CosmeticChange(val name: String) : FieldChange()
+
+    /**
+     * A config key that restricts which values are allowed changed, without changing what a
+     * stored value means: a numeric bound, the number of decimals, a text length.
+     * Strategy: STRIP_FIELD_IF_VALUE (only the entries that no longer fit lose the field)
+     *
+     * Which keys these are is declared by the field type, so a type added later says what its
+     * config does rather than needing a change of its own here. Widening a bound produces this
+     * change too and then takes nothing, since every value still fits.
+     *
+     * @param name The field name
+     * @param fieldType The type, which is what knows whether a value still fits
+     * @param newConfig The config to measure the stored values against
+     */
+    data class ConfigRestricted(
+        val name: String,
+        val fieldType: com.assistant.core.fields.FieldType,
+        val newConfig: Map<String, Any>?
+    ) : FieldChange()
 }

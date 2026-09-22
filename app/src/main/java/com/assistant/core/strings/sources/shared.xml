@@ -1151,6 +1151,7 @@
     <string name="migration_choice_options_removed">%1$d option(s) CHOICE supprimée(s) : données concernées seront effacées</string>
     <string name="migration_scale_range_changed">%1$d champ(s) SCALE avec plage modifiée : leurs données seront effacées</string>
     <string name="migration_choice_multiple_changed">%1$d champ(s) CHOICE avec mode single/multiple modifié : leurs données seront effacées</string>
+    <string name="migration_config_restricted">%1$d champ(s) dont la configuration est plus restrictive : les valeurs qui n'y entrent plus seront effacées</string>
     <string name="migration_in_progress">Migration en cours...</string>
     <string name="migration_success">Migration réussie</string>
     <string name="migration_failed">Échec de la migration</string>

@@ -216,30 +216,33 @@ class FieldConfigComparatorTest {
         assertEquals(MigrationStrategy.NONE, strategyFor(changes.single()))
     }
 
-    // ==================== Config changes nobody looks at ====================
+    // ==================== A config that restricts what is allowed ====================
 
     /**
-     * Only SCALE and CHOICE have their config inspected. Every other type's config can
-     * change without producing any change at all.
-     *
-     * This states what the code does today. Shrinking a text field from unlimited to sixty
-     * characters, or narrowing a numeric field's bounds, leaves the recorded values in place
-     * and outside what the new configuration allows -- the same situation ScaleRangeChanged
-     * exists to prevent, handled for scales and not for the rest.
+     * A type declares which of its config keys restrict the values allowed, and a change to one
+     * of them is reported so the entries that no longer fit lose the field. The others keep it:
+     * unlike a scale's range, a text length or a numeric bound does not change what a stored
+     * value means.
      */
     @Test
-    fun changingTheConfigOfOtherTypes_producesNothing() {
+    fun narrowingATextOrNumericConfig_isReported() {
         val textShrunk = FieldConfigComparator.compare(
             oldFields = listOf(field("notes", config = mapOf("length" to "UNLIMITED"))),
             newFields = listOf(field("notes", config = mapOf("length" to "SHORT")))
         )
-        assertEquals(emptyList<FieldChange>(), textShrunk)
+        assertTrue(textShrunk.any { it is FieldChange.ConfigRestricted && it.name == "notes" })
 
         val numericNarrowed = FieldConfigComparator.compare(
             oldFields = listOf(field("weight", type = FieldType.NUMERIC, config = mapOf("min" to 0, "max" to 500))),
             newFields = listOf(field("weight", type = FieldType.NUMERIC, config = mapOf("min" to 0, "max" to 100)))
         )
-        assertEquals(emptyList<FieldChange>(), numericNarrowed)
+        assertTrue(numericNarrowed.any { it is FieldChange.ConfigRestricted && it.name == "weight" })
+
+        val strategies = MigrationPolicy.getStrategies(numericNarrowed)
+        assertEquals(
+            listOf(MigrationStrategy.STRIP_FIELD_IF_VALUE),
+            strategies.values.toList()
+        )
     }
 
     /**
@@ -261,18 +264,19 @@ class FieldConfigComparatorTest {
     }
 
     /**
-     * And a retitling that comes with such a config change is swallowed with it: the
-     * cosmetic check wants everything structural to be identical, so it reports nothing
-     * rather than the cosmetic change it would have reported on its own.
+     * A retitling that comes with a restricting change is swallowed by it: only the restriction
+     * is reported. Harmless, both being about the same field -- the restriction is what decides
+     * the data, and renaming decides nothing.
      */
     @Test
-    fun retitlingAlongsideAnUninspectedConfigChange_producesNothing() {
+    fun retitlingAlongsideARestrictingChange_reportsOnlyTheRestriction() {
         val changes = FieldConfigComparator.compare(
             oldFields = listOf(field("notes", displayName = "Notes", config = mapOf("length" to "UNLIMITED"))),
             newFields = listOf(field("notes", displayName = "Remarks", config = mapOf("length" to "SHORT")))
         )
 
-        assertEquals(emptyList<FieldChange>(), changes)
+        assertEquals(1, changes.size)
+        assertTrue(changes.single() is FieldChange.ConfigRestricted)
     }
 
     // ==================== Several fields at once ====================
