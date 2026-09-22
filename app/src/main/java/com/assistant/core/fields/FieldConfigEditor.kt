@@ -17,15 +17,15 @@ import com.assistant.core.ui.FieldType as UIFieldType
  * This composable renders the appropriate configuration UI based on the field type.
  * Each field type has different configuration requirements:
  *
- * - TEXT_SHORT/TEXT_LONG/TEXT_UNLIMITED: No config required
+ * - TEXT: length?
  * - NUMERIC: unit?, min?, max?, decimals?, step?
  * - SCALE: min (required), max (required), min_label?, max_label?, step?
  * - CHOICE: options (required, min 2), multiple?
  * - BOOLEAN: true_label?, false_label?
  * - RANGE: min?, max?, unit?, decimals?
- * - DATE: min?, max?
+ * - DATE: nothing
  * - TIME: format?
- * - DATETIME: min?, max?, time_format?
+ * - DATETIME: time_format?
  *
  * Note: default_value is supported at the root level in schemas but not exposed in UI for now.
  * The AI can set it directly if needed.

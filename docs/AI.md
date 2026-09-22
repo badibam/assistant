@@ -43,7 +43,6 @@ L'orchestrateur IA fonctionne comme une machine à états pilotée par événeme
 - `WAITING_COMMUNICATION_RESPONSE` : Attente réponse communication module (CHAT)
 - `EXECUTING_DATA_QUERIES` : Exécution data commands
 - `EXECUTING_ACTIONS` : Exécution action commands
-- `WAITING_COMPLETION_CONFIRMATION` : Attente confirmation completion (AUTOMATION)
 - `WAITING_NETWORK_RETRY` : Attente retry réseau (AUTOMATION)
 - `RETRYING_AFTER_FORMAT_ERROR` : Retry après erreur format
 - `RETRYING_AFTER_ACTION_FAILURE` : Retry après échec actions
@@ -68,7 +67,7 @@ data class AIState(
 - `CompletionConfirmation(aiMessageId, scheduledConfirmationTime)` : Attente confirmation completion
 
 ### AIEvent
-Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `DataQueriesExecuted`, `ActionsExecuted`, `CompletionConfirmed`, `CompletionRejected`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
+Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `DataQueriesExecuted`, `ActionsExecuted`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
 
 ## 2. Types et structures
 
@@ -313,7 +312,7 @@ La recherche de la prochaine occurrence démarre au plus tôt à `maintenant −
 
 ### Spécificités AUTOMATION vs CHAT
 
-**Flag completed** : IA signale fin avec `completed: true` → phase `WAITING_COMPLETION_CONFIRMATION` → `CompletionConfirmed` event → `endReason=COMPLETED`.
+**Flag completed** : l'IA signale la fin avec `completed: true`. L'app ne la prend pas au mot : elle repasse en `PREPARING_CONTINUATION` avec `COMPLETION_CONFIRMATION_REQUIRED` et renvoie l'IA au travail une fois. Si la réponse suivante redit `completed: true` sans porter de commande, la session se termine avec `endReason=COMPLETED`. Toute réponse portant une commande rabaisse le drapeau : l'IA qui continue de travailler recommence à zéro.
 
 **Continuation automatique** : Après succès actions, AUTOMATION continue automatiquement (pas de keepControl requis).
 

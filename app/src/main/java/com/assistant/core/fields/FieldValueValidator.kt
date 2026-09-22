@@ -48,15 +48,11 @@ object FieldValueValidator {
             // RANGE: requires custom validation for start <= end
             FieldType.RANGE -> validateRangeValue(value, context)
 
-            // DATE: min/max might need custom validation if JSON Schema insufficient
-            // For now, trust JSON Schema format validation
+            // DATE and TIME: fully handled by JSON Schema (format, pattern)
             FieldType.DATE -> ValidationResult(isValid = true)
-
-            // TIME: fully handled by JSON Schema (pattern)
             FieldType.TIME -> ValidationResult(isValid = true)
 
-            // DATETIME: min/max might need custom validation if JSON Schema insufficient
-            // For now, trust JSON Schema format validation
+            // DATETIME: a number of milliseconds, which the schema checks
             FieldType.DATETIME -> ValidationResult(isValid = true)
         }
     }
