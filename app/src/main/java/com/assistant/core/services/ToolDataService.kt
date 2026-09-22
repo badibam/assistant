@@ -75,10 +75,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
             DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
         }
 
-        // Parse timestamp parameter: can be Long (already timestamp) or String (ISO format)
+        // Milliseconds are the contract. An absent timestamp means now, which is a default
+        // written into the contract; any number is taken as milliseconds, Int and Double
+        // included, since JSON decides the width on its own. Anything else is refused: a type
+        // nobody expected used to be answered with the present moment, and no caller could tell
+        // that apart from an entry genuinely recorded now.
         val timestamp = when {
-            !params.has("timestamp") -> System.currentTimeMillis() // Default to now
-            params.opt("timestamp") is Long -> params.optLong("timestamp")
+            !params.has("timestamp") -> System.currentTimeMillis()
+            params.opt("timestamp") is Number -> (params.opt("timestamp") as Number).toLong()
             params.opt("timestamp") is String -> {
                 try {
                     DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
@@ -86,7 +90,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
                 }
             }
-            else -> System.currentTimeMillis()
+            else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
         // Handle position-based insertion
@@ -189,10 +193,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
             DateTimeConverter.isoToTimestamps(customFieldsObj, appTimezone).toString()
         }
 
-        // Parse timestamp parameter: can be Long (already timestamp) or String (ISO format)
+        // Milliseconds are the contract. An absent timestamp leaves the recorded one alone;
+        // any number is taken as milliseconds. Anything else is refused: an unreadable type used
+        // to be dropped here, so an update meant to move an entry in time did nothing and said
+        // nothing.
         val timestamp = when {
             !params.has("timestamp") -> null
-            params.opt("timestamp") is Long -> params.optLong("timestamp")
+            params.opt("timestamp") is Number -> (params.opt("timestamp") as Number).toLong()
             params.opt("timestamp") is String -> {
                 try {
                     DateTimeConverter.isoToTimestamp(params.optString("timestamp"), appTimezone)
@@ -200,7 +207,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.optString("timestamp")))
                 }
             }
-            else -> null
+            else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
         // Merge JSON data: new fields overwrite, absent fields are preserved (e.g. systemManaged fields)
