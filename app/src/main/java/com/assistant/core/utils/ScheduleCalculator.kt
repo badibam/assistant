@@ -91,11 +91,18 @@ object ScheduleCalculator {
             return candidatesToday.minOrNull()
         }
 
-        // No match today, return first time tomorrow
+        // No match today, so the earliest time tomorrow. Read as times, the way the candidates
+        // above are: sorting the text would put "14:00" before "9:00" and land the rollover in
+        // the afternoon, since an hour written without its leading zero sorts after every hour
+        // that has one.
         val tomorrow = today.plusDays(1)
-        val firstTime = pattern.times.minOrNull() ?: return null
-        val (hour, minute) = parseTime(firstTime) ?: return null
-        return ZonedDateTime.of(tomorrow, LocalTime.of(hour, minute), zoneId)
+        return pattern.times
+            .mapNotNull { timeStr ->
+                parseTime(timeStr)?.let { (hour, minute) ->
+                    ZonedDateTime.of(tomorrow, LocalTime.of(hour, minute), zoneId)
+                }
+            }
+            .minOrNull()
     }
 
     /**

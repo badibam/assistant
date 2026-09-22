@@ -55,23 +55,19 @@ class ScheduleCalculatorTest {
     }
 
     /**
-     * Tomorrow's first time is picked by sorting the strings, not the times. With hours
-     * written without a leading zero, "14:00" sorts before "9:00", and the rollover lands
-     * on the afternoon instead of the morning.
-     *
-     * This states what the code does today. Nothing in the app writes unpadded times -- the
-     * editor produces HH:mm -- but nothing rejects them either, and a schedule arriving from
-     * the AI or from a restored backup would be read this way. The times that still come
-     * today are unaffected: those are compared as moments, not as strings.
+     * Tomorrow's first time is the earliest hour, however the hour is written. An hour without
+     * its leading zero sorts after every hour that has one, so reading the list as text used to
+     * land the rollover on the afternoon. Nothing in the app writes unpadded times -- the editor
+     * produces HH:mm -- but a schedule from the model or from a restored backup can.
      */
     @Test
-    fun daily_sortsTomorrowsTimesAsTextRatherThanAsTimes() {
+    fun daily_picksTomorrowsEarliestTimeHoweverItIsWritten() {
         val padded = SchedulePattern.DailyMultiple(listOf("09:00", "14:00"))
         val unpadded = SchedulePattern.DailyMultiple(listOf("9:00", "14:00"))
         val afterBothHaveGone = at(2025, 1, 15, 20, 0)
 
         assertEquals(at(2025, 1, 16, 9, 0), next(padded, from = afterBothHaveGone))
-        assertEquals(at(2025, 1, 16, 14, 0), next(unpadded, from = afterBothHaveGone))
+        assertEquals(at(2025, 1, 16, 9, 0), next(unpadded, from = afterBothHaveGone))
     }
 
     /** No times, nothing to schedule. */
