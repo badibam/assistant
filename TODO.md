@@ -8,11 +8,12 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Dette constatée
 
-Deux points dans `docs/design/architecture-audit-debt.md`, tous deux des décisions à prendre plutôt que du code à écrire : format du prompt L1, validation désactivée par défaut.
+Un point dans `docs/design/architecture-audit-debt.md` : la validation désactivée par défaut, que l'IA contourne donc sans rien demander. Décision reportée sciemment le 2026-09-22 — à resurveiller, pas à subir. Le format du prompt L1 est traité : `scripts/check_prompt_examples.py` confronte ses exemples au code à chaque `./run test`.
 
 ## Divers
 
 - Volume du journal : 230 lignes DEBUG contre 4 de INFO, WARN et ERROR réunis, sur deux minutes — dont 96 `Service` et 96 `AIService`, avec des répétitions comme « Found existing format settings » à chaque lecture de réglages. La rétention ne souffre plus de ce bruit (les deux classes ont des plafonds séparés), mais le journal reste illisible à l'œil. À traiter aux sites d'appel, pas au plafond.
+- Le prompt L1 a changé (`TEXT_UNLIMITED` remplacé par `TEXT` plus `config.length`) : `docs/AI.md` demande de le rejouer à la main dans une session CHAT réelle après toute modification.
 - Rejeter une complétion laisse `awaitingCompletionConfirmation` à vrai. Une automation renvoyée au travail qui répond `completed=true` sans aucune commande est lue comme une deuxième revendication et se termine. Toute réponse portant une commande remet le drapeau à zéro d'abord, donc le cas est étroit. Décider si un rejet doit annuler la revendication. Mesuré par `AIStateMachineUserInteractionTest`.
 - `SessionActivationRequested` ne teste que la phase, pas `isSlotAvailable()`. Un CHAT activé à qui personne n'a encore parlé est à IDLE avec un identifiant de session, donc une seconde activation l'écrase. Mesuré par `AIStateMachineLifecycleTest`.
 - Les périodes sont calculées dans le fuseau de la machine, pas dans celui configuré. `normalizeTimestampWithConfig` et ses voisins passent par `Calendar.getInstance()`, alors que `DateUtils`, `DateTimeConverter` et `ScheduleCalculator` travaillent tous dans le fuseau de l'app. Un utilisateur qui pose un fuseau différent de celui du téléphone obtient donc des journées qui commencent à un autre moment que les dates affichées à côté, et une automation qui résout « hier » répond au réglage du téléphone. Mesuré par `PeriodResolutionTest`.
