@@ -12,19 +12,20 @@ import java.time.format.DateTimeParseException
  * Centralized date/time conversion utilities.
  *
  * Architecture:
- * - Internal storage: UTC timestamps (Long milliseconds)
- * - External interfaces (UI + AI): ISO 8601 with timezone offset
- * - Conversion in services (transparent for business logic)
+ * - Everywhere in the app: UTC timestamps (Long milliseconds) -- interface, dispatcher,
+ *   services, database
+ * - Facing the model only: ISO 8601 with timezone offset, beside the relative periods it writes
+ * - Conversion at that boundary and nowhere else
  *
  * Handles:
  * - ISO 8601 parsing with or without offset
  * - Timestamp formatting with timezone offset
  * - Recursive JSON conversion for tool data
- * - Custom fields DATETIME type
  *
  * Usage:
- * - Services: Convert input ISO → timestamps before validation/persistence
- * - Services: Convert output timestamps → ISO before returning to UI/AI
+ * - Going in: AICommandProcessor for the payloads of the model's commands, CommandTransformer
+ *   for the bounds of a period
+ * - Coming out: CommandExecutor, where a result becomes the text the model reads
  * - Always pass explicit timezone from AppConfigManager.getDateTimeConfig().getZoneId()
  */
 object DateTimeConverter {
