@@ -49,3 +49,13 @@ La question à trancher avant l'étape 2 : que déclare le schéma d'un champ DA
 - Une chaîne. Le stockage garde l'ISO pour ce type de champ, le service cesse de le convertir, et une date de champ personnalisé est du texte partout. Cohérent avec ce que le schéma annonce déjà, mais ça met une famille de dates hors du contrat général.
 
 Les valeurs déjà en base sont des nombres sous un schéma qui annonce une chaîne : les deux réponses demandent de regarder ce qui est stocké avant de changer quoi que ce soit.
+
+## La sortie, et le désaccord prompt/schéma
+
+Étapes 1 et 2 faites (`0519b1a`, `826a014`), plus le passage du champ DATETIME aux millisecondes (`73b80c4`).
+
+Mesuré avant d'attaquer la sortie : le prompt L1 annonce `timestamp` (string) en ISO 8601 avec décalage, et `BaseSchemas` déclare le même champ `"type": "number"`. L'IA reçoit les deux et ils se contredisent. C'est la dette B.3 en acte — un contrat d'interface ni compilé ni testé.
+
+Le point de sortie est trouvé : `CommandExecutor.formatResultData` est le seul endroit où le résultat d'une commande devient le JSON que l'IA lit. Une conversion millisecondes vers ISO y couvrirait tout ce que l'IA voit, dans les deux chemins, celui de l'IA comme celui des blocs pointer de l'utilisateur.
+
+Reste à décider ce que déclare le schéma lu par l'IA pour un champ de date. Tant que ce n'est pas tranché, la conversion de sortie n'est pas posée et `ToolDataService` continue de convertir à la sortie — l'app reste cohérente, mais le sens unique n'est corrigé que pour les champs personnalisés, dont le schéma dit désormais un nombre et qui ressortent en nombre.
