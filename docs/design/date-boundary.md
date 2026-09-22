@@ -16,7 +16,7 @@ Cela remplace le contrat écrit en tête de `DateTimeConverter.kt` à la constru
 
 Conséquences observées :
 
-- Le service teste le type du paramètre `timestamp` reçu : Long pour l'interface, chaîne ISO pour l'IA. Une valeur d'un troisième type tombe dans un `else` qui rend l'instant présent — un repli silencieux, que `docs/reference.md` interdit, et de la même famille que ceux retirés de `DateUtils` par `2797910`.
+- Le service teste le type du paramètre `timestamp` reçu : Long pour l'interface, chaîne ISO pour l'IA. Le repli silencieux sur l'instant présent qu'un troisième type déclenchait est parti avec `9c28106` ; le test de type, lui, reste jusqu'à l'étape 2.
 - Le service rend de l'ISO à l'interface, qui le reparse aussitôt en Long : `JournalEntryScreen`, `JournalScreen`, `NotesScreen`, `TrackingHistory`, `MessagesScreen`. L'aller-retour existe déjà, sur cinq écrans.
 - `DateTimeFormatter.formatForDisplay` accepte Long ou chaîne et lève sur le reste, parce qu'il reçoit les deux.
 - La conversion de sortie ne se déclenche que sur un nom de clé connu, là où l'entrée se déclenche aussi sur la forme. D'où le sens unique mesuré par `1a9890c` : un champ DATETIME entre en ISO et ressort en nombre. La sortie ne peut pas se corriger par la forme — un timestamp est un Long, et aucun Long ne se distingue d'un autre. C'est le schéma qui sait quels champs sont des dates.
@@ -27,7 +27,7 @@ La frontière IA, elle, existe déjà pour une famille de dates : `CommandTransf
 
 Chaque étape laisse l'app fonctionnelle. Les étapes 1 et 2 vont ensemble, 3 et 4 aussi.
 
-1. `CommandTransformer` convertit les dates des charges utiles de l'IA, ISO vers millisecondes, en réutilisant `isoToTimestamps`. Le service reçoit alors des millisecondes de tout le monde.
+1. La conversion des charges utiles de l'IA, ISO vers millisecondes, en réutilisant `isoToTimestamps`. Elle va dans `AICommandProcessor.transformActionCommand`, sur les branches `CREATE_DATA` et `UPDATE_DATA` qui passent déjà par `enrichWithSchemaId` — et non dans `CommandTransformer`, qui sert aussi les commandes que l'utilisateur compose dans ses blocs pointer et ne verrait donc pas que l'IA. Les écritures ne viennent que du chemin IA ; les blocs pointer ne portent que des lectures. Reste à établir la forme des paramètres de `batch_create` et `batch_update` pour convertir à l'intérieur des entrées. Le service reçoit alors des millisecondes de tout le monde.
 2. `ToolDataService` cesse de convertir à l'entrée. Le paramètre `timestamp` n'accepte plus qu'un Long ; son absence vaut toujours « maintenant », mais tout autre type devient une erreur explicite au lieu de l'instant présent.
 3. La sérialisation des résultats destinés à l'IA convertit millisecondes vers ISO, pilotée par le schéma pour les champs personnalisés. Point d'entrée à localiser dans `AIEventProcessor`.
 4. `ToolDataService` cesse de convertir à la sortie. Les cinq écrans qui reparsent l'ISO reçoivent des Longs et cessent de parser. La branche chaîne de `DateTimeFormatter.formatForDisplay` devient morte et part.
