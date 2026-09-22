@@ -241,10 +241,6 @@ class AIEventProcessor(
                 executeActions(state)
             }
 
-            Phase.WAITING_COMPLETION_CONFIRMATION -> {
-                scheduleCompletionConfirmation(state)
-            }
-
             Phase.WAITING_NETWORK_RETRY -> {
                 scheduleNetworkRetry(state)
             }
@@ -1292,18 +1288,6 @@ class AIEventProcessor(
         } catch (e: Exception) {
             LogManager.aiSession("executeActions failed: ${e.message}", "ERROR", e)
             emit(AIEvent.SystemErrorOccurred(e.message ?: "Unknown error"))
-        }
-    }
-
-    /**
-     * Schedule completion confirmation with 1s delay.
-     */
-    private fun scheduleCompletionConfirmation(state: AIState) {
-        processingScope.launch {
-            delay(1_000L) // 1 second
-
-            // Auto-confirm completion
-            emit(AIEvent.CompletionConfirmed)
         }
     }
 

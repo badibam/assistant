@@ -95,8 +95,7 @@ private fun getStatusText(
             s.shared("ai_phase_waiting_validation") // "En attente de validation"
         }
 
-        Phase.WAITING_COMMUNICATION_RESPONSE,
-        Phase.WAITING_COMPLETION_CONFIRMATION -> {
+        Phase.WAITING_COMMUNICATION_RESPONSE -> {
             s.shared("ai_phase_waiting_communication") // "En attente de réponse"
         }
 

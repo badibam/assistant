@@ -13,7 +13,6 @@ import com.assistant.core.ai.validation.ValidationContext
  * Architecture: Event-Driven State Machine (V2)
  * - Validation: Actions pending approval (WAITING_VALIDATION phase)
  * - Communication: User response needed (WAITING_COMMUNICATION_RESPONSE phase)
- * - CompletionConfirmation: System waiting before auto-confirming completion (WAITING_COMPLETION_CONFIRMATION phase)
  */
 sealed class WaitingContext {
     /**
@@ -48,10 +47,6 @@ sealed class WaitingContext {
      * @param aiMessageId ID of the AI message that set completed=true
      * @param scheduledConfirmationTime Timestamp when auto-confirmation should trigger
      */
-    data class CompletionConfirmation(
-        val aiMessageId: String,
-        val scheduledConfirmationTime: Long
-    ) : WaitingContext()
 
     /**
      * Serialize waiting context to JSON string for DB storage.
@@ -73,13 +68,6 @@ sealed class WaitingContext {
                 }
             """.trimIndent()
 
-            is CompletionConfirmation -> """
-                {
-                    "type": "CompletionConfirmation",
-                    "ai_message_id": "$aiMessageId",
-                    "scheduled_confirmation_time": $scheduledConfirmationTime
-                }
-            """.trimIndent()
         }
     }
 

@@ -68,7 +68,6 @@ class AIDomainTypesTest {
         assertEquals(
             listOf(
                 Phase.IDLE,
-                Phase.WAITING_COMPLETION_CONFIRMATION,
                 Phase.RETRYING_AFTER_FORMAT_ERROR,
                 Phase.RETRYING_AFTER_ACTION_FAILURE,
                 Phase.INTERRUPTED,

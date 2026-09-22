@@ -69,7 +69,6 @@ sealed class AIEvent {
      * AI response successfully parsed into AIMessage.
      *
      * Decision logic based on AIMessage fields determines next transition:
-     * - completed=true → WAITING_COMPLETION_CONFIRMATION (AUTOMATION only)
      * - validationRequest=true → WAITING_VALIDATION
      * - communicationModule → WAITING_COMMUNICATION_RESPONSE (CHAT only)
      * - dataCommands → EXECUTING_DATA_QUERIES
@@ -175,20 +174,6 @@ sealed class AIEvent {
     ) : AIEvent()
 
     // ==================== Completion (AUTOMATION only) ====================
-
-    /**
-     * System auto-confirmed completion or user clicked "Confirmer".
-     *
-     * Triggers session completion with COMPLETED reason.
-     */
-    object CompletionConfirmed : AIEvent()
-
-    /**
-     * User clicked "Rejeter" during completion confirmation window.
-     *
-     * AI continues working instead of completing.
-     */
-    object CompletionRejected : AIEvent()
 
     // ==================== Errors & Retry ====================
 

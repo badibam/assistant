@@ -16,7 +16,6 @@ package com.assistant.core.ai.domain
  * - WAITING_COMMUNICATION_RESPONSE: Waiting for user response to communication module (CHAT only)
  * - EXECUTING_DATA_QUERIES: Executing data query commands
  * - EXECUTING_ACTIONS: Executing action commands
- * - WAITING_COMPLETION_CONFIRMATION: Waiting for completion confirmation (AUTOMATION only)
  * - WAITING_NETWORK_RETRY: Waiting before network retry (infinite for AUTOMATION)
  * - RETRYING_AFTER_FORMAT_ERROR: Retrying after AI format error
  * - RETRYING_AFTER_ACTION_FAILURE: Retrying after action failure
@@ -52,7 +51,6 @@ enum class Phase {
     EXECUTING_ACTIONS,
 
     /** Waiting for system auto-confirmation of completion (AUTOMATION only) */
-    WAITING_COMPLETION_CONFIRMATION,
 
     /** Waiting before network retry (30s delay, infinite for AUTOMATION) */
     WAITING_NETWORK_RETRY,

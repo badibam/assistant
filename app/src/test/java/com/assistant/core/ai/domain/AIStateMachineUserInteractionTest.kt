@@ -6,10 +6,9 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Covers the events the user raises, plus the two that settle a completion claim:
- * ValidationNotRequired, ValidationReceived, CommunicationResponseReceived,
- * CommunicationCancelled, AIRoundInterrupted, AIResponseIgnored, CompletionConfirmed,
- * CompletionRejected.
+ * Covers the events the user raises: ValidationNotRequired, ValidationReceived,
+ * CommunicationResponseReceived, CommunicationCancelled, AIRoundInterrupted,
+ * AIResponseIgnored.
  *
  * Two things recur and are checked throughout. A waiting phase leaves a waitingContext on
  * the state, and whatever ends the wait has to clear it, or the interface keeps showing a
@@ -134,69 +133,5 @@ class AIStateMachineUserInteractionTest {
 
         assertEquals(Phase.IDLE, state.phase)
         assertNull(state.endReason)
-    }
-
-    // ==================== Settling a completion claim ====================
-
-    /** Confirmed: the session closes, and says it finished rather than failed or timed out. */
-    @Test
-    fun completionConfirmed_closesAsCompleted() {
-        val state = AIStateMachine.transition(
-            state = automationAt(
-                Phase.WAITING_COMPLETION_CONFIRMATION,
-                waitingContext = someWaitingContext(),
-                awaitingCompletionConfirmation = true
-            ),
-            event = AIEvent.CompletionConfirmed,
-            limits = testLimits,
-            currentTime = T1
-        )
-
-        assertEquals(Phase.CLOSED, state.phase)
-        assertEquals(SessionEndReason.COMPLETED, state.endReason)
-        assertNull(state.waitingContext)
-    }
-
-    /** Rejected: the AI is sent back to work, and that call is a roundtrip. */
-    @Test
-    fun completionRejected_sendsTheAIBackToWork() {
-        val state = AIStateMachine.transition(
-            state = automationAt(
-                Phase.WAITING_COMPLETION_CONFIRMATION,
-                roundtrips = 1,
-                waitingContext = someWaitingContext(),
-                awaitingCompletionConfirmation = true
-            ),
-            event = AIEvent.CompletionRejected,
-            limits = testLimits,
-            currentTime = T1
-        )
-
-        assertEquals(Phase.CALLING_AI, state.phase)
-        assertEquals(2, state.totalRoundtrips)
-        assertNull(state.waitingContext)
-        assertNull(state.endReason)
-    }
-
-    /**
-     * Rejecting a claim does not withdraw it on the state.
-     *
-     * This states what the machine does today. awaitingCompletionConfirmation stays true,
-     * so the next answer the AI sends is read against a flag that a rejection arguably
-     * should have cleared: an answer with completed=true would then be treated as the
-     * second claim and wind the session down, rather than as a fresh first claim.
-     * handleAIResponseParsed clears the flag on any answer carrying commands, so this only
-     * bites when the AI answers the rejection with completed=true and nothing else.
-     */
-    @Test
-    fun completionRejected_leavesTheClaimFlagSet() {
-        val state = AIStateMachine.transition(
-            state = automationAt(Phase.WAITING_COMPLETION_CONFIRMATION, awaitingCompletionConfirmation = true),
-            event = AIEvent.CompletionRejected,
-            limits = testLimits,
-            currentTime = T1
-        )
-
-        assertEquals(true, state.awaitingCompletionConfirmation)
     }
 }

@@ -31,7 +31,6 @@ object PhaseUtils {
             Phase.WAITING_COMMUNICATION_RESPONSE -> s.shared("ai_phase_waiting_communication")
             Phase.EXECUTING_DATA_QUERIES -> s.shared("ai_phase_executing_queries")
             Phase.EXECUTING_ACTIONS -> s.shared("ai_phase_executing_actions")
-            Phase.WAITING_COMPLETION_CONFIRMATION -> s.shared("ai_phase_waiting_completion")
             Phase.WAITING_NETWORK_RETRY -> s.shared("ai_phase_waiting_network")
             Phase.RETRYING_AFTER_FORMAT_ERROR -> s.shared("ai_phase_retrying")
             Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")

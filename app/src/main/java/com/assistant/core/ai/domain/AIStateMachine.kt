@@ -211,26 +211,6 @@ object AIStateMachine {
 
             // ==================== Completion ====================
 
-            is AIEvent.CompletionConfirmed -> {
-                // Transition to CLOSED with COMPLETED reason
-                state.copy(
-                    phase = Phase.CLOSED,
-                    endReason = SessionEndReason.COMPLETED,
-                    waitingContext = null,
-                    lastEventTime = currentTime
-                )
-            }
-
-            is AIEvent.CompletionRejected -> {
-                // User rejected completion - continue with AI
-                state.copy(
-                    phase = Phase.CALLING_AI,
-                    waitingContext = null,
-                    totalRoundtrips = state.totalRoundtrips + 1,
-                    lastEventTime = currentTime
-                )
-            }
-
             // ==================== Errors & Retry ====================
 
             is AIEvent.ProviderErrorOccurred -> {
