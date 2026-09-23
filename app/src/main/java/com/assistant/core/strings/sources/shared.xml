@@ -1080,7 +1080,6 @@
     <string name="field_type_datetime_description">Date and time combined</string>
 
     <!-- CUSTOM FIELDS - Schema descriptions (used by AI) -->
-    <string name="field_type_text_unlimited_schema_root_description">Definition schema for a custom field of type TEXT_UNLIMITED (unlimited free text). Used in the custom_fields array of a tool\'s configuration.</string>
     <string name="field_type_schema_name_description">Technical identifier of the field, the key the values are stored under. Assigned by the app at creation, from the label, and immutable afterwards. Omit it for a new field; repeat it as is to designate an existing field. Renaming it would destroy the values already recorded, the label is the one that can be changed freely.</string>
     <string name="field_type_schema_display_name_description">Name shown to the user for this custom field</string>
     <string name="field_type_schema_type_description">Type of the custom field. Must match one of the available types (see the list of supported field types).</string>

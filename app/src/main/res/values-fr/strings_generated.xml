@@ -1186,7 +1186,6 @@
     <string name="shared_field_type_time_description">Heure (heure:minute)</string>
     <string name="shared_field_type_datetime_display_name">Date et heure</string>
     <string name="shared_field_type_datetime_description">Date et heure combinées</string>
-    <string name="shared_field_type_text_unlimited_schema_root_description">Schéma de définition pour un champ personnalisé de type TEXT_UNLIMITED (texte libre illimité). Utilisé dans l\'array custom_fields de la configuration d\'un outil.</string>
     <string name="shared_field_type_schema_name_description">Identifiant technique du champ, clé sous laquelle les valeurs sont stockées. Attribué par l\'app à la création, à partir de l\'intitulé, et immuable ensuite. À omettre pour un nouveau champ ; à reprendre tel quel pour désigner un champ existant. Le renommer détruirait les valeurs déjà enregistrées, c\'est l\'intitulé qui se modifie librement.</string>
     <string name="shared_field_type_schema_display_name_description">Nom affiché à l\'utilisateur pour ce champ personnalisé</string>
     <string name="shared_field_type_schema_type_description">Type de champ personnalisé. Doit correspondre à l\'un des types disponibles (voir liste des field types supportés).</string>

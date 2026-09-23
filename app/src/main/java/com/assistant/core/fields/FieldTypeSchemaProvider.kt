@@ -14,7 +14,7 @@ import com.assistant.core.validation.FieldLimits
  * allowing the AI to query field type specifications and constraints.
  *
  * Schema ID format: "field_type_{FIELD_TYPE_NAME}"
- * Example: "field_type_TEXT_SHORT", "field_type_NUMERIC"
+ * Example: "field_type_TEXT", "field_type_NUMERIC"
  *
  * Architecture:
  * - Single source of truth: FieldType enum
@@ -26,7 +26,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
     /**
      * Get schema for a specific field type
      *
-     * @param schemaId Schema identifier (e.g., "field_type_TEXT_SHORT")
+     * @param schemaId Schema identifier (e.g., "field_type_TEXT")
      * @param context Android context for internationalization
      * @param toolInstanceId Not used for field type schemas (always null)
      * @return Schema object or null if schemaId doesn't match field type pattern
@@ -62,7 +62,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
      *
      * Dynamically generated from FieldType enum to ensure single source of truth
      *
-     * @return List of all field type schema IDs (e.g., ["field_type_TEXT_SHORT", ...])
+     * @return List of all field type schema IDs (e.g., ["field_type_TEXT", ...])
      */
     override fun getAllSchemaIds(): List<String> {
         return FieldType.entries.map { fieldType ->
@@ -178,7 +178,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
      * Returns JSON string for: name, display_name, description, type, always_visible
      *
      * @param context Android context for strings
-     * @param fieldTypeName The field type name (e.g., "TEXT_SHORT", "NUMERIC")
+     * @param fieldTypeName The field type name (e.g., "TEXT", "NUMERIC")
      * @return JSON properties string (without enclosing braces)
      */
     private fun buildCommonFieldProperties(context: Context, fieldTypeName: String): String {
