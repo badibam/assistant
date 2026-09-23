@@ -242,53 +242,93 @@ tasks.register("generateThemeResources") {
 }
 
 // Strings Resource Generation Task
+//
+// A source carries its locale in its file name: `shared.xml` and `strings.xml` hold the
+// default (English, what Android falls back to when the phone's language has no translation),
+// `shared-fr.xml` and `strings-fr.xml` hold the French one. One output per locale -- `values/`
+// for the default, `values-<locale>/` for the rest -- so the runtime needs no locale code of
+// its own: StringsManager looks a key up through context.resources, which already picks the
+// file matching the phone.
+//
+// A source with no translation lands in the default output alone, where every locale reaches
+// it by fallback. That is what ai_prompt_chunks.xml wants: those go to the AI, not on screen.
 tasks.register("generateStringResources") {
-    description = "Generate string resources from tool XML files"
+    description = "Generate string resources from tool and shared XML files, one output per locale"
     group = "build"
     
     val toolsDir = file("src/main/java/com/assistant/tools")
     val sharedStringsDir = file("src/main/java/com/assistant/core/strings/sources") // Sources strings shared
-    val outputFile = file("src/main/res/values/strings_generated.xml")
+    val resDir = file("src/main/res")
     
     // Gradle cache: run if any source changed
     inputs.dir(toolsDir)
     if (sharedStringsDir.exists()) inputs.dir(sharedStringsDir)
-    outputs.file(outputFile)
+    outputs.files(stringSourcesByLocale(toolsDir, sharedStringsDir).keys.map { localeOutputFile(resDir, it) })
     
     doLast {
         println("Generating string resources...")
         
-        val aggregatedStrings = StringBuilder()
-        aggregatedStrings.append("""<?xml version="1.0" encoding="utf-8"?>
+        stringSourcesByLocale(toolsDir, sharedStringsDir).forEach { (locale, sources) ->
+            val aggregatedStrings = StringBuilder()
+            aggregatedStrings.append("""<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Auto-generated strings from tools - DO NOT EDIT MANUALLY -->
 """)
-        
-        // Process tool strings
-        if (toolsDir.exists()) {
-            toolsDir.listFiles()?.filter { it.isDirectory }?.forEach { toolDir ->
-                val toolName = toolDir.name
-                val stringsFile = File(toolDir, "strings.xml")
-                
-                if (stringsFile.exists()) {
-                    println("Processing tool strings: $toolName")
-                    processStrings(stringsFile, toolName, aggregatedStrings)
-                }
+            
+            sources.forEach { (sourceFile, prefix) ->
+                println("Processing ${if (locale.isEmpty()) "default" else locale} strings: ${sourceFile.name} -> $prefix")
+                processStrings(sourceFile, prefix, aggregatedStrings)
             }
+            
+            aggregatedStrings.append("</resources>")
+            
+            val outputFile = localeOutputFile(resDir, locale)
+            outputFile.parentFile.mkdirs()
+            outputFile.writeText(aggregatedStrings.toString())
+            println("Generated: ${outputFile.parentFile.name}/${outputFile.name}")
         }
-        
-        // Process all shared strings files (all XML files in sources directory)
-        if (sharedStringsDir.exists()) {
-            sharedStringsDir.listFiles()?.filter { it.extension == "xml" }?.forEach { xmlFile ->
-                println("Processing shared strings: ${xmlFile.name}")
-                processStrings(xmlFile, "shared", aggregatedStrings)
-            }
-        }
-        
-        aggregatedStrings.append("</resources>")
-        outputFile.writeText(aggregatedStrings.toString())
-        println("Generated: ${outputFile.name}")
     }
+}
+
+/**
+ * Where a locale's generated file goes: values/ for the default, values-<locale>/ for the rest.
+ */
+fun localeOutputFile(resDir: File, locale: String): File =
+    File(resDir, if (locale.isEmpty()) "values/strings_generated.xml" else "values-$locale/strings_generated.xml")
+
+/**
+ * Group the string sources by locale, in the order they must be aggregated.
+ *
+ * The locale is the `-xx` (or `-xx-rYY`) suffix of the file's base name, absent for the default,
+ * which the map keys as "". Each source is paired with the namespace its keys take: the tool's
+ * own name for a tool source, "shared" for everything under the shared sources directory.
+ */
+fun stringSourcesByLocale(toolsDir: File, sharedDir: File): Map<String, List<Pair<File, String>>> {
+    val localePattern = Regex("""^.+?(?:-([a-zA-Z]{2}(?:-r[A-Z]{2})?))?\.xml$""")
+    val byLocale = sortedMapOf<String, MutableList<Pair<File, String>>>()
+    
+    fun collect(sourceFile: File, prefix: String) {
+        val match = localePattern.matchEntire(sourceFile.name) ?: return
+        byLocale.getOrPut(match.groupValues[1]) { mutableListOf() }.add(sourceFile to prefix)
+    }
+    
+    if (toolsDir.exists()) {
+        toolsDir.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.forEach { toolDir ->
+            toolDir.listFiles()
+                ?.filter { it.name.startsWith("strings") && it.extension == "xml" }
+                ?.sortedBy { it.name }
+                ?.forEach { collect(it, toolDir.name) }
+        }
+    }
+    
+    if (sharedDir.exists()) {
+        sharedDir.listFiles()
+            ?.filter { it.extension == "xml" }
+            ?.sortedBy { it.name }
+            ?.forEach { collect(it, "shared") }
+    }
+    
+    return byLocale
 }
 
 /**

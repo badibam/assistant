@@ -1,121 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings spécifiques au tooltype tracking -->
+    <!-- Strings specific to the tracking tooltype -->
     
-    <!-- Métadonnées -->
-    <string name="display_name">Suivi</string>
-    <string name="description">Capture et analyse de données quantitatives et qualitatives au fil du temps</string>
+    <!-- Metadata -->
+    <string name="display_name">Tracking</string>
+    <string name="description">Capture and analysis of quantitative and qualitative data over time</string>
 
-    <!-- CONFIG - Labels de paramètres spécifiques -->
-    <string name="config_label_tracking_type">Type de tracking</string>
-    <string name="config_label_default_quantity">Quantité par défaut</string>
-    <string name="config_label_unit">Unité</string>
-    <string name="config_label_min_value">Valeur minimale</string>
-    <string name="config_label_max_value">Valeur maximale</string>
-    <string name="config_label_min_label">Label minimum</string>
-    <string name="config_label_max_label">Label maximum</string>
-    <string name="config_label_true_label">Label \"Vrai\"</string>
-    <string name="config_label_false_label">Label \"Faux\"</string>
-    <string name="config_label_available_options">Options disponibles</string>
-    <string name="config_label_allow_decrement">Autoriser décrémentation</string>
+    <!-- CONFIG - Labels of specific settings -->
+    <string name="config_label_tracking_type">Tracking type</string>
+    <string name="config_label_default_quantity">Default quantity</string>
+    <string name="config_label_unit">Unit</string>
+    <string name="config_label_min_value">Minimum value</string>
+    <string name="config_label_max_value">Maximum value</string>
+    <string name="config_label_min_label">Minimum label</string>
+    <string name="config_label_max_label">Maximum label</string>
+    <string name="config_label_true_label">\"True\" label</string>
+    <string name="config_label_false_label">\"False\" label</string>
+    <string name="config_label_available_options">Available options</string>
+    <string name="config_label_allow_decrement">Allow decrementing</string>
     
-    <!-- CONFIG - Options de types de tracking -->
-    <string name="config_option_numeric">Numérique (numeric)</string>
-    <string name="config_option_text">Texte (text)</string>
-    <string name="config_option_scale">Échelle (scale)</string>
-    <string name="config_option_boolean">Oui/Non (boolean)</string>
+    <!-- CONFIG - Tracking type options -->
+    <string name="config_option_numeric">Numeric (numeric)</string>
+    <string name="config_option_text">Text (text)</string>
+    <string name="config_option_scale">Scale (scale)</string>
+    <string name="config_option_boolean">Yes/No (boolean)</string>
     <string name="config_option_timer">Timer (timer)</string>
-    <string name="config_option_choice">Choix (choice)</string>
-    <string name="config_option_counter">Compteur (counter)</string>
+    <string name="config_option_choice">Choice (choice)</string>
+    <string name="config_option_counter">Counter (counter)</string>
     
     <!-- CONFIG - Sections -->
-    <string name="config_section_specific_params">Paramètres spécifiques</string>
-    <string name="config_section_predefined_items">Items prédéfinis</string>
+    <string name="config_section_specific_params">Specific settings</string>
+    <string name="config_section_predefined_items">Predefined items</string>
 
-    <!-- CONFIG - Tableaux et listes -->
-    <string name="config_header_name">Nom</string>
-    <string name="config_header_quantity">Qté</string>
-    <string name="config_header_unit">Unité</string>
-    <string name="config_message_no_items">Aucun élément défini</string>
+    <!-- CONFIG - Tables and lists -->
+    <string name="config_header_name">Name</string>
+    <string name="config_header_quantity">Qty</string>
+    <string name="config_header_unit">Unit</string>
+    <string name="config_message_no_items">No item defined</string>
     
-    <!-- CONFIG - Dialogues -->
-    <string name="config_dialog_create_item">Créer un élément</string>
-    <string name="config_dialog_edit_item">Modifier l\'élément</string>
-    <string name="config_dialog_choose_icon">Choisir une icône</string>
+    <!-- CONFIG - Dialogs -->
+    <string name="config_dialog_create_item">Create an item</string>
+    <string name="config_dialog_edit_item">Edit the item</string>
+    <string name="config_dialog_choose_icon">Choose an icon</string>
     
-    <!-- CONFIG - Messages de warning -->
-    <string name="config_warning_type_change">Vous avez %1$d élément(s) prédéfini(s). Changer le type supprimera tous les éléments existants. Continuer ?</string>
-    <string name="config_warning_type_change_title">Changement de type détecté</string>
-    <string name="config_warning_type_change_desc">Le type passe de \"%1$s\" à \"%2$s\".</string>
-    <string name="config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
-    <string name="config_warning_continue">Continuer ?</string>
+    <!-- CONFIG - Warning messages -->
+    <string name="config_warning_type_change">You have %1$d predefined item(s). Changing the type will delete every existing item. Continue?</string>
+    <string name="config_warning_type_change_title">Type change detected</string>
+    <string name="config_warning_type_change_desc">The type goes from \"%1$s\" to \"%2$s\".</string>
+    <string name="config_warning_data_deletion">Every entered piece of data will be deleted.</string>
+    <string name="config_warning_continue">Continue?</string>
 
-    <!-- CONFIG - Messages de modification d\'échelle -->
-    <string name="config_warning_scale_change_title">⚠️ Modification d\'échelle détectée</string>
-    <string name="config_warning_scale_change_old_new">Ancienne échelle : %1$s\nNouvelle échelle : %2$s</string>
+    <!-- CONFIG - Scale change messages -->
+    <string name="config_warning_scale_change_title">⚠️ Scale change detected</string>
+    <string name="config_warning_scale_change_old_new">Old scale: %1$s\nNew scale: %2$s</string>
 
-    <string name="config_warning_scale_change_desc">Les données présentes avant ces modifications garderont leur échelle et leurs étiquettes d\'origine.</string>
+    <string name="config_warning_scale_change_desc">The data present before these changes will keep its original scale and labels.</string>
     
-    <!-- CONFIG - Messages de modification de labels booléens -->
-    <string name="config_warning_boolean_change_title">⚠️ Modification d\'étiquettes détectée</string>
-    <string name="config_warning_boolean_change_old">Anciennes étiquettes : \"%1$s\" / \"%2$s\"</string>
-    <string name="config_warning_boolean_change_new">Nouvelles étiquettes : \"%1$s\" / \"%2$s\"</string>
-    <string name="config_warning_boolean_change_desc">Les données présentes avant ces modifications garderont leurs étiquettes d\'origine.</string>
+    <!-- CONFIG - Boolean label change messages -->
+    <string name="config_warning_boolean_change_title">⚠️ Label change detected</string>
+    <string name="config_warning_boolean_change_old">Old labels: \"%1$s\" / \"%2$s\"</string>
+    <string name="config_warning_boolean_change_new">New labels: \"%1$s\" / \"%2$s\"</string>
+    <string name="config_warning_boolean_change_desc">The data present before these changes will keep its original labels.</string>
     
-    <!-- CONFIG - Messages de modification d\'options de choix -->
-    <string name="config_warning_choice_change_title">⚠️ Modification d\'options détectée</string>
-    <string name="config_warning_choice_removed">Options supprimées : %1$s</string>
-    <string name="config_warning_choice_added">Options ajoutées : %1$s</string>
-    <string name="config_warning_choice_desc">Les données présentes avant ces modifications garderont leurs options d\'origine, même si elles ne sont plus disponibles dans la configuration.</string>
+    <!-- CONFIG - Choice option change messages -->
+    <string name="config_warning_choice_change_title">⚠️ Option change detected</string>
+    <string name="config_warning_choice_removed">Options removed: %1$s</string>
+    <string name="config_warning_choice_added">Options added: %1$s</string>
+    <string name="config_warning_choice_desc">The data present before these changes will keep its original options, even when they are no longer available in the configuration.</string>
     
-    <!-- CONFIG - Valeurs par défaut -->
-    <string name="config_default_true_label">Oui</string>
-    <string name="config_default_false_label">Non</string>
+    <!-- CONFIG - Default values -->
+    <string name="config_default_true_label">Yes</string>
+    <string name="config_default_false_label">No</string>
     <string name="config_default_placeholder">option</string>
     
-    <!-- CONFIG - Titres d'écran -->
-    <string name="config_title_create">Créer Suivi</string>
-    <string name="config_title_edit">Modifier Suivi</string>
+    <!-- CONFIG - Screen titles -->
+    <string name="config_title_create">Create tracking</string>
+    <string name="config_title_edit">Edit tracking</string>
     
-    <!-- USAGE - Interface d'utilisation -->
-    <string name="usage_section_new_entry">Nouvelle entrée</string>
-    <string name="usage_section_history">Historique</string>
+    <!-- USAGE - Usage interface -->
+    <string name="usage_section_new_entry">New entry</string>
+    <string name="usage_section_history">History</string>
     
-    <!-- USAGE - Dialogues de saisie -->
-    <string name="usage_dialog_create_entry">Créer une entrée</string>
-    <string name="usage_dialog_use_item">Utiliser l\'élément</string>
-    <string name="usage_dialog_edit_entry">Modifier l\'entrée</string>
+    <!-- USAGE - Entry dialogs -->
+    <string name="usage_dialog_create_entry">Create an entry</string>
+    <string name="usage_dialog_use_item">Use the item</string>
+    <string name="usage_dialog_edit_entry">Edit the entry</string>
     
-    <!-- USAGE - Labels de champs -->
-    <string name="usage_label_quantity">Quantité</string>
-    <string name="usage_label_unit">Unité</string>
-    <string name="usage_label_text">Texte</string>
-    <string name="usage_label_rating">Note</string>
-    <string name="usage_label_choice">Choix</string>
-    <string name="usage_label_state">État</string>
-    <string name="usage_label_increment">Incrément</string>
-    <string name="usage_label_hours">Heures</string>
+    <!-- USAGE - Field labels -->
+    <string name="usage_label_quantity">Quantity</string>
+    <string name="usage_label_unit">Unit</string>
+    <string name="usage_label_text">Text</string>
+    <string name="usage_label_rating">Rating</string>
+    <string name="usage_label_choice">Choice</string>
+    <string name="usage_label_state">State</string>
+    <string name="usage_label_increment">Increment</string>
+    <string name="usage_label_hours">Hours</string>
     <string name="usage_label_minutes">Minutes</string>
-    <string name="usage_label_seconds">Secondes</string>
+    <string name="usage_label_seconds">Seconds</string>
     
-    <!-- USAGE - Messages d'interface -->
-    <string name="usage_available_options">Options : %1$s</string>
-    <string name="usage_error_scale_config">Erreur : min/max non définis pour cette entrée</string>
-    <string name="usage_add_to_shortcuts">Ajouter aux raccourcis</string>
-    <string name="usage_entry_updated">Entrée modifiée</string>
-    <string name="usage_entry_deleted">Entrée supprimée</string>
-    <string name="usage_entry_saved">Entrée sauvegardée</string>
-    <string name="usage_no_entries">Aucune entrée enregistrée</string>
-    <string name="usage_label_value">Valeur</string>
-    <string name="usage_custom_date">Date personnalisée</string>
-    <string name="usage_current_time">Date = maintenant</string>
-    <string name="usage_timer_idle">En cours : -</string>
+    <!-- USAGE - Interface messages -->
+    <string name="usage_available_options">Options: %1$s</string>
+    <string name="usage_error_scale_config">Error: min/max not set for this entry</string>
+    <string name="usage_add_to_shortcuts">Add to shortcuts</string>
+    <string name="usage_entry_updated">Entry updated</string>
+    <string name="usage_entry_deleted">Entry deleted</string>
+    <string name="usage_entry_saved">Entry saved</string>
+    <string name="usage_no_entries">No entry recorded</string>
+    <string name="usage_label_value">Value</string>
+    <string name="usage_custom_date">Custom date</string>
+    <string name="usage_current_time">Date = now</string>
+    <string name="usage_timer_idle">Running: -</string>
     
-    <!-- USAGE - Messages d'erreur -->
-    <string name="error_entry_update">Erreur lors de la modification</string>
-    <string name="error_entry_deletion">Erreur lors de la suppression</string>
-    <string name="error_entry_saving">Erreur lors de la sauvegarde</string>
-    <string name="error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
+    <!-- USAGE - Error messages -->
+    <string name="error_entry_update">Error while editing</string>
+    <string name="error_entry_deletion">Error while deleting</string>
+    <string name="error_entry_saving">Error while saving</string>
+    <string name="error_entry_update_failed">Unable to update the entry</string>
     
     <!-- SCHEMAS CONFIG - Display names for schema identification -->
     <string name="schema_config_numeric_display_name"></string>
@@ -135,7 +135,7 @@
     <string name="schema_config_boolean_description"></string>
     <string name="schema_config_text_description"></string>
 
-    <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
+    <!-- SCHEMAS CONFIG - Descriptions for AI validation -->
     <string name="schema_config_type"></string>
     <string name="schema_config_numeric_items"></string>
     <string name="schema_config_numeric_item_name"></string>
@@ -178,7 +178,7 @@
     <string name="schema_data_timer_description"></string>
     <string name="schema_data_text_description"></string>
 
-    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
+    <!-- SCHEMAS DATA - Descriptions for AI validation -->
     <string name="schema_data_name"></string>
     <string name="schema_data_timestamp"></string>
     <string name="schema_data_data"></string>
@@ -200,41 +200,41 @@
     <string name="schema_data_timer_duration_seconds"></string>
     <string name="schema_data_text_content"></string>
     
-    <!-- VALIDATION - Noms de champs pour affichage -->
-    <string name="field_default_quantity">Qté par défaut</string>
-    <string name="field_quantity">Quantité</string>
-    <string name="field_name">Nom</string>
-    <string name="field_unit">Unité</string>
-    <string name="field_text">Texte</string>
-    <string name="field_rating">Note</string>
-    <string name="field_min_value">Valeur min</string>
-    <string name="field_max_value">Valeur max</string>
-    <string name="field_min_label">Libellé min</string>
-    <string name="field_max_label">Libellé max</string>
-    <string name="field_state">État</string>
-    <string name="field_true_label">Libellé vrai</string>
-    <string name="field_false_label">Libellé faux</string>
-    <string name="field_selected_option">Option sélectionnée</string>
-    <string name="field_available_options">Options disponibles</string>
-    <string name="field_increment">Incrément</string>
-    <string name="field_activity">Activité</string>
-    <string name="field_duration_seconds">Durée</string>
+    <!-- VALIDATION - Field names for display -->
+    <string name="field_default_quantity">Default qty</string>
+    <string name="field_quantity">Quantity</string>
+    <string name="field_name">Name</string>
+    <string name="field_unit">Unit</string>
+    <string name="field_text">Text</string>
+    <string name="field_rating">Rating</string>
+    <string name="field_min_value">Min value</string>
+    <string name="field_max_value">Max value</string>
+    <string name="field_min_label">Min label</string>
+    <string name="field_max_label">Max label</string>
+    <string name="field_state">State</string>
+    <string name="field_true_label">True label</string>
+    <string name="field_false_label">False label</string>
+    <string name="field_selected_option">Selected option</string>
+    <string name="field_available_options">Available options</string>
+    <string name="field_increment">Increment</string>
+    <string name="field_activity">Activity</string>
+    <string name="field_duration_seconds">Duration</string>
     <string name="field_type">Type</string>
-    <string name="field_raw">Valeur brute</string>
-    <string name="field_unknown">Champ non reconnu</string>
+    <string name="field_raw">Raw value</string>
+    <string name="field_unknown">Unknown field</string>
     
     <!-- TIMER FIELD -->
-    <string name="timer_label_optional">%1$s (optionnel)</string>
-    <string name="timer_status_active">En cours : %1$s</string>
-    <string name="timer_status_stopped">Arrêté</string>
-    <string name="timer_activities_header">Activités :</string>
+    <string name="timer_label_optional">%1$s (optional)</string>
+    <string name="timer_status_active">Running: %1$s</string>
+    <string name="timer_status_stopped">Stopped</string>
+    <string name="timer_activities_header">Activities:</string>
     
     <!-- SCALE DEFAULTS -->
-    <string name="scale_min_default">Faible</string>
-    <string name="scale_max_default">Élevé</string>
-    <string name="scale_range_separator"> à </string>
+    <string name="scale_min_default">Low</string>
+    <string name="scale_max_default">High</string>
+    <string name="scale_range_separator"> to </string>
 
-    <!-- DISPLAY FORMAT - Affichage formaté des données -->
+    <!-- DISPLAY FORMAT - Formatted display of the data -->
     <string name="display_timer_format">%1$s: %2$s</string>
 
 </resources>

@@ -1,129 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings spécifiques au tooltype messages -->
+    <!-- Strings specific to the messages tooltype -->
 
-    <!-- Métadonnées -->
+    <!-- Metadata -->
     <string name="display_name">Messages</string>
-    <string name="description">Notifications et rappels planifiés ou événementiels</string>
+    <string name="description">Scheduled or event-driven notifications and reminders</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name"></string>
     <string name="schema_data_display_name"></string>
-    <string name="schema_config_description">Schéma de validation du modèle de message</string>
-    <string name="schema_data_description">Schéma de validation des occurrences (envois) d\'un message</string>
+    <string name="schema_config_description">Validation schema of the message template</string>
+    <string name="schema_data_description">Validation schema of the occurrences (sendings) of a message</string>
 
-    <!-- SCHEMAS CONFIG - Le modèle du message (part invariante de chaque envoi) -->
-    <string name="schema_config_enabled">Modèle actif : suspendu, plus rien de cette instance ne part</string>
-    <string name="schema_config_common_title">Titre commun affiché sur chaque notification (optionnel, composé avec le titre propre à l\'envoi)</string>
-    <string name="schema_config_common_content">Corps commun à chaque notification (optionnel, composé avec le contenu propre à l\'envoi)</string>
-    <string name="schema_config_priority">Priorité des notifications de ce message (default, high, low)</string>
-    <string name="schema_config_external_notifications">Afficher notifications système Android</string>
-    <string name="schema_config_creation_horizon_days">Nombre de jours d\'occurrences créées à l\'avance, pour laisser le temps de les remplir</string>
-    <string name="schema_config_validity_window_minutes">Retard au-delà duquel une occurrence non partie expire au lieu d\'être envoyée</string>
+    <!-- SCHEMAS CONFIG - The message template (the part every sending shares) -->
+    <string name="schema_config_enabled">Template active: suspended, nothing from this instance goes out any more</string>
+    <string name="schema_config_common_title">Common title shown on every notification (optional, combined with the title of the sending itself)</string>
+    <string name="schema_config_common_content">Common body of every notification (optional, combined with the content of the sending itself)</string>
+    <string name="schema_config_priority">Priority of this message\'s notifications (default, high, low)</string>
+    <string name="schema_config_external_notifications">Show Android system notifications</string>
+    <string name="schema_config_creation_horizon_days">Number of days of occurrences created ahead, to leave time to fill them in</string>
+    <string name="schema_config_validity_window_minutes">Delay past which an occurrence that has not gone out expires instead of being sent</string>
 
-    <!-- SCHEMAS DATA - Une occurrence = un envoi. Part propre écrite avant, part commune copiée à l\'envoi -->
-    <string name="schema_data_status">État de l\'occurrence (pending, sent, expired, cancelled)</string>
-    <string name="schema_data_title">Titre propre à cet envoi (optionnel)</string>
-    <string name="schema_data_content">Contenu propre à cet envoi</string>
-    <string name="schema_data_common_title">Titre commun copié depuis le modèle au moment de l\'envoi</string>
-    <string name="schema_data_common_content">Corps commun copié depuis le modèle au moment de l\'envoi</string>
-    <string name="schema_data_priority">Priorité copiée depuis le modèle au moment de l\'envoi</string>
-    <string name="schema_data_notification_sent">La notification système est effectivement partie</string>
-    <string name="schema_data_read">L\'utilisateur a lu cette occurrence</string>
-    <string name="schema_data_archived">L\'utilisateur a archivé cette occurrence</string>
-    <string name="schema_data_triggered_by">Origine de l\'occurrence, posée à sa création (SCHEDULE = engendrée par la récurrence, MANUAL = posée à la main)</string>
+    <!-- SCHEMAS DATA - One occurrence = one sending. Own part written beforehand, common part copied at sending -->
+    <string name="schema_data_status">State of the occurrence (pending, sent, expired, cancelled)</string>
+    <string name="schema_data_title">Title of this sending alone (optional)</string>
+    <string name="schema_data_content">Content of this sending alone</string>
+    <string name="schema_data_common_title">Common title copied from the template at sending time</string>
+    <string name="schema_data_common_content">Common body copied from the template at sending time</string>
+    <string name="schema_data_priority">Priority copied from the template at sending time</string>
+    <string name="schema_data_notification_sent">The system notification did go out</string>
+    <string name="schema_data_read">The user has read this occurrence</string>
+    <string name="schema_data_archived">The user has archived this occurrence</string>
+    <string name="schema_data_triggered_by">Origin of the occurrence, set at its creation (SCHEDULE = born of the recurrence, MANUAL = created by hand)</string>
 
-    <!-- VALIDATION - Noms de champs pour affichage -->
-    <string name="field_title">Titre</string>
-    <string name="field_content">Contenu</string>
-    <string name="field_enabled">Actif</string>
-    <string name="field_common_title">Titre commun</string>
-    <string name="field_common_content">Corps commun</string>
-    <string name="field_schedule">Planning</string>
-    <string name="field_priority">Priorité</string>
-    <string name="field_external_notifications">Notifications externes</string>
-    <string name="field_creation_horizon_days">Jours d\'avance</string>
-    <string name="field_validity_window_minutes">Fenêtre de validité</string>
-    <string name="field_status">État</string>
-    <string name="field_notification_sent">Notification envoyée</string>
-    <string name="field_read">Lu</string>
-    <string name="field_archived">Archivé</string>
-    <string name="field_triggered_by">Déclenché par</string>
+    <!-- VALIDATION - Field names for display -->
+    <string name="field_title">Title</string>
+    <string name="field_content">Content</string>
+    <string name="field_enabled">Active</string>
+    <string name="field_common_title">Common title</string>
+    <string name="field_common_content">Common body</string>
+    <string name="field_schedule">Schedule</string>
+    <string name="field_priority">Priority</string>
+    <string name="field_external_notifications">External notifications</string>
+    <string name="field_creation_horizon_days">Days ahead</string>
+    <string name="field_validity_window_minutes">Validity window</string>
+    <string name="field_status">Status</string>
+    <string name="field_notification_sent">Notification sent</string>
+    <string name="field_read">Read</string>
+    <string name="field_archived">Archived</string>
+    <string name="field_triggered_by">Triggered by</string>
 
     <!-- LABELS - UI labels -->
-    <string name="label_schedule">Planning</string>
+    <string name="label_schedule">Schedule</string>
 
-    <!-- CONFIG SCREEN - Le modèle du message -->
-    <string name="label_enabled">Actif</string>
-    <string name="label_common_title">Titre commun</string>
-    <string name="label_common_content">Corps commun</string>
-    <string name="label_external_notifications">Afficher notifications système</string>
-    <string name="label_creation_horizon_days">Occurrences créées à l\'avance (jours)</string>
-    <string name="label_validity_window_minutes">Ne plus envoyer passé un retard de (minutes)</string>
-    <string name="hint_common_parts">Ces deux champs partent sur chaque notification. Un message qui ne varie jamais n\'a besoin de rien d\'autre.</string>
+    <!-- CONFIG SCREEN - The message template -->
+    <string name="label_enabled">Active</string>
+    <string name="label_common_title">Common title</string>
+    <string name="label_common_content">Common body</string>
+    <string name="label_external_notifications">Show system notifications</string>
+    <string name="label_creation_horizon_days">Occurrences created ahead (days)</string>
+    <string name="label_validity_window_minutes">Stop sending past a delay of (minutes)</string>
+    <string name="hint_common_parts">These two fields go out on every notification. A message that never varies needs nothing else.</string>
 
-    <!-- PRIORITY - Options de priorité -->
-    <string name="priority_default">Normale</string>
-    <string name="priority_high">Haute (popup)</string>
-    <string name="priority_low">Basse (silencieuse)</string>
+    <!-- PRIORITY - Priority options -->
+    <string name="priority_default">Normal</string>
+    <string name="priority_high">High (popup)</string>
+    <string name="priority_low">Low (silent)</string>
 
-    <!-- TABS - Onglets de l'écran principal -->
-    <string name="tab_received_messages">Reçus</string>
-    <string name="tab_upcoming">À venir</string>
+    <!-- TABS - Main screen tabs -->
+    <string name="tab_received_messages">Received</string>
+    <string name="tab_upcoming">Upcoming</string>
 
-    <!-- FILTERS - Filtres des occurrences reçues -->
-    <string name="filter_unread">Non lus</string>
-    <string name="filter_read">Lus</string>
-    <string name="filter_archived">Archivés</string>
-    <string name="filter_not_delivered">Non parvenus</string>
+    <!-- FILTERS - Filters of the received occurrences -->
+    <string name="filter_unread">Unread</string>
+    <string name="filter_read">Read</string>
+    <string name="filter_archived">Archived</string>
+    <string name="filter_not_delivered">Not delivered</string>
 
-    <!-- STATUS - Badges d'état d'une occurrence -->
-    <string name="status_expired">Expiré</string>
-    <string name="status_cancelled">Annulé</string>
-    <string name="status_notification_failed">Notification non partie</string>
-    <string name="badge_unread">Non lu</string>
+    <!-- STATUS - State badges of an occurrence -->
+    <string name="status_expired">Expired</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_notification_failed">Notification did not go out</string>
+    <string name="badge_unread">Unread</string>
 
-    <!-- SCHEDULE - Résumés de planning -->
-    <string name="schedule_summary_not_configured">Aucune récurrence : rien ne part tout seul</string>
-    <string name="schedule_summary_daily">Chaque jour, %1$d fois</string>
-    <string name="schedule_summary_weekly">Chaque semaine</string>
-    <string name="schedule_summary_weekly_custom">Chaque semaine, horaires variables</string>
-    <string name="schedule_summary_monthly">Chaque mois</string>
-    <string name="schedule_summary_yearly">Chaque année</string>
-    <string name="schedule_summary_specific_dates">Dates précises</string>
+    <!-- SCHEDULE - Schedule summaries -->
+    <string name="schedule_summary_not_configured">No recurrence: nothing goes out on its own</string>
+    <string name="schedule_summary_daily">Every day, %1$d times</string>
+    <string name="schedule_summary_weekly">Every week</string>
+    <string name="schedule_summary_weekly_custom">Every week, varying times</string>
+    <string name="schedule_summary_monthly">Every month</string>
+    <string name="schedule_summary_yearly">Every year</string>
+    <string name="schedule_summary_specific_dates">Specific dates</string>
 
-    <!-- DIALOG - Préparation d'un envoi à venir -->
-    <string name="edit_occurrence_title">Préparer cet envoi</string>
-    <string name="edit_occurrence_hint">Ce qui est écrit ici s\'ajoute au titre et au corps communs du message.</string>
-    <string name="label_title">Titre du jour</string>
-    <string name="label_content">Contenu du jour</string>
-    <string name="label_priority">Priorité</string>
-    <string name="action_configure_schedule">Configurer la récurrence</string>
-    <string name="occurrence_due_at">Prévu le %1$s</string>
-    <string name="occurrence_nothing_written">Rien d\'écrit pour cet envoi : seule la part commune partira</string>
+    <!-- DIALOG - Preparing an upcoming sending -->
+    <string name="edit_occurrence_title">Prepare this sending</string>
+    <string name="edit_occurrence_hint">What is written here is added to the common title and body of the message.</string>
+    <string name="label_title">Title of the day</string>
+    <string name="label_content">Content of the day</string>
+    <string name="label_priority">Priority</string>
+    <string name="action_configure_schedule">Configure the recurrence</string>
+    <string name="occurrence_due_at">Due on %1$s</string>
+    <string name="occurrence_nothing_written">Nothing written for this sending: only the common part will go out</string>
 
-    <!-- VERBALIZE - Descriptions d'actions pour validation et feedback -->
-    <string name="verbalize_execute">Envoi immédiat du message</string>
+    <!-- VERBALIZE - Action descriptions for validation and feedback -->
+    <string name="verbalize_execute">Immediate sending of the message</string>
 
-    <!-- ACTIONS - Actions spécifiques -->
-    <string name="action_mark_read">Marquer comme lu</string>
-    <string name="action_mark_unread">Marquer comme non lu</string>
-    <string name="action_archive">Archiver</string>
-    <string name="action_unarchive">Désarchiver</string>
+    <!-- ACTIONS - Specific actions -->
+    <string name="action_mark_read">Mark as read</string>
+    <string name="action_mark_unread">Mark as unread</string>
+    <string name="action_archive">Archive</string>
+    <string name="action_unarchive">Unarchive</string>
 
-    <!-- EMPTY STATES - États vides -->
-    <string name="empty_received_messages">Aucun message reçu</string>
-    <string name="empty_upcoming">Rien de prévu pour l\'instant</string>
+    <!-- EMPTY STATES - Empty states -->
+    <string name="empty_received_messages">No message received</string>
+    <string name="empty_upcoming">Nothing planned for now</string>
 
-    <!-- CONFIRMATIONS - Messages de confirmation -->
-    <string name="delete_occurrence_confirm">Supprimer cet envoi à venir ?</string>
+    <!-- CONFIRMATIONS - Confirmation messages -->
+    <string name="delete_occurrence_confirm">Delete this upcoming sending?</string>
 
-    <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
-    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
-    <string name="error_config_not_found">Impossible de charger la configuration existante</string>
-    <string name="error_load_occurrences">Erreur lors du chargement des envois</string>
-    <string name="error_save">Erreur lors de la sauvegarde</string>
-    <string name="error_mark_read">Erreur lors du changement de statut</string>
-    <string name="error_delete">Erreur lors de la suppression</string>
+    <!-- ERROR MESSAGES - Specific error messages -->
+    <string name="error_config_load">Error while loading the configuration</string>
+    <string name="error_config_not_found">Unable to load the existing configuration</string>
+    <string name="error_load_occurrences">Error while loading the sendings</string>
+    <string name="error_save">Error while saving</string>
+    <string name="error_mark_read">Error while changing the status</string>
+    <string name="error_delete">Error while deleting</string>
 
 </resources>

@@ -1,55 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Strings spécifiques au tooltype notes -->
+    <!-- Strings specific to the notes tooltype -->
 
-    <!-- Métadonnées -->
+    <!-- Metadata -->
     <string name="display_name">Notes</string>
-    <string name="description">Prise de notes simple et rapide avec organisation flexible</string>
+    <string name="description">Quick and simple note taking with flexible organisation</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
     <string name="schema_config_display_name"></string>
     <string name="schema_data_display_name"></string>
-    <string name="schema_data_description">Schéma de validation pour les entrées de notes</string>
+    <string name="schema_data_description">Validation schema for note entries</string>
 
-    <!-- SCHEMAS DATA - Descriptions pour validation IA -->
-    <string name="schema_data_name">Nom de l\'entrée de note</string>
-    <string name="schema_data_timestamp">Horodatage de création de la note</string>
-    <string name="schema_data_data">Données de contenu de la note</string>
-    <string name="schema_data_content">Contenu de la note</string>
-    <string name="schema_data_position">Position pour tri manuel des notes</string>
+    <!-- SCHEMAS DATA - Descriptions for AI validation -->
+    <string name="schema_data_name">Name of the note entry</string>
+    <string name="schema_data_timestamp">Creation timestamp of the note</string>
+    <string name="schema_data_data">Content data of the note</string>
+    <string name="schema_data_content">Content of the note</string>
+    <string name="schema_data_position">Position for manual sorting of notes</string>
 
-    <!-- VALIDATION - Noms de champs pour affichage -->
-    <string name="field_content">Contenu</string>
+    <!-- VALIDATION - Field names for display -->
+    <string name="field_content">Content</string>
     <string name="field_position">Position</string>
-    <string name="field_unknown">Champ non reconnu</string>
+    <string name="field_unknown">Unknown field</string>
 
-    <!-- CONTENT - États du contenu -->
-    <string name="content_empty">Aucun texte</string>
+    <!-- CONTENT - Content states -->
+    <string name="content_empty">No text</string>
 
-    <!-- ACTIONS - Actions spécifiques aux notes -->
-    <string name="action_add_above">Ajouter au-dessus</string>
-    <string name="action_move">Déplacer</string>
+    <!-- ACTIONS - Actions specific to notes -->
+    <string name="action_add_above">Add above</string>
+    <string name="action_move">Move</string>
 
-    <!-- MOVEMENT - Interface de déplacement -->
+    <!-- MOVEMENT - Move interface -->
     <string name="move_ok">Ok</string>
 
-    <!-- STATUS - État des opérations -->
-    <string name="save_in_progress">Sauvegarde...</string>
+    <!-- STATUS - Operation state -->
+    <string name="save_in_progress">Saving...</string>
 
-    <!-- CONFIRMATIONS - Messages de confirmation -->
-    <string name="delete_confirm_template">Supprimer \"%1$s\" ?</string>
-    <string name="delete_confirm_empty_note">Supprimer cette note vide ?</string>
+    <!-- CONFIRMATIONS - Confirmation messages -->
+    <string name="delete_confirm_template">Delete \"%1$s\"?</string>
+    <string name="delete_confirm_empty_note">Delete this empty note?</string>
 
-    <!-- DIALOG - Édition des notes -->
-    <string name="create_note_title">Créer une note</string>
-    <string name="edit_note_title">Modifier la note</string>
-    <string name="label_content">Contenu</string>
+    <!-- DIALOG - Note editing -->
+    <string name="create_note_title">Create a note</string>
+    <string name="edit_note_title">Edit note</string>
+    <string name="label_content">Content</string>
 
-    <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
-    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
-    <string name="error_config_not_found">Impossible de charger la configuration existante</string>
-    <string name="error_validation">Erreur de validation</string>
-    <string name="error_save">Erreur lors de la sauvegarde</string>
+    <!-- ERROR MESSAGES - Specific error messages -->
+    <string name="error_config_load">Error while loading the configuration</string>
+    <string name="error_config_not_found">Unable to load the existing configuration</string>
+    <string name="error_validation">Validation error</string>
+    <string name="error_save">Error while saving</string>
 
 
 </resources>

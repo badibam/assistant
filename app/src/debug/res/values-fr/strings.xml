@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The French copy of the debug label, see the default one next door.
+
+  It has to exist once the app ships a values-fr: resource resolution picks the most specific
+  qualifier first, so on a French phone the generated values-fr/shared_app_name ("Assistant")
+  wins over the debug build type's values/ override, and both launcher entries read the same
+  again. A build type's value only beats the main source set at equal qualifiers.
+-->
+<resources>
+    <string name="shared_app_name">Assistant debug</string>
+</resources>
