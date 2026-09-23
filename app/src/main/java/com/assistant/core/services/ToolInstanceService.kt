@@ -98,10 +98,19 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
+        // A custom field arriving without a technical name gets one here, the same way an
+        // update assigns one. The prompt tells the AI to omit the name and let the app
+        // generate it, and until this ran on create, a tool created that way kept fields the
+        // data could not be keyed on -- the AI then had to guess a key, or send an empty one.
+        // Unlike an update, a name that comes in is kept rather than refused: the guard over
+        // there protects values already stored under the old key, and a tool being created
+        // has none. The interface takes that route, assigning names in its editor.
+        val namedConfigJson = assignMissingFieldNames(configJson)
+
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
             tooltype = toolType,
-            config_json = configJson
+            config_json = namedConfigJson
         )
 
         if (token.isCancelled) return OperationResult.cancelled()
@@ -509,6 +518,41 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      * @param token Cancellation token
      * @return OperationResult with processed_config containing generated field names
      */
+    /**
+     * Give a technical name to every field that arrived without one.
+     *
+     * Names already assigned during this pass count as taken, so two fields created together
+     * under the same display name do not land on the same key.
+     */
+    private fun assignNames(fields: List<FieldDefinition>): List<FieldDefinition> {
+        val takenNames = fields.map { it.name }.filter { it.isNotEmpty() }.toMutableList()
+        return fields.map { field ->
+            if (field.name.isEmpty()) {
+                val generatedName = FieldNameGenerator.generateName(field.displayName, takenNames)
+                takenNames.add(generatedName)
+                field.copy(name = generatedName)
+            } else {
+                field
+            }
+        }
+    }
+
+    /**
+     * Same, on the raw config of a tool being created, returning the config to store.
+     *
+     * A config with no custom_fields comes back untouched, so the caller can run this over
+     * every creation without asking first.
+     */
+    private fun assignMissingFieldNames(configJson: String): String {
+        val config = JSONObject(configJson)
+        val fieldsArray = config.optJSONArray("custom_fields") ?: return configJson
+        if (fieldsArray.length() == 0) return configJson
+
+        val fields = (0 until fieldsArray.length()).map { fieldsArray.getJSONObject(it).toFieldDefinition() }
+        config.put("custom_fields", assignNames(fields).toJsonArray())
+        return config.toString()
+    }
+
     private suspend fun processCustomFields(
         toolInstanceId: String,
         oldConfigJson: String,
@@ -583,18 +627,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             }
 
             // Phase 1: Assign a technical name to each new field (the ones sent without one).
-            // Names already assigned during this pass count as taken, so two fields created
-            // together under the same display name do not land on the same key.
-            val takenNames = newFieldsList.map { it.name }.filter { it.isNotEmpty() }.toMutableList()
-            val processedFields = newFieldsList.map { field ->
-                if (field.name.isEmpty()) {
-                    val generatedName = FieldNameGenerator.generateName(field.displayName, takenNames)
-                    takenNames.add(generatedName)
-                    field.copy(name = generatedName)
-                } else {
-                    field
-                }
-            }
+            val processedFields = assignNames(newFieldsList)
 
             if (token.isCancelled) return OperationResult.cancelled()
 

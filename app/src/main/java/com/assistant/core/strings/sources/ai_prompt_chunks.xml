@@ -343,7 +343,8 @@ Creates data in a batch.
 - `tool_instance_id` (string, **required**)
 - `tooltype` (string, **required**)
 - `entries` (array, **required**): list of the entries to create
-  - Each entry: `{ name?, timestamp?, data }`
+  - Each entry: `{ name, timestamp?, data }`
+  - `name` is **required**: every data schema demands it, whatever the tool type
 
 **Notes**:
 
@@ -660,11 +661,13 @@ Returns every entry of the period. Then take the IDs alone and pass them to DELE
     "tooltype": "tracking",
     "entries": [
       {
+        "name": "Weighing",
         "timestamp": "2024-01-01T08:00:00+01:00",
         "data": { "value": 75.5 },
         "custom_fields": { "mood": "calm" }
       },
       {
+        "name": "Weighing",
         "timestamp": "2024-01-02T08:00:00+01:00",
         "data": { "value": 75.2 },
         "custom_fields": { "mood": "stressed" }

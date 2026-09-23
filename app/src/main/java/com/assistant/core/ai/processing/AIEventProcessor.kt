@@ -10,6 +10,7 @@ import com.assistant.core.ai.prompts.CommandExecutor
 import com.assistant.core.ai.prompts.PromptManager
 import com.assistant.core.ai.state.AIMessageRepository
 import com.assistant.core.ai.state.AIStateRepository
+import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.validation.ValidationResolver
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.utils.LogManager
@@ -194,6 +195,46 @@ class AIEventProcessor(
     }
 
     /**
+     * Say so when the roundtrip limit is what sent the session back to idle.
+     *
+     * A CHAT session never closes, so reaching the limit puts it back to IDLE and the end
+     * reason is dropped -- which left nothing at all on screen. Every message sent afterwards
+     * went the same way: stored, IDLE to EXECUTING_ENRICHMENTS, limit, back to IDLE, in
+     * silence. The session looked broken rather than stopped, and the only trace was a log
+     * line saying "Roundtrip limit reached".
+     *
+     * Reported on each return to idle rather than once, so the answer arrives with the
+     * message it answers. Kept out of the prompt: the model never sees these rounds, and if
+     * the limit is later raised the session resumes without a pile of notices in its history.
+     */
+    private suspend fun reportRoundtripLimit(state: AIState) {
+        val sessionId = state.sessionId ?: return
+        val sessionType = state.sessionType ?: return
+        val limits = AppConfigManager.getAILimits().getLimitsForSessionType(sessionType)
+        if (state.totalRoundtrips < limits.maxAutonomousRoundtrips) return
+
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+
+        messageRepository.storeMessage(sessionId, SessionMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            sender = MessageSender.SYSTEM,
+            richContent = null,
+            textContent = null,
+            aiMessage = null,
+            aiMessageJson = null,
+            systemMessage = com.assistant.core.ai.data.SystemMessage(
+                type = SystemMessageType.LIMIT_REACHED,
+                commandResults = emptyList(),
+                summary = s.shared("ai_limit_total_roundtrips_reached"),
+                formattedData = null
+            ),
+            executionMetadata = null,
+            excludeFromPrompt = true
+        ))
+    }
+
+    /**
      * Handle state change and execute side effects based on phase.
      */
     private suspend fun handleStateChange(state: AIState) {
@@ -203,6 +244,7 @@ class AIEventProcessor(
                 // This happens when CommunicationCancelled event is emitted
                 // We need to handle the side effect here since the event itself doesn't have a dedicated phase
                 // (No explicit handling needed - message creation is done in emit() before transition)
+                reportRoundtripLimit(state)
             }
 
             Phase.EXECUTING_ENRICHMENTS -> {
