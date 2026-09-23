@@ -496,7 +496,9 @@ class EnrichmentProcessor {
 
 `ai_prompt_chunks.xml` est la seule description que l'IA reçoit de l'API de commandes. Rien ne le compile ni ne le teste : une divergence avec le code ne produit aucune erreur, juste un paramètre ignoré en silence et un résultat faux côté IA.
 
-Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.** À toute modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor.formatResultData`), rejouer les exemples concernés dans une session CHAT réelle. C'est le seul filet.
+Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.** À toute modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor.formatResultData`), rejouer les exemples concernés dans une session CHAT réelle.
+
+Le filet a deux mailles, et elles ne prennent pas la même chose. `scripts/check_prompt_examples.py`, lancé à chaque `./run test`, confronte les exemples JSON du prompt au code : il dit que le prompt ne promet rien que le code ne tienne. Le rejeu en session dit ce que l'IA fait du prompt — s'il l'amène à demander un schéma avant d'agir, à poser une période où le code l'attend, à répondre dans la langue de l'utilisateur. La procédure et sa grille de lecture sont dans `docs/ai-prompt-replay.md`, à tenir à jour quand le L1 bouge.
 
 ### PromptManager.buildPromptData()
 ```kotlin
