@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## Chantier en cours
 
-- **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. Premier bloquant : l'auto-updater. Mesuré le 2026-09-23 : il n'a jamais été branché — `MainActivity` appelle `scheduleUpdateCheck`, dont le retour part dans une ligne de journal sous un `TODO`, et rien d'autre dans l'app n'atteint `core/update/`. L'app appelle donc l'API GitHub une fois par jour sans que rien ne puisse télécharger ni installer. Décision à prendre, elle porte sur le canal de distribution : supprimer le paquet (avec `REQUEST_INSTALL_PACKAGES`, `WRITE_EXTERNAL_STORAGE`, le `FileProvider` et `file_paths.xml`, qui n'existent que pour lui), ou écrire l'interface qui manque puis l'isoler dans une *flavor*. La spec recommande la suppression.
+- **Conformité F-Droid** — spec dans `docs/design/fdroid-compliance.md`. L'auto-updater est parti, avec ses deux permissions. Reste la fiche fastlane, à écrire au moment de préparer la première release candidate, et la grille d'anti-features à repasser juste avant la soumission réelle — pas avant, la codebase bouge.
 - Les strings ont désormais l'anglais par défaut et le français en traduction. Restent hors du mécanisme les 26 morceaux de prompt L1 (`ai_prompt_chunks.xml`), qui partent à l'IA et non à l'écran : les traduire changerait ce que le modèle lit, donc ça se décide avec la vérification du prompt sur l'appareil, pas avant.
 
 ## Dette constatée

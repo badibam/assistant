@@ -22,7 +22,6 @@ import com.assistant.core.commands.CommandStatus
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
 import com.assistant.core.themes.CurrentTheme
-import com.assistant.core.update.UpdateManager
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.scheduling.CoreScheduler
@@ -40,7 +39,6 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var coordinator: Coordinator
-    private lateinit var updateManager: UpdateManager
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1001
@@ -100,15 +98,6 @@ class MainActivity : ComponentActivity() {
 
         // Initialize coordinator
         coordinator = Coordinator(this)
-
-        // Initialize update manager
-        updateManager = UpdateManager(this)
-
-        // Check for updates at startup
-        updateManager.scheduleUpdateCheck { updateInfo ->
-            LogManager.service("Update available: ${updateInfo.version}")
-            // TODO: Show notification or dialog with UpdateInfo
-        }
         
         // Preload icons for current theme using multi-step operations
         startIconPreloading()

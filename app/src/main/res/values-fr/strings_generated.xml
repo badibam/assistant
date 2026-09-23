@@ -663,17 +663,6 @@
     <string name="shared_confirm_action">Confirmer cette action ?</string>
     <string name="shared_confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="shared_confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
-    <string name="shared_update_no_internet">Aucune connexion internet</string>
-    <string name="shared_update_latest_version">Vous avez la dernière version</string>
-    <string name="shared_update_permission_required">Autorisation d\'installation requise</string>
-    <string name="shared_update_downloading">Téléchargement en cours...</string>
-    <string name="shared_update_installation_started">Installation lancée...</string>
-    <string name="shared_update_success">Mise à jour téléchargée et installation lancée</string>
-    <string name="shared_update_download_title">Assistant - Mise à jour %1$s</string>
-    <string name="shared_update_download_description">Téléchargement de la nouvelle version...</string>
-    <string name="shared_update_changelog_default">Nouvelles améliorations et corrections</string>
-    <string name="shared_update_no_download_url">Aucune URL de téléchargement disponible</string>
-    <string name="shared_update_download_failed">Échec du téléchargement</string>
     <string name="shared_period_all">Toutes</string>
     <string name="shared_period_hour">Heure</string>
     <string name="shared_period_day">Jour</string>

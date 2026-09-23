@@ -417,18 +417,6 @@
     <string name="confirm_delete">Do you really want to delete this item? This action cannot be undone.</string>
     <string name="confirm_reset">Do you want to reset the configuration? The current data will be lost.</string>
 
-    <!-- Update Manager -->
-    <string name="update_no_internet">No internet connection</string>
-    <string name="update_latest_version">You have the latest version</string>
-    <string name="update_permission_required">Install permission required</string>
-    <string name="update_downloading">Downloading...</string>
-    <string name="update_installation_started">Installation started...</string>
-    <string name="update_success">Update downloaded and installation started</string>
-    <string name="update_download_title">Assistant - Update %1$s</string>
-    <string name="update_download_description">Downloading the new version...</string>
-    <string name="update_changelog_default">New improvements and fixes</string>
-    <string name="update_no_download_url">No download URL available</string>
-    <string name="update_download_failed">Download failed</string>
     
     <!-- Time periods -->
     <string name="period_all">All</string>

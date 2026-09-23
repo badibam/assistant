@@ -417,18 +417,6 @@
     <string name="confirm_delete">Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.</string>
     <string name="confirm_reset">Voulez-vous réinitialiser la configuration ? Les données actuelles seront perdues.</string>
 
-    <!-- Update Manager -->
-    <string name="update_no_internet">Aucune connexion internet</string>
-    <string name="update_latest_version">Vous avez la dernière version</string>
-    <string name="update_permission_required">Autorisation d'installation requise</string>
-    <string name="update_downloading">Téléchargement en cours...</string>
-    <string name="update_installation_started">Installation lancée...</string>
-    <string name="update_success">Mise à jour téléchargée et installation lancée</string>
-    <string name="update_download_title">Assistant - Mise à jour %1$s</string>
-    <string name="update_download_description">Téléchargement de la nouvelle version...</string>
-    <string name="update_changelog_default">Nouvelles améliorations et corrections</string>
-    <string name="update_no_download_url">Aucune URL de téléchargement disponible</string>
-    <string name="update_download_failed">Échec du téléchargement</string>
     
     <!-- Périodes temporelles -->
     <string name="period_all">Toutes</string>
