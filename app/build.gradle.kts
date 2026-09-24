@@ -288,9 +288,6 @@ dependencies {
     implementation("androidx.room:room-ktx:2.8.4")
     ksp("androidx.room:room-compiler:2.8.4")
     
-    // JSON
-    implementation("com.google.code.gson:gson:2.10.1")
-    
     // JSON Schema validation
     implementation("com.networknt:json-schema-validator:1.0.87")
     

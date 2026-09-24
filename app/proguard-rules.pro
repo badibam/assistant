@@ -45,10 +45,6 @@
 # Android JSON classes (fallback si utilisés)
 -keep class org.json.** { *; }
 
-# Gson (si utilisé pour autre chose)
--keep class com.google.gson.** { *; }
--dontwarn com.google.gson.**
-
 # ================================================================
 # Vosk Speech Recognition - Keep native code
 # ================================================================

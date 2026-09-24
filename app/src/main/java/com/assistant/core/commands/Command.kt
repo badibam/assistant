@@ -1,18 +1,6 @@
 package com.assistant.core.commands
 
 /**
- * Represents a JSON command - universal format for AI, App, and internal communication
- */
-data class Command(
-    val action: String,
-    val params: Map<String, Any> = emptyMap(), // Command parameters
-    val id: String? = null,               // Optional command ID for reference
-    // AI-specific fields (optional)
-    val description: String? = null,       // Human-readable description (from AI)
-    val reason: String? = null            // Why this command is being executed (from AI)
-)
-
-/**
  * Result of command execution
  */
 data class CommandResult(
