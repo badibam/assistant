@@ -207,15 +207,26 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
             inputTokens = 0
         )
 
-    // Extract usage metrics
-    // Use safe cast to handle JsonNull elements gracefully
+    // Usage: input and output counts are required, since the cost is computed from them and a
+    // missing one would show a paid call as free. The cached count is optional: none reported
+    // means none was read from the cache.
     val usage = jsonObj["usage"] as? JsonObject
-    val totalInputTokens = usage?.get("input_tokens")?.jsonPrimitive?.int ?: 0
-    val outputTokens = usage?.get("output_tokens")?.jsonPrimitive?.int ?: 0
-
-    // OpenAI provides cached_tokens in input_tokens_details
-    val inputTokensDetails = usage?.get("input_tokens_details") as? JsonObject
-    val cachedTokens = inputTokensDetails?.get("cached_tokens")?.jsonPrimitive?.int ?: 0
+    val totalInputTokens = usage?.get("input_tokens")?.jsonPrimitive?.intOrNull
+    val outputTokens = usage?.get("output_tokens")?.jsonPrimitive?.intOrNull
+    if (totalInputTokens == null || outputTokens == null) {
+        return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Provider response has no input_tokens or output_tokens in its usage.",
+            failure = AIFailure.CONFIG,
+            tokensUsed = 0,
+            cacheWriteTokens = 0,
+            cacheReadTokens = 0,
+            inputTokens = 0
+        )
+    }
+    val inputTokensDetails = usage["input_tokens_details"] as? JsonObject
+    val cachedTokens = inputTokensDetails?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0
 
     // OpenAI's input_tokens includes cached tokens, so we subtract to get uncached (new) tokens
     // This matches Claude's semantic where inputTokens = uncached input only

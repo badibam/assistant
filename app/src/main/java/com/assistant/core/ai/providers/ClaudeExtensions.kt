@@ -281,12 +281,27 @@ internal fun JsonElement.toClaudeAIResponse(): AIResponse {
     }
     val content = textBlock.jsonObject["text"]?.jsonPrimitive?.content ?: ""
 
-    // Extract usage metrics
-    val usage = jsonObj["usage"]?.jsonObject
-    val inputTokens = usage?.get("input_tokens")?.jsonPrimitive?.int ?: 0
-    val cacheWriteTokens = usage?.get("cache_creation_input_tokens")?.jsonPrimitive?.int ?: 0
-    val cacheReadTokens = usage?.get("cache_read_input_tokens")?.jsonPrimitive?.int ?: 0
-    val outputTokens = usage?.get("output_tokens")?.jsonPrimitive?.int ?: 0
+    // Usage: input and output counts are required, since the cost is computed from them and a
+    // missing one would show a paid call as free. The cache counts are optional: a provider
+    // on this format that does not cache (DeepSeek's documentation is silent on them) sends
+    // none, and none means nothing was written to or read from a cache.
+    val usage = jsonObj["usage"] as? JsonObject
+    val inputTokens = usage?.get("input_tokens")?.jsonPrimitive?.intOrNull
+    val outputTokens = usage?.get("output_tokens")?.jsonPrimitive?.intOrNull
+    if (inputTokens == null || outputTokens == null) {
+        return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Provider response has no input_tokens or output_tokens in its usage.",
+            failure = AIFailure.CONFIG,
+            tokensUsed = 0,
+            cacheWriteTokens = 0,
+            cacheReadTokens = 0,
+            inputTokens = 0
+        )
+    }
+    val cacheWriteTokens = usage["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+    val cacheReadTokens = usage["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
 
     return AIResponse(
         success = true,

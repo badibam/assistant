@@ -213,4 +213,32 @@ class ClaudeExtensionsTest {
         assertEquals(AIFailure.REFUSED, response.failure)
         assertEquals("Overloaded", response.errorMessage)
     }
+
+    // ==================== Usage ====================
+
+    /** No input or output count: the cost would read as free, so the call fails instead. */
+    @Test
+    fun anAnswerWithoutUsage_isAConfigFailure() {
+        val response = answer("""{"content":[{"type":"text","text":"ok"}],"stop_reason":"end_turn"}""")
+
+        assertFalse(response.success)
+        assertEquals(AIFailure.CONFIG, response.failure)
+    }
+
+    /**
+     * No cache counts, as a provider on this format that does not cache may send: read as
+     * nothing cached, and the answer goes through.
+     */
+    @Test
+    fun anAnswerWithoutCacheCounts_readsThemAsZero() {
+        val response = answer(
+            """{"content":[{"type":"text","text":"ok"}],"stop_reason":"end_turn",
+               "usage":{"input_tokens":40,"output_tokens":5}}"""
+        )
+
+        assertTrue(response.success)
+        assertEquals(40, response.inputTokens)
+        assertEquals(0, response.cacheWriteTokens)
+        assertEquals(0, response.cacheReadTokens)
+    }
 }

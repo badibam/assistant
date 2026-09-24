@@ -140,4 +140,15 @@ class OpenAIExtensionsTest {
 
         assertTrue(response.success)
     }
+
+    /** No input or output count: the cost would read as free, so the call fails instead. */
+    @Test
+    fun anAnswerWithoutUsage_isAConfigFailure() {
+        val response = answer(
+            """{"status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"ok"}]}]}"""
+        )
+
+        assertFalse(response.success)
+        assertEquals(AIFailure.CONFIG, response.failure)
+    }
 }
