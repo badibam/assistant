@@ -79,11 +79,6 @@ fun TrackingHistory(
     var totalEntries by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(1) }
     
-    // App config state
-    var dayStartHour by remember { mutableStateOf<Int?>(null) }
-    var weekStartDay by remember { mutableStateOf<String?>(null) }
-    var isConfigLoading by remember { mutableStateOf(true) }
-
     // Tool instance config (for custom fields definitions)
     var toolConfig by remember { mutableStateOf(JSONObject()) }
 
@@ -280,39 +275,11 @@ fun TrackingHistory(
         }
     }
     
-    // Load app config on composition
-    LaunchedEffect(Unit) {
-        try {
-            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
-            if (configResult.isSuccess) {
-                val config = configResult.data?.get("settings") as? Map<String, Any>
-                dayStartHour = (config?.get("day_start_hour") as? Number)?.toInt()
-                weekStartDay = config?.get("week_start_day") as? String
-            }
-        } catch (e: Exception) {
-            // Config loading failed
-        } finally {
-            isConfigLoading = false
-        }
-    }
-    
     // Initialize currentPeriod when first loaded
     if (currentPeriod == null) {
         currentPeriod = Period.now(PeriodType.DAY)
     }
     
-    // Show loading state while config is being loaded
-    if (isConfigLoading || dayStartHour == null || weekStartDay == null || currentPeriod == null) {
-        Column(
-            modifier = modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
-        }
-        return
-    }
-
     // Back to the first page when a filter changes
     OnChangedEffect("$periodFilter|$currentPeriod|$entriesLimit") { currentPage = 1 }
     

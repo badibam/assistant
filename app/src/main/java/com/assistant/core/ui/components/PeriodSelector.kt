@@ -11,15 +11,12 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.utils.AppConfigManager
-import com.assistant.core.config.FormatDefaults
 import com.assistant.core.strings.Strings
 import com.assistant.core.strings.StringsContext
-import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.launch
 import java.util.*
 import java.time.ZoneId
-import com.assistant.core.utils.LogManager
 
 /**
  * Reusable period filter types
@@ -276,55 +273,16 @@ fun SinglePeriodSelector(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // Load app configuration internally
-    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
-    var weekStartDay by remember { mutableStateOf(FormatDefaults.WEEK_START_DAY) }
-    var isConfigLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        try {
-            val coordinator = Coordinator(context)
-            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
-            if (configResult.isSuccess) {
-                val config = configResult.data?.get("settings") as? Map<String, Any>
-                // Update only if parsing succeeds, keep initial state values otherwise
-                config?.get("day_start_hour")?.let {
-                    (it as? Number)?.toInt()?.let { hour -> dayStartHour = hour }
-                }
-                config?.get("week_start_day")?.let {
-                    (it as? String)?.let { day -> weekStartDay = day }
-                }
-            }
-        } catch (e: Exception) {
-            // Log error but keep initial state values (FormatDefaults)
-            // No silent fallback - config should always load from DB after first launch
-            LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
-        } finally {
-            isConfigLoading = false
-        }
-    }
+    // Cached at startup, refreshed when the format settings are saved
+    val dayStartHour = AppConfigManager.getDayStartHour()
+    val weekStartDay = AppConfigManager.getWeekStartDay()
 
     // State for date selector
     var showPicker by rememberSaveable { mutableStateOf(false) }
 
     // Smart label generation
-    val label = remember(period, dayStartHour, weekStartDay, isConfigLoading, useOnlyRelativeLabels) {
-        if (isConfigLoading) {
-            s.shared("tools_loading")
-        } else {
-            generatePeriodLabel(period, dayStartHour, weekStartDay, s, useOnlyRelativeLabels)
-        }
-    }
-
-    if (isConfigLoading) {
-        // Show loading state
-        Box(
-            modifier = modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
-        }
-        return
+    val label = remember(period, dayStartHour, weekStartDay, useOnlyRelativeLabels) {
+        generatePeriodLabel(period, dayStartHour, weekStartDay, s, useOnlyRelativeLabels)
     }
     
     Row(
@@ -1204,45 +1162,9 @@ fun PeriodRangeSelector(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    // App configuration state
-    var dayStartHour by remember { mutableStateOf(FormatDefaults.DAY_START_HOUR) }
-    var weekStartDay by remember { mutableStateOf(FormatDefaults.WEEK_START_DAY) }
-    var isConfigLoading by remember { mutableStateOf(true) }
-
-    // Load app configuration
-    LaunchedEffect(Unit) {
-        try {
-            val coordinator = Coordinator(context)
-            val configResult = coordinator.processUserAction("app_config.get", mapOf("category" to "format"))
-            if (configResult.isSuccess) {
-                val config = configResult.data?.get("settings") as? Map<String, Any>
-                // Update only if parsing succeeds, keep initial state values otherwise
-                config?.get("day_start_hour")?.let {
-                    (it as? Number)?.toInt()?.let { hour -> dayStartHour = hour }
-                }
-                config?.get("week_start_day")?.let {
-                    (it as? String)?.let { day -> weekStartDay = day }
-                }
-            }
-        } catch (e: Exception) {
-            // Log error but keep initial state values (FormatDefaults)
-            // No silent fallback - config should always load from DB after first launch
-            LogManager.service("Failed to load period config: ${e.message}", "ERROR", e)
-        } finally {
-            isConfigLoading = false
-        }
-    }
-
-    // Show loading state while config is loading
-    if (isConfigLoading) {
-        Box(
-            modifier = modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.Text(text = s.shared("tools_loading_config"), type = TextType.BODY)
-        }
-        return
-    }
+    // Cached at startup, refreshed when the format settings are saved
+    val dayStartHour = AppConfigManager.getDayStartHour()
+    val weekStartDay = AppConfigManager.getWeekStartDay()
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1312,7 +1234,7 @@ fun PeriodRangeSelector(
                             onStartIsNowChange(false)
 
                             // Create default period when type changes
-                            if (newType != null && !isConfigLoading) {
+                            if (newType != null) {
                                 if (returnRelative) {
                                     val newRelativePeriod = RelativePeriod.now(newType)
                                     onStartRelativePeriodChange?.invoke(newRelativePeriod)
@@ -1461,7 +1383,7 @@ fun PeriodRangeSelector(
                             onEndIsNowChange(false)
 
                             // Create default period when type changes
-                            if (newType != null && !isConfigLoading) {
+                            if (newType != null) {
                                 if (returnRelative) {
                                     val newRelativePeriod = RelativePeriod.now(newType)
                                     onEndRelativePeriodChange?.invoke(newRelativePeriod)
