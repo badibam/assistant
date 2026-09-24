@@ -79,17 +79,7 @@ fun MainScreen() {
             onError = { error -> errorMessage = error }
         )?.let { result ->
             zones = result.mapData("zones") { map ->
-                Zone(
-                    id = map["id"] as String,
-                    name = map["name"] as String,
-                    description = map["description"] as? String,
-                    order_index = (map["order_index"] as Number).toInt(),
-                    created_at = (map["created_at"] as Number).toLong(),
-                    updated_at = (map["updated_at"] as Number).toLong(),
-                    tool_groups = (map["tool_groups"] as? List<*>)
-                        ?.let { JsonUtils.toJSONArray(it).toString() },
-                    group = map["group"] as? String
-                ).also { zone ->
+                zoneFrom(map).also { zone ->
                     LogManager.ui("MainScreen - Loaded zone '${zone.name}' with group: '${zone.group}'", "DEBUG")
                 }
             }
@@ -118,17 +108,7 @@ fun MainScreen() {
                         onError = { error -> errorMessage = error }
                     )?.let { result ->
                         zones = result.mapData("zones") { map ->
-                            Zone(
-                                id = map["id"] as String,
-                                name = map["name"] as String,
-                                description = map["description"] as? String,
-                                order_index = (map["order_index"] as Number).toInt(),
-                                created_at = (map["created_at"] as Number).toLong(),
-                                updated_at = (map["updated_at"] as Number).toLong(),
-                                tool_groups = (map["tool_groups"] as? List<*>)
-                        ?.let { JsonUtils.toJSONArray(it).toString() },
-                                group = map["group"] as? String
-                            )
+                            zoneFrom(map)
                         }
                     }
                 }
@@ -158,17 +138,7 @@ fun MainScreen() {
                 onError = { error -> errorMessage = error }
             )?.let { result ->
                 zones = result.mapData("zones") { map ->
-                    Zone(
-                        id = map["id"] as String,
-                        name = map["name"] as String,
-                        description = map["description"] as? String,
-                        order_index = (map["order_index"] as Number).toInt(),
-                        created_at = (map["created_at"] as Number).toLong(),
-                        updated_at = (map["updated_at"] as Number).toLong(),
-                        tool_groups = (map["tool_groups"] as? List<*>)
-                        ?.let { JsonUtils.toJSONArray(it).toString() },
-                        group = map["group"] as? String
-                    )
+                    zoneFrom(map)
                 }
             }
         }
@@ -573,3 +543,19 @@ private fun ZoneGroupSection(
         }
     }
 }
+
+/**
+ * A zone from one entry of zones.list. Every field the list returns is read here, and only
+ * here: three copies of this used to drop whatever they did not name, the icon among them.
+ */
+private fun zoneFrom(map: Map<String, Any?>): Zone = Zone(
+    id = map["id"] as String,
+    name = map["name"] as String,
+    description = map["description"] as? String,
+    icon_name = map["icon_name"] as? String,
+    order_index = (map["order_index"] as Number).toInt(),
+    created_at = (map["created_at"] as Number).toLong(),
+    updated_at = (map["updated_at"] as Number).toLong(),
+    tool_groups = (map["tool_groups"] as? List<*>)?.let { JsonUtils.toJSONArray(it).toString() },
+    group = map["group"] as? String
+)
