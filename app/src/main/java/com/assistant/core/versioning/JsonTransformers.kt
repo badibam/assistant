@@ -153,6 +153,7 @@ object JsonTransformers {
                 transformed = when (version) {
                     19 -> migrateAppConfigFrom19To20(transformed, context)
                     31 -> if (category == AppSettingCategories.AI_LIMITS) AILimitsAtV32.rewrite(transformed) else transformed
+                    32 -> SettingsAtV33.rewrite(category, transformed) ?: transformed
                     // Example future migration:
                     // 10 -> migrateAppConfigFrom10To11(transformed)
                     else -> transformed // No migrations

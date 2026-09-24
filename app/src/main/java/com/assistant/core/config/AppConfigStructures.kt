@@ -88,8 +88,34 @@ data class DateTimeConfig(
  * Hierarchy: app > zone > tool > session > AI request (OR logic)
  */
 data class ValidationConfig(
-    val validateAppConfigChanges: Boolean = false,      // Modif config app
-    val validateZoneConfigChanges: Boolean = false,     // Modif config zones
-    val validateToolConfigChanges: Boolean = false,     // Modif config outils
-    val validateToolDataChanges: Boolean = false        // Modif données outils
-)
+    val validateAppConfigChanges: Boolean = false,      // App config changes
+    val validateZoneConfigChanges: Boolean = false,     // Zone config changes
+    val validateToolConfigChanges: Boolean = false,     // Tool config changes
+    val validateToolDataChanges: Boolean = false        // Tool data changes
+) {
+    /** The validation_config settings as stored in the database */
+    fun toSettingsJson(): String = org.json.JSONObject().apply {
+        put(KEY_APP_CONFIG, validateAppConfigChanges)
+        put(KEY_ZONE_CONFIG, validateZoneConfigChanges)
+        put(KEY_TOOL_CONFIG, validateToolConfigChanges)
+        put(KEY_TOOL_DATA, validateToolDataChanges)
+    }.toString()
+
+    companion object {
+        const val KEY_APP_CONFIG = "validate_app_config_changes"
+        const val KEY_ZONE_CONFIG = "validate_zone_config_changes"
+        const val KEY_TOOL_CONFIG = "validate_tool_config_changes"
+        const val KEY_TOOL_DATA = "validate_tool_data_changes"
+
+        /**
+         * Read the stored validation_config settings. All four keys are required: a missing
+         * one throws rather than silently meaning "no validation".
+         */
+        fun fromSettingsJson(settings: org.json.JSONObject) = ValidationConfig(
+            validateAppConfigChanges = settings.getBoolean(KEY_APP_CONFIG),
+            validateZoneConfigChanges = settings.getBoolean(KEY_ZONE_CONFIG),
+            validateToolConfigChanges = settings.getBoolean(KEY_TOOL_CONFIG),
+            validateToolDataChanges = settings.getBoolean(KEY_TOOL_DATA)
+        )
+    }
+}

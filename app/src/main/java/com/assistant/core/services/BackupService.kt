@@ -397,26 +397,14 @@ class BackupService(private val context: Context) : ExecutableService {
      * Called after reset to ensure app has valid defaults
      */
     private suspend fun insertDefaultAppConfig() {
-        // Insert default app settings with system-detected values
-        @Suppress("DEPRECATION")
-        database.appSettingsCategoryDao().insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.FORMAT,
-                settings = DefaultFormatSettings.getJson(context)
+        com.assistant.core.config.AppSettingsDefaults.CATEGORIES.forEach { category ->
+            database.appSettingsCategoryDao().insertOrUpdateSettings(
+                AppSettingsCategory(
+                    category = category,
+                    settings = com.assistant.core.config.AppSettingsDefaults.forCategory(category, context)
+                )
             )
-        )
-        database.appSettingsCategoryDao().insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.AI_LIMITS,
-                settings = com.assistant.core.ai.domain.AILimitsConfig.default().toSettingsJson()
-            )
-        )
-        database.appSettingsCategoryDao().insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.VALIDATION_CONFIG,
-                settings = DefaultValidationSettings.JSON.trimIndent()
-            )
-        )
+        }
     }
 
     /**

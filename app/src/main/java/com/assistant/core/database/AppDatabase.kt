@@ -24,6 +24,7 @@ import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
 import com.assistant.core.versioning.AILimitsAtV32
 import com.assistant.core.versioning.DateFieldBounds
+import com.assistant.core.versioning.SettingsAtV33
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -64,7 +65,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 32
+        const val VERSION = 33
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1252,6 +1253,32 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_32_33 = object : Migration(32, 33) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // format, validation_config and main_screen get the required keys they lack and
+                // lose the ones nothing declares: see SettingsAtV33. A row that cannot be read is
+                // left as it is; reading it then fails with the reason, instead of the migration
+                // replacing it.
+                val rows = mutableListOf<Pair<String, String>>()
+                val cursor = database.query("SELECT category, settings FROM app_settings_categories")
+                while (cursor.moveToNext()) rows += cursor.getString(0) to cursor.getString(1)
+                cursor.close()
+
+                for ((category, settings) in rows) {
+                    try {
+                        val rewritten = SettingsAtV33.rewrite(category, org.json.JSONObject(settings)) ?: continue
+                        database.execSQL(
+                            "UPDATE app_settings_categories SET settings = ? WHERE category = ?",
+                            arrayOf(rewritten.toString(), category)
+                        )
+                        LogManager.database("MIGRATION 32->33: $category rewritten to $rewritten", "INFO")
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 32->33: $category left as is (${e.message})", "ERROR")
+                    }
+                }
+            }
+        }
+
         private val MIGRATION_31_32 = object : Migration(31, 32) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // ai_limits keeps the two roundtrip limits alone, the CHAT one set to 10: see
@@ -1365,7 +1392,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_28_29,
                     MIGRATION_29_30,
                     MIGRATION_30_31,
-                    MIGRATION_31_32
+                    MIGRATION_31_32,
+                    MIGRATION_32_33
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

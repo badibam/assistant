@@ -2,15 +2,12 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.config.DateTimeConfig
-import com.assistant.core.config.FormatDefaults
 import com.assistant.core.ai.domain.AILimitsConfig
 import com.assistant.core.config.ValidationConfig
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
-import com.assistant.core.database.entities.DefaultFormatSettings
-import com.assistant.core.database.entities.DefaultValidationSettings
-import com.assistant.core.database.entities.DefaultMainScreenSettings
+import com.assistant.core.config.AppSettingsDefaults
 import com.assistant.core.schemas.AppConfigSchemaProvider
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
@@ -37,12 +34,12 @@ class AppConfigService(private val context: Context) : ExecutableService {
      */
     suspend fun getWeekStartDay(): String {
         val settings = getFormatSettings()
-        return settings.optString("week_start_day", "monday")
+        return settings.getString("week_start_day")
     }
 
     suspend fun getDayStartHour(): Int {
         val settings = getFormatSettings()
-        return settings.optInt("day_start_hour", 4)
+        return settings.getInt("day_start_hour")
     }
 
     suspend fun getLocaleOverride(): String? {
@@ -96,97 +93,30 @@ class AppConfigService(private val context: Context) : ExecutableService {
      */
     suspend fun getZoneGroups(): List<String> {
         val settings = getMainScreenSettings()
-        val groupsJson = settings.optJSONArray("zone_groups")
-        return if (groupsJson != null) {
-            (0 until groupsJson.length()).map { groupsJson.getString(it) }
-        } else {
-            emptyList()
-        }
+        val groupsJson = settings.getJSONArray("zone_groups")
+        return (0 until groupsJson.length()).map { groupsJson.getString(it) }
     }
 
     suspend fun setZoneGroups(groups: List<String>) {
         updateMainScreenSetting("zone_groups", JSONArray(groups))
     }
 
+    private suspend fun getFormatSettings(): JSONObject = readSettings(AppSettingCategories.FORMAT)
+
     /**
-     * Internal format settings management
+     * Change one format setting, then check the whole stored object against the format
+     * schema before writing it. JSON nulls are left out of the check: they are how an
+     * optional override says "follow the phone", and the schema reads a missing key the same.
      */
-    private suspend fun getFormatSettings(): JSONObject {
-        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.FORMAT)
-        return if (settingsJson != null) {
-            try {
-                JSONObject(settingsJson)
-            } catch (e: Exception) {
-                LogManager.service("Error parsing format settings JSON: ${e.message}", "ERROR", e)
-                createDefaultFormatSettings()
-            }
-        } else {
-            LogManager.service("No format settings found, creating defaults")
-            createDefaultFormatSettings()
-        }
-    }
-
-    private suspend fun createDefaultFormatSettings(): JSONObject {
-        LogManager.service("Creating default format settings with system-detected values")
-        @Suppress("DEPRECATION")
-        val defaultSettings = JSONObject(DefaultFormatSettings.getJson(context))
-        settingsDao.insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.FORMAT,
-                settings = defaultSettings.toString()
-            )
-        )
-        LogManager.service("Default format settings inserted: $defaultSettings")
-        return defaultSettings
-    }
-
     private suspend fun updateFormatSetting(key: String, value: Any?) {
         val settings = getFormatSettings()
-        settings.put(key, value)
+        settings.put(key, value ?: JSONObject.NULL)
 
-        // Validation with SchemaValidator - include ALL required fields
-        val dataMap = mutableMapOf<String, Any>()
-        dataMap["week_start_day"] = settings.optString("week_start_day")
-        dataMap["day_start_hour"] = settings.optInt("day_start_hour")
-
-        // Optional overrides
-        settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }?.let {
-            dataMap["locale_override"] = it
-        }
-        settings.optString("timezone_override").takeIf { it != "null" && it.isNotBlank() }?.let {
-            dataMap["timezone_override"] = it
-        }
-        settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() }?.let {
-            dataMap["date_format_pattern"] = it
-        }
-
-        // Boolean fields
-        if (settings.has("use_24_hour_format")) {
-            dataMap["use_24_hour_format"] = settings.opt("use_24_hour_format")
-        }
-
-        // Time separator
-        dataMap["time_separator"] = settings.optString("time_separator", ":")
-
-        // Relative label limits (required)
-        val relativeLimits = settings.optJSONObject("relative_label_limits")
-        if (relativeLimits != null) {
-            dataMap["relative_label_limits"] = mapOf(
-                "hour_limit" to relativeLimits.optInt("hour_limit", 12),
-                "day_limit" to relativeLimits.optInt("day_limit", 7),
-                "week_limit" to relativeLimits.optInt("week_limit", 4),
-                "month_limit" to relativeLimits.optInt("month_limit", 6),
-                "year_limit" to relativeLimits.optInt("year_limit", 3)
-            )
-        }
-
+        @Suppress("UNCHECKED_CAST")
+        val data = com.assistant.core.utils.JsonUtils.toMap(settings).filterValues { it != null } as Map<String, Any>
         val schema = AppConfigSchemaProvider.getSchema("app_config_format", context)
-        val validation = if (schema != null) {
-            SchemaValidator.validate(schema, dataMap, context)
-        } else {
-            com.assistant.core.validation.ValidationResult.error("App config format schema not found")
-        }
-
+            ?: throw IllegalStateException("App config format schema not found")
+        val validation = SchemaValidator.validate(schema, data, context)
         if (!validation.isValid) {
             throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
         }
@@ -207,16 +137,16 @@ class AppConfigService(private val context: Context) : ExecutableService {
         return DateTimeConfig(
             timezoneOverride = settings.optString("timezone_override").takeIf { it != "null" && it.isNotBlank() },
             localeOverride = settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() },
+            // null or absent follows the phone; anything but a boolean is a corrupted setting
             use24HourFormat = when (val value = settings.opt("use_24_hour_format")) {
+                null, JSONObject.NULL -> null
                 is Boolean -> value
-                "true" -> true
-                "false" -> false
-                else -> null
+                else -> throw IllegalStateException("use_24_hour_format is neither a boolean nor null: $value")
             },
             dateFormatPattern = settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() },
-            timeSeparator = settings.optString("time_separator", FormatDefaults.TIME_SEPARATOR),
-            dayStartHour = settings.optInt("day_start_hour", FormatDefaults.DAY_START_HOUR),
-            weekStartDay = settings.optString("week_start_day", FormatDefaults.WEEK_START_DAY).uppercase()  // Convert to uppercase for DayOfWeek
+            timeSeparator = settings.getString("time_separator"),
+            dayStartHour = settings.getInt("day_start_hour"),
+            weekStartDay = settings.getString("week_start_day").uppercase()  // Convert to uppercase for DayOfWeek
         )
     }
 
@@ -265,118 +195,16 @@ class AppConfigService(private val context: Context) : ExecutableService {
     suspend fun getAILimits(): AILimitsConfig =
         AILimitsConfig.fromSettingsJson(getAILimitsSettings())
 
-    /**
-     * The stored ai_limits settings, written from AILimitsConfig.default() on first use.
-     * Stored settings that cannot be read throw instead of being replaced by the defaults,
-     * which would overwrite what the database holds.
-     */
-    private suspend fun getAILimitsSettings(): JSONObject {
-        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.AI_LIMITS)
-            ?: return createDefaultAILimitsSettings()
-        return JSONObject(settingsJson)
-    }
-
-    private suspend fun createDefaultAILimitsSettings(): JSONObject {
-        LogManager.service("No AI limits settings found, writing the defaults")
-        val defaultSettings = AILimitsConfig.default().toSettingsJson()
-        settingsDao.insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.AI_LIMITS,
-                settings = defaultSettings
-            )
-        )
-        return JSONObject(defaultSettings)
-    }
+    private suspend fun getAILimitsSettings(): JSONObject = readSettings(AppSettingCategories.AI_LIMITS)
 
     /**
      * Get structured validation configuration
      * Hierarchy: app > zone > tool > session > AI request (OR logic)
      */
-    suspend fun getValidationConfig(): ValidationConfig {
-        val settings = getValidationSettings()
-        return ValidationConfig(
-            validateAppConfigChanges = settings.optBoolean("validate_app_config_changes", false),
-            validateZoneConfigChanges = settings.optBoolean("validate_zone_config_changes", false),
-            validateToolConfigChanges = settings.optBoolean("validate_tool_config_changes", false),
-            validateToolDataChanges = settings.optBoolean("validate_tool_data_changes", false)
-        )
-    }
+    suspend fun getValidationConfig(): ValidationConfig =
+        ValidationConfig.fromSettingsJson(readSettings(AppSettingCategories.VALIDATION_CONFIG))
 
-    /**
-     * Set validation configuration
-     */
-    suspend fun setValidationConfig(config: ValidationConfig) {
-        val settings = JSONObject().apply {
-            put("validate_app_config_changes", config.validateAppConfigChanges)
-            put("validate_zone_config_changes", config.validateZoneConfigChanges)
-            put("validate_tool_config_changes", config.validateToolConfigChanges)
-            put("validate_tool_data_changes", config.validateToolDataChanges)
-        }
-
-        settingsDao.updateSettings(AppSettingCategories.VALIDATION_CONFIG, settings.toString())
-    }
-
-    /**
-     * Validation settings management with automatic defaults creation
-     */
-    private suspend fun getValidationSettings(): JSONObject {
-        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.VALIDATION_CONFIG)
-        return if (settingsJson != null) {
-            try {
-                JSONObject(settingsJson)
-            } catch (e: Exception) {
-                LogManager.service("Error parsing validation settings JSON: ${e.message}", "ERROR", e)
-                createDefaultValidationSettings()
-            }
-        } else {
-            LogManager.service("No validation settings found, creating defaults")
-            createDefaultValidationSettings()
-        }
-    }
-
-    private suspend fun createDefaultValidationSettings(): JSONObject {
-        LogManager.service("Creating default validation settings")
-        val defaultSettings = JSONObject(DefaultValidationSettings.JSON.trimIndent())
-        settingsDao.insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.VALIDATION_CONFIG,
-                settings = defaultSettings.toString()
-            )
-        )
-        LogManager.service("Default validation settings inserted: $defaultSettings")
-        return defaultSettings
-    }
-
-    /**
-     * Main screen settings management with automatic defaults creation
-     */
-    private suspend fun getMainScreenSettings(): JSONObject {
-        val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.MAIN_SCREEN)
-        return if (settingsJson != null) {
-            try {
-                JSONObject(settingsJson)
-            } catch (e: Exception) {
-                LogManager.service("Error parsing main screen settings JSON: ${e.message}", "ERROR", e)
-                createDefaultMainScreenSettings()
-            }
-        } else {
-            LogManager.service("No main screen settings found, creating defaults")
-            createDefaultMainScreenSettings()
-        }
-    }
-
-    private suspend fun createDefaultMainScreenSettings(): JSONObject {
-        LogManager.service("Creating default main screen settings")
-        val defaultSettings = JSONObject(DefaultMainScreenSettings.JSON.trimIndent())
-        settingsDao.insertOrUpdateSettings(
-            AppSettingsCategory(
-                category = AppSettingCategories.MAIN_SCREEN,
-                settings = defaultSettings.toString()
-            )
-        )
-        LogManager.service("Default main screen settings inserted: $defaultSettings")
-        return defaultSettings
-    }
+    private suspend fun getMainScreenSettings(): JSONObject = readSettings(AppSettingCategories.MAIN_SCREEN)
 
     private suspend fun updateMainScreenSetting(key: String, value: Any?) {
         val settings = getMainScreenSettings()
@@ -388,51 +216,25 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Generic utilities
+     * A settings category as stored. A category with no row yet gets its defaults written
+     * (AppSettingsDefaults), which is what a first launch looks like. A stored row that is
+     * not readable JSON throws: replacing it with the defaults would overwrite what the
+     * database holds, and the failure would go unseen.
      */
-    suspend fun getCategorySettings(category: String): JSONObject? {
-        return when (category) {
-            AppSettingCategories.FORMAT -> getFormatSettings()
-            AppSettingCategories.AI_LIMITS -> getAILimitsSettings()
-            AppSettingCategories.VALIDATION_CONFIG -> getValidationSettings()
-            AppSettingCategories.MAIN_SCREEN -> getMainScreenSettings()
-            else -> {
-                // Generic fallback for unknown categories - no auto-creation
-                val settingsJson = settingsDao.getSettingsJsonForCategory(category)
-                settingsJson?.let {
-                    try {
-                        JSONObject(it)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            }
-        }
-    }
+    private suspend fun readSettings(category: String): JSONObject {
+        val stored = settingsDao.getSettingsJsonForCategory(category)
+        if (stored != null) return JSONObject(stored)
 
-    suspend fun resetToDefaults(category: String) {
-        when (category) {
-            AppSettingCategories.FORMAT -> {
-                @Suppress("DEPRECATION")
-                settingsDao.updateSettings(category, DefaultFormatSettings.getJson(context))
-            }
-            AppSettingCategories.AI_LIMITS -> {
-                settingsDao.updateSettings(category, AILimitsConfig.default().toSettingsJson())
-            }
-            AppSettingCategories.VALIDATION_CONFIG -> {
-                settingsDao.updateSettings(category, DefaultValidationSettings.JSON.trimIndent())
-            }
-            AppSettingCategories.MAIN_SCREEN -> {
-                settingsDao.updateSettings(category, DefaultMainScreenSettings.JSON.trimIndent())
-            }
-            // Future categories handled here
-        }
+        LogManager.service("No $category settings found, writing the defaults", "INFO")
+        val defaults = AppSettingsDefaults.forCategory(category, context)
+        settingsDao.insertOrUpdateSettings(AppSettingsCategory(category = category, settings = defaults))
+        return JSONObject(defaults)
     }
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
         return when (operation) {
             "get" -> {
-                val category = params.optString("category", "format")
+                val category = params.optString("category")
                 when (category) {
                     AppSettingCategories.FORMAT -> {
                         val settings = getFormatSettings()
