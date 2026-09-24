@@ -55,7 +55,7 @@ tmp/
 .claude/settings.local.json
 
 # Rebuilt by preBuild (generateStringResources)
-app/src/main/res/values/strings_generated.xml
+app/src/main/res/values*/strings_generated.xml
 
 # Kotlin incremental build state
 .kotlin/
