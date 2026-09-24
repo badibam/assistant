@@ -102,9 +102,10 @@ fun TrackingHistory(
         }
     }
 
-    // Load data
-    val loadData = {
-        scope.launch {
+    // Load data. Run only by the LaunchedEffect below: a change of filter, page or refresh
+    // cancels the load in flight, so two loads never race and flash the list in turn
+    val loadData: suspend () -> Unit = {
+        run {
             isLoading = true
             errorMessage = null
             
@@ -186,6 +187,8 @@ fun TrackingHistory(
                         errorMessage = result.error ?: s.shared("tools_error_loading")
                     }
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e // A newer load took over: not an error
             } catch (e: Exception) {
                 errorMessage = s.shared("message_error").format(e.message ?: "")
             } finally {
@@ -235,7 +238,7 @@ fun TrackingHistory(
                 when {
                     result.isSuccess -> {
                         UI.Toast(context, s.tool("usage_entry_updated"), Duration.SHORT)
-                        loadData() // Reload data to show changes
+                        // The data change notification reloads the list
                     }
                     else -> {
                         UI.Toast(context, result.error ?: s.tool("error_entry_update"), Duration.LONG)
@@ -284,7 +287,8 @@ fun TrackingHistory(
     OnChangedEffect("$periodFilter|$currentPeriod|$entriesLimit") { currentPage = 1 }
     
     // Load data on composition and when filters or pagination change
-    LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, currentPage, refreshTrigger) {
+    var reloadCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(toolInstanceId, periodFilter, currentPeriod, entriesLimit, currentPage, refreshTrigger, reloadCount) {
         loadData()
     }
     
@@ -348,15 +352,14 @@ fun TrackingHistory(
             
             // Refresh button
             Box(contentAlignment = Alignment.Center) {
-                if (!isLoading) {
-                    UI.ActionButton(
-                        action = ButtonAction.REFRESH,
-                        display = ButtonDisplay.ICON,
-                        onClick = { loadData() }
-                    )
-                } else {
-                    UI.CenteredText("...", TextType.BODY)
-                }
+                // Stays in place while loading, only disabled: swapping it for a marker made
+                // the row jump twice on every load
+                UI.ActionButton(
+                    action = ButtonAction.REFRESH,
+                    display = ButtonDisplay.ICON,
+                    enabled = !isLoading,
+                    onClick = { reloadCount++ }
+                )
             }
         }
         
@@ -366,7 +369,6 @@ fun TrackingHistory(
                 period = currentPeriod!!,
                 onPeriodChange = { newPeriod ->
                     currentPeriod = newPeriod
-                    loadData()
                 }
             )
         }
