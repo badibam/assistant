@@ -89,17 +89,15 @@ class FieldConfigComparatorTest {
     }
 
     /**
-     * Renaming a field destroys its history.
+     * A changed technical name reads as one field gone and another arrived.
      *
-     * Fields are identified by their technical name, so a rename is not seen as a rename: it
-     * is one field gone and another arrived. The departure strips the recorded values, the
-     * arrival adds an empty field, and the entries come out blank under the new name.
-     *
-     * This states what the code does today. TODO.md carries the rename-aware migration this
-     * calls for; the test is here so the day it is written, this stops passing.
+     * Fields are identified by their technical name, so the departure would strip the recorded
+     * values and the entries would come out blank under the new name. That is why
+     * ToolInstanceService refuses a technical name it never assigned: a field is renamed by
+     * changing its display_name, which keeps the key and the history.
      */
     @Test
-    fun renamingAField_readsAsADeletionAndLosesTheHistory() {
+    fun aChangedTechnicalName_readsAsARemovalThatWouldStripTheValues() {
         val changes = FieldConfigComparator.compare(
             oldFields = listOf(field(name = "mood", displayName = "Mood")),
             newFields = listOf(field(name = "feeling", displayName = "Mood"))
