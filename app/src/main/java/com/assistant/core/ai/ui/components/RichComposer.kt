@@ -1,5 +1,8 @@
 package com.assistant.core.ai.ui.components
 
+import com.assistant.core.ai.data.RichMessage
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -106,6 +109,57 @@ private fun segmentsToBlocks(segments: List<MessageSegment>): List<TextBlock> {
 }
 
 /**
+ * The blocks being composed, ids included. Rebuilding them from the segments on recreation
+ * would give them new ids, and the open enrichment dialog names its block by id.
+ */
+private val TextBlocksSaver: Saver<List<TextBlock>, String> = Saver(
+    save = { blocks ->
+        JSONArray(blocks.map { block ->
+            JSONObject()
+                .put("id", block.id)
+                .put("text", block.text)
+                .put("enrichments", RichMessage(block.enrichments, "", emptyList()).toJson())
+        }).toString()
+    },
+    restore = { saved ->
+        val array = JSONArray(saved)
+        (0 until array.length()).map { i ->
+            val block = array.getJSONObject(i)
+            val enrichments = RichMessage.fromJson(block.getString("enrichments"))?.segments
+                ?: throw IllegalStateException("Saved enrichments of a block could not be parsed")
+            TextBlock(
+                id = block.getString("id"),
+                text = block.getString("text"),
+                enrichments = enrichments.filterIsInstance<MessageSegment.EnrichmentBlock>()
+            )
+        }
+    }
+)
+
+/** The enrichment dialog left open, so a rotation reopens it on the same block. */
+private val NullableEnrichmentDialogStateSaver: Saver<EnrichmentDialogState?, String> = Saver(
+    save = { state ->
+        state?.let {
+            JSONObject()
+                .put("block_id", it.blockId)
+                .put("type", it.type.name)
+                .put("existing_config", it.existingConfig ?: JSONObject.NULL)
+                .put("existing_preview", it.existingPreview ?: JSONObject.NULL)
+                .toString()
+        }
+    },
+    restore = { saved ->
+        val json = JSONObject(saved)
+        EnrichmentDialogState(
+            blockId = json.getString("block_id"),
+            type = EnrichmentType.valueOf(json.getString("type")),
+            existingConfig = if (json.isNull("existing_config")) null else json.getString("existing_config"),
+            existingPreview = if (json.isNull("existing_preview")) null else json.getString("existing_preview")
+        )
+    }
+)
+
+/**
  * Convert TextBlocks back to MessageSegments
  */
 private fun blocksToSegments(blocks: List<TextBlock>): List<MessageSegment> {
@@ -143,7 +197,7 @@ fun UI.RichComposer(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     // Convert segments to blocks for editing (initialize once, then manage locally)
-    var blocks by remember {
+    var blocks by rememberSaveable(stateSaver = TextBlocksSaver) {
         mutableStateOf(segmentsToBlocks(segments))
     }
 
@@ -159,10 +213,12 @@ fun UI.RichComposer(
     }
 
     // Track active block ID
-    var activeBlockId by remember { mutableStateOf(blocks.firstOrNull()?.id ?: "") }
+    var activeBlockId by rememberSaveable { mutableStateOf(blocks.firstOrNull()?.id ?: "") }
 
     // Enrichment dialog state
-    var showEnrichmentDialog by remember { mutableStateOf<EnrichmentDialogState?>(null) }
+    var showEnrichmentDialog by rememberSaveable(stateSaver = NullableEnrichmentDialogStateSaver) {
+        mutableStateOf<EnrichmentDialogState?>(null)
+    }
 
     // Update parent when blocks change
     val updateSegments = {
@@ -697,8 +753,8 @@ private fun PlaceholderEnrichmentDialog(
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
-    var config by remember { mutableStateOf(existingConfig ?: "{}") }
-    var preview by remember { mutableStateOf("${getEnrichmentIcon(type)} Configuration") }
+    var config by rememberSaveable { mutableStateOf(existingConfig ?: "{}") }
+    var preview by rememberSaveable { mutableStateOf("${getEnrichmentIcon(type)} Configuration") }
 
     UI.Dialog(
         type = DialogType.CONFIGURE,
