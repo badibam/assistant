@@ -784,7 +784,7 @@
     <string name="service_error_validation_failed">Validation échouée: %1$s</string>
     <string name="service_error_missing_id">Paramètre obligatoire manquant: id</string>
     <string name="service_error_entry_not_found">Entrée introuvable: %1$s</string>
-    <string name="service_error_missing_tool_instance_id">Paramètre obligatoire manquant: toolInstanceId</string>
+    <string name="service_error_missing_tool_instance_id">Paramètre obligatoire manquant: tool_instance_id</string>
     <string name="service_error_missing_entry_id">Paramètre obligatoire manquant: entry_id</string>
     <string name="error_missing_schema_id">Schema_id manquant dans les données de configuration</string>
     <string name="service_error_zone_name_required">Nom de zone obligatoire</string>
@@ -797,7 +797,7 @@
     <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
     <string name="service_error_invalid_phase">Phase invalide: %1$s</string>
     <string name="service_error_unknown_category">Catégorie inconnue: %1$s</string>
-    <string name="service_error_schema_requires_tool_instance_id">Le schéma \'%1$s\' (catégorie: %2$s) nécessite le paramètre toolInstanceId</string>
+    <string name="service_error_schema_requires_tool_instance_id">Le schéma \'%1$s\' (catégorie: %2$s) nécessite le paramètre tool_instance_id</string>
 
     <!-- AI SYSTEM MESSAGES - Messages système générés par CommandExecutor -->
     <string name="ai_system_no_commands">Aucune commande à exécuter</string>
@@ -1367,10 +1367,8 @@
     <string name="ai_data_period_until">Période : jusqu\'à %1$s</string>
     <string name="ai_data_period_all_time">Période : TOUT TEMPS (aucun filtre)</string>
     <string name="ai_data_limit">Limite : %1$d</string>
-    <string name="ai_data_offset">Décalage : %1$d</string>
     <string name="ai_data_status_filter">Filtre statut : %1$s</string>
     <string name="ai_data_template_filter">Filtre template : %1$s</string>
-    <string name="ai_data_exact_query">Requête exacte : { \"type\": \"%1$s\", \"params\": %2$s }</string>
     <string name="ai_data_fields">Champs inclus : %1$s</string>
     <string name="ai_data_fields_all">tous</string>
     <string name="ai_data_no_results_warning">⚠️ AUCUNE DONNÉE TROUVÉE - Ceci est le résultat complet. NE PAS refaire la requête.</string>

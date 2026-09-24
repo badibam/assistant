@@ -27,6 +27,16 @@ data class PromptCommandResult(
 )
 
 /**
+ * The results of one batch as the section the model reads: a heading and the data under it.
+ *
+ * A command that failed, or a schema already sent, carries neither title nor data. Left in,
+ * it printed an empty "# " heading among the real ones.
+ */
+fun List<PromptCommandResult>.toPromptSection(): String =
+    filter { it.dataTitle.isNotEmpty() || it.formattedData.isNotEmpty() }
+        .joinToString("\n\n") { "# ${it.dataTitle}\n${it.formattedData}" }
+
+/**
  * What a tool's config says about one data result: the fields worth showing beside it, and the
  * names of its DATETIME fields, which decide what turns into ISO on the way to the model.
  */
@@ -690,26 +700,6 @@ class CommandExecutor(private val context: Context) {
                     if (limit != null) {
                         headerParts.add(s.shared("ai_data_limit").format(limit))
                     }
-
-                    val offset = command.params["offset"] as? Int
-                    if (offset != null) {
-                        headerParts.add(s.shared("ai_data_offset").format(offset))
-                    }
-
-                    // Build exact query as AI would write it (TOOL_DATA format)
-                    val aiQueryParams = mutableMapOf<String, Any>()
-                    aiQueryParams["id"] = toolInstanceId ?: "unknown"
-                    if (startTime != null || endTime != null) {
-                        val period = mutableMapOf<String, Any>()
-                        if (startTime != null) period["start"] = startTime
-                        if (endTime != null) period["end"] = endTime
-                        aiQueryParams["period"] = period
-                    }
-                    if (limit != null) aiQueryParams["limit"] = limit
-                    if (offset != null) aiQueryParams["offset"] = offset
-
-                    val aiQueryJson = org.json.JSONObject(aiQueryParams as Map<*, *>).toString()
-                    headerParts.add(s.shared("ai_data_exact_query").format("TOOL_DATA", aiQueryJson))
 
                     // Fields included (dynamic from command params)
                     val requestedFields = command.params["fields"] as? List<*>

@@ -7,6 +7,7 @@ import com.assistant.core.ai.providers.AIClient
 import com.assistant.core.ai.providers.AIFailure
 import com.assistant.core.ai.providers.aiFailureOf
 import com.assistant.core.ai.prompts.CommandExecutor
+import com.assistant.core.ai.prompts.toPromptSection
 import com.assistant.core.ai.prompts.PromptManager
 import com.assistant.core.ai.state.AIMessageRepository
 import com.assistant.core.ai.state.AIStateRepository
@@ -413,9 +414,7 @@ class AIEventProcessor(
             // 6. Store SystemMessage ONLY if commands were executed (even if all CACHED)
             // Note: If all toggles unchecked, no commands generated → no SystemMessage
             if (result.systemMessage.commandResults.isNotEmpty()) {
-                val formattedData = result.promptResults.joinToString("\n\n") {
-                    "# ${it.dataTitle}\n${it.formattedData}"
-                }
+                val formattedData = result.promptResults.toPromptSection()
                 val systemMessageWithData = result.systemMessage.copy(
                     formattedData = formattedData
                 )
@@ -1147,9 +1146,7 @@ class AIEventProcessor(
             // For DATA_ADDED: rebuild formattedData from promptResults
             // For SCHEMA_REQUIRED: keep original formattedData (promptResults is empty)
             val systemMessageWithData = if (result.promptResults.isNotEmpty()) {
-                val formattedData = result.promptResults.joinToString("\n\n") {
-                    "# ${it.dataTitle}\n${it.formattedData}"
-                }
+                val formattedData = result.promptResults.toPromptSection()
                 result.systemMessage.copy(formattedData = formattedData)
             } else {
                 // Keep original formattedData (already set in CommandExecutor for SCHEMA_REQUIRED)

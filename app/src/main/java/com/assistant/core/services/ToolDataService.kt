@@ -412,12 +412,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
                         fullEntry  // Return full entry if no filter
                     }
                 },
-                "pagination" to mapOf(
-                    "current_page" to page,
-                    "total_pages" to totalPages,
-                    "total_entries" to totalCount,
-                    "entries_per_page" to limit
-                )
+                // Without a limit there is no page size to report: Int.MAX_VALUE is how the
+                // query reads "no limit", not a number anyone asked for.
+                "pagination" to buildMap {
+                    put("current_page", page)
+                    put("total_pages", totalPages)
+                    put("total_entries", totalCount)
+                    if (hasLimit) put("entries_per_page", limit)
+                }
             )
         )
     }
