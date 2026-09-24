@@ -271,14 +271,18 @@ object BaseSchemas {
      * 2. Loads the tool instance config via Coordinator
      * 3. Enriches the merged schema with custom_fields definitions
      *
-     * This is the central integration point for custom fields validation.
-     * Used by ToolTypes when generating data schemas with toolInstanceId.
+     * Used by ToolTypes when generating data schemas with toolInstanceId: the schema the AI
+     * reads, and the checks screens make before writing. The guard itself is ToolDataService.
+     *
+     * A schema without the tool's custom fields would refuse every entry that carries them, or
+     * show the AI a tool without them, for a reason nobody would see: every failure throws.
      *
      * @param baseSchema Base data schema JSON string
      * @param specificSchema Tool-specific data schema JSON string
      * @param toolInstanceId ID of the tool instance to load config from
      * @param context Android context for Coordinator access
      * @return Enriched schema JSON string with custom_fields properties
+     * @throws IllegalStateException if the tool's config cannot be loaded or its fields read
      */
     fun createExtendedDataSchema(
         baseSchema: String,
@@ -298,38 +302,21 @@ object BaseSchemas {
         }
 
         if (result.status != com.assistant.core.commands.CommandStatus.SUCCESS) {
-            LogManager.schema(
-                "Failed to load tool instance config for custom fields enrichment: ${result.error}",
-                "WARN"
-            )
-            // Return merged schema without custom fields enrichment
-            return mergedSchema
+            throw IllegalStateException("Cannot load the config of tool $toolInstanceId for its custom fields: ${result.error}")
         }
 
         // tools.get returns { "tool_instance": { "config": { ... }, ... } }
         val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
         @Suppress("UNCHECKED_CAST")
         val configMap = toolInstance?.get("config") as? Map<String, Any?>
-        if (configMap == null) {
-            LogManager.schema(
-                "Tool instance config is null for custom fields enrichment (toolInstanceId=$toolInstanceId)",
-                "WARN"
-            )
-            return mergedSchema
-        }
+            ?: throw IllegalStateException("Tool $toolInstanceId has no config to read its custom fields from")
         val configJson = JsonUtils.toJSONObject(configMap).toString()
 
         // Step 3: Enrich with custom fields
         return try {
             com.assistant.core.fields.CustomFieldsSchemaGenerator.enrichSchema(mergedSchema, configJson)
         } catch (e: Exception) {
-            LogManager.schema(
-                "Failed to enrich schema with custom fields: ${e.message}",
-                "ERROR",
-                e
-            )
-            // Return merged schema without custom fields enrichment
-            mergedSchema
+            throw IllegalStateException("Cannot read the custom fields of tool $toolInstanceId: ${e.message}", e)
         }
     }
 

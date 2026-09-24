@@ -494,8 +494,12 @@ object MessageScheduler : ToolScheduler {
         data: JSONObject
     ): String? {
         val toolType = ToolTypeManager.getToolType("messages") ?: return "messages tooltype not found"
-        val schema = toolType.getSchema("messages_data", context, toolInstanceId)
-            ?: return "messages_data schema not found"
+        val schema = try {
+            toolType.getSchema("messages_data", context, toolInstanceId)
+        } catch (e: IllegalStateException) {
+            // The tool's custom fields cannot be read: the occurrence cannot be checked
+            return e.message ?: "messages_data schema unavailable"
+        } ?: return "messages_data schema not found"
 
         val entry = mapOf(
             "tool_instance_id" to toolInstanceId,

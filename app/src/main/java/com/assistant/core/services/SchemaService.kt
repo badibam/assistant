@@ -174,7 +174,6 @@ class SchemaService(private val context: Context) : ExecutableService {
      * Get tooltype schemas via ToolTypeManager discovery
      *
      * CRITICAL: Do NOT mask technical exceptions - they must propagate to AI
-     * Only catch exceptions for individual tooltypes, not the outer loop
      *
      * @param schemaId Schema identifier
      * @param toolInstanceId Optional tool instance ID for data/execution schema enrichment
@@ -191,19 +190,14 @@ class SchemaService(private val context: Context) : ExecutableService {
             throw IllegalStateException("Failed to access ToolTypeManager: ${e.message}", e)
         }
 
-        // Iterate through tooltypes - catch individual failures but continue searching
+        // A tooltype answers null for an id it does not own. One that throws owns the id and
+        // failed to build it (a tool whose custom fields cannot be read): that is an error for
+        // the caller, not a schema that does not exist.
         for ((toolTypeName, toolType) in allToolTypes) {
-            try {
-                val schema = toolType.getSchema(schemaId, context, toolInstanceId)
-                if (schema != null) {
-                    LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
-                    return schema
-                }
-                // null means "schema not found in this tooltype" - continue searching
-            } catch (e: Exception) {
-                // Individual tooltype failure - log but continue (schema might exist in other tooltypes)
-                LogManager.service("Failed to get schema from tooltype '$toolTypeName': ${e.message}", "WARN")
-                // Continue to next tooltype
+            val schema = toolType.getSchema(schemaId, context, toolInstanceId)
+            if (schema != null) {
+                LogManager.service("Found schema '$schemaId' in tooltype '$toolTypeName'")
+                return schema
             }
         }
 

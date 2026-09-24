@@ -160,12 +160,17 @@ fun JournalEntryScreen(
 
             LogManager.ui("Journal validation - entryData: $entryData")
 
-            // Get schema WITH toolInstanceId to include custom fields definitions
-            val schema = toolType.getSchema("journal_data", context, toolInstanceId)
-            validationResult = if (schema != null) {
-                SchemaValidator.validate(schema, entryData, context)
-            } else {
-                ValidationResult.error("Journal data schema not found")
+            // Get schema WITH toolInstanceId to include custom fields definitions. A tool whose
+            // custom fields cannot be read fails here, and says why rather than crash the screen.
+            validationResult = try {
+                val schema = toolType.getSchema("journal_data", context, toolInstanceId)
+                if (schema != null) {
+                    SchemaValidator.validate(schema, entryData, context)
+                } else {
+                    ValidationResult.error("Journal data schema not found")
+                }
+            } catch (e: IllegalStateException) {
+                ValidationResult.error(e.message ?: "Journal data schema unavailable")
             }
 
             LogManager.ui("Journal validation result: isValid=${validationResult.isValid}")
