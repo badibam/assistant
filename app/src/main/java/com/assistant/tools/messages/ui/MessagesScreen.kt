@@ -1,5 +1,6 @@
 package com.assistant.tools.messages.ui
 
+import com.assistant.tools.messages.scheduler.StoredSchedule
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -147,6 +148,17 @@ fun MessagesScreen(
                 onLeftClick = onNavigateBack,
                 onRightClick = onConfigureClick
             )
+
+            // A recurrence the scheduler cannot read creates nothing: said here, where the
+            // missing messages would otherwise just be missing
+            (StoredSchedule.of(config) as? StoredSchedule.Unreadable)?.let { unreadable ->
+                Spacer(modifier = Modifier.height(8.dp))
+                UI.Card(type = CardType.DEFAULT) {
+                    Box(modifier = Modifier.padding(12.dp)) {
+                        UI.Text(s.tool("schedule_unreadable_warning").format(unreadable.cause), TextType.ERROR)
+                    }
+                }
+            }
         }
 
         TabRow(selectedTabIndex = selectedTab) {

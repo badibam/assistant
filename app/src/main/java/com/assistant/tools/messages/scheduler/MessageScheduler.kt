@@ -115,7 +115,7 @@ object MessageScheduler : ToolScheduler {
         val config = configJson
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-        val schedule = parseSchedule(config)
+        val stored = StoredSchedule.of(config)
         // The switch sits at the root of the config, not inside the recurrence: it suspends
         // the whole template — everything the instance owes, a hand-placed occurrence
         // included — and it exists even when there is no recurrence at all.
@@ -127,8 +127,21 @@ object MessageScheduler : ToolScheduler {
         // as each occurrence is cancelled at its time, so suspending is never destructive.
         // Live, it reconciles even with no recurrence at all — nothing is then expected, so
         // removing the recurrence sheds what it had generated, exactly like changing it.
-        if (enabled) {
-            reconcilePending(context, coordinator, toolInstanceId, config, schedule, pending, now, timezone)
+        //
+        // An unreadable recurrence skips reconciliation: read as none, it would delete every
+        // pending occurrence. What is already pending still goes out at its time. The Messages
+        // screen shows the same failure, so it is not left to this log line alone.
+        when (stored) {
+            is StoredSchedule.Unreadable -> LogManager.service(
+                "Message template $toolInstanceId: recurrence unreadable, nothing created or deleted (${stored.cause})",
+                "ERROR"
+            )
+            is StoredSchedule.Readable -> if (enabled) {
+                reconcilePending(context, coordinator, toolInstanceId, config, stored.schedule, pending, now, timezone)
+            }
+            StoredSchedule.None -> if (enabled) {
+                reconcilePending(context, coordinator, toolInstanceId, config, null, pending, now, timezone)
+            }
         }
 
         // Reconciliation only ever touches occurrences still in the future, so the due set is
@@ -468,17 +481,6 @@ object MessageScheduler : ToolScheduler {
                 LogManager.service("Unreadable pending occurrence $id, skipped: ${e.message}", "ERROR", e)
                 null
             }
-        }
-    }
-
-    /** Parses the recurrence out of the config. Absent means a channel fed on demand only. */
-    private fun parseSchedule(config: JSONObject): ScheduleConfig? {
-        val scheduleJson = config.optJSONObject("schedule") ?: return null
-        return try {
-            Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
-        } catch (e: Exception) {
-            LogManager.service("Failed to parse schedule config: ${e.message}", "ERROR", e)
-            null
         }
     }
 

@@ -1,5 +1,6 @@
 package com.assistant.tools.messages.ui
 
+import com.assistant.tools.messages.scheduler.StoredSchedule
 import com.assistant.core.ui.NullableScheduleConfigSaver
 import com.assistant.core.ui.FieldDefinitionsSaver
 import androidx.compose.foundation.layout.*
@@ -81,6 +82,10 @@ fun MessagesConfigScreen(
     var validityWindowMinutes by rememberSaveable { mutableStateOf("60") }
     var scheduleConfig by rememberSaveable(stateSaver = NullableScheduleConfigSaver) { mutableStateOf<ScheduleConfig?>(null) }
     var showScheduleEditor by rememberSaveable { mutableStateOf(false) }
+    // A stored recurrence that does not read: its JSON and why. Kept across rotation, since a
+    // save that has not redefined the recurrence writes it back rather than an empty one.
+    var unreadableScheduleJson by rememberSaveable { mutableStateOf<String?>(null) }
+    var unreadableScheduleCause by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Custom fields state
     var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
@@ -130,13 +135,14 @@ fun MessagesConfigScreen(
                     creationHorizonDays = config.optInt("creation_horizon_days", 2).toString()
                     validityWindowMinutes = config.optInt("validity_window_minutes", 60).toString()
 
-                    config.optJSONObject("schedule")?.let { scheduleJson ->
-                        scheduleConfig = try {
-                            Json.decodeFromString<ScheduleConfig>(scheduleJson.toString())
-                        } catch (e: Exception) {
-                            LogManager.ui("Error parsing schedule config: ${e.message}", "ERROR")
-                            null
+                    when (val stored = StoredSchedule.of(config)) {
+                        is StoredSchedule.Readable -> scheduleConfig = stored.schedule
+                        is StoredSchedule.Unreadable -> {
+                            LogManager.ui("Unreadable schedule config: ${stored.cause}", "ERROR")
+                            unreadableScheduleJson = stored.raw.toString()
+                            unreadableScheduleCause = stored.cause
                         }
+                        StoredSchedule.None -> Unit
                     }
 
                     // Load custom fields
@@ -323,10 +329,18 @@ fun MessagesConfigScreen(
                     UI.Text(s.tool("action_configure_schedule"), TextType.LABEL)
                 }
 
-                UI.Text(
-                    text = scheduleSummary(scheduleConfig, s),
-                    type = if (scheduleConfig != null) TextType.BODY else TextType.CAPTION
-                )
+                val unreadableCause = unreadableScheduleCause
+                if (unreadableCause != null) {
+                    UI.Text(
+                        text = s.tool("schedule_unreadable_config").format(unreadableCause),
+                        type = TextType.ERROR
+                    )
+                } else {
+                    UI.Text(
+                        text = scheduleSummary(scheduleConfig, s),
+                        type = if (scheduleConfig != null) TextType.BODY else TextType.CAPTION
+                    )
+                }
 
                 UI.FormField(
                     label = s.tool("label_creation_horizon_days"),
@@ -399,8 +413,13 @@ fun MessagesConfigScreen(
                         commonContent.takeIf { it.isNotBlank() }?.let { configData["common_content"] = it }
 
                         // Recurrence, if any
-                        scheduleConfig?.let { schedule ->
-                            configData["schedule"] = JsonUtils.toMap(Json.encodeToString(ScheduleConfig.serializer(), schedule))
+                        // An unreadable one not redefined goes back as it was: validation then says
+                        // what is wrong with it, and nothing is replaced by an empty recurrence
+                        val unreadableJson = unreadableScheduleJson
+                        when {
+                            scheduleConfig != null -> configData["schedule"] =
+                                JsonUtils.toMap(Json.encodeToString(ScheduleConfig.serializer(), scheduleConfig!!))
+                            unreadableJson != null -> configData["schedule"] = JsonUtils.toMap(unreadableJson)
                         }
 
                         // Add custom fields if any
@@ -479,6 +498,9 @@ fun MessagesConfigScreen(
             existingConfig = scheduleConfig,
             onConfirm = { config ->
                 scheduleConfig = config // null accepted: no recurrence, a channel fed on demand
+                // Redefined, even to none: the unreadable one is replaced on purpose
+                unreadableScheduleJson = null
+                unreadableScheduleCause = null
                 showScheduleEditor = false
                 LogManager.ui("Schedule updated: ${if (config != null) "configured" else "cleared"}")
             },

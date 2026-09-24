@@ -126,4 +126,6 @@
     <string name="error_mark_read">Error while changing the status</string>
     <string name="error_delete">Error while deleting</string>
 
+    <string name="schedule_unreadable_warning">The recurrence cannot be read, so no new message is being scheduled; those already planned still go out (%1$s). Open the configuration to set it again.</string>
+    <string name="schedule_unreadable_config">Stored recurrence unreadable (%1$s). Set it again: otherwise saving is refused and it stays as it is.</string>
 </resources>

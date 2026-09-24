@@ -126,4 +126,6 @@
     <string name="error_mark_read">Erreur lors du changement de statut</string>
     <string name="error_delete">Erreur lors de la suppression</string>
 
+    <string name="schedule_unreadable_warning">La récurrence est illisible : aucun nouveau message n\'est planifié, ceux déjà prévus partent quand même (%1$s). Rouvre la configuration pour la refaire.</string>
+    <string name="schedule_unreadable_config">Récurrence enregistrée illisible (%1$s). Refais-la : sinon l\'enregistrement sera refusé, et elle restera telle quelle.</string>
 </resources>
