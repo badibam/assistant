@@ -252,6 +252,7 @@ fun TrackingConfigScreen(
     var editItemName by rememberSaveable { mutableStateOf(String()) }
     var editItemDefaultQuantity by rememberSaveable { mutableStateOf(String()) }
     var editItemUnit by rememberSaveable { mutableStateOf(String()) }
+    var editItemDefaultIncrement by rememberSaveable { mutableStateOf(String()) }
     
     
     // State for type change confirmation
@@ -872,6 +873,7 @@ fun TrackingConfigScreen(
                                 editItemName = String()
                                 editItemDefaultQuantity = String()
                                 editItemUnit = String()
+                                editItemDefaultIncrement = String()
                                 showItemDialog = true
                             }
                         )
@@ -931,6 +933,18 @@ fun TrackingConfigScreen(
                                 }
                             }
 
+                            if (trackingType == "counter") {
+                                Box(
+                                    modifier = Modifier.weight(2f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    UI.CenteredText(
+                                        text = s.tool("config_header_increment"),
+                                        type = TextType.CAPTION
+                                    )
+                                }
+                            }
+
                             // Colones modifier + supprimer
                             Box(
                                 modifier = Modifier.weight(2f),
@@ -949,6 +963,7 @@ fun TrackingConfigScreen(
                                     editItemName = item.name
                                     editItemDefaultQuantity = item.properties["default_quantity"]?.toString() ?: String()
                                     editItemUnit = item.properties["unit"]?.toString() ?: String()
+                                    editItemDefaultIncrement = item.properties["default_increment"]?.toString() ?: String()
                                     showItemDialog = true
                                 },
                                 onMoveUp = {
@@ -1031,6 +1046,12 @@ fun TrackingConfigScreen(
                             }
                             properties["unit"] = editItemUnit
                         }
+                        "counter" -> {
+                            // Empty or not a whole number above zero: no amount, the shortcut counts by 1
+                            editItemDefaultIncrement.toIntOrNull()?.takeIf { it > 0 }?.let {
+                                properties["default_increment"] = it
+                            }
+                        }
                         // For other types (text, choice, scale, etc.), no additional properties needed
                         // The item name is sufficient
                     }
@@ -1064,6 +1085,7 @@ fun TrackingConfigScreen(
                     editItemName = String()
                     editItemDefaultQuantity = String()
                     editItemUnit = String()
+                    editItemDefaultIncrement = String()
                     editingItemIndex = null
                 },
                 onCancel = {
@@ -1071,6 +1093,7 @@ fun TrackingConfigScreen(
                     editItemName = String()
                     editItemDefaultQuantity = String()
                     editItemUnit = String()
+                    editItemDefaultIncrement = String()
                     editingItemIndex = null
                 }
             ) {
@@ -1103,6 +1126,16 @@ fun TrackingConfigScreen(
                             label = s.tool("config_label_unit"),
                             value = editItemUnit,
                             onChange = { editItemUnit = it },
+                            required = false
+                        )
+                    }
+
+                    if (trackingType == "counter") {
+                        UI.FormField(
+                            label = s.tool("config_label_default_increment"),
+                            value = editItemDefaultIncrement,
+                            onChange = { editItemDefaultIncrement = it },
+                            fieldType = FieldType.NUMERIC,
                             required = false
                         )
                     }
@@ -1199,6 +1232,18 @@ private fun ItemRowReadonly(
                 val unit = item.properties["unit"]?.toString()
                 UI.CenteredText(
                     text = unit ?: "-",
+                    type = TextType.BODY
+                )
+            }
+        }
+
+        if (trackingType == "counter") {
+            Box(
+                modifier = Modifier.weight(2f),
+                contentAlignment = Alignment.Center
+            ) {
+                UI.CenteredText(
+                    text = "±${com.assistant.tools.tracking.TrackingUtils.counterStep(item.properties)}",
                     type = TextType.BODY
                 )
             }

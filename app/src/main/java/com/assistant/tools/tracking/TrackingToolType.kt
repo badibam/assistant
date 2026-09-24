@@ -345,6 +345,12 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                                 "minLength": 1,
                                 "maxLength": ${FieldLimits.SHORT_LENGTH},
                                 "description": "${s.tool("schema_config_counter_item_name")}"
+                            },
+                            "default_increment": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "default": 1,
+                                "description": "${s.tool("schema_config_counter_item_default_increment")}"
                             }
                         },
                         "required": ["name"]
@@ -907,6 +913,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         // Then tracking-specific fields
         return when(fieldName) {
             "default_quantity" -> s.tool("field_default_quantity")
+            "default_increment" -> s.tool("field_default_increment")
             "quantity" -> s.tool("field_quantity")
             "unit" -> s.tool("field_unit")
             "text" -> s.tool("field_text")

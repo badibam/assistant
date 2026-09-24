@@ -422,7 +422,7 @@ private fun CounterItemsLayout(
     val allowDecrement = config.optBoolean("allow_decrement", true)
     
     items.forEach { item ->
-        val increment = item.getProperty("increment").toIntOrNull() ?: 1
+        val increment = com.assistant.tools.tracking.TrackingUtils.counterStep(item.properties)
         
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),

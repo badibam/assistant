@@ -22,6 +22,13 @@ object TrackingUtils {
      * @param trackingType The tracking type (numeric, text, etc.)
      * @return The data as a Map, or an empty one if it could not be read
      */
+    /**
+     * The amount a counter shortcut adds, or takes away with its minus button.
+     * A shortcut without one counts by 1, the default its config schema declares.
+     */
+    fun counterStep(properties: Map<String, Any>): Int =
+        (properties["default_increment"] as? Number)?.toInt() ?: 1
+
     fun convertToValidationFormat(dataJson: String, trackingType: String): Map<String, Any> {
         return try {
             val dataJsonObj = JSONObject(dataJson)

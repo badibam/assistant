@@ -10,6 +10,7 @@
     <string name="config_label_tracking_type">Type de tracking</string>
     <string name="config_label_default_quantity">Quantité par défaut</string>
     <string name="config_label_unit">Unité</string>
+    <string name="config_label_default_increment">Pas (1 si vide)</string>
     <string name="config_label_min_value">Valeur minimale</string>
     <string name="config_label_max_value">Valeur maximale</string>
     <string name="config_label_min_label">Label minimum</string>
@@ -36,6 +37,7 @@
     <string name="config_header_name">Nom</string>
     <string name="config_header_quantity">Qté</string>
     <string name="config_header_unit">Unité</string>
+    <string name="config_header_increment">Pas</string>
     <string name="config_message_no_items">Aucun élément défini</string>
     
     <!-- CONFIG - Dialogues -->
@@ -139,6 +141,7 @@
     <string name="schema_config_type">Nature de la valeur que ce suivi enregistre ; fixée par le schéma</string>
     <string name="schema_config_numeric_items">Éléments prédéfinis, proposés pour la saisie rapide</string>
     <string name="schema_config_numeric_item_name">Nom de l\'élément</string>
+    <string name="schema_config_counter_item_default_increment">Quantité que ce raccourci ajoute, ou retire avec son bouton moins. 1 si absente</string>
     <string name="schema_config_numeric_item_default_quantity">Quantité proposée quand cet élément est choisi</string>
     <string name="schema_config_numeric_item_unit">Unité de la quantité (kg, km, verres...)</string>
     <string name="schema_config_timer_items">Activités qu\'on peut chronométrer</string>
@@ -198,6 +201,7 @@
     <string name="schema_data_text_content">Texte enregistré</string>
     
     <!-- VALIDATION - Noms de champs pour affichage -->
+    <string name="field_default_increment">Pas</string>
     <string name="field_default_quantity">Qté par défaut</string>
     <string name="field_quantity">Quantité</string>
     <string name="field_name">Nom</string>

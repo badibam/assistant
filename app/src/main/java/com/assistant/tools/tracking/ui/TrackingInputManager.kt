@@ -282,7 +282,9 @@ fun TrackingInputManager(
                             if (dataObj.has("unit")) properties["unit"] = dataObj.getString("unit")
                         }
                         "counter" -> {
-                            if (dataObj.has("increment")) properties["default_increment"] = dataObj.getInt("increment")
+                            // The shortcut keeps the amount; its two buttons give the sign
+                            val step = Math.abs(dataObj.getInt("increment"))
+                            if (step > 0) properties["default_increment"] = step
                         }
                         // Other types don't have default properties typically
                     }
