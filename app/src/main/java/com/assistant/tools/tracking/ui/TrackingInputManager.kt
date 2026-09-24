@@ -197,7 +197,7 @@ fun TrackingInputManager(
                     }.toString()
                     "counter" -> JSONObject().apply {
                         put("type", "counter")
-                        put("increment", properties["default_increment"] ?: 1)
+                        put("increment", properties.getValue("increment")) // +n or -n, as the button sent it
                     }.toString()
                     "boolean" -> JSONObject().apply {
                         put("type", "boolean")
