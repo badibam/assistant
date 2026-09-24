@@ -134,7 +134,6 @@ class Coordinator(context: Context) {
                 
                 if (service == null) {
                     CommandResult(
-                        commandId = command.id,
                         status = CommandStatus.ERROR,
                         error = "Service not found for resource: $resource"
                     )
@@ -143,7 +142,6 @@ class Coordinator(context: Context) {
                 }
             } catch (e: IllegalArgumentException) {
                 CommandResult(
-                    commandId = command.id,
                     status = CommandStatus.UNKNOWN_ACTION,
                     error = "Invalid action format: ${command.action}"
                 )
@@ -155,7 +153,6 @@ class Coordinator(context: Context) {
             result
         } catch (e: Exception) {
             CommandResult(
-                commandId = queuedOp.command.id,
                 status = CommandStatus.ERROR,
                 error = "Command execution failed: ${e.message}"
             )
@@ -250,7 +247,6 @@ class Coordinator(context: Context) {
             LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
             
             CommandResult(
-                commandId = command.id,
                 status = when {
                     result.cancelled -> CommandStatus.CANCELLED
                     result.success -> CommandStatus.SUCCESS
@@ -264,7 +260,6 @@ class Coordinator(context: Context) {
             )
         } catch (e: Exception) {
             CommandResult(
-                commandId = command.id,
                 status = CommandStatus.ERROR,
                 error = "Service operation failed: ${e.message}"
             )
