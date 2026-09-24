@@ -62,4 +62,6 @@
     <string name="error_entry_delete">Error while deleting</string>
     <string name="error_validation">Validation error</string>
 
+    <!-- Configuration -->
+    <string name="error_config_save">Error while saving the configuration</string>
 </resources>

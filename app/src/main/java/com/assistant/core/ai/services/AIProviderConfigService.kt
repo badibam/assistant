@@ -132,7 +132,7 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             val validation = SchemaValidator.validate(schema, configData, context)
             if (!validation.isValid) {
                 LogManager.aiService("Provider config validation failed: ${validation.errorMessage}", "WARN")
-                return OperationResult.error(validation.errorMessage ?: s.shared("validation_error"))
+                return OperationResult.error(validation.errorMessage ?: s.shared("message_validation_error_simple"))
             }
 
             // Check if config already exists

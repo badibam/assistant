@@ -50,6 +50,10 @@ LOCALE_CHECK = ROOT / "scripts" / "check_string_locales.py"
 # until the user sets an override, so no test on a machine with the same zone would see it.
 TIMEZONE_CHECK = ROOT / "scripts" / "check_timezone.py"
 
+# And on the keys themselves: a key the code asks for and nobody wrote shows as "[key]" on
+# screen, and nothing else fails.
+STRING_KEYS_CHECK = ROOT / "scripts" / "check_string_keys.py"
+
 
 def gradle(*args):
     """Delegate to the wrapper, never to a system-wide gradle."""
@@ -262,6 +266,15 @@ def timezone_check():
     return process.returncode
 
 
+def string_keys_check():
+    """Report any string key the code asks for that the resources do not hold.
+
+    Returns the script's exit code, 0 when every key exists.
+    """
+    process = subprocess.run([sys.executable, str(STRING_KEYS_CHECK)], cwd=ROOT)
+    return process.returncode
+
+
 def task_test():
     """Run the unit tests and say how many ran, after checking the naming rule.
 
@@ -271,7 +284,7 @@ def task_test():
     each case here is a check that would otherwise mean installing the build on a phone
     and reproducing the situation by hand.
 
-    The key-case, prompt, locale and timezone checks come first and cost a fraction of a second. They
+    The key-case, prompt, locale, timezone and string-key checks come first and cost a fraction of a second. They
     are not tests -- they read the sources rather than running them -- but they answer the
     same question: is this tree fit to commit.
     """
@@ -279,6 +292,7 @@ def task_test():
     prompt = prompt_check()
     locales = locale_check()
     timezones = timezone_check()
+    string_keys = string_keys_check()
     # Noted before the run, so that results left by the run before cannot be read as this
     # one's. A filesystem timestamp can lag by a second, hence the margin.
     started = time.time() - 1
@@ -289,7 +303,7 @@ def task_test():
     # gradle skipped the task because nothing had changed. Otherwise there is no answer.
     if tally is None or (not tally[3] and code != 0):
         print("no results from this run -- it did not get as far as the tests")
-        return code or key_case or prompt or locales or timezones or 1
+        return code or key_case or prompt or locales or timezones or string_keys or 1
 
     tests, failures, errors, fresh = tally
     bad = failures + errors
@@ -297,7 +311,7 @@ def task_test():
     print(f"{tests} tests, {bad} failed{unchanged}")
     if bad:
         print(f"report: {TEST_REPORT}")
-    return code or key_case or prompt or locales or timezones
+    return code or key_case or prompt or locales or timezones or string_keys
 
 
 def task_strings():

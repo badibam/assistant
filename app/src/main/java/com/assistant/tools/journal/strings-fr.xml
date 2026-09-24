@@ -62,4 +62,6 @@
     <string name="error_entry_delete">Erreur lors de la suppression</string>
     <string name="error_validation">Erreur de validation</string>
 
+    <!-- Configuration -->
+    <string name="error_config_save">Erreur lors de l\'enregistrement de la configuration</string>
 </resources>

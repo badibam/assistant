@@ -141,7 +141,7 @@ fun CreateAutomationDialog(
             }
         } catch (e: Exception) {
             LogManager.aiUI("Failed to load providers: ${e.message}", "ERROR", e)
-            errorMessage = s.shared("error_provider_not_found").format("")
+            errorMessage = s.shared("error_load_failed")
         } finally {
             isLoadingProviders = false
         }
@@ -330,7 +330,7 @@ fun CreateAutomationDialog(
                 } ?: providerNames.firstOrNull()
 
                 UI.FormSelection(
-                    label = s.shared("ai_provider_claude_display_name"),
+                    label = s.shared("label_ai_provider"),
                     options = providerNames,
                     selected = selectedProviderName ?: "",
                     onSelect = { selectedName ->

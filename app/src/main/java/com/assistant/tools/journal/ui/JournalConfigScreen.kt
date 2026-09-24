@@ -119,7 +119,7 @@ fun JournalConfigScreen(
             }
         } else {
             LogManager.ui("Failed to load existing journal tool", "ERROR")
-            errorMessage = s.tool("error_config_not_found")
+            errorMessage = s.tool("error_config_load")
         }
         loaded
     }
@@ -310,7 +310,7 @@ fun JournalConfigScreen(
                         )
                     } catch (e: Exception) {
                         LogManager.ui("Error during save: ${e.message}", "ERROR")
-                        errorMessage = s.tool("error_save")
+                        errorMessage = s.tool("error_config_save")
                     } finally {
                         isSaving = false
                     }

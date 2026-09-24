@@ -1480,4 +1480,44 @@
     <string name="service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
     <string name="action_verbalize_icons_overview">Vue d\'ensemble des icônes</string>
     <string name="action_verbalize_icons_search">Recherche d\'icônes</string>
+
+    <!-- Clés que le code demandait et que personne n'avait écrites -->
+    <string name="ai_provider_error">Erreur du fournisseur IA</string>
+    <string name="ai_provider_openai_temperature_help">Entre 0 et 2 : plus bas, des réponses plus stables ; plus haut, plus variées</string>
+    <string name="ai_error_load_seed">Impossible de charger le message de départ de l\'automation</string>
+    <string name="label_ai_provider">Fournisseur IA</string>
+    <string name="label_yes">Oui</string>
+    <string name="label_no">Non</string>
+    <string name="label_start">Début</string>
+    <string name="label_end">Fin</string>
+    <string name="label_color">Couleur</string>
+    <string name="message_required">est obligatoire</string>
+    <string name="message_saved">Enregistré</string>
+    <string name="message_error_simple">Une erreur est survenue</string>
+    <string name="error_missing_tooltype">Le paramètre tooltype est manquant</string>
+    <string name="error_missing_config">Le paramètre config est manquant</string>
+    <string name="error_validation_maxlength">%1$s caractères au maximum</string>
+    <string name="error_validation_required">Champ obligatoire</string>
+    <string name="error_param_name_required">Le nom est obligatoire</string>
+    <string name="error_load_failed">Échec du chargement</string>
+    <string name="error_load_data_failed">Impossible de charger les données</string>
+    <string name="error_update_failed">Échec de la mise à jour</string>
+    <string name="error_rename_failed">Échec du renommage</string>
+    <string name="error_delete_failed">Échec de la suppression</string>
+    <string name="error_operation_failed">L\'opération a échoué</string>
+    <string name="error_operation_cancelled">Opération annulée</string>
+    <string name="error_resume_session">Impossible de reprendre la conversation</string>
+    <string name="error_unknown">Erreur inconnue</string>
+    <string name="app_config_format_schema_description">Formats de date, d\'heure et d\'affichage de l\'app</string>
+    <string name="main_screen_config_schema_description">Disposition de l\'écran d\'accueil</string>
+    <string name="main_screen_zone_display_mode">Affichage des zones</string>
+    <string name="main_screen_show_zone_descriptions">Afficher les descriptions des zones</string>
+    <string name="main_screen_zones_per_row">Zones par ligne</string>
+    <string name="main_screen_enable_quick_actions">Actions rapides</string>
+    <string name="service_error_invalid_timestamp_format">Horodatage illisible : %1$s</string>
+    <string name="service_error_tool_groups_empty_name">Un nom de groupe ne peut pas être vide</string>
+    <string name="service_error_tool_groups_duplicate">Le groupe \'%1$s\' existe déjà</string>
+    <string name="service_error_operation_failed">Échec de l\'opération</string>
+    <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
+    <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>
 </resources>

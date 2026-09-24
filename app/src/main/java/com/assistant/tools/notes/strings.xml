@@ -51,5 +51,6 @@
     <string name="error_validation">Validation error</string>
     <string name="error_save">Error while saving</string>
 
-
+    <!-- Schema -->
+    <string name="schema_config_description">Configuration schema for notes instances</string>
 </resources>

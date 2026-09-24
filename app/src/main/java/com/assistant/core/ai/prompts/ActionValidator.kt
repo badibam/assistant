@@ -73,7 +73,7 @@ class ActionValidator(private val context: Context) {
             val toolTypeName = params["tooltype"] as? String
             if (toolTypeName.isNullOrEmpty()) {
                 LogManager.aiService("Missing tooltype in tools.create/update params", "ERROR")
-                return ValidationResult.error(s.shared("error_missing_tool_type"))
+                return ValidationResult.error(s.shared("error_missing_tooltype"))
             }
 
             @Suppress("UNCHECKED_CAST")

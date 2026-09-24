@@ -237,4 +237,7 @@
     <!-- DISPLAY FORMAT - Formatted display of the data -->
     <string name="display_timer_format">%1$s: %2$s</string>
 
+    <!-- Config warnings: choice options -->
+    <string name="config_warning_choice_options_removed">Options removed: %1$s</string>
+    <string name="config_warning_choice_options_added">Options added: %1$s</string>
 </resources>
