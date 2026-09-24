@@ -14,12 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.assistant.core.utils.DateUtils
 import com.assistant.core.commands.CommandStatus
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.strings.Strings
 import com.assistant.core.ui.*
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -171,8 +171,7 @@ fun DataSettingsScreen(
                     size = Size.M,
                     state = if (isLoading) ComponentState.DISABLED else ComponentState.NORMAL,
                     onClick = {
-                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                            .format(Date())
+                        val timestamp = DateUtils.format(System.currentTimeMillis(), "yyyyMMdd_HHmmss")
                         val version = com.assistant.BuildConfig.VERSION_NAME
                         exportLauncher.launch("assistant_backup_${timestamp}_v$version.json")
                     }

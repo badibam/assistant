@@ -28,6 +28,7 @@ import com.assistant.core.ui.components.Period
 import com.assistant.core.ui.components.PeriodType
 import com.assistant.core.ui.components.SinglePeriodSelector
 import com.assistant.core.ui.components.normalizeTimestampWithConfig
+import com.assistant.core.ui.components.getPeriodEndTimestamp
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
@@ -121,49 +122,14 @@ fun TrackingHistory(
                     "page" to currentPage
                 )
                 
-                // Add temporal filters according to period type
-                when (periodFilter) {
-                    PeriodFilterType.ALL -> {
-                        // No temporal filter, only limit
-                    }
-                    PeriodFilterType.HOUR -> {
-                        val periodStart = currentPeriod!!.timestamp
-                        val periodEnd = periodStart + (60 * 60 * 1000L) // +1 hour
-                        params["start_time"] = periodStart
-                        params["end_time"] = periodEnd
-                    }
-                    PeriodFilterType.DAY -> {
-                        val periodStart = currentPeriod!!.timestamp
-                        val periodEnd = periodStart + (24 * 60 * 60 * 1000L) // +1 day
-                        params["start_time"] = periodStart
-                        params["end_time"] = periodEnd
-                    }
-                    PeriodFilterType.WEEK -> {
-                        val periodStart = currentPeriod!!.timestamp
-                        val periodEnd = periodStart + (7 * 24 * 60 * 60 * 1000L) // +1 week
-                        params["start_time"] = periodStart
-                        params["end_time"] = periodEnd
-                    }
-                    PeriodFilterType.MONTH -> {
-                        val periodStart = currentPeriod!!.timestamp
-                        // For months, calculate start of next month
-                        val periodEnd = Calendar.getInstance().apply {
-                            timeInMillis = periodStart
-                            add(Calendar.MONTH, 1)
-                        }.timeInMillis
-                        params["start_time"] = periodStart
-                        params["end_time"] = periodEnd
-                    }
-                    PeriodFilterType.YEAR -> {
-                        val periodStart = currentPeriod!!.timestamp
-                        // For years, calculate start of next year
-                        val periodEnd = Calendar.getInstance().apply {
-                            timeInMillis = periodStart
-                            add(Calendar.YEAR, 1)
-                        }.timeInMillis
-                        params["start_time"] = periodStart
-                        params["end_time"] = periodEnd
-                    }
+                // Add temporal filters according to period type. The end is the next period's
+                // start, since the query's upper bound is exclusive: worked out in the app's
+                // timezone by the period functions, so a day lasts 23 or 25 hours when the
+                // clocks change instead of a fixed 24.
+                if (periodFilter != PeriodFilterType.ALL) {
+                    val period = currentPeriod!!
+                    params["start_time"] = period.timestamp
+                    params["end_time"] = getPeriodEndTimestamp(period) + 1
                 }
                 
                 val result = coordinator.processUserAction("tool_data.get", params)

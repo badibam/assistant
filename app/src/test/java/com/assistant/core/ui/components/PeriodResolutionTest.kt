@@ -5,7 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
-import java.util.Calendar
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.TimeZone
 
 /**
@@ -16,22 +17,22 @@ import java.util.TimeZone
  * not against the clock, or every late run reads today. TODO.md still sends that to the
  * device; these cases take the arithmetic half of it.
  *
- * The day's start hour and the week's first day are parameters here, so a case states the
- * settings it assumes instead of depending on how the app happens to be configured.
+ * The day's start hour, the week's first day and the timezone are parameters here, so a case
+ * states the settings it assumes instead of depending on how the app happens to be configured.
  */
 class PeriodResolutionTest {
 
     /**
-     * These functions work in Calendar.getInstance(), which is the machine's timezone and
-     * not the app's. Fixing it for the duration keeps the cases meaningful wherever they
-     * run; the last test is about that being so.
+     * The machine is put eight hours away from the app's zone for the whole class, so every
+     * case also shows that the machine's timezone plays no part: a Calendar taken from the
+     * device instead of the app would move each of these periods.
      */
     private lateinit var originalZone: TimeZone
 
     @Before
-    fun fixTheMachineTimezone() {
+    fun putTheMachineFarFromTheAppsZone() {
         originalZone = TimeZone.getDefault()
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tokyo"))
     }
 
     @After
@@ -39,18 +40,15 @@ class PeriodResolutionTest {
         TimeZone.setDefault(originalZone)
     }
 
-    /** A moment, written as the machine's local time. */
-    private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int = 0): Long =
-        Calendar.getInstance().apply {
-            clear()
-            set(year, month - 1, day, hour, minute, 0)
-        }.timeInMillis
+    /** A moment, written as local time in [zone]. */
+    private fun at(year: Int, month: Int, day: Int, hour: Int, minute: Int = 0, zone: ZoneId = PARIS): Long =
+        LocalDateTime.of(year, month, day, hour, minute).atZone(zone).toInstant().toEpochMilli()
 
-    private fun normalize(timestamp: Long, type: PeriodType, dayStart: Int = 0, weekStart: String = "monday") =
-        normalizeTimestampWithConfig(timestamp, type, dayStart, weekStart)
+    private fun normalize(timestamp: Long, type: PeriodType, dayStart: Int = 0, weekStart: String = "monday", zone: ZoneId = PARIS) =
+        normalizeTimestampWithConfig(timestamp, type, dayStart, weekStart, zone)
 
     private fun resolve(offset: Int, type: PeriodType, reference: Long, dayStart: Int = 0, weekStart: String = "monday") =
-        resolveRelativePeriod(RelativePeriod(offset, type), reference, dayStart, weekStart)
+        resolveRelativePeriod(RelativePeriod(offset, type), reference, dayStart, weekStart, PARIS)
 
     // ==================== Where a period starts ====================
 
@@ -174,7 +172,7 @@ class PeriodResolutionTest {
             val period = resolve(0, type, at(2025, 3, 15, 14))
             val next = resolve(1, type, at(2025, 3, 15, 14))
 
-            assertEquals("for $type", next.timestamp - 1, getPeriodEndTimestamp(period, 0, "monday"))
+            assertEquals("for $type", next.timestamp - 1, getPeriodEndTimestamp(period, 0, "monday", PARIS))
         }
     }
 
@@ -184,31 +182,35 @@ class PeriodResolutionTest {
         val period = resolve(0, PeriodType.DAY, at(2025, 3, 15, 9), dayStart = 4)
 
         assertEquals(at(2025, 3, 15, 4), period.timestamp)
-        assertEquals(at(2025, 3, 16, 4) - 1, getPeriodEndTimestamp(period, 4, "monday"))
+        assertEquals(at(2025, 3, 16, 4) - 1, getPeriodEndTimestamp(period, 4, "monday", PARIS))
     }
 
     // ==================== Which timezone this all happens in ====================
 
     /**
-     * Periods are worked out in the machine's timezone, not the one configured in the app.
+     * Periods are worked out in the app's timezone, whatever the machine's.
      *
-     * This states what the code does today. Calendar.getInstance() takes the device's
-     * default, while DateUtils, DateTimeConverter and ScheduleCalculator all work in the
-     * configured one. So a user who sets a timezone override gets days that begin at a
-     * different moment from the dates shown beside them, and an automation resolving
-     * "yesterday" answers to the phone's setting rather than the app's.
+     * Late evening in Paris is already the next morning in Tokyo, so the same instant belongs
+     * to a different day depending on the zone it is read in. The app's zone decides it;
+     * moving the machine changes nothing. This is what keeps the days on screen, in the
+     * history and in an automation's "yesterday" in step with the dates shown beside them
+     * when the user sets a timezone override.
      */
     @Test
-    fun periodsFollowTheMachinesTimezoneRatherThanTheApps() {
+    fun periodsFollowTheAppsTimezoneWhateverTheMachines() {
         val instant = at(2025, 3, 15, 23, 30) // late evening in Paris
 
-        val startInParis = normalize(instant, PeriodType.DAY)
+        // The app's zone decides which day the instant belongs to.
+        assertEquals(at(2025, 3, 15, 0), normalize(instant, PeriodType.DAY, zone = PARIS))
+        assertEquals(at(2025, 3, 16, 0, zone = TOKYO), normalize(instant, PeriodType.DAY, zone = TOKYO))
 
-        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tokyo"))
-        val startInTokyo = normalize(instant, PeriodType.DAY)
+        // The machine's does not.
+        TimeZone.setDefault(TimeZone.getTimeZone("America/Toronto"))
+        assertEquals(at(2025, 3, 15, 0), normalize(instant, PeriodType.DAY, zone = PARIS))
+    }
 
-        // Eight hours further east that instant is already the next day, so the day it
-        // belongs to moves -- on the same instant, with the same app settings.
-        assertNotEquals(startInParis, startInTokyo)
+    companion object {
+        private val PARIS: ZoneId = ZoneId.of("Europe/Paris")
+        private val TOKYO: ZoneId = ZoneId.of("Asia/Tokyo")
     }
 }

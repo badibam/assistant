@@ -1,6 +1,7 @@
 package com.assistant.core.ai.ui.automation
 
 import kotlinx.serialization.builtins.serializer
+import com.assistant.core.utils.DateUtils
 import com.assistant.core.ui.StringListSaver
 import com.assistant.core.ui.serializableSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,7 +20,6 @@ import com.assistant.core.utils.ScheduleConfig
 import com.assistant.core.utils.SchedulePattern
 import com.assistant.core.utils.WeekMoment
 import com.assistant.core.utils.YearlyDate
-import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -742,11 +742,7 @@ private fun DateTimePickerField(
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
     var tempDate by rememberSaveable { mutableStateOf("") }
 
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
-    val dateOnlyFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-    val timeOnlyFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-
-    val formattedValue = dateFormatter.format(Date(timestamp))
+    val formattedValue = "${DateUtils.formatDateForDisplay(timestamp)} ${DateUtils.formatTimeForDisplay(timestamp)}"
 
     UI.FormField(
         label = label,
@@ -759,7 +755,7 @@ private fun DateTimePickerField(
 
     if (showDatePicker) {
         UI.DatePicker(
-            selectedDate = dateOnlyFormatter.format(Date(timestamp)),
+            selectedDate = DateUtils.formatDateForDisplay(timestamp),
             onDateSelected = { dateStr ->
                 tempDate = dateStr
                 showDatePicker = false
@@ -771,17 +767,10 @@ private fun DateTimePickerField(
 
     if (showTimePicker) {
         UI.TimePicker(
-            selectedTime = timeOnlyFormatter.format(Date(timestamp)),
+            selectedTime = DateUtils.formatTimeForDisplay(timestamp),
             onTimeSelected = { timeStr ->
-                try {
-                    // Combine date and time
-                    val dateTimeStr = "$tempDate $timeStr"
-                    val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                    val newTimestamp = dateTimeFormatter.parse(dateTimeStr)?.time ?: timestamp
-                    onChange(newTimestamp)
-                } catch (e: Exception) {
-                    // Keep original timestamp on parse error
-                }
+                // A string the pickers did not produce is refused and the value left as it was
+                DateUtils.combineDateTime(tempDate, timeStr)?.let { onChange(it) }
                 showTimePicker = false
             },
             onDismiss = { showTimePicker = false }

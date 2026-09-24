@@ -94,6 +94,26 @@ object DateUtils {
     }
 
     /**
+     * A calendar set to [timestamp], in the app's timezone.
+     *
+     * The only way the code gets a Calendar: Calendar.getInstance() with no argument takes the
+     * device's timezone, which differs from the app's as soon as the user sets an override --
+     * and then days, weeks and months start at a different moment from the dates shown beside
+     * them. scripts/check_timezone.py refuses it everywhere else.
+     */
+    fun calendarAt(timestamp: Long, zone: ZoneId = getConfiguredZone()): Calendar =
+        Calendar.getInstance(TimeZone.getTimeZone(zone)).apply { timeInMillis = timestamp }
+
+    /**
+     * Format [timestamp] with a pattern of the caller's choosing, in the app's timezone.
+     *
+     * For formats DateUtils has no dedicated function for -- a log line, a file name. A
+     * SimpleDateFormat built by hand takes the device's timezone, like Calendar.getInstance().
+     */
+    fun format(timestamp: Long, pattern: String, zone: ZoneId = getConfiguredZone()): String =
+        DateTimeFormatter.ofPattern(pattern).format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zone))
+
+    /**
      * Get start of day timestamp (00:00:00) for a given date
      */
     fun getStartOfDay(timestamp: Long, zone: ZoneId = getConfiguredZone()): Long {

@@ -49,7 +49,7 @@ object ScheduleCalculator {
             is SchedulePattern.MonthlyRecurrent -> calculateMonthlyRecurrent(fromZoned, pattern, zoneId)
             is SchedulePattern.WeeklyCustom -> calculateWeeklyCustom(fromZoned, pattern, zoneId)
             is SchedulePattern.YearlyRecurrent -> calculateYearlyRecurrent(fromZoned, pattern, zoneId)
-            is SchedulePattern.SpecificDates -> calculateSpecificDates(fromTimestamp, pattern)
+            is SchedulePattern.SpecificDates -> calculateSpecificDates(fromTimestamp, pattern, zoneId)
         } ?: return null
 
         val nextTimestamp = nextZoned.toInstant().toEpochMilli()
@@ -287,7 +287,8 @@ object ScheduleCalculator {
      */
     private fun calculateSpecificDates(
         fromTimestamp: Long,
-        pattern: SchedulePattern.SpecificDates
+        pattern: SchedulePattern.SpecificDates,
+        zoneId: ZoneId
     ): ZonedDateTime? {
         if (pattern.timestamps.isEmpty()) return null
 
@@ -295,7 +296,7 @@ object ScheduleCalculator {
         val nextTimestamp = pattern.timestamps.sorted().firstOrNull { it > fromTimestamp }
             ?: return null
 
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(nextTimestamp), ZoneId.systemDefault())
+        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(nextTimestamp), zoneId)
     }
 
     /**

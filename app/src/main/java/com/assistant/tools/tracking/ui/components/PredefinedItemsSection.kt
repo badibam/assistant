@@ -19,7 +19,6 @@ import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
-import java.text.SimpleDateFormat
 import java.util.*
 
 /**
@@ -85,16 +84,7 @@ fun PredefinedItemsSection(
     LaunchedEffect(customDate, customTime, useCustomTimestamp) {
         LogManager.tracking("LaunchedEffect: customDate=$customDate, customTime=$customTime, useCustom=$useCustomTimestamp")
         if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
-            val newTimestamp = try {
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                val dateTimeString = "$customDate $customTime"
-                val parsed = dateFormat.parse(dateTimeString)?.time ?: System.currentTimeMillis()
-                LogManager.tracking("Parsed custom timestamp: $parsed ($dateTimeString)")
-                parsed
-            } catch (e: Exception) {
-                LogManager.tracking("Error parsing custom timestamp", "ERROR", e)
-                System.currentTimeMillis()
-            }
+            val newTimestamp = customTimestampOf(customDate, customTime)
             LogManager.tracking("Calling onDefaultTimestampChange with: $newTimestamp")
             onDefaultTimestampChange(newTimestamp)
         } else {
@@ -104,13 +94,7 @@ fun PredefinedItemsSection(
     
     // Construct final timestamp to use for saving
     val finalTimestamp = if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
-        try {
-            val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-            val dateTimeString = "$customDate $customTime"
-            dateFormat.parse(dateTimeString)?.time ?: System.currentTimeMillis()
-        } catch (e: Exception) {
-            System.currentTimeMillis()
-        }
+        customTimestampOf(customDate, customTime)
     } else {
         System.currentTimeMillis() // Always fresh timestamp when toggle is off
     }
@@ -704,3 +688,15 @@ data class TrackingItem(
         return properties[key]?.toString() ?: ""
     }
 }
+
+/**
+ * The moment the custom date and time name, in the app's timezone.
+ *
+ * Both strings come from the date and time pickers, which only ever produce dd/MM/yyyy and
+ * HH:mm, so a string that does not read is a bug in this screen rather than a user's input:
+ * it fails loudly instead of being replaced by the current time.
+ */
+private fun customTimestampOf(date: String, time: String): Long =
+    checkNotNull(DateUtils.combineDateTime(date, time)) {
+        "Custom timestamp unreadable: '$date' '$time' -- the pickers produce dd/MM/yyyy and HH:mm"
+    }

@@ -329,7 +329,7 @@ object AIOrchestrator {
 
         val session = AISessionEntity(
             id = newSessionId,
-            name = "Chat ${java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(now))}",
+            name = "Chat ${com.assistant.core.utils.DateUtils.formatTimeForDisplay(now)}",
             type = SessionType.CHAT,
             requireValidation = false,
             phase = "IDLE",

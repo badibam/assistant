@@ -11,9 +11,6 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.ScheduleCalculator
 import com.assistant.core.utils.ScheduleConfig
 import kotlinx.serialization.json.Json
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Automation Scheduler - Pure calculation helper
@@ -33,14 +30,11 @@ class AutomationScheduler(private val context: Context) {
     private val aiDao = database.aiDao()
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Date formatter for logs (HH:mm:ss dd/MM/yyyy)
-    private val dateFormatter = SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
-
     /**
-     * Format timestamp to human-readable date for logs
+     * Format timestamp to human-readable date for logs (HH:mm:ss dd/MM/yyyy)
      */
     private fun formatTimestamp(timestamp: Long): String {
-        return dateFormatter.format(Date(timestamp))
+        return com.assistant.core.utils.DateUtils.format(timestamp, "HH:mm:ss dd/MM/yyyy")
     }
 
     /**

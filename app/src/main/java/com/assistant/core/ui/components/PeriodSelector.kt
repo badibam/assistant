@@ -18,6 +18,7 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.launch
 import java.util.*
+import java.time.ZoneId
 import com.assistant.core.utils.LogManager
 
 /**
@@ -90,14 +91,14 @@ fun calculatePeriodOffset(
             -((normalizedNow - normalizedTimestamp) / (7 * 24 * 60 * 60 * 1000)).toInt()
         }
         PeriodType.MONTH -> {
-            val nowCal = Calendar.getInstance().apply { timeInMillis = normalizedNow }
-            val tsCal = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }
+            val nowCal = DateUtils.calendarAt(normalizedNow)
+            val tsCal = DateUtils.calendarAt(normalizedTimestamp)
             -((nowCal.get(Calendar.YEAR) - tsCal.get(Calendar.YEAR)) * 12 +
                 (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH)))
         }
         PeriodType.YEAR -> {
-            val nowYear = Calendar.getInstance().apply { timeInMillis = normalizedNow }.get(Calendar.YEAR)
-            val tsYear = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }.get(Calendar.YEAR)
+            val nowYear = DateUtils.calendarAt(normalizedNow).get(Calendar.YEAR)
+            val tsYear = DateUtils.calendarAt(normalizedTimestamp).get(Calendar.YEAR)
             -(nowYear - tsYear)
         }
     }
@@ -112,26 +113,27 @@ fun calculatePeriodOffset(
  * the scheduled time for an automation run, which may be catching up on a day long past.
  * Reading the clock here by default is what made 47 catch-up runs read the same day's data.
  *
- * The day's start hour and the week's first day are parameters defaulting to the configured
- * ones, so a caller can resolve against stated settings rather than the app's.
+ * The day's start hour, the week's first day and the timezone are parameters defaulting to the
+ * configured ones, so a caller can resolve against stated settings rather than the app's.
  */
 fun resolveRelativePeriod(
     relativePeriod: RelativePeriod,
     reference: Long,
     dayStartHour: Int = AppConfigManager.getDayStartHour(),
-    weekStartDay: String = AppConfigManager.getWeekStartDay()
+    weekStartDay: String = AppConfigManager.getWeekStartDay(),
+    zone: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
 ): Period {
     val currentNormalized = normalizeTimestampWithConfig(
-        reference, relativePeriod.type, dayStartHour, weekStartDay
+        reference, relativePeriod.type, dayStartHour, weekStartDay, zone
     )
     var targetPeriod = Period(currentNormalized, relativePeriod.type)
 
     // Apply offset by navigating periods
     repeat(kotlin.math.abs(relativePeriod.offset)) {
         targetPeriod = if (relativePeriod.offset < 0) {
-            getPreviousPeriod(targetPeriod, dayStartHour, weekStartDay)
+            getPreviousPeriod(targetPeriod, dayStartHour, weekStartDay, zone)
         } else {
-            getNextPeriod(targetPeriod, dayStartHour, weekStartDay)
+            getNextPeriod(targetPeriod, dayStartHour, weekStartDay, zone)
         }
     }
 
@@ -144,10 +146,11 @@ fun resolveRelativePeriod(
 fun getPeriodEndTimestamp(
     period: Period,
     dayStartHour: Int = AppConfigManager.getDayStartHour(),
-    weekStartDay: String = AppConfigManager.getWeekStartDay()
+    weekStartDay: String = AppConfigManager.getWeekStartDay(),
+    zone: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
 ): Long {
     // Get the start of the next period
-    val nextPeriodStart = getNextPeriod(period, dayStartHour, weekStartDay).timestamp
+    val nextPeriodStart = getNextPeriod(period, dayStartHour, weekStartDay, zone).timestamp
     // End of current period is 1ms before start of next period
     return nextPeriodStart - 1
 }
@@ -167,9 +170,10 @@ fun normalizeTimestampWithConfig(
     timestamp: Long,
     type: PeriodType,
     dayStartHour: Int = AppConfigManager.getDayStartHour(),
-    weekStartDay: String = AppConfigManager.getWeekStartDay()
+    weekStartDay: String = AppConfigManager.getWeekStartDay(),
+    zone: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
 ): Long {
-    val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+    val cal = DateUtils.calendarAt(timestamp, zone)
     
     return when (type) {
         PeriodType.HOUR -> {
@@ -385,17 +389,12 @@ fun SinglePeriodSelector(
                     selectedDate = DateUtils.formatDateForDisplay(period.timestamp),
                     onDateSelected = { selectedDate ->
                         // Combine new date + existing hour
-                        val existingHour = Calendar.getInstance().apply { 
-                            timeInMillis = period.timestamp 
-                        }.get(Calendar.HOUR_OF_DAY)
-                        val existingMinute = Calendar.getInstance().apply { 
-                            timeInMillis = period.timestamp 
-                        }.get(Calendar.MINUTE)
+                        val existingHour = DateUtils.calendarAt(period.timestamp).get(Calendar.HOUR_OF_DAY)
+                        val existingMinute = DateUtils.calendarAt(period.timestamp).get(Calendar.MINUTE)
                         
                         val newDate = DateUtils.parseDateForFilter(selectedDate)
                             ?: return@DatePicker
-                        val combinedTimestamp = Calendar.getInstance().apply {
-                            timeInMillis = newDate
+                        val combinedTimestamp = DateUtils.calendarAt(newDate).apply {
                             set(Calendar.HOUR_OF_DAY, existingHour)
                             set(Calendar.MINUTE, existingMinute)
                             set(Calendar.SECOND, 0)
@@ -470,7 +469,7 @@ private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext, use
                 }
             } else {
                 val date = DateUtils.formatDateForDisplay(timestamp)
-                val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
+                val hour = DateUtils.calendarAt(timestamp).get(Calendar.HOUR_OF_DAY)
                 "$date ${hour}h"
             }
         }
@@ -484,14 +483,14 @@ private fun generateHourLabel(timestamp: Long, now: Long, s: StringsContext, use
                 }
             } else {
                 val date = DateUtils.formatDateForDisplay(timestamp)
-                val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
+                val hour = DateUtils.calendarAt(timestamp).get(Calendar.HOUR_OF_DAY)
                 "$date ${hour}h"
             }
         }
         else -> {
             // Fallback case should never happen
             val date = DateUtils.formatDateForDisplay(timestamp)
-            val hour = Calendar.getInstance().apply { timeInMillis = timestamp }.get(Calendar.HOUR_OF_DAY)
+            val hour = DateUtils.calendarAt(timestamp).get(Calendar.HOUR_OF_DAY)
             "$date ${hour}h"
         }
     }
@@ -593,8 +592,8 @@ private fun generateMonthLabel(timestamp: Long, now: Long, s: StringsContext, us
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.MONTH)
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.MONTH)
 
-    val nowCal = Calendar.getInstance().apply { timeInMillis = normalizedNow }
-    val tsCal = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }
+    val nowCal = DateUtils.calendarAt(normalizedNow)
+    val tsCal = DateUtils.calendarAt(normalizedTimestamp)
 
     val diffMonths = (nowCal.get(Calendar.YEAR) - tsCal.get(Calendar.YEAR)) * 12 +
                     (nowCal.get(Calendar.MONTH) - tsCal.get(Calendar.MONTH))
@@ -651,8 +650,8 @@ private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, use
     val normalizedNow = normalizeTimestampWithConfig(now, PeriodType.YEAR)
     val normalizedTimestamp = normalizeTimestampWithConfig(timestamp, PeriodType.YEAR)
 
-    val nowYear = Calendar.getInstance().apply { timeInMillis = normalizedNow }.get(Calendar.YEAR)
-    val tsYear = Calendar.getInstance().apply { timeInMillis = normalizedTimestamp }.get(Calendar.YEAR)
+    val nowYear = DateUtils.calendarAt(normalizedNow).get(Calendar.YEAR)
+    val tsYear = DateUtils.calendarAt(normalizedTimestamp).get(Calendar.YEAR)
     val diffYears = nowYear - tsYear
 
     return when {
@@ -695,9 +694,10 @@ private fun generateYearLabel(timestamp: Long, now: Long, s: StringsContext, use
 private fun getPreviousPeriod(
     period: Period,
     dayStartHour: Int = AppConfigManager.getDayStartHour(),
-    weekStartDay: String = AppConfigManager.getWeekStartDay()
+    weekStartDay: String = AppConfigManager.getWeekStartDay(),
+    zone: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
 ): Period {
-    val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
+    val cal = DateUtils.calendarAt(period.timestamp, zone)
 
     when (period.type) {
         PeriodType.HOUR -> cal.add(Calendar.HOUR_OF_DAY, -1)
@@ -709,7 +709,7 @@ private fun getPreviousPeriod(
 
     // Normalize timestamp after calculation with configuration parameters
     return Period(
-        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay),
+        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay, zone),
         period.type
     )
 }
@@ -720,9 +720,10 @@ private fun getPreviousPeriod(
 private fun getNextPeriod(
     period: Period,
     dayStartHour: Int = AppConfigManager.getDayStartHour(),
-    weekStartDay: String = AppConfigManager.getWeekStartDay()
+    weekStartDay: String = AppConfigManager.getWeekStartDay(),
+    zone: ZoneId = AppConfigManager.getDateTimeConfig().getZoneId()
 ): Period {
-    val cal = Calendar.getInstance().apply { timeInMillis = period.timestamp }
+    val cal = DateUtils.calendarAt(period.timestamp, zone)
 
     when (period.type) {
         PeriodType.HOUR -> cal.add(Calendar.HOUR_OF_DAY, 1)
@@ -734,7 +735,7 @@ private fun getNextPeriod(
 
     // Normalize timestamp after calculation with configuration parameters
     return Period(
-        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay),
+        normalizeTimestampWithConfig(cal.timeInMillis, period.type, dayStartHour, weekStartDay, zone),
         period.type
     )
 }
@@ -753,8 +754,7 @@ private fun getWeekStart(timestamp: Long, weekStartDay: String): Long {
         "saturday" -> Calendar.SATURDAY
         else -> Calendar.MONDAY
     }
-    val cal = Calendar.getInstance().apply { 
-        timeInMillis = timestamp
+    val cal = DateUtils.calendarAt(timestamp).apply {
         firstDayOfWeek = calendarDay
         set(Calendar.DAY_OF_WEEK, calendarDay)
     }
