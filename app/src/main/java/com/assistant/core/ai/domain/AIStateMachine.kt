@@ -42,8 +42,14 @@ object AIStateMachine {
                 // Activate session and set sessionId + sessionType
                 // CHAT sessions stay IDLE waiting for first user message
                 // AUTOMATION sessions transition to EXECUTING_ENRICHMENTS immediately
-                if (state.phase != Phase.IDLE) {
-                    // Slot not available - event processor should handle scheduling
+                // The slot must be free, not just idle: an activated CHAT nobody has spoken
+                // to yet is IDLE with a session id, and activating over it would drop it.
+                // Evicting the occupant is SessionSlotPolicy's call, made before this event.
+                if (!state.isSlotAvailable()) {
+                    LogManager.aiSession(
+                        "Activation of ${event.sessionId} refused: slot held by ${state.sessionId} (${state.phase})",
+                        "WARN"
+                    )
                     state
                 } else {
                     val nextPhase = if (event.sessionType == SessionType.CHAT) {

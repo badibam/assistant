@@ -69,15 +69,11 @@ class AIStateMachineLifecycleTest {
     }
 
     /**
-     * A CHAT that has already been activated sits at IDLE with its session id. Another
-     * activation request passes the phase check and overwrites it.
-     *
-     * This states what the machine does today rather than what it should do: the guard is
-     * on the phase alone, and an activated-but-silent CHAT is at IDLE like a free slot.
-     * isSlotAvailable() exists to tell those two apart, and this transition does not use it.
+     * A CHAT that has been activated but not yet spoken to sits at IDLE with its session
+     * id. That is a taken slot, not a free one: another activation leaves it in place.
      */
     @Test
-    fun activatingOverAnIdleChat_replacesTheSession() {
+    fun activatingOverAnIdleChat_leavesTheSessionInPlace() {
         val waitingChat = chatAt(Phase.IDLE)
 
         val state = AIStateMachine.transition(
@@ -87,7 +83,7 @@ class AIStateMachineLifecycleTest {
             currentTime = T1
         )
 
-        assertEquals("second-chat", state.sessionId)
+        assertEquals(waitingChat, state)
     }
 
     // ==================== The ordinary way forward ====================
