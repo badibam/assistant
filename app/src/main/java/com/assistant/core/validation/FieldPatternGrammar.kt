@@ -11,6 +11,9 @@ package com.assistant.core.validation
  * "data" and "custom_fields" on their own are refused: both are containers, and asking for
  * the container instead of a field inside it is the mistake this grammar exists to name.
  * Any other path carrying a dot is refused too, since nothing would know where to read it.
+ * So is a path one level deeper, like "custom_fields.sleep.start": the filter keeps whole keys
+ * and would look for a key named "sleep.start", find none and leave the field out in silence.
+ * A value holding an object or a list is asked for whole ("custom_fields.sleep").
  *
  * Root fields are not listed here on purpose. The grammar says where a path points, not
  * whether that field exists on the entry; a root field the entry does not carry is simply
@@ -54,11 +57,11 @@ object FieldPatternGrammar {
                 path == DATA_CONTAINER || path == CUSTOM_FIELDS_CONTAINER -> invalid.add(path)
                 path.startsWith(DATA_PREFIX) -> {
                     val name = path.removePrefix(DATA_PREFIX)
-                    if (name.isBlank()) invalid.add(path) else data.add(name)
+                    if (isFieldName(name)) data.add(name) else invalid.add(path)
                 }
                 path.startsWith(CUSTOM_FIELDS_PREFIX) -> {
                     val name = path.removePrefix(CUSTOM_FIELDS_PREFIX)
-                    if (name.isBlank()) invalid.add(path) else custom.add(name)
+                    if (isFieldName(name)) custom.add(name) else invalid.add(path)
                 }
                 path.contains(".") -> invalid.add(path)
                 else -> root.add(path)
@@ -67,4 +70,7 @@ object FieldPatternGrammar {
 
         return ParsedFields(root = root, data = data, custom = custom, invalid = invalid)
     }
+
+    /** A key inside data or custom_fields: not blank, and one level only. */
+    private fun isFieldName(name: String): Boolean = name.isNotBlank() && !name.contains(".")
 }
