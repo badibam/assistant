@@ -252,14 +252,19 @@ fun NotesScreen(
                                 onContextMenuChanged = { showMenu ->
                                     contextMenuNoteId = if (showMenu) note.id else null
                                 },
+                                // The service keeps the order: taking the position of the note above
+                                // puts this one before it; the position after the note below puts
+                                // it after that one. The data change notification reloads the list.
                                 onMoveUp = {
-                                    coroutineScope.launch {
-                                        moveNoteUp(note, notes, coordinator, toolInstanceId) { refreshTrigger++ }
+                                    val above = notes.getOrNull(notes.indexOf(note) - 1)
+                                    if (above != null) coroutineScope.launch {
+                                        moveNote(coordinator, note, above.position)
                                     }
                                 },
                                 onMoveDown = {
-                                    coroutineScope.launch {
-                                        moveNoteDown(note, notes, coordinator, toolInstanceId) { refreshTrigger++ }
+                                    val below = notes.getOrNull(notes.indexOf(note) + 1)
+                                    if (below != null) coroutineScope.launch {
+                                        moveNote(coordinator, note, below.position + 1)
                                     }
                                 },
                                 onAddAbove = {
@@ -326,129 +331,13 @@ fun NotesScreen(
 }
 
 /**
- * Move note up in the list
+ * Move a note to [position]; the service moves the others around it
  */
-private suspend fun moveNoteUp(
-    note: NoteEntry,
-    currentNotes: List<NoteEntry>,
-    coordinator: Coordinator,
-    toolInstanceId: String,
-    onUpdate: (List<NoteEntry>) -> Unit
-) {
-    val currentIndex = currentNotes.indexOf(note)
-    if (currentIndex > 0) {
-        val targetNote = currentNotes[currentIndex - 1]
-
-        // Swap positions
-        val newPosition = targetNote.position
-        val targetNewPosition = note.position
-
-        // Update note position in database
-        val params = mutableMapOf<String, Any>(
-            "id" to note.id,
-            "tool_instance_id" to toolInstanceId,
-            "data" to JSONObject().apply {
-                put("content", note.content)
-                put("position", newPosition)
-            }
-        )
-        if (note.customFields.isNotEmpty()) {
-            params["custom_fields"] = JSONObject(note.customFields)
-        }
-
-        val result = coordinator.processUserAction("tool_data.update", params)
-        if (result?.isSuccess == true) {
-            // Update target note position
-            val targetParams = mutableMapOf<String, Any>(
-                "id" to targetNote.id,
-                "tool_instance_id" to toolInstanceId,
-                "data" to JSONObject().apply {
-                    put("content", targetNote.content)
-                    put("position", targetNewPosition)
-                }
-            )
-            if (targetNote.customFields.isNotEmpty()) {
-                targetParams["custom_fields"] = JSONObject(targetNote.customFields)
-            }
-
-            val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
-            if (targetResult?.isSuccess == true) {
-                // Update local state
-                val updatedNotes = currentNotes.map { noteItem ->
-                    when (noteItem.id) {
-                        note.id -> noteItem.copy(position = newPosition)
-                        targetNote.id -> noteItem.copy(position = targetNewPosition)
-                        else -> noteItem
-                    }
-                }.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
-
-                onUpdate(updatedNotes)
-            }
-        }
-    }
-}
-
-/**
- * Move note down in the list
- */
-private suspend fun moveNoteDown(
-    note: NoteEntry,
-    currentNotes: List<NoteEntry>,
-    coordinator: Coordinator,
-    toolInstanceId: String,
-    onUpdate: (List<NoteEntry>) -> Unit
-) {
-    val currentIndex = currentNotes.indexOf(note)
-    if (currentIndex < currentNotes.size - 1) {
-        val targetNote = currentNotes[currentIndex + 1]
-
-        // Swap positions
-        val newPosition = targetNote.position
-        val targetNewPosition = note.position
-
-        // Update note position in database
-        val params = mutableMapOf<String, Any>(
-            "id" to note.id,
-            "tool_instance_id" to toolInstanceId,
-            "data" to JSONObject().apply {
-                put("content", note.content)
-                put("position", newPosition)
-            }
-        )
-        if (note.customFields.isNotEmpty()) {
-            params["custom_fields"] = JSONObject(note.customFields)
-        }
-
-        val result = coordinator.processUserAction("tool_data.update", params)
-        if (result?.isSuccess == true) {
-            // Update target note position
-            val targetParams = mutableMapOf<String, Any>(
-                "id" to targetNote.id,
-                "tool_instance_id" to toolInstanceId,
-                "data" to JSONObject().apply {
-                    put("content", targetNote.content)
-                    put("position", targetNewPosition)
-                }
-            )
-            if (targetNote.customFields.isNotEmpty()) {
-                targetParams["custom_fields"] = JSONObject(targetNote.customFields)
-            }
-
-            val targetResult = coordinator.processUserAction("tool_data.update", targetParams)
-            if (targetResult?.isSuccess == true) {
-                // Update local state
-                val updatedNotes = currentNotes.map { noteItem ->
-                    when (noteItem.id) {
-                        note.id -> noteItem.copy(position = newPosition)
-                        targetNote.id -> noteItem.copy(position = targetNewPosition)
-                        else -> noteItem
-                    }
-                }.sortedWith(compareBy<NoteEntry> { it.position }.thenBy { it.timestamp })
-
-                onUpdate(updatedNotes)
-            }
-        }
-    }
+private suspend fun moveNote(coordinator: Coordinator, note: NoteEntry, position: Int) {
+    coordinator.processUserAction("tool_data.update", mapOf(
+        "id" to note.id,
+        "data" to JSONObject().apply { put("position", position) }
+    ))
 }
 
 /**
@@ -496,10 +385,8 @@ private suspend fun updateNote(
 ) {
     val params = mutableMapOf<String, Any>(
         "id" to note.id,
-        "tool_instance_id" to note.id, // Will be corrected by backend
         "data" to JSONObject().apply {
             put("content", newContent.trim())
-            put("position", note.position)
         }
     )
 

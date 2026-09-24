@@ -3,6 +3,7 @@ package com.assistant.core.tools
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.room.migration.Migration
+import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.validation.SchemaProvider
@@ -131,6 +132,19 @@ interface ToolTypeContract : SchemaProvider {
      * @throws Exception if enrichment fails (will cause the create operation to fail)
      */
     fun enrichData(dataJson: String, name: String?, configJson: String?): String = dataJson
+
+    /**
+     * Keep a rule that spans the entries of one tool instance, such as a manual order.
+     *
+     * ToolDataService calls it on every create, update and delete of an entry of this tool type,
+     * whoever the caller — screen or AI — and stores its answer in the same transaction as the write.
+     *
+     * @param entries Every entry of the tool instance as it will stand once the write is done
+     * @param writtenId The entry just created or updated; null after a delete
+     * @return The entries whose content must change, the written one included if it must;
+     *         empty when the rule already holds
+     */
+    fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> = emptyList()
 
     /**
      * Get scheduler instance for this tool type.

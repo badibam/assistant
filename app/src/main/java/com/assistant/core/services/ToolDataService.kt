@@ -1,6 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.assistant.core.coordinator.CancellationToken
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.commands.CommandStatus
@@ -61,7 +62,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val toolInstanceId = params.optString("tool_instance_id")
         val name = params.optString("name", null)
-        val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
         if (toolInstanceId.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id"))
@@ -88,22 +88,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        // Position-based insertion: the new entry takes the position now, the entries after it
-        // move only once the entry is known to be valid
-        var finalDataJson = dataJson
-        if (insertPosition != null) {
-            finalDataJson = JSONObject(dataJson).put("position", insertPosition).toString()
-        }
-
         // Enrich data with auto-generated fields (e.g., raw display field for tracking)
-        finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, finalDataJson, name)
+        val finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, dataJson, name)
 
         validateEntry(target, name, timestamp, finalDataJson, customFieldsJson)
             ?.let { return OperationResult.error(it) }
-
-        if (insertPosition != null) {
-            shiftPositionsFrom(toolInstanceId, insertPosition)
-        }
 
         val now = System.currentTimeMillis()
         val entity = ToolDataEntity(
@@ -119,7 +108,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
 
         val dao = getToolDataDao()
-        dao.insert(entity)
+        storeSettled(tooltype, dao.getByToolInstance(toolInstanceId) + entity, entity.id) { settled ->
+            dao.insert(settled ?: entity)
+        }
 
         // Notify UI of data change in this tool instance
         val zoneId = getZoneIdForTool(toolInstanceId)
@@ -135,25 +126,31 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
-    /** Make room for an entry inserted at [insertPosition]: the entries at or after it move down one. */
-    private suspend fun shiftPositionsFrom(toolInstanceId: String, insertPosition: Int) {
+    /**
+     * Store one write together with what its tool type rewrites around it, all or nothing.
+     *
+     * [after] is the tool instance's entries as they stand once the write is done, [writtenId] the
+     * entry created or updated (null after a delete). [write] stores the write itself, handed the
+     * version the tool type settled it to, or null when it left it as it was.
+     */
+    private suspend fun storeSettled(
+        tooltype: String,
+        after: List<ToolDataEntity>,
+        writtenId: String?,
+        write: suspend (settled: ToolDataEntity?) -> Unit
+    ) {
+        val settled = ToolTypeManager.getToolType(tooltype)
+            ?.settleEntries(after, writtenId)
+            ?.associateBy { it.id }
+            ?: emptyMap()
         val dao = getToolDataDao()
-        val existingEntries = dao.getByToolInstance(toolInstanceId)
+        val now = System.currentTimeMillis()
 
-        // Shift positions >= insertPosition
-        existingEntries.forEach { entry ->
-            val entryData = JSONObject(entry.data)
-            val currentPosition = entryData.optInt("position", -1)
-
-            if (currentPosition >= insertPosition) {
-                entryData.put("position", currentPosition + 1)
-                // Update in DB
-                val updatedEntity = entry.copy(
-                    data = entryData.toString(),
-                    updatedAt = System.currentTimeMillis()
-                )
-                dao.update(updatedEntity)
-            }
+        AppDatabase.getDatabase(context).withTransaction {
+            write(writtenId?.let { settled[it] })
+            settled.values
+                .filter { it.id != writtenId }
+                .forEach { dao.update(it.copy(updatedAt = now)) }
         }
     }
 
@@ -260,7 +257,11 @@ class ToolDataService(private val context: Context) : ExecutableService {
             target, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.customFields
         )?.let { return OperationResult.error(it) }
 
-        dao.update(updatedEntity)
+        val after = dao.getByToolInstance(existingEntity.toolInstanceId)
+            .map { if (it.id == updatedEntity.id) updatedEntity else it }
+        storeSettled(existingEntity.tooltype, after, updatedEntity.id) { settled ->
+            dao.update(settled ?: updatedEntity)
+        }
 
         // Notify UI of data change in this tool instance
         val zoneId = getZoneIdForTool(existingEntity.toolInstanceId)
@@ -290,7 +291,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val entity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
-        dao.deleteById(entryId)
+        val after = dao.getByToolInstance(entity.toolInstanceId).filter { it.id != entryId }
+        storeSettled(entity.tooltype, after, null) {
+            dao.deleteById(entryId)
+        }
 
         // Notify UI of data change in this tool instance
         val zoneId = getZoneIdForTool(entity.toolInstanceId)

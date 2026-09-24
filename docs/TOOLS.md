@@ -55,6 +55,7 @@ Interface principale implémentant SchemaProvider avec méthodes pour :
 - **Interface utilisateur** : getConfigScreen() @Composable
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
+- **Règle entre entrées** : settleEntries() (défaut : rien à changer), voir plus bas
 - **Validation** : validateData() (délègue à SchemaValidator)
 
 ## Méthodologie d'Implémentation
@@ -107,6 +108,11 @@ override fun enrichData(data: Map<String, Any>, context: Context): Map<String, A
 ```
 
 **Usage** : Unifié UI + IA, logique pré-persistence sans interception manuelle.
+
+### settleEntries Pattern
+**Principe** : une règle qui porte sur toutes les entrées d'une instance, et non sur une seule. `ToolDataService` l'appelle à chaque création, modification ou suppression d'une entrée du tooltype, avec toutes les entrées de l'instance telles qu'elles seront après l'écriture, et l'id de l'entrée écrite (null après une suppression). Il enregistre les entrées renvoyées dans la même transaction que l'écriture. Unifié UI + IA, comme enrichData.
+
+**Exemple Notes** : `NoteOrder` garde les positions 0, 1, 2… sans trou ni doublon. Écrire la position p place la note en p et décale les suivantes ; une note sans position va en dernier.
 
 ### Tooltypes passifs et actifs
 

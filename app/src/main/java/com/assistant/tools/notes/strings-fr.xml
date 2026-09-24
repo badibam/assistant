@@ -16,7 +16,7 @@
     <string name="schema_data_timestamp">Horodatage de création de la note</string>
     <string name="schema_data_data">Données de contenu de la note</string>
     <string name="schema_data_content">Contenu de la note</string>
-    <string name="schema_data_position">Position pour tri manuel des notes</string>
+    <string name="schema_data_position">Place dans la liste, 0 en haut. Une position déjà prise y place la note et décale les suivantes ; sans position, la note va en dernier. Les positions restent 0, 1, 2… sans trou</string>
 
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_content">Contenu</string>

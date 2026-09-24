@@ -16,7 +16,7 @@
     <string name="schema_data_timestamp">Creation timestamp of the note</string>
     <string name="schema_data_data">Content data of the note</string>
     <string name="schema_data_content">Content of the note</string>
-    <string name="schema_data_position">Position for manual sorting of notes</string>
+    <string name="schema_data_position">Place in the list, 0 at the top. A position already taken puts the note there and moves the following ones down; without a position the note goes last. Positions stay 0, 1, 2… with no gap</string>
 
     <!-- VALIDATION - Field names for display -->
     <string name="field_content">Content</string>
