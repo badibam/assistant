@@ -179,10 +179,8 @@ object PromptManager {
 
             // Parse systemMessage if present
             val systemMessage = (msg["system_message_json"] as? String)?.let { json ->
-                try {
-                    parseSystemMessage(json)
-                } catch (e: Exception) {
-                    LogManager.aiPrompt("Failed to parse systemMessageJson: ${e.message}", "WARN")
+                SystemMessage.fromJson(json) ?: run {
+                    LogManager.aiPrompt("Failed to parse systemMessageJson of message $id", "WARN")
                     null
                 }
             }
@@ -233,67 +231,6 @@ object PromptManager {
             keepControl = null,
             communicationModule = null,
             completed = null
-        )
-    }
-
-    /**
-     * Parse SystemMessage from JSON
-     */
-    private fun parseSystemMessage(json: String): SystemMessage {
-        val jsonObj = org.json.JSONObject(json)
-        val typeStr = jsonObj.optString("type", "DATA_ADDED")
-        val type = try {
-            SystemMessageType.valueOf(typeStr)
-        } catch (e: Exception) {
-            SystemMessageType.DATA_ADDED
-        }
-
-        val summary = jsonObj.optString("summary", "")
-        val formattedData = jsonObj.optString("formatted_data", null)
-
-        // Parse commandResults
-        val commandResultsArray = jsonObj.optJSONArray("command_results")
-        val commandResults = mutableListOf<CommandResult>()
-        if (commandResultsArray != null) {
-            for (i in 0 until commandResultsArray.length()) {
-                val resultObj = commandResultsArray.optJSONObject(i) ?: continue
-                val command = resultObj.optString("command", "")
-                val statusStr = resultObj.optString("status", "FAILED")
-                val status = try {
-                    CommandStatus.valueOf(statusStr)
-                } catch (e: Exception) {
-                    CommandStatus.FAILED
-                }
-                val details = resultObj.optString("details", null)
-
-                // Parse data field if present
-                val data = resultObj.optJSONObject("data")?.let { dataJson ->
-                    val map = mutableMapOf<String, Any>()
-                    dataJson.keys().forEach { key ->
-                        map[key] = dataJson.get(key)
-                    }
-                    map
-                }
-
-                val error = resultObj.optString("error", null)
-
-                commandResults.add(
-                    CommandResult(
-                        command = command,
-                        status = status,
-                        details = details,
-                        data = data,
-                        error = error
-                    )
-                )
-            }
-        }
-
-        return SystemMessage(
-            type = type,
-            commandResults = commandResults,
-            summary = summary,
-            formattedData = formattedData
         )
     }
 

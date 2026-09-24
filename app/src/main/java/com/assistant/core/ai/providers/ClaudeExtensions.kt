@@ -212,45 +212,8 @@ private fun extractTextContent(message: SessionMessage): String? {
         // AI message preText
         message.aiMessage != null -> message.aiMessage.preText
 
-        // System message summary (for SYSTEM → USER transformed messages)
-        message.systemMessage != null -> {
-            val systemMsg = message.systemMessage
-            val summary = systemMsg.summary
-
-            buildString {
-                appendLine(summary)
-
-                // Include all command results with their details (like in UI)
-                if (systemMsg.commandResults.isNotEmpty()) {
-                    appendLine()
-                    systemMsg.commandResults.forEach { result ->
-
-                        // Show details (verbalized description) if available
-                        if (result.details != null) {
-                            append("- ${result.details}")
-
-                            // Add data (for action commands, like in UI)
-                            if (result.isActionCommand && result.data != null && result.data.isNotEmpty()) {
-                                val dataText = result.data.entries.joinToString(", ") { (k, v) -> "$k: $v" }
-                                append(" ($dataText)")
-                            }
-
-                            // Add error message if command failed
-                            if (result.status == CommandStatus.FAILED && result.error != null) {
-                                append(" → Erreur: ${result.error}")
-                            }
-                            appendLine()
-                        }
-                    }
-                }
-
-                // Include formattedData if available (for DATA_ADDED queries)
-                if (systemMsg.formattedData != null) {
-                    appendLine()
-                    append(systemMsg.formattedData)
-                }
-            }
-        }
+        // System message: its summary, each command result, and the data it added
+        message.systemMessage != null -> message.systemMessage.toPromptText()
 
         else -> null
     }

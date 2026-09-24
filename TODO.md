@@ -35,7 +35,6 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 - Les schémas que lit l'IA ont des descriptions vides : `tools_base_schema_config_name` et ses voisins valent `""` dans les deux langues, et le rejeu du 2026-09-24 a montré des `"description": ""` partout dans le schéma de config. Soit les écrire, soit retirer les clés.
 - `strings_generated.xml` est ignoré par git pour la langue par défaut (`values/`) mais versionné pour le français (`values-fr/`). L'un des deux a tort.
 - `CreateZoneScreen` ignore le résultat de `zones.create` et `zones.update` : un refus du service (nom en double, icône inconnue) ferme l'écran comme un succès.
-- Après un `CREATE_ZONE` et un `CREATE_TOOL` réussis, l'IA a redemandé l'identifiant créé (`ZONES`, puis `TOOL_INSTANCES`) en disant que le retour ne le donnait pas — rejeu du 2026-09-24, provider `deepseek_economic`. Le code l'envoie pourtant : `OpenAIExtensions` ajoute `(zone_id: …, name: …)` à chaque ligne de résultat d'action. Mesuré : l'aller-retour en plus, deux fois. Non mesuré : ce que la requête contenait vraiment, rien ne la journalise. À trancher en lisant une requête réelle.
 - Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste.
 
 ## À vérifier sur l'appareil

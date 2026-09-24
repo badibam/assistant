@@ -3,6 +3,8 @@ package com.assistant.core.ai.providers
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.ai.data.SessionMessage
+import com.assistant.core.ai.data.SystemMessage
+import com.assistant.core.ai.data.CommandStatus
 
 /**
  * Common message transformations for AI providers
@@ -61,4 +63,37 @@ internal fun PromptData.buildDatetimeMessage(context: android.content.Context): 
     val scheduled = scheduledExecutionTime ?: return currentLine
     val scheduledLine = s.shared("ai_prompt_scheduled_datetime").format(iso(scheduled), scheduled)
     return "$currentLine\n$scheduledLine"
+}
+
+/**
+ * A system message as the model reads it, whatever the provider: the summary, a line per
+ * command result, and the data a query added.
+ *
+ * An action's line carries its data -- above all the id of what it created, which the model
+ * needs for its next command. That hangs on isActionCommand, so the message has to be read
+ * back with it: a copy of the parser that forgot the flag left every id out, and the model
+ * asked for the zone or the tool it had just created all over again.
+ */
+fun SystemMessage.toPromptText(): String = buildString {
+    appendLine(summary)
+
+    if (commandResults.isNotEmpty()) {
+        appendLine()
+        commandResults.forEach { result ->
+            if (result.details == null) return@forEach
+            append("- ${result.details}")
+            if (result.isActionCommand && !result.data.isNullOrEmpty()) {
+                append(" (${result.data.entries.joinToString(", ") { (k, v) -> "$k: $v" }})")
+            }
+            if (result.status == CommandStatus.FAILED && result.error != null) {
+                append(" → Erreur: ${result.error}")
+            }
+            appendLine()
+        }
+    }
+
+    if (formattedData != null) {
+        appendLine()
+        append(formattedData)
+    }
 }
