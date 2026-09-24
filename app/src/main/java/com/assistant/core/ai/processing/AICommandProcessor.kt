@@ -353,7 +353,7 @@ class AICommandProcessor(private val context: Context) {
      * AI doesn't need to specify schema_id - we automatically fetch it from the
      * tool instance's data_schema_id configuration field.
      *
-     * Note: SystemManaged fields are stripped by stripSystemManagedFromCommand()
+     * Note: root-level system-managed fields are stripped by stripRootLevelSystemManagedFields()
      * before this enrichment step.
      *
      * @param params Original params from AI command
