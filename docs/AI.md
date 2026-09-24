@@ -215,7 +215,7 @@ data class AILimitsConfig(
 **Limite unique** :
 - **AutonomousRoundtrips** : Sécurité anti-boucle infinie (AUTOMATION uniquement, CHAT = Int.MAX_VALUE)
 
-**Compteur** : `totalRoundtrips` (jamais reset, compte tous les allers-retours).
+**Compteur** : `totalRoundtrips` compte les appels à l'IA depuis la dernière intervention de l'utilisateur — message, réponse à une question ou à une validation, annulation, interruption. Chacune le remet à zéro : la limite borne ce que l'IA fait seule, jamais la longueur d'une conversation. Une AUTOMATION, sans personne pour intervenir, compte donc sa session entière.
 
 **Rationale** : CHAT contrôlé par utilisateur (interrupt). AUTOMATION nécessite sécurité autonome. Pas de limites artificielles sur format errors ou action failures - l'IA doit auto-corriger. maxRoundtrips suffit comme filet de sécurité global.
 

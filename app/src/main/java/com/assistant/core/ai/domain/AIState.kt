@@ -37,9 +37,11 @@ data class AIState(
     // ==================== Loop Counters ====================
 
     /**
-     * Total autonomous roundtrips count (never reset during session).
+     * AI calls made since the user last acted -- sent a message, answered a question or a
+     * validation, cancelled, interrupted. Each of those starts the count over, so the limit
+     * bounds what the AI does on its own, never the length of a conversation. An AUTOMATION
+     * has nobody acting on it, so there it counts the whole session.
      * Incremented on each AI call.
-     * Enforced only for AUTOMATION (CHAT has Int.MAX_VALUE).
      */
     val totalRoundtrips: Int = 0,
 

@@ -70,7 +70,10 @@ class AIStateMachineUserInteractionTest {
 
     // ==================== A question put to the user ====================
 
-    /** Answered: the answer goes back to the provider, and that call is a roundtrip. */
+    /**
+     * Answered: the answer goes back to the provider. The user acted, so the count starts
+     * over, and that call is its first roundtrip.
+     */
     @Test
     fun communicationAnswered_sendsTheAnswerBack() {
         val state = AIStateMachine.transition(
@@ -81,7 +84,7 @@ class AIStateMachineUserInteractionTest {
         )
 
         assertEquals(Phase.CALLING_AI, state.phase)
-        assertEquals(2, state.totalRoundtrips)
+        assertEquals(1, state.totalRoundtrips)
         assertNull(state.waitingContext)
         assertEquals(T1, state.lastUserInteractionTime)
     }
@@ -97,7 +100,7 @@ class AIStateMachineUserInteractionTest {
         )
 
         assertEquals(Phase.IDLE, state.phase)
-        assertEquals(1, state.totalRoundtrips)
+        assertEquals(0, state.totalRoundtrips)
         assertNull(state.waitingContext)
     }
 

@@ -204,6 +204,52 @@ class AIStateMachineRoundtripLimitTest {
         assertEquals(null, state.endReason)
     }
 
+    // ==================== What the count covers ====================
+
+    /**
+     * The limit bounds what the AI does on its own, not how long a conversation lasts: every
+     * time the user acts, the count starts over. It used to run for the whole session, so a
+     * CHAT with a finite limit stopped answering for good once it had been reached, whatever
+     * the user sent afterwards.
+     */
+    @Test
+    fun everyUserActionStartsTheCountOver() {
+        val atTheLimit = testLimits.maxAutonomousRoundtrips
+
+        val afterAMessage = AIStateMachine.transition(
+            chatAt(Phase.IDLE, roundtrips = atTheLimit), AIEvent.UserMessageSent, testLimits, T0
+        )
+        assertEquals(0, afterAMessage.totalRoundtrips)
+
+        val afterAnApproval = AIStateMachine.transition(
+            chatAt(Phase.WAITING_VALIDATION, roundtrips = atTheLimit), AIEvent.ValidationReceived(approved = true), testLimits, T0
+        )
+        assertEquals(0, afterAnApproval.totalRoundtrips)
+
+        val afterARefusal = AIStateMachine.transition(
+            chatAt(Phase.WAITING_VALIDATION, roundtrips = atTheLimit), AIEvent.ValidationReceived(approved = false), testLimits, T0
+        )
+        assertEquals(0, afterARefusal.totalRoundtrips)
+
+        // An answer goes straight back to the AI: that call is the first of the new count.
+        val afterAnAnswer = AIStateMachine.transition(
+            chatAt(Phase.WAITING_COMMUNICATION_RESPONSE, roundtrips = atTheLimit), AIEvent.CommunicationResponseReceived("yes"), testLimits, T0
+        )
+        assertEquals(1, afterAnAnswer.totalRoundtrips)
+        assertEquals(Phase.CALLING_AI, afterAnAnswer.phase)
+        assertEquals(null, afterAnAnswer.endReason)
+
+        val afterACancel = AIStateMachine.transition(
+            chatAt(Phase.WAITING_COMMUNICATION_RESPONSE, roundtrips = atTheLimit), AIEvent.CommunicationCancelled, testLimits, T0
+        )
+        assertEquals(0, afterACancel.totalRoundtrips)
+
+        val afterAnInterruption = AIStateMachine.transition(
+            chatAt(Phase.CALLING_AI, roundtrips = atTheLimit), AIEvent.AIRoundInterrupted, testLimits, T0
+        )
+        assertEquals(0, afterAnInterruption.totalRoundtrips)
+    }
+
     /** Entering the guidance phase clears the reason that sent it there. */
     @Test
     fun continuationReady_clearsTheReasonItWasGuidedFor() {

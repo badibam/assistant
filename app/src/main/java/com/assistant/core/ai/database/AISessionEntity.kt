@@ -43,7 +43,7 @@ data class AISessionEntity(
 
     // ==================== Loop Counters ====================
 
-    /** Total autonomous roundtrips count (never reset during session) */
+    /** AI calls made since the user last acted: see AIState.totalRoundtrips */
     @ColumnInfo(name = "total_roundtrips") val totalRoundtrips: Int = 0,
 
     // ==================== Timestamps ====================

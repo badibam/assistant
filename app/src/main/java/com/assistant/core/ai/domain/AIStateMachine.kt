@@ -127,6 +127,7 @@ object AIStateMachine {
                     state.copy(
                         phase = Phase.EXECUTING_ACTIONS,
                         waitingContext = null,
+                        totalRoundtrips = 0, // The user acted: the count starts over
                         lastEventTime = currentTime,
                         lastUserInteractionTime = currentTime
                     )
@@ -136,6 +137,7 @@ object AIStateMachine {
                     state.copy(
                         phase = Phase.IDLE,
                         waitingContext = null,
+                        totalRoundtrips = 0, // The user acted: the count starts over
                         lastEventTime = currentTime,
                         lastUserInteractionTime = currentTime
                     )
@@ -147,7 +149,7 @@ object AIStateMachine {
                 state.copy(
                     phase = Phase.CALLING_AI,
                     waitingContext = null,
-                    totalRoundtrips = state.totalRoundtrips + 1,
+                    totalRoundtrips = 1, // The user acted: the count starts over, with this call
                     lastEventTime = currentTime,
                     lastUserInteractionTime = currentTime
                 )
@@ -158,6 +160,7 @@ object AIStateMachine {
                 state.copy(
                     phase = Phase.IDLE,
                     waitingContext = null,
+                    totalRoundtrips = 0, // The user acted: the count starts over
                     lastEventTime = currentTime,
                     lastUserInteractionTime = currentTime
                 )
@@ -170,6 +173,7 @@ object AIStateMachine {
                 state.copy(
                     phase = Phase.INTERRUPTED,
                     waitingContext = null, // Clear any waiting context
+                    totalRoundtrips = 0, // The user acted: the count starts over
                     lastEventTime = currentTime,
                     lastUserInteractionTime = currentTime
                 )
@@ -189,6 +193,7 @@ object AIStateMachine {
                 // Only valid from IDLE phase
                 state.copy(
                     phase = Phase.EXECUTING_ENRICHMENTS,
+                    totalRoundtrips = 0, // The user acted: the count starts over
                     lastEventTime = currentTime,
                     lastUserInteractionTime = currentTime
                 )
