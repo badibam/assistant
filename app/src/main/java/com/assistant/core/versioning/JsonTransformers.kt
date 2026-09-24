@@ -55,6 +55,10 @@ object JsonTransformers {
 
                 // Apply generic custom_fields transformation (all tooltypes)
                 transformed = transformCustomFields(transformed, version)
+
+                // v29 → v30: the former default icons become Lucide names, as in the
+                // installed database (all tooltypes)
+                if (version == 29) FormerDefaultIcons.rename(transformed)
             }
 
             return transformed.toString()

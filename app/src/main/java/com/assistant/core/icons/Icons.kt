@@ -22,6 +22,13 @@ object Icons {
         }
 
     /**
+     * What an icon name becomes when a zone or a tool stores it: itself when current, the
+     * current name when it is a former one, null when it designates no icon -- which the
+     * caller refuses. Stored names are therefore always current ones.
+     */
+    fun storedName(context: Context, iconName: String): String? = index(context).resolve(iconName)
+
+    /**
      * The drawable for [iconName] in the current theme, or null when the name designates no
      * icon -- the caller shows its two first letters instead. A former Lucide name finds the
      * icon it became.

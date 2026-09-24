@@ -10,6 +10,8 @@ data class Zone(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
     val description: String? = null,
+    /** A Lucide icon name, stored under its current name. Null until one is chosen. */
+    val icon_name: String? = null,
     val color: String? = null,
     val active: Boolean = true,
     val order_index: Int = 0,

@@ -23,6 +23,7 @@ import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
 import com.assistant.core.versioning.DateFieldBounds
+import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -42,7 +43,7 @@ import com.assistant.core.ai.data.LegacyCatchUp
         // Note: Tool entities will be added dynamically
         // via build system and ToolTypeRegistry
     ],
-    version = 29,
+    version = AppDatabase.VERSION,
     exportSchema = false
 )
 @androidx.room.TypeConverters(
@@ -59,15 +60,10 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         /**
-         * Database schema version
-         *
-         * MUST match @Database(version = X) annotation above
-         * Change BOTH when incrementing database version
-         *
-         * This constant is needed because @Database annotation value
-         * is not accessible as a constant at runtime
+         * Database schema version, which the @Database annotation above reads. Backups record
+         * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 28
+        const val VERSION = 30
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1223,6 +1219,38 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Zones get the icon the zone schema and the prompt always offered, and that
+                // nothing could store. Existing zones have none; they show without one until
+                // it is chosen.
+                database.execSQL("ALTER TABLE zones ADD COLUMN icon_name TEXT")
+
+                var renamed = 0
+                val cursor = database.query(
+                    "SELECT id, config_json FROM tool_instances WHERE config_json IS NOT NULL AND config_json != ''"
+                )
+                while (cursor.moveToNext()) {
+                    val rowId = cursor.getString(0)
+                    try {
+                        val config = org.json.JSONObject(cursor.getString(1))
+                        if (FormerDefaultIcons.rename(config)) {
+                            database.execSQL(
+                                "UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf(config.toString(), rowId)
+                            )
+                            renamed++
+                        }
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 29->30: tool_instances.config_json of $rowId left as is (${e.message})", "WARN")
+                    }
+                }
+                cursor.close()
+
+                LogManager.database("MIGRATION 29->30: icon_name column added to zones, $renamed former default icon(s) renamed", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1250,7 +1278,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_25_26,
                     MIGRATION_26_27,
                     MIGRATION_27_28,
-                    MIGRATION_28_29
+                    MIGRATION_28_29,
+                    MIGRATION_29_30
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

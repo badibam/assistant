@@ -350,7 +350,13 @@ object UI {
         // Themed container + standard content with UI.*
         CurrentTheme.current.ZoneCardContainer(onClick = onClick, onLongClick = onLongClick) {
             Column {
-                Text(zone.name, TextType.TITLE)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    zone.icon_name?.let { Icon(iconName = it, size = 24.dp) }
+                    Text(zone.name, TextType.TITLE)
+                }
                 zone.description?.let { desc ->
                     Text(desc, TextType.BODY)
                 }

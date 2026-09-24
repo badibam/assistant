@@ -2,6 +2,7 @@ package com.assistant.core.services
 
 import com.assistant.core.utils.JsonUtils
 import android.content.Context
+import com.assistant.core.icons.Icons
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.CancellationToken
@@ -58,6 +59,10 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         val description = params.optString("description").takeIf { it.isNotBlank() }
 
+        val icon = storedIcon(params.optString("icon_name").takeIf { it.isNotBlank() })
+        if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
+        icon as StoredIcon.Kept
+
         // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
         val toolGroupsJson = if (params.has("tool_groups")) {
             params.optJSONArray("tool_groups")?.toString()
@@ -79,6 +84,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         val newZone = Zone(
             name = name,
             description = description,
+            icon_name = icon.name,
             order_index = orderIndex,
             tool_groups = toolGroupsJson,
             group = group
@@ -97,9 +103,34 @@ class ZoneService(private val context: Context) : ExecutableService {
             "zone_id" to newZone.id,
             "name" to newZone.name,
             "created_at" to newZone.created_at
-        ))
+        ) + icon.report())
     }
     
+    /** What storing a zone's icon name comes to: kept, maybe under its current name, or refused. */
+    private sealed interface StoredIcon {
+        /** Stored as [name]; [renamedFrom] is the former name it was given, if it was one. */
+        data class Kept(val name: String?, val renamedFrom: String? = null) : StoredIcon
+        data class Refused(val message: String) : StoredIcon
+
+        /** Said in the result when a former name was stored under the current one. */
+        fun report(): Map<String, Any> {
+            val kept = this as? Kept ?: return emptyMap()
+            val from = kept.renamedFrom ?: return emptyMap()
+            return mapOf("icon_renamed" to mapOf("from" to from, "to" to kept.name))
+        }
+    }
+
+    /**
+     * An icon name is a Lucide name. A former one is stored under the name it became, and a
+     * name that designates no icon is refused rather than stored and shown as two letters.
+     */
+    private fun storedIcon(given: String?): StoredIcon {
+        if (given == null) return StoredIcon.Kept(null)
+        val stored = Icons.storedName(context, given)
+            ?: return StoredIcon.Refused(s.shared("service_error_icon_unknown").format(given))
+        return StoredIcon.Kept(stored, renamedFrom = given.takeIf { it != stored })
+    }
+
     /**
      * Update existing zone
      */
@@ -143,9 +174,18 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
 
+        // Only an icon that changes is checked, like a tool's: saving a zone again with the
+        // icon it has is always allowed.
+        val givenIcon = params.optString("icon_name").takeIf { it.isNotBlank() }
+        val icon = if (givenIcon != null && givenIcon != existingZone.icon_name) storedIcon(givenIcon)
+        else StoredIcon.Kept(existingZone.icon_name)
+        if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
+        icon as StoredIcon.Kept
+
         val updatedZone = existingZone.copy(
             name = params.optString("name").takeIf { it.isNotBlank() } ?: existingZone.name,
             description = params.optString("description").takeIf { it.isNotBlank() } ?: existingZone.description,
+            icon_name = icon.name,
             tool_groups = toolGroupsJson,
             group = group,
             updated_at = System.currentTimeMillis()
@@ -161,7 +201,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         return OperationResult.success(mapOf(
             "zone_id" to updatedZone.id,
             "updated_at" to updatedZone.updated_at
-        ))
+        ) + icon.report())
     }
     
     /**
@@ -211,6 +251,7 @@ class ZoneService(private val context: Context) : ExecutableService {
             "id" to zone.id,
             "name" to zone.name,
             "description" to zone.description,
+            "icon_name" to zone.icon_name,
             "order_index" to zone.order_index,
             "created_at" to zone.created_at,
             "updated_at" to zone.updated_at
@@ -244,6 +285,7 @@ class ZoneService(private val context: Context) : ExecutableService {
                 "id" to zone.id,
                 "name" to zone.name,
                 "description" to zone.description,
+                "icon_name" to zone.icon_name,
                 "order_index" to zone.order_index,
                 "created_at" to zone.created_at,
                 "updated_at" to zone.updated_at

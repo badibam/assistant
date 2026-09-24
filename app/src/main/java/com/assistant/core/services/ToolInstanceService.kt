@@ -27,6 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
+import com.assistant.core.icons.Icons
 
 /**
  * ToolInstance Service - Core service for tool instance operations
@@ -107,10 +108,16 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // has none. The interface takes that route, assigning names in its editor.
         val namedConfigJson = assignMissingFieldNames(configJson)
 
+        val iconCheck = checkIconName(namedConfigJson)
+        val storedConfigJson = when (iconCheck) {
+            is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
+            is IconCheck.Kept -> iconCheck.configJson
+        }
+
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
             tooltype = toolType,
-            config_json = namedConfigJson
+            config_json = storedConfigJson
         )
 
         if (token.isCancelled) return OperationResult.cancelled()
@@ -124,7 +131,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "tool_instance_id" to newToolInstance.id,
             "zone_id" to newToolInstance.zone_id,
             "tooltype" to newToolInstance.tooltype
-        ))
+        ) + iconCheck.report())
     }
     
     /**
@@ -169,6 +176,16 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             configJson = processResult.data?.get("processed_config") as? String ?: configJson
         }
 
+        // Only a name that changes is checked: a config saved again with the icon it already
+        // had stays savable, even if that name was stored before names were checked.
+        val iconChanged = configJson.isNotBlank() &&
+            JSONObject(configJson).optString("icon_name") != JSONObject(existingTool.config_json).optString("icon_name")
+        val iconCheck = if (iconChanged) checkIconName(configJson) else IconCheck.Kept(configJson)
+        when (iconCheck) {
+            is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
+            is IconCheck.Kept -> configJson = iconCheck.configJson
+        }
+
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
 
@@ -197,7 +214,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             "tool_instance_id" to updatedTool.id,
             "zone_id" to updatedTool.zone_id,
             "updated_at" to updatedTool.updated_at
-        ))
+        ) + iconCheck.report())
     }
     
     /**
@@ -543,6 +560,34 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      * A config with no custom_fields comes back untouched, so the caller can run this over
      * every creation without asking first.
      */
+    /** What storing a config's icon name comes to: kept, maybe under its current name, or refused. */
+    private sealed interface IconCheck {
+        /** Stored as [configJson]; [renamedFrom] is the former name it was given, if it was one. */
+        data class Kept(val configJson: String, val renamedFrom: String? = null) : IconCheck
+        data class Refused(val message: String) : IconCheck
+
+        /** Said in the result when a former name was stored under the current one. */
+        fun report(): Map<String, Any> {
+            val kept = this as? Kept ?: return emptyMap()
+            val from = kept.renamedFrom ?: return emptyMap()
+            return mapOf("icon_renamed" to mapOf("from" to from, "to" to JSONObject(kept.configJson).getString("icon_name")))
+        }
+    }
+
+    /**
+     * An icon name is a Lucide name. A former one is stored under the name it became, and a
+     * name that designates no icon is refused rather than stored and shown as two letters.
+     */
+    private fun checkIconName(configJson: String): IconCheck {
+        val config = JSONObject(configJson)
+        val given = config.optString("icon_name").takeIf { it.isNotBlank() } ?: return IconCheck.Kept(configJson)
+        val stored = Icons.storedName(context, given)
+            ?: return IconCheck.Refused(s.shared("service_error_icon_unknown").format(given))
+        if (stored == given) return IconCheck.Kept(configJson)
+        config.put("icon_name", stored)
+        return IconCheck.Kept(config.toString(), renamedFrom = given)
+    }
+
     private fun assignMissingFieldNames(configJson: String): String {
         val config = JSONObject(configJson)
         val fieldsArray = config.optJSONArray("custom_fields") ?: return configJson

@@ -42,6 +42,7 @@ fun CreateZoneScreen(
     // Form state - persistent across orientation changes
     var name by rememberSaveable(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
     var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
+    var iconName by rememberSaveable(existingZone) { mutableStateOf(existingZone?.icon_name.orEmpty()) }
     var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -84,6 +85,7 @@ fun CreateZoneScreen(
             "name" to name.trim(),
             "description" to description.trim()
         )
+        if (iconName.isNotBlank()) zoneData["icon_name"] = iconName
 
         // Add tool_groups if not empty
         if (toolGroups.isNotEmpty()) {
@@ -112,6 +114,7 @@ fun CreateZoneScreen(
                                 "name" to name.trim(),
                                 "description" to (description.takeIf { it.isNotBlank() } ?: "")
                             )
+                            if (iconName.isNotBlank()) updateParams["icon_name"] = iconName
 
                             // Add tool_groups to update params
                             if (toolGroups.isNotEmpty()) {
@@ -139,6 +142,7 @@ fun CreateZoneScreen(
                                 "name" to name.trim(),
                                 "description" to (description.takeIf { it.isNotBlank() } ?: "")
                             )
+                            if (iconName.isNotBlank()) createParams["icon_name"] = iconName
 
                             // Add tool_groups to create params
                             if (toolGroups.isNotEmpty()) {
@@ -203,6 +207,12 @@ fun CreateZoneScreen(
             required = false
         )
 
+        com.assistant.core.ui.components.IconSelector(
+            current = iconName,
+            suggested = ZONE_SUGGESTED_ICONS,
+            onChange = { iconName = it }
+        )
+
         // Zone group selector
         com.assistant.core.ui.components.GroupSelector(
             availableGroups = availableZoneGroups,
@@ -265,3 +275,9 @@ fun CreateZoneScreen(
         }
     }
 }
+
+/** Where the icon picker starts for a zone: the themes zones are usually made of. */
+private val ZONE_SUGGESTED_ICONS = listOf(
+    "heart", "dumbbell", "briefcase", "house", "wallet", "graduation-cap",
+    "users", "leaf", "book-open", "utensils", "plane", "music", "palette", "folder"
+)

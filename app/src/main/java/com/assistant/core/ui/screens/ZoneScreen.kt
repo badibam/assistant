@@ -350,7 +350,7 @@ fun ZoneScreen(
         UI.PageHeader(
             title = zone.name,
             subtitle = zone.description?.takeIf { it.isNotBlank() },
-            icon = null,
+            icon = zone.icon_name,
             leftButton = ButtonAction.BACK,
             rightButton = ButtonAction.CONFIGURE,
             onLeftClick = onBack,
