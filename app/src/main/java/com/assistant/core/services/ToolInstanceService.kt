@@ -519,24 +519,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Processes custom fields changes during tool instance config update.
-     *
-     * Runs on every config update, whatever the caller:
-     * 1. Refusing technical names this service never assigned (invented names, renames)
-     * 2. Assigning a technical name to each field that arrives without one
-     * 3. Refusing type changes, which would make stored values invalid
-     * 4. Detecting structural changes and migrating the data accordingly
-     * 5. Validating all field definitions
-     *
-     * Migration is automatic and silent for AI updates (no user confirmation).
-     *
-     * @param toolInstanceId ID of the tool instance being updated
-     * @param oldConfigJson Previous configuration JSON
-     * @param newConfigJson New configuration JSON (with custom_fields possibly modified)
-     * @param token Cancellation token
-     * @return OperationResult with processed_config containing generated field names
-     */
-    /**
      * Give a technical name to every field that arrived without one.
      *
      * Names already assigned during this pass count as taken, so two fields created together
@@ -555,12 +537,6 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         }
     }
 
-    /**
-     * Same, on the raw config of a tool being created, returning the config to store.
-     *
-     * A config with no custom_fields comes back untouched, so the caller can run this over
-     * every creation without asking first.
-     */
     /** What storing a config's icon name comes to: kept, maybe under its current name, or refused. */
     private sealed interface IconCheck {
         /** Stored as [configJson]; [renamedFrom] is the former name it was given, if it was one. */
@@ -602,6 +578,12 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return IconCheck.Kept(config.toString(), renamedFrom = given)
     }
 
+    /**
+     * assignNames on the raw config of a tool being created, returning the config to store.
+     *
+     * A config with no custom_fields comes back untouched, so the caller can run this over
+     * every creation without asking first.
+     */
     private fun assignMissingFieldNames(configJson: String): String {
         val config = JSONObject(configJson)
         val fieldsArray = config.optJSONArray("custom_fields") ?: return configJson
@@ -612,6 +594,24 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return config.toString()
     }
 
+    /**
+     * Processes custom fields changes during tool instance config update.
+     *
+     * Runs on every config update, whatever the caller:
+     * 1. Refusing technical names this service never assigned (invented names, renames)
+     * 2. Assigning a technical name to each field that arrives without one
+     * 3. Refusing type changes, which would make stored values invalid
+     * 4. Detecting structural changes and migrating the data accordingly
+     * 5. Validating all field definitions
+     *
+     * Migration is automatic and silent for AI updates (no user confirmation).
+     *
+     * @param toolInstanceId ID of the tool instance being updated
+     * @param oldConfigJson Previous configuration JSON
+     * @param newConfigJson New configuration JSON (with custom_fields possibly modified)
+     * @param token Cancellation token
+     * @return OperationResult with processed_config containing generated field names
+     */
     private suspend fun processCustomFields(
         toolInstanceId: String,
         oldConfigJson: String,
