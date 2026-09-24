@@ -33,7 +33,6 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 - Les messages de date envoyés à l'IA (`ai_prompt_current_datetime`, `ai_prompt_scheduled_datetime`) portent encore le timestamp en millisecondes à côté de l'ISO 8601, alors que la règle des dates veut que l'IA ne voie que de l'ISO. Le retirer change le L1 : à faire avec un rejeu.
 - Les schémas que lit l'IA ont des descriptions vides : `tools_base_schema_config_name` et ses voisins valent `""` dans les deux langues, et le rejeu du 2026-09-24 a montré des `"description": ""` partout dans le schéma de config. Soit les écrire, soit retirer les clés.
 - `strings_generated.xml` est ignoré par git pour la langue par défaut (`values/`) mais versionné pour le français (`values-fr/`). L'un des deux a tort.
-- `CreateZoneScreen` ignore le résultat de `zones.create` et `zones.update` : un refus du service (nom en double, icône inconnue) ferme l'écran comme un succès.
 - Outils prévus par la vision produit mais jamais livrés : Calcul, Graphique, Alerte, Objectif, Liste.
 
 ## À vérifier sur l'appareil
