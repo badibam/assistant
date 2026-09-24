@@ -27,6 +27,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- DeepSeek, après que les compteurs d'usage sont devenus obligatoires : qu'une session CHAT avec DeepSeek passe toujours (elle échouerait si DeepSeek n'envoyait pas `input_tokens` ou `output_tokens`), et que son coût s'affiche.
 - Zone : effacer la description dans le formulaire de modification et enregistrer — elle doit disparaître (elle restait). Puis, en CHAT, demander à l'IA de retirer la description d'une zone.
 - Touche Retour : depuis un outil, elle revient à la zone, puis à l'accueil, puis demande avant de fermer l'app ; sur la création de zone et les réglages Claude/OpenAI, elle annule ; dans une entrée de journal en modification, elle annule la modification. Et qu'elle ferme toujours les fenêtres (réglages, chat) sans effet de bord.
 - Base 32→33 : que l'app démarre, que les réglages de format (fuseau, début de semaine, 24 h) s'affichent comme avant et s'enregistrent, et que la validation garde ses quatre choix. Puis que l'historique de tracking et les sélecteurs de période s'ouvrent sans passer par « chargement de la configuration », et suivent un début de semaine changé dans les réglages.
