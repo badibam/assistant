@@ -1,6 +1,7 @@
 package com.assistant.core.services
 
 import android.content.Context
+import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.CancellationToken
@@ -108,7 +109,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // has none. The interface takes that route, assigning names in its editor.
         val namedConfigJson = assignMissingFieldNames(configJson)
 
-        val iconCheck = checkIconName(namedConfigJson)
+        val iconCheck = checkIconName(withDefaultIcon(namedConfigJson, toolType))
         val storedConfigJson = when (iconCheck) {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> iconCheck.configJson
@@ -572,6 +573,19 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             val from = kept.renamedFrom ?: return emptyMap()
             return mapOf("icon_renamed" to mapOf("from" to from, "to" to JSONObject(kept.configJson).getString("icon_name")))
         }
+    }
+
+    /**
+     * A tool created without an icon takes its tooltype's default, the way a field created
+     * without a technical name gets one: the interface starts from a default config that
+     * carries it, and a tool the AI created without one would otherwise have none to show or
+     * to edit.
+     */
+    private fun withDefaultIcon(configJson: String, toolType: String): String {
+        val config = JSONObject(configJson)
+        if (config.optString("icon_name").isNotBlank()) return configJson
+        val default = ToolTypeManager.getToolType(toolType)?.getDefaultIconName() ?: return configJson
+        return config.put("icon_name", default).toString()
     }
 
     /**

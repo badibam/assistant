@@ -43,7 +43,7 @@ interface ToolTypeContract : SchemaProvider {
     fun getAvailableOperations(): List<String>
     
     /**
-     * Default icon name for this tool type (corresponds to SVG file name in themes)
+     * Default icon for this tool type, a Lucide name: given to a tool created without one.
      */
     fun getDefaultIconName(): String
     

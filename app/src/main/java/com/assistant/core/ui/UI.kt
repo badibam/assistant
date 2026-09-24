@@ -384,9 +384,9 @@ object UI {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Real icon
-            val iconName = JSONObject(tool.config_json).optString("icon_name", "activity")
-            Icon(
+            // The stored icon; a tool created with none gets its tooltype's default
+            val iconName = JSONObject(tool.config_json).optString("icon_name")
+            if (iconName.isNotBlank()) Icon(
                 iconName = iconName,
                 size = 24.dp,
                 contentDescription = null
