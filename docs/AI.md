@@ -202,23 +202,27 @@ data class AIResponse(
 ## 3. Configuration IA
 
 ### AILimitsConfig
-Configuration globale des limites de boucles autonomes, stockée dans la catégorie de réglages `ai_limits`.
+Configuration globale des limites de l'IA, stockée dans la catégorie de réglages `ai_limits` et réglable dans l'écran des limites IA.
 
 ```kotlin
 data class AILimitsConfig(
     val chatMaxAutonomousRoundtrips: Int = 10,
-    val automationMaxAutonomousRoundtrips: Int = 20
+    val automationMaxAutonomousRoundtrips: Int = 20,
+    val chatMaxDataChars: Int = 15_000,
+    val automationMaxDataChars: Int = 100_000
 )
 ```
 
-**Limite unique** :
+Les seuils de taille des données sont décrits avec l'attente de confirmation, section « Validation et Communication ».
+
+**Limite d'appels** :
 - **AutonomousRoundtrips** : nombre d'appels à l'IA d'affilée. En CHAT, la limite atteinte rend la main à l'utilisateur (retour à IDLE, la session reste ouverte) ; en AUTOMATION, elle ferme la session (`LIMIT_REACHED`).
 
 **Compteur** : `totalRoundtrips` compte les appels à l'IA depuis la dernière intervention de l'utilisateur — message, réponse à une question ou à une validation, annulation, interruption. Chacune le remet à zéro : la limite borne ce que l'IA fait seule, jamais la longueur d'une conversation. Une AUTOMATION, sans personne pour intervenir, compte donc sa session entière.
 
 **Rationale** : chaque appel est facturé, et rien d'autre n'arrête une IA qui s'appelle en boucle — en CHAT comme en AUTOMATION. Pas de limites séparées sur les erreurs de format ou les échecs d'action : l'IA doit s'auto-corriger, et la limite d'allers-retours suffit comme filet.
 
-**Stockage** : les valeurs par défaut de `AILimitsConfig` sont les seules. Une installation neuve ou une réinitialisation les écrit via `toSettingsJson()` ; `fromSettingsJson()` exige les deux clés et échoue si l'une manque.
+**Stockage** : les valeurs par défaut de `AILimitsConfig` sont les seules. Une installation neuve ou une réinitialisation les écrit via `toSettingsJson()` ; `fromSettingsJson()` exige les quatre clés et échoue si l'une manque.
 
 **API** : `AppConfigService.getAILimits()`, `AppConfigManager.getAILimits()` (cache volatile).
 

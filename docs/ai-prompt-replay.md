@@ -94,7 +94,7 @@ Troisième et dernier message du test, mêmes règles.
 | 6 | `fields` liste `data.quantity` et `custom_fields.<id>` ; `period_start`/`period_end` **à la racine** ; l'humeur et le « Pesé le » **reviennent**, le second en ISO ; l'en-tête de période est en ISO avec décalage | Un objet `period` imbriqué ; des `custom_fields` absents → la création en lot les perd encore (corrigé le 2026-09-24) ; un « Pesé le » en nombre brut → la frontière des dates fuit |
 | 7 | `page` et `limit` | `offset`, qui sera refusé |
 | 8 | Refus lisible disant que le conteneur n'est pas un champ, puis reprise correcte | Refus incompréhensible, ou boucle |
-| 9 | `display_name` modifié, `name` conservé, l'humeur relue intacte | `name` modifié → refus attendu. Valeur perdue → c'est le renommage destructeur déjà porté par `TODO.md` et épinglé par `FieldConfigComparatorTest`, atteint par un autre chemin : à consigner |
+| 9 | `display_name` modifié, `name` conservé, l'humeur relue intacte | `name` modifié → refus attendu. Valeur perdue → le champ a été supprimé puis recréé au lieu d'être renommé par son `display_name` : le service refuse un `name` changé, donc c'est un autre chemin, à consigner |
 | 10 | `validation_request` posé, et un vrai dialogue de validation avant d'agir | L'action passe sans dialogue — à rapprocher de la validation désactivée par défaut, dette d'audit reportée le 2026-09-22 |
 | limite | Si la limite d'allers-retours tombe, un message système le dit à l'écran | Plus rien ne se passe après un message envoyé, sans rien à l'écran |
 
