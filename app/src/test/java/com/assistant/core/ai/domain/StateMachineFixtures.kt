@@ -23,7 +23,7 @@ internal const val T0 = 1_700_000_000_000L
 internal const val T1 = T0 + 60_000L
 
 /** The limit used unless a test is about the limit itself. Small, so overruns are obvious. */
-internal val testLimits = SessionLimits(maxAutonomousRoundtrips = 3)
+internal val testLimits = SessionLimits(maxAutonomousRoundtrips = 3, maxDataChars = 1_000)
 
 /** A running CHAT session sitting at a given phase. */
 internal fun chatAt(

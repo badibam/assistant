@@ -35,12 +35,16 @@ fun AILimitsSettingsScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var chatLimit by rememberSaveable { mutableStateOf(AILimitsConfig.default().chatMaxAutonomousRoundtrips) }
     var automationLimit by rememberSaveable { mutableStateOf(AILimitsConfig.default().automationMaxAutonomousRoundtrips) }
+    var chatDataLimit by rememberSaveable { mutableStateOf(AILimitsConfig.default().chatMaxDataChars) }
+    var automationDataLimit by rememberSaveable { mutableStateOf(AILimitsConfig.default().automationMaxDataChars) }
 
     val configLoad = rememberLoadOnce(Unit) {
         try {
             val limits = AppConfigManager.getAILimits()
             chatLimit = limits.chatMaxAutonomousRoundtrips
             automationLimit = limits.automationMaxAutonomousRoundtrips
+            chatDataLimit = limits.chatMaxDataChars
+            automationDataLimit = limits.automationMaxDataChars
             true
         } catch (e: Exception) {
             errorMessage = s.shared("settings_ai_limits_error_load").format(e.message ?: "")
@@ -61,7 +65,9 @@ fun AILimitsSettingsScreen(
                 AppConfigService(context).setAILimits(
                     AILimitsConfig(
                         chatMaxAutonomousRoundtrips = chatLimit,
-                        automationMaxAutonomousRoundtrips = automationLimit
+                        automationMaxAutonomousRoundtrips = automationLimit,
+                        chatMaxDataChars = chatDataLimit,
+                        automationMaxDataChars = automationDataLimit
                     )
                 )
                 // The AI reads its limits from this cache at every step
@@ -143,6 +149,22 @@ fun AILimitsSettingsScreen(
             }
         }
 
+        DataThresholdCard(
+            label = s.shared("app_config_ai_data_chat"),
+            help = s.shared("settings_ai_data_chat_help"),
+            value = chatDataLimit,
+            range = AppConfigSchemaProvider.AI_DATA_CHAT_RANGE,
+            onValueChange = { chatDataLimit = it }
+        )
+
+        DataThresholdCard(
+            label = s.shared("app_config_ai_data_automation"),
+            help = s.shared("settings_ai_data_automation_help"),
+            value = automationDataLimit,
+            range = AppConfigSchemaProvider.AI_DATA_AUTOMATION_RANGE,
+            onValueChange = { automationDataLimit = it }
+        )
+
         Box(modifier = Modifier.padding(horizontal = 16.dp)) {
             UI.ActionButton(
                 action = ButtonAction.SAVE,
@@ -151,6 +173,37 @@ fun AILimitsSettingsScreen(
                 enabled = configLoad == LoadState.LOADED,
                 onClick = { saveSettings() }
             )
+        }
+    }
+}
+
+/** A data size threshold, in characters, set by a slider stepping as its range does. */
+@Composable
+private fun DataThresholdCard(
+    label: String,
+    help: String,
+    value: Int,
+    range: IntProgression,
+    onValueChange: (Int) -> Unit
+) {
+    UI.Card(type = CardType.DEFAULT) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            UI.SliderField(
+                label = label,
+                value = value.toDouble(),
+                onValueChange = { onValueChange(it.toInt()) },
+                min = range.first.toDouble(),
+                max = range.last.toDouble(),
+                step = range.step.toDouble(),
+                minLabel = range.first.toString(),
+                maxLabel = range.last.toString()
+            )
+            UI.Text(text = help, type = TextType.CAPTION)
         }
     }
 }

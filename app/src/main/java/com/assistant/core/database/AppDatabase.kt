@@ -23,6 +23,7 @@ import com.assistant.core.ai.database.AITypeConverters
 import com.assistant.core.ai.database.MessageTypeConverters
 import com.assistant.core.utils.LogManager
 import com.assistant.core.versioning.AILimitsAtV32
+import com.assistant.core.versioning.AILimitsAtV34
 import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.SettingsAtV33
 import com.assistant.core.versioning.FormerDefaultIcons
@@ -65,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 33
+        const val VERSION = 34
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1253,6 +1254,31 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_33_34 = object : Migration(33, 34) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // ai_limits gains the two data size thresholds: see AILimitsAtV34. Settings that
+                // cannot be read are left as they are; reading them then fails with the reason.
+                val cursor = database.query(
+                    "SELECT settings FROM app_settings_categories WHERE category = 'ai_limits'"
+                )
+                if (cursor.moveToFirst()) {
+                    try {
+                        val rewritten = AILimitsAtV34.rewrite(org.json.JSONObject(cursor.getString(0)))
+                        database.execSQL(
+                            "UPDATE app_settings_categories SET settings = ? WHERE category = 'ai_limits'",
+                            arrayOf(rewritten.toString())
+                        )
+                        LogManager.database("MIGRATION 33->34: ai_limits rewritten to $rewritten", "INFO")
+                    } catch (e: Exception) {
+                        LogManager.database("MIGRATION 33->34: ai_limits left as is (${e.message})", "ERROR")
+                    }
+                } else {
+                    LogManager.database("MIGRATION 33->34: no ai_limits stored, the defaults are written on first read", "INFO")
+                }
+                cursor.close()
+            }
+        }
+
         private val MIGRATION_32_33 = object : Migration(32, 33) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // format, validation_config and main_screen get the required keys they lack and
@@ -1393,7 +1419,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_29_30,
                     MIGRATION_30_31,
                     MIGRATION_31_32,
-                    MIGRATION_32_33
+                    MIGRATION_32_33,
+                    MIGRATION_33_34
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

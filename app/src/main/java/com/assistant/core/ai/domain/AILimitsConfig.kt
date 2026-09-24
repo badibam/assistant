@@ -19,7 +19,21 @@ data class AILimitsConfig(
     val chatMaxAutonomousRoundtrips: Int = 10,
 
     /** Maximum total autonomous roundtrips for AUTOMATION sessions (safety against infinite loops) */
-    val automationMaxAutonomousRoundtrips: Int = 20
+    val automationMaxAutonomousRoundtrips: Int = 20,
+
+    /**
+     * Size, in characters of the text the AI receives, above which data asked for in a CHAT
+     * waits for the user's confirmation. 15 000 is above the chat data of the 2026-09-18 backup
+     * but its largest send (median 4 400, 90th percentile 13 000, maximum 33 000).
+     */
+    val chatMaxDataChars: Int = 15_000,
+
+    /**
+     * Same, for an AUTOMATION, where data above it is refused outright: nobody is there to
+     * confirm. 100 000 is over twice what the automations of the 2026-09-18 backup send
+     * (about 43 000 on nearly every run).
+     */
+    val automationMaxDataChars: Int = 100_000
 ) {
     /**
      * Get limits for specific session type
@@ -27,15 +41,18 @@ data class AILimitsConfig(
     fun getLimitsForSessionType(sessionType: SessionType): SessionLimits {
         return when (sessionType) {
             SessionType.CHAT -> SessionLimits(
-                maxAutonomousRoundtrips = chatMaxAutonomousRoundtrips
+                maxAutonomousRoundtrips = chatMaxAutonomousRoundtrips,
+                maxDataChars = chatMaxDataChars
             )
             SessionType.AUTOMATION -> SessionLimits(
-                maxAutonomousRoundtrips = automationMaxAutonomousRoundtrips
+                maxAutonomousRoundtrips = automationMaxAutonomousRoundtrips,
+                maxDataChars = automationMaxDataChars
             )
             SessionType.SEED -> {
                 // SEED sessions are never executed, use AUTOMATION limits as fallback
                 SessionLimits(
-                    maxAutonomousRoundtrips = automationMaxAutonomousRoundtrips
+                    maxAutonomousRoundtrips = automationMaxAutonomousRoundtrips,
+                    maxDataChars = automationMaxDataChars
                 )
             }
         }
@@ -45,22 +62,28 @@ data class AILimitsConfig(
     fun toSettingsJson(): String = JSONObject().apply {
         put(KEY_CHAT, chatMaxAutonomousRoundtrips)
         put(KEY_AUTOMATION, automationMaxAutonomousRoundtrips)
+        put(KEY_CHAT_DATA, chatMaxDataChars)
+        put(KEY_AUTOMATION_DATA, automationMaxDataChars)
     }.toString()
 
     companion object {
         const val KEY_CHAT = "chat_max_autonomous_roundtrips"
         const val KEY_AUTOMATION = "automation_max_autonomous_roundtrips"
+        const val KEY_CHAT_DATA = "chat_max_data_chars"
+        const val KEY_AUTOMATION_DATA = "automation_max_data_chars"
 
         fun default() = AILimitsConfig()
 
         /**
-         * Read the stored ai_limits settings. Both keys are required: a missing one throws
+         * Read the stored ai_limits settings. Every key is required: a missing one throws
          * rather than standing for a default, since the database is written from default()
-         * and migrated to carry both.
+         * and migrated to carry them all.
          */
         fun fromSettingsJson(settings: JSONObject) = AILimitsConfig(
             chatMaxAutonomousRoundtrips = settings.getInt(KEY_CHAT),
-            automationMaxAutonomousRoundtrips = settings.getInt(KEY_AUTOMATION)
+            automationMaxAutonomousRoundtrips = settings.getInt(KEY_AUTOMATION),
+            chatMaxDataChars = settings.getInt(KEY_CHAT_DATA),
+            automationMaxDataChars = settings.getInt(KEY_AUTOMATION_DATA)
         )
     }
 }
@@ -69,5 +92,7 @@ data class AILimitsConfig(
  * Limits for a specific session type (helper class)
  */
 data class SessionLimits(
-    val maxAutonomousRoundtrips: Int
+    val maxAutonomousRoundtrips: Int,
+    /** Characters of data text above which a CHAT asks for confirmation and an AUTOMATION refuses */
+    val maxDataChars: Int
 )

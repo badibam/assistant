@@ -886,6 +886,12 @@
     <string name="app_config_schema_ai_limits_automation">Maximum AI calls over a whole automation session</string>
     <string name="settings_ai_limits_chat_help">Counted from your last message: past it, the AI stops and hands control back to you.</string>
     <string name="settings_ai_limits_automation_help">Counted over the whole session, since nobody intervenes: past it, the automation ends.</string>
+    <string name="app_config_ai_data_chat">Data size before asking, chat (characters)</string>
+    <string name="app_config_ai_data_automation">Data size allowed, automation (characters)</string>
+    <string name="app_config_schema_ai_data_chat">Characters of data text above which a chat asks the user before sending it to the AI</string>
+    <string name="app_config_schema_ai_data_automation">Characters of data text above which an automation refuses to send it to the AI</string>
+    <string name="settings_ai_data_chat_help">Data asked for above this size, by your pointers or by the AI, waits for you to send or refuse it.</string>
+    <string name="settings_ai_data_automation_help">Above this size the data is not sent: the AI is told to narrow its request. Visible in the execution history.</string>
     <string name="settings_ai_limits_error_load">Could not load the AI limits: %1$s</string>
     <string name="settings_ai_limits_error_save">Could not save the AI limits: %1$s</string>
 

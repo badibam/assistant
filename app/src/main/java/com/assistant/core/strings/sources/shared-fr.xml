@@ -886,6 +886,12 @@
     <string name="app_config_schema_ai_limits_automation">Nombre maximal d\'appels IA sur toute une session d\'automation</string>
     <string name="settings_ai_limits_chat_help">Compté depuis ton dernier message : au-delà, l\'IA s\'arrête et te rend la main.</string>
     <string name="settings_ai_limits_automation_help">Compté sur toute la session, puisque personne n\'intervient : au-delà, l\'automation se termine.</string>
+    <string name="app_config_ai_data_chat">Taille des données avant confirmation, chat (caractères)</string>
+    <string name="app_config_ai_data_automation">Taille des données admise, automation (caractères)</string>
+    <string name="app_config_schema_ai_data_chat">Nombre de caractères de données au-delà duquel un chat demande à l\'utilisateur avant de les envoyer à l\'IA</string>
+    <string name="app_config_schema_ai_data_automation">Nombre de caractères de données au-delà duquel une automation refuse de les envoyer à l\'IA</string>
+    <string name="settings_ai_data_chat_help">Au-delà, les données demandées, par tes pointeurs ou par l\'IA, attendent que tu les envoies ou les refuses.</string>
+    <string name="settings_ai_data_automation_help">Au-delà, les données ne partent pas : l\'IA est invitée à resserrer sa demande. Visible dans l\'historique d\'exécution.</string>
     <string name="settings_ai_limits_error_load">Impossible de charger les limites IA : %1$s</string>
     <string name="settings_ai_limits_error_save">Impossible d\'enregistrer les limites IA : %1$s</string>
 

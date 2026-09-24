@@ -45,6 +45,8 @@ object AppConfigSchemaProvider : SchemaProvider {
             "year_limit" -> s.shared("app_config_format_year_limit")
             "chat_max_autonomous_roundtrips" -> s.shared("app_config_ai_limits_chat")
             "automation_max_autonomous_roundtrips" -> s.shared("app_config_ai_limits_automation")
+            "chat_max_data_chars" -> s.shared("app_config_ai_data_chat")
+            "automation_max_data_chars" -> s.shared("app_config_ai_data_automation")
             else -> fieldName
         }
     }
@@ -163,9 +165,21 @@ object AppConfigSchemaProvider : SchemaProvider {
                     "minimum": ${AI_LIMITS_AUTOMATION_RANGE.first},
                     "maximum": ${AI_LIMITS_AUTOMATION_RANGE.last},
                     "description": "${s.shared("app_config_schema_ai_limits_automation")}"
+                },
+                "chat_max_data_chars": {
+                    "type": "integer",
+                    "minimum": ${AI_DATA_CHAT_RANGE.first},
+                    "maximum": ${AI_DATA_CHAT_RANGE.last},
+                    "description": "${s.shared("app_config_schema_ai_data_chat")}"
+                },
+                "automation_max_data_chars": {
+                    "type": "integer",
+                    "minimum": ${AI_DATA_AUTOMATION_RANGE.first},
+                    "maximum": ${AI_DATA_AUTOMATION_RANGE.last},
+                    "description": "${s.shared("app_config_schema_ai_data_automation")}"
                 }
             },
-            "required": ["chat_max_autonomous_roundtrips", "automation_max_autonomous_roundtrips"],
+            "required": ["chat_max_autonomous_roundtrips", "automation_max_autonomous_roundtrips", "chat_max_data_chars", "automation_max_data_chars"],
             "additionalProperties": false
         }
         """.trimIndent()
@@ -189,4 +203,8 @@ object AppConfigSchemaProvider : SchemaProvider {
     /** The bounds of the AI limits, shared by the schema and the sliders of the settings screen */
     val AI_LIMITS_CHAT_RANGE = 1..50
     val AI_LIMITS_AUTOMATION_RANGE = 1..100
+
+    /** The data size thresholds, in characters, and the step of their sliders */
+    val AI_DATA_CHAT_RANGE = IntProgression.fromClosedRange(5_000, 100_000, 5_000)
+    val AI_DATA_AUTOMATION_RANGE = IntProgression.fromClosedRange(10_000, 500_000, 10_000)
 }
