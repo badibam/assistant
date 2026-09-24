@@ -12,12 +12,13 @@ import java.text.Normalizer
  *
  * Generation rules:
  * 1. Convert to lowercase
- * 2. Transliterate accents to ASCII (é→e, ç→c, etc.)
- * 3. Replace spaces with underscores
- * 4. Remove non-alphanumeric characters (except underscores)
- * 5. Trim underscores from start/end
- * 6. If result is empty or only numbers, use fallback "field"
- * 7. Handle collisions with numeric suffix (_2, _3, etc.)
+ * 2. Transliterate to ASCII: ligatures spelled out (œ→oe, ß→ss), accents dropped (é→e, ç→c)
+ * 3. Turn every run of other characters (spaces, punctuation, other scripts) into one underscore
+ * 4. Trim underscores from start/end
+ * 5. If result is empty or only numbers, use fallback "field"
+ * 6. Handle collisions with numeric suffix (_2, _3, etc.)
+ *
+ * A name is fixed once given: changing these rules only changes the names of fields created after.
  */
 object FieldNameGenerator {
 
@@ -52,24 +53,24 @@ object FieldNameGenerator {
      * Examples:
      * - "Calories totales" → "calories_totales"
      * - "Temp. (°C)" → "temp_c"
+     * - "Nombre d'œufs" → "nombre_d_oeufs"
+     * - "Heure-de-coucher" → "heure_de_coucher"
      * - "温度" → "field"
      * - "  Multiple   Spaces  " → "multiple_spaces"
      * - "123" → "field_123"
      */
     private fun normalize(displayName: String): String {
-        // Step 1-2: Convert to lowercase and transliterate accents
+        // Step 1-2: Convert to lowercase and transliterate
         val transliterated = transliterate(displayName.lowercase())
 
-        // Step 3: Replace spaces (and multiple spaces) with single underscore
-        val spacesReplaced = transliterated.replace(Regex("\\s+"), "_")
+        // Step 3: Every run of anything else becomes one underscore, so punctuation separates
+        // words the way a space does ("pré-sommeil" → "pre_sommeil", not "presommeil")
+        val separated = transliterated.replace(Regex("[^a-z0-9]+"), "_")
 
-        // Step 4: Remove non-alphanumeric characters except underscores
-        val cleaned = spacesReplaced.replace(Regex("[^a-z0-9_]"), "")
+        // Step 4: Trim underscores from start and end
+        val trimmed = separated.trim('_')
 
-        // Step 5: Trim underscores from start and end
-        val trimmed = cleaned.trim('_')
-
-        // Step 6: Handle empty result or numbers-only
+        // Step 5: Handle empty result or numbers-only
         if (trimmed.isEmpty() || trimmed.matches(Regex("\\d+"))) {
             // If original had some digits, append them to fallback
             val digits = displayName.filter { it.isDigit() }
@@ -80,7 +81,7 @@ object FieldNameGenerator {
             }
         }
 
-        // Step 7: If starts with number, prefix with "field_"
+        // A leading digit gets the "field_" prefix
         return if (trimmed[0].isDigit()) {
             "field_$trimmed"
         } else {
@@ -89,24 +90,31 @@ object FieldNameGenerator {
     }
 
     /**
-     * Transliterates accented characters to their ASCII equivalents.
-     *
-     * Uses NFD normalization to decompose characters, then removes diacritical marks.
+     * Letters NFD does not decompose into a base letter and a mark, spelled out in ASCII.
+     * Without them "cœur" would lose its "œ" and come out as "c_ur".
+     */
+    private val spelledOut = mapOf(
+        'œ' to "oe", 'æ' to "ae", 'ß' to "ss", 'ø' to "o", 'ł' to "l", 'đ' to "d", 'þ' to "th"
+    )
+
+    /**
+     * Transliterates a lowercase text to ASCII where a Latin spelling exists.
      *
      * Examples:
      * - "café" → "cafe"
-     * - "naïve" → "naive"
      * - "señor" → "senor"
-     * - "ça" → "ca"
+     * - "cœur" → "coeur"
+     * - "straße" → "strasse"
      *
-     * Non-transliterable characters (e.g., CJK, Arabic) are removed.
+     * Other characters (CJK, Arabic...) are left for normalize to turn into separators.
      */
     private fun transliterate(text: String): String {
+        val spelled = text.map { spelledOut[it] ?: it.toString() }.joinToString("")
+
         // Normalize to NFD (decomposed form) to separate base characters from diacritical marks
-        val normalized = Normalizer.normalize(text, Normalizer.Form.NFD)
+        val normalized = Normalizer.normalize(spelled, Normalizer.Form.NFD)
 
         // Remove diacritical marks (combining characters)
-        // Keep only ASCII letters, numbers, spaces, and basic punctuation
         return normalized.replace(Regex("[\\p{InCombiningDiacriticalMarks}]"), "")
     }
 
