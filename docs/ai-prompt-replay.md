@@ -30,7 +30,8 @@ Règles du test, valables pour les trois messages :
 - Si une commande est refusée, ne contourne pas en silence : recopie le message
   d'erreur reçu tel quel, puis corrige.
 
-1. Crée une zone « Test L1 » avec une description et une icône de ton choix.
+1. Crée une zone « Test L1 » avec une description et une icône que tu choisis
+   en cherchant parmi les icônes disponibles.
 
 2. Avant de rien créer dedans, récupère le schéma de configuration d'un suivi
    numérique. Dis-moi l'identifiant exact que tu as demandé.
@@ -85,7 +86,7 @@ Troisième et dernier message du test, mêmes règles.
 |---|---|---|
 | tout | Réponse **en français** | Bascule en anglais — le prompt est en anglais depuis le 2026-09-23 |
 | tout | Les étapes d'un message s'enchaînent sans rendre la main | Il faut relancer l'IA au milieu d'un message : `keep_control` n'est pas posé quand il le faudrait |
-| 1 | Une icône qui existe, enregistrée : visible sur la zone à l'accueil | Un nom d'icône inventé, ou une zone sans icône |
+| 1 | `ICONS` avec `query` (plusieurs mots) et/ou `categories`, puis un nom pris dans les résultats ; l'icône visible sur la zone à l'accueil | Un nom inventé → refus renvoyant à `ICONS` ; une zone sans icône ; `ICONS` appelée sans paramètre en boucle |
 | 2 | `tracking_config_numeric` demandé **avant** toute création | Création d'abord, schéma après, ou jamais. Le schéma de données ne se demande pas ici : il exige le `tool_instance_id` d'un outil qui n'existe pas encore |
 | 3 | `"type": "TEXT"` avec `config.length` à `MEDIUM` (250) ou `LONG` (1500), **sans clé `name`** | `TEXT_MEDIUM` ou `TEXT_UNLIMITED` (types morts depuis la migration v25→v26). Un `name` envoyé n'est pas refusé à la création, il est gardé : c'est l'IA qui n'a pas suivi le L1 |
 | 4 | Deux identifiants snake_case attribués par l'app | Aucun identifiant — les champs ont été enregistrés sans nom, ce que la création faisait avant le 2026-09-23 ; ou ceux que l'IA avait proposés |
