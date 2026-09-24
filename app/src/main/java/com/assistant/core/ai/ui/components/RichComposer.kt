@@ -201,19 +201,22 @@ fun UI.RichComposer(
         mutableStateOf(segmentsToBlocks(segments))
     }
 
+    // Track active block ID
+    var activeBlockId by rememberSaveable { mutableStateOf(blocks.firstOrNull()?.id ?: "") }
+
     // Sync from parent only when segments change externally (not from our own updates)
     var lastSyncedSegments by remember { mutableStateOf(segments) }
     LaunchedEffect(segments) {
         // Only update if segments changed externally (not from our updateSegments call)
         if (segments != lastSyncedSegments && blocksToSegments(blocks) != segments) {
             blocks = segmentsToBlocks(segments)
+            // Rebuilt blocks have new ids: the active one would name a block that is gone,
+            // and the next enrichment would find nowhere to go (the composer emptied after a send)
+            activeBlockId = blocks.first().id
         }
         // Always keep lastSyncedSegments in sync to avoid stale state
         lastSyncedSegments = segments
     }
-
-    // Track active block ID
-    var activeBlockId by rememberSaveable { mutableStateOf(blocks.firstOrNull()?.id ?: "") }
 
     // Enrichment dialog state
     var showEnrichmentDialog by rememberSaveable(stateSaver = NullableEnrichmentDialogStateSaver) {
@@ -418,7 +421,11 @@ fun UI.RichComposer(
 
                 LogManager.aiEnrichment("Created EnrichmentBlock: type=${dialogState.type}, uiPreview='$finalUiPreview', promptPreview='$finalPromptPreview'")
 
-                // Add or update enrichment in the target block
+                // Add or update enrichment in the target block, which must exist: a missing one
+                // would drop the enrichment without a word
+                check(blocks.any { it.id == dialogState.blockId }) {
+                    "Enrichment aimed at block ${dialogState.blockId}, which the composer no longer holds"
+                }
                 blocks = blocks.map { block ->
                     if (block.id == dialogState.blockId) {
                         // If editing, replace existing; if new, add
