@@ -20,7 +20,7 @@ import com.assistant.core.utils.LogManager
  * Usage:
  * - transformToolConfig(json, tooltype, fromVersion, toVersion)
  * - transformToolData(json, tooltype, fromVersion, toVersion)
- * - transformAppConfig(json, fromVersion, toVersion)
+ * - transformAppConfig(json, category, fromVersion, toVersion, context)
  */
 object JsonTransformers {
 
@@ -134,6 +134,7 @@ object JsonTransformers {
      * @param category The settings category the JSON belongs to (format, ai_limits...)
      * @param fromVersion Source version (from backup metadata)
      * @param toVersion Target version (current app version)
+     * @param context Required from a version below 20, whose step reads the phone's format
      * @return Transformed JSON string
      */
     fun transformAppConfig(
@@ -179,24 +180,20 @@ object JsonTransformers {
         try {
             // Fill null use_24_hour_format
             if (!json.has("use_24_hour_format") || json.isNull("use_24_hour_format")) {
-                val systemValue = if (context != null) {
-                    com.assistant.core.config.FormatDefaults.getSystemDefault24HourFormat(context)
-                } else {
-                    true // Fallback if no context (shouldn't happen in practice)
-                }
+                val systemValue = com.assistant.core.config.FormatDefaults.getSystemDefault24HourFormat(
+                    requireNotNull(context) { "v19->v20 reads the phone's format and needs a Context" }
+                )
                 json.put("use_24_hour_format", systemValue)
-                LogManager.service("JSON Transform 19->20: Filled use_24_hour_format with ${if (context != null) "system" else "fallback"} value: $systemValue", "INFO")
+                LogManager.service("JSON Transform 19->20: Filled use_24_hour_format with system value: $systemValue", "INFO")
             }
 
             // Fill null date_format_pattern
             if (!json.has("date_format_pattern") || json.isNull("date_format_pattern")) {
-                val systemValue = if (context != null) {
-                    com.assistant.core.config.FormatDefaults.getSystemDefaultDatePattern(context)
-                } else {
-                    "dd/MM/yyyy" // Fallback if no context (shouldn't happen in practice)
-                }
+                val systemValue = com.assistant.core.config.FormatDefaults.getSystemDefaultDatePattern(
+                    requireNotNull(context) { "v19->v20 reads the phone's format and needs a Context" }
+                )
                 json.put("date_format_pattern", systemValue)
-                LogManager.service("JSON Transform 19->20: Filled date_format_pattern with ${if (context != null) "system" else "fallback"} value: $systemValue", "INFO")
+                LogManager.service("JSON Transform 19->20: Filled date_format_pattern with system value: $systemValue", "INFO")
             }
         } catch (e: Exception) {
             LogManager.service("JSON Transform 19->20: Failed to fill null format values: ${e.message}", "ERROR", e)
