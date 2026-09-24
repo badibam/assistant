@@ -112,11 +112,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * Internal format settings management
      */
     private suspend fun getFormatSettings(): JSONObject {
-        LogManager.service("Getting format settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.FORMAT)
         return if (settingsJson != null) {
             try {
-                LogManager.service("Found existing format settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
                 LogManager.service("Error parsing format settings JSON: ${e.message}", "ERROR", e)
@@ -322,11 +320,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * Validation settings management with automatic defaults creation
      */
     private suspend fun getValidationSettings(): JSONObject {
-        LogManager.service("Getting validation settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.VALIDATION_CONFIG)
         return if (settingsJson != null) {
             try {
-                LogManager.service("Found existing validation settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
                 LogManager.service("Error parsing validation settings JSON: ${e.message}", "ERROR", e)
@@ -355,11 +351,9 @@ class AppConfigService(private val context: Context) : ExecutableService {
      * Main screen settings management with automatic defaults creation
      */
     private suspend fun getMainScreenSettings(): JSONObject {
-        LogManager.service("Getting main screen settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.MAIN_SCREEN)
         return if (settingsJson != null) {
             try {
-                LogManager.service("Found existing main screen settings: $settingsJson")
                 JSONObject(settingsJson)
             } catch (e: Exception) {
                 LogManager.service("Error parsing main screen settings JSON: ${e.message}", "ERROR", e)
@@ -436,20 +430,16 @@ class AppConfigService(private val context: Context) : ExecutableService {
     }
 
     override suspend fun execute(operation: String, params: JSONObject, token: CancellationToken): OperationResult {
-        LogManager.service("AppConfigService.execute: operation=$operation, params=$params")
         return when (operation) {
             "get" -> {
                 val category = params.optString("category", "format")
-                LogManager.service("Getting config for category: $category")
                 when (category) {
                     AppSettingCategories.FORMAT -> {
                         val settings = getFormatSettings()
-                        LogManager.service("Format settings retrieved: $settings")
                         OperationResult.success(mapOf("settings" to settings.toMap()))
                     }
                     AppSettingCategories.AI_LIMITS -> {
                         val settings = getAILimitsSettings()
-                        LogManager.service("AI limits settings retrieved: $settings")
                         OperationResult.success(mapOf("settings" to settings.toMap()))
                     }
                     else -> {
@@ -462,12 +452,10 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 // Milliseconds, as everything inside speaks: CommandExecutor turns the timestamp
                 // into the ISO 8601 the model reads, in the app's timezone
                 val currentTimestamp = System.currentTimeMillis()
-                LogManager.service("Current datetime: $currentTimestamp")
                 OperationResult.success(mapOf("timestamp" to currentTimestamp))
             }
             "get_zone_groups" -> {
                 val groups = getZoneGroups()
-                LogManager.service("Zone groups retrieved: $groups")
                 OperationResult.success(mapOf("zone_groups" to groups))
             }
             "set_zone_groups" -> {

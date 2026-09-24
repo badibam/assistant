@@ -10,52 +10,40 @@ import com.assistant.core.utils.LogManager
 class AIProviderRegistry(private val context: Context) {
 
     // TODO: Load providers dynamically via discovery pattern
-    // Initialize providers with detailed logging for debugging Android compatibility issues
+    // A provider that fails to build is logged and left out; the others stay available
     private val providers = buildList {
         try {
-            LogManager.aiService("Initializing ClaudeStandardProvider...")
             add(ClaudeStandardProvider(context))
-            LogManager.aiService("ClaudeStandardProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize ClaudeStandardProvider: ${e.message}", "ERROR", e)
         }
 
         try {
-            LogManager.aiService("Initializing ClaudeEconomicProvider...")
             add(ClaudeEconomicProvider(context))
-            LogManager.aiService("ClaudeEconomicProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize ClaudeEconomicProvider: ${e.message}", "ERROR", e)
         }
 
         try {
-            LogManager.aiService("Initializing OpenAIStandardProvider...")
             add(OpenAIStandardProvider(context))
-            LogManager.aiService("OpenAIStandardProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize OpenAIStandardProvider: ${e.message}", "ERROR", e)
         }
 
         try {
-            LogManager.aiService("Initializing OpenAIEconomicProvider...")
             add(OpenAIEconomicProvider(context))
-            LogManager.aiService("OpenAIEconomicProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize OpenAIEconomicProvider: ${e.message}", "ERROR", e)
         }
 
         try {
-            LogManager.aiService("Initializing DeepSeekStandardProvider...")
             add(DeepSeekStandardProvider(context))
-            LogManager.aiService("DeepSeekStandardProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize DeepSeekStandardProvider: ${e.message}", "ERROR", e)
         }
 
         try {
-            LogManager.aiService("Initializing DeepSeekEconomicProvider...")
             add(DeepSeekEconomicProvider(context))
-            LogManager.aiService("DeepSeekEconomicProvider initialized successfully")
         } catch (e: Exception) {
             LogManager.aiService("Failed to initialize DeepSeekEconomicProvider: ${e.message}", "ERROR", e)
         }
@@ -80,7 +68,6 @@ class AIProviderRegistry(private val context: Context) {
      */
     fun getProviderConfig(providerId: String): String? {
         // TODO: Load from app config or database
-        LogManager.aiService("Getting provider config for: $providerId")
         return "{}" // Mock empty config for now
     }
 
@@ -108,7 +95,6 @@ class AIProviderRegistry(private val context: Context) {
      */
     fun getActiveProviderId(): String? {
         // TODO: Load from app config via coordinator
-        LogManager.aiService("Getting active provider ID")
         return null // NO FALLBACK - must be explicitly configured
     }
 

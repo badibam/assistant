@@ -57,7 +57,6 @@ object MessageScheduler : ToolScheduler {
     )
 
     override suspend fun checkScheduled(context: Context) {
-        LogManager.service("MessageScheduler.checkScheduled() - scanning message templates", "DEBUG")
 
         try {
             val coordinator = Coordinator(context)
@@ -78,12 +77,8 @@ object MessageScheduler : ToolScheduler {
             val instances = (instancesResult.data?.get("tool_instances") as? List<Map<String, Any>>) ?: emptyList()
             val messageInstances = instances.filter { it["tooltype"] == "messages" }
 
-            if (messageInstances.isEmpty()) {
-                LogManager.service("No Messages tool instances found", "DEBUG")
-                return
-            }
+            if (messageInstances.isEmpty()) return
 
-            LogManager.service("Found ${messageInstances.size} Messages tool instance(s)", "DEBUG")
 
             for (instance in messageInstances) {
                 val toolInstanceId = instance["id"] as? String ?: continue
@@ -95,7 +90,6 @@ object MessageScheduler : ToolScheduler {
                 }
             }
 
-            LogManager.service("MessageScheduler.checkScheduled() completed", "DEBUG")
 
         } catch (e: Exception) {
             LogManager.service("MessageScheduler.checkScheduled() failed: ${e.message}", "ERROR", e)

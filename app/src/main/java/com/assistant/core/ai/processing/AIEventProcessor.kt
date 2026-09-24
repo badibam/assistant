@@ -1542,11 +1542,6 @@ class AIEventProcessor(
 
                 val hasWaitingAutomations = nextSession != null
 
-                LogManager.aiSession(
-                    "Heartbeat: CHAT active (${currentState.sessionId}), automation waiting: $hasWaitingAutomations",
-                    "DEBUG"
-                )
-
                 if (hasWaitingAutomations) {
                     if (com.assistant.core.ai.scheduling.SessionSlotPolicy.shouldTimeout(
                             currentState,
@@ -1561,11 +1556,6 @@ class AIEventProcessor(
             }
 
             SessionType.AUTOMATION -> {
-                LogManager.aiSession(
-                    "Heartbeat: AUTOMATION active (${currentState.sessionId}), checking timeouts",
-                    "DEBUG"
-                )
-
                 if (com.assistant.core.ai.scheduling.SessionSlotPolicy.shouldTimeout(
                         currentState,
                         hasWaitingAutomations = false,
@@ -1595,8 +1585,6 @@ class AIEventProcessor(
      * Priority: CHAT (queue) > MANUAL (queue) > SCHEDULED (calculated)
      */
     private suspend fun processNextSessionActivation() {
-        LogManager.aiSession("Heartbeat: Slot free, checking for next session to activate", "DEBUG")
-
         val queuedSessions = com.assistant.core.ai.orchestration.AIOrchestrator.queuedSessions.value
         val sessionScheduler = com.assistant.core.ai.scheduling.AISessionScheduler(
             aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao(),
@@ -1634,8 +1622,6 @@ class AIEventProcessor(
                     scheduledFor = nextSession.scheduledFor!!
                 )
             }
-        } else {
-            LogManager.aiSession("Heartbeat: No sessions to activate", "DEBUG")
         }
     }
 

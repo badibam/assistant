@@ -65,8 +65,6 @@ object CoreScheduler {
                     // Wait 1 minute
                     delay(60_000L)
 
-                    // Trigger tick
-                    LogManager.service("CoreScheduler: Heartbeat tick (1 min)", "DEBUG")
                     tick()
 
                 } catch (e: kotlinx.coroutines.CancellationException) {
@@ -91,11 +89,9 @@ object CoreScheduler {
      * one failure doesn't block others.
      */
     suspend fun tick() {
-        LogManager.service("CoreScheduler.tick() started", "DEBUG")
 
         try {
             // 1. AI scheduling (AIOrchestrator handles automations + session management)
-            LogManager.service("CoreScheduler: Calling AIOrchestrator.tick()", "DEBUG")
             AIOrchestrator.tick()
 
         } catch (e: Exception) {
@@ -105,16 +101,13 @@ object CoreScheduler {
 
         try {
             // 2. Tool scheduling (discovery pattern)
-            LogManager.service("CoreScheduler: Checking tool schedulers", "DEBUG")
 
             val allTools = ToolTypeManager.getAllToolTypes()
-            LogManager.service("CoreScheduler: Found ${allTools.size} tool types", "DEBUG")
 
             allTools.forEach { (toolTypeName, toolType) ->
                 try {
                     val scheduler = toolType.getScheduler()
                     if (scheduler != null) {
-                        LogManager.service("CoreScheduler: Calling scheduler for tool type '$toolTypeName'", "DEBUG")
                         scheduler.checkScheduled(context)
                     }
                 } catch (e: Exception) {
@@ -131,7 +124,6 @@ object CoreScheduler {
             LogManager.service("CoreScheduler: Tool scheduling error: ${e.message}", "ERROR", e)
         }
 
-        LogManager.service("CoreScheduler.tick() completed", "DEBUG")
     }
 
     /**
