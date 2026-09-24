@@ -61,10 +61,9 @@ data class AIState(
 )
 ```
 
-**WaitingContext** : Contextes d'attente typés
-- `Validation(validationContext, cancelMessageId)` : Attente validation actions
-- `Communication(communicationModule, cancelMessageId)` : Attente réponse communication
-- `CompletionConfirmation(aiMessageId, scheduledConfirmationTime)` : Attente confirmation completion
+**WaitingContext** : Contextes d'attente typés, tenus dans l'état seulement, jamais stockés
+- `Validation(validationContext)` : Attente validation actions
+- `Communication(communicationModule, aiMessageId)` : Attente réponse communication
 
 ### AIEvent
 Événements déclenchant transitions : `SessionActivationRequested`, `UserMessageSent`, `EnrichmentsExecuted`, `AIResponseReceived`, `AIResponseParsed`, `ValidationReceived`, `CommunicationResponseReceived`, `DataQueriesExecuted`, `ActionsExecuted`, `NetworkErrorOccurred`, `ParseErrorOccurred`, `ActionFailureOccurred`, `NetworkRetryScheduled`, `RetryScheduled`, `NetworkAvailable`, `SystemErrorOccurred`, `SessionCompleted`, `SchedulerHeartbeat`.
@@ -83,7 +82,6 @@ data class AISessionEntity(
     val type: SessionType,
     val requireValidation: Boolean,
     val phase: String, // Phase actuelle (serialized)
-    val waitingContextJson: String?, // WaitingContext (serialized)
     val totalRoundtrips: Int,
     val lastEventTime: Long,
     val lastUserInteractionTime: Long,
@@ -476,7 +474,7 @@ class EnrichmentProcessor {
 **Flow** : EnrichmentProcessor → DataCommand → CommandTransformer → CommandExecutor → SystemMessage.
 
 ### CommandTransformer
-**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (résolution périodes), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list.
+**Transformations** : SCHEMA → schemas.get, TOOL_CONFIG → tools.get, TOOL_DATA → tool_data.get (résolution périodes), ZONE_CONFIG → zones.get, ZONES → zones.list, TOOL_INSTANCES → tools.list, ICONS → icons.overview (sans paramètre) ou icons.search (`categories` et/ou `query`).
 
 ### User vs AI Commands
 **User** : Source EnrichmentBlocks, types POINTER/USE/CREATE/MODIFY_CONFIG uniquement, but données contextuelles, jamais d'actions.
@@ -626,7 +624,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 
 **Messages fallback** : COMMUNICATION_CANCELLED / VALIDATION_CANCELLED créés AVANT suspension (trace si fermeture app/navigation). Supprimés si user répond/valide effectivement.
 
-**Persistance** : `WaitingContext` serialisé en JSON dans DB (champ `waitingContextJson`).
+**Persistance** : aucune. Le contexte se déduit du dernier message de l'IA et des règles de validation ; une session restaurée dans une phase d'attente le retrouve parce que `AIEventProcessor`, en collectant l'état restauré, le reconstruit comme à l'entrée dans cette phase.
 
 ## 13. SystemMessages
 

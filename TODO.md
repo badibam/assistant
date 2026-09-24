@@ -36,6 +36,8 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- Base 30→31 : que l'historique des conversations s'ouvre intact après la migration (testée sur une copie de la base du téléphone : 26 sessions et 192 messages conservés).
+- Identifiants des actions : qu'après un `CREATE_ZONE` puis un `CREATE_TOOL`, l'IA enchaîne sans rappeler `ZONES` ni `TOOL_INSTANCES` — le texte qu'elle reçoit porte désormais `zone_id`, testé par `SystemMessagePromptTextTest`.
 - Session en attente au redémarrage : fermer l'app de force pendant qu'une session CHAT attend une validation (ou la réponse à une question), la rouvrir, et voir revenir les boutons (ou la question). Le contexte n'est plus stocké : c'est `AIEventProcessor`, en collectant l'état restauré, qui le reconstruit — lu dans le code, pas vu tourner.
 - Icônes : qu'elles prennent la couleur du thème partout (outils, zones, catégories du sélecteur), et que le sélecteur s'ouvre, cherche et parcoure une catégorie sans lenteur. Vérifié le 2026-09-24 : la base passée en 30 avec les icônes de notes et de messages renommées, et une zone qui reçoit, garde et affiche son icône.
 - Historique de tracking : retrouver le symptôme du mauvais timestamp. Noté sur le téléphone sans détail, donc à revoir avant de chercher la cause. Le fuseau n'est candidat que si l'app avait un fuseau réglé différent de celui du téléphone ; les périodes suivent désormais le fuseau de l'app.
