@@ -37,13 +37,6 @@ data class AISessionEntity(
     /** Current execution phase (IDLE, CALLING_AI, EXECUTING_ACTIONS, etc.) */
     val phase: String = "IDLE",
 
-    /**
-     * No longer written: the waiting context derives from the last AI message and is rebuilt,
-     * not stored (see WaitingContext). The column stays until ai_sessions is next recreated:
-     * dropping it means dropping the table, and with foreign keys on, that deletes every
-     * session_messages row through the cascade.
-     */
-    @ColumnInfo(name = "waiting_context_json") val waitingContextJson: String? = null,
 
     // ==================== Loop Counters ====================
 

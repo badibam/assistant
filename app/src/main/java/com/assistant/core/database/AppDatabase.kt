@@ -63,7 +63,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 30
+        const val VERSION = 31
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1251,6 +1251,62 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // waiting_context_json goes: the waiting context derives from the last AI message
+                // and is rebuilt on entering a waiting phase, and nothing ever read the column.
+                // SQLite before 3.35 cannot drop a column and minSdk 26 ships 3.19, so the table is
+                // recreated with its indices, its definition as Room generates it. session_messages
+                // references ai_sessions by name and needs nothing: foreign keys are not enforced
+                // during a migration -- the messages kept since 2025 went through 25 -> 26, which
+                // dropped this table the same way.
+                database.execSQL("""
+                    CREATE TABLE ai_sessions_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        require_validation INTEGER NOT NULL,
+                        phase TEXT NOT NULL,
+                        total_roundtrips INTEGER NOT NULL,
+                        last_event_time INTEGER NOT NULL,
+                        last_user_interaction_time INTEGER NOT NULL,
+                        automation_id TEXT,
+                        seed_id TEXT,
+                        scheduled_execution_time INTEGER,
+                        provider_id TEXT NOT NULL,
+                        provider_session_id TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        last_activity INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        end_reason TEXT,
+                        tokens_json TEXT,
+                        cost_json TEXT,
+                        app_state_snapshot TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO ai_sessions_new
+                    SELECT id, name, type, require_validation, phase, total_roundtrips,
+                           last_event_time, last_user_interaction_time, automation_id, seed_id,
+                           scheduled_execution_time, provider_id, provider_session_id, created_at,
+                           last_activity, is_active, end_reason, tokens_json, cost_json,
+                           app_state_snapshot
+                    FROM ai_sessions
+                """)
+                database.execSQL("DROP TABLE ai_sessions")
+                database.execSQL("ALTER TABLE ai_sessions_new RENAME TO ai_sessions")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_is_active ON ai_sessions(is_active)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_type ON ai_sessions(type)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_last_activity ON ai_sessions(last_activity)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_automation_id ON ai_sessions(automation_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_end_reason ON ai_sessions(end_reason)")
+
+                LogManager.database("MIGRATION 30->31: waiting_context_json dropped from ai_sessions", "INFO")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1279,7 +1335,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_26_27,
                     MIGRATION_27_28,
                     MIGRATION_28_29,
-                    MIGRATION_29_30
+                    MIGRATION_29_30,
+                    MIGRATION_30_31
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
