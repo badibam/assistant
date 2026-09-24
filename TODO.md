@@ -12,8 +12,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## Divers
 
-- Les limites IA ne sont réglables nulle part : `AILimitsSettingsScreen` est un stub « à venir », donc les valeurs de `ai_limits` ne se changent que dans la base. Celle du téléphone portait encore `chat_max_autonomous_roundtrips: 10` écrit avant que les limites soient simplifiées, avec deux clés (`chat_max_data_query_iterations`, `chat_max_action_retries`) que `AILimitsConfig` ne lit plus. Remise à la valeur du code le 2026-09-23, à la main. Tant que l'écran est un stub, une config périmée reste hors d'atteinte de l'utilisateur.
-  - Les valeurs par défaut se contredisent. `AILimitsConfig` (domaine) veut le CHAT sans limite, mais `DefaultAILimitsSettings.JSON` — ce qu'une installation neuve ou une réinitialisation écrit en base — pose encore `chat_max_autonomous_roundtrips: 10` et les deux clés mortes. Un second `AILimitsConfig` dans `AppConfigStructures.kt`, lui aussi à 10, n'est lu par personne. Et `AppConfigService.getAILimits` lit une clé absente comme « illimité », un repli silencieux. Trancher d'abord la valeur voulue pour le CHAT, maintenant que la limite se compte depuis la dernière intervention de l'utilisateur.
+- Les limites IA ne sont réglables nulle part : `AILimitsSettingsScreen` est un stub « à venir », donc les valeurs de `ai_limits` ne se changent que dans la base.
 - Volume du journal : 230 lignes DEBUG contre 4 de INFO, WARN et ERROR réunis, sur deux minutes — dont 96 `Service` et 96 `AIService`, avec des répétitions comme « Found existing format settings » à chaque lecture de réglages. La rétention ne souffre plus de ce bruit (les deux classes ont des plafonds séparés), mais le journal reste illisible à l'œil. À traiter aux sites d'appel, pas au plafond.
 - Étendre la suite de tests. Le critère est dans `docs/reference.md` : un test mérite d'exister s'il remplace une vérification sur l'appareil. Reste, par ordre de risque :
   - `JsonTransformers.kt` — les transformations de migration. Elles tournent **une fois**, sur les données réelles, sans retour arrière. Avec les 19 migrations Room, c'est le point le plus dangereux du projet, et le seul cas qui justifie de l'instrumenté (`MigrationTestHelper`). Les quatre dépendances `androidTestImplementation` ont été retirées le 2026-09-22, n'ayant jamais servi : elles se redéclarent en quatre lignes le jour où ce test s'écrit.
@@ -31,6 +30,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- Base 31→32 : que l'app démarre après la migration, et que `ai_limits` ne porte plus que `chat_max_autonomous_roundtrips: 10` et la limite d'automation. Puis, en CHAT, qu'une IA qui enchaîne plus de dix appels seule s'arrête et rende la main avec un message à l'écran.
 - Message daté de fin d'historique, désormais sans millisecondes : dans une session CHAT, demander « quelle heure est-il ? » puis de créer une entrée datée d'hier ; dans une automation en rattrapage, qu'une donnée de la date prévue soit écrite avec un timestamp ISO explicite (`docs/ai-prompt-replay.md`).
 - Journal, « Annuler » : en modification d'une entrée enregistrée, l'écran revient au texte stocké, pas à la saisie abandonnée ; une entrée créée, enregistrée, rouverte en modification puis annulée reste en place (elle était supprimée).
 - Base 30→31 : que l'historique des conversations s'ouvre intact après la migration (testée sur une copie de la base du téléphone : 26 sessions et 192 messages conservés).
