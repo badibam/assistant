@@ -279,12 +279,13 @@ class EnrichmentProcessor(
     }
 
     /**
-     * Format timestamp for inline display
+     * Format timestamp for the enrichment's description: ISO 8601 with its offset, in the
+     * app's timezone, like every date the AI reads.
      */
-    private fun formatTimestamp(timestamp: Long): String {
-        return java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
-            .format(java.util.Date(timestamp))
-    }
+    private fun formatTimestamp(timestamp: Long): String =
+        com.assistant.core.utils.DateTimeConverter.timestampToISO(
+            timestamp, com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+        )
 
     private fun generateUseSummary(config: JSONObject): String {
         val toolInstanceId = config.optString("tool_instance_id", "")

@@ -50,15 +50,15 @@ fun transformSystemMessagesToUser(messages: List<SessionMessage>): List<SessionM
  */
 internal fun PromptData.buildDatetimeMessage(context: android.content.Context): String {
     val s = com.assistant.core.strings.Strings.`for`(context = context)
-    val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
-    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
+    // ISO 8601 with its offset, in the app's timezone: the form every date takes in front of
+    // the AI, so this one reads like the dates in the data beside it.
+    val zone = com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+    fun iso(timestamp: Long) = com.assistant.core.utils.DateTimeConverter.timestampToISO(timestamp, zone)
 
     val now = System.currentTimeMillis()
-    val currentLine = s.shared("ai_prompt_current_datetime")
-        .format(dateFormat.format(java.util.Date(now)), now)
+    val currentLine = s.shared("ai_prompt_current_datetime").format(iso(now), now)
 
     val scheduled = scheduledExecutionTime ?: return currentLine
-    val scheduledLine = s.shared("ai_prompt_scheduled_datetime")
-        .format(dateFormat.format(java.util.Date(scheduled)), scheduled)
+    val scheduledLine = s.shared("ai_prompt_scheduled_datetime").format(iso(scheduled), scheduled)
     return "$currentLine\n$scheduledLine"
 }

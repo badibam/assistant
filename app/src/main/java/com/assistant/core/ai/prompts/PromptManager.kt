@@ -450,10 +450,10 @@ object PromptManager {
         val zones = snapshotObj.getJSONArray("zones")
         val toolInstances = snapshotObj.getJSONArray("tool_instances")
 
-        // Format timestamp as readable date (use app's configured locale)
-        val locale = com.assistant.core.utils.LocaleUtils.getAppLocale(context)
-        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
-        val dateStr = dateFormat.format(java.util.Date(timestamp))
+        // ISO 8601 with its offset, in the app's timezone, like every date the AI reads
+        val dateStr = com.assistant.core.utils.DateTimeConverter.timestampToISO(
+            timestamp, com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
+        )
 
         val sb = StringBuilder()
         sb.appendLine("## ${s.shared("ai_prompt_level3_title")}")

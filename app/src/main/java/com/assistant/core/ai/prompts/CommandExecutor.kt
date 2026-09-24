@@ -670,19 +670,17 @@ class CommandExecutor(private val context: Context) {
                     // Period info if present
                     val startTime = command.params["start_time"] as? Long
                     val endTime = command.params["end_time"] as? Long
+                    // ISO 8601 with its offset, in the app's timezone, like the data below it
+                    val zone = AppConfigManager.getDateTimeConfig().getZoneId()
                     if (startTime != null && endTime != null) {
-                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(startTime))
-                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(endTime))
+                        val startDate = DateTimeConverter.timestampToISO(startTime, zone)
+                        val endDate = DateTimeConverter.timestampToISO(endTime, zone)
                         headerParts.add(s.shared("ai_data_period_range").format(startDate, endDate))
                     } else if (startTime != null) {
-                        val startDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(startTime))
+                        val startDate = DateTimeConverter.timestampToISO(startTime, zone)
                         headerParts.add(s.shared("ai_data_period_from").format(startDate))
                     } else if (endTime != null) {
-                        val endDate = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
-                            .format(java.util.Date(endTime))
+                        val endDate = DateTimeConverter.timestampToISO(endTime, zone)
                         headerParts.add(s.shared("ai_data_period_until").format(endDate))
                     } else {
                         headerParts.add(s.shared("ai_data_period_all_time"))
