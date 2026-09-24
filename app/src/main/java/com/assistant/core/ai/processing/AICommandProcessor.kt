@@ -373,7 +373,7 @@ class AICommandProcessor(private val context: Context) {
      * reads. Refusing is the point: a date silently left as text would reach the database as a
      * string in a column of numbers.
      */
-    private fun resolveDatesToMilliseconds(params: Map<String, Any>): Map<String, Any> {
+    private fun resolveDatesToMilliseconds(params: Map<String, Any?>): Map<String, Any?> {
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         val resolved = params.toMutableMap()
 
@@ -383,7 +383,7 @@ class AICommandProcessor(private val context: Context) {
             resolved["entries"] = entries.map { entry ->
                 if (entry is Map<*, *>) {
                     @Suppress("UNCHECKED_CAST")
-                    val singleEntry = (entry as Map<String, Any>).toMutableMap()
+                    val singleEntry = (entry as Map<String, Any?>).toMutableMap()
                     convertPayloadDates(singleEntry, timezone)
                     singleEntry
                 } else {
@@ -399,7 +399,7 @@ class AICommandProcessor(private val context: Context) {
      * Convert the date-bearing parts of one entry in place: the two payloads recursively, and the
      * timestamp that sits beside them.
      */
-    private fun convertPayloadDates(entry: MutableMap<String, Any>, timezone: ZoneId) {
+    private fun convertPayloadDates(entry: MutableMap<String, Any?>, timezone: ZoneId) {
         for (key in listOf("data", "custom_fields")) {
             val payload = entry[key] ?: continue
             val json = when (payload) {
@@ -418,7 +418,7 @@ class AICommandProcessor(private val context: Context) {
         }
     }
 
-    private suspend fun enrichWithSchemaId(params: Map<String, Any>): Map<String, Any> {
+    private suspend fun enrichWithSchemaId(params: Map<String, Any?>): Map<String, Any?> {
         val toolInstanceId = params["tool_instance_id"] as? String
 
         if (toolInstanceId.isNullOrEmpty()) {

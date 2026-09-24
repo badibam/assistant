@@ -68,7 +68,7 @@ class ActionValidator(private val context: Context) {
      * - tooltype: String (tooltype name)
      * - config_json: String (JSON configuration to validate)
      */
-    private fun validateToolConfig(params: Map<String, Any>): ValidationResult {
+    private fun validateToolConfig(params: Map<String, Any?>): ValidationResult {
         try {
             val toolTypeName = params["tooltype"] as? String
             if (toolTypeName.isNullOrEmpty()) {
@@ -136,7 +136,7 @@ class ActionValidator(private val context: Context) {
      * - data: JSONObject or Map (for single operations)
      * - items: List<Map> (for batch operations)
      */
-    private fun validateToolData(params: Map<String, Any>, operation: String): ValidationResult {
+    private fun validateToolData(params: Map<String, Any?>, operation: String): ValidationResult {
         try {
             val toolTypeName = params["tooltype"] as? String
             if (toolTypeName.isNullOrEmpty()) {
@@ -221,7 +221,7 @@ class ActionValidator(private val context: Context) {
      * @param operation The operation being performed (create, update, etc.)
      */
     private fun validateSingleToolData(
-        params: Map<String, Any>,
+        params: Map<String, Any?>,
         schema: com.assistant.core.validation.Schema,
         schemaId: String,
         toolTypeName: String,
@@ -274,7 +274,7 @@ class ActionValidator(private val context: Context) {
      * @param operation The operation being performed (batch_create, batch_update, etc.)
      */
     private fun validateBatchToolData(
-        params: Map<String, Any>,
+        params: Map<String, Any?>,
         schema: com.assistant.core.validation.Schema,
         schemaId: String,
         toolTypeName: String,
@@ -356,7 +356,7 @@ class ActionValidator(private val context: Context) {
      * - description: String (optional, max 250 chars)
      * - color: String (optional)
      */
-    private fun validateZoneConfig(params: Map<String, Any>): ValidationResult {
+    private fun validateZoneConfig(params: Map<String, Any?>): ValidationResult {
         try {
             // Get ZoneSchemaProvider (registered in SchemaService)
             val schemaProvider = com.assistant.core.schemas.ZoneSchemaProvider

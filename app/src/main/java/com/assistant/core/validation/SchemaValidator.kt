@@ -31,7 +31,7 @@ object SchemaValidator {
      */
     fun validate(
         schema: Schema,
-        data: Map<String, Any>,
+        data: Map<String, Any?>,
         context: Context,
         partialValidation: Boolean = false
     ): ValidationResult {
@@ -295,7 +295,7 @@ object SchemaValidator {
      * @return ValidationResult - success if no custom_fields or all valid, error otherwise
      */
     private fun validateCustomFieldsIfPresent(
-        data: Map<String, Any>,
+        data: Map<String, Any?>,
         context: Context
     ): ValidationResult {
         val s = com.assistant.core.strings.Strings.`for`(context = context)

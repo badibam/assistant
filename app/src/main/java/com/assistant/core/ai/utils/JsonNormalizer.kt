@@ -22,13 +22,11 @@ import org.json.JSONObject
  * Usage:
  * - Call normalizeParams() on Map<String, Any> from parseParams()
  * - Handles arbitrary nesting depth
- * - Preserves all data, only changes types, with one exception below
+ * - Preserves all data, only changes types
  *
- * The exception is a null at the top level: normalizeParams drops its key, where a null
- * nested in an object or a list is kept. Keeping it would mean declaring the result
- * Map<String, Any?>, and that type runs on through DataCommand.params into eighty-odd
- * places, so it is a decision rather than a fix. Until it is taken, a command emptying a
- * top-level field arrives as one that never mentioned it.
+ * A null is kept at every level, the top one included: it is how a command asks for a field
+ * to be emptied, and leaving the key out would read as a command that never mentioned it.
+ * Coordinator turns it into JSON null at the service boundary.
  */
 object JsonNormalizer {
 
@@ -36,18 +34,10 @@ object JsonNormalizer {
      * Normalize a params map by converting all JSON native types to Kotlin types
      *
      * @param params Map potentially containing JSONObject/JSONArray
-     * @return Map with all JSON types converted to Kotlin equivalents
+     * @return Map with all JSON types converted to Kotlin equivalents, JSON null as null
      */
-    fun normalizeParams(params: Map<String, Any>): Map<String, Any> {
-        val result = mutableMapOf<String, Any>()
-        params.forEach { (key, value) ->
-            val normalized = normalizeValue(value)
-            if (normalized != null) {
-                result[key] = normalized
-            }
-        }
-        return result
-    }
+    fun normalizeParams(params: Map<String, Any>): Map<String, Any?> =
+        params.mapValues { (_, value) -> normalizeValue(value) }
 
     /**
      * Recursively normalize a value

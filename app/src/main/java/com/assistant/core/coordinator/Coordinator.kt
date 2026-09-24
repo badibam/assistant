@@ -46,7 +46,7 @@ class Coordinator(context: Context) {
     /**
      * Process user action from UI - simple interface for UI layer
      */
-    suspend fun processUserAction(action: String, params: Map<String, Any> = emptyMap()): CommandResult {
+    suspend fun processUserAction(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(action, params, Source.USER)
         val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
@@ -56,7 +56,7 @@ class Coordinator(context: Context) {
      * Process AI command - simplified for new resource.operation format
      * AI must now send actions in format: "zones.create", "tools.update", etc.
      */
-    suspend fun processAICommand(action: String, params: Map<String, Any> = emptyMap()): CommandResult {
+    suspend fun processAICommand(action: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(action, params, Source.AI)
         val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
@@ -65,7 +65,7 @@ class Coordinator(context: Context) {
     /**
      * Process scheduled task - simple interface for scheduler
      */
-    suspend fun processScheduledTask(task: String, params: Map<String, Any> = emptyMap()): CommandResult {
+    suspend fun processScheduledTask(task: String, params: Map<String, Any?> = emptyMap()): CommandResult {
         val command = convertToDispatchCommand(task, params, Source.SCHEDULER)
         val queuedOp = QueuedOperation(command)
         return enqueueAndProcess(queuedOp)
@@ -74,7 +74,7 @@ class Coordinator(context: Context) {
     /**
      * Convert action/params to DispatchCommand object
      */
-    private fun convertToDispatchCommand(action: String, params: Map<String, Any>, source: Source): DispatchCommand {
+    private fun convertToDispatchCommand(action: String, params: Map<String, Any?>, source: Source): DispatchCommand {
         return DispatchCommand(
             action = action,
             params = params,

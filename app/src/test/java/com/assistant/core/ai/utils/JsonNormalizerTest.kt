@@ -3,7 +3,6 @@ package com.assistant.core.ai.utils
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,8 +15,8 @@ import org.junit.Test
  * them silently. This is the first of the three stages a command goes through, and the one
  * where the data is still shaped exactly as the model wrote it.
  *
- * The class says of itself that it "preserves all data, only changes types". Most of these
- * cases check that; the ones at the end are where it does not.
+ * The class says of itself that it "preserves all data, only changes types"; these cases
+ * check that, nulls included.
  */
 class JsonNormalizerTest {
 
@@ -125,25 +124,35 @@ class JsonNormalizerTest {
     }
 
     /**
-     * A null at the top level does not: normalizeParams drops the key rather than keeping
-     * it with a null, unlike every nested map below it.
-     *
-     * This states what the code does today. The comments inside say filtering nulls "was
-     * causing fields to disappear from batch operations", and the nested maps were changed
-     * to keep them -- this entry point was not. So a command emptying a field one level up
-     * arrives as a command that never mentioned it.
+     * A null at the top level is kept too. It used to lose its key, so a command emptying a
+     * top-level field -- a zone's description -- arrived as one that never mentioned it.
      */
     @Test
-    fun aNullAtTheTopLevel_losesItsKey() {
+    fun aNullAtTheTopLevel_keepsItsKey() {
         val params = mapOf<String, Any>(
-            "value" to JSONObject.NULL,
-            "tool_instance_id" to "abc"
+            "description" to JSONObject.NULL,
+            "zone_id" to "abc"
         )
 
         val result = JsonNormalizer.normalizeParams(params)
 
-        assertFalse("the key is gone", result.containsKey("value"))
-        assertEquals("abc", result["tool_instance_id"])
+        assertTrue("the key is still there", result.containsKey("description"))
+        assertNull(result["description"])
+        assertEquals("abc", result["zone_id"])
+    }
+
+    /**
+     * And it reaches the service as JSON null, which is what a service tests for to empty a
+     * field: the coordinator hands the params over through JsonUtils.toJSONObject.
+     */
+    @Test
+    fun aTopLevelNull_reachesTheServiceAsJsonNull() {
+        val normalized = JsonNormalizer.normalizeParams(mapOf<String, Any>("description" to JSONObject.NULL))
+
+        val handedOver = com.assistant.core.utils.JsonUtils.toJSONObject(normalized)
+
+        assertTrue(handedOver.has("description"))
+        assertTrue(handedOver.isNull("description"))
     }
 
     /**

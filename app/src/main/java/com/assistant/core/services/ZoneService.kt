@@ -52,14 +52,12 @@ class ZoneService(private val context: Context) : ExecutableService {
     private suspend fun handleCreate(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        val name = params.optString("name")
-        if (name.isBlank()) {
-            return OperationResult.error(s.shared("service_error_zone_name_required"))
-        }
+        val name = params.givenText("name")
+            ?: return OperationResult.error(s.shared("service_error_zone_name_required"))
 
-        val description = params.optString("description").takeIf { it.isNotBlank() }
+        val description = params.givenText("description")
 
-        val icon = storedIcon(params.optString("icon_name").takeIf { it.isNotBlank() })
+        val icon = storedIcon(params.givenText("icon_name"))
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
@@ -132,6 +130,13 @@ class ZoneService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * A text parameter as given: null when it is JSON null or blank, which is how a command
+     * empties a field. optString alone would read JSON null as the text "null".
+     */
+    private fun JSONObject.givenText(key: String): String? =
+        if (isNull(key)) null else optString(key).trim().takeIf { it.isNotEmpty() }
+
+    /**
      * Update existing zone
      */
     private suspend fun handleUpdate(params: JSONObject, token: CancellationToken): OperationResult {
@@ -174,17 +179,25 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         LogManager.service("ZoneService.handleUpdate - params has group: ${params.has("group")}, group value: '$group', existing group: '${existingZone.group}'", "DEBUG")
 
+        // A partial update: a field left out keeps its value, a field given replaces it, and a
+        // field given as null or empty is emptied -- except the name, which a zone must have.
+        val name = if (params.has("name")) {
+            params.givenText("name") ?: return OperationResult.error(s.shared("service_error_zone_name_required"))
+        } else existingZone.name
+        val description = if (params.has("description")) params.givenText("description") else existingZone.description
+
         // Only an icon that changes is checked, like a tool's: saving a zone again with the
         // icon it has is always allowed.
-        val givenIcon = params.optString("icon_name").takeIf { it.isNotBlank() }
-        val icon = if (givenIcon != null && givenIcon != existingZone.icon_name) storedIcon(givenIcon)
-        else StoredIcon.Kept(existingZone.icon_name)
+        val icon = if (params.has("icon_name")) {
+            val givenIcon = params.givenText("icon_name")
+            if (givenIcon == existingZone.icon_name) StoredIcon.Kept(givenIcon) else storedIcon(givenIcon)
+        } else StoredIcon.Kept(existingZone.icon_name)
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
         val updatedZone = existingZone.copy(
-            name = params.optString("name").takeIf { it.isNotBlank() } ?: existingZone.name,
-            description = params.optString("description").takeIf { it.isNotBlank() } ?: existingZone.description,
+            name = name,
+            description = description,
             icon_name = icon.name,
             tool_groups = toolGroupsJson,
             group = group,

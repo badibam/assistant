@@ -23,6 +23,6 @@ package com.assistant.core.ai.data
 data class DataCommand(
     val id: String,              // Hash deterministic of (type + params + isRelative)
     val type: String,            // Standardized command type (see available types in AI.md)
-    val params: Map<String, Any>, // Absolute or relative parameters
+    val params: Map<String, Any?>, // Absolute or relative parameters
     val isRelative: Boolean = false // true for automation, false for chat
 )

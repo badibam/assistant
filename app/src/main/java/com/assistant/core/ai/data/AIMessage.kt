@@ -196,7 +196,7 @@ data class AIMessage(
          * which are not compatible with Kotlin types (Map, List).
          * JsonNormalizer handles recursive conversion for all nested structures.
          */
-        private fun parseParams(paramsJson: JSONObject): Map<String, Any> {
+        private fun parseParams(paramsJson: JSONObject): Map<String, Any?> {
             val rawParams = mutableMapOf<String, Any>()
             paramsJson.keys().forEach { key ->
                 rawParams[key] = paramsJson.get(key)
@@ -209,7 +209,7 @@ data class AIMessage(
          * Generate deterministic ID from command content (type + params + isRelative).
          * Same logic as EnrichmentProcessor.buildQueryId() to ensure consistency.
          */
-        private fun buildCommandId(type: String, params: Map<String, Any>, isRelative: Boolean): String {
+        private fun buildCommandId(type: String, params: Map<String, Any?>, isRelative: Boolean): String {
             val sortedParams = params.toSortedMap()
             val paramString = sortedParams.map { "${it.key}_${it.value}" }.joinToString(".")
             val relativeFlag = if (isRelative) "rel" else "abs"
@@ -231,7 +231,7 @@ data class AIMessage(
  */
 sealed class CommunicationModule {
     abstract val type: String
-    abstract val data: Map<String, Any>
+    abstract val data: Map<String, Any?>
 
     /**
      * Convert module to text representation for display in message history
@@ -245,7 +245,7 @@ sealed class CommunicationModule {
      */
     data class MultipleChoice(
         override val type: String = "MultipleChoice",
-        override val data: Map<String, Any>
+        override val data: Map<String, Any?>
     ) : CommunicationModule() {
         override fun toText(context: Context): String {
             val question = data["question"] as? String ?: ""
@@ -266,7 +266,7 @@ sealed class CommunicationModule {
      */
     data class Validation(
         override val type: String = "Validation",
-        override val data: Map<String, Any>
+        override val data: Map<String, Any?>
     ) : CommunicationModule() {
         override fun toText(context: Context): String {
             return data["message"] as? String ?: ""
