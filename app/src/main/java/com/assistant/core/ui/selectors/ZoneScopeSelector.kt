@@ -1,5 +1,8 @@
 package com.assistant.core.ui.selectors
 
+import com.assistant.core.ui.selectors.data.ZoneScopeStateJson
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -54,12 +57,17 @@ fun ZoneScopeSelector(
     val dataNavigator = remember { DataNavigator(context) }
 
     // State management
-    var state by remember { mutableStateOf(ZoneScopeState(selectedContext = config.defaultContext)) }
+    // Saved across a rotation: the zone, tool, context, resources and period being chosen
+    var state by rememberSaveable(stateSaver = ZoneScopeStateSaver) {
+        mutableStateOf(ZoneScopeState(selectedContext = config.defaultContext))
+    }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Load initial zones on mount
+    // Load initial zones on mount. A state restored after a rotation already holds its options:
+    // loading again would put the selector back to the zone list over the user's choices.
     LaunchedEffect(Unit) {
+        if (state.optionsByLevel.isNotEmpty()) return@LaunchedEffect
         isLoading = true
         try {
             val rootNodes = dataNavigator.getRootNodes()
@@ -775,3 +783,9 @@ private fun getPeriodSectionLabel(context: PointerContext, s: com.assistant.core
         PointerContext.CONFIG -> "" // Not shown
     }
 }
+
+/** The selector's state across a rotation, as ZoneScopeStateJson writes it. */
+private val ZoneScopeStateSaver: Saver<ZoneScopeState, String> = Saver(
+    save = { ZoneScopeStateJson.toJson(it) },
+    restore = { ZoneScopeStateJson.fromJson(it) }
+)
