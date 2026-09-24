@@ -26,6 +26,7 @@ object CustomFieldsSchemaGenerator {
      * @param baseSchemaJson The base schema JSON string (already merged from base + specific)
      * @param configJson The tool instance config JSON string containing custom_fields array
      * @return Enriched schema JSON string with custom_fields properties added
+ * @throws ValidationException if a field definition cannot be read
      */
     fun enrichSchema(baseSchemaJson: String, configJson: String): String {
         val schemaObj = JSONObject(baseSchemaJson)
@@ -38,14 +39,8 @@ object CustomFieldsSchemaGenerator {
             return schemaObj.toString()
         }
 
-        // Parse field definitions
-        val fieldDefinitions = try {
-            customFieldsArray.toFieldDefinitions()
-        } catch (e: Exception) {
-            // If parsing fails, return schema without enrichment
-            // This should never happen if config validation is correct
-            return schemaObj.toString()
-        }
+        // Parse field definitions; an unreadable one throws, so the caller sees why
+        val fieldDefinitions = customFieldsArray.toFieldDefinitions()
 
         // Get or create the root properties object
         val properties = schemaObj.optJSONObject("properties") ?: JSONObject().also {
@@ -149,7 +144,8 @@ object CustomFieldsSchemaGenerator {
                         (config["min"] as? Number)?.let { put("minimum", it) }
                         (config["max"] as? Number)?.let { put("maximum", it) }
 
-                        // multipleOf for step validation
+                        // The stops of the slider. multipleOf counts from 0, not from min: the
+                        // config validation keeps min and max on the step so the two agree.
                         val step = (config["step"] as? Number)?.toDouble() ?: 1.0
                         if (step > 0) {
                             put("multipleOf", step)
