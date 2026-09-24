@@ -17,6 +17,7 @@ import com.assistant.core.ui.components.GroupListEditor
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
+import com.assistant.core.coordinator.isSuccess
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import com.assistant.core.utils.LogManager
@@ -135,7 +136,8 @@ fun CreateZoneScreen(
                             LogManager.ui("CreateZoneScreen - Updating zone with params: $updateParams", "DEBUG")
 
                             val result = coordinator.processUserAction("zones.update", updateParams)
-                            onUpdate?.invoke()
+                            if (result.isSuccess) onUpdate?.invoke()
+                            else errorMessage = result.error ?: s.shared("error_operation_failed")
                         } else {
                             // Handle create
                             val createParams = mutableMapOf<String, Any>(
@@ -155,10 +157,11 @@ fun CreateZoneScreen(
                             LogManager.ui("CreateZoneScreen - Creating zone with params: $createParams", "DEBUG")
 
                             val result = coordinator.processUserAction("zones.create", createParams)
-                            onCreate?.invoke()
+                            if (result.isSuccess) onCreate?.invoke()
+                            else errorMessage = result.error ?: s.shared("error_operation_failed")
                         }
                     } catch (e: Exception) {
-                        errorMessage = "Operation error: ${e.message}"
+                        errorMessage = s.shared("message_error").format(e.message ?: "")
                     }
                 }
             } else {
@@ -255,9 +258,10 @@ fun CreateZoneScreen(
                                     "zones.delete",
                                     mapOf("zone_id" to existingZone!!.id)
                                 )
-                                onDelete?.invoke()
+                                if (result.isSuccess) onDelete?.invoke()
+                                else errorMessage = result.error ?: s.shared("error_operation_failed")
                             } catch (e: Exception) {
-                                errorMessage = "Delete error: ${e.message}"
+                                errorMessage = s.shared("message_error").format(e.message ?: "")
                             }
                         }
                     }
