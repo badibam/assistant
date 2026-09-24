@@ -187,30 +187,25 @@ internal fun JsonElement.toOpenAIResponse(): AIResponse {
         )
     }
 
-    // Extract content from output array
-    // OpenAI returns multiple output elements: reasoning (optional) + message
-    // We need to find the element with type="message"
-    val outputArray = jsonObj["output"]?.jsonArray
-    LogManager.aiService("OpenAI parsing - outputArray size: ${outputArray?.size}")
-
-    // Find the message element (not reasoning)
-    val messageOutput = outputArray?.firstOrNull { element ->
-        (element as? JsonObject)?.get("type")?.jsonPrimitive?.content == "message"
+    // Extract content from output array: an optional reasoning element, then the message,
+    // whose text is the output_text block
+    val messageOutput = (jsonObj["output"] as? JsonArray)?.firstOrNull { element ->
+        (element as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "message"
     } as? JsonObject
-    LogManager.aiService("OpenAI parsing - messageOutput found: ${messageOutput != null}")
-
-    val contentArray = messageOutput?.get("content")?.jsonArray
-    LogManager.aiService("OpenAI parsing - contentArray size: ${contentArray?.size}")
-
-    // Find the text content (type="output_text")
-    val textContent = contentArray?.firstOrNull { element ->
-        (element as? JsonObject)?.get("type")?.jsonPrimitive?.content == "output_text"
+    val textContent = (messageOutput?.get("content") as? JsonArray)?.firstOrNull { element ->
+        (element as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "output_text"
     } as? JsonObject
-    LogManager.aiService("OpenAI parsing - textContent found: ${textContent != null}")
-
-    val text = textContent?.get("text")?.jsonPrimitive?.content ?: ""
-    LogManager.aiService("OpenAI parsing - extracted text length: ${text.length}")
-    LogManager.aiService("OpenAI parsing - text preview: ${text.take(200)}")
+    val text = textContent?.get("text")?.jsonPrimitive?.contentOrNull
+        ?: return AIResponse(
+            success = false,
+            content = "",
+            errorMessage = "Provider response has no output_text in a message element.",
+            failure = AIFailure.CONFIG,
+            tokensUsed = 0,
+            cacheWriteTokens = 0,
+            cacheReadTokens = 0,
+            inputTokens = 0
+        )
 
     // Extract usage metrics
     // Use safe cast to handle JsonNull elements gracefully
