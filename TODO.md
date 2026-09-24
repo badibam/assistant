@@ -40,7 +40,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
-- Icônes : que les icônes Lucide s'affichent (outils, zones, catégories du sélecteur) et prennent la couleur du thème ; que le sélecteur s'ouvre, cherche et parcoure une catégorie sans lenteur ; que la base passe en 30 avec l'icône des outils de notes et de messages renommée, et qu'une zone reçoive, garde et affiche son icône. `IconIndexTest` couvre la recherche et les anciens noms ; la conversion des SVG a été comparée au rendu d'origine, pas au rendu Android.
+- Icônes : qu'elles prennent la couleur du thème partout (outils, zones, catégories du sélecteur), et que le sélecteur s'ouvre, cherche et parcoure une catégorie sans lenteur. Vérifié le 2026-09-24 : la base passée en 30 avec les icônes de notes et de messages renommées, et une zone qui reçoit, garde et affiche son icône.
 - Historique de tracking : retrouver le symptôme du mauvais timestamp. Noté sur le téléphone sans détail, donc à revoir avant de chercher la cause. Le fuseau n'est candidat que si l'app avait un fuseau réglé différent de celui du téléphone ; les périodes suivent désormais le fuseau de l'app.
 - Fuseau : avec un fuseau réglé dans l'app différent de celui du téléphone, que l'historique (tracking et écran d'historique) range chaque entrée dans le jour affiché sur elle, que le sélecteur de période et l'éditeur de planning des automations montrent l'heure de l'app, et que les libellés « aujourd'hui » / « hier » du journal suivent. `PeriodResolutionTest` couvre le calcul, pas les écrans.
 - Base 28→29 : qu'une config d'outil portant un champ DATE ou DATETIME s'ouvre et se sauvegarde normalement après le retrait des bornes.
