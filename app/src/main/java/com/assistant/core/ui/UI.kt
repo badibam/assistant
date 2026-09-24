@@ -1,5 +1,6 @@
 package com.assistant.core.ui
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
@@ -373,7 +374,15 @@ object UI {
         rightButton: ButtonAction? = null,
         onLeftClick: (() -> Unit)? = null,
         onRightClick: (() -> Unit)? = null
-    ) = CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
+    ) {
+        // The phone's back key does what the header's back button does. Only the screen on
+        // display is composed, so its header is the one that answers, and the key walks back
+        // up the same way the button does -- tool, zone, home.
+        if (leftButton == ButtonAction.BACK && onLeftClick != null) {
+            BackHandler(onBack = onLeftClick)
+        }
+        CurrentTheme.current.PageHeader(title, subtitle, icon, leftButton, rightButton, onLeftClick, onRightClick)
+    }
     
     @Composable
     fun ToolCardHeader(

@@ -1,6 +1,7 @@
 package com.assistant.core.ui.screens
 
 import com.assistant.core.ui.StringListSaver
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,11 +31,14 @@ import com.assistant.core.utils.LogManager
 fun CreateZoneScreen(
     existingZone: Zone? = null,
     preSelectedGroup: String? = null,
-    onCancel: () -> Unit = {},
+    onCancel: () -> Unit,
     onCreate: (() -> Unit)? = null,
     onUpdate: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null
 ) {
+    // No page header here: the back key cancels, like the form's cancel button
+    BackHandler(onBack = onCancel)
+
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
     val coroutineScope = rememberCoroutineScope()

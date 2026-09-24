@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
@@ -65,6 +66,7 @@ fun MainScreen() {
     var showLogs by rememberSaveable { mutableStateOf(false) }
     var showAIChat by rememberSaveable { mutableStateOf(false) }
     var showHistory by rememberSaveable { mutableStateOf(false) }
+    var showExitConfirm by remember { mutableStateOf(false) }
     
     // Derived states from IDs (recomputed after orientation change)
     val selectedZone = zones.find { it.id == selectedZoneId }
@@ -336,6 +338,9 @@ fun MainScreen() {
             }
         )
     } else {
+        // The home screen is the root: the back key leaves the app, and asks first
+        BackHandler { showExitConfirm = true }
+
         // Main content using hybrid system: Compose layouts + UI.* components
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -431,6 +436,17 @@ fun MainScreen() {
                 }
                 showSettings = false
             }
+        )
+    }
+
+    if (showExitConfirm) {
+        UI.ConfirmDialog(
+            title = s.shared("action_quit"),
+            message = s.shared("exit_confirm_message"),
+            confirmText = s.shared("action_quit"),
+            cancelText = s.shared("action_cancel"),
+            onConfirm = { (context as? android.app.Activity)?.finish() },
+            onDismiss = { showExitConfirm = false }
         )
     }
 

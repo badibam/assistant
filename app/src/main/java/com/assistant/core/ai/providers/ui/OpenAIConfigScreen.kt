@@ -4,6 +4,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +48,9 @@ internal fun OpenAIConfigScreen(
     onCancel: () -> Unit,
     onReset: (() -> Unit)? = null
 ) {
+    // The header has no back button: the back key cancels, like the form's cancel button
+    BackHandler(onBack = onCancel)
+
     val context = LocalContext.current
     val s = remember { Strings.`for`(context = context) }
 
