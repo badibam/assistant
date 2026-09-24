@@ -11,7 +11,6 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.DataChangeNotifier
 import com.assistant.core.utils.DateTimeConverter
-import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
@@ -61,9 +60,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
             return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
         }
-
-        // Get app timezone for the timestamps handed back on read
-        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
         val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
@@ -164,9 +160,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val dao = getToolDataDao()
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
-
-        // Get app timezone for ISO ↔ timestamp conversion
-        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
         val dataJson = params.optJSONObject("data")?.toString()
@@ -364,9 +357,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         
         val totalPages = if (totalCount == 0) 1 else ((totalCount - 1) / limit) + 1
 
-        // Get app timezone for timestamp → ISO conversion
-        val appTimezone = AppConfigManager.getDateTimeConfig().getZoneId()
-
         // Parse fields filter if provided (optional for backward compatibility)
         val fieldsFilter = params.optJSONArray("fields")?.let { fieldsArray ->
             val list = mutableListOf<String>()
@@ -384,26 +374,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         return OperationResult.success(
             data = mapOf(
                 "entries" to entries.map { entity ->
-                    // Milliseconds, as stored. The ISO the model reads is produced where the
-                    // model is spoken to, in CommandExecutor. Handed out as an object: the
-                    // string form belongs to the database, not to the callers.
-                    val entryData = JsonUtils.toMap(JSONObject(entity.data))
-
-                    val entryCustomFields = entity.customFields?.let { cf ->
-                        JsonUtils.toMap(JSONObject(cf))
-                    }
-
-                    val fullEntry = mapOf(
-                        "id" to entity.id,
-                        "tool_instance_id" to entity.toolInstanceId,
-                        "tooltype" to entity.tooltype,
-                        "timestamp" to entity.timestamp,
-                        "name" to entity.name,
-                        "data" to entryData,
-                        "custom_fields" to entryCustomFields,  // Use underscore for consistency with DB and configs
-                        "created_at" to entity.createdAt,
-                        "updated_at" to entity.updatedAt
-                    )
+                    val fullEntry = ToolDataEntries.toMap(entity)
 
                     // Apply fields filter if provided
                     if (fieldsFilter != null) {
@@ -436,27 +407,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val entity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
-        // Get app timezone for timestamp → ISO conversion
-        // Milliseconds, as stored. The ISO the model reads is produced in CommandExecutor.
-        val entryCustomFields = entity.customFields?.let { cf ->
-            JsonUtils.toMap(JSONObject(cf))
-        }
-
-        return OperationResult.success(
-            data = mapOf(
-                "entry" to mapOf(
-                    "id" to entity.id,
-                    "tool_instance_id" to entity.toolInstanceId,
-                    "tooltype" to entity.tooltype,
-                    "timestamp" to entity.timestamp,
-                    "name" to entity.name,
-                    "data" to entity.data,
-                    "custom_fields" to entryCustomFields,  // Use underscore for consistency with DB and configs
-                    "created_at" to entity.createdAt,
-                    "updated_at" to entity.updatedAt
-                )
-            )
-        )
+        return OperationResult.success(data = mapOf("entry" to ToolDataEntries.toMap(entity)))
     }
 
     private suspend fun getStats(params: JSONObject, token: CancellationToken): OperationResult {
