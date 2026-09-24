@@ -335,7 +335,7 @@ internal class ClaudeProviderCore(
             LogManager.aiService("=== LEVEL 1 CONTENT (RAW, WITH LINE BREAKS) ===\n${promptData.level1Content}\n=== END LEVEL 1 ===", "VERBOSE")
 
             // Transform PromptData to Claude JSON via extension
-            val requestJson = promptData.toClaudeJson(configJson, context)
+            val requestJson = promptData.toClaudeJson(configJson, promptData.buildDatetimeMessage(context))
             val requestBody = requestJson.toString()
 
             LogManager.aiService("Built Claude request: ${requestBody.length} characters")

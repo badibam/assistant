@@ -266,7 +266,7 @@ internal class OpenAIProviderCore(
             val apiKey = configJson.getString("api_key")
 
             // Transform PromptData to OpenAI JSON via extension
-            val requestJson = promptData.toOpenAIJson(configJson, context)
+            val requestJson = promptData.toOpenAIJson(configJson, promptData.buildDatetimeMessage(context))
             val requestBody = requestJson.toString()
 
             LogManager.aiService("Built OpenAI request: ${requestBody.length} characters")

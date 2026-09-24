@@ -28,10 +28,11 @@ import com.assistant.core.utils.LogManager
  * - Current datetime appended at the end
  *
  * @param config Provider configuration (api_key, model, temperature, etc.)
- * @param context Android context for i18n strings
+ * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
+ *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for OpenAI API /v1/responses endpoint
  */
-internal fun PromptData.toOpenAIJson(config: JSONObject, context: android.content.Context): JsonObject {
+internal fun PromptData.toOpenAIJson(config: JSONObject, datetimeText: String): JsonObject {
     val model = config.getString("model")
     val temperature = config.optDouble("temperature", 1.0)
     val maxTokens = config.optInt("max_output_tokens", 32000)
@@ -92,8 +93,6 @@ internal fun PromptData.toOpenAIJson(config: JSONObject, context: android.conten
             }
 
             // Add current datetime as final message
-            val datetimeText = this@toOpenAIJson.buildDatetimeMessage(context)
-
             addJsonObject {
                 put("role", "user")
                 put("content", datetimeText)

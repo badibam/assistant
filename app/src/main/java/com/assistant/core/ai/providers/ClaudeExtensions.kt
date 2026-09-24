@@ -33,10 +33,11 @@ internal data class FusedMessage(
  * - Cache_control on last block of last history message (4th breakpoint)
  *
  * @param config Provider configuration (api_key, model, max_tokens, etc.)
- * @param context Android context for i18n strings
+ * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
+ *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for Claude API /v1/messages endpoint
  */
-internal fun PromptData.toClaudeJson(config: JSONObject, context: android.content.Context): JsonObject {
+internal fun PromptData.toClaudeJson(config: JSONObject, datetimeText: String): JsonObject {
     val model = config.getString("model")
     val maxTokens = config.optInt("max_tokens", 32000)
     // Present only when the endpoint declares effort levels (schema-enforced, see MessagesApi)
@@ -124,9 +125,8 @@ internal fun PromptData.toClaudeJson(config: JSONObject, context: android.conten
                 }
             }
 
-            // Add the dated closing message (always fresh, no cache)
-            val datetimeText = this@toClaudeJson.buildDatetimeMessage(context)
-
+            // The dated closing message: after the last breakpoint, so its change on every call
+            // costs no cache
             addJsonObject {
                 put("role", "user")
                 put("content", datetimeText)
@@ -164,16 +164,15 @@ internal fun fuseConsecutiveUserMessages(messages: List<SessionMessage>): List<F
                 }
             }
             MessageSender.AI -> {
-                // Flush accumulated USER blocks
-                if (currentUserBlocks.isNotEmpty()) {
-                    result.add(FusedMessage("user", currentUserBlocks.toList()))
-                    currentUserBlocks.clear()
-                }
-
-                // Add AI message (use aiMessageJson if available, otherwise construct)
-                // Filter empty content to avoid API errors
+                // An empty AI message is left out (the API refuses an empty block), and it
+                // must not close the user turn either: the user blocks on both sides of it
+                // belong to one turn, or two user turns would follow each other.
                 val aiContent = msg.aiMessageJson ?: extractTextContent(msg) ?: ""
                 if (aiContent.isNotBlank()) {
+                    if (currentUserBlocks.isNotEmpty()) {
+                        result.add(FusedMessage("user", currentUserBlocks.toList()))
+                        currentUserBlocks.clear()
+                    }
                     result.add(FusedMessage("assistant", listOf(aiContent)))
                 }
             }
