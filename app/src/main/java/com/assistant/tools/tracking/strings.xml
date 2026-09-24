@@ -118,83 +118,83 @@
     <string name="error_entry_update_failed">Unable to update the entry</string>
     
     <!-- SCHEMAS CONFIG - Display names for schema identification -->
-    <string name="schema_config_numeric_display_name"></string>
-    <string name="schema_config_timer_display_name"></string>
-    <string name="schema_config_choice_display_name"></string>
-    <string name="schema_config_scale_display_name"></string>
-    <string name="schema_config_counter_display_name"></string>
-    <string name="schema_config_boolean_display_name"></string>
-    <string name="schema_config_text_display_name"></string>
+    <string name="schema_config_numeric_display_name">Tracking configuration (numeric)</string>
+    <string name="schema_config_timer_display_name">Tracking configuration (timer)</string>
+    <string name="schema_config_choice_display_name">Tracking configuration (choice)</string>
+    <string name="schema_config_scale_display_name">Tracking configuration (scale)</string>
+    <string name="schema_config_counter_display_name">Tracking configuration (counter)</string>
+    <string name="schema_config_boolean_display_name">Tracking configuration (yes/no)</string>
+    <string name="schema_config_text_display_name">Tracking configuration (text)</string>
 
     <!-- SCHEMAS CONFIG - Descriptions for schema identification -->
-    <string name="schema_config_numeric_description"></string>
-    <string name="schema_config_timer_description"></string>
-    <string name="schema_config_choice_description"></string>
-    <string name="schema_config_scale_description"></string>
-    <string name="schema_config_counter_description"></string>
-    <string name="schema_config_boolean_description"></string>
-    <string name="schema_config_text_description"></string>
+    <string name="schema_config_numeric_description">Configuration schema for numeric tracking</string>
+    <string name="schema_config_timer_description">Configuration schema for timer tracking</string>
+    <string name="schema_config_choice_description">Configuration schema for choice tracking</string>
+    <string name="schema_config_scale_description">Configuration schema for scale tracking</string>
+    <string name="schema_config_counter_description">Configuration schema for counter tracking</string>
+    <string name="schema_config_boolean_description">Configuration schema for yes/no tracking</string>
+    <string name="schema_config_text_description">Configuration schema for text tracking</string>
 
     <!-- SCHEMAS CONFIG - Descriptions for AI validation -->
-    <string name="schema_config_type"></string>
-    <string name="schema_config_numeric_items"></string>
-    <string name="schema_config_numeric_item_name"></string>
-    <string name="schema_config_numeric_item_default_quantity"></string>
-    <string name="schema_config_numeric_item_unit"></string>
-    <string name="schema_config_timer_items"></string>
-    <string name="schema_config_timer_item_name"></string>
-    <string name="schema_config_choice_options"></string>
-    <string name="schema_config_scale_items"></string>
-    <string name="schema_config_scale_item_name"></string>
-    <string name="schema_config_scale_min"></string>
-    <string name="schema_config_scale_max"></string>
-    <string name="schema_config_scale_min_label"></string>
-    <string name="schema_config_scale_max_label"></string>
-    <string name="schema_config_counter_items"></string>
-    <string name="schema_config_counter_item_name"></string>
-    <string name="schema_config_counter_allow_decrement"></string>
-    <string name="schema_config_boolean_items"></string>
-    <string name="schema_config_boolean_item_name"></string>
-    <string name="schema_config_boolean_item_true_label"></string>
-    <string name="schema_config_boolean_item_false_label"></string>
-    <string name="schema_config_text_items"></string>
-    <string name="schema_config_text_item_name"></string>
+    <string name="schema_config_type">Kind of value this tracking records; fixed by the schema</string>
+    <string name="schema_config_numeric_items">Predefined items, offered for quick entry</string>
+    <string name="schema_config_numeric_item_name">Name of the item</string>
+    <string name="schema_config_numeric_item_default_quantity">Quantity proposed when this item is chosen</string>
+    <string name="schema_config_numeric_item_unit">Unit of the quantity (kg, km, glasses...)</string>
+    <string name="schema_config_timer_items">Activities that can be timed</string>
+    <string name="schema_config_timer_item_name">Name of the activity</string>
+    <string name="schema_config_choice_options">Options the user picks from</string>
+    <string name="schema_config_scale_items">Predefined items, each rated on the scale</string>
+    <string name="schema_config_scale_item_name">Name of the item</string>
+    <string name="schema_config_scale_min">Lowest value of the scale</string>
+    <string name="schema_config_scale_max">Highest value of the scale</string>
+    <string name="schema_config_scale_min_label">Label of the lowest value</string>
+    <string name="schema_config_scale_max_label">Label of the highest value</string>
+    <string name="schema_config_counter_items">Things that are counted</string>
+    <string name="schema_config_counter_item_name">Name of what is counted</string>
+    <string name="schema_config_counter_allow_decrement">Whether the count can go down as well as up</string>
+    <string name="schema_config_boolean_items">Questions answered yes or no</string>
+    <string name="schema_config_boolean_item_name">Name of the question</string>
+    <string name="schema_config_boolean_item_true_label">Label shown for yes</string>
+    <string name="schema_config_boolean_item_false_label">Label shown for no</string>
+    <string name="schema_config_text_items">Predefined items, offered for quick entry</string>
+    <string name="schema_config_text_item_name">Name of the item</string>
     
     <!-- SCHEMAS DATA - Display names for schema identification -->
-    <string name="schema_data_numeric_display_name"></string>
-    <string name="schema_data_scale_display_name"></string>
-    <string name="schema_data_boolean_display_name"></string>
-    <string name="schema_data_choice_display_name"></string>
-    <string name="schema_data_counter_display_name"></string>
-    <string name="schema_data_timer_display_name"></string>
-    <string name="schema_data_text_display_name"></string>
+    <string name="schema_data_numeric_display_name">Tracking data (numeric)</string>
+    <string name="schema_data_scale_display_name">Tracking data (scale)</string>
+    <string name="schema_data_boolean_display_name">Tracking data (yes/no)</string>
+    <string name="schema_data_choice_display_name">Tracking data (choice)</string>
+    <string name="schema_data_counter_display_name">Tracking data (counter)</string>
+    <string name="schema_data_timer_display_name">Tracking data (timer)</string>
+    <string name="schema_data_text_display_name">Tracking data (text)</string>
 
     <!-- SCHEMAS DATA - Descriptions for schema identification -->
-    <string name="schema_data_numeric_description"></string>
-    <string name="schema_data_scale_description"></string>
-    <string name="schema_data_boolean_description"></string>
-    <string name="schema_data_choice_description"></string>
-    <string name="schema_data_counter_description"></string>
-    <string name="schema_data_timer_description"></string>
-    <string name="schema_data_text_description"></string>
+    <string name="schema_data_numeric_description">Validation schema for numeric tracking entries</string>
+    <string name="schema_data_scale_description">Validation schema for scale tracking entries</string>
+    <string name="schema_data_boolean_description">Validation schema for yes/no tracking entries</string>
+    <string name="schema_data_choice_description">Validation schema for choice tracking entries</string>
+    <string name="schema_data_counter_description">Validation schema for counter tracking entries</string>
+    <string name="schema_data_timer_description">Validation schema for timer tracking entries</string>
+    <string name="schema_data_text_description">Validation schema for text tracking entries</string>
 
     <!-- SCHEMAS DATA - Descriptions for AI validation -->
-    <string name="schema_data_type"></string>
-    <string name="schema_data_numeric_quantity"></string>
-    <string name="schema_data_numeric_unit"></string>
-    <string name="schema_data_scale_rating"></string>
-    <string name="schema_data_scale_min_value"></string>
-    <string name="schema_data_scale_max_value"></string>
-    <string name="schema_data_scale_min_label"></string>
-    <string name="schema_data_scale_max_label"></string>
-    <string name="schema_data_boolean_state"></string>
-    <string name="schema_data_boolean_true_label"></string>
-    <string name="schema_data_boolean_false_label"></string>
-    <string name="schema_data_choice_selected_option"></string>
-    <string name="schema_data_choice_available_options"></string>
-    <string name="schema_data_counter_increment"></string>
-    <string name="schema_data_timer_duration_seconds"></string>
-    <string name="schema_data_text_content"></string>
+    <string name="schema_data_type">Kind of value recorded; must match the tool\'s configuration</string>
+    <string name="schema_data_numeric_quantity">Quantity recorded</string>
+    <string name="schema_data_numeric_unit">Unit of the quantity</string>
+    <string name="schema_data_scale_rating">Rating given, between min_value and max_value</string>
+    <string name="schema_data_scale_min_value">Lowest value of the scale when the rating was given</string>
+    <string name="schema_data_scale_max_value">Highest value of the scale when the rating was given</string>
+    <string name="schema_data_scale_min_label">Label of the lowest value when the rating was given</string>
+    <string name="schema_data_scale_max_label">Label of the highest value when the rating was given</string>
+    <string name="schema_data_boolean_state">Answer recorded: true for yes, false for no</string>
+    <string name="schema_data_boolean_true_label">Label of yes when the answer was given</string>
+    <string name="schema_data_boolean_false_label">Label of no when the answer was given</string>
+    <string name="schema_data_choice_selected_option">Option chosen, one of available_options</string>
+    <string name="schema_data_choice_available_options">Options offered when the choice was made</string>
+    <string name="schema_data_counter_increment">Amount added to the count; negative to take away</string>
+    <string name="schema_data_timer_duration_seconds">Time spent, in seconds</string>
+    <string name="schema_data_text_content">Text recorded</string>
     
     <!-- VALIDATION - Field names for display -->
     <string name="field_default_quantity">Default qty</string>

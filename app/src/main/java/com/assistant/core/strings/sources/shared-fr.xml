@@ -638,34 +638,34 @@
     <string name="tools_error_loading">Erreur lors du chargement</string>
 
     <!-- Tools BASE SCHEMA CONFIG - Descriptions communes pour validation des configurations -->
-    <string name="tools_base_schema_config_name"></string>
-    <string name="tools_base_schema_config_description"></string>
-    <string name="tools_base_schema_config_management"></string>
-    <string name="tools_base_schema_config_display_mode"></string>
-    <string name="tools_base_schema_config_icon_name"></string>
-    <string name="tools_base_schema_config_schema_id"></string>
-    <string name="tools_base_schema_config_data_schema_id"></string>
+    <string name="tools_base_schema_config_name">Nom de l\'outil, affiché dans sa zone</string>
+    <string name="tools_base_schema_config_description">Description facultative de l\'usage de l\'outil</string>
+    <string name="tools_base_schema_config_management">Qui gère l\'outil : l\'utilisateur (manual) ou l\'IA (ai)</string>
+    <string name="tools_base_schema_config_display_mode">Forme de l\'outil dans sa zone, de la plus petite (ICON) à la plus grande (FULL)</string>
+    <string name="tools_base_schema_config_icon_name">Nom de l\'icône de l\'outil (un nom d\'icône Lucide)</string>
+    <string name="tools_base_schema_config_schema_id">Identifiant de ce schéma de configuration, posé par le système</string>
+    <string name="tools_base_schema_config_data_schema_id">Identifiant du schéma que suivent les entrées de l\'outil, posé par le système</string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
     <string name="tools_base_schema_config_validate_config">Requiert validation utilisateur avant modification configuration</string>
     <string name="tools_base_schema_config_validate_data">Requiert validation utilisateur avant modification données</string>
 
     <!-- Tools BASE SCHEMA DATA - Descriptions communes pour validation des données -->
-    <string name="tools_base_schema_data_id"></string>
-    <string name="tools_base_schema_data_tool_instance_id"></string>
-    <string name="tools_base_schema_data_tooltype"></string>
-    <string name="tools_base_schema_data_name"></string>
-    <string name="tools_base_schema_data_timestamp"></string>
-    <string name="tools_base_schema_data_created_at"></string>
-    <string name="tools_base_schema_data_updated_at"></string>
-    <string name="tools_base_schema_data_schema_id"></string>
+    <string name="tools_base_schema_data_id">Identifiant de l\'entrée, posé par le système</string>
+    <string name="tools_base_schema_data_tool_instance_id">Identifiant de l\'outil auquel appartient l\'entrée</string>
+    <string name="tools_base_schema_data_tooltype">Type de l\'outil auquel appartient l\'entrée, posé par le système</string>
+    <string name="tools_base_schema_data_name">Nom de l\'entrée</string>
+    <string name="tools_base_schema_data_timestamp">Moment auquel se rapporte l\'entrée ; maintenant s\'il est omis, et peut être dans le passé</string>
+    <string name="tools_base_schema_data_created_at">Date de création de l\'entrée, posée par le système</string>
+    <string name="tools_base_schema_data_updated_at">Date de dernière modification de l\'entrée, posée par le système</string>
+    <string name="tools_base_schema_data_schema_id">Identifiant du schéma que suit l\'entrée, posé par le système</string>
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
 
     <!-- Tools BASE SCHEMA EXECUTION - Descriptions communes pour validation des exécutions -->
 
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
-    <string name="zone_config_schema_display_name"></string>
+    <string name="zone_config_schema_display_name">Configuration de zone</string>
     <string name="zone_config_schema_description">Schéma de configuration pour les zones</string>
-    <string name="app_config_format_schema_display_name"></string>
+    <string name="app_config_format_schema_display_name">Réglages de format</string>
 
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
     <string name="app_config_schema_format_week_start_day">Jour de début de semaine</string>
@@ -683,10 +683,10 @@
     <string name="app_config_schema_format_year_limit">Nombre d\'années avant passage à date absolue</string>
 
     <!-- ZONE SCHEMA - Descriptions pour validation zones -->
-    <string name="zone_schema_name"></string>
-    <string name="zone_schema_description"></string>
-    <string name="zone_schema_icon_name"></string>
-    <string name="zone_schema_color"></string>
+    <string name="zone_schema_name">Nom de la zone</string>
+    <string name="zone_schema_description">Description facultative de ce que contient la zone</string>
+    <string name="zone_schema_icon_name">Nom de l\'icône de la zone (un nom d\'icône Lucide)</string>
+    <string name="zone_schema_color">Couleur de la zone</string>
     <string name="zone_schema_validate_zone_config_changes">Requiert validation pour modifications de configuration de cette zone</string>
     <string name="zone_schema_validate_tool_config_changes">Requiert validation pour modifications de configuration des outils de cette zone</string>
     <string name="zone_schema_validate_tool_data_changes">Requiert validation pour modifications de données des outils de cette zone</string>

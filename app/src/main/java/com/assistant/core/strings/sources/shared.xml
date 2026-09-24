@@ -638,34 +638,34 @@
     <string name="tools_error_loading">Error while loading</string>
 
     <!-- Tools BASE SCHEMA CONFIG - Shared descriptions for configuration validation -->
-    <string name="tools_base_schema_config_name"></string>
-    <string name="tools_base_schema_config_description"></string>
-    <string name="tools_base_schema_config_management"></string>
-    <string name="tools_base_schema_config_display_mode"></string>
-    <string name="tools_base_schema_config_icon_name"></string>
-    <string name="tools_base_schema_config_schema_id"></string>
-    <string name="tools_base_schema_config_data_schema_id"></string>
+    <string name="tools_base_schema_config_name">Name of the tool, shown in its zone</string>
+    <string name="tools_base_schema_config_description">Optional description of what the tool is for</string>
+    <string name="tools_base_schema_config_management">Who manages the tool: the user (manual) or the AI (ai)</string>
+    <string name="tools_base_schema_config_display_mode">How the tool is drawn in its zone, from the smallest (ICON) to the largest (FULL)</string>
+    <string name="tools_base_schema_config_icon_name">Name of the tool\'s icon (a Lucide icon name)</string>
+    <string name="tools_base_schema_config_schema_id">Identifier of this configuration schema, set by the system</string>
+    <string name="tools_base_schema_config_data_schema_id">Identifier of the schema the tool\'s entries follow, set by the system</string>
     <string name="tools_base_schema_config_always_send">Always send the data to the AI (Level 2)</string>
     <string name="tools_base_schema_config_validate_config">Requires user validation before a configuration change</string>
     <string name="tools_base_schema_config_validate_data">Requires user validation before a data change</string>
 
     <!-- Tools BASE SCHEMA DATA - Shared descriptions for data validation -->
-    <string name="tools_base_schema_data_id"></string>
-    <string name="tools_base_schema_data_tool_instance_id"></string>
-    <string name="tools_base_schema_data_tooltype"></string>
-    <string name="tools_base_schema_data_name"></string>
-    <string name="tools_base_schema_data_timestamp"></string>
-    <string name="tools_base_schema_data_created_at"></string>
-    <string name="tools_base_schema_data_updated_at"></string>
-    <string name="tools_base_schema_data_schema_id"></string>
+    <string name="tools_base_schema_data_id">Identifier of the entry, set by the system</string>
+    <string name="tools_base_schema_data_tool_instance_id">Identifier of the tool the entry belongs to</string>
+    <string name="tools_base_schema_data_tooltype">Type of the tool the entry belongs to, set by the system</string>
+    <string name="tools_base_schema_data_name">Name of the entry</string>
+    <string name="tools_base_schema_data_timestamp">Moment the entry refers to; the present if omitted, and can be set in the past</string>
+    <string name="tools_base_schema_data_created_at">When the entry was created, set by the system</string>
+    <string name="tools_base_schema_data_updated_at">When the entry was last changed, set by the system</string>
+    <string name="tools_base_schema_data_schema_id">Identifier of the schema the entry follows, set by the system</string>
     <string name="tools_base_schema_data_data">Data specific to the tool type</string>
 
     <!-- Tools BASE SCHEMA EXECUTION - Shared descriptions for execution validation -->
 
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
-    <string name="zone_config_schema_display_name"></string>
+    <string name="zone_config_schema_display_name">Zone configuration</string>
     <string name="zone_config_schema_description">Configuration schema for the zones</string>
-    <string name="app_config_format_schema_display_name"></string>
+    <string name="app_config_format_schema_display_name">Format settings</string>
 
     <!-- APP CONFIG SCHEMA - Descriptions for application configuration validation -->
     <string name="app_config_schema_format_week_start_day">Day the week starts on</string>
@@ -683,10 +683,10 @@
     <string name="app_config_schema_format_year_limit">Number of years before switching to an absolute date</string>
 
     <!-- ZONE SCHEMA - Descriptions for zone validation -->
-    <string name="zone_schema_name"></string>
-    <string name="zone_schema_description"></string>
-    <string name="zone_schema_icon_name"></string>
-    <string name="zone_schema_color"></string>
+    <string name="zone_schema_name">Name of the zone</string>
+    <string name="zone_schema_description">Optional description of what the zone holds</string>
+    <string name="zone_schema_icon_name">Name of the zone\'s icon (a Lucide icon name)</string>
+    <string name="zone_schema_color">Colour of the zone</string>
     <string name="zone_schema_validate_zone_config_changes">Requires validation for configuration changes of this zone</string>
     <string name="zone_schema_validate_tool_config_changes">Requires validation for configuration changes of the tools of this zone</string>
     <string name="zone_schema_validate_tool_data_changes">Requires validation for data changes of the tools of this zone</string>

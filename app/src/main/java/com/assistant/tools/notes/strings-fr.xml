@@ -7,8 +7,8 @@
     <string name="description">Prise de notes simple et rapide avec organisation flexible</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
-    <string name="schema_config_display_name"></string>
-    <string name="schema_data_display_name"></string>
+    <string name="schema_config_display_name">Configuration de notes</string>
+    <string name="schema_data_display_name">Données de note</string>
     <string name="schema_data_description">Schéma de validation pour les entrées de notes</string>
 
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->

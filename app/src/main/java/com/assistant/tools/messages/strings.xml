@@ -7,8 +7,8 @@
     <string name="description">Scheduled or event-driven notifications and reminders</string>
 
     <!-- SCHEMAS - Display names for schema identification -->
-    <string name="schema_config_display_name"></string>
-    <string name="schema_data_display_name"></string>
+    <string name="schema_config_display_name">Message configuration</string>
+    <string name="schema_data_display_name">Message data</string>
     <string name="schema_config_description">Validation schema of the message template</string>
     <string name="schema_data_description">Validation schema of the occurrences (sendings) of a message</string>
 

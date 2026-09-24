@@ -118,83 +118,83 @@
     <string name="error_entry_update_failed">Impossible de mettre à jour l\'entrée</string>
     
     <!-- SCHEMAS CONFIG - Display names for schema identification -->
-    <string name="schema_config_numeric_display_name"></string>
-    <string name="schema_config_timer_display_name"></string>
-    <string name="schema_config_choice_display_name"></string>
-    <string name="schema_config_scale_display_name"></string>
-    <string name="schema_config_counter_display_name"></string>
-    <string name="schema_config_boolean_display_name"></string>
-    <string name="schema_config_text_display_name"></string>
+    <string name="schema_config_numeric_display_name">Configuration de suivi (numérique)</string>
+    <string name="schema_config_timer_display_name">Configuration de suivi (chronomètre)</string>
+    <string name="schema_config_choice_display_name">Configuration de suivi (choix)</string>
+    <string name="schema_config_scale_display_name">Configuration de suivi (échelle)</string>
+    <string name="schema_config_counter_display_name">Configuration de suivi (compteur)</string>
+    <string name="schema_config_boolean_display_name">Configuration de suivi (oui/non)</string>
+    <string name="schema_config_text_display_name">Configuration de suivi (texte)</string>
 
     <!-- SCHEMAS CONFIG - Descriptions for schema identification -->
-    <string name="schema_config_numeric_description"></string>
-    <string name="schema_config_timer_description"></string>
-    <string name="schema_config_choice_description"></string>
-    <string name="schema_config_scale_description"></string>
-    <string name="schema_config_counter_description"></string>
-    <string name="schema_config_boolean_description"></string>
-    <string name="schema_config_text_description"></string>
+    <string name="schema_config_numeric_description">Schéma de configuration du suivi numérique</string>
+    <string name="schema_config_timer_description">Schéma de configuration du suivi chronomètre</string>
+    <string name="schema_config_choice_description">Schéma de configuration du suivi choix</string>
+    <string name="schema_config_scale_description">Schéma de configuration du suivi échelle</string>
+    <string name="schema_config_counter_description">Schéma de configuration du suivi compteur</string>
+    <string name="schema_config_boolean_description">Schéma de configuration du suivi oui/non</string>
+    <string name="schema_config_text_description">Schéma de configuration du suivi texte</string>
 
     <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
-    <string name="schema_config_type"></string>
-    <string name="schema_config_numeric_items"></string>
-    <string name="schema_config_numeric_item_name"></string>
-    <string name="schema_config_numeric_item_default_quantity"></string>
-    <string name="schema_config_numeric_item_unit"></string>
-    <string name="schema_config_timer_items"></string>
-    <string name="schema_config_timer_item_name"></string>
-    <string name="schema_config_choice_options"></string>
-    <string name="schema_config_scale_items"></string>
-    <string name="schema_config_scale_item_name"></string>
-    <string name="schema_config_scale_min"></string>
-    <string name="schema_config_scale_max"></string>
-    <string name="schema_config_scale_min_label"></string>
-    <string name="schema_config_scale_max_label"></string>
-    <string name="schema_config_counter_items"></string>
-    <string name="schema_config_counter_item_name"></string>
-    <string name="schema_config_counter_allow_decrement"></string>
-    <string name="schema_config_boolean_items"></string>
-    <string name="schema_config_boolean_item_name"></string>
-    <string name="schema_config_boolean_item_true_label"></string>
-    <string name="schema_config_boolean_item_false_label"></string>
-    <string name="schema_config_text_items"></string>
-    <string name="schema_config_text_item_name"></string>
+    <string name="schema_config_type">Nature de la valeur que ce suivi enregistre ; fixée par le schéma</string>
+    <string name="schema_config_numeric_items">Éléments prédéfinis, proposés pour la saisie rapide</string>
+    <string name="schema_config_numeric_item_name">Nom de l\'élément</string>
+    <string name="schema_config_numeric_item_default_quantity">Quantité proposée quand cet élément est choisi</string>
+    <string name="schema_config_numeric_item_unit">Unité de la quantité (kg, km, verres...)</string>
+    <string name="schema_config_timer_items">Activités qu\'on peut chronométrer</string>
+    <string name="schema_config_timer_item_name">Nom de l\'activité</string>
+    <string name="schema_config_choice_options">Options parmi lesquelles l\'utilisateur choisit</string>
+    <string name="schema_config_scale_items">Éléments prédéfinis, chacun noté sur l\'échelle</string>
+    <string name="schema_config_scale_item_name">Nom de l\'élément</string>
+    <string name="schema_config_scale_min">Valeur la plus basse de l\'échelle</string>
+    <string name="schema_config_scale_max">Valeur la plus haute de l\'échelle</string>
+    <string name="schema_config_scale_min_label">Libellé de la valeur la plus basse</string>
+    <string name="schema_config_scale_max_label">Libellé de la valeur la plus haute</string>
+    <string name="schema_config_counter_items">Ce qu\'on compte</string>
+    <string name="schema_config_counter_item_name">Nom de ce qu\'on compte</string>
+    <string name="schema_config_counter_allow_decrement">Si le compte peut descendre autant que monter</string>
+    <string name="schema_config_boolean_items">Questions à réponse oui ou non</string>
+    <string name="schema_config_boolean_item_name">Nom de la question</string>
+    <string name="schema_config_boolean_item_true_label">Libellé affiché pour oui</string>
+    <string name="schema_config_boolean_item_false_label">Libellé affiché pour non</string>
+    <string name="schema_config_text_items">Éléments prédéfinis, proposés pour la saisie rapide</string>
+    <string name="schema_config_text_item_name">Nom de l\'élément</string>
     
     <!-- SCHEMAS DATA - Display names for schema identification -->
-    <string name="schema_data_numeric_display_name"></string>
-    <string name="schema_data_scale_display_name"></string>
-    <string name="schema_data_boolean_display_name"></string>
-    <string name="schema_data_choice_display_name"></string>
-    <string name="schema_data_counter_display_name"></string>
-    <string name="schema_data_timer_display_name"></string>
-    <string name="schema_data_text_display_name"></string>
+    <string name="schema_data_numeric_display_name">Données de suivi (numérique)</string>
+    <string name="schema_data_scale_display_name">Données de suivi (échelle)</string>
+    <string name="schema_data_boolean_display_name">Données de suivi (oui/non)</string>
+    <string name="schema_data_choice_display_name">Données de suivi (choix)</string>
+    <string name="schema_data_counter_display_name">Données de suivi (compteur)</string>
+    <string name="schema_data_timer_display_name">Données de suivi (chronomètre)</string>
+    <string name="schema_data_text_display_name">Données de suivi (texte)</string>
 
     <!-- SCHEMAS DATA - Descriptions for schema identification -->
-    <string name="schema_data_numeric_description"></string>
-    <string name="schema_data_scale_description"></string>
-    <string name="schema_data_boolean_description"></string>
-    <string name="schema_data_choice_description"></string>
-    <string name="schema_data_counter_description"></string>
-    <string name="schema_data_timer_description"></string>
-    <string name="schema_data_text_description"></string>
+    <string name="schema_data_numeric_description">Schéma de validation des entrées de suivi numérique</string>
+    <string name="schema_data_scale_description">Schéma de validation des entrées de suivi échelle</string>
+    <string name="schema_data_boolean_description">Schéma de validation des entrées de suivi oui/non</string>
+    <string name="schema_data_choice_description">Schéma de validation des entrées de suivi choix</string>
+    <string name="schema_data_counter_description">Schéma de validation des entrées de suivi compteur</string>
+    <string name="schema_data_timer_description">Schéma de validation des entrées de suivi chronomètre</string>
+    <string name="schema_data_text_description">Schéma de validation des entrées de suivi texte</string>
 
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
-    <string name="schema_data_type"></string>
-    <string name="schema_data_numeric_quantity"></string>
-    <string name="schema_data_numeric_unit"></string>
-    <string name="schema_data_scale_rating"></string>
-    <string name="schema_data_scale_min_value"></string>
-    <string name="schema_data_scale_max_value"></string>
-    <string name="schema_data_scale_min_label"></string>
-    <string name="schema_data_scale_max_label"></string>
-    <string name="schema_data_boolean_state"></string>
-    <string name="schema_data_boolean_true_label"></string>
-    <string name="schema_data_boolean_false_label"></string>
-    <string name="schema_data_choice_selected_option"></string>
-    <string name="schema_data_choice_available_options"></string>
-    <string name="schema_data_counter_increment"></string>
-    <string name="schema_data_timer_duration_seconds"></string>
-    <string name="schema_data_text_content"></string>
+    <string name="schema_data_type">Nature de la valeur enregistrée ; doit correspondre à la configuration de l\'outil</string>
+    <string name="schema_data_numeric_quantity">Quantité enregistrée</string>
+    <string name="schema_data_numeric_unit">Unité de la quantité</string>
+    <string name="schema_data_scale_rating">Note donnée, entre min_value et max_value</string>
+    <string name="schema_data_scale_min_value">Valeur la plus basse de l\'échelle au moment de la note</string>
+    <string name="schema_data_scale_max_value">Valeur la plus haute de l\'échelle au moment de la note</string>
+    <string name="schema_data_scale_min_label">Libellé de la valeur la plus basse au moment de la note</string>
+    <string name="schema_data_scale_max_label">Libellé de la valeur la plus haute au moment de la note</string>
+    <string name="schema_data_boolean_state">Réponse enregistrée : true pour oui, false pour non</string>
+    <string name="schema_data_boolean_true_label">Libellé de oui au moment de la réponse</string>
+    <string name="schema_data_boolean_false_label">Libellé de non au moment de la réponse</string>
+    <string name="schema_data_choice_selected_option">Option choisie, parmi available_options</string>
+    <string name="schema_data_choice_available_options">Options proposées au moment du choix</string>
+    <string name="schema_data_counter_increment">Quantité ajoutée au compte ; négative pour retirer</string>
+    <string name="schema_data_timer_duration_seconds">Temps passé, en secondes</string>
+    <string name="schema_data_text_content">Texte enregistré</string>
     
     <!-- VALIDATION - Noms de champs pour affichage -->
     <string name="field_default_quantity">Qté par défaut</string>
