@@ -880,6 +880,14 @@
 
     <string name="settings_ai_limits">Limites IA</string>
     <string name="settings_ai_limits_description">Configurer les limites des boucles autonomes de l\'IA</string>
+    <string name="app_config_ai_limits_chat">Appels IA d\'affilée, chat</string>
+    <string name="app_config_ai_limits_automation">Appels IA par automation</string>
+    <string name="app_config_schema_ai_limits_chat">Nombre maximal d\'appels IA d\'affilée dans un chat, compté depuis le dernier message de l\'utilisateur</string>
+    <string name="app_config_schema_ai_limits_automation">Nombre maximal d\'appels IA sur toute une session d\'automation</string>
+    <string name="settings_ai_limits_chat_help">Compté depuis ton dernier message : au-delà, l\'IA s\'arrête et te rend la main.</string>
+    <string name="settings_ai_limits_automation_help">Compté sur toute la session, puisque personne n\'intervient : au-delà, l\'automation se termine.</string>
+    <string name="settings_ai_limits_error_load">Impossible de charger les limites IA : %1$s</string>
+    <string name="settings_ai_limits_error_save">Impossible d\'enregistrer les limites IA : %1$s</string>
 
     <string name="settings_validation">Validation IA</string>
     <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>

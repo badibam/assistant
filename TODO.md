@@ -12,7 +12,6 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## Divers
 
-- Les limites IA ne sont réglables nulle part : `AILimitsSettingsScreen` est un stub « à venir », donc les valeurs de `ai_limits` ne se changent que dans la base.
 - Volume du journal : 230 lignes DEBUG contre 4 de INFO, WARN et ERROR réunis, sur deux minutes, mesuré avant le retrait des lignes de routine (registre des fournisseurs, battement d'une minute, lectures de réglages). Refaire le compte sur l'appareil pour voir ce qui reste, et traiter le reste aux sites d'appel, pas au plafond.
 - Étendre la suite de tests. Le critère est dans `docs/reference.md` : un test mérite d'exister s'il remplace une vérification sur l'appareil. Reste, par ordre de risque :
   - Les migrations Room elles-mêmes, côté SQL. Les transformations JSON qu'elles appellent sont couvertes par `JsonTransformersTest` (l'enchaînement d'une sauvegarde ancienne jusqu'à la version actuelle) et par un test par transformateur. Reste ce que seul l'instrumenté (`MigrationTestHelper`) voit : que chacune des 19 migrations passe sur une base réelle, sans retour arrière possible. Les quatre dépendances `androidTestImplementation` ont été retirées le 2026-09-22, n'ayant jamais servi : elles se redéclarent en quatre lignes le jour où ce test s'écrit.
@@ -28,6 +27,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- Écran des limites IA : qu'il s'ouvre sur 10 et 20, que les deux curseurs s'enregistrent et se retrouvent à la réouverture, puis qu'un CHAT s'arrête bien à la nouvelle limite.
 - Validation de toute écriture par `ToolDataService` : créer et modifier une entrée de chaque type (tracking de chaque sorte, notes avec insertion à une position, journal, occurrence Messages), et une entrée qui porte des champs personnalisés. Puis voir un refus s'afficher à l'écran : une plage de champ personnalisé dont le début dépasse la fin. En CHAT, demander à l'IA d'écrire une valeur hors d'une échelle ou hors des options d'un choix, et voir le refus lui revenir. Une ancienne entrée devenue invalide ne se modifie plus sans être corrigée : c'est voulu, à voir si ça gêne.
 - Prompt L1 modifié (un chemin de champ à deux niveaux, comme `custom_fields.sommeil.start`, est refusé) : rejouer `docs/ai-prompt-replay.md`.
 - Planning sans son propre `enabled` : créer puis modifier la récurrence d'un outil Messages et voir les messages partir ; mettre l'outil en pause par son interrupteur et voir les envois s'arrêter ; créer une automation planifiée et vérifier sa prochaine exécution sur sa carte. Puis, en CHAT, demander à l'IA de poser une récurrence sur un outil Messages.

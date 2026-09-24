@@ -197,6 +197,22 @@ class AppConfigService(private val context: Context) : ExecutableService {
 
     private suspend fun getAILimitsSettings(): JSONObject = readSettings(AppSettingCategories.AI_LIMITS)
 
+    /** Store both AI limits, checked against the ai_limits schema before writing. */
+    suspend fun setAILimits(limits: AILimitsConfig) {
+        val settings = JSONObject(limits.toSettingsJson())
+
+        @Suppress("UNCHECKED_CAST")
+        val data = com.assistant.core.utils.JsonUtils.toMap(settings) as Map<String, Any>
+        val schema = AppConfigSchemaProvider.getSchema("app_config_ai_limits", context)
+            ?: throw IllegalStateException("App config AI limits schema not found")
+        val validation = SchemaValidator.validate(schema, data, context)
+        if (!validation.isValid) {
+            throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
+        }
+
+        settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())
+    }
+
     /**
      * Get structured validation configuration
      * Hierarchy: app > zone > tool > session > AI request (OR logic)

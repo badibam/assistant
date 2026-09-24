@@ -880,6 +880,14 @@
 
     <string name="settings_ai_limits">AI limits</string>
     <string name="settings_ai_limits_description">Configure the limits of the autonomous loops of the AI</string>
+    <string name="app_config_ai_limits_chat">AI calls in a row, chat</string>
+    <string name="app_config_ai_limits_automation">AI calls per automation</string>
+    <string name="app_config_schema_ai_limits_chat">Maximum AI calls in a row in a chat, counted from the user\'s last message</string>
+    <string name="app_config_schema_ai_limits_automation">Maximum AI calls over a whole automation session</string>
+    <string name="settings_ai_limits_chat_help">Counted from your last message: past it, the AI stops and hands control back to you.</string>
+    <string name="settings_ai_limits_automation_help">Counted over the whole session, since nobody intervenes: past it, the automation ends.</string>
+    <string name="settings_ai_limits_error_load">Could not load the AI limits: %1$s</string>
+    <string name="settings_ai_limits_error_save">Could not save the AI limits: %1$s</string>
 
     <string name="settings_validation">AI validation</string>
     <string name="settings_validation_description">Configure when the AI must ask for validation</string>

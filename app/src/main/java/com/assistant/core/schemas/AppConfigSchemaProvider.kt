@@ -15,6 +15,7 @@ object AppConfigSchemaProvider : SchemaProvider {
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
             "app_config_format" -> createFormatSchema(context)
+            "app_config_ai_limits" -> createAILimitsSchema(context)
             // Future schema types:
             // "app_config_ui" -> createUiSchema(context)
             // "app_config_data" -> createDataSchema(context)
@@ -23,8 +24,7 @@ object AppConfigSchemaProvider : SchemaProvider {
     }
 
     override fun getAllSchemaIds(): List<String> {
-        return listOf("app_config_format")
-        // return listOf("app_config_format", "app_config_ui", "app_config_data")
+        return listOf("app_config_format", "app_config_ai_limits")
     }
 
     override fun getFormFieldName(fieldName: String, context: Context): String {
@@ -43,6 +43,8 @@ object AppConfigSchemaProvider : SchemaProvider {
             "week_limit" -> s.shared("app_config_format_week_limit")
             "month_limit" -> s.shared("app_config_format_month_limit")
             "year_limit" -> s.shared("app_config_format_year_limit")
+            "chat_max_autonomous_roundtrips" -> s.shared("app_config_ai_limits_chat")
+            "automation_max_autonomous_roundtrips" -> s.shared("app_config_ai_limits_automation")
             else -> fieldName
         }
     }
@@ -139,4 +141,45 @@ object AppConfigSchemaProvider : SchemaProvider {
         )
     }
 
+    /**
+     * The two AI roundtrip limits. Each call is paid for, and the limit is what stops an AI that
+     * keeps calling itself: the bounds keep it at least one call and below a runaway.
+     */
+    private fun createAILimitsSchema(context: Context): Schema {
+        val s = Strings.`for`(context = context)
+
+        val content = """
+        {
+            "type": "object",
+            "properties": {
+                "chat_max_autonomous_roundtrips": {
+                    "type": "integer",
+                    "minimum": ${AI_LIMITS_CHAT_RANGE.first},
+                    "maximum": ${AI_LIMITS_CHAT_RANGE.last},
+                    "description": "${s.shared("app_config_schema_ai_limits_chat")}"
+                },
+                "automation_max_autonomous_roundtrips": {
+                    "type": "integer",
+                    "minimum": ${AI_LIMITS_AUTOMATION_RANGE.first},
+                    "maximum": ${AI_LIMITS_AUTOMATION_RANGE.last},
+                    "description": "${s.shared("app_config_schema_ai_limits_automation")}"
+                }
+            },
+            "required": ["chat_max_autonomous_roundtrips", "automation_max_autonomous_roundtrips"],
+            "additionalProperties": false
+        }
+        """.trimIndent()
+
+        return Schema(
+            id = "app_config_ai_limits",
+            displayName = s.shared("settings_ai_limits"),
+            description = s.shared("settings_ai_limits_description"),
+            category = SchemaCategory.APP_CONFIG,
+            content = content
+        )
+    }
+
+    /** The bounds of the AI limits, shared by the schema and the sliders of the settings screen */
+    val AI_LIMITS_CHAT_RANGE = 1..50
+    val AI_LIMITS_AUTOMATION_RANGE = 1..100
 }
