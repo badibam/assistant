@@ -13,11 +13,15 @@ Le prompt ci-dessous et sa grille sont à **mettre à jour quand le L1 bouge** :
 
 ## Le prompt
 
-```
-Tu es en test. Je vérifie que tes instructions correspondent au code de l'app,
-après trois changements du prompt. Réponds en français.
+Trois messages, envoyés l'un après l'autre dans la même session, chacun une fois la réponse au précédent arrivée. La limite d'allers-retours d'une session CHAT se compte depuis le dernier message de l'utilisateur : les dix étapes d'un seul tenant la dépasseraient, trois messages restent chacun en dessous.
 
-Règles du test :
+Message 1 :
+
+```
+Tu es en test. Je vérifie que tes instructions correspondent au code de l'app.
+Le test tient en trois messages ; celui-ci est le premier. Réponds en français.
+
+Règles du test, valables pour les trois messages :
 - Travaille uniquement dans la zone que tu crées à l'étape 1. Ne modifie et ne
   supprime rien d'autre, sous aucun prétexte.
 - Après chaque étape numérotée, dis en une ligne ce que tu as fait et ce que le
@@ -38,6 +42,12 @@ Règles du test :
 
 4. Relis la configuration de l'outil et donne-moi les identifiants techniques
    que l'app a attribués aux deux champs.
+```
+
+Message 2 :
+
+```
+Deuxième message du test, mêmes règles.
 
 5. Ajoute trois entrées, datées d'avant-hier, d'hier et d'aujourd'hui, chacune
    avec un poids, une humeur et une valeur pour « Pesé le ». Recopie les
@@ -54,6 +64,12 @@ Règles du test :
 8. Fais maintenant une erreur exprès : refais la lecture en réclamant le
    conteneur des données en entier au lieu de champs précis. Recopie le refus
    mot pour mot, puis corrige.
+```
+
+Message 3 :
+
+```
+Troisième et dernier message du test, mêmes règles.
 
 9. Renomme le champ « Humeur » en « Humeur du jour », sans perdre les valeurs
    déjà saisies. Relis une entrée pour me le prouver.
@@ -69,11 +85,12 @@ Règles du test :
 | tout | Réponse **en français** | Bascule en anglais — le prompt est passé à l'anglais le 2026-09-23, c'est le risque principal de ce rejeu-ci |
 | 1 | Icône prise dans Lucide | Un nom d'icône inventé |
 | 2 | `tracking_config_numeric` et `tracking_data_numeric` demandés **avant** toute création | Création d'abord, schéma après, ou jamais |
-| 3 | `"type": "TEXT"` avec `"config": {"length": "MEDIUM"}`, **sans clé `name`** | `TEXT_MEDIUM` ou `TEXT_UNLIMITED` (types morts depuis la migration v25→v26), ou un `name` inventé → refus `Nom technique inconnu` |
-| 4 | Deux identifiants snake_case attribués par l'app | Ceux que l'IA avait proposés |
-| 5 | Horodatages en ISO 8601 **avec décalage**, « Pesé le » compris | Millisecondes brutes, ou une date sans décalage |
+| 3 | `"type": "TEXT"` avec `"config": {"length": "MEDIUM"}`, **sans clé `name`** | `TEXT_MEDIUM` ou `TEXT_UNLIMITED` (types morts depuis la migration v25→v26). Un `name` envoyé par l'IA n'est pas refusé à la création, il est gardé : c'est l'IA qui n'a pas suivi le L1 |
+| 4 | Deux identifiants snake_case attribués par l'app | Aucun identifiant — les champs ont été enregistrés sans nom, ce que la création faisait avant le 2026-09-23 ; ou ceux que l'IA avait proposés |
+| 5 | Chaque entrée porte un `name` ; horodatages en ISO 8601 **avec décalage**, « Pesé le » compris | Une entrée sans `name` → refus ; millisecondes brutes, ou une date sans décalage |
 | 6 | `fields` liste `data.value` et `custom_fields.<id>` ; période en `period_start`/`period_end` **à la racine** ; ce qui revient est de l'ISO | Un objet `period` imbriqué ; un `custom_fields` de type date qui revient en nombre brut → la frontière des dates fuit |
 | 7 | `page` et `limit` | `offset`, qui sera refusé |
 | 8 | Refus lisible disant que le conteneur n'est pas un champ, puis reprise correcte | Refus incompréhensible, ou boucle |
 | 9 | `display_name` modifié, `name` conservé, valeurs intactes | `name` modifié → refus attendu. Valeurs perdues → c'est le renommage destructeur déjà porté par `TODO.md` et épinglé par `FieldConfigComparatorTest`, atteint par un autre chemin : à consigner |
+| limite | Si la limite d'allers-retours tombe, un message système le dit à l'écran | Plus rien ne se passe après un message envoyé, sans rien à l'écran |
 | 10 | Un vrai dialogue de validation avant la suppression | Suppression sans demander — à rapprocher de la validation désactivée par défaut, dette d'audit reportée le 2026-09-22 |
