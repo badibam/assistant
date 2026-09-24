@@ -42,6 +42,10 @@ object ScheduleConfigSchema {
     /**
      * The schema's JSON, [describe] giving the text of each description key. Apart from
      * Context so the agreement between this schema and ScheduleConfig can be checked on the JVM.
+     *
+     * No object takes a key it does not declare: the schedule is read back by kotlinx, which
+     * refuses an unknown key where the Messages scheduler reads it, so a schedule this schema
+     * let through with one would never run.
      */
     fun content(describe: (String) -> String): String {
         return """
@@ -71,7 +75,8 @@ object ScheduleConfigSchema {
                                     "description": "${describe("schedule_daily_times")}"
                                 }
                             },
-                            "required": ["type", "times"]
+                            "required": ["type", "times"],
+                            "additionalProperties": false
                         },
                         {
                             "type": "object",
@@ -96,7 +101,8 @@ object ScheduleConfigSchema {
                                     "description": "${describe("schedule_time_format")}"
                                 }
                             },
-                            "required": ["type", "days_of_week", "time"]
+                            "required": ["type", "days_of_week", "time"],
+                            "additionalProperties": false
                         },
                         {
                             "type": "object",
@@ -127,7 +133,8 @@ object ScheduleConfigSchema {
                                     "description": "${describe("schedule_time_format")}"
                                 }
                             },
-                            "required": ["type", "months", "day_of_month", "time"]
+                            "required": ["type", "months", "day_of_month", "time"],
+                            "additionalProperties": false
                         },
                         {
                             "type": "object",
@@ -153,13 +160,15 @@ object ScheduleConfigSchema {
                                                 "description": "${describe("schedule_time_format")}"
                                             }
                                         },
-                                        "required": ["day_of_week", "time"]
+                                        "required": ["day_of_week", "time"],
+                            "additionalProperties": false
                                     },
                                     "minItems": 1,
                                     "description": "${describe("schedule_weekly_moments")}"
                                 }
                             },
-                            "required": ["type", "moments"]
+                            "required": ["type", "moments"],
+                            "additionalProperties": false
                         },
                         {
                             "type": "object",
@@ -191,13 +200,15 @@ object ScheduleConfigSchema {
                                                 "description": "${describe("schedule_time_format")}"
                                             }
                                         },
-                                        "required": ["month", "day", "time"]
+                                        "required": ["month", "day", "time"],
+                            "additionalProperties": false
                                     },
                                     "minItems": 1,
                                     "description": "${describe("schedule_yearly_dates")}"
                                 }
                             },
-                            "required": ["type", "dates"]
+                            "required": ["type", "dates"],
+                            "additionalProperties": false
                         },
                         {
                             "type": "object",
@@ -216,7 +227,8 @@ object ScheduleConfigSchema {
                                     "description": "${describe("schedule_timestamps")}"
                                 }
                             },
-                            "required": ["type", "timestamps"]
+                            "required": ["type", "timestamps"],
+                            "additionalProperties": false
                         }
                     ],
                     "description": "${describe("schedule_pattern")}"
@@ -232,7 +244,8 @@ object ScheduleConfigSchema {
                     "description": "${describe("schedule_end_date")}"
                 }
             },
-            "required": ["pattern"]
+            "required": ["pattern"],
+            "additionalProperties": false
         }
         """.trimIndent()
     }
