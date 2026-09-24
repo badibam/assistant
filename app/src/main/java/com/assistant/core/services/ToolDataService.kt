@@ -508,7 +508,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
     /**
      * Batch create multiple tool data entries
-     * Params: toolInstanceId, tooltype, entries (array of objects with data, timestamp?, name?)
+     * Params: tool_instance_id, tooltype, entries (see BatchEntryParams.forCreate)
      */
     private suspend fun batchCreateEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -534,15 +534,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             try {
                 val entryJson = entriesArray.getJSONObject(i)
 
-                // Build params for single create
-                val singleParams = JSONObject().apply {
-                    put("tool_instance_id", toolInstanceId)
-                    put("tooltype", tooltype)
-                    put("data", entryJson.optJSONObject("data") ?: JSONObject())
-                    if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
-                    if (entryJson.has("name")) put("name", entryJson.getString("name"))
-                    if (entryJson.has("schema_id")) put("schema_id", entryJson.getString("schema_id"))
-                }
+                val singleParams = BatchEntryParams.forCreate(entryJson, toolInstanceId, tooltype)
 
                 // Use existing createEntry logic
                 val result = createEntry(singleParams, token)
@@ -632,14 +624,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     continue
                 }
 
-                // Build params for single update
-                val singleParams = JSONObject().apply {
-                    put("id", entryId)
-                    if (entryJson.has("data")) put("data", entryJson.getJSONObject("data"))
-                    if (entryJson.has("custom_fields")) put("custom_fields", entryJson.getJSONObject("custom_fields"))
-                    if (entryJson.has("timestamp")) put("timestamp", entryJson.getLong("timestamp"))
-                    if (entryJson.has("name")) put("name", entryJson.getString("name"))
-                }
+                val singleParams = BatchEntryParams.forUpdate(entryJson, entryId)
 
                 // Use existing updateEntry logic
                 val result = updateEntry(singleParams, token)
