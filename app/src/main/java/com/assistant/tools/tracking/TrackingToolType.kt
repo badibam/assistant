@@ -800,7 +800,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
     }
     
     override fun getSuggestedIcons(): List<String> {
-        return listOf("activity", "trending-up")
+        return listOf("activity", "trending-up", "scale", "heart-pulse", "dumbbell", "droplet", "moon", "timer")
     }
     
     @Composable

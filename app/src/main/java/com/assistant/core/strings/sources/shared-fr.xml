@@ -624,12 +624,13 @@
     <!-- Tools CONFIG - Dialog icônes -->
     <string name="tools_config_dialog_choose_icon">Choisir une icône</string>
     <string name="tools_config_dialog_suggested_icons">Suggérées</string>
-    <string name="tools_config_dialog_all_icons">Toutes</string>
-    
-    <!-- Icônes - Noms traduits -->
-    <string name="icon_activity">Activité</string>
-    <string name="icon_trending_up">Tendance croissante</string>
-    
+    <string name="tools_config_dialog_categories">Catégories</string>
+    <string name="tools_config_dialog_search">Rechercher (en anglais)</string>
+    <string name="tools_config_dialog_results">%1$d icône(s)</string>
+    <string name="tools_config_dialog_results_truncated">%1$d affichées sur %2$d : précisez la recherche</string>
+    <string name="tools_config_dialog_no_result">Aucune icône ne correspond</string>
+    <string name="tools_config_dialog_all_categories">Toutes les catégories</string>
+        
     <!-- Tools USAGE - Chaînes communes aux tooltypes pour l'utilisation -->
     <string name="tools_loading">Chargement...</string>
     <string name="tools_loading_config">Chargement de la configuration...</string>
@@ -1428,4 +1429,48 @@
     <string name="history_session_messages">%1$d messages</string>
     <string name="settings_history">Historique des discussions</string>
     <string name="settings_history_description">Consulter, renommer et reprendre vos discussions passées</string>
+
+    <!-- Icon picker: Lucide's categories -->
+    <string name="icon_category_accessibility">Accessibilité</string>
+    <string name="icon_category_account">Comptes et accès</string>
+    <string name="icon_category_animals">Animaux</string>
+    <string name="icon_category_arrows">Flèches</string>
+    <string name="icon_category_buildings">Bâtiments</string>
+    <string name="icon_category_charts">Graphiques</string>
+    <string name="icon_category_communication">Communication</string>
+    <string name="icon_category_connectivity">Connectivité</string>
+    <string name="icon_category_cursors">Curseurs</string>
+    <string name="icon_category_design">Design</string>
+    <string name="icon_category_development">Code et développement</string>
+    <string name="icon_category_devices">Appareils</string>
+    <string name="icon_category_emoji">Émojis</string>
+    <string name="icon_category_files">Fichiers</string>
+    <string name="icon_category_finance">Finance</string>
+    <string name="icon_category_food_beverage">Nourriture et boissons</string>
+    <string name="icon_category_gaming">Jeux</string>
+    <string name="icon_category_home">Maison</string>
+    <string name="icon_category_layout">Mise en page</string>
+    <string name="icon_category_mail">Courrier</string>
+    <string name="icon_category_math">Mathématiques</string>
+    <string name="icon_category_medical">Santé</string>
+    <string name="icon_category_multimedia">Multimédia</string>
+    <string name="icon_category_nature">Nature</string>
+    <string name="icon_category_navigation">Navigation et lieux</string>
+    <string name="icon_category_notifications">Notifications</string>
+    <string name="icon_category_people">Personnes</string>
+    <string name="icon_category_photography">Photographie</string>
+    <string name="icon_category_science">Sciences</string>
+    <string name="icon_category_seasons">Saisons</string>
+    <string name="icon_category_security">Sécurité</string>
+    <string name="icon_category_shapes">Formes</string>
+    <string name="icon_category_shopping">Achats</string>
+    <string name="icon_category_social">Social</string>
+    <string name="icon_category_sports">Sports</string>
+    <string name="icon_category_sustainability">Écologie</string>
+    <string name="icon_category_text">Mise en forme du texte</string>
+    <string name="icon_category_time">Temps et calendrier</string>
+    <string name="icon_category_tools">Outils</string>
+    <string name="icon_category_transportation">Transports</string>
+    <string name="icon_category_travel">Voyage</string>
+    <string name="icon_category_weather">Météo</string>
 </resources>

@@ -624,11 +624,12 @@
     <!-- Tools CONFIG - Icon dialog -->
     <string name="tools_config_dialog_choose_icon">Choose an icon</string>
     <string name="tools_config_dialog_suggested_icons">Suggested</string>
-    <string name="tools_config_dialog_all_icons">All</string>
-    
-    <!-- Icons - Translated names -->
-    <string name="icon_activity">Activity</string>
-    <string name="icon_trending_up">Trending up</string>
+    <string name="tools_config_dialog_categories">Categories</string>
+    <string name="tools_config_dialog_search">Search (in English)</string>
+    <string name="tools_config_dialog_results">%1$d icon(s)</string>
+    <string name="tools_config_dialog_results_truncated">%1$d shown out of %2$d: narrow the search</string>
+    <string name="tools_config_dialog_no_result">No icon matches</string>
+    <string name="tools_config_dialog_all_categories">All categories</string>
     
     <!-- Tools USAGE - Strings shared by the tooltypes for usage -->
     <string name="tools_loading">Loading...</string>
@@ -1428,4 +1429,48 @@
     <string name="history_session_messages">%1$d messages</string>
     <string name="settings_history">History of the conversations</string>
     <string name="settings_history_description">Read, rename and resume your past conversations</string>
+
+    <!-- Icon picker: Lucide's categories -->
+    <string name="icon_category_accessibility">Accessibility</string>
+    <string name="icon_category_account">Accounts &amp; access</string>
+    <string name="icon_category_animals">Animals</string>
+    <string name="icon_category_arrows">Arrows</string>
+    <string name="icon_category_buildings">Buildings</string>
+    <string name="icon_category_charts">Charts</string>
+    <string name="icon_category_communication">Communication</string>
+    <string name="icon_category_connectivity">Connectivity</string>
+    <string name="icon_category_cursors">Cursors</string>
+    <string name="icon_category_design">Design</string>
+    <string name="icon_category_development">Coding &amp; development</string>
+    <string name="icon_category_devices">Devices</string>
+    <string name="icon_category_emoji">Emoji</string>
+    <string name="icon_category_files">Files</string>
+    <string name="icon_category_finance">Finance</string>
+    <string name="icon_category_food_beverage">Food &amp; beverage</string>
+    <string name="icon_category_gaming">Gaming</string>
+    <string name="icon_category_home">Home</string>
+    <string name="icon_category_layout">Layout</string>
+    <string name="icon_category_mail">Mail</string>
+    <string name="icon_category_math">Mathematics</string>
+    <string name="icon_category_medical">Medical</string>
+    <string name="icon_category_multimedia">Multimedia</string>
+    <string name="icon_category_nature">Nature</string>
+    <string name="icon_category_navigation">Navigation &amp; places</string>
+    <string name="icon_category_notifications">Notifications</string>
+    <string name="icon_category_people">People</string>
+    <string name="icon_category_photography">Photography</string>
+    <string name="icon_category_science">Science</string>
+    <string name="icon_category_seasons">Seasons</string>
+    <string name="icon_category_security">Security</string>
+    <string name="icon_category_shapes">Shapes</string>
+    <string name="icon_category_shopping">Shopping</string>
+    <string name="icon_category_social">Social</string>
+    <string name="icon_category_sports">Sports</string>
+    <string name="icon_category_sustainability">Sustainability</string>
+    <string name="icon_category_text">Text formatting</string>
+    <string name="icon_category_time">Time &amp; calendar</string>
+    <string name="icon_category_tools">Tools</string>
+    <string name="icon_category_transportation">Transportation</string>
+    <string name="icon_category_travel">Travel</string>
+    <string name="icon_category_weather">Weather</string>
 </resources>

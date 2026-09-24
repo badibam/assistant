@@ -10,7 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
-import com.assistant.core.themes.ThemeIconManager
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.coordinator.executeWithLoading

@@ -141,7 +141,7 @@ fun MessagesScreen(
             UI.PageHeader(
                 title = config.optString("name", s.tool("display_name")),
                 subtitle = config.optString("description", "").takeIf { it.isNotBlank() },
-                icon = config.optString("icon_name", "notification"),
+                icon = config.optString("icon_name", "bell"),
                 leftButton = ButtonAction.BACK,
                 rightButton = ButtonAction.CONFIGURE,
                 onLeftClick = onNavigateBack,

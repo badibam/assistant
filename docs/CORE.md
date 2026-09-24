@@ -14,7 +14,7 @@ Guide technique de l'architecture système centrale.
 - app_config.get - Configuration application
 
 ### ServiceRegistry
-**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, icon_preload → IconPreloadService, backup → BackupService, ai_provider_config → AIProviderConfigService, notifications → NotificationService
+**Services Core** : zones → ZoneService, tools → ToolInstanceService, tool_data → ToolDataService, app_config → AppConfigService, backup → BackupService, ai_provider_config → AIProviderConfigService, notifications → NotificationService
 
 **Services Tools** (découverte dynamique) : tracking → ToolTypeManager.getServiceForToolType()
 

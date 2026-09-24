@@ -35,7 +35,7 @@ object NotesToolType : ToolTypeContract {
         {
             "name": "",
             "description": "",
-            "icon_name": "note",
+            "icon_name": "sticky-note",
             "display_mode": "EXTENDED",
             "management": "manual",
             "validate_config": false,
@@ -163,11 +163,11 @@ object NotesToolType : ToolTypeContract {
     }
 
     override fun getDefaultIconName(): String {
-        return "note"
+        return "sticky-note"
     }
 
     override fun getSuggestedIcons(): List<String> {
-        return emptyList() // Use standard icon selection
+        return listOf("sticky-note", "notepad-text", "notebook-pen")
     }
 
     @Composable

@@ -34,6 +34,9 @@ import com.assistant.core.ui.FieldModifier
  * to provide its own visual style to components
  */
 interface ThemeContract {
+
+    /** Who draws this theme's icons: Lucide, or the theme itself, all of them. */
+    val iconSource: com.assistant.core.icons.IconSource
     
     // =====================================
     // LAYOUTS: USE COMPOSE DIRECTLY

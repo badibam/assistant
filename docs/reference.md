@@ -35,6 +35,7 @@ Application Android native (Kotlin + Jetpack Compose, persistance Room) : un ass
 - `docs/ai-prompt-replay.md` — la procédure de rejeu du prompt L1 sur l'appareil : le prompt à coller dans une session CHAT et ce qu'il faut y lire. À lancer après toute modification du L1, comme `docs/AI.md` l'exige.
 - `docs/design/` — conception transitoire, écrite pour être implémentée puis élaguée. Le code et les commits deviennent le registre.
 
-## Ressources hors dépôt
+## Icônes
 
-- `icons-source/lucide/` — bibliothèque d'icônes Lucide, gitignorée : c'est la source où l'on pioche. Ajouter une icône = copier son SVG dans `app/src/main/java/com/assistant/themes/default/icons/` et inscrire son nom dans `app/src/main/assets/standard_icons.txt`, lancer `./gradlew generateThemeResources` (demande `npx`) et commiter le drawable et `GeneratedThemeResources.kt` produits. Le build ne les régénère pas : il doit tourner sans `npx`.
+- Le vocabulaire est Lucide, en entier : un nom d'icône est un nom Lucide. La source est copiée dans `third_party/lucide/` (SVG, métadonnées, `LICENSE`, `VERSION`). `scripts/generate_icons.py` en tire les drawables `lucide_*`, l'index `assets/icons/index.json` (tags, catégories, anciens noms) et la licence embarquée ; sa sortie est commitée, le build ne génère rien. Mettre Lucide à jour = remplacer `third_party/lucide/`, relancer le script, commiter.
+- Un thème déclare `iconSource` : `LUCIDE`, ou `OWN` s'il dessine lui-même **toutes** les icônes dans son dossier `icons/` — le script refuse un thème incomplet. `Icons.drawable()` trouve l'image d'un nom, ancien nom compris ; un nom introuvable s'affiche en deux lettres.

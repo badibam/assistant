@@ -4,7 +4,7 @@
 ## universel @ 5f92093
 ! 2142abc  tracking stores its derived 'raw' display text in data; moving it to read time touches every read path (AI queries, backup), deferred to the tracking rewrite
 ! 75da8fc  OpenAI base URL and LiteLLM price list are hardcoded; a configurable host needs a decision on model listing and pricing for unknown hosts
-- f6a60f3  generated files that only a tool outside the repo can rebuild (theme drawables and GeneratedThemeResources.kt, via npx) stay versioned: the build must never need that tool
+- f6a60f3  generated files stay versioned (icon drawables and index, from scripts/generate_icons.py over third_party/lucide): the build must never need the generator or its inputs
 ## android @ a500d4f
 ! 9b59e58  targetSdk stays 34: target 35+ forces edge-to-edge, every screen to rework and check on a phone
 - 9b59e58  screens call the command dispatcher (Coordinator) directly and keep only view state; the dispatcher and its services are the controller layer

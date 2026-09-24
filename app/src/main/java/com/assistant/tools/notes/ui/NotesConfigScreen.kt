@@ -50,7 +50,7 @@ fun NotesConfigScreen(
     // Configuration states
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
-    var iconName by rememberSaveable { mutableStateOf("note") }
+    var iconName by rememberSaveable { mutableStateOf("sticky-note") }
     var displayMode by rememberSaveable { mutableStateOf("EXTENDED") }
     var management by rememberSaveable { mutableStateOf("manual") }
     var validateConfig by rememberSaveable { mutableStateOf(false) }
@@ -88,7 +88,7 @@ fun NotesConfigScreen(
                     val config = configJson
                     name = config.optString("name", "")
                     description = config.optString("description", "")
-                    iconName = config.optString("icon_name", "note")
+                    iconName = config.optString("icon_name", "sticky-note")
                     displayMode = config.optString("display_mode", "EXTENDED")
                     management = config.optString("management", "manual")
                     validateConfig = config.optBoolean("validate_config", false)

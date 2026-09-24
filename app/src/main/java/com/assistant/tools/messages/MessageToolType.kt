@@ -60,7 +60,7 @@ object MessageToolType : ToolTypeContract {
     }
 
     override fun getSuggestedIcons(): List<String> {
-        return listOf("bell", "notification", "message", "alarm", "calendar-clock", "bell-ring")
+        return listOf("bell", "bell-ring", "message-circle", "alarm-clock", "calendar-clock")
     }
 
     override fun getAvailableOperations(): List<String> {

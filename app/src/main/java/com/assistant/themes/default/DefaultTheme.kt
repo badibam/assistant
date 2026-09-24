@@ -73,6 +73,8 @@ import java.util.Calendar
  */
 @OptIn(ExperimentalFoundationApi::class)
 object DefaultTheme : ThemeContract {
+
+    override val iconSource = com.assistant.core.icons.IconSource.LUCIDE
     
 
     // =====================================
@@ -1488,8 +1490,7 @@ object DefaultTheme : ThemeContract {
                 ) {
                     icon?.let { iconName ->
                         val context = LocalContext.current
-                        if (com.assistant.core.themes.ThemeIconManager.iconExists(context, "default", iconName)) {
-                            val iconResource = com.assistant.core.themes.ThemeIconManager.getIconResource(context, "default", iconName)
+                        com.assistant.core.icons.Icons.drawable(context, iconName)?.let { iconResource ->
                             Icon(
                                 painter = painterResource(iconResource),
                                 contentDescription = null,

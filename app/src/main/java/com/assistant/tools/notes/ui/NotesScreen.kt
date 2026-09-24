@@ -203,7 +203,7 @@ fun NotesScreen(
                     UI.PageHeader(
                         title = toolName,
                         subtitle = toolDescription.takeIf { it.isNotBlank() },
-                        icon = config.optString("icon_name", "note"),
+                        icon = config.optString("icon_name", "sticky-note"),
                         leftButton = ButtonAction.BACK,
                         rightButton = ButtonAction.CONFIGURE,
                         onLeftClick = onNavigateBack,

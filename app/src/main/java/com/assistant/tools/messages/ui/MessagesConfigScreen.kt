@@ -63,7 +63,7 @@ fun MessagesConfigScreen(
     // General configuration states (8 base fields from ToolGeneralConfigSection)
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
-    var iconName by rememberSaveable { mutableStateOf("notification") }
+    var iconName by rememberSaveable { mutableStateOf("bell") }
     var displayMode by rememberSaveable { mutableStateOf("LINE") }
     var management by rememberSaveable { mutableStateOf("manual") }
     var validateConfig by rememberSaveable { mutableStateOf(false) }
@@ -113,7 +113,7 @@ fun MessagesConfigScreen(
                     // Load general config
                     name = config.optString("name", "")
                     description = config.optString("description", "")
-                    iconName = config.optString("icon_name", "notification")
+                    iconName = config.optString("icon_name", "bell")
                     displayMode = config.optString("display_mode", "LINE")
                     management = config.optString("management", "USER")
                     validateConfig = config.optBoolean("validate_config", false)

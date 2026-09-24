@@ -12,7 +12,6 @@ import com.assistant.core.database.entities.Zone
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.themes.CurrentTheme
-import com.assistant.core.themes.ThemeIconManager
 import org.json.JSONObject
 
 /**
@@ -164,15 +163,14 @@ object UI {
     @Composable
     fun Icon(
         iconName: String,
-        themeName: String = "default",
         size: Dp = 24.dp,
         contentDescription: String? = null,
         tint: androidx.compose.ui.graphics.Color? = null,
         background: androidx.compose.ui.graphics.Color? = null
     ) {
         val context = androidx.compose.ui.platform.LocalContext.current
-        if (ThemeIconManager.iconExists(context, themeName, iconName)) {
-            val iconResource = ThemeIconManager.getIconResource(context, themeName, iconName)
+        val iconResource = com.assistant.core.icons.Icons.drawable(context, iconName)
+        if (iconResource != null) {
             CurrentTheme.current.Icon(
                 resourceId = iconResource,
                 size = size,
