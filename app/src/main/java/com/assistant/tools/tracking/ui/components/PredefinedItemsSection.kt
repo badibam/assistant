@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
-import com.assistant.core.utils.NumberFormatting
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
@@ -265,7 +264,6 @@ private fun NumericItemsLayout(
     onQuickSave: (String, Map<String, Any>) -> Unit,
     onOpenDialog: (String, Map<String, Any>) -> Unit
 ) {
-    val context = LocalContext.current
     items.forEach { item ->
         val defaultQuantity = item.getProperty("default_quantity")
         val hasDefaultQuantity = defaultQuantity.isNotBlank()
@@ -308,14 +306,13 @@ private fun NumericItemsLayout(
                 enabled = !isLoading,
                 onClick = {
                     if (hasDefaultQuantity) {
-                        // Quick save with default quantity
-                        val numericQuantity = NumberFormatting.parseUserInput(defaultQuantity, context)
-                        if (numericQuantity != null) {
-                            onQuickSave(item.name, mapOf(
-                                "quantity" to defaultQuantity,
-                                "unit" to item.getProperty("unit")
-                            ))
-                        }
+                        // Quick save with default quantity, a number in the config as its schema
+                        // declares, and handed on as one: the entry schema takes a number too
+                        val numericQuantity = item.properties["default_quantity"] as Number
+                        onQuickSave(item.name, mapOf(
+                            "quantity" to numericQuantity,
+                            "unit" to item.getProperty("unit")
+                        ))
                     } else {
                         // Open dialog
                         onOpenDialog(item.name, item.properties)
