@@ -14,18 +14,16 @@ import org.json.JSONObject
 internal object BatchEntryParams {
 
     /**
-     * Params for createEntry. The tool instance and tooltype come from the batch command, which
-     * names them once for all its entries.
+     * Params for createEntry. The tool instance comes from the batch command, which names it once
+     * for all its entries. Its tooltype and data schema are the service's to read from the tool.
      */
-    fun forCreate(entry: JSONObject, toolInstanceId: String, tooltype: String): JSONObject =
+    fun forCreate(entry: JSONObject, toolInstanceId: String): JSONObject =
         JSONObject().apply {
             put("tool_instance_id", toolInstanceId)
-            put("tooltype", tooltype)
             put("data", entry.optJSONObject("data") ?: JSONObject())
             if (entry.has("custom_fields")) put("custom_fields", entry.getJSONObject("custom_fields"))
             if (entry.has("timestamp")) put("timestamp", entry.getLong("timestamp"))
             if (entry.has("name")) put("name", entry.getString("name"))
-            if (entry.has("schema_id")) put("schema_id", entry.getString("schema_id"))
         }
 
     /** Params for updateEntry: only what the entry names changes. */

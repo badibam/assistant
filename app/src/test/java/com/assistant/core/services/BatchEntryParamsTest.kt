@@ -28,7 +28,7 @@ class BatchEntryParamsTest {
     /** A created entry keeps everything it names, custom fields included. */
     @Test
     fun aCreatedEntryKeepsItsCustomFields() {
-        val params = BatchEntryParams.forCreate(entry, "tool-1", "tracking")
+        val params = BatchEntryParams.forCreate(entry, "tool-1")
 
         assertEquals("calm", params.getJSONObject("custom_fields").getString("mood"))
         assertEquals(1790200120000L, params.getJSONObject("custom_fields").getLong("weighed_at"))
@@ -37,13 +37,18 @@ class BatchEntryParamsTest {
         assertEquals(1790200000000L, params.getLong("timestamp"))
     }
 
-    /** The tool instance and tooltype come from the command, named once for every entry. */
+    /**
+     * The tool instance comes from the command, named once for every entry. A tooltype or a
+     * schema_id an entry carries is not passed on: the service reads both from the tool.
+     */
     @Test
     fun aCreatedEntryTakesItsToolFromTheCommand() {
-        val params = BatchEntryParams.forCreate(entry, "tool-1", "tracking")
+        val carrying = JSONObject(entry.toString()).put("tooltype", "notes").put("schema_id", "notes_data")
+        val params = BatchEntryParams.forCreate(carrying, "tool-1")
 
         assertEquals("tool-1", params.getString("tool_instance_id"))
-        assertEquals("tracking", params.getString("tooltype"))
+        assertFalse(params.has("tooltype"))
+        assertFalse(params.has("schema_id"))
     }
 
     /** An updated entry keeps its custom fields too, and changes nothing it does not name. */

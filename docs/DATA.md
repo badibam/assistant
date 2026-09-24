@@ -184,6 +184,8 @@ UI.ValidationHelper.validateAndSave(
 
 Toute entrée est validée par `ToolDataService` avant d'être écrite, quel que soit l'appelant — écran, IA, planificateur, lot. Le service lit le `data_schema_id` dans la config de l'outil (pas dans les paramètres), l'enrichit des champs personnalisés de cette config (`CustomFieldsSchemaGenerator`), et valide l'entrée telle qu'elle sera stockée : après la fusion pour une modification, après l'ajout des champs calculés (le `raw` du tracking, déclaré `system_managed`). Viennent ensuite les règles qu'un schéma ne sait pas dire, par `FieldValueValidator` (le début d'une plage avant sa fin). Une entrée refusée n'écrit rien.
 
+Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant, et la marque est la règle. Dans `data`, le service retire tout champ marqué de ce qu'on lui envoie avant de produire le sien (`SystemManagedFields`). À la racine, il ne lit que des paramètres nommés et tire lui-même les champs marqués : `tooltype` de l'outil, `schema_id` de sa config, les dates de l'horloge. Un nouveau champ marqué dans `data` est donc protégé sans autre changement ; un nouveau champ marqué à la racine demande que le service sache le produire.
+
 La validation que font les écrans et `ActionValidator` avant d'appeler le service sert à répondre tôt, dans le formulaire ou à l'IA ; elle n'est pas la garde.
 
 ### Schémas de Base
@@ -211,7 +213,7 @@ SchemaValidator.validate(schema, data, context, partialValidation)
 
 Mode partial retire `required` arrays du schéma (récursivement), valide types/formats des champs présents. Service merge avec données existantes.
 
-**Champ `id`** : NOT systemManaged (nécessaire pour identifier l'entrée). Strippé manuellement pour CREATE_DATA uniquement.
+**Champ `id`** : pas `system_managed`, puisqu'une modification le nomme pour désigner l'entrée. Une création l'ignore : le service génère l'identifiant.
 
 ### ValidationHelper
 

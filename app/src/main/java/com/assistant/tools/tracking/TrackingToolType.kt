@@ -952,8 +952,8 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
      * Enrich tracking data by calculating the 'raw' display field
      * The 'raw' field is an auto-generated human-readable representation of the data
      *
-     * Important: The 'raw' field should NOT be provided by AI/user - it's always calculated here
-     * If 'raw' is present in dataJson, it will be removed and recalculated
+     * The schema marks 'raw' system-managed, so the service has already dropped any value a caller
+     * sent; the one computed here overwrites the stored one on an update.
      *
      * @param dataJson The data JSON to enrich
      * @param name The entry name (optional, used for some types)
@@ -964,11 +964,6 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
     override fun enrichData(dataJson: String, name: String?, configJson: String?): String {
         try {
             val dataObj = JSONObject(dataJson)
-
-            // Remove raw if explicitly provided (auto-generated field only)
-            if (dataObj.has("raw")) {
-                dataObj.remove("raw")
-            }
 
             // Calculate raw based on type
             val trackingType = dataObj.optString("type")

@@ -17,6 +17,9 @@ import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.validation.SystemManagedFields
+import com.assistant.core.validation.Schema
+import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.fields.CustomFieldsSchemaGenerator
 import com.assistant.core.fields.FieldValueValidator
 import com.assistant.core.fields.toFieldDefinitions
@@ -57,16 +60,23 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        val tooltype = params.optString("tooltype")
         val name = params.optString("name", null)
         val insertPosition = if (params.has("insert_position")) params.optInt("insert_position") else null
 
-        if (toolInstanceId.isEmpty() || tooltype.isEmpty()) {
-            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype"))
+        if (toolInstanceId.isEmpty()) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id"))
         }
 
+        val target = when (val loaded = loadWriteTarget(toolInstanceId)) {
+            is WriteTarget.Refused -> return OperationResult.error(loaded.error)
+            is WriteTarget.Ready -> loaded
+        }
+        // System-managed at the root of an entry: taken from the tool, never from the caller
+        val tooltype = target.tool.tooltype
+
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
-        val dataJson = params.optJSONObject("data")?.toString() ?: "{}"
+        // Fields the schema marks system-managed are the app's to produce, not the caller's.
+        val dataJson = SystemManagedFields.dropFromData(params.optJSONObject("data") ?: JSONObject(), target.schema.content).toString()
         val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
 
         // Milliseconds are the contract. An absent timestamp means now, which is a default
@@ -88,7 +98,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Enrich data with auto-generated fields (e.g., raw display field for tracking)
         finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, finalDataJson, name)
 
-        validateEntry(toolInstanceId, tooltype, name, timestamp, finalDataJson, customFieldsJson)
+        validateEntry(target, name, timestamp, finalDataJson, customFieldsJson)
             ?.let { return OperationResult.error(it) }
 
         if (insertPosition != null) {
@@ -161,8 +171,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val existingEntity = dao.getById(entryId)
             ?: return OperationResult.error(s.shared("service_error_entry_not_found").format(entryId))
 
+        val target = when (val loaded = loadWriteTarget(existingEntity.toolInstanceId)) {
+            is WriteTarget.Refused -> return OperationResult.error(loaded.error)
+            is WriteTarget.Ready -> loaded
+        }
+
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
-        val dataJson = params.optJSONObject("data")?.toString()
+        // Fields the schema marks system-managed are the app's to produce, not the caller's.
+        val dataJson = params.optJSONObject("data")
+            ?.let { SystemManagedFields.dropFromData(it, target.schema.content).toString() }
         val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
 
         // Milliseconds are the contract. An absent timestamp leaves the recorded one alone;
@@ -173,8 +190,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        // Merge JSON data: new fields overwrite, absent fields are preserved (e.g. systemManaged fields)
-        // Protection layers: AI commands have systemManaged fields stripped, UI doesn't expose them
+        // Merge JSON data: new fields overwrite, absent fields are preserved (system-managed ones
+        // included, the incoming data having lost them above)
         val mergedData = if (dataJson != null) {
             val existingJson = JSONObject(existingEntity.data)
             val newJson = JSONObject(dataJson)
@@ -240,8 +257,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // The whole entry is checked, not only the fields sent: after the merge it is what will be stored
         validateEntry(
-            updatedEntity.toolInstanceId, updatedEntity.tooltype, updatedEntity.name,
-            updatedEntity.timestamp, updatedEntity.data, updatedEntity.customFields
+            target, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.customFields
         )?.let { return OperationResult.error(it) }
 
         dao.update(updatedEntity)
@@ -467,17 +483,16 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
     /**
      * Batch create multiple tool data entries
-     * Params: tool_instance_id, tooltype, entries (see BatchEntryParams.forCreate)
+     * Params: tool_instance_id, entries (see BatchEntryParams.forCreate)
      */
     private suspend fun batchCreateEntries(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
         val toolInstanceId = params.optString("tool_instance_id")
-        val tooltype = params.optString("tooltype")
         val entriesArray = params.optJSONArray("entries")
 
-        if (toolInstanceId.isEmpty() || tooltype.isEmpty() || entriesArray == null) {
-            return OperationResult.error(s.shared("service_error_missing_required_params").format("toolInstanceId, tooltype, entries"))
+        if (toolInstanceId.isEmpty() || entriesArray == null) {
+            return OperationResult.error(s.shared("service_error_missing_required_params").format("tool_instance_id, entries"))
         }
 
         val dao = getToolDataDao()
@@ -493,7 +508,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             try {
                 val entryJson = entriesArray.getJSONObject(i)
 
-                val singleParams = BatchEntryParams.forCreate(entryJson, toolInstanceId, tooltype)
+                val singleParams = BatchEntryParams.forCreate(entryJson, toolInstanceId)
 
                 // Use existing createEntry logic
                 val result = createEntry(singleParams, token)
@@ -914,48 +929,58 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
     }
 
+    /** The tool an entry is written to, as the write path needs it, or why it cannot be written to. */
+    private sealed interface WriteTarget {
+        /** [schema] is the tool's data schema, enriched with its custom fields. */
+        class Ready(val tool: ToolInstance, val config: JSONObject, val schema: Schema) : WriteTarget
+        class Refused(val error: String) : WriteTarget
+    }
+
+    /** Load a tool and its data schema, read straight from the database and its config. */
+    private suspend fun loadWriteTarget(toolInstanceId: String): WriteTarget {
+        val tool = AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)
+            ?: return WriteTarget.Refused(s.shared("service_error_tool_instance_not_found"))
+        val config = JSONObject(tool.config_json)
+        val dataSchemaId = config.optString("data_schema_id").takeIf { it.isNotBlank() }
+            ?: return WriteTarget.Refused(s.shared("service_error_tool_no_data_schema"))
+        val schema = ToolTypeManager.getToolType(tool.tooltype)?.getSchema(dataSchemaId, context)
+            ?: return WriteTarget.Refused(s.shared("service_error_data_schema_not_found").format(dataSchemaId, tool.tooltype))
+        return WriteTarget.Ready(
+            tool, config, schema.copy(content = CustomFieldsSchemaGenerator.enrichSchema(schema.content, tool.config_json))
+        )
+    }
+
     /**
      * Check an entry exactly as it is about to be stored: against its tool's data schema, custom
      * fields included, then against the value rules a schema cannot state (a RANGE's start <= end).
      *
      * Every write goes through here, whoever makes it -- a screen, the AI, the scheduler, a batch
-     * -- so nothing the schema refuses can be stored. The config is read straight from the
-     * database, the tool's own schema enriched with its custom fields.
+     * -- so nothing the schema refuses can be stored.
      *
      * @return The error to hand back, or null when the entry is valid
      */
-    private suspend fun validateEntry(
-        toolInstanceId: String,
-        tooltype: String,
+    private fun validateEntry(
+        target: WriteTarget.Ready,
         name: String?,
         timestamp: Long?,
         dataJson: String,
         customFieldsJson: String?
     ): String? {
-        val toolInstance = AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)
-            ?: return s.shared("service_error_tool_instance_not_found")
-        val config = JSONObject(toolInstance.config_json)
-        val dataSchemaId = config.optString("data_schema_id").takeIf { it.isNotBlank() }
-            ?: return s.shared("service_error_tool_no_data_schema")
-        val schema = ToolTypeManager.getToolType(tooltype)?.getSchema(dataSchemaId, context)
-            ?: return s.shared("service_error_data_schema_not_found").format(dataSchemaId, tooltype)
-        val enriched = schema.copy(content = CustomFieldsSchemaGenerator.enrichSchema(schema.content, toolInstance.config_json))
-
         val customFields = customFieldsJson?.let { JsonUtils.toMap(it) }?.takeIf { it.isNotEmpty() }
         val entry = mutableMapOf<String, Any?>(
-            "tool_instance_id" to toolInstanceId,
-            "tooltype" to tooltype,
+            "tool_instance_id" to target.tool.id,
+            "tooltype" to target.tool.tooltype,
             "data" to JsonUtils.toMap(dataJson)
         )
         timestamp?.let { entry["timestamp"] = it }
         name?.let { entry["name"] = it }
         customFields?.let { entry["custom_fields"] = it }
 
-        val result = SchemaValidator.validate(enriched, entry, context)
+        val result = SchemaValidator.validate(target.schema, entry, context)
         if (!result.isValid) return result.errorMessage ?: s.shared("service_error_validation_failed").format("")
 
         // What the schema cannot say, field by field
-        val fields = config.optJSONArray("custom_fields")?.toFieldDefinitions() ?: emptyList()
+        val fields = target.config.optJSONArray("custom_fields")?.toFieldDefinitions() ?: emptyList()
         for (field in fields) {
             val fieldResult = FieldValueValidator.validate(field, customFields?.get(field.name), context)
             if (!fieldResult.isValid) {
