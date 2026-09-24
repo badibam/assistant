@@ -811,8 +811,8 @@
     <string name="ai_prompt_level3_snapshot_note">Note: this is a snapshot, which may have moved on since the start of the session.</string>
     <string name="ai_prompt_level3_zones_title">Zones</string>
     <string name="ai_prompt_level3_tools_title">Tool instances</string>
-    <string name="ai_prompt_current_datetime">Current date and time: %1$s (timestamp: %2$d)</string>
-    <string name="ai_prompt_scheduled_datetime">Date planned for this run: %1$s (timestamp: %2$d). Relative data (yesterday, this week) is resolved against that date, not against the current time. What you do or say stays in the present. If you write a piece of data that belongs to the planned date rather than to today, pass its timestamp explicitly: with no timestamp, the entry is dated from the moment this run happens.</string>
+    <string name="ai_prompt_current_datetime">Current date and time: %1$s</string>
+    <string name="ai_prompt_scheduled_datetime">Date planned for this run: %1$s. Relative data (yesterday, this week) is resolved against that date, not against the current time. What you do or say stays in the present. If you write a piece of data that belongs to the planned date rather than to today, pass its timestamp explicitly: with no timestamp, the entry is dated from the moment this run happens.</string>
 
     <!-- AI TOKEN STATUS - Token status display (TokenCalculator) -->
 

@@ -58,10 +58,10 @@ internal fun PromptData.buildDatetimeMessage(context: android.content.Context): 
     fun iso(timestamp: Long) = com.assistant.core.utils.DateTimeConverter.timestampToISO(timestamp, zone)
 
     val now = System.currentTimeMillis()
-    val currentLine = s.shared("ai_prompt_current_datetime").format(iso(now), now)
+    val currentLine = s.shared("ai_prompt_current_datetime").format(iso(now))
 
     val scheduled = scheduledExecutionTime ?: return currentLine
-    val scheduledLine = s.shared("ai_prompt_scheduled_datetime").format(iso(scheduled), scheduled)
+    val scheduledLine = s.shared("ai_prompt_scheduled_datetime").format(iso(scheduled))
     return "$currentLine\n$scheduledLine"
 }
 

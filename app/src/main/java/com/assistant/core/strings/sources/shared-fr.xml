@@ -811,8 +811,8 @@
     <string name="ai_prompt_level3_snapshot_note">Note : Il s\'agit d\'un snapshot qui a pu évoluer depuis le début de la session.</string>
     <string name="ai_prompt_level3_zones_title">Zones</string>
     <string name="ai_prompt_level3_tools_title">Instances d\'outils</string>
-    <string name="ai_prompt_current_datetime">Date et heure actuelles : %1$s (timestamp: %2$d)</string>
-    <string name="ai_prompt_scheduled_datetime">Date prévue pour cette exécution : %1$s (timestamp: %2$d). Les données relatives (hier, cette semaine) sont résolues sur cette date, pas sur l\'heure actuelle. Ce que tu fais ou dis reste au présent. Si tu écris une donnée qui appartient à la date prévue plutôt qu\'à aujourd\'hui, passe son timestamp explicitement : sans timestamp, l\'entrée est datée du moment où cette exécution tourne.</string>
+    <string name="ai_prompt_current_datetime">Date et heure actuelles : %1$s</string>
+    <string name="ai_prompt_scheduled_datetime">Date prévue pour cette exécution : %1$s. Les données relatives (hier, cette semaine) sont résolues sur cette date, pas sur l\'heure actuelle. Ce que tu fais ou dis reste au présent. Si tu écris une donnée qui appartient à la date prévue plutôt qu\'à aujourd\'hui, passe son timestamp explicitement : sans timestamp, l\'entrée est datée du moment où cette exécution tourne.</string>
 
     <!-- AI TOKEN STATUS - Affichage statut tokens (TokenCalculator) -->
 
