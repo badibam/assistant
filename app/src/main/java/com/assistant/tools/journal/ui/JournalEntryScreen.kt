@@ -36,7 +36,7 @@ import org.json.JSONArray
  * - Date/time picker
  * - Title field
  * - Content field
- * - Cancel in creation mode = auto-delete entry
+ * - Cancel before the first save = auto-delete entry; cancel after it = reload the stored entry
  */
 @Composable
 fun JournalEntryScreen(
@@ -58,6 +58,9 @@ fun JournalEntryScreen(
 
     // Entry data states (survive rotation)
     var isEditing by rememberSaveable { mutableStateOf(isCreating) } // Start in edit mode if creating
+    // True until the first save. isCreating is fixed for the screen's life, so it cannot say
+    // whether a cancel discards a whole new entry or only the edits of a saved one.
+    var isUnsaved by rememberSaveable { mutableStateOf(isCreating) }
     var title by rememberSaveable { mutableStateOf("") }
     var content by rememberSaveable { mutableStateOf("") }
     var timestamp by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
@@ -72,51 +75,55 @@ fun JournalEntryScreen(
     // Validation state
     var validationResult by remember { mutableStateOf(ValidationResult.success()) }
 
+    // Reads the stored entry into the form: on opening, and on cancel to drop the edits
+    suspend fun loadEntry(): Boolean {
+        // Nothing is touched unless the read succeeds: a failed reload on cancel must leave
+        // the open form as it was, since it can still be saved
+        var loaded = false
+        LogManager.ui("Loading journal entry: $entryId")
+        val params = mapOf(
+            "entry_id" to entryId
+        )
+
+        val result = coordinator.processUserAction("tool_data.get_single", params)
+
+        if (result?.isSuccess == true) {
+            val entryData = result.data?.get("entry") as? Map<*, *>
+            entryData?.let { data ->
+                title = data["name"] as? String ?: ""
+                // Milliseconds from the service, as stored. An entry with none keeps the
+                // present moment, which is what a new entry starts from anyway.
+                timestamp = (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
+
+                // The service hands out an object; the string form stays at the database edge.
+                @Suppress("UNCHECKED_CAST")
+                val parsedData = (data["data"] as? Map<String, Any>) ?: emptyMap()
+
+                content = parsedData["content"] as? String ?: ""
+
+                // Load custom fields values
+                @Suppress("UNCHECKED_CAST")
+                customFieldsValues = (data["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
+                LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
+
+                LogManager.ui("Successfully loaded entry: title=$title")
+                loaded = true
+            }
+        } else {
+            errorMessage = s.tool("error_entry_load")
+        }
+        return loaded
+    }
+
     // Load entry if not creating; a new entry starts from the current time
     val entryLoad = rememberLoadOnce(entryId, isCreating) {
         LogManager.ui("Loading entry: entryId=$entryId, isCreating=$isCreating")
-        var loaded = false
-        if (!isCreating) {
-            // Reset custom fields to ensure clean state
-            customFieldsValues = emptyMap()
-            LogManager.ui("Loading journal entry: $entryId")
-            val params = mapOf(
-                "entry_id" to entryId
-            )
-
-            val result = coordinator.processUserAction("tool_data.get_single", params)
-
-            if (result?.isSuccess == true) {
-                val entryData = result.data?.get("entry") as? Map<*, *>
-                entryData?.let { data ->
-                    title = data["name"] as? String ?: ""
-                    // Milliseconds from the service, as stored. An entry with none keeps the
-                    // present moment, which is what a new entry starts from anyway.
-                    timestamp = (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
-
-                    // The service hands out an object; the string form stays at the database edge.
-                    @Suppress("UNCHECKED_CAST")
-                    val parsedData = (data["data"] as? Map<String, Any>) ?: emptyMap()
-
-                    content = parsedData["content"] as? String ?: ""
-
-                    // Load custom fields values
-                    @Suppress("UNCHECKED_CAST")
-                    customFieldsValues = (data["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
-                    LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
-
-                    LogManager.ui("Successfully loaded entry: title=$title")
-                    loaded = true
-                }
-            } else {
-                errorMessage = s.tool("error_entry_load")
-            }
-        } else {
-            // In creation mode, initialize with current timestamp
+        if (isCreating) {
             timestamp = System.currentTimeMillis()
-            loaded = true
+            true
+        } else {
+            loadEntry()
         }
-        loaded
     }
 
     // Error message display
@@ -198,13 +205,9 @@ fun JournalEntryScreen(
                     val result = coordinator.processUserAction("tool_data.update", params)
                     if (result?.isSuccess == true) {
                         LogManager.ui("Successfully saved journal entry")
-                        if (isCreating) {
-                            // After first save, no longer in creating mode
-                            isEditing = false
-                        } else {
-                            // Switch back to consultation mode
-                            isEditing = false
-                        }
+                        // Back to consultation mode; the entry now exists as saved
+                        isUnsaved = false
+                        isEditing = false
                     } else {
                         errorMessage = s.tool("error_entry_save")
                     }
@@ -223,7 +226,7 @@ fun JournalEntryScreen(
 
     // Cancel function
     val handleCancel = {
-        if (isCreating) {
+        if (isUnsaved) {
             // Delete entry automatically if cancelling creation
             coroutineScope.launch {
                 val params = mapOf("id" to entryId)
@@ -232,8 +235,11 @@ fun JournalEntryScreen(
                 onNavigateBack()
             }
         } else {
-            // Just switch back to consultation mode
-            isEditing = false
+            // Back to consultation with what is stored, not what was typed. If the entry
+            // cannot be read, the form stays open rather than showing the abandoned input.
+            coroutineScope.launch {
+                if (loadEntry()) isEditing = false
+            }
         }
     }
 
@@ -262,7 +268,7 @@ fun JournalEntryScreen(
             title = if (isEditing) s.shared("action_edit") else title.ifBlank { s.tool("placeholder_untitled") },
             leftButton = ButtonAction.BACK,
             onLeftClick = {
-                if (isEditing && !isCreating) {
+                if (isEditing && !isUnsaved) {
                     // In edit mode (not creating), Back = Cancel
                     handleCancel()
                 } else {
