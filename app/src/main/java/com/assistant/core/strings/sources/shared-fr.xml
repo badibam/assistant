@@ -293,6 +293,13 @@
     <string name="ai_phase_executing_actions">Exécution actions...</string>
     <string name="ai_phase_waiting_validation">Validation requise</string>
     <string name="ai_phase_waiting_communication">En attente de réponse</string>
+    <string name="ai_phase_waiting_data_confirmation">En attente de ta décision sur les données</string>
+    <string name="ai_system_data_too_large_automation">Données non envoyées : %1$d caractères, au-delà du seuil des automations de %2$d. Resserre la requête (moins de champs, une période plus courte) ou découpe ce qui est vraiment nécessaire.</string>
+    <string name="ai_system_data_refused_by_user">Données non envoyées : l\'utilisateur a refusé %1$d caractères de données. Resserre la requête (moins de champs, une période plus courte) ou demande-lui ce qui est nécessaire.</string>
+    <string name="ai_data_confirmation_title">Données volumineuses</string>
+    <string name="ai_data_confirmation_text">Les données demandées font %1$d caractères, au-delà de ton seuil de %2$d. Les envoyer à l\'IA ?</string>
+    <string name="ai_data_confirmation_send">Envoyer</string>
+    <string name="ai_data_confirmation_refuse">Refuser</string>
     <string name="ai_phase_waiting_network">Attente réseau...</string>
     <string name="ai_phase_retrying">Nouvelle tentative...</string>
     <string name="ai_phase_interrupted">Interrompu</string>

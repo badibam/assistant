@@ -32,7 +32,7 @@ class AIDomainTypesTest {
             Phase.PARSING_AI_RESPONSE,
             Phase.PREPARING_CONTINUATION
         )
-        val waitingOnTheUser = setOf(Phase.WAITING_VALIDATION, Phase.WAITING_COMMUNICATION_RESPONSE)
+        val waitingOnTheUser = setOf(Phase.WAITING_VALIDATION, Phase.WAITING_COMMUNICATION_RESPONSE, Phase.WAITING_DATA_CONFIRMATION)
         val waitingOnTheNetwork = setOf(Phase.WAITING_NETWORK_RETRY)
 
         for (phase in Phase.values()) {

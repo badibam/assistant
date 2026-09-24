@@ -36,4 +36,17 @@ sealed class WaitingContext {
         val communicationModule: CommunicationModule,
         val aiMessageId: String
     ) : WaitingContext()
+
+    /**
+     * Waiting for the user to send or refuse data above the size threshold (CHAT only).
+     *
+     * @param messageId The SYSTEM message holding the data, kept out of the prompt meanwhile
+     * @param dataChars Size of its data text, as the AI would receive it
+     * @param maxDataChars The threshold it went over
+     */
+    data class DataConfirmation(
+        val messageId: String,
+        val dataChars: Int,
+        val maxDataChars: Int
+    ) : WaitingContext()
 }

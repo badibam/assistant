@@ -43,6 +43,7 @@ private fun getPhaseLabel(phase: Phase, s: com.assistant.core.strings.StringsCon
         Phase.EXECUTING_ACTIONS -> s.shared("ai_phase_executing_actions")
         Phase.WAITING_VALIDATION -> s.shared("ai_phase_waiting_validation")
         Phase.WAITING_COMMUNICATION_RESPONSE -> s.shared("ai_phase_waiting_communication")
+        Phase.WAITING_DATA_CONFIRMATION -> s.shared("ai_phase_waiting_data_confirmation")
         Phase.WAITING_NETWORK_RETRY -> s.shared("ai_phase_waiting_network")
         Phase.RETRYING_AFTER_FORMAT_ERROR,
         Phase.RETRYING_AFTER_ACTION_FAILURE -> s.shared("ai_phase_retrying")
@@ -315,6 +316,7 @@ private fun ChatMode(
         Phase.PARSING_AI_RESPONSE,
         Phase.WAITING_VALIDATION,
         Phase.WAITING_COMMUNICATION_RESPONSE,
+        Phase.WAITING_DATA_CONFIRMATION,
         Phase.WAITING_NETWORK_RETRY,
         Phase.RETRYING_AFTER_FORMAT_ERROR,
         Phase.RETRYING_AFTER_ACTION_FAILURE,

@@ -7,8 +7,8 @@ import org.junit.Test
 
 /**
  * Covers the events the user raises: ValidationNotRequired, ValidationReceived,
- * CommunicationResponseReceived, CommunicationCancelled, AIRoundInterrupted,
- * AIResponseIgnored.
+ * DataConfirmationRequested, DataConfirmationReceived, CommunicationResponseReceived,
+ * CommunicationCancelled, AIRoundInterrupted, AIResponseIgnored.
  *
  * Two things recur and are checked throughout. A waiting phase leaves a waitingContext on
  * the state, and whatever ends the wait has to clear it, or the interface keeps showing a
@@ -32,6 +32,45 @@ class AIStateMachineUserInteractionTest {
 
         assertEquals(Phase.EXECUTING_ACTIONS, state.phase)
         assertNull(state.waitingContext)
+    }
+
+    // ==================== Data above the size threshold ====================
+
+    /** Data went over the CHAT threshold: the session waits for the user instead of calling the AI. */
+    @Test
+    fun dataConfirmationRequested_waitsForTheUser() {
+        val state = AIStateMachine.transition(
+            state = chatAt(Phase.EXECUTING_DATA_QUERIES, roundtrips = 2),
+            event = AIEvent.DataConfirmationRequested,
+            limits = testLimits,
+            currentTime = T1
+        )
+
+        assertEquals(Phase.WAITING_DATA_CONFIRMATION, state.phase)
+        assertEquals(2, state.totalRoundtrips)
+    }
+
+    /**
+     * Sent or refused, the AI is called -- with the data or with the refusal -- and, the user
+     * having acted, the count of calls starts over with this one. Even at the limit, the call
+     * goes out: it is the user's answer that is being sent.
+     */
+    @Test
+    fun dataConfirmationAnswered_callsTheAIEitherWay() {
+        val data = WaitingContext.DataConfirmation(messageId = "m", dataChars = 5_000, maxDataChars = 1_000)
+        for (approved in listOf(true, false)) {
+            val state = AIStateMachine.transition(
+                state = chatAt(Phase.WAITING_DATA_CONFIRMATION, roundtrips = testLimits.maxAutonomousRoundtrips, waitingContext = data),
+                event = AIEvent.DataConfirmationReceived(approved),
+                limits = testLimits,
+                currentTime = T1
+            )
+
+            assertEquals(Phase.CALLING_AI, state.phase)
+            assertNull(state.waitingContext)
+            assertEquals(1, state.totalRoundtrips)
+            assertEquals(T1, state.lastUserInteractionTime)
+        }
     }
 
     /** Approved: the actions run. */

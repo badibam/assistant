@@ -150,6 +150,24 @@ object AIStateMachine {
                 }
             }
 
+            is AIEvent.DataConfirmationRequested -> {
+                state.copy(
+                    phase = Phase.WAITING_DATA_CONFIRMATION,
+                    lastEventTime = currentTime
+                )
+            }
+
+            is AIEvent.DataConfirmationReceived -> {
+                // Sent or refused, the AI hears of it: with the data, or with the refusal
+                state.copy(
+                    phase = Phase.CALLING_AI,
+                    waitingContext = null,
+                    totalRoundtrips = 1, // The user acted: the count starts over, with this call
+                    lastEventTime = currentTime,
+                    lastUserInteractionTime = currentTime
+                )
+            }
+
             is AIEvent.CommunicationResponseReceived -> {
                 // User responded - transition to CALLING_AI (send response to AI)
                 state.copy(

@@ -112,7 +112,9 @@ enum class SystemMessageType {
     VALIDATION_CANCELLED,    // User did not validate AI actions or explicitly refused (sent to AI prompt for context)
     COMPLETED_CONFIRMATION,  // AI used completed flag, asking for confirmation (sent to AI prompt for double-check)
     PROVIDER_ERROR,          // AI provider not configured or not found (stored for audit, FILTERED from prompt)
-    SCHEMA_REQUIRED          // Data schema required before TOOL_DATA query (sent to AI to request schema first)
+    SCHEMA_REQUIRED,         // Data schema required before TOOL_DATA query (sent to AI to request schema first)
+    DATA_AWAITING_CONFIRMATION, // Data above the CHAT size threshold, kept out of the prompt until the user sends it
+    DATA_REFUSED             // Data above the size threshold not sent: refused by the user or by an automation (sent to AI to narrow its request)
 }
 
 /**

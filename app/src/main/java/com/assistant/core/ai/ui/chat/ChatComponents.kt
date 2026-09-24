@@ -180,6 +180,17 @@ fun ChatMessageBubble(
                                     type = TextType.BODY
                                 )
 
+                                // Data above the size threshold waiting for the user's decision
+                                val dataWaiting = aiState.waitingContext as? com.assistant.core.ai.domain.WaitingContext.DataConfirmation
+                                if (dataWaiting != null && dataWaiting.messageId == message.id) {
+                                    DataConfirmationCard(
+                                        dataChars = dataWaiting.dataChars,
+                                        maxDataChars = dataWaiting.maxDataChars,
+                                        onSend = { AIOrchestrator.resumeWithDataConfirmation(true) },
+                                        onRefuse = { AIOrchestrator.resumeWithDataConfirmation(false) }
+                                    )
+                                }
+
                                 // Command results details (if present)
                                 if (message.systemMessage.commandResults.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -465,6 +476,39 @@ fun SessionStatsDialog(
 
                 // Cost display
                 com.assistant.core.ai.ui.SessionCostDisplay(sessionId = sessionId)
+            }
+        }
+    }
+}
+
+/** Asks whether data above the CHAT size threshold goes to the AI. */
+@Composable
+private fun DataConfirmationCard(
+    dataChars: Int,
+    maxDataChars: Int,
+    onSend: () -> Unit,
+    onRefuse: () -> Unit
+) {
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(context = context) }
+
+    UI.Card(type = CardType.DEFAULT) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            UI.Text(text = s.shared("ai_data_confirmation_title"), type = TextType.SUBTITLE)
+            UI.Text(
+                text = s.shared("ai_data_confirmation_text").format(dataChars, maxDataChars),
+                type = TextType.BODY
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                UI.Button(type = ButtonType.PRIMARY, size = Size.M, onClick = onSend) {
+                    UI.Text(text = s.shared("ai_data_confirmation_send"), type = TextType.BODY)
+                }
+                UI.Button(type = ButtonType.DEFAULT, size = Size.M, onClick = onRefuse) {
+                    UI.Text(text = s.shared("ai_data_confirmation_refuse"), type = TextType.BODY)
+                }
             }
         }
     }

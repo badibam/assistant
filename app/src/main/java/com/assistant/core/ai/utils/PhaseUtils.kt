@@ -29,6 +29,7 @@ object PhaseUtils {
             Phase.PREPARING_CONTINUATION -> s.shared("ai_phase_preparing_continuation")
             Phase.WAITING_VALIDATION -> s.shared("ai_phase_waiting_validation")
             Phase.WAITING_COMMUNICATION_RESPONSE -> s.shared("ai_phase_waiting_communication")
+            Phase.WAITING_DATA_CONFIRMATION -> s.shared("ai_phase_waiting_data_confirmation")
             Phase.EXECUTING_DATA_QUERIES -> s.shared("ai_phase_executing_queries")
             Phase.EXECUTING_ACTIONS -> s.shared("ai_phase_executing_actions")
             Phase.WAITING_NETWORK_RETRY -> s.shared("ai_phase_waiting_network")

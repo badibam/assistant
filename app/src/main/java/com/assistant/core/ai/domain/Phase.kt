@@ -44,6 +44,9 @@ enum class Phase {
     /** Waiting for user response to communication module (CHAT only) */
     WAITING_COMMUNICATION_RESPONSE,
 
+    /** Waiting for the user to send or refuse data above the size threshold (CHAT only) */
+    WAITING_DATA_CONFIRMATION,
+
     /** Executing data query commands (tool_data.get, etc.) */
     EXECUTING_DATA_QUERIES,
 
@@ -79,7 +82,7 @@ enum class Phase {
      * Used for inactivity timeout calculation.
      */
     fun isWaitingForUser(): Boolean = when (this) {
-        WAITING_VALIDATION, WAITING_COMMUNICATION_RESPONSE -> true
+        WAITING_VALIDATION, WAITING_COMMUNICATION_RESPONSE, WAITING_DATA_CONFIRMATION -> true
         else -> false
     }
 

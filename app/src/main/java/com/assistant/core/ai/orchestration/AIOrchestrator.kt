@@ -615,6 +615,17 @@ object AIOrchestrator {
     }
 
     /**
+     * Resume execution after the user sent or refused data above the size threshold.
+     */
+    fun resumeWithDataConfirmation(approved: Boolean) {
+        LogManager.aiSession("resumeWithDataConfirmation: $approved", "INFO")
+
+        orchestratorScope.launch {
+            eventProcessor.emit(AIEvent.DataConfirmationReceived(approved))
+        }
+    }
+
+    /**
      * Resume execution after communication module response.
      */
     fun resumeWithResponse(response: String) {

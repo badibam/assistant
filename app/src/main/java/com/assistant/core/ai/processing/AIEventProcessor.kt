@@ -122,6 +122,37 @@ class AIEventProcessor(
                 }
             }
 
+            // DataConfirmationReceived: the pending data joins the prompt, or is replaced by the
+            // refusal, BEFORE the transition calls the AI
+            if (event is AIEvent.DataConfirmationReceived) {
+                val currentState = stateRepository.currentState
+                val sessionId = currentState.sessionId
+                val waiting = currentState.waitingContext as? WaitingContext.DataConfirmation
+                if (sessionId != null && waiting != null) {
+                    val pending = messageRepository.loadMessages(sessionId).firstOrNull { it.id == waiting.messageId }
+                    val systemMessage = pending?.systemMessage
+                    if (pending != null && systemMessage != null) {
+                        val resolved = if (event.approved) {
+                            pending.copy(
+                                systemMessage = systemMessage.copy(type = SystemMessageType.DATA_ADDED),
+                                excludeFromPrompt = false
+                            )
+                        } else {
+                            val s = com.assistant.core.strings.Strings.`for`(context = context)
+                            pending.copy(
+                                systemMessage = systemMessage.copy(
+                                    type = SystemMessageType.DATA_REFUSED,
+                                    summary = s.shared("ai_system_data_refused_by_user").format(waiting.dataChars),
+                                    formattedData = null
+                                ),
+                                excludeFromPrompt = false
+                            )
+                        }
+                        messageRepository.updateMessage(sessionId, resolved)
+                    }
+                }
+            }
+
             // Special handling for ValidationReceived - create message BEFORE transition
             if (event is AIEvent.ValidationReceived) {
                 val currentState = stateRepository.currentState
@@ -274,6 +305,11 @@ class AIEventProcessor(
             Phase.WAITING_COMMUNICATION_RESPONSE -> {
                 // Create WaitingContext with communication module for UI display
                 createCommunicationWaitingContext(state)
+            }
+
+            Phase.WAITING_DATA_CONFIRMATION -> {
+                // Rebuilt from the stored pending message, so the wait survives a restart
+                createDataConfirmationWaitingContext(state)
             }
 
             Phase.EXECUTING_DATA_QUERIES -> {
@@ -442,7 +478,8 @@ class AIEventProcessor(
                     excludeFromPrompt = false
                 )
 
-                messageRepository.storeMessage(sessionId, systemSessionMessage)
+                // Above the size threshold the data waits for the user (CHAT) or is refused (AUTOMATION)
+                if (storeDataWithinThreshold(state, sessionId, systemSessionMessage)) return
                 LogManager.aiSession("Stored enrichments SystemMessage with ${result.systemMessage.commandResults.size} results", "DEBUG")
             } else {
                 LogManager.aiSession("No commands executed from enrichments - skipping SystemMessage creation", "DEBUG")
@@ -1166,7 +1203,8 @@ class AIEventProcessor(
                 excludeFromPrompt = false
             )
 
-            messageRepository.storeMessage(sessionId, systemSessionMessage)
+            // Above the size threshold the data waits for the user (CHAT) or is refused (AUTOMATION)
+            if (storeDataWithinThreshold(state, sessionId, systemSessionMessage)) return
 
             // Emit event
             emit(AIEvent.DataQueriesExecuted(result.systemMessage.commandResults))
@@ -1487,6 +1525,72 @@ class AIEventProcessor(
                 emit(AIEvent.ValidationNotRequired)
             }
         }
+    }
+
+    /**
+     * Store a data SystemMessage, holding it to the session's data size threshold.
+     *
+     * The size is that of the data text as the AI would receive it. Within the threshold the
+     * message is stored as it is and the caller carries on. Above it:
+     * - CHAT: stored out of the prompt as DATA_AWAITING_CONFIRMATION, and the user is asked
+     * - AUTOMATION: nobody can be asked, so the data is not stored; the AI gets a DATA_REFUSED
+     *   message naming the size, the threshold and the requests, telling it to narrow them
+     *
+     * @return true when the flow now waits for the user, so the caller must not carry on
+     */
+    private suspend fun storeDataWithinThreshold(state: AIState, sessionId: String, message: SessionMessage): Boolean {
+        val dataChars = message.systemMessage?.formattedData?.length ?: 0
+        val sessionType = state.sessionType ?: SessionType.CHAT
+        val maxDataChars = AppConfigManager.getAILimits().getLimitsForSessionType(sessionType).maxDataChars
+
+        if (dataChars <= maxDataChars) {
+            messageRepository.storeMessage(sessionId, message)
+            return false
+        }
+
+        LogManager.aiSession("Data of $dataChars characters above the $sessionType threshold of $maxDataChars", "INFO")
+        val systemMessage = message.systemMessage ?: return false
+
+        if (sessionType == SessionType.CHAT) {
+            messageRepository.storeMessage(sessionId, message.copy(
+                systemMessage = systemMessage.copy(type = SystemMessageType.DATA_AWAITING_CONFIRMATION),
+                excludeFromPrompt = true
+            ))
+            emit(AIEvent.DataConfirmationRequested)
+            return true
+        }
+
+        val s = com.assistant.core.strings.Strings.`for`(context = context)
+        messageRepository.storeMessage(sessionId, message.copy(
+            systemMessage = systemMessage.copy(
+                type = SystemMessageType.DATA_REFUSED,
+                summary = s.shared("ai_system_data_too_large_automation").format(dataChars, maxDataChars),
+                formattedData = null
+            )
+        ))
+        return false
+    }
+
+    /**
+     * Create the data confirmation waiting context when entering WAITING_DATA_CONFIRMATION.
+     *
+     * Read from the last message awaiting confirmation, so the same context comes back after
+     * the app was closed during the wait.
+     */
+    private suspend fun createDataConfirmationWaitingContext(state: AIState) {
+        val sessionId = state.sessionId ?: return
+        val pending = messageRepository.loadMessages(sessionId).lastOrNull {
+            it.systemMessage?.type == SystemMessageType.DATA_AWAITING_CONFIRMATION
+        } ?: run {
+            LogManager.aiSession("createDataConfirmationWaitingContext: No data awaiting confirmation", "ERROR")
+            return
+        }
+        val sessionType = state.sessionType ?: SessionType.CHAT
+        stateRepository.updateWaitingContext(WaitingContext.DataConfirmation(
+            messageId = pending.id,
+            dataChars = pending.systemMessage?.formattedData?.length ?: 0,
+            maxDataChars = AppConfigManager.getAILimits().getLimitsForSessionType(sessionType).maxDataChars
+        ))
     }
 
     /**

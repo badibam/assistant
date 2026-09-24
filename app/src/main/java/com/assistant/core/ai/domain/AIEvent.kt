@@ -107,6 +107,18 @@ sealed class AIEvent {
     data class ValidationReceived(val approved: Boolean) : AIEvent()
 
     /**
+     * Data fetched for the AI went over the CHAT threshold: it is stored out of the prompt,
+     * and the user decides whether it is sent (CHAT only).
+     */
+    object DataConfirmationRequested : AIEvent()
+
+    /**
+     * User sent or refused data above the threshold (CHAT only). Either way the AI is called:
+     * with the data, or with the refusal and the requests it concerned.
+     */
+    data class DataConfirmationReceived(val approved: Boolean) : AIEvent()
+
+    /**
      * User responded to communication module (CHAT only).
      *
      * @param response User's text response
