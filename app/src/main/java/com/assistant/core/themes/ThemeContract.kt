@@ -251,12 +251,15 @@ interface ThemeContract {
         required: Boolean
     )
     
+    /** A slider from [min] to [max] that stops every [step] from [min]; hands back the stop reached. */
     @Composable
     fun SliderField(
         label: String,
-        value: Int,
-        onValueChange: (Int) -> Unit,
-        range: IntRange,
+        value: Double,
+        onValueChange: (Double) -> Unit,
+        min: Double,
+        max: Double,
+        step: Double,
         minLabel: String,
         maxLabel: String,
         required: Boolean

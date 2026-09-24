@@ -289,6 +289,7 @@ object UI {
         )
     }
     
+    /** A slider over whole numbers, one by one. */
     @Composable
     fun SliderField(
         label: String,
@@ -298,7 +299,24 @@ object UI {
         minLabel: String = "",
         maxLabel: String = "",
         required: Boolean = true
-    ) = CurrentTheme.current.SliderField(label, value, onValueChange, range, minLabel, maxLabel, required)
+    ) = CurrentTheme.current.SliderField(
+        label, value.toDouble(), { onValueChange(kotlin.math.round(it).toInt()) },
+        range.first.toDouble(), range.last.toDouble(), 1.0, minLabel, maxLabel, required
+    )
+
+    /** A slider that stops every [step] from [min], decimals included (0 to 5 by 0.5). */
+    @Composable
+    fun SliderField(
+        label: String,
+        value: Double,
+        onValueChange: (Double) -> Unit,
+        min: Double,
+        max: Double,
+        step: Double,
+        minLabel: String = "",
+        maxLabel: String = "",
+        required: Boolean = true
+    ) = CurrentTheme.current.SliderField(label, value, onValueChange, min, max, step, minLabel, maxLabel, required)
     
     @Composable
     fun CounterField(

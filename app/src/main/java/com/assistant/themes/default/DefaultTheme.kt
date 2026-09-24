@@ -1121,13 +1121,19 @@ object DefaultTheme : ThemeContract {
     @Composable
     override fun SliderField(
         label: String,
-        value: Int,
-        onValueChange: (Int) -> Unit,
-        range: IntRange,
+        value: Double,
+        onValueChange: (Double) -> Unit,
+        min: Double,
+        max: Double,
+        step: Double,
         minLabel: String,
         maxLabel: String,
         required: Boolean
     ) {
+        // The track ends on the last stop, so every notch Compose draws falls on a step from min
+        val lastStop = com.assistant.core.ui.SliderSteps.lastStop(min, max, step)
+        val decimals = com.assistant.core.ui.SliderSteps.decimals(min, step)
+
         val displayLabel = if (required) label else "$label (optionnel)"
         
         Column(
@@ -1142,7 +1148,7 @@ object DefaultTheme : ThemeContract {
                 horizontalArrangement = Arrangement.Center
             ) {
                 androidx.compose.material3.Text(
-                    text = value.toString(),
+                    text = String.format(java.util.Locale.getDefault(), "%.${decimals}f", value),
                     style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
                     color = CurrentTheme.getCurrentColorScheme().primary
                 )
@@ -1151,9 +1157,9 @@ object DefaultTheme : ThemeContract {
             // Slider
             Slider(
                 value = value.toFloat(),
-                onValueChange = { onValueChange(it.toInt()) },
-                valueRange = range.first.toFloat()..range.last.toFloat(),
-                steps = if (range.last - range.first > 1) range.last - range.first - 1 else 0
+                onValueChange = { onValueChange(com.assistant.core.ui.SliderSteps.snap(it.toDouble(), min, step)) },
+                valueRange = min.toFloat()..lastStop.toFloat(),
+                steps = com.assistant.core.ui.SliderSteps.innerStops(min, lastStop, step)
             )
             
             // Labels min/max
