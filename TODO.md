@@ -24,6 +24,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- Champs `system_managed` appliqués par le service : en CHAT, faire créer et modifier des entrées de tracking par l'IA et vérifier que `raw` est juste. Une IA qui enverrait `created_at` ou `updated_at` n'est plus arrêtée en amont : une valeur mal formée lui revient en erreur de validation au lieu d'être jetée.
 - Planning Messages illisible : le produire demande d'écrire en base un `schedule` avec une clé inconnue (par exemple `"enabled": true`). Puis voir l'avertissement sur l'écran de l'outil, les occurrences déjà prévues rester et partir, l'erreur dans la section récurrence de la config, et un enregistrement sans refaire la récurrence refusé sans rien écraser.
 - Écran des limites IA : qu'il s'ouvre sur 10 et 20, que les deux curseurs s'enregistrent et se retrouvent à la réouverture, puis qu'un CHAT s'arrête bien à la nouvelle limite.
 - Validation de toute écriture par `ToolDataService` : créer et modifier une entrée de chaque type (tracking de chaque sorte, notes avec insertion à une position, journal, occurrence Messages), et une entrée qui porte des champs personnalisés. Puis voir un refus s'afficher à l'écran : une plage de champ personnalisé dont le début dépasse la fin. En CHAT, demander à l'IA d'écrire une valeur hors d'une échelle ou hors des options d'un choix, et voir le refus lui revenir. Une ancienne entrée devenue invalide ne se modifie plus sans être corrigée : c'est voulu, à voir si ça gêne.
