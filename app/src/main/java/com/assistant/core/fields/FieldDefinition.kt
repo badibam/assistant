@@ -181,10 +181,15 @@ private fun formatNumericValue(value: Any?, config: Map<String, Any>?, s: String
  * Format: "value (min à max - "min_label" à "max_label")"
  */
 private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
-    val number = (value as? Number) ?: return s.shared("label_no_value")
+    val number = (value as? Number)?.toDouble() ?: return s.shared("label_no_value")
 
-    val min = (config?.get("min") as? Number) ?: 0
-    val max = (config?.get("max") as? Number) ?: 10
+    val min = (config?.get("min") as? Number)?.toDouble() ?: 0.0
+    val max = (config?.get("max") as? Number)?.toDouble() ?: 10.0
+    val step = (config?.get("step") as? Number)?.toDouble() ?: 1.0
+
+    // As many decimals as the scale's stops carry: 7 on a scale of whole numbers, never 7.0
+    val decimals = com.assistant.core.ui.SliderSteps.decimals(min, step)
+    fun shown(n: Double) = String.format(java.util.Locale.getDefault(), "%.${decimals}f", n)
 
     val minLabel = config?.get("min_label") as? String
     val maxLabel = config?.get("max_label") as? String
@@ -195,7 +200,7 @@ private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsC
         ""
     }
 
-    return "$number ($min à $max$labelsStr)"
+    return "${shown(number)} (${shown(min)} à ${shown(max)}$labelsStr)"
 }
 
 /**

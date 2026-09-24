@@ -1099,7 +1099,7 @@
     <string name="field_validation_scale_min_max_required">The SCALE type needs the min and max values</string>
     <string name="field_validation_scale_min_max_order">The minimum value must be strictly less than the maximum value</string>
     <string name="field_validation_scale_step">The step must be greater than 0</string>
-    <string name="field_validation_scale_step_range_mismatch">The range (max - min) must be divisible by the step</string>
+    <string name="field_validation_scale_bounds_off_step">The minimum and the maximum must be multiples of the step (1 when none is set)</string>
     <string name="field_validation_choice_options_required">The CHOICE type needs a list of options</string>
     <string name="field_validation_choice_options_min">The CHOICE type needs at least 2 options</string>
     <string name="field_validation_choice_options_duplicate">The options cannot contain duplicates</string>

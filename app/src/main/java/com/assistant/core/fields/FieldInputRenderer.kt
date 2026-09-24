@@ -81,23 +81,22 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.SCALE -> {
-            val numValue = (value as? Number)?.toInt() ?: run {
-                val config = fieldDef.config
-                ((config?.get("min") as? Number)?.toInt() ?: 0)
-            }
-
             val config = fieldDef.config
-            val min = (config?.get("min") as? Number)?.toInt() ?: 0
-            val max = (config?.get("max") as? Number)?.toInt() ?: 10
+            val min = (config?.get("min") as? Number)?.toDouble() ?: 0.0
+            val max = (config?.get("max") as? Number)?.toDouble() ?: 10.0
+            val step = (config?.get("step") as? Number)?.toDouble() ?: 1.0
             val minLabel = config?.get("min_label") as? String ?: ""
             val maxLabel = config?.get("max_label") as? String ?: ""
+            // A scale of whole numbers stores whole numbers: 7, not 7.0
+            val wholeNumbers = com.assistant.core.ui.SliderSteps.decimals(min, step) == 0
 
-            // Use SliderField (will need step support added)
             UI.SliderField(
                 label = fieldDef.displayName,
-                value = numValue,
-                onValueChange = { newValue -> onChange(newValue) },
-                range = min..max,
+                value = (value as? Number)?.toDouble() ?: min,
+                onValueChange = { newValue -> onChange(if (wholeNumbers) newValue.toInt() else newValue) },
+                min = min,
+                max = max,
+                step = step,
                 minLabel = minLabel,
                 maxLabel = maxLabel,
                 required = false

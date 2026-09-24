@@ -220,31 +220,30 @@ object FieldConfigValidator {
             )
         }
 
-        // Validate step > 0 if defined
-        val step = config["step"] as? Number
-        if (step != null) {
-            val stepValue = step.toDouble()
-            if (stepValue <= 0) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_scale_step")
-                )
-            }
+        // step > 0, 1 when none is set
+        val step = (config["step"] as? Number)?.toDouble() ?: 1.0
+        if (step <= 0) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_scale_step")
+            )
+        }
 
-            // Validate that (max - min) is divisible by step
-            val range = max.toDouble() - min.toDouble()
-            val epsilon = stepValue * 1e-10 // Floating point tolerance
-            val remainder = range % stepValue
-            if (remainder > epsilon && (stepValue - remainder) > epsilon) {
-                return ValidationResult(
-                    isValid = false,
-                    errorMessage = s.shared("field_validation_scale_step_range_mismatch")
-                )
-            }
+        // Both ends on the step: the value schema checks a scale value with multipleOf, which
+        // counts from 0, so the stops the slider offers from min must be multiples of the step.
+        if (!isMultipleOf(min.toDouble(), step) || !isMultipleOf(max.toDouble(), step)) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_scale_bounds_off_step")
+            )
         }
 
         return ValidationResult(isValid = true)
     }
+
+    /** Whether [value] is a whole number of [step]s, computed on the decimal text so 0.3 is one of 0.1. */
+    internal fun isMultipleOf(value: Double, step: Double): Boolean =
+        java.math.BigDecimal(value.toString()).remainder(java.math.BigDecimal(step.toString())).signum() == 0
 
     /**
      * Validates CHOICE field config.
