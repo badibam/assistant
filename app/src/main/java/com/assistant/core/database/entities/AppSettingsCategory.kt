@@ -54,25 +54,6 @@ object DefaultFormatSettings {
 }
 
 /**
- * Default AI limits configuration
- */
-object DefaultAILimitsSettings {
-    const val JSON = """
-    {
-        "default_query_max_tokens": 2000,
-        "default_chars_per_token": 4.5,
-        "default_prompt_max_tokens": 15000,
-        "chat_max_data_query_iterations": 3,
-        "chat_max_action_retries": 3,
-        "chat_max_autonomous_roundtrips": 10,
-        "automation_max_data_query_iterations": 5,
-        "automation_max_action_retries": 5,
-        "automation_max_autonomous_roundtrips": 20
-    }
-    """
-}
-
-/**
  * Default validation configuration
  * Hierarchy: app > zone > tool > session > AI request (OR logic)
  */

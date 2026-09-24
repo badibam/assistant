@@ -1,5 +1,6 @@
 package com.assistant.core.versioning
 
+import com.assistant.core.database.entities.AppSettingCategories
 import org.json.JSONObject
 import com.assistant.core.utils.LogManager
 
@@ -130,12 +131,14 @@ object JsonTransformers {
      * Transform app configuration JSON
      *
      * @param json The app config JSON string to transform
+     * @param category The settings category the JSON belongs to (format, ai_limits...)
      * @param fromVersion Source version (from backup metadata)
      * @param toVersion Target version (current app version)
      * @return Transformed JSON string
      */
     fun transformAppConfig(
         json: String,
+        category: String,
         fromVersion: Int,
         toVersion: Int,
         context: android.content.Context? = null
@@ -149,6 +152,7 @@ object JsonTransformers {
             for (version in fromVersion until toVersion) {
                 transformed = when (version) {
                     19 -> migrateAppConfigFrom19To20(transformed, context)
+                    31 -> if (category == AppSettingCategories.AI_LIMITS) AILimitsAtV32.rewrite(transformed) else transformed
                     // Example future migration:
                     // 10 -> migrateAppConfigFrom10To11(transformed)
                     else -> transformed // No migrations

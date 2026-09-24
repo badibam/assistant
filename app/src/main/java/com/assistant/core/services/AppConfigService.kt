@@ -9,7 +9,6 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.database.entities.DefaultFormatSettings
-import com.assistant.core.database.entities.DefaultAILimitsSettings
 import com.assistant.core.database.entities.DefaultValidationSettings
 import com.assistant.core.database.entities.DefaultMainScreenSettings
 import com.assistant.core.schemas.AppConfigSchemaProvider
@@ -265,64 +264,30 @@ class AppConfigService(private val context: Context) : ExecutableService {
     /**
      * Get structured AI limits configuration
      */
-    suspend fun getAILimits(): AILimitsConfig {
-        val settings = getAILimitsSettings()
-        return AILimitsConfig(
-            chatMaxAutonomousRoundtrips = settings.optInt("chat_max_autonomous_roundtrips", Int.MAX_VALUE),
-            automationMaxAutonomousRoundtrips = settings.optInt("automation_max_autonomous_roundtrips", 20)
-        )
-    }
+    suspend fun getAILimits(): AILimitsConfig =
+        AILimitsConfig.fromSettingsJson(getAILimitsSettings())
 
     /**
-     * Set AI limits configuration
-     */
-    suspend fun setAILimits(limits: AILimitsConfig) {
-        val settings = JSONObject().apply {
-            // Keep existing token limits
-            val currentSettings = getAILimitsSettings()
-            put("default_query_max_tokens", currentSettings.optInt("default_query_max_tokens", 2000))
-            put("default_chars_per_token", currentSettings.optDouble("default_chars_per_token", 4.5))
-            put("default_prompt_max_tokens", currentSettings.optInt("default_prompt_max_tokens", 15000))
-
-            // Set loop limits
-            put("chat_max_autonomous_roundtrips", limits.chatMaxAutonomousRoundtrips)
-            put("automation_max_autonomous_roundtrips", limits.automationMaxAutonomousRoundtrips)
-        }
-
-        settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())
-    }
-
-    /**
-     * AI Limits settings management with automatic defaults creation
+     * The stored ai_limits settings, written from AILimitsConfig.default() on first use.
+     * Stored settings that cannot be read throw instead of being replaced by the defaults,
+     * which would overwrite what the database holds.
      */
     private suspend fun getAILimitsSettings(): JSONObject {
-        LogManager.service("Getting AI limits settings from database")
         val settingsJson = settingsDao.getSettingsJsonForCategory(AppSettingCategories.AI_LIMITS)
-        return if (settingsJson != null) {
-            try {
-                LogManager.service("Found existing AI limits settings: $settingsJson")
-                JSONObject(settingsJson)
-            } catch (e: Exception) {
-                LogManager.service("Error parsing AI limits settings JSON: ${e.message}", "ERROR", e)
-                createDefaultAILimitsSettings()
-            }
-        } else {
-            LogManager.service("No AI limits settings found, creating defaults")
-            createDefaultAILimitsSettings()
-        }
+            ?: return createDefaultAILimitsSettings()
+        return JSONObject(settingsJson)
     }
 
     private suspend fun createDefaultAILimitsSettings(): JSONObject {
-        LogManager.service("Creating default AI limits settings")
-        val defaultSettings = JSONObject(DefaultAILimitsSettings.JSON.trimIndent())
+        LogManager.service("No AI limits settings found, writing the defaults")
+        val defaultSettings = AILimitsConfig.default().toSettingsJson()
         settingsDao.insertOrUpdateSettings(
             AppSettingsCategory(
                 category = AppSettingCategories.AI_LIMITS,
-                settings = defaultSettings.toString()
+                settings = defaultSettings
             )
         )
-        LogManager.service("Default AI limits settings inserted: $defaultSettings")
-        return defaultSettings
+        return JSONObject(defaultSettings)
     }
 
     /**
@@ -458,7 +423,7 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 settingsDao.updateSettings(category, DefaultFormatSettings.getJson(context))
             }
             AppSettingCategories.AI_LIMITS -> {
-                settingsDao.updateSettings(category, DefaultAILimitsSettings.JSON.trimIndent())
+                settingsDao.updateSettings(category, AILimitsConfig.default().toSettingsJson())
             }
             AppSettingCategories.VALIDATION_CONFIG -> {
                 settingsDao.updateSettings(category, DefaultValidationSettings.JSON.trimIndent())

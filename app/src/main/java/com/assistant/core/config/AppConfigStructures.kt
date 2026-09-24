@@ -84,33 +84,6 @@ data class DateTimeConfig(
 }
 
 /**
- * AI autonomous loop limits configuration
- * Separate limits for CHAT vs AUTOMATION sessions
- */
-data class AILimitsConfig(
-    // ===== CHAT LIMITS =====
-    val chatMaxDataQueryIterations: Int = 3,
-    val chatMaxActionRetries: Int = 3,
-    val chatMaxFormatErrorRetries: Int = 3,
-    val chatMaxAutonomousRoundtrips: Int = 10,
-
-    // ===== AUTOMATION LIMITS =====
-    val automationMaxDataQueryIterations: Int = 5,
-    val automationMaxActionRetries: Int = 5,
-    val automationMaxFormatErrorRetries: Int = 5,
-    val automationMaxAutonomousRoundtrips: Int = 20,
-
-    // ===== CHAT: HOW LONG IT MAY SIT IDLE BEFORE AUTOMATION EVICTS IT (ms) =====
-    // AUTOMATION asks for the slot and CHAT has been idle longer than this -> CHAT is stopped
-    // CHAT has been idle for less than this -> AUTOMATION waits in the queue
-    val chatMaxInactivityBeforeAutomationEviction: Long = 5 * 60 * 1000, // 5 min
-
-    // ===== AUTOMATION : DURÉE MAX OCCUPATION SESSION (ms) =====
-    // Watchdog against runaway loops (CHAT never times out: the user has the stop button)
-    val automationMaxSessionDuration: Long = 10 * 60 * 1000 // 10 min
-)
-
-/**
  * AI action validation configuration
  * Hierarchy: app > zone > tool > session > AI request (OR logic)
  */

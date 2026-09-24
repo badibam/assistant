@@ -4,6 +4,8 @@ import com.assistant.core.ai.data.SessionType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.json.JSONException
+import org.json.JSONObject
 import org.junit.Test
 
 /**
@@ -91,12 +93,15 @@ class AIDomainTypesTest {
 
     // ==================== Which limits a session type gets ====================
 
-    /** A CHAT is not limited: the user stops it by interrupting. */
+    /**
+     * A CHAT is limited too: ten calls the AI makes on its own since the user last stepped in.
+     * Each call is paid for, and nothing else stops an AI that keeps calling itself.
+     */
     @Test
-    fun aChatHasNoRoundtripLimit() {
+    fun aChatIsLimitedToTenCallsInARow() {
         val limits = AILimitsConfig.default().getLimitsForSessionType(SessionType.CHAT)
 
-        assertEquals(Int.MAX_VALUE, limits.maxAutonomousRoundtrips)
+        assertEquals(10, limits.maxAutonomousRoundtrips)
     }
 
     /** An automation is, since nobody is watching it. */
@@ -126,5 +131,21 @@ class AIDomainTypesTest {
 
         assertEquals(5, config.getLimitsForSessionType(SessionType.CHAT).maxAutonomousRoundtrips)
         assertEquals(7, config.getLimitsForSessionType(SessionType.AUTOMATION).maxAutonomousRoundtrips)
+    }
+
+    // ==================== How the limits are stored ====================
+
+    /** What a fresh install writes is what the app reads back. */
+    @Test
+    fun theDefaultsReadBackAsWritten() {
+        val stored = JSONObject(AILimitsConfig.default().toSettingsJson())
+
+        assertEquals(AILimitsConfig.default(), AILimitsConfig.fromSettingsJson(stored))
+    }
+
+    /** A missing limit is an error, not "no limit": it used to be read as unlimited. */
+    @Test(expected = JSONException::class)
+    fun aMissingLimitIsRefused() {
+        AILimitsConfig.fromSettingsJson(JSONObject().put(AILimitsConfig.KEY_AUTOMATION, 20))
     }
 }

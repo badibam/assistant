@@ -192,16 +192,22 @@ class AIStateMachineRoundtripLimitTest {
         assertEquals(SessionEndReason.LIMIT_REACHED, stopped.endReason)
     }
 
-    /** A CHAT is not limited, so the guard never fires on one however long it runs. */
+    /**
+     * The CHAT default stops the AI on the count. The session stays open: it goes back to
+     * IDLE, the call is not placed, and the user has the hand again.
+     */
     @Test
-    fun aChatIsNeverStoppedOnTheCount() {
+    fun aChatAtItsDefaultLimit_handsBackToTheUser() {
         val chatLimits = AILimitsConfig.default().getLimitsForSessionType(SessionType.CHAT)
-        var state = chatAt(Phase.PREPARING_CONTINUATION, roundtrips = 1_000)
+        val preparing = chatAt(
+            Phase.PREPARING_CONTINUATION,
+            roundtrips = chatLimits.maxAutonomousRoundtrips - 1
+        )
 
-        state = AIStateMachine.transition(state, AIEvent.ContinuationReady, chatLimits, T0)
+        val stopped = AIStateMachine.transition(preparing, AIEvent.ContinuationReady, chatLimits, T0)
 
-        assertEquals(Phase.CALLING_AI, state.phase)
-        assertEquals(null, state.endReason)
+        assertEquals(Phase.IDLE, stopped.phase)
+        assertEquals("chat-session", stopped.sessionId)
     }
 
     // ==================== What the count covers ====================

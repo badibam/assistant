@@ -408,7 +408,7 @@ class BackupService(private val context: Context) : ExecutableService {
         database.appSettingsCategoryDao().insertOrUpdateSettings(
             AppSettingsCategory(
                 category = AppSettingCategories.AI_LIMITS,
-                settings = DefaultAILimitsSettings.JSON.trimIndent()
+                settings = com.assistant.core.ai.domain.AILimitsConfig.default().toSettingsJson()
             )
         )
         database.appSettingsCategoryDao().insertOrUpdateSettings(
@@ -689,6 +689,7 @@ class BackupService(private val context: Context) : ExecutableService {
                     // Apply JSON transformations to app config
                     val transformedSettings = JsonTransformers.transformAppConfig(
                         settingsJson,
+                        category.getString("category"),
                         fromVersion,
                         toVersion,
                         context  // Pass context for system detection in migrations
