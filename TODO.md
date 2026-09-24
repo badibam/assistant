@@ -4,6 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
+- Spec « requête IA en cours » (interruption, stop, réseau perdu, timeout) : à concevoir, rien d'écrit. Constat : l'appel HTTP bloquant (jusqu'à 2 + 2 min) tourne dans la boucle qui traite les changements d'état de session (`AIEventProcessor.callAI`), et Stop ou Interrompre ne le coupent pas — cause probable, non mesurée, de l'automation arrêtée sans réseau qui ne se termine jamais. Première question ouverte : Stop coupe-t-il l'appel tout de suite, ou attend-il sa fin pour ignorer la réponse ?
 - Coûts IA : vérifier la méthode de calcul pour chaque fournisseur (Claude, OpenAI), et ce que devient le coût affiché quand un tarif change — suspicion d'erreur, pas de symptôme précis.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
