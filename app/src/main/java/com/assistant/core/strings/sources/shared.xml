@@ -1249,7 +1249,6 @@
     <string name="schedule_pattern">Recurrence type of the schedule</string>
     <string name="schedule_timezone">Time zone of the schedule</string>
     <string name="schedule_day_of_month">Day of the month (1-31) for a monthly recurrence</string>
-    <string name="schedule_enabled">Schedule enabled</string>
     <string name="schedule_start_date">Start date of the runs (timestamp in milliseconds)</string>
     <string name="schedule_end_date">End date of the runs (timestamp in milliseconds)</string>
     <string name="schedule_day_of_week">Day of the week (1=Monday, 7=Sunday)</string>

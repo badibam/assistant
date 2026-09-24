@@ -30,13 +30,26 @@ object ScheduleConfigSchema {
      */
     fun getSchema(context: Context): Schema {
         val s = Strings.`for`(context = context)
+        return Schema(
+            id = SCHEMA_ID,
+            displayName = s.shared("schedule_config_display_name"),
+            description = s.shared("schedule_config_description"),
+            category = SchemaCategory.UTILITY,
+            content = content { key -> s.shared(key) }
+        )
+    }
 
-        val content = """
+    /**
+     * The schema's JSON, [describe] giving the text of each description key. Apart from
+     * Context so the agreement between this schema and ScheduleConfig can be checked on the JVM.
+     */
+    fun content(describe: (String) -> String): String {
+        return """
         {
             "${'$'}schema": "http://json-schema.org/draft-07/schema#",
             "${'$'}id": "$SCHEMA_ID",
             "type": ["object", "null"],
-            "description": "${s.shared("schedule_config_description")}",
+            "description": "${describe("schedule_config_description")}",
 
             "properties": {
                 "pattern": {
@@ -55,7 +68,7 @@ object ScheduleConfigSchema {
                                         "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)${'$'}"
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_daily_times")}"
+                                    "description": "${describe("schedule_daily_times")}"
                                 }
                             },
                             "required": ["type", "times"]
@@ -75,12 +88,12 @@ object ScheduleConfigSchema {
                                         "maximum": 7
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_days_of_week")}"
+                                    "description": "${describe("schedule_days_of_week")}"
                                 },
                                 "time": {
                                     "type": "string",
                                     "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)${'$'}",
-                                    "description": "${s.shared("schedule_time_format")}"
+                                    "description": "${describe("schedule_time_format")}"
                                 }
                             },
                             "required": ["type", "days_of_week", "time"]
@@ -100,18 +113,18 @@ object ScheduleConfigSchema {
                                         "maximum": 12
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_months")}"
+                                    "description": "${describe("schedule_months")}"
                                 },
                                 "day_of_month": {
                                     "type": "integer",
                                     "minimum": 1,
                                     "maximum": 31,
-                                    "description": "${s.shared("schedule_day_of_month")}"
+                                    "description": "${describe("schedule_day_of_month")}"
                                 },
                                 "time": {
                                     "type": "string",
                                     "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)${'$'}",
-                                    "description": "${s.shared("schedule_time_format")}"
+                                    "description": "${describe("schedule_time_format")}"
                                 }
                             },
                             "required": ["type", "months", "day_of_month", "time"]
@@ -132,18 +145,18 @@ object ScheduleConfigSchema {
                                                 "type": "integer",
                                                 "minimum": 1,
                                                 "maximum": 7,
-                                                "description": "${s.shared("schedule_day_of_week")}"
+                                                "description": "${describe("schedule_day_of_week")}"
                                             },
                                             "time": {
                                                 "type": "string",
                                                 "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)${'$'}",
-                                                "description": "${s.shared("schedule_time_format")}"
+                                                "description": "${describe("schedule_time_format")}"
                                             }
                                         },
                                         "required": ["day_of_week", "time"]
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_weekly_moments")}"
+                                    "description": "${describe("schedule_weekly_moments")}"
                                 }
                             },
                             "required": ["type", "moments"]
@@ -164,24 +177,24 @@ object ScheduleConfigSchema {
                                                 "type": "integer",
                                                 "minimum": 1,
                                                 "maximum": 12,
-                                                "description": "${s.shared("schedule_month")}"
+                                                "description": "${describe("schedule_month")}"
                                             },
                                             "day": {
                                                 "type": "integer",
                                                 "minimum": 1,
                                                 "maximum": 31,
-                                                "description": "${s.shared("schedule_day")}"
+                                                "description": "${describe("schedule_day")}"
                                             },
                                             "time": {
                                                 "type": "string",
                                                 "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)${'$'}",
-                                                "description": "${s.shared("schedule_time_format")}"
+                                                "description": "${describe("schedule_time_format")}"
                                             }
                                         },
                                         "required": ["month", "day", "time"]
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_yearly_dates")}"
+                                    "description": "${describe("schedule_yearly_dates")}"
                                 }
                             },
                             "required": ["type", "dates"]
@@ -200,40 +213,27 @@ object ScheduleConfigSchema {
                                         "minimum": 0
                                     },
                                     "minItems": 1,
-                                    "description": "${s.shared("schedule_timestamps")}"
+                                    "description": "${describe("schedule_timestamps")}"
                                 }
                             },
                             "required": ["type", "timestamps"]
                         }
                     ],
-                    "description": "${s.shared("schedule_pattern")}"
-                },
-                "enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "${s.shared("schedule_enabled")}"
+                    "description": "${describe("schedule_pattern")}"
                 },
                 "start_date": {
                     "type": ["integer", "null"],
                     "minimum": 0,
-                    "description": "${s.shared("schedule_start_date")}"
+                    "description": "${describe("schedule_start_date")}"
                 },
                 "end_date": {
                     "type": ["integer", "null"],
                     "minimum": 0,
-                    "description": "${s.shared("schedule_end_date")}"
+                    "description": "${describe("schedule_end_date")}"
                 }
             },
-            "required": ["pattern", "enabled"]
+            "required": ["pattern"]
         }
         """.trimIndent()
-
-        return Schema(
-            id = SCHEMA_ID,
-            displayName = s.shared("schedule_config_display_name"),
-            description = s.shared("schedule_config_description"),
-            category = SchemaCategory.UTILITY,
-            content = content
-        )
     }
 }

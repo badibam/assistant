@@ -8,11 +8,13 @@ import kotlinx.serialization.SerialName
  * Supports 6 types of scheduling patterns
  *
  * Note: Timezone is resolved from AppConfig (user-configured global timezone)
+ *
+ * A schedule carries no on/off switch: what it drives has one. An automation is paused by its
+ * is_enabled column, a Messages tool by the "enabled" at the root of its config.
  */
 @Serializable
 data class ScheduleConfig(
     val pattern: SchedulePattern,
-    val enabled: Boolean = true,
     @SerialName("start_date") val startDate: Long? = null,  // Start executing from this date (null = now)
     @SerialName("end_date") val endDate: Long? = null       // Stop executing after this date (null = indefinite)
 )

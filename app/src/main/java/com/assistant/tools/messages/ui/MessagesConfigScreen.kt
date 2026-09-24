@@ -398,11 +398,9 @@ fun MessagesConfigScreen(
                         commonTitle.takeIf { it.isNotBlank() }?.let { configData["common_title"] = it }
                         commonContent.takeIf { it.isNotBlank() }?.let { configData["common_content"] = it }
 
-                        // Recurrence, without ScheduleConfig's own enabled flag: the switch of a
-                        // Messages template is the root "enabled" above, and storing a second one
-                        // here would leave two switches with only one of them read.
+                        // Recurrence, if any
                         scheduleConfig?.let { schedule ->
-                            configData["schedule"] = scheduleWithoutSwitch(schedule)
+                            configData["schedule"] = JsonUtils.toMap(Json.encodeToString(ScheduleConfig.serializer(), schedule))
                         }
 
                         // Add custom fields if any
@@ -487,47 +485,6 @@ fun MessagesConfigScreen(
             onDismiss = { showScheduleEditor = false }
         )
     }
-}
-
-/**
- * Serializes a recurrence for storage, dropping ScheduleConfig's own "enabled" flag.
- *
- * A Messages template is suspended by the "enabled" field at the root of its config, which
- * covers everything the instance owes and exists even without a recurrence. ScheduleConfig
- * carries a flag of the same name that Messages never reads; storing it would leave two
- * switches with one silently ignored. Its Kotlin default is true, so a recurrence read back
- * without it deserializes unchanged.
- */
-private fun scheduleWithoutSwitch(schedule: ScheduleConfig): Map<String, Any> {
-    val json = JSONObject(Json.encodeToString(ScheduleConfig.serializer(), schedule))
-    json.remove("enabled")
-    return json.toMap()
-}
-
-/** Recursive JSONObject to Map, so the config payload stays plain Kotlin collections. */
-private fun JSONObject.toMap(): Map<String, Any> {
-    val map = mutableMapOf<String, Any>()
-    keys().forEach { key ->
-        when (val value = get(key)) {
-            is JSONObject -> map[key] = value.toMap()
-            is org.json.JSONArray -> map[key] = value.toList()
-            JSONObject.NULL -> Unit // absent rather than null
-            else -> map[key] = value
-        }
-    }
-    return map
-}
-
-private fun org.json.JSONArray.toList(): List<Any> {
-    val list = mutableListOf<Any>()
-    for (i in 0 until length()) {
-        when (val value = get(i)) {
-            is JSONObject -> list.add(value.toMap())
-            is org.json.JSONArray -> list.add(value.toList())
-            else -> list.add(value)
-        }
-    }
-    return list
 }
 
 /** One line describing the recurrence, or what its absence means. */
