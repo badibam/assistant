@@ -40,7 +40,7 @@ import androidx.compose.foundation.verticalScroll
 **Exceptions** : Seuls les conteneurs avec LazyColumn/LazyRow (qui ont leur propre scroll natif) sont exemptés.
 
 ### Headers de Page
-UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies.
+UI.PageHeader supporte titre, sous-titre optionnel, icône, boutons gauche/droite avec actions prédéfinies. Un bouton gauche BACK donne aussi son action à la touche Retour du téléphone : un écran sans ce bouton (formulaire sans en-tête) pose son propre `BackHandler` sur son annulation, et l'accueil demande confirmation avant de fermer l'app.
 
 ## Conventions Générales
 

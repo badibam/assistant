@@ -168,14 +168,14 @@ enum class SystemMessageType {
 data class DataCommand(
     val id: String, // Hash déterministe
     val type: String, // TOOL_DATA, CREATE_DATA, etc.
-    val params: Map<String, Any>,
+    val params: Map<String, Any?>, // un null demande de vider le champ, à tout niveau
     val isRelative: Boolean = false
 )
 
 data class ExecutableCommand(
     val resource: String, // "zones", "tool_data"
     val operation: String, // "get", "batch_create"
-    val params: Map<String, Any>
+    val params: Map<String, Any?>
 )
 
 data class PromptData(
@@ -548,22 +548,22 @@ interface AIProvider {
 ### Pattern extensions
 **Exemple ClaudeExtensions.kt** :
 ```kotlin
-internal fun PromptData.toClaudeJson(config: JSONObject): JsonObject
+internal fun PromptData.toClaudeJson(config: JSONObject, datetimeText: String): JsonObject
 internal fun JsonElement.toClaudeAIResponse(): AIResponse
 ```
 
-**Avantages** : Testable séparément, concis, logique complexe isolée.
+**Avantages** : Testable séparément, concis, logique complexe isolée. Le message daté (horloge et strings) est construit par l'appelant et passé en texte, ce qui garde ces fonctions pures : `ClaudeExtensionsTest` et `OpenAIExtensionsTest` les couvrent sans réseau.
 
 ### Fusion messages (pattern général)
 Le provider fusionne USER/SYSTEM consécutifs pour respecter contraintes API.
 
-**Exemple** : DB (1.USER "Question" → 2.SYSTEM enrichments → 3.AI réponse → 4.SYSTEM queries → 5.USER "Autre") transformé en API (1.USER ["Question", "enrichments"] → 2.ASSISTANT réponse → 3.USER ["queries", "Autre"]).
+**Exemple** : DB (1.USER "Question" → 2.SYSTEM enrichments → 3.AI réponse → 4.SYSTEM queries → 5.USER "Autre") transformé en API (1.USER ["Question", "enrichments"] → 2.ASSISTANT réponse → 3.USER ["queries", "Autre"]). Un message vide est omis, et un message IA vide ne coupe pas le tour utilisateur qui l'entoure.
 
 ### ClaudeProvider - Cache control (spécifique)
-**3 breakpoints** : L1 dernier bloc, L2 dernier bloc, dernier bloc du dernier message historique.
-**Automatic prefix checking** : Messages précédents (sans cache_control) automatiquement cachés (~20 blocs avant le 3ème breakpoint).
+**4 breakpoints**, le maximum de l'API : un par bloc système (L1, L2, L3), et le dernier bloc du dernier message de l'historique. Le message daté vient après, hors breakpoint, puisqu'il change à chaque appel.
+**Automatic prefix checking** : Messages précédents (sans cache_control) automatiquement cachés (~20 blocs avant le dernier breakpoint).
 
-**Structure** : system array avec L1/L2 + cache_control, messages array avec fusion USER/SYSTEM. Le dernier message est forcé en format array pour supporter cache_control sur son dernier bloc.
+**Structure** : system array avec L1/L2/L3 + cache_control, messages array avec fusion USER/SYSTEM. Le dernier message est forcé en format array pour supporter cache_control sur son dernier bloc.
 
 ### DeepSeek - Endpoint compatible Anthropic
 DeepSeek passe par `ClaudeProviderCore` sur son endpoint `/anthropic` (`MessagesApi.DEEPSEEK` : adresse, liste des modèles, niveaux d'effort). Particularités :
@@ -582,10 +582,10 @@ Configurations gérées par `AIProviderConfigService`, providers découverts via
 ```kotlin
 sealed class CommunicationModule {
     abstract val type: String
-    abstract val data: Map<String, Any>
+    abstract val data: Map<String, Any?>
 
-    data class MultipleChoice(type: String = "MultipleChoice", data: Map<String, Any>)
-    data class Validation(type: String = "Validation", data: Map<String, Any>)
+    data class MultipleChoice(type: String = "MultipleChoice", data: Map<String, Any?>)
+    data class Validation(type: String = "Validation", data: Map<String, Any?>)
 }
 ```
 

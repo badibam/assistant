@@ -249,6 +249,7 @@ AppConfigManager.refresh(context) // Après modif config
 - Initialize obligatoire au démarrage
 - Getters throws `IllegalStateException` si non initialisé
 - Pas de fallback en dur (échec explicite)
+- Réglages en base (`app_settings_categories`) : une catégorie absente reçoit ses valeurs par défaut, tirées du seul `AppSettingsDefaults` ; une catégorie illisible ou privée d'une clé obligatoire lève une erreur, jamais remplacée. Les surcharges de format (fuseau, langue, motif de date, 24 h) restent facultatives : absentes, elles suivent le téléphone.
 - Extension : getter dans AppConfigService + cache volatile + initialize + getter public
 
 ## Types de Résultats
