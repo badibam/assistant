@@ -311,6 +311,11 @@ def task_test():
     print(f"{tests} tests, {bad} failed{unchanged}")
     if bad:
         print(f"report: {TEST_REPORT}")
+    # The checks print first, and a green test count below them reads as a verdict. Say
+    # again, last, that the tree is not fit to commit.
+    failed_checks = sum(1 for c in (key_case, prompt, locales, timezones, string_keys) if c)
+    if failed_checks:
+        print(f"{failed_checks} source check(s) failed -- see above")
     return code or key_case or prompt or locales or timezones or string_keys
 
 
