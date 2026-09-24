@@ -34,8 +34,7 @@ fun PredefinedItemsSection(
     onQuickSave: (name: String, properties: Map<String, Any>) -> Unit,
     onOpenDialog: (name: String, properties: Map<String, Any>) -> Unit,
     onEntrySaved: () -> Unit = {},
-    defaultTimestamp: Long = System.currentTimeMillis(),
-    onDefaultTimestampChange: (Long) -> Unit = {}
+    onCustomTimestampChange: (Long?) -> Unit = {}
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
@@ -80,23 +79,14 @@ fun PredefinedItemsSection(
         }
     }
     
-    // Update defaultTimestamp when custom date/time changes
+    // Hand the custom date up while the toggle is on, and null when it is off: null means
+    // "now", read at the moment an entry is saved or a dialog opens
     LaunchedEffect(customDate, customTime, useCustomTimestamp) {
-        LogManager.tracking("LaunchedEffect: customDate=$customDate, customTime=$customTime, useCustom=$useCustomTimestamp")
-        if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
-            val newTimestamp = customTimestampOf(customDate, customTime)
-            LogManager.tracking("Calling onDefaultTimestampChange with: $newTimestamp")
-            onDefaultTimestampChange(newTimestamp)
-        } else {
-            LogManager.tracking("Not updating timestamp - conditions not met")
-        }
-    }
-    
-    // Construct final timestamp to use for saving
-    val finalTimestamp = if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
-        customTimestampOf(customDate, customTime)
-    } else {
-        System.currentTimeMillis() // Always fresh timestamp when toggle is off
+        onCustomTimestampChange(
+            if (useCustomTimestamp && customDate.isNotBlank() && customTime.isNotBlank()) {
+                customTimestampOf(customDate, customTime)
+            } else null
+        )
     }
 
     if (predefinedItems.isNotEmpty()) {
@@ -176,8 +166,7 @@ fun PredefinedItemsSection(
                         },
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
-                        },
-                        customTimestamp = finalTimestamp
+                        }
                     )
                 }
                 
@@ -192,7 +181,6 @@ fun PredefinedItemsSection(
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
                         },
-                        customTimestamp = finalTimestamp,
                         context = context
                     )
                 }
@@ -207,8 +195,7 @@ fun PredefinedItemsSection(
                         },
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
-                        },
-                        customTimestamp = finalTimestamp
+                        }
                     )
                 }
                 
@@ -224,8 +211,7 @@ fun PredefinedItemsSection(
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
                         },
-                        onEntrySaved = onEntrySaved,
-                        customTimestamp = finalTimestamp
+                        onEntrySaved = onEntrySaved
                     )
                 }
                 
@@ -236,8 +222,7 @@ fun PredefinedItemsSection(
                         isLoading = isLoading,
                         onOpenDialog = { name, properties ->
                             onOpenDialog(name, properties)
-                        },
-                        customTimestamp = finalTimestamp
+                        }
                     )
                 }
             }
@@ -278,8 +263,7 @@ private fun NumericItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
-    onOpenDialog: (String, Map<String, Any>) -> Unit,
-    customTimestamp: Long = System.currentTimeMillis()
+    onOpenDialog: (String, Map<String, Any>) -> Unit
 ) {
     val context = LocalContext.current
     items.forEach { item ->
@@ -363,7 +347,6 @@ private fun BooleanItemsLayout(
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
     onOpenDialog: (String, Map<String, Any>) -> Unit,
-    customTimestamp: Long = System.currentTimeMillis(),
     context: android.content.Context
 ) {
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
@@ -437,8 +420,7 @@ private fun CounterItemsLayout(
     config: JSONObject,
     isLoading: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
-    onOpenDialog: (String, Map<String, Any>) -> Unit,
-    customTimestamp: Long = System.currentTimeMillis()
+    onOpenDialog: (String, Map<String, Any>) -> Unit
 ) {
     val allowDecrement = config.optBoolean("allow_decrement", true)
     
@@ -506,8 +488,7 @@ private fun TimerItemsLayout(
     useCustomTimestamp: Boolean,
     onQuickSave: (String, Map<String, Any>) -> Unit,
     onOpenDialog: (String, Map<String, Any>) -> Unit,
-    onEntrySaved: () -> Unit,
-    customTimestamp: Long = System.currentTimeMillis()
+    onEntrySaved: () -> Unit
 ) {
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
@@ -648,8 +629,7 @@ private fun TimerItemsLayout(
 private fun SimpleItemsLayout(
     items: List<TrackingItem>,
     isLoading: Boolean,
-    onOpenDialog: (String, Map<String, Any>) -> Unit,
-    customTimestamp: Long = System.currentTimeMillis()
+    onOpenDialog: (String, Map<String, Any>) -> Unit
 ) {
     items.chunked(2).forEach { rowItems ->
         Row(
