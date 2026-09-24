@@ -7,12 +7,14 @@ promise it makes can stop being true without anything saying so. That has happen
 it announced an ISO timestamp while the schema declared a number, and it still taught a
 field type that a migration removed.
 
-This reads the prompt's JSON examples and asks four questions of them:
+This reads the prompt's JSON examples and asks five questions of them:
 
   1. does every example parse as JSON;
   2. does every custom field type it names still exist in FieldType;
   3. does every key the base data schema declares carry a value of the declared type;
-  4. does every object carry the fields its schema requires.
+  4. does every object carry the fields its schema requires;
+  5. does every icon it names exist -- the icon index is the app's, so a name the model would
+     copy from an example is a name the app accepts.
 
 Question 3 compares against the shape the *model* is given, not the stored one. A property
 the schema marks `"format": "epoch-millis"` is stored as a number and handed to the model as
@@ -59,6 +61,7 @@ BASE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/tools/BaseSchemas.kt
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
 MODULE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/CommunicationModuleSchemas.kt"
 FIELD_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/fields/FieldTypeSchemaProvider.kt"
+ICON_INDEX = ROOT / "app/src/main/assets/icons/index.json"
 
 # A JSON type, as the schema declares it, against the Python types a parsed example yields.
 JSON_TYPES = {
@@ -270,6 +273,7 @@ def main():
     text = PROMPT.read_text(encoding="utf-8")
     types = field_type_names()
     declared = declared_property_types()
+    icon_names = {icon["name"] for icon in json.loads(ICON_INDEX.read_text(encoding="utf-8"))["icons"]}
 
     problems = []
     parsed_count = 0
@@ -290,6 +294,10 @@ def main():
                     problems.append(
                         f'field type "{value}" at {path} is not a FieldType any more'
                     )
+
+            # 5. an icon the prompt names must exist
+            if key == "icon_name" and isinstance(value, str) and value not in icon_names:
+                problems.append(f'icon "{value}" at {path} is not in the icon index')
 
             # 3. a declared key must carry the declared type
             if key in declared and value is not None:

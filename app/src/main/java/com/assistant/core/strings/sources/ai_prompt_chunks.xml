@@ -37,8 +37,10 @@ The application uses a modular architecture built on:
 
 ## Icons
 
-Use only icons from the **Lucide Icons** library for every zone and tool you create or modify.
-Examples: `heart`, `activity`, `calendar`, `clipboard`, `target`, `chart-bar`, and so on.]]></string>
+An icon, for a zone or a tool, is named by its **Lucide** name: `heart`, `activity`, `calendar`, `scale`, `chart-bar`, and so on. Every Lucide icon is available.
+
+- A former Lucide name is accepted and stored under the current one; the answer says so.
+- A name Lucide never had is refused. When unsure, search with the ICONS command rather than guess.]]></string>
 
     <!-- A.3 Automation Completion [DEGREE 1, AUTOMATION only] -->
     <string name="ai_chunk_automation_completion"><![CDATA[## AUTOMATION: signalling that the work is done
@@ -183,7 +185,7 @@ Structure: {{SCHEMA:communication_module_validation}}
       "params": {
         "name": "Finances",
         "description": "Budget tracking and savings",
-        "icon_name": "currency_euro"
+        "icon_name": "euro"
       }
     }
   ],
@@ -316,7 +318,6 @@ Retrieves the current system date and time.
 **Returns**:
 
 - `timestamp` (string): ISO 8601 timestamp with a timezone offset (e.g. `"2025-11-23T14:30:00+01:00"`)
-- `formatted` (string): date and time formatted for display (yyyy-MM-dd HH:mm:ss)
 
 **Use**: reach for this command when you need the current timestamp to create data with precise dates.
 For example: creating a note carrying the exact time it was written.
@@ -327,7 +328,23 @@ Retrieves a JSON schema for validation.
 
 **Parameters**:
 
-- `id` (string, **required**): schema_id]]></string>
+- `id` (string, **required**): schema_id
+
+### ICONS
+
+Searches the icons a zone or a tool can take.
+
+**Parameters** (all optional):
+
+- `categories` (array of strings): category ids; an icon in any of them matches
+- `query` (array of strings): words searched in the icon names and tags, in English; an icon holding any of them matches, and one holding several ranks higher. Give synonyms: `["weight", "scale", "balance"]`
+
+**Returns**:
+
+- Without parameters: `total`, the `categories` (`id`, `count`) and `max_results`. No icon is listed.
+- With parameters: at most `max_results` `icons` (`name`, `tags`), best first; `total`; `truncated`; and `count_by_category`, which says where to narrow a search too wide to list.
+
+Both parameters together: an icon must match both.]]></string>
 
     <!-- C.2 Action commands signatures [DEGREE 1] -->
     <string name="ai_chunk_commands_actions_signatures"><![CDATA[## Action commands
@@ -744,7 +761,7 @@ Creates a tracking tool instance in the Health zone.
   "params": {
     "name": "Finances",
     "description": "Budget tracking and savings",
-    "icon_name": "currency_euro"
+    "icon_name": "euro"
   }
 }
 ```

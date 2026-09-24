@@ -1517,5 +1517,10 @@
     <string name="shared_icon_category_transportation">Transports</string>
     <string name="shared_icon_category_travel">Voyage</string>
     <string name="shared_icon_category_weather">Météo</string>
+    <string name="shared_service_error_icons_param_not_list">\'%1$s\' est une liste de chaînes</string>
+    <string name="shared_service_error_icons_unknown_category">Catégorie d\'icônes inconnue : \'%1$s\'. ICONS sans paramètre liste les catégories</string>
+    <string name="shared_service_error_icon_unknown">Icône inconnue : \'%1$s\'. La commande ICONS cherche les icônes par mot et par catégorie</string>
+    <string name="shared_action_verbalize_icons_overview">Vue d\'ensemble des icônes</string>
+    <string name="shared_action_verbalize_icons_search">Recherche d\'icônes</string>
 
 </resources>

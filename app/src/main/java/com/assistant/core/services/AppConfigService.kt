@@ -494,18 +494,11 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 }
             }
             "get_current_datetime" -> {
-                // Return current timestamp with a readable form for AI: ISO 8601 with its
-                // offset, in the app's timezone, like every date the AI reads
+                // Milliseconds, as everything inside speaks: CommandExecutor turns the timestamp
+                // into the ISO 8601 the model reads, in the app's timezone
                 val currentTimestamp = System.currentTimeMillis()
-                val humanReadable = com.assistant.core.utils.DateTimeConverter.timestampToISO(
-                    currentTimestamp, com.assistant.core.utils.AppConfigManager.getDateTimeConfig().getZoneId()
-                )
-
-                LogManager.service("Current datetime: $humanReadable (timestamp: $currentTimestamp)")
-                OperationResult.success(mapOf(
-                    "timestamp" to currentTimestamp,
-                    "formatted" to humanReadable
-                ))
+                LogManager.service("Current datetime: $currentTimestamp")
+                OperationResult.success(mapOf("timestamp" to currentTimestamp))
             }
             "get_zone_groups" -> {
                 val groups = getZoneGroups()

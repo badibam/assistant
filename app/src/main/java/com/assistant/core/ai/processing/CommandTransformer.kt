@@ -75,6 +75,7 @@ object CommandTransformer {
                     "ZONES" -> transformZonesCommand(command)
                     "TOOL_INSTANCES" -> transformToolInstancesCommand(command)
                     "CURRENT_DATETIME" -> transformCurrentDatetimeCommand(command)
+                    "ICONS" -> transformIconsCommand(command)
                     else -> {
                         val error = s.shared("ai_error_command_unknown_type").format(command.type)
                         LogManager.aiPrompt("Unknown command type: ${command.type}", "WARN")
@@ -270,6 +271,19 @@ object CommandTransformer {
                 params = emptyMap()
             )
         }
+    }
+
+    /**
+     * ICONS with neither categories nor query is the overview; with either, a search. The
+     * lists go through as given, and the service refuses what is not a list.
+     */
+    private fun transformIconsCommand(command: DataCommand): ExecutableCommand {
+        val searchParams = command.params.filterKeys { it == "categories" || it == "query" }
+        return ExecutableCommand(
+            resource = "icons",
+            operation = if (searchParams.isEmpty()) "overview" else "search",
+            params = searchParams
+        )
     }
 
     private fun transformCurrentDatetimeCommand(command: DataCommand): ExecutableCommand? {

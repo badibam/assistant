@@ -757,6 +757,17 @@ class CommandExecutor(private val context: Context) {
                         else -> ""
                     }
                 }
+                "icons" -> when (command.operation) {
+                    "overview" -> "Icons: overview"
+                    else -> {
+                        val query = (command.params["query"] as? List<*>)?.joinToString(", ")
+                        val categories = (command.params["categories"] as? List<*>)?.joinToString(", ")
+                        listOfNotNull(
+                            query?.let { "matching $it" },
+                            categories?.let { "in $it" }
+                        ).joinToString(" ", prefix = "Icons ")
+                    }
+                }
                 else -> {
                     "Data from ${command.resource}.${command.operation}"
                 }

@@ -1473,4 +1473,11 @@
     <string name="icon_category_transportation">Transportation</string>
     <string name="icon_category_travel">Travel</string>
     <string name="icon_category_weather">Weather</string>
+
+    <!-- Icons: the ICONS command and icon names at write time -->
+    <string name="service_error_icons_param_not_list">\'%1$s\' is a list of strings</string>
+    <string name="service_error_icons_unknown_category">Unknown icon category: \'%1$s\'. ICONS without parameters lists the categories</string>
+    <string name="service_error_icon_unknown">Unknown icon: \'%1$s\'. The ICONS command searches the icons by word and category</string>
+    <string name="action_verbalize_icons_overview">Overview of the icons</string>
+    <string name="action_verbalize_icons_search">Search of the icons</string>
 </resources>
