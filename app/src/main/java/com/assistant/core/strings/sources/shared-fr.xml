@@ -643,8 +643,6 @@
     <string name="tools_base_schema_config_management"></string>
     <string name="tools_base_schema_config_display_mode"></string>
     <string name="tools_base_schema_config_icon_name"></string>
-    <string name="tools_base_schema_config_config_validation"></string>
-    <string name="tools_base_schema_config_data_validation"></string>
     <string name="tools_base_schema_config_schema_id"></string>
     <string name="tools_base_schema_config_data_schema_id"></string>
     <string name="tools_base_schema_config_always_send">Toujours envoyer les données à l\'IA (Level 2)</string>
@@ -668,7 +666,6 @@
     <string name="zone_config_schema_display_name"></string>
     <string name="zone_config_schema_description">Schéma de configuration pour les zones</string>
     <string name="app_config_format_schema_display_name"></string>
-    <string name="main_screen_config_schema_display_name"></string>
 
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
     <string name="app_config_schema_format_week_start_day">Jour de début de semaine</string>
@@ -684,12 +681,6 @@
     <string name="app_config_schema_format_week_limit">Nombre de semaines avant passage à mois</string>
     <string name="app_config_schema_format_month_limit">Nombre de mois avant passage à années</string>
     <string name="app_config_schema_format_year_limit">Nombre d\'années avant passage à date absolue</string>
-
-    <!-- MAIN SCREEN SCHEMA - Descriptions pour validation écran principal -->
-    <string name="main_screen_schema_zone_display_mode"></string>
-    <string name="main_screen_schema_show_zone_descriptions"></string>
-    <string name="main_screen_schema_zones_per_row"></string>
-    <string name="main_screen_schema_enable_quick_actions"></string>
 
     <!-- ZONE SCHEMA - Descriptions pour validation zones -->
     <string name="zone_schema_name"></string>
@@ -1509,11 +1500,6 @@
     <string name="error_resume_session">Impossible de reprendre la conversation</string>
     <string name="error_unknown">Erreur inconnue</string>
     <string name="app_config_format_schema_description">Formats de date, d\'heure et d\'affichage de l\'app</string>
-    <string name="main_screen_config_schema_description">Disposition de l\'écran d\'accueil</string>
-    <string name="main_screen_zone_display_mode">Affichage des zones</string>
-    <string name="main_screen_show_zone_descriptions">Afficher les descriptions des zones</string>
-    <string name="main_screen_zones_per_row">Zones par ligne</string>
-    <string name="main_screen_enable_quick_actions">Actions rapides</string>
     <string name="service_error_invalid_timestamp_format">Horodatage illisible : %1$s</string>
     <string name="service_error_tool_groups_empty_name">Un nom de groupe ne peut pas être vide</string>
     <string name="service_error_tool_groups_duplicate">Le groupe \'%1$s\' existe déjà</string>
