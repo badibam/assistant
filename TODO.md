@@ -31,6 +31,7 @@ Un point dans `docs/design/architecture-audit-debt.md` : la validation désactiv
 
 ## À vérifier sur l'appareil
 
+- Planning sans son propre `enabled` : créer puis modifier la récurrence d'un outil Messages et voir les messages partir ; mettre l'outil en pause par son interrupteur et voir les envois s'arrêter ; créer une automation planifiée et vérifier sa prochaine exécution sur sa carte. Puis, en CHAT, demander à l'IA de poser une récurrence sur un outil Messages.
 - `JsonUtils` échoue désormais sur une valeur qu'il ne sait pas traduire, au lieu de l'enregistrer sous forme de texte ou de la perdre. Les 15 appels de `toMap`/`toList` ont été relus ; les 38 de `toJSONObject` non. Faire un tour des écrans (créer et modifier une zone, un outil de chaque type, une automation, les réglages) et une session CHAT qui crée et modifie des données, puis filtrer l'écran des journaux sur « Error » et y chercher `No JSON form`.
 - Curseurs, passés aux décimaux : que ceux des réglages de format et la note d'un tracking d'échelle se comportent comme avant ; qu'un champ échelle de 1 à 10 affiche et enregistre « 7 » et non « 7.0 » ; qu'une échelle de 0 à 5 par 0.5 s'arrête sur chaque demi-point et affiche « 3,5 » ; que l'éditeur refuse une échelle de 1 à 10 par 2.
 - DeepSeek, après que les compteurs d'usage sont devenus obligatoires : qu'une session CHAT avec DeepSeek passe toujours (elle échouerait si DeepSeek n'envoyait pas `input_tokens` ou `output_tokens`), et que son coût s'affiche.
