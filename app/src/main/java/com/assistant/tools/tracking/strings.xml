@@ -180,6 +180,7 @@
 
     <!-- SCHEMAS DATA - Descriptions for AI validation -->
     <string name="schema_data_type">Kind of value recorded; must match the tool\'s configuration</string>
+    <string name="schema_data_raw">Display text of the value, computed by the app on every write; never written by the AI</string>
     <string name="schema_data_numeric_quantity">Quantity recorded</string>
     <string name="schema_data_numeric_unit">Unit of the quantity</string>
     <string name="schema_data_scale_rating">Rating given, between min_value and max_value</string>

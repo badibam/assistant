@@ -16,6 +16,10 @@ import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
+import com.assistant.core.validation.SchemaValidator
+import com.assistant.core.fields.CustomFieldsSchemaGenerator
+import com.assistant.core.fields.FieldValueValidator
+import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.utils.LogManager
 
 /**
@@ -74,14 +78,22 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        // Handle position-based insertion
+        // Position-based insertion: the new entry takes the position now, the entries after it
+        // move only once the entry is known to be valid
         var finalDataJson = dataJson
         if (insertPosition != null) {
-            finalDataJson = handlePositionInsertion(toolInstanceId, tooltype, dataJson, insertPosition)
+            finalDataJson = JSONObject(dataJson).put("position", insertPosition).toString()
         }
 
         // Enrich data with auto-generated fields (e.g., raw display field for tracking)
         finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, finalDataJson, name)
+
+        validateEntry(toolInstanceId, tooltype, name, timestamp, finalDataJson, customFieldsJson)
+            ?.let { return OperationResult.error(it) }
+
+        if (insertPosition != null) {
+            shiftPositionsFrom(toolInstanceId, insertPosition)
+        }
 
         val now = System.currentTimeMillis()
         val entity = ToolDataEntity(
@@ -113,19 +125,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
-    /**
-     * Handle position-based insertion by shifting existing positions and setting new position
-     */
-    private suspend fun handlePositionInsertion(
-        toolInstanceId: String,
-        tooltype: String,
-        dataJson: String,
-        insertPosition: Int
-    ): String {
+    /** Make room for an entry inserted at [insertPosition]: the entries at or after it move down one. */
+    private suspend fun shiftPositionsFrom(toolInstanceId: String, insertPosition: Int) {
         val dao = getToolDataDao()
         val existingEntries = dao.getByToolInstance(toolInstanceId)
 
-        // 1. Shift positions >= insertPosition
+        // Shift positions >= insertPosition
         existingEntries.forEach { entry ->
             val entryData = JSONObject(entry.data)
             val currentPosition = entryData.optInt("position", -1)
@@ -140,11 +145,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 dao.update(updatedEntity)
             }
         }
-
-        // 2. Set position for new entry
-        val newData = JSONObject(dataJson)
-        newData.put("position", insertPosition)
-        return newData.toString()
     }
 
     private suspend fun updateEntry(params: JSONObject, token: CancellationToken): OperationResult {
@@ -237,6 +237,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
             name = name ?: existingEntity.name,
             updatedAt = System.currentTimeMillis()
         )
+
+        // The whole entry is checked, not only the fields sent: after the merge it is what will be stored
+        validateEntry(
+            updatedEntity.toolInstanceId, updatedEntity.tooltype, updatedEntity.name,
+            updatedEntity.timestamp, updatedEntity.data, updatedEntity.customFields
+        )?.let { return OperationResult.error(it) }
 
         dao.update(updatedEntity)
 
@@ -906,6 +912,57 @@ class ToolDataService(private val context: Context) : ExecutableService {
             )
             dataJson
         }
+    }
+
+    /**
+     * Check an entry exactly as it is about to be stored: against its tool's data schema, custom
+     * fields included, then against the value rules a schema cannot state (a RANGE's start <= end).
+     *
+     * Every write goes through here, whoever makes it -- a screen, the AI, the scheduler, a batch
+     * -- so nothing the schema refuses can be stored. The config is read straight from the
+     * database, the tool's own schema enriched with its custom fields.
+     *
+     * @return The error to hand back, or null when the entry is valid
+     */
+    private suspend fun validateEntry(
+        toolInstanceId: String,
+        tooltype: String,
+        name: String?,
+        timestamp: Long?,
+        dataJson: String,
+        customFieldsJson: String?
+    ): String? {
+        val toolInstance = AppDatabase.getDatabase(context).toolInstanceDao().getToolInstanceById(toolInstanceId)
+            ?: return s.shared("service_error_tool_instance_not_found")
+        val config = JSONObject(toolInstance.config_json)
+        val dataSchemaId = config.optString("data_schema_id").takeIf { it.isNotBlank() }
+            ?: return s.shared("service_error_tool_no_data_schema")
+        val schema = ToolTypeManager.getToolType(tooltype)?.getSchema(dataSchemaId, context)
+            ?: return s.shared("service_error_data_schema_not_found").format(dataSchemaId, tooltype)
+        val enriched = schema.copy(content = CustomFieldsSchemaGenerator.enrichSchema(schema.content, toolInstance.config_json))
+
+        val customFields = customFieldsJson?.let { JsonUtils.toMap(it) }?.takeIf { it.isNotEmpty() }
+        val entry = mutableMapOf<String, Any?>(
+            "tool_instance_id" to toolInstanceId,
+            "tooltype" to tooltype,
+            "data" to JsonUtils.toMap(dataJson)
+        )
+        timestamp?.let { entry["timestamp"] = it }
+        name?.let { entry["name"] = it }
+        customFields?.let { entry["custom_fields"] = it }
+
+        val result = SchemaValidator.validate(enriched, entry, context)
+        if (!result.isValid) return result.errorMessage ?: s.shared("service_error_validation_failed").format("")
+
+        // What the schema cannot say, field by field
+        val fields = config.optJSONArray("custom_fields")?.toFieldDefinitions() ?: emptyList()
+        for (field in fields) {
+            val fieldResult = FieldValueValidator.validate(field, customFields?.get(field.name), context)
+            if (!fieldResult.isValid) {
+                return s.shared("error_custom_field_validation_failed").format(field.displayName, fieldResult.errorMessage ?: "")
+            }
+        }
+        return null
     }
 
     /**

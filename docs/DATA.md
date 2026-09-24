@@ -182,31 +182,9 @@ UI.ValidationHelper.validateAndSave(
 
 #### Données d'entrée
 
-Le `schema_id` est passé au niveau des paramètres de service, séparé du JSON des données :
+Toute entrée est validée par `ToolDataService` avant d'être écrite, quel que soit l'appelant — écran, IA, planificateur, lot. Le service lit le `data_schema_id` dans la config de l'outil (pas dans les paramètres), l'enrichit des champs personnalisés de cette config (`CustomFieldsSchemaGenerator`), et valide l'entrée telle qu'elle sera stockée : après la fusion pour une modification, après l'ajout des champs calculés (le `raw` du tracking, déclaré `system_managed`). Viennent ensuite les règles qu'un schéma ne sait pas dire, par `FieldValueValidator` (le début d'une plage avant sa fin). Une entrée refusée n'écrit rien.
 
-```kotlin
-val params = mapOf(
-    "toolInstanceId" to toolInstanceId,
-    "tooltype" to "tracking",
-    "schema_id" to "tracking_data_numeric", // Pour validation service
-    "data" to JSONObject(dataJson) // JSON propre sans schema_id
-)
-
-coordinator.processUserAction("tool_data.create", params)
-```
-
-### Validation Service
-
-ToolDataService récupère le `schema_id` depuis les paramètres et l'ajoute à la structure de validation :
-
-```kotlin
-val schemaId = params.optString("schema_id")
-if (schemaId.isNotEmpty()) {
-    fullDataMap["schema_id"] = schemaId // Ajout au niveau racine
-}
-val schema = toolType.getSchema(schemaId, context)
-SchemaValidator.validate(schema, fullDataMap, context)
-```
+La validation que font les écrans et `ActionValidator` avant d'appeler le service sert à répondre tôt, dans le formulaire ou à l'IA ; elle n'est pas la garde.
 
 ### Schémas de Base
 

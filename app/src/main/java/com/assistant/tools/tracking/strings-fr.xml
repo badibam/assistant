@@ -180,6 +180,7 @@
 
     <!-- SCHEMAS DATA - Descriptions pour validation IA -->
     <string name="schema_data_type">Nature de la valeur enregistrée ; doit correspondre à la configuration de l\'outil</string>
+    <string name="schema_data_raw">Texte d\'affichage de la valeur, calculé par l\'app à chaque écriture ; jamais écrit par l\'IA</string>
     <string name="schema_data_numeric_quantity">Quantité enregistrée</string>
     <string name="schema_data_numeric_unit">Unité de la quantité</string>
     <string name="schema_data_scale_rating">Note donnée, entre min_value et max_value</string>

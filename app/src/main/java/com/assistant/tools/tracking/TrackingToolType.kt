@@ -485,6 +485,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_numeric_unit")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "quantity"],
@@ -543,6 +548,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_scale_max_label")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "rating", "min_value", "max_value"],
@@ -593,6 +603,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.SHORT_LENGTH},
                             "description": "${s.tool("schema_data_boolean_false_label")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "state"],
@@ -642,6 +657,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                                 "type": "string",
                                 "maxLength": ${FieldLimits.SHORT_LENGTH}
                             }
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "selected_option", "available_options"],
@@ -682,6 +702,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                         "increment": {
                             "type": "integer",
                             "description": "${s.tool("schema_data_counter_increment")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "increment"],
@@ -723,6 +748,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "integer",
                             "minimum": 0,
                             "description": "${s.tool("schema_data_timer_duration_seconds")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "duration_seconds"],
@@ -764,6 +794,11 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                             "type": "string",
                             "maxLength": ${FieldLimits.LONG_LENGTH},
                             "description": "${s.tool("schema_data_text_content")}"
+                        },
+                        "raw": {
+                            "type": "string",
+                            "system_managed": true,
+                            "description": "${s.tool("schema_data_raw")}"
                         }
                     },
                     "required": ["type", "text"],

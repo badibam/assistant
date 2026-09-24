@@ -787,6 +787,8 @@
     <string name="service_error_zone_id_tool_type_required">ID de zone et type d'outil obligatoires</string>
     <string name="service_error_tool_instance_id_required">ID d'instance d'outil obligatoire</string>
     <string name="service_error_tool_instance_not_found">Instance d'outil introuvable</string>
+    <string name="service_error_tool_no_data_schema">La config de l\'outil ne nomme aucun schéma de données (data_schema_id)</string>
+    <string name="service_error_data_schema_not_found">Aucun schéma de données \'%1$s\' pour le type d\'outil %2$s</string>
     <string name="service_error_no_data_found">Aucune donnée trouvée pour l'opération %1$s</string>
     <string name="service_error_no_results_found">Aucun résultat trouvé pour l'opération %1$s</string>
     <string name="service_error_invalid_phase">Phase invalide: %1$s</string>

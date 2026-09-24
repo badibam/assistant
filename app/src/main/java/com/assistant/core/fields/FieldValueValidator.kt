@@ -7,7 +7,7 @@ import com.assistant.core.strings.Strings
  * Validates field values for custom fields.
  *
  * This validator handles business constraints that are not expressible in JSON Schema.
- * It is called by ToolDataService.execute() after SchemaValidator, before persistence.
+ * It is called by ToolDataService.validateEntry after SchemaValidator, before every write.
  *
  * Main use case: RANGE type with start <= end constraint
  * Other types are generally handled by JSON Schema validation.

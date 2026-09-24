@@ -787,6 +787,8 @@
     <string name="service_error_zone_id_tool_type_required">Zone ID and tool type required</string>
     <string name="service_error_tool_instance_id_required">Tool instance ID required</string>
     <string name="service_error_tool_instance_not_found">Tool instance not found</string>
+    <string name="service_error_tool_no_data_schema">The tool\'s config names no data schema (data_schema_id)</string>
+    <string name="service_error_data_schema_not_found">No data schema \'%1$s\' for the tooltype %2$s</string>
     <string name="service_error_no_data_found">No data found for the %1$s operation</string>
     <string name="service_error_no_results_found">No result found for the %1$s operation</string>
     <string name="service_error_invalid_phase">Invalid phase: %1$s</string>
