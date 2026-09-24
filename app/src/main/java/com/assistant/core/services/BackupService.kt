@@ -174,7 +174,6 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("type", session.type)
                                 put("require_validation", session.requireValidation)
                                 put("phase", session.phase)
-                                put("waiting_context_json", session.waitingContextJson)
                                 put("total_roundtrips", session.totalRoundtrips)
                                 put("last_event_time", session.lastEventTime)
                                 put("last_user_interaction_time", session.lastUserInteractionTime)
@@ -530,7 +529,6 @@ class BackupService(private val context: Context) : ExecutableService {
                         type = SessionType.valueOf(item.getString("type")),
                         requireValidation = item.getBoolean("require_validation"),
                         phase = item.getString("phase"),
-                        waitingContextJson = item.optString("waiting_context_json", null),
                         totalRoundtrips = item.getInt("total_roundtrips"),
                         lastEventTime = item.getLong("last_event_time"),
                         lastUserInteractionTime = item.getLong("last_user_interaction_time"),

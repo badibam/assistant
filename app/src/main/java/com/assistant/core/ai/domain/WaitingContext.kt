@@ -7,8 +7,10 @@ import com.assistant.core.ai.validation.ValidationContext
 /**
  * Context data when AI execution is waiting for user interaction.
  *
- * Used by AIState to persist waiting state information.
- * This context is stored in DB as JSON for recovery after app restart.
+ * Held in AIState only, never stored: it derives entirely from the last AI message (its
+ * action commands, or its communication module) and the validation rules. A session restored
+ * in a waiting phase gets it back from AIEventProcessor, which builds it on entering that
+ * phase exactly as it did the first time.
  *
  * Architecture: Event-Driven State Machine (V2)
  * - Validation: Actions pending approval (WAITING_VALIDATION phase)
@@ -34,83 +36,4 @@ sealed class WaitingContext {
         val communicationModule: CommunicationModule,
         val aiMessageId: String
     ) : WaitingContext()
-
-    /**
-     * Waiting for system auto-confirmation of completion (AUTOMATION only).
-     *
-     * This state is used to give a small delay (1s) before auto-confirming
-     * completion when AI sets completed=true in AUTOMATION sessions.
-     *
-     * User can still click "Rejeter" during this window to reject completion
-     * and allow AI to continue working.
-     *
-     * @param aiMessageId ID of the AI message that set completed=true
-     * @param scheduledConfirmationTime Timestamp when auto-confirmation should trigger
-     */
-
-    /**
-     * Serialize waiting context to JSON string for DB storage.
-     */
-    fun toJson(): String {
-        return when (this) {
-            is Validation -> """
-                {
-                    "type": "Validation",
-                    "validation_context": ${validationContextToJson(validationContext)}
-                }
-            """.trimIndent()
-
-            is Communication -> """
-                {
-                    "type": "Communication",
-                    "communication_module": ${communicationModuleToJson(communicationModule)},
-                    "ai_message_id": "$aiMessageId"
-                }
-            """.trimIndent()
-
-        }
-    }
-
-    companion object {
-        /**
-         * Deserialize waiting context from JSON string.
-         * Returns null if parsing fails.
-         */
-        fun fromJson(jsonString: String): WaitingContext? {
-            // TODO: Implement JSON deserialization when needed for recovery
-            // For now, waiting contexts are reconstructed from DB state on app restart
-            return null
-        }
-
-        /**
-         * Helper to serialize ValidationContext to JSON
-         */
-        private fun validationContextToJson(context: ValidationContext): String {
-            // Simplified serialization - full reconstruction from DB on restart
-            return """{"ai_message_id": "${context.aiMessageId}"}"""
-        }
-
-        /**
-         * Helper to serialize CommunicationModule to JSON
-         */
-        private fun communicationModuleToJson(module: CommunicationModule): String {
-            // Use AIMessage serialization logic
-            return """{"type": "${module.type}", "data": ${dataToJson(module.data)}}"""
-        }
-
-        /**
-         * Helper to serialize Map<String, Any> to JSON
-         */
-        private fun dataToJson(data: Map<String, Any>): String {
-            val entries = data.entries.joinToString(", ") { (key, value) ->
-                val valueStr = when (value) {
-                    is String -> "\"$value\""
-                    is List<*> -> "[${value.joinToString(", ") { "\"$it\"" }}]"
-                    else -> value.toString()
-                }
-                "\"$key\": $valueStr"
-            }
-            return "{$entries}"
-        }
-    }
 }

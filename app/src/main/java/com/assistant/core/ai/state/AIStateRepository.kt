@@ -184,7 +184,6 @@ class AIStateRepository(
                 // Update entity with new state values
                 val updatedEntity = existingSession.copy(
                     phase = state.phase.name,
-                    waitingContextJson = state.waitingContext?.toJson(),
                     totalRoundtrips = state.totalRoundtrips,
                     lastEventTime = state.lastEventTime,
                     lastUserInteractionTime = state.lastUserInteractionTime,
@@ -219,9 +218,9 @@ class AIStateRepository(
             totalRoundtrips = entity.totalRoundtrips,
             lastEventTime = entity.lastEventTime,
             lastUserInteractionTime = entity.lastUserInteractionTime,
-            waitingContext = entity.waitingContextJson?.let {
-                WaitingContext.fromJson(it)
-            }
+            // Not stored: AIEventProcessor builds it again from the last AI message when the
+            // restored phase is a waiting one, as it did on entering that phase.
+            waitingContext = null
         )
     }
 

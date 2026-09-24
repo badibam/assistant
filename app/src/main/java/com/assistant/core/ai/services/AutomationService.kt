@@ -329,7 +329,6 @@ class AutomationService(private val context: Context) : ExecutableService {
             endReason = null,
             automationId = null, // Will be set after automation is created
             phase = "IDLE",
-            waitingContextJson = null,
             totalRoundtrips = 0,
             lastEventTime = now,
             lastUserInteractionTime = now,
