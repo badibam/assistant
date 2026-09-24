@@ -4,6 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
+- Coûts IA : vérifier la méthode de calcul pour chaque fournisseur (Claude, OpenAI), et ce que devient le coût affiché quand un tarif change — suspicion d'erreur, pas de symptôme précis.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
