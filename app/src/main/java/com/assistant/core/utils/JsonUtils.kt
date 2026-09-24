@@ -1,6 +1,5 @@
 package com.assistant.core.utils
 
-import com.assistant.core.utils.LogManager
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -17,7 +16,8 @@ import org.json.JSONObject
  * Solution:
  * - Recursive conversion Kotlin → JSON: Map → JSONObject, List → JSONArray
  * - Recursive conversion JSON → Kotlin: JSONObject → Map, JSONArray → List
- * - String JSON → Map parsing with error handling
+ * - String JSON → Map parsing
+ * - A value with no JSON form fails, rather than being stored as its text or dropped
  * - Primitives preserved bidirectionally (String, Int, Long, Double, Boolean, null)
  *
  * Usage:
@@ -64,13 +64,19 @@ object JsonUtils {
                 toJSONObject(value as Map<String, Any?>)
             }
 
-            value is List<*> -> {
+            // Any collection is an array: a Set would otherwise fall through to its text "[a, b]"
+            value is Collection<*> -> {
                 val jsonArray = JSONArray()
                 value.forEach { item ->
                     jsonArray.put(toJSONValue(item))
                 }
                 jsonArray
             }
+
+            value is Array<*> -> toJSONValue(value.toList())
+
+            // An enum value is stored under its name
+            value is Enum<*> -> value.name
 
             // Primitives - keep as-is (JSONObject.put handles these natively)
             value is String || value is Int || value is Long || value is Double || value is Boolean -> value
@@ -81,14 +87,8 @@ object JsonUtils {
                 else -> value.toLong()
             }
 
-            // Unknown type - log warning and convert to string as fallback
-            else -> {
-                LogManager.service(
-                    "Unknown value type during JSON conversion: ${value.javaClass.name} - converting to string",
-                    "WARN"
-                )
-                value.toString()
-            }
+            // Its text would be stored in place of the value, with nothing to tell it apart
+            else -> throw IllegalArgumentException("No JSON form for a ${value.javaClass.name}")
         }
     }
 
@@ -103,6 +103,7 @@ object JsonUtils {
      * @param value JSONObject, String JSON, or Map
      * @return Mutable Map with all JSON types converted to Kotlin equivalents
      * @throws org.json.JSONException if String cannot be parsed as valid JSON
+     * @throws IllegalArgumentException for any other type
      */
     fun toMap(value: Any?): MutableMap<String, Any?> {
         return when (value) {
@@ -121,13 +122,8 @@ object JsonUtils {
                 jsonObjectToMap(value)
             }
             null -> mutableMapOf()
-            else -> {
-                LogManager.service(
-                    "Unexpected type in toMap: ${value.javaClass.name} - returning empty map",
-                    "WARN"
-                )
-                mutableMapOf()
-            }
+            // An empty map would read as an object holding nothing, and the value would be lost
+            else -> throw IllegalArgumentException("Not a JSON object: a ${value.javaClass.name}")
         }
     }
 
@@ -154,13 +150,7 @@ object JsonUtils {
             is List<*> -> value.map { fromJSONValue(it) }
             is JSONArray -> (0 until value.length()).map { fromJSONValue(value.get(it)) }
             is String -> if (value.isBlank()) emptyList() else toList(JSONArray(value))
-            else -> {
-                LogManager.service(
-                    "Unexpected type in toList: ${value.javaClass.name} - returning empty list",
-                    "WARN"
-                )
-                emptyList()
-            }
+            else -> throw IllegalArgumentException("Not a JSON array: a ${value.javaClass.name}")
         }
     }
 
@@ -209,14 +199,7 @@ object JsonUtils {
             // Already converted Map/List - keep as-is
             value is Map<*, *> || value is List<*> -> value
 
-            // Unknown type - log warning and convert to string as fallback
-            else -> {
-                LogManager.service(
-                    "Unknown value type during fromJSON conversion: ${value.javaClass.name} - converting to string",
-                    "WARN"
-                )
-                value.toString()
-            }
+            else -> throw IllegalArgumentException("Not a JSON value: a ${value.javaClass.name}")
         }
     }
 }
