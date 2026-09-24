@@ -111,7 +111,6 @@ object LogManager {
 
     fun aiService(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
         safeLog("AIService", message, level, throwable)
-        safeLog("Service", message, level, throwable)
     }
 
     fun aiEnrichment(message: String, level: String = "DEBUG", throwable: Throwable? = null) {
@@ -119,17 +118,11 @@ object LogManager {
     }
 
     private fun safeLog(tag: String, message: String, level: String, throwable: Throwable?) {
-        try {
-            // Replace simple escaped characters, but keep double escapes for debug
-            // Strategy: protect double escapes, replace simple escapes, restore double escapes
-            val readableMessage = message
-                .replace("\\\\n", "\uE000")     // Protect \\n (double escape) with placeholder
-                .replace("\\\\\"", "\uE001")    // Protect \\\" (double escape) with placeholder
-                .replace("\\n", "\n")           // Replace \n (simple escape) with real newline
-                .replace("\\\"", "\"")          // Replace \" (simple escape) with real quote
-                .replace("\uE000", "\\\\n")     // Restore \\n (double escape)
-                .replace("\uE001", "\\\\\"")    // Restore \\\" (double escape)
+        // Cut first: every step below copies the message, and a message can hold a whole query
+        // result. Neither logcat nor the logs table would keep more than this anyway.
+        val readableMessage = unescape(truncate(message, MAX_MESSAGE_LENGTH))
 
+        try {
             // Console logging (always)
             when (level.uppercase()) {
                 "VERBOSE" -> Log.v(tag, readableMessage, throwable)
@@ -145,17 +138,25 @@ object LogManager {
 
         } catch (e: Exception) {
             // Fallback for tests (no Android Log available)
-            val readableMessage = message
-                .replace("\\\\n", "\uE000")
-                .replace("\\\\\"", "\uE001")
-                .replace("\\n", "\n")
-                .replace("\\\"", "\"")
-                .replace("\uE000", "\\\\n")
-                .replace("\uE001", "\\\\\"")
             println("LogManager fallback - $tag: $readableMessage")
             throwable?.let { println("Exception: ${it.message}") }
         }
     }
+
+    private fun truncate(text: String, max: Int): String =
+        if (text.length > max) text.take(max) + "\n[... truncated ${text.length - max} chars]" else text
+
+    /**
+     * Replace simple escaped characters, but keep double escapes for debug.
+     * Strategy: protect double escapes, replace simple escapes, restore double escapes.
+     */
+    private fun unescape(text: String): String = text
+        .replace("\\\\n", "\uE000")     // Protect \\n (double escape) with placeholder
+        .replace("\\\\\"", "\uE001")    // Protect \\\" (double escape) with placeholder
+        .replace("\\n", "\n")           // Replace \n (simple escape) with real newline
+        .replace("\\\"", "\"")          // Replace \" (simple escape) with real quote
+        .replace("\uE000", "\\\\n")     // Restore \\n (double escape)
+        .replace("\uE001", "\\\\\"")    // Restore \\\" (double escape)
 
     /**
      * Persist log entry to database with automatic purge
@@ -163,9 +164,9 @@ object LogManager {
      *
      * Features:
      * - Inserts log to database with size limits to prevent overflow
-     * - Truncates messages and stack traces to prevent CursorWindow overflow
+     * - Truncates stack traces to prevent CursorWindow overflow (messages arrive already cut)
      * - Probabilistic purge check (1 in N chance) to limit DB queries
-     * - Keeps only MAX_LOG_COUNT most recent logs
+     * - Keeps each class of levels under its own ceiling (MAX_CHATTY_LOGS, MAX_KEPT_LOGS)
      *
      * Note: GlobalScope is appropriate here because logs are:
      * - Fire-and-forget operations
@@ -179,26 +180,14 @@ object LogManager {
             try {
                 val database = AppDatabase.getDatabase(ctx)
 
-                // Truncate message if too long to prevent CursorWindow overflow
-                val truncatedMessage = if (message.length > MAX_MESSAGE_LENGTH) {
-                    message.take(MAX_MESSAGE_LENGTH) + "\n[... truncated ${message.length - MAX_MESSAGE_LENGTH} chars]"
-                } else {
-                    message
-                }
-
-                // Truncate throwable stack trace if too long
-                val throwableStr = throwable?.stackTraceToString()
-                val truncatedThrowable = if (throwableStr != null && throwableStr.length > MAX_THROWABLE_LENGTH) {
-                    throwableStr.take(MAX_THROWABLE_LENGTH) + "\n[... truncated ${throwableStr.length - MAX_THROWABLE_LENGTH} chars]"
-                } else {
-                    throwableStr
-                }
+                // Truncate throwable stack trace if too long (the message arrives already cut)
+                val truncatedThrowable = throwable?.stackTraceToString()?.let { truncate(it, MAX_THROWABLE_LENGTH) }
 
                 val logEntry = LogEntry(
                     timestamp = System.currentTimeMillis(),
                     level = level.uppercase(),
                     tag = tag,
-                    message = truncatedMessage,
+                    message = message,
                     throwableMessage = truncatedThrowable
                 )
                 database.logDao().insertLog(logEntry)
