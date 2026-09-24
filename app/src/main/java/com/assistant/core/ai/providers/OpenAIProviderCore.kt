@@ -271,10 +271,9 @@ internal class OpenAIProviderCore(
 
             LogManager.aiService("Built OpenAI request: ${requestBody.length} characters")
 
-            // Log raw prompt for debugging (VERBOSE level) - formatted for maximum readability
+            // The prompt goes whole to a file below: a log line would keep only its start
             val prettyJson = Json { prettyPrint = true }
             val formattedPrompt = prettyJson.encodeToString(JsonObject.serializer(), requestJson)
-            LogManager.aiService("=== RAW PROMPT TO OPENAI API ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
 
             // Save raw prompt to file for debugging (overwrites previous)
             // Accessible via: adb pull /data/data/com.assistant/files/last_prompt_openai_<variant>.txt

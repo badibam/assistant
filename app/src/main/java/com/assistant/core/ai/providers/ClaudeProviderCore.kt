@@ -331,19 +331,15 @@ internal class ClaudeProviderCore(
             val configJson = JSONObject(config)
             val apiKey = configJson.getString("api_key")
 
-            // Log raw Level 1 content BEFORE JSON serialization (preserves line breaks for readability)
-            LogManager.aiService("=== LEVEL 1 CONTENT (RAW, WITH LINE BREAKS) ===\n${promptData.level1Content}\n=== END LEVEL 1 ===", "VERBOSE")
-
             // Transform PromptData to Claude JSON via extension
             val requestJson = promptData.toClaudeJson(configJson, promptData.buildDatetimeMessage(context))
             val requestBody = requestJson.toString()
 
             LogManager.aiService("Built Claude request: ${requestBody.length} characters")
 
-            // Log raw prompt for debugging (VERBOSE level) - formatted for maximum readability
+            // The prompt goes whole to files below: a log line would keep only its start
             val prettyJson = Json { prettyPrint = true }
             val formattedPrompt = prettyJson.encodeToString(JsonObject.serializer(), requestJson)
-            LogManager.aiService("=== RAW PROMPT TO CLAUDE API (JSON with \\n escaped) ===\n$formattedPrompt\n=== END RAW PROMPT ===", "VERBOSE")
 
             // Save prompts to files for debugging (overwrites previous)
             // Accessible via: adb pull /data/data/com.assistant/files/last_prompt_*

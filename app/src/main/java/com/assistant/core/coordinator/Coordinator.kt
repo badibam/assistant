@@ -229,7 +229,7 @@ class Coordinator(context: Context) {
         operation: String,
         phase: Int = 1
     ): CommandResult {
-        LogManager.coordination("executeServiceOperation: operation=$operation, params=${command.params}, phase=$phase", "VERBOSE")
+        LogManager.coordination("executeServiceOperation: operation=$operation, phase=$phase", "VERBOSE")
         val opId = command.id ?: "op_${System.currentTimeMillis()}"
         val token = CancellationToken()
         tokens[opId] = token
@@ -242,9 +242,8 @@ class Coordinator(context: Context) {
                 put("phase", phase)
             }
 
-            LogManager.coordination("Calling service.execute with params: $params", "VERBOSE")
             val result = service.execute(operation, params, token)
-            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, data=${result.data}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
+            LogManager.coordination("Service result: success=${result.success}, error=${result.error}, requiresContinuation=${result.requiresContinuation}", "VERBOSE")
             
             CommandResult(
                 status = when {
