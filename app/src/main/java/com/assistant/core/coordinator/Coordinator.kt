@@ -280,15 +280,4 @@ class Coordinator(context: Context) {
     fun canAcceptNewOperation(): Boolean {
         return _state.value == CoordinatorState.IDLE
     }
-    
-    /**
-     * Get queue status info
-     */
-    fun getQueueInfo(): Map<String, Any> {
-        return mapOf(
-            "normal_queue_size" to normalQueue.size,
-            "background_slot_busy" to isBackgroundSlotBusy,
-            "current_state" to _state.value.name
-        )
-    }
 }
