@@ -1061,6 +1061,8 @@
     <string name="field_type_numeric_display_name">Numeric</string>
     <string name="field_type_numeric_description">Numeric value with a unit and optional constraints</string>
     <string name="field_type_scale_display_name">Scale</string>
+    <string name="field_scale_value">%1$s (%2$s to %3$s)</string>
+    <string name="field_scale_value_with_labels">%1$s (%2$s to %3$s - \"%4$s\" to \"%5$s\")</string>
     <string name="field_type_scale_description">Graduated scale between two values with labels</string>
     <string name="field_type_choice_display_name">Choice</string>
     <string name="field_type_choice_description">Single or multiple choice among predefined options</string>

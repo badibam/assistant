@@ -1061,6 +1061,8 @@
     <string name="field_type_numeric_display_name">Numérique</string>
     <string name="field_type_numeric_description">Valeur numérique avec unité et contraintes optionnelles</string>
     <string name="field_type_scale_display_name">Échelle</string>
+    <string name="field_scale_value">%1$s (%2$s à %3$s)</string>
+    <string name="field_scale_value_with_labels">%1$s (%2$s à %3$s - \"%4$s\" à \"%5$s\")</string>
     <string name="field_type_scale_description">Échelle graduée entre deux valeurs avec labels</string>
     <string name="field_type_choice_display_name">Choix</string>
     <string name="field_type_choice_description">Choix unique ou multiple parmi des options prédéfinies</string>

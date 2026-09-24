@@ -178,7 +178,7 @@ private fun formatNumericValue(value: Any?, config: Map<String, Any>?, s: String
 
 /**
  * Format SCALE value with range and labels
- * Format: "value (min à max - "min_label" à "max_label")"
+ * Format: "value (min to max - "min_label" to "max_label")", worded by the strings
  */
 private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
     val number = (value as? Number)?.toDouble() ?: return s.shared("label_no_value")
@@ -194,13 +194,11 @@ private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsC
     val minLabel = config?.get("min_label") as? String
     val maxLabel = config?.get("max_label") as? String
 
-    val labelsStr = if (minLabel != null && maxLabel != null) {
-        " - \"$minLabel\" à \"$maxLabel\""
+    return if (minLabel != null && maxLabel != null) {
+        s.shared("field_scale_value_with_labels").format(shown(number), shown(min), shown(max), minLabel, maxLabel)
     } else {
-        ""
+        s.shared("field_scale_value").format(shown(number), shown(min), shown(max))
     }
-
-    return "${shown(number)} (${shown(min)} à ${shown(max)}$labelsStr)"
 }
 
 /**
