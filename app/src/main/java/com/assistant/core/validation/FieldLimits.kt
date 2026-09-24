@@ -1,19 +1,19 @@
 package com.assistant.core.validation
 
 /**
- * Field length constants for all schema definitions
- * Maps directly to FieldType text variants for consistency
+ * Field length constants for all schema definitions.
+ * A TEXT custom field picks one through its config.length: SHORT, MEDIUM, LONG or UNLIMITED.
  */
 object FieldLimits {
-    /** FieldType.TEXT - identifiers, names, labels */
+    /** SHORT - identifiers, names, labels */
     const val SHORT_LENGTH = 60
 
-    /** FieldType.TEXT_MEDIUM - descriptions, text values */
+    /** MEDIUM - descriptions, text values */
     const val MEDIUM_LENGTH = 250
 
-    /** FieldType.TEXT_LONG - long content */
+    /** LONG - long content */
     const val LONG_LENGTH = 1500
 
-    /** FieldType.TEXT_UNLIMITED - no limits */
+    /** UNLIMITED - no limits */
     const val UNLIMITED_LENGTH = Int.MAX_VALUE
 }
