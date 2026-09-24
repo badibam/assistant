@@ -94,32 +94,32 @@ object AppConfigSchemaProvider : SchemaProvider {
                     "properties": {
                         "hour_limit": {
                             "type": "integer",
-                            "minimum": 1,
-                            "maximum": 24,
+                            "minimum": ${HOUR_LIMIT_RANGE.first},
+                            "maximum": ${HOUR_LIMIT_RANGE.last},
                             "description": "${s.shared("app_config_schema_format_hour_limit")}"
                         },
                         "day_limit": {
                             "type": "integer",
-                            "minimum": 1,
-                            "maximum": 30,
+                            "minimum": ${DAY_LIMIT_RANGE.first},
+                            "maximum": ${DAY_LIMIT_RANGE.last},
                             "description": "${s.shared("app_config_schema_format_day_limit")}"
                         },
                         "week_limit": {
                             "type": "integer",
-                            "minimum": 1,
-                            "maximum": 12,
+                            "minimum": ${WEEK_LIMIT_RANGE.first},
+                            "maximum": ${WEEK_LIMIT_RANGE.last},
                             "description": "${s.shared("app_config_schema_format_week_limit")}"
                         },
                         "month_limit": {
                             "type": "integer",
-                            "minimum": 1,
-                            "maximum": 24,
+                            "minimum": ${MONTH_LIMIT_RANGE.first},
+                            "maximum": ${MONTH_LIMIT_RANGE.last},
                             "description": "${s.shared("app_config_schema_format_month_limit")}"
                         },
                         "year_limit": {
                             "type": "integer",
-                            "minimum": 1,
-                            "maximum": 10,
+                            "minimum": ${YEAR_LIMIT_RANGE.first},
+                            "maximum": ${YEAR_LIMIT_RANGE.last},
                             "description": "${s.shared("app_config_schema_format_year_limit")}"
                         }
                     },
@@ -178,6 +178,13 @@ object AppConfigSchemaProvider : SchemaProvider {
             content = content
         )
     }
+
+    /** The bounds of the relative label limits, shared by the schema and the sliders of the format screen */
+    val HOUR_LIMIT_RANGE = 1..24
+    val DAY_LIMIT_RANGE = 1..30
+    val WEEK_LIMIT_RANGE = 1..12
+    val MONTH_LIMIT_RANGE = 1..24
+    val YEAR_LIMIT_RANGE = 1..10
 
     /** The bounds of the AI limits, shared by the schema and the sliders of the settings screen */
     val AI_LIMITS_CHAT_RANGE = 1..50

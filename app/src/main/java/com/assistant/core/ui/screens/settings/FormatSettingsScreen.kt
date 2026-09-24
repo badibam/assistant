@@ -12,6 +12,7 @@ import com.assistant.core.ui.*
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.config.FormatDefaults
+import com.assistant.core.schemas.AppConfigSchemaProvider
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.util.Locale
@@ -383,9 +384,9 @@ fun FormatSettingsScreen(
                     label = s.shared("app_config_format_hour_limit"),
                     value = hourLimit,
                     onValueChange = { hourLimit = it },
-                    range = 1..48,
-                    minLabel = "1",
-                    maxLabel = "48"
+                    range = AppConfigSchemaProvider.HOUR_LIMIT_RANGE,
+                    minLabel = AppConfigSchemaProvider.HOUR_LIMIT_RANGE.first.toString(),
+                    maxLabel = AppConfigSchemaProvider.HOUR_LIMIT_RANGE.last.toString()
                 )
 
                 // Day limit
@@ -393,9 +394,9 @@ fun FormatSettingsScreen(
                     label = s.shared("app_config_format_day_limit"),
                     value = dayLimit,
                     onValueChange = { dayLimit = it },
-                    range = 1..31,
-                    minLabel = "1",
-                    maxLabel = "31"
+                    range = AppConfigSchemaProvider.DAY_LIMIT_RANGE,
+                    minLabel = AppConfigSchemaProvider.DAY_LIMIT_RANGE.first.toString(),
+                    maxLabel = AppConfigSchemaProvider.DAY_LIMIT_RANGE.last.toString()
                 )
 
                 // Week limit
@@ -403,9 +404,9 @@ fun FormatSettingsScreen(
                     label = s.shared("app_config_format_week_limit"),
                     value = weekLimit,
                     onValueChange = { weekLimit = it },
-                    range = 1..12,
-                    minLabel = "1",
-                    maxLabel = "12"
+                    range = AppConfigSchemaProvider.WEEK_LIMIT_RANGE,
+                    minLabel = AppConfigSchemaProvider.WEEK_LIMIT_RANGE.first.toString(),
+                    maxLabel = AppConfigSchemaProvider.WEEK_LIMIT_RANGE.last.toString()
                 )
 
                 // Month limit
@@ -413,9 +414,9 @@ fun FormatSettingsScreen(
                     label = s.shared("app_config_format_month_limit"),
                     value = monthLimit,
                     onValueChange = { monthLimit = it },
-                    range = 1..24,
-                    minLabel = "1",
-                    maxLabel = "24"
+                    range = AppConfigSchemaProvider.MONTH_LIMIT_RANGE,
+                    minLabel = AppConfigSchemaProvider.MONTH_LIMIT_RANGE.first.toString(),
+                    maxLabel = AppConfigSchemaProvider.MONTH_LIMIT_RANGE.last.toString()
                 )
 
                 // Year limit
@@ -423,9 +424,9 @@ fun FormatSettingsScreen(
                     label = s.shared("app_config_format_year_limit"),
                     value = yearLimit,
                     onValueChange = { yearLimit = it },
-                    range = 1..10,
-                    minLabel = "1",
-                    maxLabel = "10"
+                    range = AppConfigSchemaProvider.YEAR_LIMIT_RANGE,
+                    minLabel = AppConfigSchemaProvider.YEAR_LIMIT_RANGE.first.toString(),
+                    maxLabel = AppConfigSchemaProvider.YEAR_LIMIT_RANGE.last.toString()
                 )
             }
         }
