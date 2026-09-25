@@ -145,14 +145,6 @@ A communication module asks the user something through a form: you declare its f
 
 **No field** (`"fields": []`) asks for a confirmation: the user confirms or cancels what your `pre_text` says.
 
-Pick the type that fits the answer:
-
-- one option among several: CHOICE; `"multiple": true` for several, `"ordered": true` for a ranking of the options, `"open": true` to let the user type an option you did not list
-- free text: TEXT, its `config.length` bounding it
-- yes or no: BOOLEAN
-- a number: NUMERIC, or SCALE between two labelled bounds
-- a moment or a length of time: DATE, TIME, DATETIME, DURATION
-
 The whole schema: `SCHEMA` with the ID `communication_module`.
 
 ### The answer
@@ -233,15 +225,9 @@ The answer comes back as `{"zone": "zone_sport_2"}`.]]></string>
 
 The query commands read the data without changing it.
 
-### Using the data already supplied
+### Data already supplied
 
-The user can attach data to their message through POINTER enrichments. That data is **already in your context**, as earlier system messages.
-
-1. **Read the context before querying**: check whether what your task needs is already loaded
-2. **Query only what is missing**: data absent from the context, data filtered differently (another period, other fields), data changed since it was loaded
-3. **Trust what the user attached**: it is complete for the period and the tool it names. Do not ask for it again "to be safe"
-
-For example, if the user attached "Data of the \'Weight\' tool, period from 2024-01-01 to 2024-01-31 (15 entries)", analyse those 15 entries without a TOOL_DATA query.
+Data the user attached (POINTER enrichments) is already in your context, as earlier system messages, complete for the tool and period it names. Use it directly; query only what is missing, filtered differently, or changed since.
 
 ### TOOL_DATA
 
@@ -412,14 +398,7 @@ Changes the configuration of a tool, or moves it to another zone.
 - `confirm_migration` (boolean, optional): `true` to agree to what the change erases in the entries
 - `fill_values` (object, optional): the values to give the entries a change leaves without a required value, `{"data": {"value": 3}}`
 
-A config change reaches the recorded entries. The app works out what it does to them, field by field:
-
-- A value that keeps its meaning is kept (a text field renamed, a choice option added)
-- A value that loses its meaning is erased from an optional field: a choice option removed, a number now out of bounds, **any** value of a scale whose bounds changed (a 5 out of 5 is not a 5 out of 10)
-- An entry whose **required** field loses its value is deleted, and changing the `type` of a tracking loses every entry
-- A field that becomes required, or a new required field, needs a value in every entry
-
-When the change erases or deletes something, the update is **refused** with what it would do (`migration`: `removed_values`, `deleted_entries`). Tell the user, and send the update again with `"confirm_migration": true` only once they agree. When entries would lack a required value, the refusal names the fields and their counts (`missing_values`): send it again with `fill_values`.
+A change that erases values or entries is **refused** with what it would lose: tell the user, and send it again with `"confirm_migration": true` only once they agree. A refusal naming `missing_values` is sent again with `fill_values`.
 
 ### DELETE_TOOL
 
