@@ -170,6 +170,8 @@
     <string name="automation_catch_up_every_occurrence">Each one</string>
     <string name="automation_catch_up_latest_only">The most recent one</string>
     <string name="automation_catch_up_required">Say how far back a missed run is caught up before saving.</string>
+    <string name="automation_dialog_edit_hint">Changes the name, the provider, the group and the zone of the automation.</string>
+    <string name="automation_dialog_create_hint">Once created, the automation's message and schedule are set in its editor.</string>
     <string name="automation_catch_up_without_schedule">An automation without schedule has nothing to catch up: its catch-up settings come with a schedule.</string>
     <string name="automation_catch_up_limited">Up to a delay</string>
     <string name="automation_catch_up_delay">Delay</string>

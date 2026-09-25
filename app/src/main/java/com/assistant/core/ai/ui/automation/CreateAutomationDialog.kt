@@ -53,23 +53,25 @@ fun CreateAutomationDialog(
     val isEditMode = automation != null
 
     // Form states - initialize with existing values in EDIT mode
-    var name by rememberSaveable {
-        mutableStateOf(
-            if (isEditMode) automation?.get("name") as? String ?: ""
-            else ""
-        )
+    // Name, provider and group, as the automation's declaration describes them (AutomationSettings)
+    var settings by rememberSaveable(stateSaver = com.assistant.core.ui.JsonObjectSaver) {
+        mutableStateOf(org.json.JSONObject().apply {
+            if (isEditMode) {
+                (automation?.get("name") as? String)?.let { put("name", it) }
+                (automation?.get("provider_id") as? String)?.let { put("provider_id", it) }
+                (automation?.get("group") as? String)?.let { put("group", it) }
+            } else {
+                preSelectedGroup?.let { put("group", it) }
+            }
+        })
     }
-    var selectedProvider by rememberSaveable {
-        mutableStateOf(
-            if (isEditMode) automation?.get("provider_id") as? String
-            else null
-        )
-    }
-    var selectedGroup by rememberSaveable {
-        mutableStateOf(
-            if (isEditMode) automation?.get("group") as? String
-            else preSelectedGroup
-        )
+    val name = settings.optString("name")
+    val selectedProvider = settings.optString("provider_id").ifEmpty { null }
+    val selectedGroup = settings.optString("group").ifEmpty { null }
+    val settingsNodes = remember {
+        com.assistant.core.ai.data.AutomationSettings.nodes(context).filter { node ->
+            node is com.assistant.core.fields.settings.SettingNode.Field && node.definition.name in setOf("name", "provider_id", "group")
+        }
     }
     var selectedZoneId by rememberSaveable {
         mutableStateOf(
@@ -136,7 +138,7 @@ fun CreateAutomationDialog(
 
                 // Auto-select first provider if available
                 if (providers.isNotEmpty() && selectedProvider == null) {
-                    selectedProvider = providers.first()["id"] as? String
+                    settings = org.json.JSONObject(settings.toString()).put("provider_id", providers.first()["id"] as String)
                 }
             }
         } catch (e: Exception) {
@@ -176,16 +178,14 @@ fun CreateAutomationDialog(
                             return@launch
                         }
 
-                        // Update automation (name + provider + group + zone)
+                        // Update automation (name + provider + group + zone); no group is sent
+                        // as null, which removes it
                         val updateParams = mutableMapOf<String, Any>(
                             "automation_id" to automationId,
                             "name" to name,
-                            "provider_id" to selectedProvider!!
+                            "provider_id" to selectedProvider!!,
+                            "group" to (selectedGroup ?: org.json.JSONObject.NULL)
                         )
-                        // Add group if present (empty string means explicitly ungrouped)
-                        if (selectedGroup != null) {
-                            updateParams["group"] = selectedGroup!!
-                        }
                         // Add zone_id if changed
                         if (selectedZoneId != currentZoneId) {
                             updateParams["zone_id"] = selectedZoneId
@@ -254,10 +254,7 @@ fun CreateAutomationDialog(
                             "provider_id" to selectedProvider!!,
                             "is_enabled" to true
                         )
-                        // Add group if present (empty string means explicitly ungrouped)
-                        if (selectedGroup != null) {
-                            createParams["group"] = selectedGroup!!
-                        }
+                        selectedGroup?.let { createParams["group"] = it }
 
                         val createAutomationResult = coordinator.processUserAction("automations.create", createParams)
 
@@ -300,56 +297,39 @@ fun CreateAutomationDialog(
                 type = TextType.TITLE
             )
 
-            // Name field
-            UI.FormField(
-                label = s.shared("label_name"),
-                value = name,
-                onChange = { name = it },
-                fieldType = FieldType.TEXT,
-                required = true
-            )
-
-            // Provider selection
-            if (isLoadingProviders) {
-                UI.Text(
-                    text = s.shared("message_loading"),
-                    type = TextType.CAPTION
-                )
-            } else if (providers.isEmpty()) {
-                UI.Text(
-                    text = s.shared("message_no_providers"),
-                    type = TextType.CAPTION
-                )
-            } else {
-                val providerNames = providers.map {
-                    (it["display_name"] as? String) ?: (it["id"] as? String) ?: "Unknown"
-                }
-                val selectedProviderName = selectedProvider?.let { id ->
-                    providers.find { (it["id"] as? String) == id }
-                        ?.let { (it["display_name"] as? String) ?: id }
-                } ?: providerNames.firstOrNull()
-
-                UI.FormSelection(
-                    label = s.shared("label_ai_provider"),
-                    options = providerNames,
-                    selected = selectedProviderName ?: "",
-                    onSelect = { selectedName ->
-                        val index = providerNames.indexOf(selectedName)
-                        if (index >= 0) {
-                            selectedProvider = providers[index]["id"] as? String
+            // Name, provider among the configured ones, group among the zone's
+            com.assistant.core.fields.settings.SettingsForm(settingsNodes, settings, { settings = it }, context, mapOf(
+                "provider_id" to object : com.assistant.core.fields.settings.SettingEditor {
+                    @Composable
+                    override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+                        when {
+                            isLoadingProviders -> UI.Text(s.shared("message_loading"), TextType.CAPTION)
+                            providers.isEmpty() -> UI.Text(s.shared("message_no_providers"), TextType.CAPTION)
+                            else -> {
+                                val names = providers.associate { (it["display_name"] as String) to (it["id"] as String) }
+                                UI.FormSelection(
+                                    label = s.shared("label_ai_provider"),
+                                    options = names.keys.toList(),
+                                    selected = names.entries.find { it.value == value }?.key ?: "",
+                                    onSelect = { onChange(names[it]) },
+                                    required = true
+                                )
+                            }
                         }
-                    },
-                    required = true
-                )
-            }
-
-            // Group selection
-            com.assistant.core.ui.components.GroupSelector(
-                availableGroups = zoneToolGroups,
-                selectedGroup = selectedGroup,
-                onGroupSelected = { selectedGroup = it },
-                label = s.shared("label_group")
-            )
+                    }
+                },
+                "group" to object : com.assistant.core.fields.settings.SettingEditor {
+                    @Composable
+                    override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+                        com.assistant.core.ui.components.GroupSelector(
+                            availableGroups = zoneToolGroups,
+                            selectedGroup = value as? String,
+                            onGroupSelected = { onChange(it) },
+                            label = s.shared("label_group")
+                        )
+                    }
+                }
+            ))
 
             // Zone selection (only in EDIT mode)
             if (isEditMode && availableZones.isNotEmpty()) {
@@ -363,7 +343,7 @@ fun CreateAutomationDialog(
                         if (newZoneId != null) {
                             selectedZoneId = newZoneId
                             // Reset group selection when zone changes (groups are zone-specific)
-                            selectedGroup = null
+                            settings = org.json.JSONObject(settings.toString()).apply { remove("group") }
                         }
                     },
                     required = false
@@ -372,10 +352,7 @@ fun CreateAutomationDialog(
 
             // Info text (changes based on mode)
             UI.Text(
-                text = if (isEditMode)
-                    "Modification du nom et du fournisseur de l'automation."
-                else
-                    "Après création, vous pourrez configurer le message et l'horaire de l'automation.",
+                text = if (isEditMode) s.shared("automation_dialog_edit_hint") else s.shared("automation_dialog_create_hint"),
                 type = TextType.CAPTION
             )
 

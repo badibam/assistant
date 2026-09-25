@@ -170,6 +170,8 @@
     <string name="automation_catch_up_every_occurrence">Chacune</string>
     <string name="automation_catch_up_latest_only">La plus récente</string>
     <string name="automation_catch_up_required">Indique jusqu\'où rattraper une exécution manquée avant d\'enregistrer.</string>
+    <string name="automation_dialog_edit_hint">Modifie le nom, le fournisseur, le groupe et la zone de l\'automation.</string>
+    <string name="automation_dialog_create_hint">Une fois créée, le message et la planification de l\'automation se règlent dans son éditeur.</string>
     <string name="automation_catch_up_without_schedule">Une automation sans planification n\'a rien à rattraper : ses réglages de rattrapage vont avec une planification.</string>
     <string name="automation_catch_up_limited">Jusqu\'à un délai</string>
     <string name="automation_catch_up_delay">Délai</string>
