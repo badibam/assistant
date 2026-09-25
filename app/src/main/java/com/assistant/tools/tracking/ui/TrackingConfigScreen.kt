@@ -1243,7 +1243,7 @@ private fun ItemRowReadonly(
                 contentAlignment = Alignment.Center
             ) {
                 UI.CenteredText(
-                    text = "±${com.assistant.tools.tracking.TrackingUtils.counterStep(item.properties)}",
+                    text = "±${com.assistant.tools.tracking.TrackingConfig.counterStep(com.assistant.tools.tracking.TrackingShortcut(item.name, item.properties["value"] as? Number))}",
                     type = TextType.BODY
                 )
             }

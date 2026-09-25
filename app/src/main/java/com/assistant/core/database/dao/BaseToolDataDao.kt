@@ -117,4 +117,10 @@ abstract class BaseToolDataDao {
     @Query("SELECT COUNT(*) FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(state, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime")
     abstract suspend fun countByStatusAndTimeRange(toolInstanceId: String, status: String, startTime: Long, endTime: Long): Int
 
+    /**
+     * The entries of a tool with a DURATION field running (state.running present), whenever
+     * they started: a stopwatch left running for days must still be found to be stopped.
+     */
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(state, '$.running') IS NOT NULL ORDER BY timestamp DESC")
+    abstract suspend fun getRunning(toolInstanceId: String): List<ToolDataEntity>
 }

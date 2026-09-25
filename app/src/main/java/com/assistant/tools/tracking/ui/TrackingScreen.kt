@@ -125,20 +125,16 @@ fun TrackingScreen(
                     UI.Text(s.tool("usage_section_new_entry"), TextType.SUBTITLE, fillMaxWidth = true, textAlign = TextAlign.Center)
                     
                     key(configRefreshTrigger) {
-                        TrackingInputManager(
+                        TrackingQuickEntry(
                             toolInstanceId = toolInstanceId,
                             config = config,
-                            onEntrySaved = { 
-                                historyRefreshTrigger++
-                            },
-                            onConfigChanged = {
-                                configRefreshTrigger++
-                            }
+                            refreshTrigger = historyRefreshTrigger,
+                            onConfigChanged = { configRefreshTrigger++ }
                         )
                     }
                 }
             }
-            
+
             // History section
             UI.Card(type = CardType.DEFAULT) {
                 Column(
@@ -149,7 +145,6 @@ fun TrackingScreen(
                     
                     TrackingHistory(
                         toolInstanceId = toolInstanceId,
-                        trackingType = config.optString("type", "numeric"),
                         refreshTrigger = historyRefreshTrigger
                     )
                 }

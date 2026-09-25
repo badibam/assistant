@@ -334,7 +334,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         val dao = getToolDataDao()
 
+        // Only the entries with a DURATION field running, for a screen to show and stop them
+        val running = params.optBoolean("running", false)
+
         val (entries, totalCount) = when {
+            running -> {
+                val data = dao.getRunning(toolInstanceId)
+                Pair(data, data.size)
+            }
             // Status filter, optionally narrowed further by the time range
             status != null -> {
                 val from = startTime ?: 0

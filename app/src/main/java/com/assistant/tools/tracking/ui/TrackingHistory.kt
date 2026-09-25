@@ -15,13 +15,16 @@ import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.*
 import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.tools.tracking.ui.components.TrackingEntryDialog
-import com.assistant.tools.tracking.ui.components.ItemType
-import com.assistant.tools.tracking.ui.components.ActionType
+import com.assistant.tools.tracking.ui.components.TrackingEntryDraft
+import com.assistant.tools.tracking.TrackingConfig
+import com.assistant.tools.tracking.TrackingToolType
+import com.assistant.core.fields.FieldContainer
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldValue
+import com.assistant.core.fields.RunningDurations
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
-import com.assistant.tools.tracking.TrackingUtils
-import com.assistant.tools.tracking.timer.TimerManager
 import com.assistant.core.utils.DateUtils
 import com.assistant.core.ui.components.PeriodFilterType
 import com.assistant.core.ui.components.Period
@@ -50,7 +53,6 @@ private fun createCurrentPeriod(type: PeriodType): Period {
 @Composable
 fun TrackingHistory(
     toolInstanceId: String,
-    trackingType: String,
     refreshTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
@@ -79,8 +81,11 @@ fun TrackingHistory(
     var totalEntries by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(1) }
     
-    // Tool instance config (for custom fields definitions)
-    var toolConfig by remember { mutableStateOf(JSONObject()) }
+    // Tool instance config: the value's field and the user's fields are read from it
+    var toolConfig by remember { mutableStateOf<JSONObject?>(null) }
+    val valueField = remember(toolConfig) {
+        toolConfig?.let { config -> TrackingToolType.getEntryFields(config, context).data.firstOrNull { it.definition.name == "value" }?.definition }
+    }
 
     // Load tool instance config once
     LaunchedEffect(toolInstanceId) {
@@ -94,7 +99,7 @@ fun TrackingHistory(
                 val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
                     toolConfig = configJson
-                    LogManager.tracking("TrackingHistory - Loaded tool config with ${toolConfig.optJSONArray("extra_fields")?.length() ?: 0} custom fields")
+                    LogManager.tracking("TrackingHistory - Loaded tool config")
                 } catch (e: Exception) {
                     LogManager.tracking("Error parsing tool config: ${e.message}", "ERROR")
                 }
@@ -142,18 +147,10 @@ fun TrackingHistory(
                             currentPage = (pagination["current_page"] as? Number)?.toInt() ?: 1
                         }
                         
-                        // Get current timer entry ID for this instance to exclude it
-                        val activeTimerEntryId = TimerManager.getInstance().getTimerState(toolInstanceId).value.entryId
-                        
                         trackingData = entriesData.mapNotNull { entryMap ->
                             if (entryMap is Map<*, *>) {
                                 try {
                                     val entryId = entryMap["id"] as? String ?: ""
-                                    
-                                    // Exclude current timer entry (duration = 0)
-                                    if (activeTimerEntryId.isNotEmpty() && entryId == activeTimerEntryId) {
-                                        return@mapNotNull null
-                                    }
                                     
                                     // Milliseconds from the service, as stored. An entry
                                     // without one is skipped rather than shown at the present
@@ -173,6 +170,9 @@ fun TrackingHistory(
                                         createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
                                         updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L,
                                         extra = (entryMap["extra"] as? Map<*, *>)?.let {
+                                            JsonUtils.toJSONObject(it.entries.associate { (k, v) -> k.toString() to v }).toString()
+                                        },
+                                        state = (entryMap["state"] as? Map<*, *>)?.let {
                                             JsonUtils.toJSONObject(it.entries.associate { (k, v) -> k.toString() to v }).toString()
                                         }
                                     )
@@ -197,44 +197,19 @@ fun TrackingHistory(
         }
     }
     
-    // Update entry - name, data and timestamp can be changed
-    val updateEntry = { entryId: String, name: String, dataJson: String, newTimestamp: Long? ->
-        LogManager.tracking("=== UpdateEntry start ===")
-        LogManager.tracking("updateEntry called: entryId=$entryId, name=$name, dataJson=$dataJson, newTimestamp=$newTimestamp")
+    // Update entry: its name, moment, value and unit, and the user's fields
+    val updateEntry = { entryId: String, draft: TrackingEntryDraft ->
         scope.launch {
             try {
-                // Parse dataJson and extract custom_fields
-                val dataObject = JSONObject(dataJson)
-                val customFields = dataObject.optJSONObject("extra")
-                if (customFields != null) {
-                    dataObject.remove("extra") // Remove from data object
-                }
-
                 val params = mutableMapOf<String, Any>(
                     "id" to entryId,
-                    "name" to name,
-                    "data" to dataObject
+                    "name" to draft.name,
+                    "timestamp" to draft.timestamp,
+                    "data" to TrackingConfig.entryData(draft.value, draft.unit),
+                    "extra" to JSONObject(draft.extra)
                 )
-
-                // Add custom_fields as separate parameter if present
-                if (customFields != null) {
-                    params["extra"] = customFields
-                }
-
-                // Add timestamp if provided
-                newTimestamp?.let {
-                    params["timestamp"] = it
-                }
-
-                LogManager.tracking("Final update params: $params")
-                
                 val result = coordinator.processUserAction("tool_data.update", params)
-                
-                LogManager.tracking("=== Update result ===")
-                LogManager.tracking("Result status: ${result.status}")
-                LogManager.tracking("Result error: ${result.error}")
-                LogManager.tracking("Result data: ${result.data}")
-                
+
                 when {
                     result.isSuccess -> {
                         UI.Toast(context, s.tool("usage_entry_updated"), Duration.SHORT)
@@ -441,7 +416,7 @@ fun TrackingHistory(
             trackingData.forEach { entry ->
                 TrackingHistoryRow(
                     entry = entry,
-                    trackingType = trackingType,
+                    valueField = valueField,
                     onEdit = {
                         editingEntryId = entry.id
                         showEditDialog = true
@@ -462,97 +437,24 @@ fun TrackingHistory(
         }
         
         // Edit dialog
-        if (showEditDialog && editingEntry != null) {
+        if (showEditDialog && editingEntry != null && toolConfig != null) {
             val entry = editingEntry!!
-            
-            // Parse JSON directly for each type instead of using limited ParsedValue
-            val initialProperties = try {
-                val json = JSONObject(entry.data)
-
-                // Parse custom fields from entity
-                val customFieldsData = entry.extra
-                val customFields = if (customFieldsData != null && customFieldsData.isNotEmpty()) {
-                    try {
-                        val customFieldsJson = JSONObject(customFieldsData)
-                        mutableMapOf<String, Any?>().apply {
-                            customFieldsJson.keys().forEach { key -> put(key, customFieldsJson.get(key)) }
-                        }
-                    } catch (e: Exception) {
-                        LogManager.tracking("Error parsing custom fields: ${e.message}", "ERROR")
-                        emptyMap<String, Any?>()
-                    }
-                } else {
-                    emptyMap<String, Any?>()
-                }
-
-                val typeSpecificData = when (trackingType) {
-                    "numeric" -> mapOf(
-                        "quantity" to json.optString("quantity", ""),
-                        "unit" to json.optString("unit", "")
-                    )
-                    "boolean" -> mapOf(
-                        "state" to json.optBoolean("state", false),
-                        "true_label" to json.optString("true_label", s.tool("config_default_true_label")),
-                        "false_label" to json.optString("false_label", s.tool("config_default_false_label"))
-                    )
-                    "scale" -> {
-                        LogManager.tracking("Scale JSON data: $json")
-                        mapOf(
-                            "rating" to json.optInt("rating"),
-                            "min_value" to json.optInt("min_value"),
-                            "max_value" to json.optInt("max_value"),
-                            "min_label" to json.optString("min_label"),
-                            "max_label" to json.optString("max_label")
-                        ).also {
-                            LogManager.tracking("InitialProperties created: $it")
-                        }
-                    }
-                    "text" -> mapOf(
-                        "text" to json.optString("text", "")
-                    )
-                    "choice" -> {
-                        val availableOptions = json.optJSONArray("available_options")?.let { array ->
-                            (0 until array.length()).map { array.optString(it, "") }
-                        } ?: emptyList<String>()
-                        mapOf(
-                            "selected_option" to json.optString("selected_option", ""),
-                            "available_options" to availableOptions
-                        )
-                    }
-                    "counter" -> mapOf(
-                        "increment" to json.optInt("increment", 1)
-                    )
-                    "timer" -> mapOf(
-                        "duration_seconds" to json.optInt("duration_seconds", 0)
-                    )
-                    else -> emptyMap()
-                }
-
-                // Combine type-specific data with custom fields
-                typeSpecificData + if (customFields.isNotEmpty()) {
-                    mapOf("extra" to customFields)
-                } else {
-                    emptyMap()
-                }
-            } catch (e: Exception) {
-                emptyMap<String, Any>()
-            }
-            
+            val data = JSONObject(entry.data)
             TrackingEntryDialog(
-                isVisible = showEditDialog,
-                trackingType = trackingType,
-                config = toolConfig, // Tool config with custom fields definitions
-                itemType = null, // History editing - no itemType
-                actionType = ActionType.UPDATE,
-                toolInstanceId = toolInstanceId,
-                initialName = entry.name ?: "",
-                initialData = initialProperties,
-                initialTimestamp = entry.timestamp ?: System.currentTimeMillis(),
-                onConfirm = { name, dataJson, _, timestamp ->
-                    LogManager.tracking("TrackingHistory - onConfirm called: name='$name', dataJson=$dataJson, trackingType=$trackingType")
-                    
-                    LogManager.tracking("TrackingHistory - calling updateEntry: id=${entry.id}, name='$name', dataJson=$dataJson, timestamp=$timestamp")
-                    updateEntry(entry.id, name, dataJson, timestamp)
+                config = toolConfig!!,
+                title = s.tool("usage_dialog_edit_entry"),
+                dialogType = DialogType.EDIT,
+                initial = TrackingEntryDraft(
+                    name = entry.name ?: "",
+                    timestamp = entry.timestamp ?: System.currentTimeMillis(),
+                    value = data.opt("value")?.let { if (it is org.json.JSONArray) JsonUtils.toList(it) else it },
+                    unit = data.optString("unit").takeIf { it.isNotEmpty() },
+                    extra = entry.extra?.let { JsonUtils.toMap(JSONObject(it)) } ?: emptyMap()
+                ),
+                nameEditable = true,
+                offerShortcut = false,
+                onConfirm = { draft ->
+                    updateEntry(entry.id, draft)
                     showEditDialog = false
                     editingEntryId = null
                 },
@@ -562,76 +464,58 @@ fun TrackingHistory(
                 }
             )
         }
-        
+
     }
 }
 
 /**
- * Individual table row for tracking data
+ * Individual table row for tracking data: its moment, its name, and its value drawn by the
+ * value's field type, with its unit. A running stopwatch shows the time so far.
  */
 @Composable
 private fun TrackingHistoryRow(
     entry: ToolDataEntity,
-    trackingType: String,
+    valueField: FieldDefinition?,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
+    val data = remember(entry.data) { JSONObject(entry.data) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Date (weight=3f)
-        Box(
-            modifier = Modifier.weight(3f).padding(8.dp)
-        ) {
+        Box(modifier = Modifier.weight(3f).padding(8.dp)) {
             UI.Text(
-                text = com.assistant.core.utils.DateTimeFormatter.formatForDisplay(
-                    entry.timestamp ?: System.currentTimeMillis(),
-                    androidx.compose.ui.platform.LocalContext.current
-                ),
+                text = com.assistant.core.utils.DateTimeFormatter.formatForDisplay(entry.timestamp ?: entry.createdAt, context),
                 type = TextType.BODY
             )
         }
-        
-        // Name (weight=3f)
-        Box(
-            modifier = Modifier.weight(3f).padding(8.dp)
-        ) {
-            UI.Text(
-                text = entry.name ?: "",
-                type = TextType.BODY
-            )
+
+        Box(modifier = Modifier.weight(3f).padding(8.dp)) {
+            UI.Text(text = entry.name ?: "", type = TextType.BODY)
         }
-        
-        // Value (weight=3f)
-        Box(
-            modifier = Modifier.weight(3f).padding(8.dp)
-        ) {
-            UI.Text(
-                text = formatTrackingValue(entry, trackingType),
-                type = TextType.BODY
-            )
+
+        Column(modifier = Modifier.weight(3f).padding(8.dp)) {
+            if (valueField != null) {
+                val state = entry.state?.let { JSONObject(it) }
+                val stored = data.opt("value")?.let { if (it is org.json.JSONArray) JsonUtils.toList(it) else it }
+                val isRunning = RunningDurations.startedAt(state, FieldContainer.DATA, "value") != null
+                val shown = if (isRunning) {
+                    RunningDurations.currentValue((stored as? Number)?.toLong(), state, FieldContainer.DATA, "value", System.currentTimeMillis())
+                } else stored
+                FieldValue(valueField, shown, context)
+                data.optString("unit").takeIf { it.isNotEmpty() }?.let { UI.Text(it, TextType.CAPTION) }
+                if (isRunning) UI.Text(Strings.`for`(tool = "tracking", context = context).tool("usage_timer_running"), TextType.CAPTION)
+            }
         }
-        
-        // Update (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.ActionButton(
-                action = ButtonAction.EDIT,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                onClick = onEdit
-            )
+
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            UI.ActionButton(action = ButtonAction.EDIT, display = ButtonDisplay.ICON, size = Size.S, onClick = onEdit)
         }
-        
-        // Delete (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
+
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             UI.ActionButton(
                 action = ButtonAction.DELETE,
                 display = ButtonDisplay.ICON,
@@ -641,41 +525,4 @@ private fun TrackingHistoryRow(
             )
         }
     }
-    }
-
-
-/**
- * Format tracking value for display based on type
- */
-private fun formatTrackingValue(entry: ToolDataEntity, trackingType: String): String {
-    return try {
-        val dataJson = JSONObject(entry.data)
-        dataJson.optString("raw", entry.data)
-    } catch (e: Exception) {
-        entry.data
-    }
 }
-
-/**
- * Parse tracking value JSON for editing
- */
-private fun parseTrackingValue(dataJson: String): ParsedValue {
-    return try {
-        val json = JSONObject(dataJson)
-        ParsedValue(
-            quantity = json.optDouble("quantity", 0.0),
-            unit = json.optString("unit", "")
-        )
-    } catch (e: Exception) {
-        ParsedValue(0.0, "")
-    }
-}
-
-
-/**
- * Data class for parsed tracking values
- */
-private data class ParsedValue(
-    val quantity: Double,
-    val unit: String
-)

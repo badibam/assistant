@@ -111,7 +111,7 @@
     <string name="usage_label_value">Value</string>
     <string name="usage_custom_date">Custom date</string>
     <string name="usage_current_time">Date = now</string>
-    <string name="usage_timer_idle">Running: -</string>
+    <string name="usage_timer_running">Running</string>
     
     <!-- USAGE - Error messages -->
     <string name="error_entry_update">Error while editing</string>

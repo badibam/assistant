@@ -1,636 +1,163 @@
 package com.assistant.tools.tracking.ui.components
 
-import com.assistant.core.ui.FieldValuesSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.assistant.core.ui.*
-import com.assistant.core.utils.DateUtils
-import com.assistant.core.validation.SchemaValidator
-import com.assistant.core.validation.ValidationResult
-import com.assistant.core.strings.Strings
-import com.assistant.core.utils.LogManager
-import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.CoreFields
 import com.assistant.core.fields.CustomFieldsInput
-import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldInput
 import com.assistant.core.fields.toFieldDefinitions
+import com.assistant.core.strings.Strings
+import com.assistant.core.ui.DialogType
+import com.assistant.core.ui.FieldType as UIFieldType
+import com.assistant.core.ui.FieldValuesSaver
+import com.assistant.core.ui.TextType
+import com.assistant.core.ui.UI
+import com.assistant.tools.tracking.TrackingConfig
+import com.assistant.tools.tracking.TrackingKind
+import com.assistant.tools.tracking.TrackingToolType
 import org.json.JSONObject
-import org.json.JSONArray
 
 /**
- * Dialog modes for tracking entries
+ * An entry as the dialog hands it back: what the user entered, and whether to keep it as a
+ * shortcut.
  */
-enum class ItemType { FREE, PREDEFINED }
-enum class ActionType { CREATE, UPDATE }
+data class TrackingEntryDraft(
+    val name: String,
+    val timestamp: Long,
+    val value: Any?,
+    val unit: String?,
+    val extra: Map<String, Any?>,
+    val addToShortcuts: Boolean = false
+)
 
 /**
- * TrackingEntryDialog - Clean rewrite for tracking data entry only
+ * Creates or edits a tracking entry. Every field is entered by the component of its field type:
+ * the name and the moment, declared by the core; the value and its unit, declared by the tool
+ * type for this tool's config; the user's own fields.
  *
- * Purpose: Create/edit tracking entries (not predefined items configuration)
- *
- * Use cases:
- * 1. Predefined item: Use predefined item (name + defaults pre-filled)
- * 2. Free entry: Create new entry (name + value from scratch)
- * 3. History edit: Edit existing entry (all fields editable)
+ * @param initial What the dialog opens with
+ * @param nameEditable False when the entry comes from a shortcut, whose name it keeps
+ * @param offerShortcut Whether to offer keeping the entry as a new shortcut (a free entry)
  */
 @Composable
 fun TrackingEntryDialog(
-    isVisible: Boolean,
-    trackingType: String,
     config: JSONObject,
-    itemType: ItemType?, // PREDEFINED, FREE, or null for history
-    actionType: ActionType, // CREATE or UPDATE
-    toolInstanceId: String = "",
-    initialName: String = "",
-    initialData: Map<String, Any> = emptyMap(),
-    initialTimestamp: Long = System.currentTimeMillis(),
-    onConfirm: (name: String, dataJson: String, addToPredefined: Boolean, timestamp: Long) -> Unit,
+    title: String,
+    dialogType: DialogType,
+    initial: TrackingEntryDraft,
+    nameEditable: Boolean,
+    offerShortcut: Boolean,
+    onConfirm: (TrackingEntryDraft) -> Unit,
     onCancel: () -> Unit
 ) {
-    // State management
-    var name by rememberSaveable(isVisible) { mutableStateOf(initialName) }
-    var timestamp by rememberSaveable(isVisible, initialTimestamp) { mutableStateOf(initialTimestamp) }
-    var addToPredefined by rememberSaveable(isVisible) { mutableStateOf(false) }
-    
-    // Type-specific value states
-    var numericQuantity by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["quantity"]?.toString() ?: initialData["default_quantity"]?.toString() ?: "") 
-    }
-    var numericUnit by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["unit"]?.toString() ?: "") 
-    }
-    
-    var textValue by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["text"]?.toString() ?: "") 
-    }
-    
-    var scaleRating by rememberSaveable(isVisible) { 
-        mutableStateOf((initialData["rating"] as? Number)?.toInt())
-    }
-    
-    var choiceValue by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["selected_option"]?.toString() ?: "") 
-    }
-    
-    var booleanValue by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["state"] as? Boolean ?: false) 
-    }
-    
-    var counterIncrement by rememberSaveable(isVisible) { 
-        mutableStateOf(initialData["increment"]?.toString() ?: initialData["default_increment"]?.toString() ?: "1") 
-    }
-    
-    // Timer: 3 separate H/M/S fields
-    val initialSeconds = (initialData["duration_seconds"] as? Number)?.toInt() ?: 0
-    var timerHours by rememberSaveable(isVisible) { 
-        mutableStateOf((initialSeconds / 3600).toString()) 
-    }
-    var timerMinutes by rememberSaveable(isVisible) { 
-        mutableStateOf(((initialSeconds % 3600) / 60).toString()) 
-    }
-    var timerSeconds by rememberSaveable(isVisible) {
-        mutableStateOf((initialSeconds % 60).toString())
-    }
-
-    // Custom fields states
-    val customFieldsDefinitions = remember(config) {
-        val customFieldsArray = config.optJSONArray("extra_fields")
-        if (customFieldsArray != null) {
-            try {
-                customFieldsArray.toFieldDefinitions()
-            } catch (e: Exception) {
-                LogManager.tracking("Error parsing custom fields definitions: ${e.message}", "ERROR")
-                emptyList()
-            }
-        } else {
-            emptyList()
-        }
-    }
-
-    var customFieldsValues by rememberSaveable(isVisible, initialData, stateSaver = FieldValuesSaver) {
-        val values = (initialData["extra"] as? Map<String, Any?>) ?: emptyMap()
-        LogManager.tracking("TrackingEntryDialog - Custom fields values: ${values.size} fields, keys=${values.keys}")
-        mutableStateOf(values)
-    }
-
-    // Date/time UI states
-    var dateString by rememberSaveable(isVisible) { 
-        mutableStateOf(DateUtils.formatDateForDisplay(timestamp)) 
-    }
-    var timeString by rememberSaveable(isVisible) { 
-        mutableStateOf(DateUtils.formatTimeForDisplay(timestamp)) 
-    }
-    var showDatePicker by rememberSaveable { mutableStateOf(false) }
-    var showTimePicker by rememberSaveable { mutableStateOf(false) }
-
-    // Validation state
-    var validationResult: ValidationResult by remember { mutableStateOf(ValidationResult.success()) }
-
-    // A numeric entry carries a number, so the form refuses to submit anything else rather than
-    // letting the schema say "string found, number expected" to someone who left a field empty.
-    val canConfirm = when (trackingType) {
-        "numeric" -> numericQuantity.trim().toDoubleOrNull() != null
-        else -> true
-    }
-
-    // Get Android context for string resources
     val context = LocalContext.current
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
+    val kind = remember(config) { TrackingKind.of(config) }
+    val declared = remember(config) { TrackingToolType.getEntryFields(config, context).data.map { it.definition } }
+    val valueField = declared.firstOrNull { it.name == "value" }
+    val unitField = declared.firstOrNull { it.name == "unit" }
+    val extraFields = remember(config) { config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList() }
+    val units = remember(config) { TrackingConfig.units(config) }
 
-    // Centralized actual values for all types (used in validateForm AND UI)
-    val realValues = remember(trackingType, config, initialData, s) {
-        when (trackingType) {
-            "scale" -> mapOf(
-                "min_value" to ((initialData["min_value"] as? Number)?.toInt() 
-                    ?: if (config.has("min")) config.getInt("min") else null),
-                "max_value" to ((initialData["max_value"] as? Number)?.toInt() 
-                    ?: if (config.has("max")) config.getInt("max") else null),
-                "min_label" to ((initialData["min_label"] as? String)
-                    ?: if (config.has("min_label")) config.getString("min_label") else null),
-                "max_label" to ((initialData["max_label"] as? String)
-                    ?: if (config.has("max_label")) config.getString("max_label") else null)
+    var name by rememberSaveable { mutableStateOf(initial.name) }
+    var timestamp by rememberSaveable { mutableStateOf(initial.timestamp) }
+    // The value and its unit, in one saved map so any field type's value survives a rotation.
+    // A new entry takes the first unit: the one the config lists first.
+    var values by rememberSaveable(stateSaver = FieldValuesSaver) {
+        mutableStateOf(mapOf("value" to initial.value, "unit" to (initial.unit ?: units.firstOrNull())))
+    }
+    var extra by rememberSaveable(stateSaver = FieldValuesSaver) { mutableStateOf(initial.extra) }
+    var addToShortcuts by rememberSaveable { mutableStateOf(false) }
+
+    // A timer's value comes from its stopwatch and an occurrence has none: both can be saved
+    // without one
+    val valueNeeded = kind != TrackingKind.TIMER && kind != TrackingKind.OCCURRENCE
+    val complete = name.isNotBlank() && (!valueNeeded || values["value"] != null)
+
+    UI.Dialog(
+        type = dialogType,
+        confirmEnabled = complete,
+        onConfirm = {
+            onConfirm(
+                TrackingEntryDraft(
+                    name = name.trim(),
+                    timestamp = timestamp,
+                    value = values["value"],
+                    unit = if (unitField != null) values["unit"] as? String else null,
+                    extra = extra,
+                    addToShortcuts = addToShortcuts
+                )
             )
-            "boolean" -> mapOf(
-                "true_label" to ((initialData["true_label"] as? String)
-                    ?: if (config.has("true_label")) config.getString("true_label") else s.tool("config_default_true_label")),
-                "false_label" to ((initialData["false_label"] as? String)
-                    ?: if (config.has("false_label")) config.getString("false_label") else s.tool("config_default_false_label"))
-            )
-            "choice" -> mapOf(
-                "options" to (config.optJSONArray("options")?.let { array ->
-                    (0 until array.length()).map { array.getString(it) }
-                } ?: emptyList<String>())
-            )
-            else -> emptyMap()
-        }
-    }
-    
-    // State for error messages
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    
-    // State for validated data object (single source of truth)
-    var dataObject by remember { mutableStateOf<Any>(emptyMap<String, Any>()) }
-
-    // UI behavior based on context
-    val isNameEditable = true // Name is always editable
-    val showAddToPredefinedCheckbox = itemType == ItemType.FREE && actionType == ActionType.CREATE
-    val dialogTitle = when (actionType) {
-        ActionType.CREATE -> when (itemType) {
-            ItemType.FREE -> s.tool("usage_dialog_create_entry")
-            ItemType.PREDEFINED -> s.tool("usage_dialog_use_item")
-            null -> s.tool("usage_dialog_create_entry")
-        }
-        ActionType.UPDATE -> s.tool("usage_dialog_edit_entry")
-    }
-
-    // Sync date/time with timestamp
-    LaunchedEffect(dateString, timeString) {
-        // The two strings come from the pickers. An unreadable pair leaves the entry on the
-        // moment it already had, rather than filing it under the present one unannounced.
-        DateUtils.combineDateTime(dateString, timeString)?.let { timestamp = it }
-    }
-
-    // Reset validation errors when dialog opens
-    LaunchedEffect(isVisible) {
-        if (isVisible) {
-            validationResult = ValidationResult.success()
-        }
-    }
-
-    // Validation function
-    val validateForm = {
-        // Build data JSON according to tracking type
-        // Note: 'raw' field is auto-generated by ToolDataService via enrichData()
-        val dataJson = when (trackingType) {
-            "numeric" -> JSONObject().apply {
-                put("type", "numeric")
-                // The schema asks for a number, and the confirm button stays disabled until
-                // the field holds one, so the conversion here cannot fail.
-                put("quantity", numericQuantity.trim().toDouble())
-                put("unit", numericUnit.trim())
-            }.toString()
-
-            "text" -> JSONObject().apply {
-                put("type", "text")
-                put("text", textValue.trim())
-            }.toString()
-
-            "scale" -> {
-                val minValue = realValues["min_value"] as? Int
-                val maxValue = realValues["max_value"] as? Int
-                val minLabel = realValues["min_label"] as? String
-                val maxLabel = realValues["max_label"] as? String
-
-                JSONObject().apply {
-                    put("type", "scale")
-                    put("rating", scaleRating)
-                    if (minValue != null) put("min_value", minValue)
-                    if (maxValue != null) put("max_value", maxValue)
-                    if (minLabel != null) put("min_label", minLabel)
-                    if (maxLabel != null) put("max_label", maxLabel)
-                }.toString()
-            }
-
-            "choice" -> {
-                val options = realValues["options"] as? List<String> ?: emptyList()
-
-                JSONObject().apply {
-                    put("type", "choice")
-                    put("selected_option", choiceValue.trim())
-                    put("available_options", JSONArray(options))
-                }.toString()
-            }
-
-            "boolean" -> {
-                val trueLabel = realValues["true_label"] as? String ?: s.tool("config_default_true_label")
-                val falseLabel = realValues["false_label"] as? String ?: s.tool("config_default_false_label")
-
-                JSONObject().apply {
-                    put("type", "boolean")
-                    put("state", booleanValue)
-                    put("true_label", trueLabel)
-                    put("false_label", falseLabel)
-                }.toString()
-            }
-
-            "counter" -> JSONObject().apply {
-                put("type", "counter")
-                put("increment", counterIncrement.toIntOrNull() ?: 1)
-            }.toString()
-
-            "timer" -> {
-                // Convert H/M/S into total seconds
-                val h = timerHours.trim().toIntOrNull() ?: 0
-                val m = timerMinutes.trim().toIntOrNull() ?: 0
-                val s = timerSeconds.trim().toIntOrNull() ?: 0
-                val totalSeconds = h * 3600 + m * 60 + s
-
-                JSONObject().apply {
-                    put("type", "timer")
-                    put("duration_seconds", totalSeconds)
-                }.toString()
-            }
-
-            else -> "{}"
-        }
-
-        // Build complete TrackingData structure for validation
-        // Parse dataJson to object for schema validation
-        dataObject = com.assistant.tools.tracking.TrackingUtils.convertToValidationFormat(dataJson, trackingType)
-        
-        val entryData = mapOf(
-            "id" to "temp-validation-id",
-            "tool_instance_id" to toolInstanceId,
-            "tooltype" to "tracking",
-            "name" to name.trim(),
-            "data" to dataObject, // Use parsed object, not JSON string
-            "timestamp" to timestamp,
-            "created_at" to System.currentTimeMillis(),
-            "updated_at" to System.currentTimeMillis()
-        )
-
-        // Log data being validated
-        LogManager.tracking("=== Validation start ===")
-        LogManager.tracking("trackingType: $trackingType")
-        LogManager.tracking("dataJson: $dataJson")
-        LogManager.tracking("dataObject: $dataObject")
-        LogManager.tracking("entryData: $entryData")
-        
-        val toolType = com.assistant.core.tools.ToolTypeManager.getToolType("tracking")
-        if (toolType != null) {
-            val schemaId = "tracking_data_$trackingType"
-            val schema = toolType.getSchema(schemaId, context)
-            if (schema != null) {
-                LogManager.tracking("DataSchema being used: ${schema.content.take(200)}...")
-                validationResult = SchemaValidator.validate(schema, entryData, context)
-            } else {
-                LogManager.tracking("ERROR: Schema not found for type: $trackingType", "ERROR")
-                validationResult = ValidationResult.error("Schema not found for type: $trackingType")
-            }
-        } else {
-            validationResult = ValidationResult.error("Tool type 'tracking' not found")
-        }
-        
-        // Log validation result for debugging
-        LogManager.tracking("TrackingEntryDialog validation result: isValid=${validationResult.isValid}")
-        if (!validationResult.isValid) {
-            LogManager.tracking("TrackingEntryDialog validation error: ${validationResult.errorMessage}")
-        }
-        
-        // Debug: Log additional details
-        try {
-            LogManager.tracking("Using new SchemaValidator API")
-        } catch (e: Exception) {
-            LogManager.tracking("Debug validation failed: ${e.message}", "ERROR", e)
-        }
-        LogManager.tracking("=== Validation end ===")
-    }
-
-    if (isVisible) {
-        UI.Dialog(
-            type = DialogType.CONFIRM,
-            confirmEnabled = canConfirm,
-            onConfirm = {
-                LogManager.tracking("=== OnConfirm called ===")
-                validateForm()
-                LogManager.tracking("After validation: isValid=${validationResult.isValid}")
-                if (validationResult.isValid) {
-                    // Use validated and transformed dataObject (single source of truth)
-                    // This ensures Dialog and Service use exactly the same data format
-                    val dataJson = JSONObject().apply {
-                        val dataMap = dataObject as Map<String, Any>
-                        for ((key, value) in dataMap) {
-                            when (value) {
-                                is List<*> -> put(key, JSONArray(value))
-                                else -> put(key, value)
-                            }
-                        }
-
-                        // Add custom fields if any
-                        if (customFieldsValues.isNotEmpty()) {
-                            put("extra", JSONObject(customFieldsValues))
-                        }
-                    }.toString()
-                    
-                    LogManager.tracking("=== Calling parent onConfirm ===")
-                    LogManager.tracking("Final name: '${name.trim()}'")
-                    LogManager.tracking("Final dataJson: $dataJson")
-                    LogManager.tracking("Final addToPredefined: $addToPredefined")
-                    LogManager.tracking("Final timestamp: $timestamp")
-                    
-                    onConfirm(name.trim(), dataJson, addToPredefined, timestamp)
-                } else {
-                    // DEBUG: Detailed error logging
-                    LogManager.tracking("=== Validation failed ===", "ERROR")
-                    LogManager.tracking("Field data: $dataObject", "ERROR")
-                    LogManager.tracking("Error: ${validationResult.errorMessage}", "ERROR")
-                    LogManager.tracking("Tracking type: $trackingType", "ERROR")
-                    LogManager.tracking("Device: Android ${android.os.Build.VERSION.RELEASE}", "ERROR")
-                    
-                    // Set error message for toast display
-                    errorMessage = validationResult.errorMessage ?: s.shared("message_validation_error_simple")
-                }
-            },
-            onCancel = onCancel
+        },
+        onCancel = onCancel
+    ) {
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                UI.Text(dialogTitle, TextType.SUBTITLE)
-                
-                // Name field
-                UI.FormField(
-                    label = s.shared("tools_config_label_name"),
-                    value = name,
-                    onChange = { name = it },
-                    required = true,
-                    readonly = !isNameEditable,
-                    fieldType = FieldType.TEXT
+            UI.Text(title, TextType.SUBTITLE)
+
+            UI.FormField(
+                label = s.shared("tools_config_label_name"),
+                value = name,
+                onChange = { name = it },
+                required = true,
+                readonly = !nameEditable,
+                fieldType = UIFieldType.TEXT
+            )
+
+            FieldInput(
+                fieldDef = CoreFields.timestamp(s::shared),
+                value = timestamp,
+                onChange = { new -> (new as? Number)?.toLong()?.let { timestamp = it } },
+                context = context
+            )
+
+            if (valueField != null) {
+                FieldInput(
+                    fieldDef = valueField,
+                    value = values["value"],
+                    onChange = { values = values + ("value" to it) },
+                    context = context
                 )
-                
-                // Type-specific value fields
-                when (trackingType) {
-                    "numeric" -> {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(modifier = Modifier.weight(2f)) {
-                                UI.FormField(
-                                    label = s.tool("usage_label_quantity"),
-                                    value = numericQuantity,
-                                    onChange = { numericQuantity = it },
-                                    required = true,
-                                    fieldType = FieldType.NUMERIC
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                UI.FormField(
-                                    label = s.tool("usage_label_unit"),
-                                    value = numericUnit,
-                                    onChange = { numericUnit = it },
-                                    fieldType = FieldType.TEXT
-                                )
-                            }
-                        }
-                    }
-                    
-                    "text" -> {
-                        UI.FormField(
-                            label = s.tool("usage_label_text"),
-                            value = textValue,
-                            onChange = { textValue = it },
-                            required = true,
-                            fieldType = FieldType.TEXT_LONG
-                        )
-                    }
-                    
-                    "scale" -> {
-                        // Use centralized actual values
-                        val minValue = realValues["min_value"] as? Int
-                        val maxValue = realValues["max_value"] as? Int
-                        val minLabel = realValues["min_label"] as? String
-                        val maxLabel = realValues["max_label"] as? String
-                        
-                        LogManager.tracking("Dialog values: min=$minValue, max=$maxValue, minLabel='$minLabel', maxLabel='$maxLabel'")
-                        
-                        if (minValue != null && maxValue != null) {
-                            // Initialize to min value if not yet defined
-                            val currentRating = scaleRating ?: minValue
-                            if (scaleRating == null) {
-                                scaleRating = currentRating
-                            }
-                            
-                            UI.SliderField(
-                                label = s.tool("usage_label_rating"),
-                                value = currentRating,
-                                onValueChange = { scaleRating = it },
-                                range = minValue..maxValue,
-                                minLabel = minLabel?.ifBlank { minValue.toString() } ?: minValue.toString(),
-                                maxLabel = maxLabel?.ifBlank { maxValue.toString() } ?: maxValue.toString(),
-                                required = true
-                            )
-                        } else {
-                            // No valid min/max data - show error
-                            UI.Text(s.tool("usage_error_scale_config"), TextType.BODY)
-                            LogManager.tracking("minValue ou maxValue null - impossible d'afficher le slider", "ERROR")
-                        }
-                    }
-                    
-                    "choice" -> {
-                        val options = realValues["options"] as? List<String> ?: emptyList()
-                        
-                        // Show available options (readonly context)
-                        if (options.isNotEmpty()) {
-                            UI.Text(
-                                text = s.tool("usage_available_options").format(options.joinToString(", ")),
-                                type = TextType.CAPTION
-                            )
-                        }
-                        
-                        UI.FormSelection(
-                            label = s.tool("usage_label_choice"),
-                            options = options,
-                            selected = choiceValue,
-                            onSelect = { choiceValue = it },
-                            required = true
-                        )
-                    }
-                    
-                    "boolean" -> {
-                        val trueLabel = realValues["true_label"] as? String ?: s.tool("config_default_true_label")
-                        val falseLabel = realValues["false_label"] as? String ?: s.tool("config_default_false_label")
-                        
-                        UI.ToggleField(
-                            label = s.tool("usage_label_state"),
-                            checked = booleanValue,
-                            onCheckedChange = { booleanValue = it },
-                            trueLabel = trueLabel,
-                            falseLabel = falseLabel,
-                            required = true
-                        )
-                    }
-                    
-                    "counter" -> {
-                        UI.FormField(
-                            label = s.tool("usage_label_increment"),
-                            value = counterIncrement,
-                            onChange = { counterIncrement = it },
-                            required = true,
-                            fieldType = FieldType.NUMERIC
-                        )
-                    }
-                    
-                    "timer" -> {
-                        // 3 separate fields for H/M/S
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                UI.FormField(
-                                    label = s.tool("usage_label_hours"),
-                                    value = timerHours,
-                                    onChange = { timerHours = it },
-                                    fieldType = FieldType.NUMERIC
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                UI.FormField(
-                                    label = s.tool("usage_label_minutes"), 
-                                    value = timerMinutes,
-                                    onChange = { timerMinutes = it },
-                                    fieldType = FieldType.NUMERIC
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                UI.FormField(
-                                    label = s.tool("usage_label_seconds"),
-                                    value = timerSeconds,
-                                    onChange = { timerSeconds = it },
-                                    fieldType = FieldType.NUMERIC
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Custom fields input (if any custom fields defined)
-                if (customFieldsDefinitions.isNotEmpty()) {
-                    CustomFieldsInput(
-                        customFieldsMetadata = customFieldsDefinitions,
-                        values = customFieldsValues,
-                        onValuesChange = { newValues ->
-                            customFieldsValues = newValues
-                            LogManager.tracking("Custom fields values updated")
-                        },
-                        context = context
-                    )
-                }
-
-                // Date and time fields
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.shared("label_date"),
-                            value = dateString,
-                            onChange = { /* readonly, use picker */ },
-                            readonly = true,
-                            onClick = { showDatePicker = true },
-                            fieldType = FieldType.TEXT
-                        )
-                    }
-                    
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.shared("label_time"),
-                            value = timeString,
-                            onChange = { /* readonly, use picker */ },
-                            readonly = true,
-                            onClick = { showTimePicker = true },
-                            fieldType = FieldType.TEXT
-                        )
-                    }
-                }
-                
-                // Add to predefined checkbox
-                if (showAddToPredefinedCheckbox) {
-                    UI.Checkbox(
-                        checked = addToPredefined,
-                        onCheckedChange = { addToPredefined = it },
-                        label = s.tool("usage_add_to_shortcuts")
-                    )
-                }
             }
-        }
-        
-        // Date picker dialog
-        if (showDatePicker) {
-            UI.DatePicker(
-                selectedDate = dateString,
-                onDateSelected = { newDate ->
-                    dateString = newDate
-                },
-                onDismiss = { showDatePicker = false }
-            )
-        }
-        
-        // Time picker dialog
-        if (showTimePicker) {
-            UI.TimePicker(
-                selectedTime = timeString,
-                onTimeSelected = { newTime ->
-                    timeString = newTime
-                },
-                onDismiss = { showTimePicker = false }
-            )
-        }
-        
-        // Show error toast when errorMessage is set
-        errorMessage?.let { message ->
-            val context = LocalContext.current
-            LaunchedEffect(message) {
-                UI.Toast(
-                    context,
-                    message,
-                    Duration.LONG
+
+            if (unitField != null) {
+                UI.FormSelection(
+                    label = unitField.displayName,
+                    options = units,
+                    selected = values["unit"] as? String ?: "",
+                    onSelect = { values = values + ("unit" to it) },
+                    required = true
                 )
-                errorMessage = null
+            }
+
+            if (extraFields.isNotEmpty()) {
+                CustomFieldsInput(
+                    customFieldsMetadata = extraFields,
+                    values = extra,
+                    onValuesChange = { extra = it },
+                    context = context
+                )
+            }
+
+            if (offerShortcut) {
+                UI.Checkbox(
+                    checked = addToShortcuts,
+                    onCheckedChange = { addToShortcuts = it },
+                    label = s.tool("usage_add_to_shortcuts")
+                )
             }
         }
     }
