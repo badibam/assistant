@@ -245,7 +245,6 @@ fun NotesConfigScreen(
                             toolTypeName = "notes",
                             configData = configData,
                             context = context,
-                            schemaType = "config",
                             onSuccess = { configJson ->
                                 LogManager.ui("Notes config validation success - checking zone change")
 

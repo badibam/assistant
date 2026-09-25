@@ -122,6 +122,12 @@ interface ToolTypeContract : SchemaProvider {
     fun getEntryFields(config: JSONObject, context: Context): com.assistant.core.fields.EntryFields
 
     /**
+     * The settings of this tool type's config, beside the ones every tool has
+     * (ToolConfigSettings): the config's schema and checking are generated from them.
+     */
+    fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode>
+
+    /**
      * [config] once [added] have joined the options of the CHOICE field [field] this tool type
      * declares in data, for a field whose vocabulary is open. Only a tool type that declares an
      * open CHOICE in data keeps its options in its config and answers; the service asks no other.

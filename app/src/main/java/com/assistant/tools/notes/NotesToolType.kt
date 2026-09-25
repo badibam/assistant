@@ -56,7 +56,7 @@ object NotesToolType : ToolTypeContract {
 
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
-            "notes_config" -> createNotesConfigSchema(context)
+            "notes_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
             "notes_data" -> createNotesDataSchema(context, toolInstanceId)
             else -> null
         }
@@ -75,27 +75,8 @@ object NotesToolType : ToolTypeContract {
         }
     }
 
-    private fun createNotesConfigSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "notes", context = context)
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseConfigSchema(context),
-            """
-            {
-                "properties": {},
-                "required": []
-            }
-            """.trimIndent()
-        )
-
-        return Schema(
-            id = "notes_config",
-            displayName = s.tool("schema_config_display_name"),
-            description = s.tool("schema_config_description"),
-            category = SchemaCategory.TOOL_CONFIG,
-            content = content
-        )
-    }
+    /** Notes have no setting of their own. */
+    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> = emptyList()
 
     /**
      * The data schema of notes, generated from their declared fields.

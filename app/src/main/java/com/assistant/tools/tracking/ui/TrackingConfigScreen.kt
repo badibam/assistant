@@ -142,7 +142,6 @@ fun TrackingConfigScreen(
             toolTypeName = "tracking",
             configData = toSave.keys().asSequence().associateWith { toSave.get(it) },
             context = context,
-            schemaType = "config",
             onSuccess = { configJson ->
                 scope.launch {
                     if (deletesEntries && existingToolId != null) {

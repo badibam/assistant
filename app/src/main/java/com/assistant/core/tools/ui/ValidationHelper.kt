@@ -14,12 +14,11 @@ import com.assistant.core.utils.LogManager
 object ValidationHelper {
 
     /**
-     * Validates data and automatically displays toast on error.
+     * Validates a tool's config and automatically displays toast on error.
      *
      * @param toolTypeName Tooltype name (e.g., "tracking", "notes")
-     * @param configData Data to validate as Map
+     * @param configData The config to validate as Map
      * @param context Android context for toast
-     * @param schemaId Full schema ID to use (e.g., "tracking_config_numeric", "notes_data")
      * @param onSuccess Callback called if validation succeeds with JSON string
      * @param onError Optional callback called on error (in addition to toast)
      * @return true if validation succeeded, false otherwise
@@ -28,7 +27,6 @@ object ValidationHelper {
         toolTypeName: String,
         configData: Map<String, Any>,
         context: Context,
-        schemaId: String,
         onSuccess: (String) -> Unit,
         onError: ((String) -> Unit)? = null
     ): Boolean {
@@ -43,24 +41,11 @@ object ValidationHelper {
             return false
         }
 
-        // Extract schema_id from the data
-        val extractedSchemaId = configData["schema_id"] as? String
-        if (extractedSchemaId.isNullOrEmpty()) {
-            val s = com.assistant.core.strings.Strings.`for`(context = context)
-            val errorMsg = s.shared("error_missing_schema_id")
-            LogManager.service("Missing schema_id in data for $toolTypeName", "ERROR")
-            showErrorToast(context, errorMsg)
-            onError?.invoke(errorMsg)
-            return false
-        }
+        // The schema generated from the tool type's declaration, the one the service holds the
+        // config to as well: checked here first so the screen can say what is wrong
+        val schema = com.assistant.core.tools.ToolConfigSettings.schema(toolType, "config:$toolTypeName", context)
+        val validation = SchemaValidator.validate(schema, configData, context)
 
-        val schema = toolType.getSchema(extractedSchemaId, context)
-        val validation = if (schema != null) {
-            SchemaValidator.validate(schema, configData, context)
-        } else {
-            com.assistant.core.validation.ValidationResult.error("Schema not found: $extractedSchemaId")
-        }
-        
         if (validation.isValid) {
             // Map to JSON string conversion for compatibility
             val jsonString = mapToJsonString(configData)
@@ -69,7 +54,7 @@ object ValidationHelper {
         } else {
             val s = com.assistant.core.strings.Strings.`for`(context = context)
             val errorMsg = validation.errorMessage ?: s.shared("message_validation_error_simple")
-            LogManager.service("Validation failed for $toolTypeName ($schemaId): $errorMsg", "ERROR")
+            LogManager.service("Validation failed for $toolTypeName: $errorMsg", "ERROR")
             showErrorToast(context, errorMsg)
             onError?.invoke(errorMsg)
             return false

@@ -1,5 +1,8 @@
 package com.assistant.tools.messages
 
+import com.assistant.core.fields.ChoiceSettings
+import com.assistant.core.fields.settings.ScheduleSettings
+import com.assistant.core.fields.settings.SettingNode
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.EntryFields
 import com.assistant.core.fields.FieldDefinition
@@ -19,7 +22,6 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
-import com.assistant.core.validation.SchemaUtils
 import com.assistant.tools.messages.scheduler.MessageScheduler
 // import com.assistant.tools.messages.ui.MessagesConfigScreen
 // import com.assistant.tools.messages.ui.MessagesScreen
@@ -107,7 +109,7 @@ object MessageToolType : ToolTypeContract {
 
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
-            "messages_config" -> createMessagesConfigSchema(context)
+            "messages_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
             "messages_data" -> createMessagesDataSchema(context, toolInstanceId)
             else -> null
         }
@@ -131,73 +133,24 @@ object MessageToolType : ToolTypeContract {
      * schedule is optional: without it nothing fires on its own and the instance is a pure
      * notification channel, fed on demand by the user or the AI.
      */
-    private fun createMessagesConfigSchema(context: Context): Schema {
+    override fun getConfigSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(tool = "messages", context = context)
-
-        val specificSchemaTemplate = """
-        {
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "${s.tool("schema_config_enabled")}"
-                },
-                "common_title": {
-                    "type": "string",
-                    "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "${s.tool("schema_config_common_title")}"
-                },
-                "common_content": {
-                    "type": "string",
-                    "maxLength": ${FieldLimits.LONG_LENGTH},
-                    "description": "${s.tool("schema_config_common_content")}"
-                },
-                "priority": {
-                    "type": "string",
-                    "enum": ["default", "high", "low"],
-                    "default": "default",
-                    "description": "${s.tool("schema_config_priority")}"
-                },
-                "external_notifications": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "${s.tool("schema_config_external_notifications")}"
-                },
-                "schedule": "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
-                "creation_horizon_days": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "default": 2,
-                    "description": "${s.tool("schema_config_creation_horizon_days")}"
-                },
-                "validity_window_minutes": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "default": 60,
-                    "description": "${s.tool("schema_config_validity_window_minutes")}"
-                }
-            },
-            "required": ["enabled", "priority", "external_notifications", "creation_horizon_days", "validity_window_minutes"]
-        }
-        """.trimIndent()
-
-        // Reuse the shared ScheduleConfig schema rather than restating its six patterns
-        val embedded = SchemaUtils.embedScheduleConfig(
-            specificSchemaTemplate,
-            "{{SCHEDULE_CONFIG_PLACEHOLDER}}",
-            context
-        )
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseConfigSchema(context),
-            embedded
-        )
-
-        return Schema(
-            id = "messages_config",
-            displayName = s.tool("schema_config_display_name"),
-            description = s.tool("schema_config_description"),
-            category = SchemaCategory.TOOL_CONFIG,
-            content = content
+        val shared = Strings.`for`(context = context)
+        fun field(name: String, type: FieldType, required: Boolean = false, default: Any? = null, config: Map<String, Any>? = null) =
+            SettingNode.Field(FieldDefinition(name, s.tool("field_$name"), s.tool("schema_config_$name"), type, false, config),
+                required = required, default = default)
+        val priorities = listOf("default", "high", "low")
+        return listOf(
+            field("enabled", FieldType.BOOLEAN, required = true, default = true),
+            field("common_title", FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
+            field("common_content", FieldType.TEXT, config = mapOf("length" to TextLength.LONG.name)),
+            field("priority", FieldType.CHOICE, required = true, default = "default",
+                config = mapOf("options" to ChoiceSettings.storedOptions(priorities, priorities.associateWith { s.tool("priority_$it") }))),
+            field("external_notifications", FieldType.BOOLEAN, required = true, default = true),
+            // Absent: nothing fires on its own, the tool is a channel fed on demand
+            SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
+            field("creation_horizon_days", FieldType.NUMERIC, required = true, default = 2, config = mapOf("min" to 1, "decimals" to 0)),
+            field("validity_window_minutes", FieldType.NUMERIC, required = true, default = 60, config = mapOf("min" to 0, "decimals" to 0))
         )
     }
 

@@ -1,5 +1,9 @@
-package com.assistant.core.utils
+package com.assistant.core.fields.settings
 
+import com.assistant.core.utils.ScheduleConfig
+import com.assistant.core.utils.SchedulePattern
+import com.assistant.core.utils.WeekMoment
+import com.assistant.core.utils.YearlyDate
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
@@ -15,14 +19,13 @@ import org.junit.Test
  * lets through reads back into the same schedule. A gap either way is a schedule that is
  * refused when it is fine, or accepted and then never run.
  */
-class ScheduleConfigSchemaTest {
+class ScheduleSettingsTest {
 
     private val mapper = ObjectMapper()
 
-    /** Loaded the way Messages embeds it: without its bare "$id", which the validator cannot resolve alone. */
+    /** Generated from the declaration, as a Messages config holds it under "schedule". */
     private val schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(
-        (mapper.readTree(ScheduleConfigSchema.content { it }) as com.fasterxml.jackson.databind.node.ObjectNode)
-            .apply { remove("\$id") }
+        SettingsSchemaGenerator.generate(ScheduleSettings.nodes { it }) { it }.toString()
     )
 
     private fun passes(json: String) = schema.validate(mapper.readTree(json)).isEmpty()
@@ -54,7 +57,7 @@ class ScheduleConfigSchemaTest {
             """{"pattern":{"type":"MonthlyRecurrent","months":[1,6],"day_of_month":15,"time":"10:00"}}""",
             """{"pattern":{"type":"WeeklyCustom","moments":[{"day_of_week":1,"time":"09:00"},{"day_of_week":7,"time":"20:00"}]}}""",
             """{"pattern":{"type":"YearlyRecurrent","dates":[{"month":12,"day":25,"time":"08:00"}]}}""",
-            """{"pattern":{"type":"SpecificDates","timestamps":[1727000000000]},"start_date":0,"end_date":null}"""
+            """{"pattern":{"type":"SpecificDates","timestamps":[1727000000000]},"start_date":0}"""
         )
         written.zip(onePerPattern).forEach { (json, pattern) ->
             assertTrue(json, passes(json))

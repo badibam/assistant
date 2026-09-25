@@ -57,7 +57,7 @@ object JournalToolType : ToolTypeContract {
 
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         return when (schemaId) {
-            "journal_config" -> createJournalConfigSchema(context)
+            "journal_config" -> com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
             "journal_data" -> createJournalDataSchema(context, toolInstanceId)
             else -> null
         }
@@ -76,39 +76,17 @@ object JournalToolType : ToolTypeContract {
         }
     }
 
-    /**
-     * Creates journal configuration schema
-     * Extends base config with sort_order field
-     */
-    private fun createJournalConfigSchema(context: Context): Schema {
+    /** A journal's own setting: in which order its entries are shown. */
+    override fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode> {
         val s = Strings.`for`(tool = "journal", context = context)
-
-        val specificSchema = """
-        {
-            "properties": {
-                "sort_order": {
-                    "type": "string",
-                    "enum": ["ascending", "descending"],
-                    "default": "descending",
-                    "description": "${s.tool("schema_config_sort_order")}"
-                }
-            },
-            "required": ["sort_order"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseConfigSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "journal_config",
-            displayName = s.tool("schema_config_display_name"),
-            description = s.tool("schema_config_description"),
-            category = SchemaCategory.TOOL_CONFIG,
-            content = content
-        )
+        val orders = listOf("ascending", "descending")
+        return listOf(com.assistant.core.fields.settings.SettingNode.Field(
+            com.assistant.core.fields.FieldDefinition("sort_order", s.tool("field_sort_order"), s.tool("schema_config_sort_order"),
+                com.assistant.core.fields.FieldType.CHOICE, false,
+                mapOf("options" to com.assistant.core.fields.ChoiceSettings.storedOptions(orders, orders.associateWith { s.tool("sort_order_$it") }))),
+            required = true,
+            default = "descending"
+        ))
     }
 
     /**

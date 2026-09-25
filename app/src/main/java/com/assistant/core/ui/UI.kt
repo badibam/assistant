@@ -565,11 +565,10 @@ object UI {
             toolTypeName: String,
             configData: Map<String, Any>,
             context: android.content.Context,
-            schemaType: String = "config",
             onSuccess: (String) -> Unit,
             onError: ((String) -> Unit)? = null
         ): Boolean = com.assistant.core.tools.ui.ValidationHelper.validateAndSave(
-            toolTypeName, configData, context, schemaType, onSuccess, onError
+            toolTypeName, configData, context, onSuccess, onError
         )
     }
     

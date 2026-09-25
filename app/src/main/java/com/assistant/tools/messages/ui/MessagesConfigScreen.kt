@@ -432,7 +432,6 @@ fun MessagesConfigScreen(
                             toolTypeName = "messages",
                             configData = configData,
                             context = context,
-                            schemaType = "config",
                             onSuccess = { configJson ->
                                 LogManager.ui("Messages config validation success - checking zone change")
 

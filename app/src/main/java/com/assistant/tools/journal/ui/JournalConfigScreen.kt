@@ -279,7 +279,6 @@ fun JournalConfigScreen(
                             toolTypeName = "journal",
                             configData = configData,
                             context = context,
-                            schemaType = "config",
                             onSuccess = { configJson ->
                                 LogManager.ui("Journal config validation success")
 

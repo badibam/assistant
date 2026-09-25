@@ -2,6 +2,7 @@ package com.assistant.core.services
 
 import android.content.Context
 import com.assistant.core.tools.ToolTypeManager
+import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.ToolInstance
 import com.assistant.core.coordinator.CancellationToken
@@ -114,6 +115,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> iconCheck.configJson
         }
+        checkConfig(toolType, storedConfigJson)?.let { return OperationResult.error(it) }
 
         val newToolInstance = ToolInstance(
             zone_id = zoneId,
@@ -186,6 +188,9 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             is IconCheck.Refused -> return OperationResult.error(iconCheck.message)
             is IconCheck.Kept -> configJson = iconCheck.configJson
         }
+        if (configJson.isNotBlank()) {
+            checkConfig(existingTool.tooltype, configJson)?.let { return OperationResult.error(it) }
+        }
 
         // Store old zone_id for notification
         val oldZoneId = existingTool.zone_id
@@ -218,6 +223,21 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         ) + iconCheck.report())
     }
     
+    /**
+     * Check a config exactly as it is about to be stored, against the schema generated from its
+     * tool type's declaration (ToolConfigSettings). Every config write goes through here, whoever
+     * makes it -- a screen or the AI -- so nothing the declaration refuses can be stored.
+     *
+     * @return The error to hand back, or null when the config is valid
+     */
+    private fun checkConfig(tooltype: String, configJson: String): String? {
+        val toolType = ToolTypeManager.getToolType(tooltype)
+            ?: return s.shared("error_tooltype_not_found").format(tooltype)
+        val schema = com.assistant.core.tools.ToolConfigSettings.schema(toolType, "config:$tooltype", context)
+        val result = SchemaValidator.validate(schema, JsonUtils.toMap(configJson), context)
+        return if (result.isValid) null else result.errorMessage ?: s.shared("message_validation_error_simple")
+    }
+
     /**
      * Delete tool instance
      */

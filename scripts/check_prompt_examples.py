@@ -11,8 +11,7 @@ This reads the prompt's JSON examples and asks five questions of them:
 
   1. does every example parse as JSON;
   2. does every custom field type it names still exist in FieldType;
-  3. does every key the base config schema or the core's entry fields declare carry a value of
-     the declared type;
+  3. does every key the core's entry fields declare carry a value of the declared type;
   4. does every object carry the fields its schema requires;
   5. does every icon it names exist -- the icon index is the app's, so a name the model would
      copy from an example is a name the app accepts.
@@ -33,12 +32,13 @@ is which -- a data entry is only a data entry inside CREATE_DATA -- so it works 
   - a communication module's data: that module's schema;
   - a CREATE_DATA entry: the keys every entry schema requires, whatever its tool (the list
     EntrySchemaGenerator starts from), where a key the command's params carry counts as
-    present, since the service copies tool_instance_id and tooltype into every entry;
-  - a CREATE_TOOL config: the base config schema.
+    present, since the service copies tool_instance_id and tooltype into every entry.
 
 A schema's `required` is read from the Kotlin source: the least indented list in the function
 that builds it is the top level's. A field definition is not read here: its schema is generated
 from its declaration, and FieldTypeSchemasTest validates the prompt's definitions against it.
+A tool config is not read either: its schema is generated from its tool type's declaration,
+whose labels need an Android context, and the prompt's only CREATE_TOOL example elides.
 
 Not everything is covered. Some of the prompt's brace-delimited blocks are shorthand rather
 than JSON (`{ name?, timestamp?, data }`), and three fenced examples elide part of themselves
@@ -58,7 +58,6 @@ ROOT = Path(__file__).resolve().parent.parent
 
 PROMPT = ROOT / "app/src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml"
 FIELD_TYPE = ROOT / "app/src/main/java/com/assistant/core/fields/FieldType.kt"
-BASE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/tools/BaseSchemas.kt"
 ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
 MODULE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/CommunicationModuleSchemas.kt"
@@ -134,27 +133,6 @@ def entry_required():
     return re.findall(r'"(\w+)"', match.group(1))
 
 
-def declared_property_types():
-    """What the base config schema says each of its properties holds, as the model sees it.
-
-    Returns {key: (json_type, seen_as_iso_string)}. A property marked epoch-millis is a
-    number at rest and an ISO string to the model, which is the only place the two views
-    differ.
-    """
-    source = BASE_SCHEMAS.read_text(encoding="utf-8")
-    declared = {}
-    for match in re.finditer(
-        r'"(?P<key>[a-z_]+)"\s*:\s*\{(?P<body>[^{}]*)\}', source
-    ):
-        body = match.group("body")
-        type_match = re.search(r'"type"\s*:\s*"(\w+)"', body)
-        if not type_match:
-            continue
-        epoch = '"format": "epoch-millis"' in body
-        declared[match.group("key")] = (type_match.group(1), epoch)
-    return declared
-
-
 def function_body(path, name):
     """The source of the Kotlin function `name`, up to the next function of the file."""
     source = path.read_text(encoding="utf-8")
@@ -197,7 +175,7 @@ def missing(obj, required, supplied=()):
 def required_problems(example, schemas):
     """Every object of one whole example that lacks a field its schema requires."""
     problems = []
-    response_required, module_required, data_required, config_required = schemas
+    response_required, module_required, data_required = schemas
 
     def at(path, key):
         return f"{path}.{key}" if path else key
@@ -232,11 +210,6 @@ def required_problems(example, schemas):
                     keys = missing(entry, data_required, supplied=params.keys())
                     if keys:
                         report(at(path, f"params.entries[{index}]"), "CREATE_DATA entry", keys)
-            if value.get("type") == "CREATE_TOOL" and isinstance(params.get("config"), dict):
-                keys = missing(params["config"], config_required)
-                if keys:
-                    report(at(path, "params.config"), "CREATE_TOOL config", keys)
-
         for key, child in value.items():
             visit(child, at(path, key))
 
@@ -262,7 +235,7 @@ def main():
 
     text = PROMPT.read_text(encoding="utf-8")
     types = field_type_names()
-    declared = {**declared_property_types(), **core_field_types()}
+    declared = core_field_types()
     icon_names = {icon["name"] for icon in json.loads(ICON_INDEX.read_text(encoding="utf-8"))["icons"]}
 
     problems = []
@@ -306,7 +279,6 @@ def main():
         {module: required_lists(MODULE_SCHEMAS, f"get{module}Schema")[0]
          for module in ("MultipleChoice", "Validation")},
         entry_required(),
-        required_lists(BASE_SCHEMAS, "getBaseConfigSchema")[0],
     )
     whole_count = 0
     elided_count = 0

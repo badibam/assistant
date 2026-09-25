@@ -10,7 +10,6 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.FieldPatternGrammar
-import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.JsonUtils

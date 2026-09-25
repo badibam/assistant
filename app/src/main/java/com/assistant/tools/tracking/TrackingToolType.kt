@@ -1,5 +1,9 @@
 package com.assistant.tools.tracking
 
+import com.assistant.core.fields.ChoiceSettings
+import com.assistant.core.fields.TextLength
+import com.assistant.core.fields.settings.FieldTypeSettings
+import com.assistant.core.fields.settings.SettingNode
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -62,8 +66,8 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
     override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
         // Config schemas (no custom fields)
         if (schemaId.startsWith("tracking_config_")) {
-            val kind = TrackingKind.entries.firstOrNull { it.configSchemaId == schemaId } ?: return null
-            return createConfigSchema(kind, context)
+            TrackingKind.entries.firstOrNull { it.configSchemaId == schemaId } ?: return null
+            return com.assistant.core.tools.ToolConfigSettings.schema(this, schemaId, context)
         }
 
         // Data schemas, generated from the declared fields: for the tool's own config when it is
@@ -90,62 +94,56 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
     }
 
     /**
-     * The config schema of a tracking tool of [kind], on top of the base config:
-     * - value: the settings of the entries' main field, held to the config schema of its field
-     *   type (FieldTypeSchemaProvider), so they are checked like any field's settings;
+     * A tracking tool's settings: what it follows ("type"), and for that type
+     * - value: the settings of the entries' main field, those of its field type (FieldTypeSettings);
      * - units: the units a numeric value can be in;
      * - items: the shortcuts, each a name, and for a numeric or counter tool the value it enters
      *   (and for a numeric one its unit, one of the units);
      * - allow_decrement: whether a counter's shortcuts also take away.
      */
-    private fun createConfigSchema(kind: TrackingKind, context: Context): Schema {
+    override fun getConfigSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(tool = "tracking", context = context)
-        val properties = JSONObject()
-            .put("type", JSONObject().put("type", "string").put("const", kind.key).put("description", s.tool("schema_config_type")))
+        val shared = Strings.`for`(context = context)
+        fun field(name: String, label: String, description: String, type: FieldType, required: Boolean = false,
+                  default: Any? = null, config: Map<String, Any>? = null) =
+            SettingNode.Field(FieldDefinition(name, label, description, type, false, config), required = required, default = default)
+        val short = mapOf("length" to TextLength.SHORT.name)
+        val kinds = TrackingKind.entries.map { it.key }
 
-        kind.valueType?.let { valueType ->
-            val shared = Strings.`for`(context = context)
-            val valueSchema = com.assistant.core.fields.settings.SettingsSchemaGenerator.generate(
-                com.assistant.core.fields.settings.FieldTypeSettings.configNodes(valueType, shared::shared), shared::shared
-            )
-            properties.put("value", valueSchema.put("description", s.tool("schema_config_value")))
-        }
-
-        val item = JSONObject()
-            .put("name", JSONObject().put("type", "string").put("minLength", 1).put("maxLength", FieldLimits.SHORT_LENGTH)
-                .put("description", s.tool("schema_config_item_name")))
-        if (kind == TrackingKind.NUMERIC || kind == TrackingKind.COUNTER) {
-            item.put("value", JSONObject().put("type", "number").put("description", s.tool("schema_config_item_value")))
-        }
-        if (kind == TrackingKind.NUMERIC) {
-            item.put("unit", JSONObject().put("type", "string").put("description", s.tool("schema_config_item_unit")))
-            properties.put("units", JSONObject().put("type", "array").put("uniqueItems", true)
-                .put("items", JSONObject().put("type", "string").put("minLength", 1).put("maxLength", FieldLimits.SHORT_LENGTH))
-                .put("description", s.tool("schema_config_units")))
-        }
-        if (kind == TrackingKind.COUNTER) {
-            properties.put("allow_decrement", JSONObject().put("type", "boolean").put("default", true)
-                .put("description", s.tool("schema_config_counter_allow_decrement")))
-        }
-        properties.put("items", JSONObject().put("type", "array").put("description", s.tool("schema_config_items"))
-            .put("items", JSONObject().put("type", "object").put("properties", item)
-                .put("required", org.json.JSONArray().put("name")).put("additionalProperties", false)))
-
-        // A number needs its decimals, a scale its bounds and a choice its options: their value
-        // settings are required
-        val required = org.json.JSONArray().put("type")
-        if (kind == TrackingKind.NUMERIC || kind == TrackingKind.SCALE || kind == TrackingKind.CHOICE) required.put("value")
-
-        return Schema(
-            id = kind.configSchemaId,
-            displayName = s.tool("schema_config_${kind.key}_display_name"),
-            description = s.tool("schema_config_${kind.key}_description"),
-            category = SchemaCategory.TOOL_CONFIG,
-            content = BaseSchemas.createExtendedSchema(
-                BaseSchemas.getBaseConfigSchema(context),
-                JSONObject().put("properties", properties).put("required", required).toString()
-            )
-        )
+        return listOf(SettingNode.Variant(
+            selector = field("type", s.tool("config_label_tracking_type"), s.tool("schema_config_type"), FieldType.CHOICE,
+                config = mapOf("options" to ChoiceSettings.storedOptions(kinds, kinds.associateWith { s.tool("config_option_$it") }))),
+            cases = TrackingKind.entries.associate { kind ->
+                val item = listOfNotNull(
+                    field("name", shared.shared("label_name"), s.tool("schema_config_item_name"), FieldType.TEXT, required = true, config = short),
+                    if (kind == TrackingKind.NUMERIC || kind == TrackingKind.COUNTER)
+                        field("value", s.tool("field_value"), s.tool("schema_config_item_value"), FieldType.NUMERIC, config = mapOf("decimals" to 2))
+                    else null,
+                    if (kind == TrackingKind.NUMERIC)
+                        field("unit", s.tool("field_unit"), s.tool("schema_config_item_unit"), FieldType.TEXT, config = short)
+                    else null
+                )
+                kind.key to listOfNotNull(
+                    // A number needs its decimals, a scale its bounds and a choice its options:
+                    // their value settings are required
+                    kind.valueType?.let { valueType ->
+                        SettingNode.Group("value", s.tool("schema_config_value"),
+                            FieldTypeSettings.configNodes(valueType, shared::shared),
+                            required = kind == TrackingKind.NUMERIC || kind == TrackingKind.SCALE || kind == TrackingKind.CHOICE)
+                    },
+                    if (kind == TrackingKind.NUMERIC)
+                        SettingNode.ListOf("units", s.tool("field_units"),
+                            SettingNode.Item.Value(FieldDefinition("unit", s.tool("field_unit"), s.tool("schema_config_units"), FieldType.TEXT, false, short)),
+                            distinct = true)
+                    else null,
+                    if (kind == TrackingKind.COUNTER)
+                        field("allow_decrement", s.tool("field_allow_decrement"), s.tool("schema_config_counter_allow_decrement"),
+                            FieldType.BOOLEAN, default = true)
+                    else null,
+                    SettingNode.ListOf("items", s.tool("field_items"), SettingNode.Item.Of(item))
+                )
+            }
+        ))
     }
 
     /**
