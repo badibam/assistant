@@ -5,7 +5,8 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 ## Décisions
 
 1. **Toute valeur saisie dans une entrée est un champ.** Le contenu d'une entrée — ce que l'utilisateur ou l'IA saisit (`content` du journal et d'une note, `title` et `content` d'un message, la valeur du tracking) — est déclaré avec les mêmes types de champ que les champs personnalisés : mêmes contraintes, même schéma généré, même saisie, même affichage, mêmes migrations. Un type d'outil déclare ses champs fixes, qui ne se suppriment ni ne se renomment ; l'utilisateur en ajoute d'autres.
-2. **L'état n'est pas un champ.** Ce que l'app et les actions produisent sur une entrée (`status`, `read`, `archived`, `notification_sent`, `triggered_by` des messages, `position` d'une note) ne s'écrit pas par un formulaire : il s'écrit par son action (marquer lu, déplacer) ou par le système.
+2. **L'état est décrit par des champs, mais ne se saisit pas.** Ce que l'app et les actions produisent sur une entrée (`status`, `read`, `archived`, `notification_sent`, `triggered_by` des messages, `position` d'une note) s'écrit par son action (marquer lu, déplacer) ou par le système, jamais par un formulaire. Il est pourtant déclaré avec les types de champ (`read` BOOLEAN « Lu » / « Non lu », `status` CHOICE aux options traduites) : le schéma JSON seul reconnaît un booléen ou un `enum`, mais ne donne ni libellés ni ce qui a un sens à filtrer. Le type d'outil dit quelles clés d'état se proposent comme filtre (`read` oui, `position` non).
+   **Règle d'ensemble : tout ce qui dit quelque chose de ce que l'entrée enregistre est un champ ; ce qui sert à la retrouver ou à la ranger ne l'est pas.** Champs : `name`, `timestamp`, `created_at` et `updated_at` (DATETIME écrits par le système), `data`, `extra`, `state`. Hors champs : `id`, `tool_instance_id`, `tooltype`, `schema_id`. Le marqueur « en cours » d'un champ DURÉE (décision 7) appartient au champ qu'il concerne : son composant l'affiche, son filtre le lit.
 3. **Les valeurs sont rangées par auteur**, en trois objets JSON d'une entrée :
    - `data` — les champs fixes, déclarés par le type d'outil ;
    - `extra` — les champs ajoutés par l'utilisateur (l'actuel `custom_fields`, renommé) ;
@@ -32,6 +33,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 ## Écarté
 
 - Fusionner `data` et `custom_fields` en un seul objet : collision permanente entre noms fixes et noms de l'utilisateur, et un outil ne pourrait plus refuser une clé inconnue (`additionalProperties: false`). Les gains attendus venaient de la déclaration unique des champs, pas du stockage.
+- Décrire l'état par son seul schéma JSON : pas de libellés (« pending », « true »), et `position` proposé comme filtre.
 - Garder l'état dans `data` : même collision, et l'IA devrait deviner, clé par clé, ce qui se saisit.
 - Des colonnes communes pour `position` ou `archived` : pas de deuxième outil qui en ait besoin aujourd'hui.
 - Le chronomètre porté par le type DURÉE lui-même : il doit survivre à la fermeture du formulaire, ce qui est le rôle de `state`, pas du type.
