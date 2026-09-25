@@ -122,16 +122,7 @@ class CommandExecutor(private val context: Context) {
                     schemasJson.appendLine("## Schema: ${schema.schemaId}")
                     schemasJson.appendLine("Tool Instance: ${schema.toolInstanceId}")
                     schemasJson.appendLine()
-                    schemasJson.appendLine("```json")
-                    // Parse and pretty-print the schema
-                    try {
-                        val parsedSchema = SchemaModelView.forModel(JSONObject(schema.schemaContent), AppConfigManager.getDateTimeConfig().getZoneId())
-                        schemasJson.appendLine(parsedSchema.toString(2))
-                    } catch (e: Exception) {
-                        // If parsing fails, include as-is
-                        schemasJson.appendLine(schema.schemaContent)
-                    }
-                    schemasJson.appendLine("```")
+                    schemasJson.appendLine(schemaForModel(schema.schemaContent))
                     schemasJson.appendLine()
                 }
 
@@ -794,6 +785,11 @@ class CommandExecutor(private val context: Context) {
         val reordered = mutableMapOf<String, Any>()
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
+        // A schema is read in its notation, not as the JSON the app validates against
+        (data["content"] as? String)?.takeIf { command.resource == "schemas" }?.let { content ->
+            return "schema_id: ${data["schema_id"]}\n" + schemaForModel(content)
+        }
+
         // Extract metadata keys first based on command type
         when (command.resource) {
             "tool_data" -> {
@@ -811,16 +807,6 @@ class CommandExecutor(private val context: Context) {
 
                 // Add pagination if present
                 data["pagination"]?.let { reordered["pagination"] = it }
-            }
-            "schemas" -> {
-                // Schema data: parse content as JSON instead of keeping it as escaped string
-                data["schema_id"]?.let { reordered["schema_id"] = it }
-
-                // Parse content string as JSON for readable prompt formatting
-                val contentStr = data["content"] as? String
-                if (contentStr != null) {
-                    reordered["content"] = SchemaModelView.forModel(org.json.JSONObject(contentStr), timezone)
-                }
             }
             "tools" -> {
                 // Config or list
@@ -865,6 +851,13 @@ class CommandExecutor(private val context: Context) {
         return if (command.resource == "tool_data") json.toString(2)
         else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
     }
+
+    /**
+     * A schema as the model reads it: its dates and durations in ISO 8601 (SchemaModelView),
+     * written in the notation (SchemaNotation).
+     */
+    private fun schemaForModel(content: String): String =
+        SchemaNotation.render(SchemaModelView.forModel(JSONObject(content), AppConfigManager.getDateTimeConfig().getZoneId()))
 
     /** A tool instance of a result, its config in the form the model reads. */
     private fun configForModel(instance: Any?, timezone: java.time.ZoneId): Any? {

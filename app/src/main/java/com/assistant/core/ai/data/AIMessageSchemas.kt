@@ -73,7 +73,7 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "SCHEMA", "ICONS"]
+                    "enum": ["TOOL_DATA", "TOOL_CONFIG", "TOOL_INSTANCES", "ZONE_CONFIG", "ZONES", "APP_STATE", "CURRENT_DATETIME", "SCHEMA", "ICONS"]
                   },
                   "params": {
                     "type": "object",

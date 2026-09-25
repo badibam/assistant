@@ -48,7 +48,7 @@ object ToolConfigSettings {
                 field("always_send", text("tools_config_label_always_send"), FieldType.BOOLEAN, text("tools_base_schema_config_always_send"), default = false)
             )),
             SettingNode.ListOf("extra_fields", text("custom_fields_section_title"),
-                SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)))
+                SettingNode.Item.Of(FieldTypeSettings.definitionNodes(text)), fieldDefinitions = true)
         )
     }
 

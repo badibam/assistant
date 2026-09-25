@@ -64,7 +64,8 @@ object CommunicationModules {
             name = "fields",
             label = text("ai_module_fields"),
             item = SettingNode.Item.Of(fieldNodes(text)),
-            required = true
+            required = true,
+            fieldDefinitions = true
         )
     )
 

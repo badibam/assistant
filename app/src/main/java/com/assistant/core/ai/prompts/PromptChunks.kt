@@ -181,15 +181,8 @@ object PromptChunks {
             return "```\nError: Schema $schemaId has no content\n```"
         }
 
-        // Format JSON for readability
-        return try {
-            val jsonObj = JSONObject(schemaContent)
-            val formatted = jsonObj.toString(2) // Indent with 2 spaces
-            "```json\n$formatted\n```"
-        } catch (e: Exception) {
-            LogManager.aiPrompt("Failed to format schema $schemaId: ${e.message}", "ERROR")
-            "```json\n$schemaContent\n```"
-        }
+        // Written in the notation the prompt's legend describes, as every schema the model reads
+        return SchemaNotation.render(SchemaModelView.forModel(JSONObject(schemaContent), AppConfigManager.getDateTimeConfig().getZoneId()))
     }
 
     /**
@@ -220,8 +213,12 @@ object PromptChunks {
         val s = Strings.`for`(context = context)
         val content = s.shared("ai_chunk_custom_fields")
         val typesList = buildCustomFieldTypesList(context)
+        val definition = SchemaNotation.render(SchemaModelView.forModel(
+            JSONObject(com.assistant.core.fields.settings.FieldTypeSchemas.anyDefinition(context)),
+            AppConfigManager.getDateTimeConfig().getZoneId()
+        ))
 
-        return content.replace("{{CUSTOM_FIELD_TYPES}}", typesList)
+        return content.replace("{{CUSTOM_FIELD_TYPES}}", typesList).replace("{{FIELD_DEFINITION}}", "```\n$definition\n```")
     }
 
     // ================================================================

@@ -170,6 +170,7 @@ Aucun schéma n'est écrit à la main ni nommé dans une donnée : ils sont gén
 - **Automations** : déclarées dans `AutomationSettings` (voir `docs/AI.md`).
 - **Lecture** : une config se lit par `ToolConfigSettings.read` (`SettingValues`) ; un réglage absent vaut son défaut déclaré, jamais un repli écrit sur place.
 - **Face à l'IA** : un schéma se demande par `tooltype` (config), `tool_instance_id` (entrées) ou `id` (les autres : `zone_config`, `field_type_TEXT`…). Son nom calculé (`tracking_config`, `tracking_data`) ne sert qu'à ne pas renvoyer deux fois le même schéma.
+- **Ce que l'IA lit d'un schéma** : pas le JSON Schema, qui ne sert qu'à valider, mais sa notation (`SchemaNotation`) : une ligne par valeur, avec son libellé et sa description une seule fois, et les réglages communs d'une variante écrits une fois au lieu d'une par option. Une liste de définitions de champ y renvoie à la section Fields du prompt, qui la décrit une fois. Un mot-clé que la notation ne sait pas écrire fait échouer l'envoi plutôt que de disparaître.
 
 Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant. Dans `data`, le service retire tout champ marqué de ce qu'on lui envoie (`SystemManagedFields`) ; à la racine, il ne lit que des paramètres nommés.
 

@@ -43,6 +43,8 @@ sealed class SettingNode {
      *
      * @property minItems The fewest elements the list may hold
      * @property distinct Whether two elements may be equal
+     * @property fieldDefinitions Whether its elements are field definitions, which the model
+     *   reads once in its prompt rather than in every schema holding such a list
      */
     data class ListOf(
         val name: String,
@@ -50,7 +52,8 @@ sealed class SettingNode {
         val item: Item,
         val required: Boolean = false,
         val minItems: Int = 0,
-        val distinct: Boolean = false
+        val distinct: Boolean = false,
+        val fieldDefinitions: Boolean = false
     ) : SettingNode()
 
     /** What one element of a [ListOf] is. */

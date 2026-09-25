@@ -19,6 +19,12 @@ object SettingsSchemaGenerator {
     const val SECRET = "secret"
 
     /**
+     * Custom keyword marking a list of field definitions: what the model reads of it is spelled
+     * out once in the prompt, not in every schema that holds one (SchemaNotation).
+     */
+    const val FIELD_DEFINITIONS = "field_definitions"
+
+    /**
      * @param nodes The declaration
      * @param text The shared string of a key (s::shared), for what the schema says of a value
      * @throws IllegalStateException when two settings of one object share a name: the one
@@ -85,6 +91,7 @@ object SettingsSchemaGenerator {
             .also {
                 if (list.minItems > 0) it.put("minItems", list.minItems)
                 if (list.distinct) it.put("uniqueItems", true)
+                if (list.fieldDefinitions) it.put(FIELD_DEFINITIONS, true)
             }
     }
 

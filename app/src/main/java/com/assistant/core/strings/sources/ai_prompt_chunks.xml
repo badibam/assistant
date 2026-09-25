@@ -483,7 +483,13 @@ Actions run in order and stop at the first failure: the ones after it are cancel
     <!-- C.4 Custom fields [DEGREE 1] -->
     <string name="ai_chunk_custom_fields"><![CDATA[## Fields
 
-Every value of the app is a field of a field type. A field definition says its label, its type and its type\'s settings:
+Every value of the app is a field of a field type:
+
+{{CUSTOM_FIELD_TYPES}}
+
+A **field definition** says a field\'s label, its type and its type\'s settings. Wherever a schema says "list of field definitions (see Fields)", each element is:
+
+{{FIELD_DEFINITION}}
 
 ```json
 {
@@ -493,12 +499,6 @@ Every value of the app is a field of a field type. A field definition says its l
   "config": { "min": 1, "max": 5, "min_label": "Very bad", "max_label": "Very good" }
 }
 ```
-
-**Field types**:
-
-{{CUSTOM_FIELD_TYPES}}
-
-The settings of each type: `SCHEMA` with the ID `field_type_{TYPE}` (e.g. `field_type_CHOICE`).
 
 A CHOICE lists its options as `{ "value", "label"?, "color"? }`; the value is what an entry stores. `"multiple": true` takes several options, `"ordered": true` a ranking of them, `"open": true` accepts a value that is not an option yet: writing it adds it to the options.
 
@@ -734,10 +734,18 @@ A schema is asked for by what it describes:
 
 ### Reading a schema
 
-- `required`: what must be given
-- `title` and `description`: what a value means (its unit, the labels of a scale, the options of a choice)
-- `default`: what an absent setting means. Leave a setting out to take it; write it only to choose another value. In an entry, no value is ever filled in for you
-- `"format": "date-time"` or `"format": "duration"`: an ISO 8601 date or duration (Part E)]]></string>
+A schema is written one value per line, what a value holds indented under it:
+
+`key*: kind [constraints] — label. description`
+
+- `*`: required
+- kind: `string`, `number`, `integer`, `boolean`, options `A|B|C`, `ISO 8601 date-time with offset`, `ISO 8601 duration`, `date YYYY-MM-DD`, `list of …`
+- constraints: `min`, `max`, `step`, `max length`; for a list, `at least N` and `distinct`
+- `default …`: what an absent value means. Leave it out to take it; write it only to choose another. In an entry, no value is ever filled in for you
+- `written by the app, never sent`: read it, never write it
+- `if type = X:` what the value named just above adds when it is X
+- The label and the description say what a value means: its unit, what the bounds of a scale mean, the options of a choice
+- Only the keys listed are accepted]]></string>
 
     <!-- D.2 Usage strategy [DEGREE 1] -->
     <string name="ai_chunk_validation_strategy"><![CDATA[## Validation strategy
@@ -762,7 +770,7 @@ User: "Create a daily weight tracking"
     <!-- D.3 System-managed fields [DEGREE 1] -->
     <string name="ai_chunk_validation_system_managed"><![CDATA[## Values written by the app
 
-Some values are written by the app alone. Their schema marks them `"system_managed": true`:
+Some values are written by the app alone. Their schema marks them `written by the app, never sent`:
 
 - `id`, `created_at`, `updated_at` of an entry
 - the entry\'s `state`: its actions write it (START_DURATION, STOP_DURATION), and you read it
