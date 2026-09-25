@@ -1,105 +1,71 @@
 package com.assistant.tools.tracking.ui
 
-import com.assistant.core.ui.JsonObjectSaver
-import com.assistant.core.ui.FieldDefinitionsSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.Dp
-import com.assistant.core.ui.UI
-import com.assistant.core.ui.*
-import com.assistant.core.strings.Strings
-import com.assistant.core.utils.LogManager
-import com.assistant.tools.tracking.TrackingToolType
-import com.assistant.core.utils.NumberFormatting
-import com.assistant.core.coordinator.Coordinator
-import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.commands.CommandStatus
-import com.assistant.core.validation.ValidationResult
+import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
-import com.assistant.core.validation.SchemaValidator
-import com.assistant.core.tools.ToolTypeManager
-import com.assistant.core.tools.ui.ToolGeneralConfigSection
+import com.assistant.core.coordinator.mapSingleData
 import com.assistant.core.fields.CustomFieldsEditor
+import com.assistant.core.fields.FieldConfigEditor
 import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.toFieldConfig
 import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.fields.toJsonArray
 import com.assistant.core.fields.migration.rememberCustomFieldsMigrationHandler
+import com.assistant.core.strings.Strings
+import com.assistant.core.tools.ui.ToolGeneralConfigSection
+import com.assistant.core.ui.ButtonAction
+import com.assistant.core.ui.ButtonDisplay
+import com.assistant.core.ui.CardType
+import com.assistant.core.ui.DialogType
+import com.assistant.core.ui.Duration
+import com.assistant.core.ui.FieldDefinitionsSaver
+import com.assistant.core.ui.FieldType as UIFieldType
+import com.assistant.core.ui.JsonObjectSaver
+import com.assistant.core.ui.LoadState
+import com.assistant.core.ui.Size
+import com.assistant.core.ui.TextType
+import com.assistant.core.ui.UI
+import com.assistant.core.ui.rememberLoadOnce
+import com.assistant.core.utils.JsonUtils
+import com.assistant.core.utils.LogManager
+import com.assistant.tools.tracking.TrackingConfig
+import com.assistant.tools.tracking.TrackingKind
+import com.assistant.tools.tracking.TrackingShortcut
+import com.assistant.tools.tracking.TrackingToolType
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 
 /**
- * Data class for tracking items
- */
-data class TrackingItem(
-    val name: String,
-    val properties: MutableMap<String, Any> = mutableMapOf()
-)
-
-/**
- * Helper function to check if all fields of an item are empty
- */
-private fun allFieldsEmpty(name: String, properties: Map<String, Any>): Boolean {
-    // Check if name is empty or blank
-    if (name.trim().isNotEmpty()) return false
-    
-    // Check if any property has non-empty value
-    return properties.values.all { value ->
-        when (value) {
-            is String -> value.trim().isEmpty()
-            is Number -> value.toDouble() == 0.0
-            else -> value.toString().trim().isEmpty()
-        }
-    }
-}
-
-
-/**
- * Helper function to safely get icon resource
- */
-
-/**
- * Every field that belongs to one tracking type rather than to all of them.
+ * Configuration screen of a tracking tool: its general settings, what it follows (its type),
+ * the settings of its value (edited by the value's field type, like any field's), its units
+ * for a numeric one, its shortcuts and the user's fields.
  *
- * A config schema accepts only the properties of its own type, so a field left behind by the
- * previous type makes the new one refuse the config. The list follows the root properties of
- * the schemas in TrackingToolType: scale carries min, max and their labels, counter carries
- * allow_decrement, choice carries options, and every type but choice carries items.
- */
-private val TYPE_SPECIFIC_FIELDS = listOf(
-    "min", "max", "min_label", "max_label",   // scale
-    "allow_decrement",                         // counter
-    "options",                                 // choice
-    "items"                                    // every type but choice
-)
-
-/** Types whose schema declares items; choice describes its values with options instead. */
-private fun usesItems(trackingType: String): Boolean = trackingType != "choice"
-
-/**
- * Drops the fields of the type being left, and gives the new type the empty items list it
- * expects, so the config never carries a field its own schema refuses. The caller sets the
- * type itself, through updateConfig, which is also what redraws the screen.
- */
-private fun clearFieldsOfOtherTypes(config: JSONObject, newType: String) {
-    TYPE_SPECIFIC_FIELDS.forEach { config.remove(it) }
-    if (usesItems(newType)) {
-        config.put("items", JSONArray())
-    }
-}
-
-/**
- * Configuration screen for Tracking tool type
- * Uses UI_DECISIONS.md patterns with full functionality restored
+ * Saving a change of type deletes the tool's entries, after confirmation: they hold a value of
+ * another kind. A change of the value's settings or of the units keeps the entries as they
+ * are, after a warning: a value recorded on the former scale or with a former option stays as
+ * it was recorded.
  */
 @Composable
 fun TrackingConfigScreen(
@@ -110,1380 +76,338 @@ fun TrackingConfigScreen(
     onDelete: (() -> Unit)? = null,
     initialGroup: String? = null
 ) {
-    // VALDEBUG: Screen startup debug
-    LogManager.tracking("TrackingConfigScreen opened - existingToolId=$existingToolId")
-    LogManager.tracking("===============================")
-    LogManager.tracking("TrackingConfigScreen called with existingToolId: $existingToolId")
-    LogManager.tracking("===============================")
-    
     val context = LocalContext.current
     val coordinator = remember { Coordinator(context) }
     val scope = rememberCoroutineScope()
-    val isEditing = existingToolId != null
-    
-    // Strings context
     val s = remember { Strings.`for`(tool = "tracking", context = context) }
-    
-    // Helper loading items from a JSONArray
-    fun loadItemsFromJSONArray(itemsArray: JSONArray): MutableList<TrackingItem> {
-        val loadedItems = mutableListOf<TrackingItem>()
-        for (i in 0 until itemsArray.length()) {
-            val itemObj = itemsArray.getJSONObject(i)
-            val itemName = itemObj.getString("name")
-            val properties = mutableMapOf<String, Any>()
-            
-            // Load all properties except name
-            itemObj.keys().forEach { key ->
-                if (key != "name") {
-                    properties[key] = itemObj.get(key)
-                }
-            }
-            
-            loadedItems.add(TrackingItem(itemName, properties))
-        }
-        return loadedItems
-    }
-    
-    // Single config state - source of truth
+    val isEditing = existingToolId != null
+
+    // The whole config, the single source of truth of the screen; the user's fields apart,
+    // since their editor and their migration work on definitions
     var config by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
-
-    // General config states (for ToolGeneralConfigSection reactivity)
-    var alwaysSend by rememberSaveable { mutableStateOf(false) }
-    var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
-
-    // Custom fields state
+    var initialConfig by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
     var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
     var oldCustomFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
+    var currentZoneId by rememberSaveable { mutableStateOf(zoneId) }
 
-    // Derived states from config (only used ones)
-    val trackingType by remember { derivedStateOf { config.optString("type", "") } }
-    val items by remember { derivedStateOf {
-        val itemsArray = config.optJSONArray("items")
-        itemsArray?.let { loadItemsFromJSONArray(it) } ?: mutableListOf()
-    } }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+    var warning by rememberSaveable { mutableStateOf<String?>(null) }
+    var deletesEntries by rememberSaveable { mutableStateOf(false) }
+    // The shortcut being edited: its index, or -1 for a new one; null when the dialog is closed
+    var editingShortcut by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    // Track original type for data deletion detection
-    var originalType by rememberSaveable { mutableStateOf("") }
-    var initialConfigString by rememberSaveable { mutableStateOf("") }
-
-    // Config update helpers
-    fun updateConfig(key: String, value: Any) {
-        // Update state for reactive fields
-        if (key == "always_send") {
-            alwaysSend = value as Boolean
-        }
-        config.put(key, value)
-        config = JSONObject(config.toString()) // Force recomposition
+    fun update(block: JSONObject.() -> Unit) {
+        config = JSONObject(config.toString()).apply(block)
     }
-    
-    fun updateItems(newItems: MutableList<TrackingItem>) {
-        val itemsArray = JSONArray()
-        newItems.forEach { item ->
-            val itemObj = JSONObject().apply {
-                put("name", item.name)
-                item.properties.forEach { (key, value) ->
-                    put(key, value)
-                }
-            }
-            itemsArray.put(itemObj)
-        }
-        updateConfig("items", itemsArray)
-    }
-    
-    // Load config: NO FALLBACKS - CRASH IF DB FAILS
+
     val configLoad = rememberLoadOnce(existingToolId) {
-        LogManager.tracking("Loading config - existingToolId: $existingToolId")
-
-        if (existingToolId == null) {
-            LogManager.tracking("No existingToolId, using default config for creation")
-            config = JSONObject(TrackingToolType.getDefaultConfig())
-            alwaysSend = config.optBoolean("always_send", false)
-            return@rememberLoadOnce true
-        }
-        
-        LogManager.tracking("Calling coordinator.processUserAction for toolId: $existingToolId")
-        val result = coordinator.processUserAction(
-            "tools.get",
-            mapOf("tool_instance_id" to existingToolId)
-        )
-        
-        LogManager.tracking("Coordinator result - status: ${result.status}, data: ${result.data}")
-        
-        if (!result.isSuccess) {
-            throw RuntimeException("CONFIGDEBUG: DB call failed - status: ${result.status}, error: ${result.error}")
-        }
-        
-        val toolInstanceData = result.mapSingleData("tool_instance") { it }
-            ?: throw RuntimeException("CONFIGDEBUG: No tool_instance in result.data: ${result.data}")
-            
-        val loadedConfig = (toolInstanceData["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
-            ?: throw RuntimeException("CONFIGDEBUG: No config in toolInstanceData: $toolInstanceData")
-
-        LogManager.tracking("Config loaded: $loadedConfig")
-        val newConfig = loadedConfig
-        LogManager.tracking("New config items count: ${newConfig.optJSONArray("items")?.length() ?: 0}")
-
-        // Capture original config and type before updating
-        initialConfigString = loadedConfig.toString()
-        originalType = newConfig.optString("type", "")
-        LogManager.tracking("Original type captured: $originalType")
-
-        config = newConfig
-        alwaysSend = config.optBoolean("always_send", false)
-
-        // Load custom fields
-        val customFieldsArray = newConfig.optJSONArray("extra_fields")
-        if (customFieldsArray != null) {
-            try {
-                customFields = customFieldsArray.toFieldDefinitions()
-                oldCustomFields = customFields.toList() // Save copy for migration comparison
-                LogManager.tracking("Loaded ${customFields.size} custom fields")
-            } catch (e: Exception) {
-                LogManager.tracking("Error parsing custom fields: ${e.message}", "ERROR")
-                // Keep empty list on error
-            }
-        }
+        if (existingToolId == null) return@rememberLoadOnce true
+        val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to existingToolId))
+        if (!result.isSuccess) throw IllegalStateException("Cannot load tracking tool $existingToolId: ${result.error}")
+        val loaded = result.mapSingleData("tool_instance") { it }?.get("config") as? Map<*, *>
+            ?: throw IllegalStateException("Tracking tool $existingToolId has no config")
+        @Suppress("UNCHECKED_CAST")
+        val loadedConfig = JsonUtils.toJSONObject(loaded as Map<String, Any?>)
+        customFields = loadedConfig.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+        oldCustomFields = customFields.toList()
+        loadedConfig.remove("extra_fields")
+        config = loadedConfig
+        initialConfig = JSONObject(loadedConfig.toString())
         true
     }
-    
-    // UI state for item dialog
-    var showItemDialog by rememberSaveable { mutableStateOf(false) }
-    var editingItemIndex by rememberSaveable { mutableStateOf<Int?>(null) }
-    var editItemName by rememberSaveable { mutableStateOf(String()) }
-    var editItemDefaultQuantity by rememberSaveable { mutableStateOf(String()) }
-    var editItemUnit by rememberSaveable { mutableStateOf(String()) }
-    var editItemDefaultIncrement by rememberSaveable { mutableStateOf(String()) }
-    
-    
-    // State for type change confirmation
-    var showTypeChangeWarning by rememberSaveable { mutableStateOf(false) }
-    var pendingTrackingType by rememberSaveable { mutableStateOf<String?>(null) }
-    
-    
-    
-    // State for error messages  
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    
-    // State for data deletion warning
-    var showDataDeletionWarning by rememberSaveable { mutableStateOf(false) }
-    
-    // State for scale change warning
-    var showScaleChangeWarning by rememberSaveable { mutableStateOf(false) }
-    var scaleChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
-    
-    // State for boolean labels change warning
-    var showBooleanChangeWarning by rememberSaveable { mutableStateOf(false) }
-    var booleanChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
-    
-    // State for choice options change warning  
-    var showChoiceChangeWarning by rememberSaveable { mutableStateOf(false) }
-    var choiceChangeDetails by rememberSaveable { mutableStateOf<String?>(null) }
-    
-    // Function to detect scale changes
-    val detectScaleChanges = {
-        if (isEditing && trackingType == "scale" && originalType == "scale") {
-            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
-            val currentConfig = config
-            
-            val oldMin = originalConfig.optInt("min", 1)
-            val oldMax = originalConfig.optInt("max", 10)
-            val oldMinLabel = originalConfig.optString("min_label", "")
-            val oldMaxLabel = originalConfig.optString("max_label", "")
-            
-            val newMin = currentConfig.optInt("min", 1)
-            val newMax = currentConfig.optInt("max", 10)
-            val newMinLabel = currentConfig.optString("min_label", "")
-            val newMaxLabel = currentConfig.optString("max_label", "")
-            
-            val scaleChanged = oldMin != newMin || oldMax != newMax
-            val labelsChanged = oldMinLabel != newMinLabel || oldMaxLabel != newMaxLabel
-            
-            if (scaleChanged || labelsChanged) {
-                val oldScaleText = buildString {
-                    append(oldMin)
-                    if (oldMinLabel.isNotEmpty()) append(" ($oldMinLabel)")
-                    append("->")
-                    append(oldMax)
-                    if (oldMaxLabel.isNotEmpty()) append(" ($oldMaxLabel)")
-                }
-                val newScaleText = buildString {
-                    append(newMin)
-                    if (newMinLabel.isNotEmpty()) append(" ($newMinLabel)")
-                    append("->")
-                    append(newMax)
-                    if (newMaxLabel.isNotEmpty()) append(" ($newMaxLabel)")
-                }
-                scaleChangeDetails = s.tool("config_warning_scale_change_old_new").format(oldScaleText, newScaleText)
-                true
-            } else false
-        } else false
-    }
 
-    // Function to detect boolean label changes
-    val detectBooleanChanges = {
-        if (isEditing && trackingType == "boolean" && originalType == "boolean") {
-            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
-            val currentConfig = config
-            
-            val oldTrueLabel = originalConfig.optString("true_label", s.tool("config_default_true_label"))
-            val oldFalseLabel = originalConfig.optString("false_label", s.tool("config_default_false_label"))
-            val newTrueLabel = currentConfig.optString("true_label", s.tool("config_default_true_label"))
-            val newFalseLabel = currentConfig.optString("false_label", s.tool("config_default_false_label"))
-            
-            if (oldTrueLabel != newTrueLabel || oldFalseLabel != newFalseLabel) {
-                booleanChangeDetails = s.tool("config_warning_boolean_change_old").format(oldTrueLabel, oldFalseLabel) + "\n" + s.tool("config_warning_boolean_change_new").format(newTrueLabel, newFalseLabel)
-                true
-            } else false
-        } else false
-    }
-
-    // Function to detect choice options changes  
-    val detectChoiceChanges = {
-        if (isEditing && trackingType == "choice" && originalType == "choice") {
-            val originalConfig = try { JSONObject(initialConfigString) } catch (e: Exception) { JSONObject() }
-            val currentConfig = config
-            
-            val oldOptions = originalConfig.optJSONArray("options")?.let { array ->
-                (0 until array.length()).map { array.getString(it) }
-            } ?: emptyList()
-            val newOptions = currentConfig.optJSONArray("options")?.let { array ->
-                (0 until array.length()).map { array.getString(it) }
-            } ?: emptyList()
-            
-            if (oldOptions != newOptions) {
-                val removedOptions = oldOptions.filter { it !in newOptions }
-                val addedOptions = newOptions.filter { it !in oldOptions }
-                
-                val details = buildString {
-                    if (removedOptions.isNotEmpty()) {
-                        append(s.tool("config_warning_choice_options_removed").format(removedOptions.joinToString(", ") { "\"$it\"" }))
-                    }
-                    if (addedOptions.isNotEmpty()) {
-                        if (removedOptions.isNotEmpty()) append("\n")
-                        append(s.tool("config_warning_choice_options_added").format(addedOptions.joinToString(", ") { "\"$it\"" }))
-                    }
-                }
-                choiceChangeDetails = details
-                true
-            } else false
-        } else false
-    }
-
-    // Internal save function with tracking-specific logic
-    val handleSaveInternal: () -> Unit = handleSaveInternal@{
-        // Debug logs for type change detection
-        LogManager.tracking("handleSave - isEditing: $isEditing")
-        LogManager.tracking("handleSave - originalType: '$originalType'")
-        LogManager.tracking("handleSave - trackingType: '$trackingType'")
-        LogManager.tracking("handleSave - condition result: ${isEditing && originalType.isNotEmpty() && originalType != trackingType}")
-
-        // Check if type changed and we're editing an existing tool
-        if (isEditing && originalType.isNotEmpty() && originalType != trackingType) {
-            // Show data deletion warning
-            LogManager.tracking("Showing data deletion warning")
-            showDataDeletionWarning = true
-            return@handleSaveInternal
-        }
-
-        // Check if scale parameters changed
-        if (detectScaleChanges()) {
-            showScaleChangeWarning = true
-            return@handleSaveInternal
-        }
-
-        // Check if boolean labels changed
-        if (detectBooleanChanges()) {
-            showBooleanChangeWarning = true
-            return@handleSaveInternal
-        }
-
-        // Check if choice options changed
-        if (detectChoiceChanges()) {
-            showChoiceChangeWarning = true
-            return@handleSaveInternal
-        }
-        
-        // Nettoyer la config avant validation
-        val cleanConfig = cleanConfiguration(config)
-
-        // Add custom fields
-        if (customFields.isNotEmpty()) {
-            cleanConfig.put("extra_fields", customFields.toJsonArray())
-        }
-
-        // Convert the JSONObject into the Map ValidationHelper expects
-        val configMap = cleanConfig.keys().asSequence().associateWith { key ->
-            cleanConfig.get(key)
-        }
-        
-        // Use unified ValidationHelper with zone change handling
-        UI.ValidationHelper.validateAndSave(
-            toolTypeName = "tracking",
-            configData = configMap,
-            context = context,
-            schemaType = "config",
-            onSuccess = { configJson ->
-                LogManager.tracking("ValidationHelper success - checking zone change", "DEBUG")
-
-                // If zone changed and we're editing, update zone_id FIRST before calling onSave
-                if (isEditing && currentZoneId != zoneId && existingToolId != null) {
-                    LogManager.tracking("Zone changed detected - updating from $zoneId to $currentZoneId BEFORE config save", "DEBUG")
-                    scope.launch {
-                        // Update zone first
-                        val zoneUpdateResult = coordinator.processUserAction(
-                            "tools.update",
-                            mapOf(
-                                "tool_instance_id" to existingToolId,
-                                "zone_id" to currentZoneId
-                            )
-                        )
-                        if (zoneUpdateResult.status != CommandStatus.SUCCESS) {
-                            LogManager.tracking("Failed to update zone: ${zoneUpdateResult.error}", "ERROR")
-                        } else {
-                            LogManager.tracking("Zone updated successfully to $currentZoneId, now saving config", "DEBUG")
-                        }
-
-                        // Then save config (which will also do a tools.update but with the new zone already set)
-                        onSave(configJson)
-                    }
-                } else {
-                    LogManager.tracking("No zone change - saving config normally", "DEBUG")
-                    onSave(configJson)
-                }
-            }
-        )
-    }
-
-    // Migration handler for custom fields (reusable)
-    val migrationHandler = rememberCustomFieldsMigrationHandler(
-        toolInstanceId = existingToolId,
-        oldFields = oldCustomFields,
-        newFields = customFields,
-        context = context,
-        onSuccess = {
-            // Migration succeeded or not needed - proceed with tracking-specific logic
-            handleSaveInternal()
-        },
-        onError = { error ->
-            errorMessage = error
-        }
-    )
-
-    // Public save function - checks custom fields migration first
-    val handleSave = {
-        // Check custom fields migration first, then proceed to tracking-specific logic
-        migrationHandler.checkAndProceed()
-    }
-
-    // Final save with data deletion
-    val handleFinalSave = {
-        LogManager.tracking("=== Final save started ===")
-        scope.launch {
-            try {
-                // Delete existing data first
-                if (existingToolId != null) {
-                    LogManager.tracking("About to call delete_all_entries for tool: $existingToolId")
-                    val deleteResult = coordinator.processUserAction(
-                        "tool_data.delete_all",
-                        mapOf(
-                            "tool_instance_id" to existingToolId
-                        )
-                    )
-                    LogManager.tracking("Delete result - status: ${deleteResult.status}, message: ${deleteResult.message}")
-                    if (!deleteResult.isSuccess) {
-                        LogManager.tracking("Failed to delete existing data: ${deleteResult.error}", "WARN")
-                    } else {
-                        LogManager.tracking("Data deletion successful")
-                    }
-                } else {
-                    LogManager.tracking("No existingToolId, skipping data deletion")
-                }
-                
-                // Then proceed with normal save
-                val cleanConfig = cleanConfiguration(config)
-
-                // Add custom fields
-                if (customFields.isNotEmpty()) {
-                    cleanConfig.put("extra_fields", customFields.toJsonArray())
-                }
-
-                val configMap = cleanConfig.keys().asSequence().associateWith { key ->
-                    cleanConfig.get(key)
-                }
-                
-                val toolType = ToolTypeManager.getToolType("tracking")
-                if (toolType != null) {
-                    val type = cleanConfig.optString("type")
-                    if (type.isNullOrEmpty()) {
-                        // Error: missing type
-                        return@launch
-                    }
-
-                    val schemaId = "tracking_config_$type"
-                    val schema = toolType.getSchema(schemaId, context)
-                    val validation = if (schema != null) {
-                        SchemaValidator.validate(schema, configMap, context)
-                    } else {
-                        ValidationResult.error("Schema not found for type: $type")
-                    }
-                    
-                    if (validation.isValid) {
-                        LogManager.tracking("About to save - isEditing: $isEditing, currentZoneId: $currentZoneId, originalZoneId: $zoneId", "DEBUG")
-
-                        onSave(cleanConfig.toString())
-
-                        // If zone changed and we're editing, update zone_id separately
-                        if (isEditing && currentZoneId != zoneId && existingToolId != null) {
-                            LogManager.tracking("Zone changed detected - updating from $zoneId to $currentZoneId for tool $existingToolId", "DEBUG")
-                            scope.launch {
-                                val result = coordinator.processUserAction(
-                                    "tools.update",
-                                    mapOf(
-                                        "tool_instance_id" to existingToolId,
-                                        "zone_id" to currentZoneId
-                                    )
-                                )
-                                if (result.status != CommandStatus.SUCCESS) {
-                                    LogManager.tracking("Failed to update zone: ${result.error}", "ERROR")
-                                    errorMessage = result.error ?: s.shared("tools_config_error_zone_update")
-                                } else {
-                                    LogManager.tracking("Zone updated successfully to $currentZoneId - result: ${result.data}", "DEBUG")
-                                }
-                            }
-                        } else {
-                            LogManager.tracking("Zone NOT changed - isEditing: $isEditing, zonesEqual: ${currentZoneId == zoneId}, existingToolId: $existingToolId", "DEBUG")
-                        }
-                    } else {
-                        LogManager.tracking("Validation failed: ${validation.errorMessage}", "ERROR")
-                        errorMessage = validation.errorMessage ?: s.shared("tools_config_error_validation")
-                    }
-                } else {
-                    LogManager.tracking("ToolType tracking not found", "ERROR")
-                    errorMessage = s.shared("tools_config_error_tooltype_not_found")
-                }
-            } catch (e: Exception) {
-                LogManager.tracking("Error during final save", "ERROR", e)
-                errorMessage = s.shared("tools_config_error_save")
-            }
-        }
-    }
-    
-    // Confirmation dialogs
-    if (showTypeChangeWarning) {
-        UI.Dialog(
-            type = DialogType.DANGER,
-            onConfirm = {
-                pendingTrackingType?.let { newType ->
-                    clearFieldsOfOtherTypes(config, newType)
-                    updateConfig("type", newType)
-                }
-                showTypeChangeWarning = false
-                pendingTrackingType = null
-                
-                // Cancel editing if in progress when type changes
-                editingItemIndex = null
-                editItemName = ""
-            },
-            onCancel = {
-                showTypeChangeWarning = false
-                pendingTrackingType = null
-            }
-        ) {
-            UI.Text(
-                s.tool("config_warning_type_change").format(items.size),
-                TextType.BODY
-            )
-        }
-    }
-    
-    // Data deletion warning dialog
-    if (showDataDeletionWarning) {
-        UI.Dialog(
-            type = DialogType.DANGER,
-            onConfirm = {
-                showDataDeletionWarning = false
-                handleFinalSave()
-            },
-            onCancel = {
-                showDataDeletionWarning = false
-            }
-        ) {
-            Column {
-                UI.Text(
-                    s.tool("config_warning_type_change_title"),
-                    TextType.SUBTITLE
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                UI.Text(
-                    s.tool("config_warning_type_change_desc").format(originalType, trackingType).also { formatted ->
-                        LogManager.tracking("Dialog message: '$formatted' (originalType='$originalType', trackingType='$trackingType')")
-                    },
-                    TextType.BODY
-                )
-                UI.Text(
-                    s.tool("config_warning_data_deletion"),
-                    TextType.BODY
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                UI.Text(
-                    s.tool("config_warning_continue"),
-                    TextType.BODY
-                )
-            }
-        }
-    }
-    
-    // Scale change warning dialog
-    if (showScaleChangeWarning) {
-        UI.Dialog(
-            type = DialogType.CONFIRM,
-            onConfirm = {
-                showScaleChangeWarning = false
-                handleFinalSave()
-            },
-            onCancel = {
-                showScaleChangeWarning = false
-            }
-        ) {
-            Column {
-                UI.Text(
-                    s.tool("config_warning_scale_change_title"),
-                    TextType.SUBTITLE
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                scaleChangeDetails?.let { details ->
-                    UI.Text(
-                        details,
-                        TextType.BODY
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                UI.Text(
-                    s.tool("config_warning_scale_change_desc"),
-                    TextType.BODY
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                UI.Text(
-                    s.tool("config_warning_continue"),
-                    TextType.BODY
-                )
-            }
-        }
-    }
-    
-    // Boolean labels change warning dialog
-    if (showBooleanChangeWarning) {
-        UI.Dialog(
-            type = DialogType.CONFIRM,
-            onConfirm = {
-                showBooleanChangeWarning = false
-                handleFinalSave()
-            },
-            onCancel = {
-                showBooleanChangeWarning = false
-            }
-        ) {
-            Column {
-                UI.Text(
-                    s.tool("config_warning_boolean_change_title"),
-                    TextType.SUBTITLE
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                booleanChangeDetails?.let { details ->
-                    UI.Text(
-                        details,
-                        TextType.BODY
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                UI.Text(
-                    s.tool("config_warning_boolean_change_desc"),
-                    TextType.BODY
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                UI.Text(
-                    s.tool("config_warning_continue"),
-                    TextType.BODY
-                )
-            }
-        }
-    }
-    
-    // Choice options change warning dialog
-    if (showChoiceChangeWarning) {
-        UI.Dialog(
-            type = DialogType.CONFIRM,
-            onConfirm = {
-                showChoiceChangeWarning = false
-                handleFinalSave()
-            },
-            onCancel = {
-                showChoiceChangeWarning = false
-            }
-        ) {
-            Column {
-                UI.Text(
-                    s.tool("config_warning_choice_change_title"),
-                    TextType.SUBTITLE
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                choiceChangeDetails?.let { details ->
-                    UI.Text(
-                        details,
-                        TextType.BODY
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                UI.Text(
-                    s.tool("config_warning_choice_desc"),
-                    TextType.BODY
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                UI.Text(
-                    s.tool("config_warning_continue"),
-                    TextType.BODY
-                )
-            }
-        }
-    }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Header with back button
-        UI.PageHeader(
-            title = if (isEditing) s.tool("config_title_edit") else s.tool("config_title_create"),
-            subtitle = null,
-            icon = null,
-            leftButton = ButtonAction.BACK,
-            rightButton = null,
-            onLeftClick = onCancel,
-            onRightClick = null
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // Card 1: General parameters (reusable composable)
-        // Sync alwaysSend state back to config before passing to component
-        config.put("always_send", alwaysSend)
-
-        ToolGeneralConfigSection(
-            config = config,
-            updateConfig = ::updateConfig,
-            toolTypeName = "tracking",
-            zoneId = currentZoneId,
-            onZoneChange = { newZoneId -> currentZoneId = newZoneId },
-            initialGroup = initialGroup,
-            isEditing = isEditing
-        )
-        
-        // Card 2: Tracking-specific parameters
-        UI.Card(type = CardType.DEFAULT) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                UI.Text(s.tool("config_section_specific_params"), TextType.SUBTITLE)
-                
-                UI.FormSelection(
-                    label = s.tool("config_label_tracking_type"),
-                    options = listOf(
-                        s.tool("config_option_numeric"),
-                        s.tool("config_option_text"), 
-                        s.tool("config_option_scale"),
-                        s.tool("config_option_boolean"),
-                        s.tool("config_option_timer"),
-                        s.tool("config_option_choice"),
-                        s.tool("config_option_counter")
-                    ),
-                    selected = when(trackingType) {
-                        "numeric" -> s.tool("config_option_numeric")
-                        "text" -> s.tool("config_option_text")
-                        "scale" -> s.tool("config_option_scale")
-                        "boolean" -> s.tool("config_option_boolean")
-                        "timer" -> s.tool("config_option_timer")
-                        "choice" -> s.tool("config_option_choice")
-                        "counter" -> s.tool("config_option_counter")
-                        else -> trackingType
-                    },
-                    onSelect = { selectedLabel ->
-                        val newType = when (selectedLabel) {
-                            s.tool("config_option_numeric") -> "numeric"
-                            s.tool("config_option_text") -> "text"
-                            s.tool("config_option_scale") -> "scale"
-                            s.tool("config_option_boolean") -> "boolean"
-                            s.tool("config_option_timer") -> "timer"
-                            s.tool("config_option_choice") -> "choice"
-                            s.tool("config_option_counter") -> "counter"
-                            else -> selectedLabel
-                        }
-                        
-                        if (trackingType != newType && items.isNotEmpty()) {
-                            // Show warning if there are existing items
-                            pendingTrackingType = newType
-                            showTypeChangeWarning = true
-                        } else if (trackingType != newType) {
-                            // No items to lose, but the fields of the type being left still go:
-                            // a choice tracking has no items and would otherwise keep its options.
-                            clearFieldsOfOtherTypes(config, newType)
-                            updateConfig("type", newType)
-                        }
-                        
-                        // Cancel editing if in progress when type changes
-                        if (trackingType != newType) {
-                            editingItemIndex = null
-                            editItemName = ""
-                                    }
-                    },
-                    required = true
-                )
-                
-                // Type-specific parameters
-                TypeSpecificParameters(
-                    trackingType = trackingType,
-                    config = config,
-                    updateConfig = ::updateConfig,
-                    s = s
-                )
-            }
-        }
-        
-        // Card 3: Predefined items list
-        if (trackingType.isNotBlank()) {
-            UI.Card(type = CardType.DEFAULT) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        UI.Text(s.tool("config_section_predefined_items"), TextType.SUBTITLE)
-                        UI.ActionButton(
-                            action = ButtonAction.ADD,
-                            onClick = { 
-                                // Open the dialog for a new item
-                                editingItemIndex = null
-                                editItemName = String()
-                                editItemDefaultQuantity = String()
-                                editItemUnit = String()
-                                editItemDefaultIncrement = String()
-                                showItemDialog = true
-                            }
-                        )
-                    }
-
-                    // Tableau items
-                    if (items.isEmpty()) {
-                        UI.Text(
-                            text = s.tool("config_message_no_items"),
-                            type = TextType.CAPTION,
-                            fillMaxWidth = true,
-                            textAlign = TextAlign.Center
-                        )
-                    } else{
-                        // Header row
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Colonnes ordre
-                            Box(
-                                modifier = Modifier.weight(2f),
-                                contentAlignment = Alignment.Center
-                            ) {}
-
-                            // Colonne nom
-                            Box(
-                                modifier = Modifier.weight(4f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                UI.CenteredText(
-                                    text = s.tool("config_header_name"),
-                                    type = TextType.CAPTION
-                                )
-                            }
-
-                            // Columns specific to numeric type
-                            if (trackingType == "numeric") {
-                                Box(
-                                    modifier = Modifier.weight(2f),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    UI.CenteredText(
-                                        text = s.tool("config_header_quantity"),
-                                        type = TextType.CAPTION
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier.weight(2f),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    UI.CenteredText(
-                                        text = s.tool("config_header_unit"),
-                                        type = TextType.CAPTION
-                                    )
-                                }
-                            }
-
-                            if (trackingType == "counter") {
-                                Box(
-                                    modifier = Modifier.weight(2f),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    UI.CenteredText(
-                                        text = s.tool("config_header_increment"),
-                                        type = TextType.CAPTION
-                                    )
-                                }
-                            }
-
-                            // Colones modifier + supprimer
-                            Box(
-                                modifier = Modifier.weight(2f),
-                                contentAlignment = Alignment.Center
-                            ) {}
-                        }
-
-                        // Show the items
-                        items.forEachIndexed { itemIndex, item ->
-                            ItemRowReadonly(
-                                item = item,
-                                itemIndex = itemIndex,
-                                trackingType = trackingType,
-                                onEdit = {
-                                    editingItemIndex = itemIndex
-                                    editItemName = item.name
-                                    editItemDefaultQuantity = item.properties["default_quantity"]?.toString() ?: String()
-                                    editItemUnit = item.properties["unit"]?.toString() ?: String()
-                                    editItemDefaultIncrement = item.properties["default_increment"]?.toString() ?: String()
-                                    showItemDialog = true
-                                },
-                                onMoveUp = {
-                                    if (itemIndex > 0) {
-                                        val newItems = items.toMutableList()
-                                        val temp = newItems[itemIndex]
-                                        newItems[itemIndex] = newItems[itemIndex - 1]
-                                        newItems[itemIndex - 1] = temp
-                                        updateItems(newItems)
-                                    }
-                                },
-                                onMoveDown = {
-                                    if (itemIndex < items.size - 1) {
-                                        val newItems = items.toMutableList()
-                                        val temp = newItems[itemIndex]
-                                        newItems[itemIndex] = newItems[itemIndex + 1]
-                                        newItems[itemIndex + 1] = temp
-                                        updateItems(newItems)
-                                    }
-                                },
-                                onDelete = {
-                                    val newItems = items.toMutableList()
-                                    newItems.removeAt(itemIndex)
-                                    updateItems(newItems)
-                                }
-                            )
-                        }
-                    }
-
-                    
-
-                    
-
-                }
-            }
-        }
-
-        // Custom fields editor
-        UI.Card(type = CardType.DEFAULT) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                CustomFieldsEditor(
-                    fields = customFields,
-                    onFieldsChange = { newFields ->
-                        customFields = newFields
-                        LogManager.tracking("Custom fields updated: ${newFields.size} fields")
-                    },
-                    context = context
-                )
-            }
-        }
-
-        // Actions
-        UI.ToolConfigActions(
-            isEditing = isEditing,
-            onSave = handleSave,
-            onCancel = onCancel,
-            onDelete = onDelete,
-            saveEnabled = configLoad == LoadState.LOADED
-        )
-        
-        
-        // Item edit/create dialog
-        if (showItemDialog) {
-            val isCreating = editingItemIndex == null
-            UI.Dialog(
-                type = if (isCreating) DialogType.CREATE else DialogType.EDIT,
-                onConfirm = {
-                    val properties = mutableMapOf<String, Any>()
-                    
-                    // Build properties according to tracking type
-                    when (trackingType) {
-                        "numeric" -> {
-                            // Convert string to number for schema validation
-                            val quantity = editItemDefaultQuantity.toDoubleOrNull()
-                            if (quantity != null) {
-                                properties["default_quantity"] = quantity
-                            }
-                            properties["unit"] = editItemUnit
-                        }
-                        "counter" -> {
-                            // Empty or not a whole number above zero: no amount, the shortcut counts by 1
-                            editItemDefaultIncrement.toIntOrNull()?.takeIf { it > 0 }?.let {
-                                properties["default_increment"] = it
-                            }
-                        }
-                        // For other types (text, choice, scale, etc.), no additional properties needed
-                        // The item name is sufficient
-                    }
-                    
-                    // Check if all fields are empty - if so, silently handle removal/non-addition
-                    if (allFieldsEmpty(editItemName, properties)) {
-                        if (!isCreating && editingItemIndex != null) {
-                            // Editing mode: remove the item from the list
-                            val newItems = items.toMutableList()
-                            newItems.removeAt(editingItemIndex!!)
-                            updateItems(newItems)
-                        }
-                        // Creating mode: simply don't add anything (silent)
-                    } else {
-                        // Normal case: add or update the item
-                        if (isCreating) {
-                            val newItem = TrackingItem(editItemName, properties)
-                            val newItems = items.toMutableList()
-                            newItems.add(newItem)
-                            updateItems(newItems)
-                        } else {
-                            editingItemIndex?.let { index ->
-                                val newItems = items.toMutableList()
-                                newItems[index] = TrackingItem(editItemName, properties)
-                                updateItems(newItems)
-                            }
-                        }
-                    }
-                    
-                    showItemDialog = false
-                    editItemName = String()
-                    editItemDefaultQuantity = String()
-                    editItemUnit = String()
-                    editItemDefaultIncrement = String()
-                    editingItemIndex = null
-                },
-                onCancel = {
-                    showItemDialog = false
-                    editItemName = String()
-                    editItemDefaultQuantity = String()
-                    editItemUnit = String()
-                    editItemDefaultIncrement = String()
-                    editingItemIndex = null
-                }
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    UI.Text(
-                        if (isCreating) s.tool("config_dialog_create_item") else s.tool("config_dialog_edit_item"),
-                        TextType.SUBTITLE
-                    )
-                    
-                    UI.FormField(
-                        label = s.shared("tools_config_label_name"),
-                        value = editItemName,
-                        onChange = { editItemName = it },
-                        required = true
-                    )
-                    
-                    // Specific fields according to tracking type
-                    if (trackingType == "numeric") {
-                        UI.FormField(
-                            label = s.tool("config_label_default_quantity"),
-                            value = editItemDefaultQuantity,
-                            onChange = { editItemDefaultQuantity = it },
-                            fieldType = FieldType.NUMERIC,
-                            required = false
-                        )
-                        
-                        UI.FormField(
-                            label = s.tool("config_label_unit"),
-                            value = editItemUnit,
-                            onChange = { editItemUnit = it },
-                            required = false
-                        )
-                    }
-
-                    if (trackingType == "counter") {
-                        UI.FormField(
-                            label = s.tool("config_label_default_increment"),
-                            value = editItemDefaultIncrement,
-                            onChange = { editItemDefaultIncrement = it },
-                            fieldType = FieldType.NUMERIC,
-                            required = false
-                        )
-                    }
-                }
-            }
-        }
-        
-        
-    }
-    
-    // Show error toast when errorMessage is set
     errorMessage?.let { message ->
         LaunchedEffect(message) {
             UI.Toast(context, message, Duration.LONG)
             errorMessage = null
         }
     }
-}
 
+    if (configLoad == LoadState.LOADING) {
+        UI.Text(s.shared("tools_loading_config"), TextType.BODY)
+        return
+    }
 
-/**
- * Composable for a readonly item row with its actions
- */
-@Composable
-private fun ItemRowReadonly(
-    item: TrackingItem,
-    itemIndex: Int,
-    trackingType: String,
-    onEdit: () -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val kind = TrackingKind.of(config)
+
+    /** Validates and saves, the entries deleted first when the type changed. */
+    fun save() {
+        val toSave = JSONObject(config.toString()).apply {
+            put("schema_id", kind.configSchemaId)
+            put("data_schema_id", kind.dataSchemaId)
+            if (customFields.isNotEmpty()) put("extra_fields", customFields.toJsonArray()) else remove("extra_fields")
+        }
+        UI.ValidationHelper.validateAndSave(
+            toolTypeName = "tracking",
+            configData = toSave.keys().asSequence().associateWith { toSave.get(it) },
+            context = context,
+            schemaType = "config",
+            onSuccess = { configJson ->
+                scope.launch {
+                    if (deletesEntries && existingToolId != null) {
+                        val deleted = coordinator.processUserAction("tool_data.delete_all", mapOf("tool_instance_id" to existingToolId))
+                        if (!deleted.isSuccess) {
+                            errorMessage = deleted.error ?: s.shared("tools_config_error_save")
+                            isSaving = false
+                            return@launch
+                        }
+                    }
+                    if (isEditing && currentZoneId != zoneId && existingToolId != null) {
+                        val moved = coordinator.processUserAction("tools.update", mapOf("tool_instance_id" to existingToolId, "zone_id" to currentZoneId))
+                        if (moved.status != CommandStatus.SUCCESS) LogManager.tracking("Failed to update zone: ${moved.error}", "ERROR")
+                    }
+                    onSave(configJson)
+                }
+            },
+            onError = { error ->
+                errorMessage = error
+                isSaving = false
+            }
+        )
+    }
+
+    /** Asks before a save that changes what the recorded entries mean, saves otherwise. */
+    fun checkAndSave() {
+        val before = if (isEditing) initialConfig else null
+        when {
+            before != null && before.optString("type") != config.optString("type") -> {
+                deletesEntries = true
+                warning = s.tool("config_warning_type_change_desc").format(before.optString("type"), config.optString("type")) +
+                    "\n" + s.tool("config_warning_data_deletion")
+            }
+            before != null && (before.optJSONObject("value")?.toString() != config.optJSONObject("value")?.toString() ||
+                TrackingConfig.units(before).any { it !in TrackingConfig.units(config) }) -> {
+                deletesEntries = false
+                warning = s.tool("config_warning_value_change")
+            }
+            else -> save()
+        }
+    }
+
+    val migrationHandler = rememberCustomFieldsMigrationHandler(
+        toolInstanceId = existingToolId,
+        oldFields = oldCustomFields,
+        newFields = customFields,
+        context = context,
+        onSuccess = { checkAndSave() },
+        onError = { error ->
+            errorMessage = error
+            isSaving = false
+        }
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // UP button (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.ActionButton(
-                action = ButtonAction.UP,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                onClick = onMoveUp
-            )
-        }
-        
-        // DOWN button (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.ActionButton(
-                action = ButtonAction.DOWN,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                onClick = onMoveDown
-            )
-        }
-        
-        // Nom (weight=4f)
-        Box(
-            modifier = Modifier.weight(4f),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.CenteredText(
-                text = item.name,
-                type = TextType.BODY
-            )
-        }
-        
-        // Specific fields (currently only for numeric)
+        UI.PageHeader(
+            title = if (isEditing) s.tool("config_title_edit") else s.tool("config_title_create"),
+            subtitle = s.tool("display_name"),
+            leftButton = ButtonAction.BACK,
+            onLeftClick = onCancel
+        )
 
-        if (trackingType == "numeric") {
-            Box(
-                modifier = Modifier.weight(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                val defaultQuantity = item.properties["default_quantity"]
-                UI.CenteredText(
-                    text = defaultQuantity?.toString() ?: "-",
-                    type = TextType.BODY
-                )
-            }
+        ToolGeneralConfigSection(
+            config = config,
+            updateConfig = { key, value -> update { put(key, value) } },
+            toolTypeName = "tracking",
+            zoneId = currentZoneId,
+            onZoneChange = { currentZoneId = it },
+            initialGroup = initialGroup,
+            isEditing = isEditing
+        )
 
-            Box(
-                modifier = Modifier.weight(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                val unit = item.properties["unit"]?.toString()
-                UI.CenteredText(
-                    text = unit ?: "-",
-                    type = TextType.BODY
-                )
-            }
-        }
+        // What the tool follows, and the settings of its value
+        UI.Card(type = CardType.DEFAULT) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                UI.Text(s.tool("config_section_specific_params"), TextType.SUBTITLE)
 
-        if (trackingType == "counter") {
-            Box(
-                modifier = Modifier.weight(2f),
-                contentAlignment = Alignment.Center
-            ) {
-                UI.CenteredText(
-                    text = "±${com.assistant.tools.tracking.TrackingConfig.counterStep(com.assistant.tools.tracking.TrackingShortcut(item.name, item.properties["value"] as? Number))}",
-                    type = TextType.BODY
+                UI.FormSelection(
+                    label = s.tool("config_label_tracking_type"),
+                    options = TrackingKind.entries.map { s.tool("config_option_${it.key}") },
+                    selected = s.tool("config_option_${kind.key}"),
+                    onSelect = { selected ->
+                        val chosen = TrackingKind.entries.first { s.tool("config_option_${it.key}") == selected }
+                        if (chosen != kind) update {
+                            // The value's settings, units and shortcut values belong to the former type
+                            put("type", chosen.key)
+                            remove("value")
+                            remove("units")
+                            remove("allow_decrement")
+                            put("items", JSONArray(TrackingConfig.shortcuts(this).map { JSONObject().put("name", it.name) }))
+                        }
+                    }
                 )
+
+                kind.valueType?.let { valueType ->
+                    FieldConfigEditor(
+                        fieldType = valueType,
+                        config = config.optJSONObject("value")?.toFieldConfig(),
+                        onConfigChange = { valueConfig ->
+                            update { if (valueConfig.isNullOrEmpty()) remove("value") else put("value", JSONObject(valueConfig)) }
+                        },
+                        context = context
+                    )
+                }
+
+                if (kind == TrackingKind.NUMERIC) {
+                    UI.DynamicList(
+                        label = s.tool("field_units"),
+                        items = TrackingConfig.units(config),
+                        onItemsChanged = { units ->
+                            update { if (units.isEmpty()) remove("units") else put("units", JSONArray(units)) }
+                        },
+                        placeholder = s.tool("config_label_unit"),
+                        required = false
+                    )
+                }
+
+                if (kind == TrackingKind.COUNTER) {
+                    UI.ToggleField(
+                        label = s.tool("config_label_allow_decrement"),
+                        checked = TrackingConfig.allowsDecrement(config),
+                        onCheckedChange = { allowed -> update { put("allow_decrement", allowed) } },
+                        required = false
+                    )
+                }
             }
         }
 
-        // EDIT button (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            UI.ActionButton(
-                action = ButtonAction.EDIT,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                onClick = onEdit
-            )
+        // Shortcuts
+        val shortcuts = TrackingConfig.shortcuts(config)
+        UI.Card(type = CardType.DEFAULT) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Box(modifier = Modifier.weight(1f)) { UI.Text(s.tool("field_items"), TextType.SUBTITLE) }
+                    UI.ActionButton(action = ButtonAction.ADD, display = ButtonDisplay.ICON, size = Size.S, onClick = { editingShortcut = -1 })
+                }
+                if (shortcuts.isEmpty()) UI.Text(s.tool("config_message_no_items"), TextType.CAPTION)
+                shortcuts.forEachIndexed { index, shortcut ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UI.Text(listOfNotNull(shortcut.name, shortcut.value?.toString(), shortcut.unit).joinToString(" · "), TextType.BODY)
+                        }
+                        UI.ActionButton(action = ButtonAction.UP, display = ButtonDisplay.ICON, size = Size.S, enabled = index > 0, onClick = {
+                            config = TrackingConfig.withShortcuts(config, shortcuts.toMutableList().apply { add(index - 1, removeAt(index)) })
+                        })
+                        UI.ActionButton(action = ButtonAction.DOWN, display = ButtonDisplay.ICON, size = Size.S, enabled = index < shortcuts.size - 1, onClick = {
+                            config = TrackingConfig.withShortcuts(config, shortcuts.toMutableList().apply { add(index + 1, removeAt(index)) })
+                        })
+                        UI.ActionButton(action = ButtonAction.EDIT, display = ButtonDisplay.ICON, size = Size.S, onClick = { editingShortcut = index })
+                        UI.ActionButton(action = ButtonAction.DELETE, display = ButtonDisplay.ICON, size = Size.S, onClick = {
+                            config = TrackingConfig.withShortcuts(config, shortcuts.filterIndexed { i, _ -> i != index })
+                        })
+                    }
+                }
+            }
         }
-        
-        // DELETE button (weight=1f)
-        Box(
-            modifier = Modifier.weight(1f),
-            contentAlignment = Alignment.Center
+
+        UI.Card(type = CardType.DEFAULT) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                CustomFieldsEditor(fields = customFields, onFieldsChange = { customFields = it }, context = context)
+            }
+        }
+
+        UI.ToolConfigActions(
+            isEditing = isEditing,
+            onSave = {
+                isSaving = true
+                migrationHandler.checkAndProceed()
+            },
+            onCancel = onCancel,
+            onDelete = onDelete,
+            saveEnabled = !isSaving && configLoad == LoadState.LOADED
+        )
+    }
+
+    editingShortcut?.let { index ->
+        val current = TrackingConfig.shortcuts(config).getOrNull(index)
+        ShortcutDialog(
+            kind = kind,
+            units = TrackingConfig.units(config),
+            initial = current ?: TrackingShortcut(""),
+            isNew = current == null,
+            onConfirm = { shortcut ->
+                val shortcuts = TrackingConfig.shortcuts(config).toMutableList()
+                if (current == null) shortcuts.add(shortcut) else shortcuts[index] = shortcut
+                config = TrackingConfig.withShortcuts(config, shortcuts)
+                editingShortcut = null
+            },
+            onCancel = { editingShortcut = null }
+        )
+    }
+
+    warning?.let { text ->
+        UI.Dialog(
+            type = if (deletesEntries) DialogType.DANGER else DialogType.CONFIRM,
+            onConfirm = {
+                warning = null
+                save()
+            },
+            onCancel = {
+                warning = null
+                isSaving = false
+            }
         ) {
-            UI.ActionButton(
-                action = ButtonAction.DELETE,
-                display = ButtonDisplay.ICON,
-                size = Size.S,
-                requireConfirmation = true,
-                onClick = onDelete
-            )
+            UI.Text(text, TextType.BODY)
         }
     }
 }
 
 /**
- * Build display text for item properties based on tracking type
- */
-private fun buildItemPropertiesText(properties: Map<String, Any>, trackingType: String): String {
-    return when (trackingType) {
-        "numeric" -> {
-            val defaultQuantity = properties["default_quantity"]
-            val unit = properties["unit"]?.toString()?.takeIf { it.isNotBlank() }
-            
-            when {
-                defaultQuantity != null && unit != null -> "$defaultQuantity $unit"
-                defaultQuantity != null -> defaultQuantity.toString()
-                unit != null -> unit
-                else -> ""
-            }
-        }
-        else -> {
-            // For other types, show all properties generically
-            properties.entries.joinToString(", ") { "${it.key}: ${it.value}" }
-        }
-    }
-}
-
-/**
- * Type-specific configuration parameters
+ * Creates or edits a shortcut: its name, and for a numeric or counter tool the value it
+ * enters, and for a numeric one its unit.
  */
 @Composable
-private fun TypeSpecificParameters(
-    trackingType: String,
-    config: JSONObject,
-    updateConfig: (String, Any) -> Unit,
-    s: com.assistant.core.strings.StringsContext
+private fun ShortcutDialog(
+    kind: TrackingKind,
+    units: List<String>,
+    initial: TrackingShortcut,
+    isNew: Boolean,
+    onConfirm: (TrackingShortcut) -> Unit,
+    onCancel: () -> Unit
 ) {
-    when (trackingType) {
-        "scale" -> {
-            // Use state variables instead of val to allow real-time updates
-            var minValue by rememberSaveable { mutableStateOf(config.optInt("min", 1).toString()) }
-            var maxValue by rememberSaveable { mutableStateOf(config.optInt("max", 10).toString()) }
-            val minLabel = config.optString("min_label", "")
-            val maxLabel = config.optString("max_label", "")
-            
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.tool("config_label_min_value"),
-                            value = minValue,
-                            onChange = { value ->
-                                minValue = value
-                                val intValue = value.toIntOrNull() ?: 1
-                                updateConfig("min", intValue)
-                            },
-                            fieldType = FieldType.NUMERIC,
-                            required = true
-                        )
-                    }
-                    
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.tool("config_label_max_value"), 
-                            value = maxValue,
-                            onChange = { value ->
-                                maxValue = value
-                                val intValue = value.toIntOrNull() ?: 10
-                                updateConfig("max", intValue)
-                            },
-                            fieldType = FieldType.NUMERIC,
-                            required = true
-                        )
-                    }
-                }
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.tool("config_label_min_label"),
-                            value = minLabel,
-                            onChange = { updateConfig("min_label", it) },
-                            fieldType = FieldType.TEXT
-                        )
-                    }
-                    
-                    Box(modifier = Modifier.weight(1f)) {
-                        UI.FormField(
-                            label = s.tool("config_label_max_label"),
-                            value = maxLabel,
-                            onChange = { updateConfig("max_label", it) },
-                            fieldType = FieldType.TEXT
-                        )
-                    }
-                }
+    val context = LocalContext.current
+    val s = remember { Strings.`for`(tool = "tracking", context = context) }
+    var name by rememberSaveable { mutableStateOf(initial.name) }
+    var value by rememberSaveable { mutableStateOf(initial.value?.toString() ?: "") }
+    var unit by rememberSaveable { mutableStateOf(initial.unit ?: "") }
+    val keepsValue = kind == TrackingKind.NUMERIC || kind == TrackingKind.COUNTER
+    // A whole number is kept whole: 150, not 150.0
+    val number: Number? = value.toDoubleOrNull()?.let { if (it % 1.0 == 0.0) it.toLong() else it }
+    val valid = name.isNotBlank() && (value.isBlank() || number != null)
+
+    UI.Dialog(
+        type = if (isNew) DialogType.CREATE else DialogType.EDIT,
+        confirmEnabled = valid,
+        onConfirm = {
+            onConfirm(TrackingShortcut(
+                name = name.trim(),
+                value = if (keepsValue) number else null,
+                unit = if (kind == TrackingKind.NUMERIC) unit.takeIf { it.isNotEmpty() } else null
+            ))
+        },
+        onCancel = onCancel
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            UI.Text(if (isNew) s.tool("config_dialog_create_item") else s.tool("config_dialog_edit_item"), TextType.SUBTITLE)
+            UI.FormField(label = s.tool("field_name"), value = name, onChange = { name = it }, fieldType = UIFieldType.TEXT, required = true)
+            if (keepsValue) {
+                UI.FormField(
+                    label = if (kind == TrackingKind.COUNTER) s.tool("config_label_default_increment") else s.tool("config_label_default_quantity"),
+                    value = value,
+                    onChange = { value = it },
+                    fieldType = UIFieldType.NUMERIC,
+                    required = false
+                )
+            }
+            if (kind == TrackingKind.NUMERIC && units.isNotEmpty()) {
+                UI.FormSelection(label = s.tool("config_label_unit"), options = listOf("") + units, selected = unit, onSelect = { unit = it }, required = false)
             }
         }
-        
-        "boolean" -> {
-            val trueLabel = config.optString("true_label", s.tool("config_default_true_label"))
-            val falseLabel = config.optString("false_label", s.tool("config_default_false_label"))
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    UI.FormField(
-                        label = s.tool("config_label_true_label"),
-                        value = trueLabel,
-                        onChange = { updateConfig("true_label", it) },
-                        fieldType = FieldType.TEXT
-                    )
-                }
-                
-                Box(modifier = Modifier.weight(1f)) {
-                    UI.FormField(
-                        label = s.tool("config_label_false_label"),
-                        value = falseLabel,
-                        onChange = { updateConfig("false_label", it) },
-                        fieldType = FieldType.TEXT
-                    )
-                }
-            }
-        }
-        
-        "choice" -> {
-            val optionsArray = config.optJSONArray("options") ?: JSONArray()
-            val currentOptions = (0 until optionsArray.length()).map { 
-                optionsArray.optString(it, "") 
-            }.toMutableList()
-            
-            UI.DynamicList(
-                label = s.tool("config_label_available_options"),
-                items = currentOptions,
-                onItemsChanged = { newOptions ->
-                    // Save all options (even empty ones) to allow editing
-                    // Filtering will be done during final configuration save
-                    val newArray = JSONArray()
-                    newOptions.forEach { option ->
-                        newArray.put(option) // Keep all elements, even empty ones
-                    }
-                    updateConfig("options", newArray)
-                },
-                placeholder = s.tool("config_default_placeholder"),
-                required = true,
-                minItems = 2 // Au moins 2 options pour un choix
-            )
-        }
-        
-        "counter" -> {
-            val allowDecrement = config.optBoolean("allow_decrement", true)
-            
-            UI.FormSelection(
-                label = s.tool("config_label_allow_decrement"),
-                options = listOf(s.shared("tools_config_option_yes"), s.shared("tools_config_option_no")),
-                selected = if (allowDecrement) s.shared("tools_config_option_yes") else s.shared("tools_config_option_no"),
-                onSelect = { selected ->
-                    updateConfig("allow_decrement", selected == s.shared("tools_config_option_yes"))
-                }
-            )
-        }
-        
-        // NUMERIC, TEXT, TIMER don't have specific configuration parameters
-        // Predefined items are sufficient for their configuration
     }
-}
-
-/**
- * Nettoie la configuration avant sauvegarde finale
- */
-private fun cleanConfiguration(config: JSONObject): JSONObject {
-    val cleanConfig = JSONObject(config.toString()) // Copie profonde
-
-    // Add schema_id and data_schema_id based on type for validation and runtime usage
-    val type = cleanConfig.optString("type", "")
-    if (type.isNotEmpty()) {
-        val configSchemaId = "tracking_config_$type"
-        val dataSchemaId = "tracking_data_$type"
-        cleanConfig.put("schema_id", configSchemaId)
-        cleanConfig.put("data_schema_id", dataSchemaId)
-        LogManager.tracking("Added schema_id: $configSchemaId and data_schema_id: $dataSchemaId")
-    }
-
-    // Drop the empty options on CHOICE types
-    if (cleanConfig.optString("type") == "choice") {
-        LogManager.tracking("Cleaning CHOICE config")
-        val optionsArray = cleanConfig.optJSONArray("options")
-        if (optionsArray != null) {
-            LogManager.tracking("Original options: $optionsArray")
-            val cleanArray = JSONArray()
-            for (i in 0 until optionsArray.length()) {
-                val option = optionsArray.optString(i, "")
-                val trimmedOption = option.trim()
-                LogManager.tracking("Option '$option' -> trimmed '$trimmedOption'")
-                if (trimmedOption.isNotBlank()) {
-                    cleanArray.put(trimmedOption)
-                }
-            }
-            LogManager.tracking("Clean options: $cleanArray")
-            cleanConfig.put("options", cleanArray)
-        }
-    }
-    
-    // Predefined items are always valid (name required in UI)
-    
-    return cleanConfig
 }

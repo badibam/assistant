@@ -11,13 +11,6 @@
     <string name="config_label_default_quantity">Default quantity</string>
     <string name="config_label_unit">Unit</string>
     <string name="config_label_default_increment">Step (1 if empty)</string>
-    <string name="config_label_min_value">Minimum value</string>
-    <string name="config_label_max_value">Maximum value</string>
-    <string name="config_label_min_label">Minimum label</string>
-    <string name="config_label_max_label">Maximum label</string>
-    <string name="config_label_true_label">\"True\" label</string>
-    <string name="config_label_false_label">\"False\" label</string>
-    <string name="config_label_available_options">Available options</string>
     <string name="config_label_allow_decrement">Allow decrementing</string>
     
     <!-- CONFIG - Tracking type options -->
@@ -28,52 +21,31 @@
     <string name="config_option_timer">Timer (timer)</string>
     <string name="config_option_choice">Choice (choice)</string>
     <string name="config_option_counter">Counter (counter)</string>
+    <string name="config_option_occurrence">Occurrence (occurrence)</string>
     
     <!-- CONFIG - Sections -->
     <string name="config_section_specific_params">Specific settings</string>
-    <string name="config_section_predefined_items">Predefined items</string>
 
     <!-- CONFIG - Tables and lists -->
-    <string name="config_header_name">Name</string>
-    <string name="config_header_quantity">Qty</string>
-    <string name="config_header_unit">Unit</string>
-    <string name="config_header_increment">Step</string>
     <string name="config_message_no_items">No item defined</string>
     
     <!-- CONFIG - Dialogs -->
     <string name="config_dialog_create_item">Create an item</string>
     <string name="config_dialog_edit_item">Edit the item</string>
-    <string name="config_dialog_choose_icon">Choose an icon</string>
     
     <!-- CONFIG - Warning messages -->
-    <string name="config_warning_type_change">You have %1$d predefined item(s). Changing the type will delete every existing item. Continue?</string>
-    <string name="config_warning_type_change_title">Type change detected</string>
     <string name="config_warning_type_change_desc">The type goes from \"%1$s\" to \"%2$s\".</string>
     <string name="config_warning_data_deletion">Every entered piece of data will be deleted.</string>
-    <string name="config_warning_continue">Continue?</string>
+    <string name="config_warning_value_change">The settings of the value changed. The entries already recorded keep the value they were recorded with, even where it no longer fits the new settings. Continue?</string>
 
     <!-- CONFIG - Scale change messages -->
-    <string name="config_warning_scale_change_title">⚠️ Scale change detected</string>
-    <string name="config_warning_scale_change_old_new">Old scale: %1$s\nNew scale: %2$s</string>
 
-    <string name="config_warning_scale_change_desc">The data present before these changes will keep its original scale and labels.</string>
     
     <!-- CONFIG - Boolean label change messages -->
-    <string name="config_warning_boolean_change_title">⚠️ Label change detected</string>
-    <string name="config_warning_boolean_change_old">Old labels: \"%1$s\" / \"%2$s\"</string>
-    <string name="config_warning_boolean_change_new">New labels: \"%1$s\" / \"%2$s\"</string>
-    <string name="config_warning_boolean_change_desc">The data present before these changes will keep its original labels.</string>
     
     <!-- CONFIG - Choice option change messages -->
-    <string name="config_warning_choice_change_title">⚠️ Option change detected</string>
-    <string name="config_warning_choice_removed">Options removed: %1$s</string>
-    <string name="config_warning_choice_added">Options added: %1$s</string>
-    <string name="config_warning_choice_desc">The data present before these changes will keep its original options, even when they are no longer available in the configuration.</string>
     
     <!-- CONFIG - Default values -->
-    <string name="config_default_true_label">Yes</string>
-    <string name="config_default_false_label">No</string>
-    <string name="config_default_placeholder">option</string>
     
     <!-- CONFIG - Screen titles -->
     <string name="config_title_create">Create tracking</string>
@@ -85,24 +57,11 @@
     
     <!-- USAGE - Entry dialogs -->
     <string name="usage_dialog_create_entry">Create an entry</string>
-    <string name="usage_dialog_use_item">Use the item</string>
     <string name="usage_dialog_edit_entry">Edit the entry</string>
     
     <!-- USAGE - Field labels -->
-    <string name="usage_label_quantity">Quantity</string>
-    <string name="usage_label_unit">Unit</string>
-    <string name="usage_label_text">Text</string>
-    <string name="usage_label_rating">Rating</string>
-    <string name="usage_label_choice">Choice</string>
-    <string name="usage_label_state">State</string>
-    <string name="usage_label_increment">Increment</string>
-    <string name="usage_label_hours">Hours</string>
-    <string name="usage_label_minutes">Minutes</string>
-    <string name="usage_label_seconds">Seconds</string>
     
     <!-- USAGE - Interface messages -->
-    <string name="usage_available_options">Options: %1$s</string>
-    <string name="usage_error_scale_config">Error: min/max not set for this entry</string>
     <string name="usage_add_to_shortcuts">Add to shortcuts</string>
     <string name="usage_entry_updated">Entry updated</string>
     <string name="usage_entry_deleted">Entry deleted</string>
@@ -164,44 +123,16 @@
     <!-- SCHEMAS DATA - Descriptions for AI validation -->
     
     <!-- VALIDATION - Field names for display -->
-    <string name="field_default_increment">Step</string>
-    <string name="field_default_quantity">Default qty</string>
-    <string name="field_quantity">Quantity</string>
     <string name="field_name">Name</string>
     <string name="field_unit">Unit</string>
-    <string name="field_text">Text</string>
-    <string name="field_rating">Rating</string>
-    <string name="field_min_value">Min value</string>
-    <string name="field_max_value">Max value</string>
-    <string name="field_min_label">Min label</string>
-    <string name="field_max_label">Max label</string>
-    <string name="field_state">State</string>
-    <string name="field_true_label">True label</string>
-    <string name="field_false_label">False label</string>
-    <string name="field_selected_option">Selected option</string>
-    <string name="field_available_options">Available options</string>
-    <string name="field_increment">Increment</string>
-    <string name="field_activity">Activity</string>
-    <string name="field_duration_seconds">Duration</string>
     <string name="field_type">Type</string>
-    <string name="field_raw">Raw value</string>
     <string name="field_unknown">Unknown field</string>
     
     <!-- TIMER FIELD -->
-    <string name="timer_label_optional">%1$s (optional)</string>
-    <string name="timer_status_active">Running: %1$s</string>
-    <string name="timer_status_stopped">Stopped</string>
-    <string name="timer_activities_header">Activities:</string>
     
     <!-- SCALE DEFAULTS -->
-    <string name="scale_min_default">Low</string>
-    <string name="scale_max_default">High</string>
-    <string name="scale_range_separator"> to </string>
 
     <!-- DISPLAY FORMAT - Formatted display of the data -->
-    <string name="display_timer_format">%1$s: %2$s</string>
 
     <!-- Config warnings: choice options -->
-    <string name="config_warning_choice_options_removed">Options removed: %1$s</string>
-    <string name="config_warning_choice_options_added">Options added: %1$s</string>
 </resources>
