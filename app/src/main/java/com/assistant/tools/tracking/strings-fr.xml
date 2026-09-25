@@ -139,29 +139,15 @@
 
     <!-- SCHEMAS CONFIG - Descriptions pour validation IA -->
     <string name="schema_config_type">Nature de la valeur que ce suivi enregistre ; fixée par le schéma</string>
-    <string name="schema_config_numeric_items">Éléments prédéfinis, proposés pour la saisie rapide</string>
-    <string name="schema_config_numeric_item_name">Nom de l\'élément</string>
-    <string name="schema_config_counter_item_default_increment">Quantité que ce raccourci ajoute, ou retire avec son bouton moins. 1 si absente</string>
-    <string name="schema_config_numeric_item_default_quantity">Quantité proposée quand cet élément est choisi</string>
-    <string name="schema_config_numeric_item_unit">Unité de la quantité (kg, km, verres...)</string>
-    <string name="schema_config_timer_items">Activités qu\'on peut chronométrer</string>
-    <string name="schema_config_timer_item_name">Nom de l\'activité</string>
-    <string name="schema_config_choice_options">Options parmi lesquelles l\'utilisateur choisit</string>
-    <string name="schema_config_scale_items">Éléments prédéfinis, chacun noté sur l\'échelle</string>
-    <string name="schema_config_scale_item_name">Nom de l\'élément</string>
-    <string name="schema_config_scale_min">Valeur la plus basse de l\'échelle</string>
-    <string name="schema_config_scale_max">Valeur la plus haute de l\'échelle</string>
-    <string name="schema_config_scale_min_label">Libellé de la valeur la plus basse</string>
-    <string name="schema_config_scale_max_label">Libellé de la valeur la plus haute</string>
-    <string name="schema_config_counter_items">Ce qu\'on compte</string>
-    <string name="schema_config_counter_item_name">Nom de ce qu\'on compte</string>
+    <string name="schema_config_occurrence_display_name">Configuration de suivi (occurrence)</string>
+    <string name="schema_config_occurrence_description">Schéma de configuration d\'un suivi d\'occurrences : chaque entrée est le fait qu\'une chose a eu lieu</string>
+    <string name="schema_config_value">Réglages de la valeur que les entrées enregistrent, ceux de son type de champ</string>
+    <string name="schema_config_units">Unités possibles d\'une valeur ; chaque entrée enregistre l\'une d\'elles</string>
+    <string name="schema_config_items">Raccourcis, proposés pour une saisie rapide</string>
+    <string name="schema_config_item_name">Nom du raccourci, donné aux entrées qu\'il crée</string>
+    <string name="schema_config_item_value">Valeur que le raccourci saisit (pour un compteur, la quantité ajoutée ou retirée ; 1 si absente)</string>
+    <string name="schema_config_item_unit">Unité de la valeur que saisit le raccourci, l\'une des unités</string>
     <string name="schema_config_counter_allow_decrement">Si le compte peut descendre autant que monter</string>
-    <string name="schema_config_boolean_items">Questions à réponse oui ou non</string>
-    <string name="schema_config_boolean_item_name">Nom de la question</string>
-    <string name="schema_config_boolean_item_true_label">Libellé affiché pour oui</string>
-    <string name="schema_config_boolean_item_false_label">Libellé affiché pour non</string>
-    <string name="schema_config_text_items">Éléments prédéfinis, proposés pour la saisie rapide</string>
-    <string name="schema_config_text_item_name">Nom de l\'élément</string>
     
     <!-- SCHEMAS DATA - Display names for schema identification -->
     <string name="schema_data_display_name">Entrée de suivi</string>
@@ -169,6 +155,9 @@
     <string name="schema_data_value">La valeur enregistrée ; son type et ses réglages viennent de la config de l\'outil</string>
     <string name="schema_data_unit">Unité de la valeur, l\'une des unités que déclare la config de l\'outil</string>
     <string name="field_value">Valeur</string>
+    <string name="field_units">Unités</string>
+    <string name="field_items">Raccourcis</string>
+    <string name="field_allow_decrement">Permettre de retirer</string>
 
     <!-- SCHEMAS DATA - Descriptions for schema identification -->
 

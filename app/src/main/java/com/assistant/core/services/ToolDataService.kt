@@ -99,8 +99,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        // Enrich data with auto-generated fields (e.g., raw display field for tracking)
-        val finalDataJson = enrichDataIfSupported(tooltype, toolInstanceId, dataJson, name)
+        val finalDataJson = dataJson
 
         // An open choice's new values join its options, in the same transaction as the entry
         val grownConfig = configWithNewOptions(target, finalDataJson, extraJson)
@@ -218,8 +217,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
                 existingJson.put(key, newJson.get(key))
             }
 
-            // Enrich data with auto-generated fields (e.g., raw for tracking)
-            enrichDataIfSupported(existingEntity.tooltype, existingEntity.toolInstanceId, existingJson.toString(), name)
+            existingJson.toString()
         } else {
             existingEntity.data
         }
@@ -972,54 +970,6 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val toolInstanceDao = database.toolInstanceDao()
         val toolInstance = toolInstanceDao.getToolInstanceById(toolInstanceId)
         return toolInstance?.zone_id
-    }
-
-    /**
-     * Enrich data using ToolType's enrichData() method if supported
-     * Returns enriched data, or original data if:
-     * - ToolType not found
-     * - Config not found
-     * - enrichData() not overridden (returns data unchanged)
-     *
-     * @param tooltype The tooltype name (e.g., "tracking", "notes")
-     * @param toolInstanceId The tool instance ID (to fetch config)
-     * @param dataJson The data JSON to enrich
-     * @param name The entry name (optional)
-     * @return Enriched data JSON
-     */
-    private suspend fun enrichDataIfSupported(
-        tooltype: String,
-        toolInstanceId: String,
-        dataJson: String,
-        name: String?
-    ): String {
-        return try {
-            // Get ToolType from ToolTypeManager
-            val toolType = ToolTypeManager.getToolType(tooltype) ?: return dataJson
-
-            // Get tool instance config
-            val coordinator = Coordinator(context)
-            val toolResult = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-
-            val configJson = if (toolResult.status == CommandStatus.SUCCESS) {
-                val tool = toolResult.data?.get("tool_instance") as? Map<*, *>
-                @Suppress("UNCHECKED_CAST")
-                (tool?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it).toString() }
-            } else null
-
-            // Call enrichData() - default implementation returns data unchanged
-            toolType.enrichData(dataJson, name, configJson)
-        } catch (e: Exception) {
-            // Log error but return original data (enrichment is not critical for data creation)
-            LogManager.service(
-                "Failed to enrich data for tooltype=$tooltype: ${e.message}",
-                "WARN",
-                e
-            )
-            dataJson
-        }
     }
 
     /** The tool an entry is written to, as the write path needs it, or why it cannot be written to. */

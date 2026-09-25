@@ -139,29 +139,15 @@
 
     <!-- SCHEMAS CONFIG - Descriptions for AI validation -->
     <string name="schema_config_type">Kind of value this tracking records; fixed by the schema</string>
-    <string name="schema_config_numeric_items">Predefined items, offered for quick entry</string>
-    <string name="schema_config_numeric_item_name">Name of the item</string>
-    <string name="schema_config_counter_item_default_increment">Amount this shortcut adds, or takes away with its minus button. 1 if absent</string>
-    <string name="schema_config_numeric_item_default_quantity">Quantity proposed when this item is chosen</string>
-    <string name="schema_config_numeric_item_unit">Unit of the quantity (kg, km, glasses...)</string>
-    <string name="schema_config_timer_items">Activities that can be timed</string>
-    <string name="schema_config_timer_item_name">Name of the activity</string>
-    <string name="schema_config_choice_options">Options the user picks from</string>
-    <string name="schema_config_scale_items">Predefined items, each rated on the scale</string>
-    <string name="schema_config_scale_item_name">Name of the item</string>
-    <string name="schema_config_scale_min">Lowest value of the scale</string>
-    <string name="schema_config_scale_max">Highest value of the scale</string>
-    <string name="schema_config_scale_min_label">Label of the lowest value</string>
-    <string name="schema_config_scale_max_label">Label of the highest value</string>
-    <string name="schema_config_counter_items">Things that are counted</string>
-    <string name="schema_config_counter_item_name">Name of what is counted</string>
+    <string name="schema_config_occurrence_display_name">Tracking configuration (occurrence)</string>
+    <string name="schema_config_occurrence_description">Configuration schema for occurrence tracking: each entry is the fact that something happened</string>
+    <string name="schema_config_value">Settings of the value the entries record, those of its field type</string>
+    <string name="schema_config_units">Units a value can be in; each entry records one of them</string>
+    <string name="schema_config_items">Shortcuts, offered for quick entry</string>
+    <string name="schema_config_item_name">Name of the shortcut, given to the entries it creates</string>
+    <string name="schema_config_item_value">Value the shortcut enters (for a counter, the amount added or taken away; 1 if absent)</string>
+    <string name="schema_config_item_unit">Unit of the value the shortcut enters, one of the units</string>
     <string name="schema_config_counter_allow_decrement">Whether the count can go down as well as up</string>
-    <string name="schema_config_boolean_items">Questions answered yes or no</string>
-    <string name="schema_config_boolean_item_name">Name of the question</string>
-    <string name="schema_config_boolean_item_true_label">Label shown for yes</string>
-    <string name="schema_config_boolean_item_false_label">Label shown for no</string>
-    <string name="schema_config_text_items">Predefined items, offered for quick entry</string>
-    <string name="schema_config_text_item_name">Name of the item</string>
     
     <!-- SCHEMAS DATA - Display names for schema identification -->
     <string name="schema_data_display_name">Tracking entry</string>
@@ -169,6 +155,9 @@
     <string name="schema_data_value">The value recorded; its type and settings come from the config of the tool</string>
     <string name="schema_data_unit">Unit of the value, one of the units the config of the tool declares</string>
     <string name="field_value">Value</string>
+    <string name="field_units">Units</string>
+    <string name="field_items">Shortcuts</string>
+    <string name="field_allow_decrement">Allow taking away</string>
 
     <!-- SCHEMAS DATA - Descriptions for schema identification -->
 

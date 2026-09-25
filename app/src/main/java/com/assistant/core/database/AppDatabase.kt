@@ -1291,16 +1291,33 @@ abstract class AppDatabase : RoomDatabase() {
 
                 // Configs, read before they are rewritten: an entry is rewritten against its
                 // tool's config as it stood at v35.
+                // A numeric tracking tool's units are read from its entries too.
+                val entriesData = mutableMapOf<String, MutableList<org.json.JSONObject>>()
+                database.query("SELECT tool_instance_id, data FROM tool_data").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        try {
+                            entriesData.getOrPut(cursor.getString(0)) { mutableListOf() }.add(org.json.JSONObject(cursor.getString(1)))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 35->36: unreadable entry data of tool ${cursor.getString(0)}, its units not read: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
                 val configsAtV35 = mutableMapOf<String, org.json.JSONObject>()
                 database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
                     while (cursor.moveToNext()) {
                         val id = cursor.getString(0)
-                        val config = org.json.JSONObject(cursor.getString(2))
-                        configsAtV35[id] = config
-                        database.execSQL(
-                            "UPDATE tool_instances SET config_json = ? WHERE id = ?",
-                            arrayOf(FieldsAtV36.config(cursor.getString(1), config).toString(), id)
-                        )
+                        // A config that cannot be read stays as it was and is logged; its
+                        // entries cannot be rewritten against it and stay as they were too.
+                        try {
+                            val config = org.json.JSONObject(cursor.getString(2))
+                            database.execSQL(
+                                "UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                                arrayOf(FieldsAtV36.config(cursor.getString(1), config, entriesData[id] ?: emptyList()).toString(), id)
+                            )
+                            configsAtV35[id] = config
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 35->36: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
                     }
                 }
 
