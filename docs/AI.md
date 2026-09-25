@@ -510,7 +510,7 @@ class EnrichmentProcessor {
 ## 10. Architecture prompts
 
 ### 2 niveaux de contexte
-**Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, schémas (zone, tooltypes, communication modules). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
+**Level 1: DOC** - Généré par PromptChunks avec degrés d'importance configurables. Inclut rôle IA, documentation API, **limites IA dynamiques** selon SessionType, la légende de la notation des schémas, la définition d'un champ et les schémas de la réponse de l'IA et d'une zone, écrits dans cette notation (`SchemaNotation`, voir `docs/DATA.md`). Pour AUTOMATION : documentation flag `completed: true` obligatoire + continuation automatique après succès actions.
 **Level 2: USER DATA** - Données tool instances avec `always_send: true`.
 
 **APP_STATE** : Zones et tool instances disponibles via command dédiée (à la demande).
@@ -523,7 +523,7 @@ class EnrichmentProcessor {
 
 Règle : **chaque exemple de requête présent dans le L1 doit être exécutable tel quel et produire ce qu'il annonce.** À toute modification du L1 ou du pipeline qui le sert (`AICommandProcessor`, `CommandTransformer`, `CommandExecutor.formatResultData`), rejouer les exemples concernés dans une session CHAT réelle.
 
-Le filet a deux mailles, et elles ne prennent pas la même chose. `scripts/check_prompt_examples.py`, lancé à chaque `./run test`, confronte les exemples JSON du prompt au code : il dit que le prompt ne promet rien que le code ne tienne. Le rejeu en session dit ce que l'IA fait du prompt — s'il l'amène à demander un schéma avant d'agir, à poser une période où le code l'attend, à répondre dans la langue de l'utilisateur. La procédure et sa grille de lecture sont dans `docs/ai-prompt-replay.md`, à tenir à jour quand le L1 bouge.
+Le filet a deux mailles, et elles ne prennent pas la même chose. `scripts/check_prompt_examples.py`, lancé à chaque `./run test`, confronte les exemples JSON du prompt au code, et `FieldTypeSchemasTest` et `CommunicationModulesTest` valident ses définitions de champ et ses modules contre les schémas générés (le prompt est une entrée de la tâche de test, qu'il relance) : ils disent que le prompt ne promet rien que le code ne tienne. Le rejeu en session dit ce que l'IA fait du prompt — s'il l'amène à demander un schéma avant d'agir, à poser une période où le code l'attend, à répondre dans la langue de l'utilisateur. La procédure et sa grille de lecture sont dans `docs/ai-prompt-replay.md`, à tenir à jour quand le L1 bouge.
 
 ### PromptManager.buildPromptData()
 ```kotlin
