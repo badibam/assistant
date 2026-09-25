@@ -54,6 +54,9 @@ object FieldValueValidator {
 
             // DATETIME: a number of milliseconds, which the schema checks
             FieldType.DATETIME -> ValidationResult(isValid = true)
+
+            // DURATION: a whole number of milliseconds, which the schema checks
+            FieldType.DURATION -> ValidationResult(isValid = true)
         }
     }
 

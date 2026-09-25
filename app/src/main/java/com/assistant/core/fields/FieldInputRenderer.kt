@@ -376,6 +376,69 @@ fun FieldInput(
                 )
             }
         }
+
+        com.assistant.core.fields.FieldType.DURATION -> {
+            DurationInput(fieldDef, value, onChange, context)
+        }
+    }
+}
+
+/**
+ * Input for a DURATION field: one whole-number box per unit, from the hour down to the
+ * precision when composed, a single box in the precision otherwise.
+ *
+ * The value stays milliseconds throughout. Emptying every box clears the field; a value finer
+ * than the precision (a stopwatch's exact time) is kept as long as no box is touched.
+ */
+@Composable
+private fun DurationInput(
+    fieldDef: FieldDefinition,
+    value: Any?,
+    onChange: (Any?) -> Unit,
+    context: Context
+) {
+    val s = Strings.`for`(context = context)
+    val precision = DurationUnit.fromConfig(fieldDef.config)
+    val units = when (DurationForm.fromConfig(fieldDef.config)) {
+        DurationForm.COMPOSED -> Durations.composedUnits(precision)
+        DurationForm.SINGLE -> listOf(precision)
+    }
+    val millis = (value as? Number)?.toLong()
+    val amounts = millis?.let { Durations.split(it, units).toMap() }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        UI.Text(
+            text = fieldDef.displayName,
+            type = TextType.LABEL,
+            fillMaxWidth = true
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            units.forEach { unit ->
+                Box(modifier = Modifier.weight(1f)) {
+                    UI.FormField(
+                        label = unit.symbol(s),
+                        value = amounts?.get(unit)?.toString() ?: "",
+                        onChange = { text ->
+                            val typed = text.toLongOrNull()?.coerceAtLeast(0)
+                            val others = units.filter { it != unit }.associateWith { amounts?.get(it) ?: 0L }
+                            onChange(
+                                if (typed == null && others.values.all { it == 0L }) null
+                                else Durations.join(others + (unit to (typed ?: 0L)))
+                            )
+                        },
+                        fieldType = UIFieldType.NUMERIC,
+                        required = false
+                    )
+                }
+            }
+        }
     }
 }
 

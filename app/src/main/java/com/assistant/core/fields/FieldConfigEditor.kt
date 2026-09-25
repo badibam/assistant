@@ -26,6 +26,7 @@ import com.assistant.core.ui.FieldType as UIFieldType
  * - DATE: nothing
  * - TIME: format?
  * - DATETIME: time_format?
+ * - DURATION: precision?, form?
  *
  * Note: default_value is supported at the root level in schemas but not exposed in UI for now.
  * The AI can set it directly if needed.
@@ -89,6 +90,10 @@ fun FieldConfigEditor(
 
             FieldType.DATETIME -> {
                 DateTimeConfigEditor(config, onConfigChange, context)
+            }
+
+            FieldType.DURATION -> {
+                DurationConfigEditor(config, onConfigChange, context)
             }
         }
     }
@@ -565,3 +570,48 @@ private fun DateTimeConfigEditor(
     )
 }
 
+/**
+ * Configuration editor for DURATION type.
+ * Config: {precision?, form?}
+ * Values are milliseconds whatever the choice: both only change what is entered and shown.
+ */
+@Composable
+private fun DurationConfigEditor(
+    config: Map<String, Any>?,
+    onConfigChange: (Map<String, Any>?) -> Unit,
+    context: Context
+) {
+    val s = Strings.`for`(context = context)
+    val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
+
+    val precision = DurationUnit.fromConfig(config)
+    val form = DurationForm.fromConfig(config)
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        UI.FormSelection(
+            label = s.shared("field_config_duration_precision"),
+            options = DurationUnit.entries.map { it.displayName(s) },
+            selected = precision.displayName(s),
+            onSelect = { selected ->
+                DurationUnit.entries.find { it.displayName(s) == selected }?.let {
+                    mutableConfig["precision"] = it.name
+                    onConfigChange(mutableConfig)
+                }
+            },
+            required = false
+        )
+
+        UI.FormSelection(
+            label = s.shared("field_config_duration_form"),
+            options = DurationForm.entries.map { it.displayName(s) },
+            selected = form.displayName(s),
+            onSelect = { selected ->
+                DurationForm.entries.find { it.displayName(s) == selected }?.let {
+                    mutableConfig["form"] = it.name
+                    onConfigChange(mutableConfig)
+                }
+            },
+            required = false
+        )
+    }
+}

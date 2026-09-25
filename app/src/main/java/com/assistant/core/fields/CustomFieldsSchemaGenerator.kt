@@ -286,6 +286,22 @@ object CustomFieldsSchemaGenerator {
                     }
                 }
             }
+
+            FieldType.DURATION -> {
+                JSONObject().apply {
+                    // Milliseconds, whatever the precision: the precision decides what the form
+                    // offers and the screen shows, not what is stored, so a stopwatch can write
+                    // the exact time it measured into a field entered in minutes.
+                    put("type", "integer")
+                    put("minimum", 0)
+                    // Marks the property as a duration, which is what lets the view handed to
+                    // the model show it in ISO 8601 (PT1H25M) while the stored form stays a number.
+                    put("format", "duration-millis")
+                    if (fieldDef.description != null) {
+                        put("description", fieldDef.description)
+                    }
+                }
+            }
         }
     }
 }

@@ -162,6 +162,18 @@ class CustomFieldsSchemaGeneratorTest {
         assertFalse(schema.accepts("-1"))
     }
 
+    /** A duration is whole milliseconds, whatever precision it is entered in. */
+    @Test
+    fun duration_isWholeMilliseconds() {
+        val schema = schemaFor("""{ "type": "DURATION", "config": { "precision": "HOUR" } }""")
+
+        assertTrue(schema.accepts("5100000"))
+        assertTrue(schema.accepts("1"))
+        assertFalse(schema.accepts("1.5"))
+        assertFalse(schema.accepts("-1"))
+        assertFalse(schema.accepts("\"PT1H25M\""))
+    }
+
     /** A value under a name the config does not declare is refused. */
     @Test
     fun anUndeclaredField_isRefused() {

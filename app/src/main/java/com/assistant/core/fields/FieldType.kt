@@ -84,7 +84,15 @@ enum class FieldType {
      * Format: ISO 8601 (YYYY-MM-DDTHH:MM:SS)
      * Example: Precise timestamps, appointments, dated events
      */
-    DATETIME;
+    DATETIME,
+
+    /**
+     * A length of time, stored as a whole number of milliseconds with no unit.
+     * Config: {precision?: DurationUnit (default MINUTE), form?: "COMPOSED" | "SINGLE" (default COMPOSED)}
+     * The precision is the smallest unit entered and shown; the form writes "1 h 25 min" or "85 min".
+     * Example: Sleep, time spent on an activity, a workout
+     */
+    DURATION;
 
     /**
      * Get the localized display name for this field type.
@@ -105,6 +113,7 @@ enum class FieldType {
             DATE -> s.shared("field_type_date_display_name")
             TIME -> s.shared("field_type_time_display_name")
             DATETIME -> s.shared("field_type_datetime_display_name")
+            DURATION -> s.shared("field_type_duration_display_name")
         }
     }
 
@@ -127,6 +136,7 @@ enum class FieldType {
             DATE -> s.shared("field_type_date_description")
             TIME -> s.shared("field_type_time_description")
             DATETIME -> s.shared("field_type_datetime_description")
+            DURATION -> s.shared("field_type_duration_description")
         }
     }
 

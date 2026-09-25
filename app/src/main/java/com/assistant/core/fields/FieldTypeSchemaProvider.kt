@@ -54,6 +54,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
             FieldType.DATE -> createDateSchema(context)
             FieldType.TIME -> createTimeSchema(context)
             FieldType.DATETIME -> createDateTimeSchema(context)
+            FieldType.DURATION -> createDurationSchema(context)
         }
     }
 
@@ -700,6 +701,61 @@ object FieldTypeSchemaProvider : SchemaProvider {
             description = s.shared("field_type_datetime_description"),
             category = SchemaCategory.FIELD_TYPE,
             content = buildDateTimeSchemaJson(context)
+        )
+    }
+
+    /**
+     * Build DURATION JSON Schema
+     */
+    private fun buildDurationSchemaJson(context: Context): String {
+        val s = Strings.`for`(context = context)
+        val commonProps = buildCommonFieldProperties(context, "DURATION")
+        val units = DurationUnit.entries.joinToString(", ") { "\"${it.name}\"" }
+        val forms = DurationForm.entries.joinToString(", ") { "\"${it.name}\"" }
+        return """
+        {
+            "type": "object",
+            "properties": {
+                $commonProps,
+                "default_value": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "format": "duration-millis",
+                    "description": "${s.shared("field_type_schema_default_value_description")}"
+                },
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "precision": {
+                            "type": "string",
+                            "enum": [$units],
+                            "default": "${DurationUnit.DEFAULT_PRECISION.name}",
+                            "description": "${s.shared("field_type_duration_precision_description")}"
+                        },
+                        "form": {
+                            "type": "string",
+                            "enum": [$forms],
+                            "default": "${DurationForm.DEFAULT.name}",
+                            "description": "${s.shared("field_type_duration_form_description")}"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "required": ["display_name", "type"],
+            "additionalProperties": false
+        }
+        """.trimIndent()
+    }
+
+    private fun createDurationSchema(context: Context): Schema {
+        val s = Strings.`for`(context = context)
+        return Schema(
+            id = "field_type_DURATION",
+            displayName = s.shared("field_type_duration_display_name"),
+            description = s.shared("field_type_duration_description"),
+            category = SchemaCategory.FIELD_TYPE,
+            content = buildDurationSchemaJson(context)
         )
     }
 }

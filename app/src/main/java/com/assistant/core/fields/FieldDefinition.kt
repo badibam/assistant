@@ -153,6 +153,7 @@ fun FieldDefinition.formatValue(value: Any?, context: Context): String {
         FieldType.DATE -> formatDateValue(value, s)
         FieldType.TIME -> formatTimeValue(value, config, s)
         FieldType.DATETIME -> formatDateTimeValue(value, config, s)
+        FieldType.DURATION -> (value as? Number)?.let { Durations.format(it.toLong(), config, s) } ?: s.shared("label_no_value")
     }
 }
 

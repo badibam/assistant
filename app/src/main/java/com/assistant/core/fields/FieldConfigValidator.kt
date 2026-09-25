@@ -122,6 +122,7 @@ object FieldConfigValidator {
             FieldType.DATE -> validateDateConfig(config, s)
             FieldType.TIME -> validateTimeConfig(config, s)
             FieldType.DATETIME -> validateDateTimeConfig(config, s)
+            FieldType.DURATION -> validateDurationConfig(config, s)
         }
     }
 
@@ -395,6 +396,33 @@ object FieldConfigValidator {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_datetime_format")
+            )
+        }
+
+        return ValidationResult(isValid = true)
+    }
+
+    /**
+     * Validates DURATION field config.
+     * Config: {precision?, form?}
+     */
+    private fun validateDurationConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
+        // Config is optional for DURATION (minutes, composed)
+        if (config == null) return ValidationResult(isValid = true)
+
+        val precision = config["precision"]
+        if (precision != null && DurationUnit.entries.none { it.name == precision }) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_duration_precision").format(precision.toString())
+            )
+        }
+
+        val form = config["form"]
+        if (form != null && DurationForm.entries.none { it.name == form }) {
+            return ValidationResult(
+                isValid = false,
+                errorMessage = s.shared("field_validation_duration_form").format(form.toString())
             )
         }
 
