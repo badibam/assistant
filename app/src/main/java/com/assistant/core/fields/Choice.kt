@@ -24,13 +24,20 @@ enum class ChoiceShape {
  * @property shape Whether a value is one option, several, or a ranking
  * @property open Whether a value outside the options is added to them rather than refused
  * @property colors The color of each option that has one; a colored choice shows as tags
+ * @property labels The text shown for each option that has one. A field a tool type declares
+ *           stores technical options ("pending") and shows them translated; a user's field
+ *           shows its options as they are.
  */
 data class ChoiceSettings(
     val options: List<String>,
     val shape: ChoiceShape,
     val open: Boolean,
-    val colors: Map<String, TagColor>
+    val colors: Map<String, TagColor>,
+    val labels: Map<String, String>
 ) {
+    /** The text shown for [option]. */
+    fun labelOf(option: String): String = labels[option] ?: option
+
     /**
      * The values of [value] that are not options yet, in the order they appear.
      *
@@ -59,6 +66,10 @@ data class ChoiceSettings(
                 open = config?.get("open") as? Boolean ?: false,
                 colors = (config?.get("option_colors") as? Map<*, *>)
                     ?.map { (option, color) -> option.toString() to TagColor.valueOf(color.toString()) }
+                    ?.toMap()
+                    ?: emptyMap(),
+                labels = (config?.get("option_labels") as? Map<*, *>)
+                    ?.map { (option, label) -> option.toString() to label.toString() }
                     ?.toMap()
                     ?: emptyMap()
             )

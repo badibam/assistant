@@ -375,6 +375,8 @@
     <string name="label_date">Date</string>
     <string name="label_time">Time</string>
     <string name="label_name">Name</string>
+    <string name="label_created_at">Created</string>
+    <string name="label_updated_at">Modified</string>
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
     <string name="label_validation">Validation</string>
@@ -677,6 +679,10 @@
     <string name="tools_base_schema_data_updated_at">When the entry was last changed, set by the system</string>
     <string name="tools_base_schema_data_schema_id">Identifier of the schema the entry follows, set by the system</string>
     <string name="tools_base_schema_data_data">Data specific to the tool type</string>
+    <string name="entry_schema_extra">Fields the user added to this tool</string>
+    <string name="entry_schema_state">State of the entry, written by its actions and by the app, never directly</string>
+    <string name="entry_schema_running">The duration fields running now, with the moment each started</string>
+    <string name="entry_schema_running_container">Running duration fields of %1$s, by name</string>
 
     <!-- Tools BASE SCHEMA EXECUTION - Shared descriptions for execution validation -->
 

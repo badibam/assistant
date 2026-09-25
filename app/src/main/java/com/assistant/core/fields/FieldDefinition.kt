@@ -209,16 +209,17 @@ private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsC
  * is the order chosen)
  */
 private fun formatChoiceValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
-    return if (ChoiceSettings.fromConfig(config).shape.isList) {
+    val settings = ChoiceSettings.fromConfig(config)
+    return if (settings.shape.isList) {
         val list = value as? List<*>
         if (list.isNullOrEmpty()) {
             s.shared("label_no_value")
         } else {
-            list.joinToString(", ")
+            list.joinToString(", ") { settings.labelOf(it.toString()) }
         }
     } else {
         val str = value as? String
-        if (str.isNullOrEmpty()) s.shared("label_no_value") else str
+        if (str.isNullOrEmpty()) s.shared("label_no_value") else settings.labelOf(str)
     }
 }
 

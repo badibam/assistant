@@ -375,6 +375,8 @@
     <string name="label_date">Date</string>
     <string name="label_time">Heure</string>
     <string name="label_name">Nom</string>
+    <string name="label_created_at">Créée</string>
+    <string name="label_updated_at">Modifiée</string>
     <string name="label_actions">Actions</string>
     <string name="label_configuration">Configuration</string>
     <string name="label_validation">Validation</string>
@@ -677,6 +679,10 @@
     <string name="tools_base_schema_data_updated_at">Date de dernière modification de l\'entrée, posée par le système</string>
     <string name="tools_base_schema_data_schema_id">Identifiant du schéma que suit l\'entrée, posé par le système</string>
     <string name="tools_base_schema_data_data">Données spécifiques au type d\'outil</string>
+    <string name="entry_schema_extra">Champs ajoutés à cet outil par l\'utilisateur</string>
+    <string name="entry_schema_state">État de l\'entrée, écrit par ses actions et par l\'app, jamais directement</string>
+    <string name="entry_schema_running">Les champs de durée en cours, avec l\'instant où chacun a démarré</string>
+    <string name="entry_schema_running_container">Champs de durée en cours de %1$s, par nom</string>
 
     <!-- Tools BASE SCHEMA EXECUTION - Descriptions communes pour validation des exécutions -->
 

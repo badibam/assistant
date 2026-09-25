@@ -75,7 +75,7 @@ object CustomFieldsSchemaGenerator {
 
         val properties = JSONObject()
         for (fieldDef in fieldDefinitions) {
-            val fieldSchema = createFieldSchema(fieldDef)
+            val fieldSchema = valueSchema(fieldDef)
             properties.put(fieldDef.name, fieldSchema)
         }
 
@@ -90,10 +90,10 @@ object CustomFieldsSchemaGenerator {
     }
 
     /**
-     * Creates the JSON schema for a single field based on its type.
-     * Generates validation schemas for all supported field types.
+     * The JSON schema a value of [fieldDef] is held to, from its type and config.
+     * The single place a field's value schema is written, whoever declared the field.
      */
-    private fun createFieldSchema(fieldDef: FieldDefinition): JSONObject {
+    fun valueSchema(fieldDef: FieldDefinition): JSONObject {
         return when (fieldDef.type) {
             FieldType.TEXT -> {
                 JSONObject().apply {
