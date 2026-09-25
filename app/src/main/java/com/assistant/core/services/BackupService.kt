@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.SessionType
+import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
 import org.json.JSONObject
@@ -156,8 +157,11 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("name", data.name)
                                 put("timestamp", data.timestamp)
                                 put("data", data.data)
-                                if (data.customFields != null) {
-                                    put("custom_fields", data.customFields)
+                                if (data.extra != null) {
+                                    put("extra", data.extra)
+                                }
+                                if (data.state != null) {
+                                    put("state", data.state)
                                 }
                                 put("created_at", data.createdAt)
                                 put("updated_at", data.updatedAt)
@@ -480,7 +484,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         timestamp = item.optLong("timestamp", 0).let { if (it == 0L) null else it },
                         name = item.optString("name", null),
                         data = item.getString("data"),
-                        customFields = item.optString("custom_fields", null),
+                        extra = item.optString("extra", null),
+                        state = item.optString("state", null),
                         createdAt = item.getLong("created_at"),
                         updatedAt = item.getLong("updated_at")
                     )
@@ -633,6 +638,11 @@ class BackupService(private val context: Context) : ExecutableService {
             }
             val data = document.getJSONObject("data")
 
+            // The column transformations run up to v35. From there an entry changes as a whole
+            // (columns renamed, state moved out of data, tracking reshaped against its tool's
+            // config), which FieldsAtV36 does on the document.
+            val columnsTo = minOf(toVersion, 35)
+
             // Transform tool instance configurations
             data.optJSONArray("tool_instances")?.let { array ->
                 for (i in 0 until array.length()) {
@@ -645,7 +655,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         configJson,
                         tooltype,
                         fromVersion,
-                        toVersion
+                        columnsTo
                     )
                     instance.put("config_json", transformedConfig)
                 }
@@ -663,7 +673,7 @@ class BackupService(private val context: Context) : ExecutableService {
                         dataJson,
                         tooltype,
                         fromVersion,
-                        toVersion
+                        columnsTo
                     )
 
                     // Also fix SchedulePattern types if present (for Messages tool)
@@ -671,6 +681,10 @@ class BackupService(private val context: Context) : ExecutableService {
 
                     entry.put("data", transformedData)
                 }
+            }
+
+            if (fromVersion < 36 && toVersion >= 36) {
+                FieldsAtV36.backup(data)
             }
 
             // Transform app settings

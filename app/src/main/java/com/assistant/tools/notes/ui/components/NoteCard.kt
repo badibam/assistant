@@ -103,7 +103,7 @@ fun NoteCard(
                             Spacer(modifier = Modifier.height(8.dp))
                             CustomFieldsDisplay(
                                 toolInstanceId = toolInstanceId,
-                                values = note?.customFields ?: emptyMap(),
+                                values = note?.extra ?: emptyMap(),
                                 context = context
                             )
                         }

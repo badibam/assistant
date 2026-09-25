@@ -146,7 +146,7 @@ fun MessagesConfigScreen(
                     }
 
                     // Load custom fields
-                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    val customFieldsArray = config.optJSONArray("extra_fields")
                     if (customFieldsArray != null) {
                         try {
                             customFields = customFieldsArray.toFieldDefinitions()
@@ -424,7 +424,7 @@ fun MessagesConfigScreen(
 
                         // Add custom fields if any
                         if (customFields.isNotEmpty()) {
-                            configData["custom_fields"] = customFields.toJsonArray()
+                            configData["extra_fields"] = customFields.toJsonArray()
                         }
 
                         // Use unified ValidationHelper

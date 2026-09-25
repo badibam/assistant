@@ -98,7 +98,7 @@ fun JournalConfigScreen(
                     sortOrder = config.optString("sort_order", "descending")
 
                     // Load custom fields
-                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    val customFieldsArray = config.optJSONArray("extra_fields")
                     if (customFieldsArray != null) {
                         try {
                             customFields = customFieldsArray.toFieldDefinitions()
@@ -271,7 +271,7 @@ fun JournalConfigScreen(
                         group?.let { configData["group"] = it }
 
                         if (customFields.isNotEmpty()) {
-                            configData["custom_fields"] = customFields.toJsonArray()
+                            configData["extra_fields"] = customFields.toJsonArray()
                         }
 
                         // Validate and save config

@@ -34,7 +34,7 @@ data class NoteEntry(
     val content: String,
     val timestamp: Long,
     val position: Int = 0,
-    val customFields: Map<String, Any?> = emptyMap()
+    val extra: Map<String, Any?> = emptyMap()
 )
 
 /**
@@ -112,7 +112,7 @@ fun NotesScreen(
 
                         // Custom fields come from their own column, not from the data object
                         @Suppress("UNCHECKED_CAST")
-                        val customFields = (map["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
+                        val customFields = (map["extra"] as? Map<String, Any?>) ?: emptyMap()
 
                         LogManager.ui("Parsing note: id=$id, timestamp=$timestamp, content=$content, position=$position, customFields=${customFields.size}")
                         NoteEntry(id, content, timestamp, position, customFields)
@@ -303,7 +303,7 @@ fun NotesScreen(
             insertPosition = dialogPosition,
             initialContent = dialogNote?.content ?: "",
             initialNoteId = dialogNote?.id,
-            initialCustomFields = dialogNote?.customFields ?: emptyMap(),
+            initialCustomFields = dialogNote?.extra ?: emptyMap(),
             onConfirm = { content, position, customFields ->
                 if (dialogNote == null) {
                     // Create new note
@@ -364,7 +364,7 @@ private suspend fun createNote(
 
     // Add custom fields if any
     if (customFields.isNotEmpty()) {
-        params["custom_fields"] = JSONObject(customFields)
+        params["extra"] = JSONObject(customFields)
     }
 
     val result = coordinator.processUserAction("tool_data.create", params)
@@ -392,12 +392,12 @@ private suspend fun updateNote(
 
     // Add custom fields if any
     if (customFields.isNotEmpty()) {
-        params["custom_fields"] = JSONObject(customFields)
+        params["extra"] = JSONObject(customFields)
     }
 
     val result = coordinator.processUserAction("tool_data.update", params)
     if (result?.isSuccess == true) {
-        val updatedNote = note.copy(content = newContent.trim(), customFields = customFields)
+        val updatedNote = note.copy(content = newContent.trim(), extra = customFields)
         onSuccess(updatedNote)
     }
 }

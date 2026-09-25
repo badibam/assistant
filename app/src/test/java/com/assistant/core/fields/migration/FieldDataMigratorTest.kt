@@ -24,7 +24,7 @@ class FieldDataMigratorTest {
         customFields: Map<String, Any?>,
         vararg changes: Pair<FieldChange, MigrationStrategy>
     ): Map<String, Any?> = FieldDataMigrator.applyMigrationStrategies(
-        customFields = customFields,
+        extra = customFields,
         changes = changes.map { it.first },
         strategies = changes.toMap()
     )

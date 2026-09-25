@@ -94,7 +94,7 @@ fun TrackingHistory(
                 val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
                     toolConfig = configJson
-                    LogManager.tracking("TrackingHistory - Loaded tool config with ${toolConfig.optJSONArray("custom_fields")?.length() ?: 0} custom fields")
+                    LogManager.tracking("TrackingHistory - Loaded tool config with ${toolConfig.optJSONArray("extra_fields")?.length() ?: 0} custom fields")
                 } catch (e: Exception) {
                     LogManager.tracking("Error parsing tool config: ${e.message}", "ERROR")
                 }
@@ -172,7 +172,7 @@ fun TrackingHistory(
                                         } ?: "{}",
                                         createdAt = (entryMap["created_at"] as? Number)?.toLong() ?: 0L,
                                         updatedAt = (entryMap["updated_at"] as? Number)?.toLong() ?: 0L,
-                                        customFields = (entryMap["custom_fields"] as? Map<*, *>)?.let {
+                                        extra = (entryMap["extra"] as? Map<*, *>)?.let {
                                             JsonUtils.toJSONObject(it.entries.associate { (k, v) -> k.toString() to v }).toString()
                                         }
                                     )
@@ -205,9 +205,9 @@ fun TrackingHistory(
             try {
                 // Parse dataJson and extract custom_fields
                 val dataObject = JSONObject(dataJson)
-                val customFields = dataObject.optJSONObject("custom_fields")
+                val customFields = dataObject.optJSONObject("extra")
                 if (customFields != null) {
-                    dataObject.remove("custom_fields") // Remove from data object
+                    dataObject.remove("extra") // Remove from data object
                 }
 
                 val params = mutableMapOf<String, Any>(
@@ -218,7 +218,7 @@ fun TrackingHistory(
 
                 // Add custom_fields as separate parameter if present
                 if (customFields != null) {
-                    params["custom_fields"] = customFields
+                    params["extra"] = customFields
                 }
 
                 // Add timestamp if provided
@@ -470,7 +470,7 @@ fun TrackingHistory(
                 val json = JSONObject(entry.data)
 
                 // Parse custom fields from entity
-                val customFieldsData = entry.customFields
+                val customFieldsData = entry.extra
                 val customFields = if (customFieldsData != null && customFieldsData.isNotEmpty()) {
                     try {
                         val customFieldsJson = JSONObject(customFieldsData)
@@ -530,7 +530,7 @@ fun TrackingHistory(
 
                 // Combine type-specific data with custom fields
                 typeSpecificData + if (customFields.isNotEmpty()) {
-                    mapOf("custom_fields" to customFields)
+                    mapOf("extra" to customFields)
                 } else {
                     emptyMap()
                 }

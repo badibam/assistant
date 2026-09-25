@@ -45,7 +45,7 @@ fun EditOccurrenceDialog(
 
     var title by rememberSaveable(occurrence.id) { mutableStateOf(occurrence.ownTitle ?: "") }
     var content by rememberSaveable(occurrence.id) { mutableStateOf(occurrence.ownContent ?: "") }
-    var customFields by rememberSaveable(occurrence.id, stateSaver = FieldValuesSaver) { mutableStateOf(occurrence.customFields) }
+    var customFields by rememberSaveable(occurrence.id, stateSaver = FieldValuesSaver) { mutableStateOf(occurrence.extra) }
     var isSaving by remember { mutableStateOf(false) }
 
     UI.Dialog(
@@ -69,7 +69,7 @@ fun EditOccurrenceDialog(
                         "data" to data
                     )
                     if (customFields.isNotEmpty()) {
-                        params["custom_fields"] = JSONObject(customFields)
+                        params["extra"] = JSONObject(customFields)
                     }
 
                     val result = coordinator.processUserAction("tool_data.update", params)

@@ -22,7 +22,7 @@ class ToolDataEntriesTest {
         data = """{"content":"Slept well."}""",
         createdAt = 1790200000000L,
         updatedAt = 1790200000000L,
-        customFields = """{"mood":"calm"}"""
+        extra = """{"mood":"calm"}"""
     )
 
     @Test
@@ -33,7 +33,7 @@ class ToolDataEntriesTest {
 
     @Test
     fun customFieldsAreAnObjectToo() {
-        val customFields = ToolDataEntries.toMap(journalEntry)["custom_fields"] as Map<*, *>
+        val customFields = ToolDataEntries.toMap(journalEntry)["extra"] as Map<*, *>
         assertEquals("calm", customFields["mood"])
     }
 
@@ -45,6 +45,6 @@ class ToolDataEntriesTest {
 
     @Test
     fun anEntryWithoutCustomFieldsSaysSo() {
-        assertNull(ToolDataEntries.toMap(journalEntry.copy(customFields = null))["custom_fields"])
+        assertNull(ToolDataEntries.toMap(journalEntry.copy(extra = null))["extra"])
     }
 }

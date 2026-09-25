@@ -586,11 +586,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
      */
     private fun assignMissingFieldNames(configJson: String): String {
         val config = JSONObject(configJson)
-        val fieldsArray = config.optJSONArray("custom_fields") ?: return configJson
+        val fieldsArray = config.optJSONArray("extra_fields") ?: return configJson
         if (fieldsArray.length() == 0) return configJson
 
         val fields = (0 until fieldsArray.length()).map { fieldsArray.getJSONObject(it).toFieldDefinition() }
-        config.put("custom_fields", assignNames(fields).toJsonArray())
+        config.put("extra_fields", assignNames(fields).toJsonArray())
         return config.toString()
     }
 
@@ -625,8 +625,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
             val newConfig = JSONObject(newConfigJson)
 
             // Extract custom_fields arrays
-            val oldFieldsArray = oldConfig.optJSONArray("custom_fields")
-            val newFieldsArray = newConfig.optJSONArray("custom_fields")
+            val oldFieldsArray = oldConfig.optJSONArray("extra_fields")
+            val newFieldsArray = newConfig.optJSONArray("extra_fields")
 
             // If no custom_fields in new config, nothing to process
             if (newFieldsArray == null || newFieldsArray.length() == 0) {
@@ -780,7 +780,7 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
 
             // Phase 4: Build processed config with generated names
             val processedFieldsArray = processedFields.toJsonArray()
-            newConfig.put("custom_fields", processedFieldsArray)
+            newConfig.put("extra_fields", processedFieldsArray)
 
             return OperationResult.success(mapOf(
                 "processed_config" to newConfig.toString()

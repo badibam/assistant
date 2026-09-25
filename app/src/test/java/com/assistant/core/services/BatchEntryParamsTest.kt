@@ -20,7 +20,7 @@ class BatchEntryParamsTest {
           "name": "Weighing",
           "timestamp": 1790200000000,
           "data": { "quantity": 81.5 },
-          "custom_fields": { "mood": "calm", "weighed_at": 1790200120000 }
+          "extra": { "mood": "calm", "weighed_at": 1790200120000 }
         }
         """
     )
@@ -30,8 +30,8 @@ class BatchEntryParamsTest {
     fun aCreatedEntryKeepsItsCustomFields() {
         val params = BatchEntryParams.forCreate(entry, "tool-1")
 
-        assertEquals("calm", params.getJSONObject("custom_fields").getString("mood"))
-        assertEquals(1790200120000L, params.getJSONObject("custom_fields").getLong("weighed_at"))
+        assertEquals("calm", params.getJSONObject("extra").getString("mood"))
+        assertEquals(1790200120000L, params.getJSONObject("extra").getLong("weighed_at"))
         assertEquals(81.5, params.getJSONObject("data").getDouble("quantity"), 0.0)
         assertEquals("Weighing", params.getString("name"))
         assertEquals(1790200000000L, params.getLong("timestamp"))
@@ -54,10 +54,10 @@ class BatchEntryParamsTest {
     /** An updated entry keeps its custom fields too, and changes nothing it does not name. */
     @Test
     fun anUpdatedEntryKeepsItsCustomFieldsAndNothingElse() {
-        val params = BatchEntryParams.forUpdate(JSONObject("""{ "custom_fields": { "mood": "tired" } }"""), "entry-1")
+        val params = BatchEntryParams.forUpdate(JSONObject("""{ "extra": { "mood": "tired" } }"""), "entry-1")
 
         assertEquals("entry-1", params.getString("id"))
-        assertEquals("tired", params.getJSONObject("custom_fields").getString("mood"))
+        assertEquals("tired", params.getJSONObject("extra").getString("mood"))
         assertFalse(params.has("data"))
         assertFalse(params.has("name"))
         assertFalse(params.has("timestamp"))

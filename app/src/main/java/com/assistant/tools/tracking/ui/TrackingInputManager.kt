@@ -56,9 +56,9 @@ fun TrackingInputManager(
             try {
                 // Parse dataJson and extract custom_fields
                 val dataObject = JSONObject(dataJson)
-                val customFields = dataObject.optJSONObject("custom_fields")
+                val customFields = dataObject.optJSONObject("extra")
                 if (customFields != null) {
-                    dataObject.remove("custom_fields") // Remove from data object
+                    dataObject.remove("extra") // Remove from data object
                 }
 
                 // Build the params for the current tool_data structure
@@ -73,7 +73,7 @@ fun TrackingInputManager(
 
                 // Add custom_fields as separate parameter if present
                 if (customFields != null) {
-                    params["custom_fields"] = customFields
+                    params["extra"] = customFields
                 }
 
                 LogManager.tracking("Final params being sent: $params")

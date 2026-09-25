@@ -112,11 +112,11 @@ class JsonNormalizerTest {
     @Test
     fun aNullInsideAnObjectSurvives() {
         val params = mapOf<String, Any>(
-            "custom_fields" to JSONObject("""{"mood": null, "notes": "kept"}""")
+            "extra" to JSONObject("""{"mood": null, "notes": "kept"}""")
         )
 
         val result = JsonNormalizer.normalizeParams(params)
-        val fields = result["custom_fields"] as Map<*, *>
+        val fields = result["extra"] as Map<*, *>
 
         assertTrue("the key is still there", fields.containsKey("mood"))
         assertNull(fields["mood"])

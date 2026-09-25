@@ -23,7 +23,7 @@ class JsonUtilsTest {
     fun nestedStructures_surviveTheRoundTrip() {
         val sent = mapOf(
             "name" to "Sleep",
-            "custom_fields" to listOf(
+            "extra" to listOf(
                 mapOf("name" to "quality", "config" to mapOf("min" to 1, "max" to 10)),
                 mapOf("name" to "notes", "config" to mapOf("length" to "LONG"))
             ),

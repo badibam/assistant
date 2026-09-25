@@ -252,7 +252,7 @@ class DateTimeConverterTest {
     @Test
     fun aDatetimeUnderAnUnknownNameIsConvertedOnItsShape() {
         val payload = JSONObject().put(
-            "custom_fields",
+            "extra",
             JSONObject().put("appointment", "2025-03-15T14:30:00+01:00")
         )
 
@@ -260,7 +260,7 @@ class DateTimeConverterTest {
 
         assertEquals(
             1_742_045_400_000L,
-            out.getJSONObject("custom_fields").get("appointment")
+            out.getJSONObject("extra").get("appointment")
         )
     }
 
@@ -276,14 +276,14 @@ class DateTimeConverterTest {
     @Test
     fun aDatetimeConvertedOnItsShapeDoesNotComeBack() {
         val payload = JSONObject().put(
-            "custom_fields",
+            "extra",
             JSONObject().put("appointment", "2025-03-15T14:30:00+01:00")
         )
 
         val asTimestamps = DateTimeConverter.isoToTimestamps(payload, paris)
         val backOut = DateTimeConverter.timestampsToISO(asTimestamps, paris)
 
-        val value = backOut.getJSONObject("custom_fields").get("appointment")
+        val value = backOut.getJSONObject("extra").get("appointment")
         assertFalse("it stays a number", value is String)
         assertEquals(1_742_045_400_000L, value)
     }

@@ -593,7 +593,7 @@ private fun loadFieldDefinitionsFromConfig(
 
                 if (configMap != null) {
                     val config = JsonUtils.toJSONObject(configMap)
-                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    val customFieldsArray = config.optJSONArray("extra_fields")
 
                     // Convert JSONArray to List<FieldDefinition>
                     fields = if (customFieldsArray != null) {

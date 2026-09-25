@@ -252,15 +252,15 @@ Retrieves the data of one tool (templates and configurations live in tool_data).
 - `fields` (array, **required**): list of the fields to retrieve. **EVERY field must be asked for explicitly**.
   - **System fields**: `"id"`, `"timestamp"`, `"name"`, `"created_at"`, `"updated_at"`, `"tool_instance_id"`, `"tooltype"`
   - **Data fields**: `"data.value"`, `"data.text"`, `"data.quantity"`, and so on (depending on the tool type)
-  - **Custom fields**: `"custom_fields.notes"`, `"custom_fields.mood"`, and so on (depending on the config)
+  - **Custom fields**: `"extra.notes"`, `"extra.mood"`, and so on (depending on the config)
   - **No wildcard**: each field has to be listed on its own
-  - **Refused**: `"data"` and `"custom_fields"` alone. They are containers: name a field inside one (`"data.value"`). Any other path containing a dot is refused too. So is a path one level deeper: a field holding an object or a list is asked for whole (`"custom_fields.sleep"`, not `"custom_fields.sleep.start"`).
+  - **Refused**: `"data"` and `"extra"` alone. They are containers: name a field inside one (`"data.value"`). Any other path containing a dot is refused too. So is a path one level deeper: a field holding an object or a list is asked for whole (`"extra.sleep"`, not `"extra.sleep.start"`).
 - `period_start` (string, optional): start of the time filter, at the root of the params (not inside a `period` object). Formats in Part E.
 - `period_end` (string, optional): end of the time filter, at the root of the params. Independent of `period_start`.
 - `limit` (number, optional): maximum number of entries per page
 - `page` (number, optional): page number, starting at 1
 
-**Automatic config extract**: every TOOL_DATA answer includes a `config_extract` holding the configuration fields that matter for reading the data (type, min/max, options, custom_fields, and so on). Use them to understand the context of the values returned.
+**Automatic config extract**: every TOOL_DATA answer includes a `config_extract` holding the configuration fields that matter for reading the data (type, min/max, options, extra_fields, and so on). Use them to understand the context of the values returned.
 
 **Optimisation**: include only the fields your task strictly needs. For example: to count entries → `["id"]`, to analyse values → `["id", "timestamp", "data.value"]`, and so on.
 
@@ -504,7 +504,7 @@ Every tooltype supports **extra fields** defined by the user.
 
 **Structure in the config** (definitions):
 ```json
-"custom_fields": [
+"extra_fields": [
   {
     "name": "mood_before",
     "display_name": "Mood before",
@@ -524,7 +524,7 @@ Every tooltype supports **extra fields** defined by the user.
 **Structure in the data** (values):
 ```json
 {
-  "custom_fields": {
+  "extra": {
     "mood_before": "stressed"
   }
 }
@@ -535,7 +535,7 @@ Every tooltype supports **extra fields** defined by the user.
 **Detailed schemas**: to learn the exact structure of a field type, use `SCHEMA` with the ID `field_type_{TYPE}` (e.g. `field_type_TEXT`).
 
 **Behaviour**:
-- Every custom_field is **optional**
+- Every extra field is **optional**
 - Returned automatically by `TOOL_CONFIG` and `TOOL_DATA`
 - Usable in `CREATE_DATA` and `UPDATE_DATA`]]></string>
 
@@ -564,13 +564,13 @@ Returns every zone with its configuration.
 }
 ```
 
-Returns the complete JSON config, including the custom_fields defined:
+Returns the complete JSON config, including the extra_fields defined:
 ```json
 {
   "name": "Daily weight",
   "type": "numeric",
   "unit": "kg",
-  "custom_fields": [
+  "extra_fields": [
     {"name": "mood", "display_name": "Mood", "type": "TEXT", "config": {"length": "UNLIMITED"}}
   ]
 }
@@ -583,7 +583,7 @@ Returns the complete JSON config, including the custom_fields defined:
   "type": "TOOL_DATA",
   "params": {
     "id": "tracking_weight_123",
-    "fields": ["id", "timestamp", "data.value", "custom_fields.notes"],
+    "fields": ["id", "timestamp", "data.value", "extra.notes"],
     "period_start": "2024-01-01T00:00:00+01:00",
     "period_end": "2024-02-01T00:00:00+01:00",
     "limit": 50
@@ -591,7 +591,7 @@ Returns the complete JSON config, including the custom_fields defined:
 }
 ```
 
-Returns up to 50 entries, including custom_fields when they are defined:
+Returns up to 50 entries, including extra when the tool has extra fields:
 ```json
 {
   "entries": [
@@ -599,7 +599,7 @@ Returns up to 50 entries, including custom_fields when they are defined:
       "id": "entry_456",
       "timestamp": "2024-01-01T08:00:00+01:00",
       "data": {"value": 75.5},
-      "custom_fields": {"mood": "stressed"}
+      "extra": {"mood": "stressed"}
     }
   ],
   "pagination": {
@@ -623,7 +623,7 @@ Returns up to 50 entries, including custom_fields when they are defined:
 }
 ```
 
-**Data schema** (tool_instance_id required for the custom_fields):
+**Data schema** (tool_instance_id required for the extra fields):
 ```json
 {
   "type": "SCHEMA",
@@ -681,20 +681,20 @@ Returns every entry of the period. Then take the IDs alone and pass them to DELE
         "name": "Weighing",
         "timestamp": "2024-01-01T08:00:00+01:00",
         "data": { "value": 75.5 },
-        "custom_fields": { "mood": "calm" }
+        "extra": { "mood": "calm" }
       },
       {
         "name": "Weighing",
         "timestamp": "2024-01-02T08:00:00+01:00",
         "data": { "value": 75.2 },
-        "custom_fields": { "mood": "stressed" }
+        "extra": { "mood": "stressed" }
       }
     ]
   }
 }
 ```
 
-Creates 2 weight entries with custom_fields. The schema_id is derived automatically from the config of the tool.
+Creates 2 weight entries with extra fields. The schema_id is derived automatically from the config of the tool.
 
 ### Example 2: updating data (partial update)
 
@@ -708,14 +708,14 @@ Creates 2 weight entries with custom_fields. The schema_id is derived automatica
       {
         "id": "entry_456",
         "data": { "value": 75.8 },
-        "custom_fields": { "mood": "calm" }
+        "extra": { "mood": "calm" }
       }
     ]
   }
 }
 ```
 
-**Partial update**: changes the value and the mood custom_field alone. The other fields (name, timestamp, other data fields, other custom_fields) keep their existing values.
+**Partial update**: changes the value and the mood extra field alone. The other fields (name, timestamp, other data fields, other extra fields) keep their existing values.
 Only the fields you supply are updated.
 
 ### Example 3: deleting data

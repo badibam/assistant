@@ -996,7 +996,7 @@ class CommandExecutor(private val context: Context) {
             // The tool's DATETIME fields, named so the result's values can be turned into ISO
             // on the way to the model. Their names are the user's, chosen when the field was
             // created, so they are read from the config rather than from any list.
-            val dateTimeFieldNames = configJson.optJSONArray("custom_fields")
+            val dateTimeFieldNames = configJson.optJSONArray("extra_fields")
                 ?.toFieldDefinitions()
                 ?.filter { it.type == FieldType.DATETIME }
                 ?.map { it.name }

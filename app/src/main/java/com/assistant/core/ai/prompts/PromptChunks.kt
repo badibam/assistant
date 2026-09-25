@@ -61,7 +61,7 @@ object PromptChunks {
         Chunk("commands_queries_signatures", 1) { ctx, _ -> buildChunk("commands_queries_signatures", ctx) },
         Chunk("commands_actions_signatures", 1) { ctx, _ -> buildChunk("commands_actions_signatures", ctx) },
         Chunk("commands_response_format", 2) { ctx, _ -> buildChunk("commands_response_format", ctx) },
-        Chunk("custom_fields", 1) { ctx, _ -> buildCustomFieldsChunk(ctx) },
+        Chunk("extra", 1) { ctx, _ -> buildCustomFieldsChunk(ctx) },
         Chunk("commands_queries_examples", 3) { ctx, _ -> buildChunk("commands_queries_examples", ctx) },
         Chunk("commands_actions_examples", 3) { ctx, _ -> buildChunk("commands_actions_examples", ctx) },
 

@@ -232,7 +232,7 @@ fun TrackingConfigScreen(
         alwaysSend = config.optBoolean("always_send", false)
 
         // Load custom fields
-        val customFieldsArray = newConfig.optJSONArray("custom_fields")
+        val customFieldsArray = newConfig.optJSONArray("extra_fields")
         if (customFieldsArray != null) {
             try {
                 customFields = customFieldsArray.toFieldDefinitions()
@@ -408,7 +408,7 @@ fun TrackingConfigScreen(
 
         // Add custom fields
         if (customFields.isNotEmpty()) {
-            cleanConfig.put("custom_fields", customFields.toJsonArray())
+            cleanConfig.put("extra_fields", customFields.toJsonArray())
         }
 
         // Convert the JSONObject into the Map ValidationHelper expects
@@ -504,7 +504,7 @@ fun TrackingConfigScreen(
 
                 // Add custom fields
                 if (customFields.isNotEmpty()) {
-                    cleanConfig.put("custom_fields", customFields.toJsonArray())
+                    cleanConfig.put("extra_fields", customFields.toJsonArray())
                 }
 
                 val configMap = cleanConfig.keys().asSequence().associateWith { key ->

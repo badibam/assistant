@@ -8,7 +8,7 @@ package com.assistant.core.validation
  * - a data field: "data.value", "data.text"
  * - a custom field: "custom_fields.notes", "custom_fields.mood"
  *
- * "data" and "custom_fields" on their own are refused: both are containers, and asking for
+ * "data" and "extra" on their own are refused: both are containers, and asking for
  * the container instead of a field inside it is the mistake this grammar exists to name.
  * Any other path carrying a dot is refused too, since nothing would know where to read it.
  * So is a path one level deeper, like "custom_fields.sleep.start": the filter keeps whole keys
@@ -27,10 +27,10 @@ package com.assistant.core.validation
 object FieldPatternGrammar {
 
     const val DATA_PREFIX = "data."
-    const val CUSTOM_FIELDS_PREFIX = "custom_fields."
+    const val CUSTOM_FIELDS_PREFIX = "extra."
 
     private const val DATA_CONTAINER = "data"
-    private const val CUSTOM_FIELDS_CONTAINER = "custom_fields"
+    private const val CUSTOM_FIELDS_CONTAINER = "extra"
 
     /**
      * Requested paths sorted by where they point, plus the ones that point nowhere.

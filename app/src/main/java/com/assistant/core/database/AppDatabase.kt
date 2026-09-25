@@ -26,6 +26,7 @@ import com.assistant.core.versioning.AILimitsAtV32
 import com.assistant.core.versioning.AILimitsAtV34
 import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.SettingsAtV33
+import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -66,7 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 35
+        const val VERSION = 36
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1254,6 +1255,88 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_35_36 = object : Migration(35, 36) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // One field system: see FieldsAtV36. tool_data's custom_fields column becomes
+                // extra and the table gains state. SQLite before 3.25 has no RENAME COLUMN and
+                // minSdk 26 ships 3.19, so the table is recreated, with the foreign key and the
+                // indices Room checks at open.
+                database.execSQL("""
+                    CREATE TABLE tool_data_new (
+                        id TEXT NOT NULL,
+                        tool_instance_id TEXT NOT NULL,
+                        tooltype TEXT NOT NULL,
+                        timestamp INTEGER,
+                        name TEXT,
+                        data TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        extra TEXT,
+                        state TEXT,
+                        PRIMARY KEY(id),
+                        FOREIGN KEY(tool_instance_id) REFERENCES tool_instances(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO tool_data_new (id, tool_instance_id, tooltype, timestamp, name, data, created_at, updated_at, extra, state)
+                    SELECT id, tool_instance_id, tooltype, timestamp, name, data, created_at, updated_at, custom_fields, NULL
+                    FROM tool_data
+                """)
+                database.execSQL("DROP TABLE tool_data")
+                database.execSQL("ALTER TABLE tool_data_new RENAME TO tool_data")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_data_tool_instance_id ON tool_data(tool_instance_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_data_timestamp ON tool_data(timestamp)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_data_tooltype ON tool_data(tooltype)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_tool_data_tool_instance_id_timestamp ON tool_data(tool_instance_id, timestamp)")
+
+                // Configs, read before they are rewritten: an entry is rewritten against its
+                // tool's config as it stood at v35.
+                val configsAtV35 = mutableMapOf<String, org.json.JSONObject>()
+                database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val config = org.json.JSONObject(cursor.getString(2))
+                        configsAtV35[id] = config
+                        database.execSQL(
+                            "UPDATE tool_instances SET config_json = ? WHERE id = ?",
+                            arrayOf(FieldsAtV36.config(cursor.getString(1), config).toString(), id)
+                        )
+                    }
+                }
+
+                // Entries. A row that cannot be read stays as it was and is logged, never deleted.
+                var rewritten = 0
+                var failed = 0
+                database.query("SELECT id, tool_instance_id, tooltype, name, data, extra FROM tool_data").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        try {
+                            val entry = FieldsAtV36.entry(
+                                cursor.getString(2),
+                                FieldsAtV36.Entry(
+                                    name = if (cursor.isNull(3)) null else cursor.getString(3),
+                                    data = org.json.JSONObject(cursor.getString(4)),
+                                    extra = if (cursor.isNull(5)) null else org.json.JSONObject(cursor.getString(5)),
+                                    state = null
+                                ),
+                                configsAtV35.getValue(cursor.getString(1))
+                            )
+                            database.execSQL(
+                                "UPDATE tool_data SET name = ?, data = ?, extra = ?, state = ? WHERE id = ?",
+                                arrayOf(entry.name, entry.data.toString(), entry.extra?.toString(), entry.state?.toString(), id)
+                            )
+                            rewritten++
+                        } catch (e: Exception) {
+                            failed++
+                            LogManager.database("MIGRATION 35->36: entry $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+
+                LogManager.database("MIGRATION 35->36: ${configsAtV35.size} config(s), $rewritten entr(ies) rewritten, $failed left as they were", "INFO")
+            }
+        }
+
         private val MIGRATION_34_35 = object : Migration(34, 35) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Each AI message keeps the model and prices of its call. Messages from before
@@ -1481,7 +1564,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_31_32,
                     MIGRATION_32_33,
                     MIGRATION_33_34,
-                    MIGRATION_34_35
+                    MIGRATION_34_35,
+                    MIGRATION_35_36
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -103,7 +103,7 @@ fun JournalEntryScreen(
 
                 // Load custom fields values
                 @Suppress("UNCHECKED_CAST")
-                customFieldsValues = (data["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
+                customFieldsValues = (data["extra"] as? Map<String, Any?>) ?: emptyMap()
                 LogManager.ui("Loaded ${customFieldsValues.size} custom field values")
 
                 LogManager.ui("Successfully loaded entry: title=$title")
@@ -155,7 +155,7 @@ fun JournalEntryScreen(
 
             // Add custom fields if any (for validation)
             if (customFieldsValues.isNotEmpty()) {
-                entryData["custom_fields"] = customFieldsValues
+                entryData["extra"] = customFieldsValues
             }
 
             LogManager.ui("Journal validation - entryData: $entryData")
@@ -204,7 +204,7 @@ fun JournalEntryScreen(
 
                     // Add custom fields if any
                     if (customFieldsValues.isNotEmpty()) {
-                        params["custom_fields"] = JSONObject(customFieldsValues)
+                        params["extra"] = JSONObject(customFieldsValues)
                     }
 
                     val result = coordinator.processUserAction("tool_data.update", params)

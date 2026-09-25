@@ -398,7 +398,7 @@ class AICommandProcessor(private val context: Context) {
      * timestamp that sits beside them.
      */
     private fun convertPayloadDates(entry: MutableMap<String, Any?>, timezone: ZoneId) {
-        for (key in listOf("data", "custom_fields")) {
+        for (key in listOf("data", "extra")) {
             val payload = entry[key] ?: continue
             val json = when (payload) {
                 is JSONObject -> payload

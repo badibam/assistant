@@ -9,7 +9,7 @@ import kotlin.math.pow
  * Enriches JSON schemas with custom field definitions.
  *
  * Takes a base schema and a tool instance config, extracts custom_fields definitions,
- * and adds them as properties to the schema under a "custom_fields" object.
+ * and adds them as properties to the schema under a "extra" object.
  *
  * This is a critical component for validation - all custom field validation
  * goes through the enriched schema via SchemaValidator.
@@ -33,7 +33,7 @@ object CustomFieldsSchemaGenerator {
         val configObj = JSONObject(configJson)
 
         // Extract custom_fields array from config
-        val customFieldsArray = configObj.optJSONArray("custom_fields")
+        val customFieldsArray = configObj.optJSONArray("extra_fields")
         if (customFieldsArray == null || customFieldsArray.length() == 0) {
             // No custom fields defined, return schema as-is
             return schemaObj.toString()
@@ -51,7 +51,7 @@ object CustomFieldsSchemaGenerator {
         val customFieldsSchema = createCustomFieldsSchema(fieldDefinitions)
 
         // Add custom_fields property to schema
-        properties.put("custom_fields", customFieldsSchema)
+        properties.put("extra", customFieldsSchema)
 
         return schemaObj.toString()
     }

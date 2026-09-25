@@ -50,7 +50,7 @@ data class Occurrence(
     val read: Boolean,
     val archived: Boolean,
     val notificationSent: Boolean,
-    val customFields: Map<String, Any?>
+    val extra: Map<String, Any?>
 ) {
     /** What actually went out, or would go out: the common part joined with the day's. */
     val displayTitle: String
@@ -471,7 +471,7 @@ private suspend fun loadByStatus(
 
         try {
             val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
-            val customFields = (entry["custom_fields"] as? Map<*, *>)
+            val customFields = (entry["extra"] as? Map<*, *>)
                 ?.entries?.associate { (k, v) -> k.toString() to v }
                 ?: emptyMap()
 
@@ -486,7 +486,7 @@ private suspend fun loadByStatus(
                 read = data.optBoolean("read", false),
                 archived = data.optBoolean("archived", false),
                 notificationSent = data.optBoolean("notification_sent", true),
-                customFields = customFields
+                extra = customFields
             )
         } catch (e: Exception) {
             LogManager.ui("Unreadable occurrence $id, skipped: ${e.message}", "ERROR", e)

@@ -21,7 +21,7 @@ internal object BatchEntryParams {
         JSONObject().apply {
             put("tool_instance_id", toolInstanceId)
             put("data", entry.optJSONObject("data") ?: JSONObject())
-            if (entry.has("custom_fields")) put("custom_fields", entry.getJSONObject("custom_fields"))
+            if (entry.has("extra")) put("extra", entry.getJSONObject("extra"))
             if (entry.has("timestamp")) put("timestamp", entry.getLong("timestamp"))
             if (entry.has("name")) put("name", entry.getString("name"))
         }
@@ -31,7 +31,7 @@ internal object BatchEntryParams {
         JSONObject().apply {
             put("id", entryId)
             if (entry.has("data")) put("data", entry.getJSONObject("data"))
-            if (entry.has("custom_fields")) put("custom_fields", entry.getJSONObject("custom_fields"))
+            if (entry.has("extra")) put("extra", entry.getJSONObject("extra"))
             if (entry.has("timestamp")) put("timestamp", entry.getLong("timestamp"))
             if (entry.has("name")) put("name", entry.getString("name"))
         }

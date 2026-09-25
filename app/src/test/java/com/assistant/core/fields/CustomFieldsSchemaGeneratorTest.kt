@@ -24,14 +24,14 @@ class CustomFieldsSchemaGeneratorTest {
 
     /** The schema for a tool whose only custom field is [field] (the field's JSON, without name). */
     private fun schemaFor(field: String): JsonSchema {
-        val config = """{ "custom_fields": [ ${JSONObject(field).put("name", "f").put("display_name", "F")} ] }"""
+        val config = """{ "extra_fields": [ ${JSONObject(field).put("name", "f").put("display_name", "F")} ] }"""
         val enriched = CustomFieldsSchemaGenerator.enrichSchema(baseSchema, config)
         return JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(enriched)
     }
 
     /** Whether an entry holding [value] as the custom field passes. */
     private fun JsonSchema.accepts(value: String): Boolean =
-        validate(mapper.readTree("""{ "custom_fields": { "f": $value } }""")).isEmpty()
+        validate(mapper.readTree("""{ "extra": { "f": $value } }""")).isEmpty()
 
     @Test
     fun text_isHeldToItsLength() {
@@ -191,7 +191,7 @@ class CustomFieldsSchemaGeneratorTest {
     fun anUndeclaredField_isRefused() {
         val schema = schemaFor("""{ "type": "BOOLEAN" }""")
 
-        assertFalse(schema.validate(mapper.readTree("""{ "custom_fields": { "other": true } }""")).isEmpty())
+        assertFalse(schema.validate(mapper.readTree("""{ "extra": { "other": true } }""")).isEmpty())
     }
 
     @Test
@@ -206,7 +206,7 @@ class CustomFieldsSchemaGeneratorTest {
     fun anUnreadableField_fails() {
         CustomFieldsSchemaGenerator.enrichSchema(
             baseSchema,
-            """{ "custom_fields": [ { "name": "f", "display_name": "F", "type": "COLOR" } ] }"""
+            """{ "extra_fields": [ { "name": "f", "display_name": "F", "type": "COLOR" } ] }"""
         )
     }
 }

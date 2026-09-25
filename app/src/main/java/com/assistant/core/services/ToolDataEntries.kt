@@ -23,7 +23,7 @@ internal object ToolDataEntries {
         "timestamp" to entity.timestamp,
         "name" to entity.name,
         "data" to JsonUtils.toMap(JSONObject(entity.data)),
-        "custom_fields" to entity.customFields?.let { JsonUtils.toMap(JSONObject(it)) },
+        "extra" to entity.extra?.let { JsonUtils.toMap(JSONObject(it)) },
         "created_at" to entity.createdAt,
         "updated_at" to entity.updatedAt
     )

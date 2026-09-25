@@ -952,7 +952,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
      * full config every time.
      */
     override fun getRelevantConfigFieldsForData(): List<String> {
-        return listOf("type", "unit", "min", "max", "min_label", "max_label", "items", "options", "custom_fields")
+        return listOf("type", "unit", "min", "max", "min_label", "max_label", "items", "options", "extra_fields")
     }
 
     /**

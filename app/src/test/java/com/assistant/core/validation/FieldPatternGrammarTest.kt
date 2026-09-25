@@ -13,7 +13,7 @@ class FieldPatternGrammarTest {
     /** The three shapes, sorted by where they point, data and custom names without their prefix. */
     @Test
     fun theThreeShapes_areSortedByWhereTheyPoint() {
-        val parsed = FieldPatternGrammar.parse(listOf("timestamp", "name", "data.quantity", "data.unit", "custom_fields.mood"))
+        val parsed = FieldPatternGrammar.parse(listOf("timestamp", "name", "data.quantity", "data.unit", "extra.mood"))
 
         assertEquals(listOf("timestamp", "name"), parsed.root)
         assertEquals(listOf("quantity", "unit"), parsed.data)
@@ -24,12 +24,12 @@ class FieldPatternGrammarTest {
     /** A container on its own, or a prefix with no name after it, asks for no field. */
     @Test
     fun containersAndEmptyNames_areRefused() {
-        val paths = listOf("data", "custom_fields", "data.", "custom_fields.", "", "  ")
+        val paths = listOf("data", "extra", "data.", "extra.", "", "  ")
 
         assertEquals(paths, FieldPatternGrammar.parse(paths).invalid)
     }
 
-    /** A dotted path under anything but data or custom_fields points nowhere. */
+    /** A dotted path under anything but data or extra points nowhere. */
     @Test
     fun anotherDottedPath_isRefused() {
         val paths = listOf("config.name", "Data.quantity", "custom.mood")
@@ -43,9 +43,9 @@ class FieldPatternGrammarTest {
      */
     @Test
     fun aPathOneLevelTooDeep_isRefused() {
-        val parsed = FieldPatternGrammar.parse(listOf("custom_fields.sleep.start", "data.quantity.value", "custom_fields.sleep"))
+        val parsed = FieldPatternGrammar.parse(listOf("extra.sleep.start", "data.quantity.value", "extra.sleep"))
 
-        assertEquals(listOf("custom_fields.sleep.start", "data.quantity.value"), parsed.invalid)
+        assertEquals(listOf("extra.sleep.start", "data.quantity.value"), parsed.invalid)
         assertEquals(listOf("sleep"), parsed.custom)
         assertEquals(emptyList<String>(), parsed.data)
     }

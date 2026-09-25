@@ -179,6 +179,6 @@ interface ToolTypeContract : SchemaProvider {
      * @return List of config field names to include in config_extract
      */
     fun getRelevantConfigFieldsForData(): List<String> {
-        return listOf("custom_fields")  // Default: only custom_fields
+        return listOf("extra_fields")  // Default: only custom_fields
     }
 }

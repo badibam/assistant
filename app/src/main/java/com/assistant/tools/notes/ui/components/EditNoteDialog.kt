@@ -73,7 +73,7 @@ fun EditNoteDialog(
                 val configJson = JsonUtils.toJSONObject(data["config"] as? Map<String, Any?> ?: emptyMap())
                 try {
                     val config = configJson
-                    val customFieldsArray = config.optJSONArray("custom_fields")
+                    val customFieldsArray = config.optJSONArray("extra_fields")
                     if (customFieldsArray != null) {
                         customFieldsDefinitions = customFieldsArray.toFieldDefinitions()
                         LogManager.ui("Loaded ${customFieldsDefinitions.size} custom field definitions")

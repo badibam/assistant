@@ -134,7 +134,7 @@ object FieldDataMigrator {
 
                 // custom_fields comes as an object, or is absent
                 val customFields = try {
-                    JsonUtils.toMap(entry["custom_fields"])
+                    JsonUtils.toMap(entry["extra"])
                 } catch (e: Exception) {
                     LogManager.service("Entry $entryId: Error reading custom_fields: ${e.message}", "ERROR", e)
                     null
@@ -150,7 +150,7 @@ object FieldDataMigrator {
 
                 // Apply migration strategies to transform custom_fields
                 val transformed = applyMigrationStrategies(
-                    customFields = customFields,
+                    extra = customFields,
                     changes = changes,
                     strategies = strategies
                 )
@@ -175,7 +175,7 @@ object FieldDataMigrator {
                     entriesToUpdate.add(
                         mapOf(
                             "id" to entryId,
-                            "custom_fields" to JsonUtils.toJSONObject(updateMap)
+                            "extra" to JsonUtils.toJSONObject(updateMap)
                         )
                     )
                 }
@@ -247,11 +247,11 @@ object FieldDataMigrator {
      * does to them cannot be read off the strategies alone.
      */
     internal fun applyMigrationStrategies(
-        customFields: Map<String, Any?>,
+        extra: Map<String, Any?>,
         changes: List<FieldChange>,
         strategies: Map<FieldChange, MigrationStrategy>
     ): Map<String, Any?> {
-        val result = customFields.toMutableMap()
+        val result = extra.toMutableMap()
 
         changes.forEach { change ->
             val strategy = strategies[change] ?: return@forEach

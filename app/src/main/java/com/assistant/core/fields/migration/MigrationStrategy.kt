@@ -37,8 +37,8 @@ enum class MigrationStrategy {
      * Result: custom_fields[fieldName] removed from all tool_data entries
      *
      * Example:
-     * Before: {"custom_fields": {"mood": "happy", "notes": "Good day"}}
-     * After:  {"custom_fields": {"mood": "happy"}} (if "notes" was removed)
+     * Before: {"extra": {"mood": "happy", "notes": "Good day"}}
+     * After:  {"extra": {"mood": "happy"}} (if "notes" was removed)
      */
     STRIP_FIELD,
 
@@ -51,12 +51,12 @@ enum class MigrationStrategy {
      * Result: custom_fields[fieldName] removed only if value matches removed option
      *
      * Example - Single choice:
-     * Before: {"custom_fields": {"mood": "sad"}}
-     * After:  {"custom_fields": {}} (if "sad" was removed from options)
+     * Before: {"extra": {"mood": "sad"}}
+     * After:  {"extra": {}} (if "sad" was removed from options)
      *
      * Example - Multiple choice:
-     * Before: {"custom_fields": {"tags": ["work", "urgent", "review"]}}
-     * After:  {"custom_fields": {}} (if "urgent" was removed and is in the list)
+     * Before: {"extra": {"tags": ["work", "urgent", "review"]}}
+     * After:  {"extra": {}} (if "urgent" was removed and is in the list)
      */
     STRIP_FIELD_IF_VALUE,
 

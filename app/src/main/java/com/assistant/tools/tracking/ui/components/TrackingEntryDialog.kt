@@ -107,7 +107,7 @@ fun TrackingEntryDialog(
 
     // Custom fields states
     val customFieldsDefinitions = remember(config) {
-        val customFieldsArray = config.optJSONArray("custom_fields")
+        val customFieldsArray = config.optJSONArray("extra_fields")
         if (customFieldsArray != null) {
             try {
                 customFieldsArray.toFieldDefinitions()
@@ -121,7 +121,7 @@ fun TrackingEntryDialog(
     }
 
     var customFieldsValues by rememberSaveable(isVisible, initialData, stateSaver = FieldValuesSaver) {
-        val values = (initialData["custom_fields"] as? Map<String, Any?>) ?: emptyMap()
+        val values = (initialData["extra"] as? Map<String, Any?>) ?: emptyMap()
         LogManager.tracking("TrackingEntryDialog - Custom fields values: ${values.size} fields, keys=${values.keys}")
         mutableStateOf(values)
     }
@@ -361,7 +361,7 @@ fun TrackingEntryDialog(
 
                         // Add custom fields if any
                         if (customFieldsValues.isNotEmpty()) {
-                            put("custom_fields", JSONObject(customFieldsValues))
+                            put("extra", JSONObject(customFieldsValues))
                         }
                     }.toString()
                     

@@ -88,7 +88,7 @@ object BaseSchemas {
                     "maxLength": ${FieldLimits.SHORT_LENGTH},
                     "description": "${s.shared("tools_base_schema_config_group")}"
                 },
-                "custom_fields": {
+                "extra_fields": {
                     "type": "array",
                     "description": "${s.shared("tools_base_schema_config_custom_fields")}",
                     "items": {{CUSTOM_FIELDS_ITEMS_SCHEMA}}

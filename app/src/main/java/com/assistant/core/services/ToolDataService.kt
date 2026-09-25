@@ -77,7 +77,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Payloads arrive in milliseconds from every caller, so they are stored as they come.
         // Fields the schema marks system-managed are the app's to produce, not the caller's.
         val dataJson = SystemManagedFields.dropFromData(params.optJSONObject("data") ?: JSONObject(), target.schema.content).toString()
-        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
+        val customFieldsJson = params.optJSONObject("extra")?.toString()
 
         // Milliseconds are the contract. An absent timestamp means now, which is a default
         // written into the contract; any number is taken as milliseconds, Int and Double
@@ -104,7 +104,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             data = finalDataJson,
             createdAt = now,
             updatedAt = now,
-            customFields = customFieldsJson  // Store custom fields separately
+            extra = customFieldsJson  // Store custom fields separately
         )
 
         val dao = getToolDataDao()
@@ -177,7 +177,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         // Fields the schema marks system-managed are the app's to produce, not the caller's.
         val dataJson = params.optJSONObject("data")
             ?.let { SystemManagedFields.dropFromData(it, target.schema.content).toString() }
-        val customFieldsJson = params.optJSONObject("custom_fields")?.toString()
+        val customFieldsJson = params.optJSONObject("extra")?.toString()
 
         // Milliseconds are the contract. An absent timestamp leaves the recorded one alone;
         // any number is taken as milliseconds. Anything else is refused.
@@ -206,8 +206,8 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // Merge custom fields: new fields overwrite, absent fields are preserved, null values remove fields
         val mergedCustomFields = if (customFieldsJson != null) {
-            val existingCustomFields = if (existingEntity.customFields != null) {
-                JSONObject(existingEntity.customFields)
+            val existingCustomFields = if (existingEntity.extra != null) {
+                JSONObject(existingEntity.extra)
             } else {
                 JSONObject()
             }
@@ -241,12 +241,12 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
             existingCustomFields.toString()
         } else {
-            existingEntity.customFields
+            existingEntity.extra
         }
 
         val updatedEntity = existingEntity.copy(
             data = mergedData,
-            customFields = mergedCustomFields,
+            extra = mergedCustomFields,
             timestamp = timestamp ?: existingEntity.timestamp,
             name = name ?: existingEntity.name,
             updatedAt = System.currentTimeMillis()
@@ -254,7 +254,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
 
         // The whole entry is checked, not only the fields sent: after the merge it is what will be stored
         validateEntry(
-            target, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.customFields
+            target, updatedEntity.name, updatedEntity.timestamp, updatedEntity.data, updatedEntity.extra
         )?.let { return OperationResult.error(it) }
 
         val after = dao.getByToolInstance(existingEntity.toolInstanceId)
@@ -778,9 +778,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
             database.execSQL(
                 """
                 UPDATE tool_data
-                SET custom_fields = json_remove(custom_fields, ?),
+                SET extra = json_remove(extra, ?),
                     updated_at = ?
-                WHERE tool_instance_id = ? AND custom_fields IS NOT NULL
+                WHERE tool_instance_id = ? AND extra IS NOT NULL
                 """.trimIndent(),
                 arrayOf("$.$fieldName", System.currentTimeMillis(), toolInstanceId)
             )
@@ -978,13 +978,13 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
         timestamp?.let { entry["timestamp"] = it }
         name?.let { entry["name"] = it }
-        customFields?.let { entry["custom_fields"] = it }
+        customFields?.let { entry["extra"] = it }
 
         val result = SchemaValidator.validate(target.schema, entry, context)
         if (!result.isValid) return result.errorMessage ?: s.shared("service_error_validation_failed").format("")
 
         // What the schema cannot say, field by field
-        val fields = target.config.optJSONArray("custom_fields")?.toFieldDefinitions() ?: emptyList()
+        val fields = target.config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
         for (field in fields) {
             val fieldResult = FieldValueValidator.validate(field, customFields?.get(field.name), context)
             if (!fieldResult.isValid) {
@@ -1061,7 +1061,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         }
 
         filterJsonField(entry, "data", parsed.data)?.let { filtered["data"] = it }
-        filterJsonField(entry, "custom_fields", parsed.custom)?.let { filtered["custom_fields"] = it }
+        filterJsonField(entry, "extra", parsed.custom)?.let { filtered["extra"] = it }
 
         return filtered
     }

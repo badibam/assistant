@@ -301,7 +301,7 @@ object SchemaValidator {
         val s = com.assistant.core.strings.Strings.`for`(context = context)
 
         // Check if data contains custom_fields
-        val customFields = data["custom_fields"] as? List<*> ?: return ValidationResult.success()
+        val customFields = data["extra_fields"] as? List<*> ?: return ValidationResult.success()
 
         if (customFields.isEmpty()) {
             return ValidationResult.success()

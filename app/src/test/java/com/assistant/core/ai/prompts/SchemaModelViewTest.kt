@@ -80,14 +80,14 @@ class SchemaModelViewTest {
     @Test
     fun aMarkedPropertyIsReachedAtAnyDepth() {
         val result = view("""
-            {"properties": {"custom_fields": {"type": "object", "properties": {
+            {"properties": {"extra": {"type": "object", "properties": {
                 "bedtime": {"type": "number", "minimum": 0, "format": "epoch-millis"}
             }}}}
         """.trimIndent())
 
         val bedtime = result
             .getJSONObject("properties")
-            .getJSONObject("custom_fields")
+            .getJSONObject("extra")
             .getJSONObject("properties")
             .getJSONObject("bedtime")
         assertEquals("string", bedtime.getString("type"))
