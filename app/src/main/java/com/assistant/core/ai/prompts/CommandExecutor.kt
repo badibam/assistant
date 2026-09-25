@@ -7,8 +7,6 @@ import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.ServiceRegistry
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.ExecutableService
-import com.assistant.core.fields.FieldType
-import com.assistant.core.fields.toFieldDefinitions
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.AppConfigManager
 import com.assistant.core.utils.DateTimeConverter
@@ -38,14 +36,14 @@ fun List<PromptCommandResult>.toPromptSection(): String =
 
 /**
  * What a tool's config says about one data result: the fields worth showing beside it, and the
- * names of its DATETIME fields, which decide what turns into ISO on the way to the model.
+ * schema of its entries, which says what turns into ISO 8601 on the way to the model.
  */
 private data class DataResultContext(
     val configExtract: Map<String, Any>?,
-    val dateTimeFieldNames: Set<String>
+    val entrySchema: JSONObject?
 ) {
     companion object {
-        val EMPTY = DataResultContext(configExtract = null, dateTimeFieldNames = emptySet())
+        val EMPTY = DataResultContext(configExtract = null, entrySchema = null)
     }
 }
 
@@ -831,15 +829,13 @@ class CommandExecutor(private val context: Context) {
     private fun formatResultData(command: ExecutableCommand, data: Map<String, Any>): String {
         return try {
             val reordered = mutableMapOf<String, Any>()
-            // Filled by the tool_data branch, which is the only one that knows a tool's fields.
-            var dateFieldNames: Set<String> = emptySet()
+            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
             // Extract metadata keys first based on command type
             when (command.resource) {
                 "tool_data" -> {
                     // LOGIQUE 2: Build config_extract with relevant config fields
                     val toolConfig = runBlocking { buildDataResultContext(command) }
-                    dateFieldNames = toolConfig.dateTimeFieldNames
                     if (toolConfig.configExtract != null) {
                         reordered["config_extract"] = toolConfig.configExtract
                     }
@@ -849,7 +845,13 @@ class CommandExecutor(private val context: Context) {
                     data["tool_instance_name"]?.let { reordered["tool_instance_name"] = it }
                     data["count"]?.let { reordered["count"] = it }
 
-                    data["entries"]?.let { reordered["entries"] = it }
+                    // The entries' dates and durations in ISO 8601, found by the tool's entry
+                    // schema: its fixed fields, the user's and the core's alike
+                    data["entries"]?.let { entries ->
+                        val schema = toolConfig.entrySchema
+                            ?: throw IllegalStateException("No entry schema to convert the entries of ${command.params["id"]}")
+                        reordered["entries"] = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
+                    }
 
                     // Add pagination if present
                     data["pagination"]?.let { reordered["pagination"] = it }
@@ -904,14 +906,11 @@ class CommandExecutor(private val context: Context) {
 
             // This is where a result becomes the text the model reads, so this is where the
             // milliseconds everything else speaks turn into the ISO 8601 the model does
-            // (docs/design/date-boundary.md). The tool's DATETIME fields are named here because
-            // their names are the user's, and no fixed list can hold them.
-            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
-            DateTimeConverter.timestampsToISO(
-                org.json.JSONObject(reordered as Map<*, *>),
-                timezone,
-                dateFieldNames
-            ).toString(2)
+            // (docs/design/date-boundary.md). Entries were converted above by their schema;
+            // any other result carries its dates under the few names DateTimeConverter knows.
+            val json = org.json.JSONObject(reordered as Map<*, *>)
+            if (command.resource == "tool_data") json.toString(2)
+            else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
         } catch (e: Exception) {
             LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
             org.json.JSONObject(data).toString(2)
@@ -993,21 +992,15 @@ class CommandExecutor(private val context: Context) {
                 }
             }
 
-            // The tool's DATETIME fields, named so the result's values can be turned into ISO
-            // on the way to the model. Their names are the user's, chosen when the field was
-            // created, so they are read from the config rather than from any list.
-            val dateTimeFieldNames = configJson.optJSONArray("extra_fields")
-                ?.toFieldDefinitions()
-                ?.filter { it.type == FieldType.DATETIME }
-                ?.map { it.name }
-                ?.toSet()
-                ?: emptySet()
+            val entrySchema = JSONObject(
+                com.assistant.core.tools.BaseSchemas.getEntrySchemaOrThrow(toolType, configJson, toolInstanceId, context)
+            )
 
-            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields and ${dateTimeFieldNames.size} datetime fields for tool instance $toolInstanceId", "DEBUG")
+            LogManager.aiPrompt("Built config_extract with ${configExtract.size} fields for tool instance $toolInstanceId", "DEBUG")
 
             DataResultContext(
                 configExtract = if (configExtract.isEmpty()) null else configExtract,
-                dateTimeFieldNames = dateTimeFieldNames
+                entrySchema = entrySchema
             )
 
         } catch (e: Exception) {

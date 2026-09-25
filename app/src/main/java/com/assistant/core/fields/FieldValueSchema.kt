@@ -13,6 +13,18 @@ import kotlin.math.pow
 object FieldValueSchema {
 
     /**
+     * The mark of a value stored as an instant in milliseconds. The model reads and writes it as
+     * an ISO 8601 date-time (SchemaModelView for the schema, ModelValues for the values).
+     */
+    const val EPOCH_MILLIS = "epoch-millis"
+
+    /**
+     * The mark of a value stored as a duration in milliseconds. The model reads and writes it as
+     * an ISO 8601 duration, like PT1H25M.
+     */
+    const val DURATION_MILLIS = "duration-millis"
+
+    /**
      * The JSON schema a value of [fieldDef] is held to, from its type and config.
      * The single place a field's value schema is written, whoever declared the field.
      */
@@ -205,7 +217,7 @@ object FieldValueSchema {
                     // Marks the property as an instant, which is what lets the view handed to
                     // the model show it as ISO while the stored form stays a number. A plain
                     // NUMBER field carries no such mark and stays a number on both sides.
-                    put("format", "epoch-millis")
+                    put("format", EPOCH_MILLIS)
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }
@@ -221,7 +233,7 @@ object FieldValueSchema {
                     put("minimum", 0)
                     // Marks the property as a duration, which is what lets the view handed to
                     // the model show it in ISO 8601 (PT1H25M) while the stored form stays a number.
-                    put("format", "duration-millis")
+                    put("format", DURATION_MILLIS)
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)
                     }

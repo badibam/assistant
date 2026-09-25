@@ -3,18 +3,18 @@ package com.assistant.core.ai.processing
 import android.content.Context
 import com.assistant.core.ai.data.DataCommand
 import com.assistant.core.ai.data.ExecutableCommand
+import com.assistant.core.ai.prompts.ModelValues
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.strings.Strings
+import com.assistant.core.tools.BaseSchemas
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.FieldPatternGrammar
 import com.assistant.core.validation.SchemaUtils
 import com.assistant.core.utils.AppConfigManager
-import com.assistant.core.utils.DateTimeConverter
 import com.assistant.core.utils.LogManager
 import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
-import java.time.ZoneId
 
 /**
  * AI command processor for validating and processing commands from AI responses
@@ -186,7 +186,7 @@ class AICommandProcessor(private val context: Context) {
             // Schema ID enrichment: automatically inject data_schema_id from tool instance config
             "CREATE_DATA" -> {
                 LogManager.aiService("CREATE_DATA original params keys: ${command.params.keys}", "DEBUG")
-                val enrichedParams = enrichWithSchemaId(resolveDatesToMilliseconds(command.params))
+                val enrichedParams = toStoredForm(command.params)
                 LogManager.aiService("CREATE_DATA enriched params keys: ${enrichedParams.keys}", "DEBUG")
                 ExecutableCommand(
                     resource = "tool_data",
@@ -196,7 +196,7 @@ class AICommandProcessor(private val context: Context) {
                 )
             }
             "UPDATE_DATA" -> {
-                val enrichedParams = enrichWithSchemaId(resolveDatesToMilliseconds(command.params))
+                val enrichedParams = toStoredForm(command.params)
                 ExecutableCommand(
                     resource = "tool_data",
                     operation = "batch_update",
@@ -347,182 +347,48 @@ class AICommandProcessor(private val context: Context) {
     }
 
     /**
-     * Enrich CREATE_DATA/UPDATE_DATA params with schema_id from tool instance config
+     * Turn the dates and durations the model writes into milliseconds, the form everything past
+     * this point speaks (docs/design/date-boundary.md). ISO 8601 is the model's form, and this is
+     * the last place it is understood: the dispatcher, the services and the database see numbers.
      *
-     * AI doesn't need to specify schema_id - we automatically fetch it from the
-     * tool instance's data_schema_id configuration field.
+     * Where a value is a date or a duration is read from the tool's entry schema -- the one its
+     * writes are validated against -- so a fixed field of the tool type, a user's field and the
+     * core's timestamp are all found, and a text that merely looks like a date is left alone.
+     * Converted: the entry the params stand for, and each entry of a batch.
      *
-     * A schema_id the AI sent is replaced by the one read here.
-     *
-     * @param params Original params from AI command
-     * @return Enriched params with schema_id added to each entry
+     * @throws IllegalArgumentException on a date or duration that does not read, and
+     *   IllegalStateException when the tool or its schema cannot be read; processActionCommands
+     *   turns either into an error the model reads. A value silently left as text would only be
+     *   refused later, further from what caused it.
      */
-    /**
-     * Turn the dates the model writes into milliseconds, the form everything past this point
-     * speaks (docs/design/date-boundary.md). ISO 8601 is the model's form, and this is the last
-     * place it is understood: the dispatcher, the services and the database see numbers only.
-     *
-     * Reaches what the service used to reach -- the data and custom_fields payloads and the
-     * timestamp beside them -- and reaches it inside each entry of a batch as well, which the
-     * service never could: batchCreateEntries reads an entry's timestamp with getLong, so an ISO
-     * string sent in a batch failed there rather than converting.
-     *
-     * An unreadable date throws, and processActionCommands turns that into an error the model
-     * reads. Refusing is the point: a date silently left as text would reach the database as a
-     * string in a column of numbers.
-     */
-    private fun resolveDatesToMilliseconds(params: Map<String, Any?>): Map<String, Any?> {
-        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
-        val resolved = params.toMutableMap()
+    private suspend fun toStoredForm(params: Map<String, Any?>): Map<String, Any?> {
+        val toolInstanceId = params["tool_instance_id"] as? String
+            ?: throw IllegalStateException(s.shared("service_error_missing_tool_instance_id"))
+        val schema = JSONObject(loadEntrySchema(toolInstanceId))
+        val zone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-        convertPayloadDates(resolved, timezone)
-
+        @Suppress("UNCHECKED_CAST")
+        val resolved = (ModelValues.fromModel(params, schema, zone) as Map<String, Any?>).toMutableMap()
         (params["entries"] as? List<*>)?.let { entries ->
-            resolved["entries"] = entries.map { entry ->
-                if (entry is Map<*, *>) {
-                    @Suppress("UNCHECKED_CAST")
-                    val singleEntry = (entry as Map<String, Any?>).toMutableMap()
-                    convertPayloadDates(singleEntry, timezone)
-                    singleEntry
-                } else {
-                    entry
-                }
-            }
+            resolved["entries"] = entries.map { ModelValues.fromModel(it, schema, zone) }
         }
-
         return resolved
     }
 
-    /**
-     * Convert the date-bearing parts of one entry in place: the two payloads recursively, and the
-     * timestamp that sits beside them.
-     */
-    private fun convertPayloadDates(entry: MutableMap<String, Any?>, timezone: ZoneId) {
-        for (key in listOf("data", "extra")) {
-            val payload = entry[key] ?: continue
-            val json = when (payload) {
-                is JSONObject -> payload
-                is Map<*, *> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    JsonUtils.toJSONObject(payload as Map<String, Any?>)
-                }
-                else -> continue
-            }
-            entry[key] = JsonUtils.toMap(DateTimeConverter.isoToTimestamps(json, timezone))
+    /** The entry schema of the tool [toolInstanceId], generated from its current config. */
+    private suspend fun loadEntrySchema(toolInstanceId: String): String {
+        val result = Coordinator(context).processUserAction(
+            "tools.get",
+            mapOf("tool_instance_id" to toolInstanceId)
+        )
+        val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val config = (toolInstance?.get("config") as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
+        val toolType = (toolInstance?.get("tooltype") as? String)?.let { ToolTypeManager.getToolType(it) }
+        if (!result.isSuccess || config == null || toolType == null) {
+            throw IllegalStateException(s.shared("service_error_tool_instance_not_found"))
         }
-
-        (entry["timestamp"] as? String)?.let { iso ->
-            entry["timestamp"] = DateTimeConverter.isoToTimestamp(iso, timezone)
-        }
-    }
-
-    private suspend fun enrichWithSchemaId(params: Map<String, Any?>): Map<String, Any?> {
-        val toolInstanceId = params["tool_instance_id"] as? String
-
-        if (toolInstanceId.isNullOrEmpty()) {
-            LogManager.aiService("Cannot enrich schema_id: tool_instance_id missing", "ERROR")
-            return params
-        }
-
-        try {
-            // Get tool instance config to extract data_schema_id
-            val coordinator = Coordinator(context)
-            val result = coordinator.processUserAction(
-                "tools.get",
-                mapOf("tool_instance_id" to toolInstanceId)
-            )
-
-            if (!result.isSuccess) {
-                LogManager.aiService(
-                    "Failed to fetch tool instance for schema enrichment: ${result.error}",
-                    "ERROR"
-                )
-                return params
-            }
-
-            // tools.get returns { "tool_instance": { "config": { ... }, ... } }
-            val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
-            if (toolInstance == null) {
-                LogManager.aiService(
-                    "Tool instance $toolInstanceId not found in result",
-                    "ERROR"
-                )
-                return params
-            }
-
-            val config = (toolInstance["config"] as? Map<String, Any?>)?.let { JsonUtils.toJSONObject(it) }
-            if (config == null || config.length() == 0) {
-                LogManager.aiService(
-                    "Tool instance $toolInstanceId has no config",
-                    "ERROR"
-                )
-                return params
-            }
-            val dataSchemaId = config.optString("data_schema_id")
-
-            if (dataSchemaId.isEmpty()) {
-                LogManager.aiService(
-                    "Tool instance $toolInstanceId config has no data_schema_id",
-                    "ERROR"
-                )
-                return params
-            }
-
-            // Enrich entries with schema_id
-            // Note: params already normalized by JsonNormalizer in AIMessage.parseParams()
-            // All JSONArray → List, all JSONObject → Map conversions already done
-            @Suppress("UNCHECKED_CAST")
-            val entries = params["entries"] as? List<*>
-
-            if (entries == null) {
-                LogManager.aiService(
-                    "No entries found to enrich with schema_id (type: ${params["entries"]?.javaClass?.simpleName})",
-                    "WARN"
-                )
-                return params
-            }
-
-            if (entries.isEmpty()) {
-                LogManager.aiService("Empty entries list, cannot enrich", "WARN")
-                return params
-            }
-
-            // Add schema_id to each entry for validation
-            val enrichedEntries = entries.map { entry ->
-                if (entry is Map<*, *>) {
-                    @Suppress("UNCHECKED_CAST")
-                    val mutableEntry = (entry as Map<String, Any>).toMutableMap()
-
-                    // Add schema_id for validation
-                    mutableEntry["schema_id"] = dataSchemaId
-
-                    mutableEntry
-                } else {
-                    LogManager.aiService(
-                        "Unexpected entry type: ${entry?.javaClass?.simpleName}",
-                        "WARN"
-                    )
-                    entry
-                }
-            }
-
-            LogManager.aiService(
-                "Enriched ${enrichedEntries.size} entries with schema_id: $dataSchemaId",
-                "DEBUG"
-            )
-
-            return params.toMutableMap().apply {
-                put("entries", enrichedEntries)
-            }
-
-        } catch (e: Exception) {
-            LogManager.aiService(
-                "Exception during schema enrichment: ${e.message}",
-                "ERROR",
-                e
-            )
-            return params
-        }
+        return BaseSchemas.getEntrySchemaOrThrow(toolType, config, toolInstanceId, context)
     }
 
     /**

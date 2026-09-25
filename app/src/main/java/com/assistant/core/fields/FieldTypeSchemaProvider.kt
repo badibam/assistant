@@ -734,7 +734,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                 "default_value": {
                     "type": "integer",
                     "minimum": 0,
-                    "format": "duration-millis",
                     "description": "${s.shared("field_type_schema_default_value_description")}"
                 },
                 "config": {

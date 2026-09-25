@@ -446,7 +446,7 @@ abstract class AppDatabase : RoomDatabase() {
          *
          * Problem: Messages tool had schema_id in data.properties, inconsistent with other tooltypes
          * - Tracking, Journal, Note tools don't have schema_id in data.properties
-         * - schema_id should only exist at entry root level (systemManaged, added by enrichWithSchemaId)
+         * - schema_id should only exist at entry root level (systemManaged)
          * - Having it in data.properties is confusing and redundant
          *
          * Solution: Remove schema_id from data object for all Messages entries

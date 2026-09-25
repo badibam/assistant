@@ -176,23 +176,17 @@ class DateTimeConverterTest {
         assertTrue(DateTimeConverter.looksLikeISO8601("2025-03-15T14:30:00 seen in the log"))
     }
 
-    // ==================== Walking a whole payload ====================
+    // ==================== Walking a result that is not entries ====================
 
-    /**
-     * A known timestamp field is converted both ways, so a payload can be handed out as ISO
-     * and taken back as timestamps without the values moving.
-     */
+    /** A known name is converted on the way to the model, the rest carried along. */
     @Test
-    fun aKnownTimestampFieldMakesTheRoundTrip() {
+    fun aKnownTimestampFieldIsWrittenAsIso() {
         val stored = JSONObject().put("timestamp", 1_742_042_200_000L).put("name", "Sport")
 
         val out = DateTimeConverter.timestampsToISO(stored, paris)
+
         assertEquals("2025-03-15T13:36:40+01:00", out.get("timestamp"))
         assertEquals("Sport", out.get("name"))
-
-        val back = DateTimeConverter.isoToTimestamps(out, paris)
-        assertEquals(1_742_042_200_000L, back.get("timestamp"))
-        assertEquals("Sport", back.get("name"))
     }
 
     /** Every name in the known list is treated the same way, at any depth. */
@@ -200,12 +194,12 @@ class DateTimeConverterTest {
     fun theKnownNamesAreConvertedWhereverTheyAre() {
         val stored = JSONObject()
             .put("created_at", 1_742_042_200_000L)
-            .put("session", JSONObject().put("last_activity", 1_742_042_200_000L))
+            .put("zone", JSONObject().put("updated_at", 1_742_042_200_000L))
 
         val out = DateTimeConverter.timestampsToISO(stored, paris)
 
         assertTrue(out.get("created_at") is String)
-        assertTrue(out.getJSONObject("session").get("last_activity") is String)
+        assertTrue(out.getJSONObject("zone").get("updated_at") is String)
     }
 
     /** An Int is treated as a timestamp too, since JSON may hand back the smaller type. */
@@ -216,104 +210,20 @@ class DateTimeConverterTest {
         assertEquals("1970-01-01T01:00:00+01:00", out.get("timestamp"))
     }
 
-    /** Values that are not datetimes are carried through untouched, whatever their type. */
+    /** A number under any other name stays a number: nothing says it is an instant. */
     @Test
-    fun everythingElseIsCarriedThrough() {
-        val payload = JSONObject()
-            .put("name", "Sport")
-            .put("amount", 30)
-            .put("done", true)
-            .put("note", "done at the gym")
+    fun aNumberUnderAnUnknownNameStaysANumber() {
+        val out = DateTimeConverter.timestampsToISO(JSONObject().put("last_activity", 1_742_042_200_000L), paris)
 
-        val out = DateTimeConverter.timestampsToISO(payload, paris)
-        val back = DateTimeConverter.isoToTimestamps(payload, paris)
-
-        for (result in listOf(out, back)) {
-            assertEquals("Sport", result.get("name"))
-            assertEquals(30, result.get("amount"))
-            assertEquals(true, result.get("done"))
-            assertEquals("done at the gym", result.get("note"))
-        }
+        assertEquals(1_742_042_200_000L, out.get("last_activity"))
     }
 
     /**
-     * A string under a known name that is not a datetime is kept as it was: the conversion
-     * is attempted and refused, and the refusal leaves the value alone rather than emptying
-     * the field.
+     * Elements of an array are converted under an empty key, which is in no known-name list:
+     * a list of instants stays numbers.
      */
     @Test
-    fun anUnreadableValueUnderAKnownNameIsKept() {
-        val out = DateTimeConverter.isoToTimestamps(JSONObject().put("timestamp", "whenever"), paris)
-
-        assertEquals("whenever", out.get("timestamp"))
-    }
-
-    /** A datetime under an unknown name is converted on its shape alone, going in. */
-    @Test
-    fun aDatetimeUnderAnUnknownNameIsConvertedOnItsShape() {
-        val payload = JSONObject().put(
-            "extra",
-            JSONObject().put("appointment", "2025-03-15T14:30:00+01:00")
-        )
-
-        val out = DateTimeConverter.isoToTimestamps(payload, paris)
-
-        assertEquals(
-            1_742_045_400_000L,
-            out.getJSONObject("extra").get("appointment")
-        )
-    }
-
-    /**
-     * But it does not come back. Going in, a value is converted when its name is known OR
-     * its shape matches; coming out, only when its name is known. So anything converted on
-     * shape alone stays a number on the way back.
-     *
-     * This states what the code does today. A custom field of type DATETIME is exactly that
-     * case: stored as a timestamp, handed back to the interface and to the model as a raw
-     * number rather than as the ISO string it arrived as.
-     */
-    @Test
-    fun aDatetimeConvertedOnItsShapeDoesNotComeBack() {
-        val payload = JSONObject().put(
-            "extra",
-            JSONObject().put("appointment", "2025-03-15T14:30:00+01:00")
-        )
-
-        val asTimestamps = DateTimeConverter.isoToTimestamps(payload, paris)
-        val backOut = DateTimeConverter.timestampsToISO(asTimestamps, paris)
-
-        val value = backOut.getJSONObject("extra").get("appointment")
-        assertFalse("it stays a number", value is String)
-        assertEquals(1_742_045_400_000L, value)
-    }
-
-    // ==================== Inside a list ====================
-
-    /** A datetime inside an array is converted going in, recognised by its shape. */
-    @Test
-    fun aDatetimeInsideAnArrayIsConvertedGoingIn() {
-        val payload = JSONObject().put(
-            "moments",
-            JSONArray().put("2025-03-15T14:30:00+01:00").put("not a date")
-        )
-
-        val out = DateTimeConverter.isoToTimestamps(payload, paris)
-        val moments = out.getJSONArray("moments")
-
-        assertEquals(1_742_045_400_000L, moments.get(0))
-        assertEquals("not a date", moments.get(1))
-    }
-
-    /**
-     * And never comes back, for the same reason as above but more surely: elements of an
-     * array are converted under an empty key, and an empty key is in no known-name list.
-     *
-     * This states what the code does today. A list of datetimes therefore survives one way
-     * only, whatever the name of the field holding it.
-     */
-    @Test
-    fun aTimestampInsideAnArrayNeverComesBack() {
+    fun aTimestampInsideAnArrayStaysANumber() {
         val payload = JSONObject().put("timestamp", JSONArray().put(1_742_045_400_000L))
 
         val out = DateTimeConverter.timestampsToISO(payload, paris)
@@ -321,40 +231,26 @@ class DateTimeConverterTest {
         assertEquals(1_742_045_400_000L, out.getJSONArray("timestamp").get(0))
     }
 
-    /** Objects inside an array are still walked, so a batch of entries is converted. */
+    /** Objects inside an array are still walked. */
     @Test
     fun objectsInsideAnArrayAreStillWalked() {
         val payload = JSONObject().put(
-            "entries",
+            "zones",
             JSONArray()
-                .put(JSONObject().put("timestamp", 1_742_042_200_000L).put("name", "Sport"))
-                .put(JSONObject().put("timestamp", 1_742_045_400_000L).put("name", "Lecture"))
+                .put(JSONObject().put("created_at", 1_742_042_200_000L).put("name", "Sport"))
+                .put(JSONObject().put("created_at", 1_742_045_400_000L).put("name", "Lecture"))
         )
 
         val out = DateTimeConverter.timestampsToISO(payload, paris)
-        val entries = out.getJSONArray("entries")
+        val zones = out.getJSONArray("zones")
 
-        assertEquals("2025-03-15T13:36:40+01:00", entries.getJSONObject(0).get("timestamp"))
-        assertEquals("Lecture", entries.getJSONObject(1).get("name"))
+        assertEquals("2025-03-15T13:36:40+01:00", zones.getJSONObject(0).get("created_at"))
+        assertEquals("Lecture", zones.getJSONObject(1).get("name"))
     }
 
-    // ==================== The timezone of a whole payload ====================
-
-    /** An offset-less string in a payload is read in the timezone given to the call. */
+    /** An empty result comes back empty rather than failing. */
     @Test
-    fun aPayloadIsReadInTheTimezoneGiven() {
-        val payload = JSONObject().put("timestamp", "2025-03-15T14:30:00")
-
-        val inParis = DateTimeConverter.isoToTimestamps(payload, paris).get("timestamp") as Long
-        val inTokyo = DateTimeConverter.isoToTimestamps(payload, tokyo).get("timestamp") as Long
-
-        assertEquals(8 * 3_600_000L, inParis - inTokyo)
-    }
-
-    /** An empty payload comes back empty rather than failing. */
-    @Test
-    fun anEmptyPayloadStaysEmpty() {
-        assertEquals(0, DateTimeConverter.isoToTimestamps(JSONObject(), paris).length())
+    fun anEmptyResultStaysEmpty() {
         assertEquals(0, DateTimeConverter.timestampsToISO(JSONObject(), paris).length())
     }
 }

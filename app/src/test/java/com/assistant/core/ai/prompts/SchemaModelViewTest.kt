@@ -105,6 +105,20 @@ class SchemaModelViewTest {
         assertEquals("null", result.getJSONArray("anyOf").getJSONObject(1).getString("type"))
     }
 
+    /** A duration is shown as the ISO 8601 duration string the model reads and writes. */
+    @Test
+    fun aMarkedDurationBecomesAnIsoDurationString() {
+        val result = view("""
+            {"properties": {"sleep": {"type": "integer", "minimum": 0, "format": "duration-millis", "description": "d"}}}
+        """.trimIndent())
+
+        val sleep = result.getJSONObject("properties").getJSONObject("sleep")
+        assertEquals("string", sleep.getString("type"))
+        assertEquals("duration", sleep.getString("format"))
+        assertFalse("minimum", sleep.has("minimum"))
+        assertEquals("d", sleep.getString("description"))
+    }
+
     /** A schema with no instant in it comes back unchanged. */
     @Test
     fun aSchemaWithoutInstantsIsUnchanged() {

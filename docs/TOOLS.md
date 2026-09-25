@@ -236,7 +236,7 @@ val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
 - **validateConfig** : Boolean - Requiert validation utilisateur avant modification configuration (default: false)
 - **validateData** : Boolean - Requiert validation utilisateur avant modification données (default: false)
 
-**IMPORTANT** : `schema_id` et `data_schema_id` sont des champs de configuration uniquement. Ne jamais les inclure dans `data.properties` des schémas data - le `schema_id` pour validation est ajouté temporairement au niveau racine par AICommandProcessor.enrichWithSchemaId() puis strippé avant persistence.
+**IMPORTANT** : `schema_id` et `data_schema_id` sont des champs de configuration uniquement. Ne jamais les inclure dans `data.properties` des schémas data : le service valide une entrée contre le schéma qu'il génère depuis la config de l'outil (`BaseSchemas.getEntrySchema`).
 
 ### Champ always_send (Level 2 AI)
 ```kotlin

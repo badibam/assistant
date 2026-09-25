@@ -233,7 +233,7 @@ object EntrySchemaGenerator {
                     field.name to JSONObject()
                         .put("type", "integer")
                         .put("minimum", 0)
-                        .put("format", "epoch-millis")
+                        .put("format", FieldValueSchema.EPOCH_MILLIS)
                 },
                 required = emptyList(),
                 description = text("entry_schema_running_container").format(container)
