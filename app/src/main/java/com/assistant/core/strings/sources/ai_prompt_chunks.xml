@@ -742,6 +742,7 @@ A schema is written one value per line, what a value holds indented under it:
 - kind: `string`, `number`, `integer`, `boolean`, options `A|B|C`, `ISO 8601 date-time with offset`, `ISO 8601 duration`, `date YYYY-MM-DD`, `list of …`
 - constraints: `min`, `max`, `step`, `max length`; for a list, `at least N` and `distinct`
 - `default …`: what an absent value means. Leave it out to take it; write it only to choose another. In an entry, no value is ever filled in for you
+- `suggested …`: on a required value, what to write when you mean nothing else
 - `written by the app, never sent`: read it, never write it
 - `if type = X:` what the value named just above adds when it is X
 - The label and the description say what a value means: its unit, what the bounds of a scale mean, the options of a choice

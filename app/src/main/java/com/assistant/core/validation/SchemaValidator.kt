@@ -70,7 +70,12 @@ object SchemaValidator {
                 LogManager.schema("Validation success")
                 ValidationResult.success()
             } else {
-                val errorMessage = ValidationErrorProcessor.filterErrors(errors, schema.content, context)
+                // A variant's refusal names nothing to fix: it is replaced by the errors of the
+                // branch the value's selector points to
+                val (others, explained) = VariantErrors.sort(errors, JSONObject(schemaContent), dataNode)
+                val errorMessage = (listOfNotNull(
+                    ValidationErrorProcessor.filterErrors(others.toSet(), schema.content, context).takeIf { it.isNotEmpty() }
+                ) + explained).joinToString("\n")
                 if (errorMessage.isEmpty()) {
                     LogManager.schema("Validation success (errors filtered out)")
                     ValidationResult.success()

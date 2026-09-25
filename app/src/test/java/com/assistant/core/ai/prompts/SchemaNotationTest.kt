@@ -132,6 +132,8 @@ class SchemaNotationTest {
         val settings = SchemaNotation.render(generated.getValue("settings"))
         assertTrue(settings, Regex("api_key\\*: .*secret").containsMatchIn(settings))
         assertTrue(settings, Regex("window: ISO 8601 duration \\[default \"PT1H\"]").containsMatchIn(settings))
+        // A required value's default is not what its absence means: its absence is refused
+        assertTrue(settings, Regex("decimals\\*: .*suggested 0").containsMatchIn(settings))
     }
 
     @Test(expected = SchemaNotation.UnknownKeyword::class)

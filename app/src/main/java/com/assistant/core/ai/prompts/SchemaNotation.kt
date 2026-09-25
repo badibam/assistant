@@ -106,7 +106,7 @@ object SchemaNotation {
         check(schema, path)
         val head = "$indent$name${if (required) "*" else ""}"
         val text = text(schema)
-        val constraints = constraints(schema)
+        val constraints = constraints(schema, required)
 
         if (schema.optBoolean(FIELD_DEFINITIONS)) {
             return listOf("$head: list of field definitions (see Fields)$constraints$text")
@@ -142,7 +142,7 @@ object SchemaNotation {
     }
 
     /** The bounds and flags of a value, in brackets. */
-    private fun constraints(schema: JSONObject): String {
+    private fun constraints(schema: JSONObject, required: Boolean = false): String {
         val bits = mutableListOf<String>()
         schema.opt("minimum")?.let { bits += "min $it" }
         schema.opt("maximum")?.let { bits += "max $it" }
@@ -153,7 +153,9 @@ object SchemaNotation {
         schema.opt("maxItems")?.let { bits += "at most $it" }
         if (schema.optBoolean("uniqueItems")) bits += "distinct"
         schema.opt("pattern")?.let { bits += "pattern $it" }
-        schema.opt("default")?.let { bits += "default " + if (it is String) "\"$it\"" else it.toString() }
+        // An optional value's default is what its absence means; a required one's only what to
+        // write when nothing else is meant, since its absence is refused
+        schema.opt("default")?.let { bits += (if (required) "suggested " else "default ") + if (it is String) "\"$it\"" else it.toString() }
         if (schema.optBoolean("system_managed")) bits += "written by the app, never sent"
         if (schema.optBoolean("secret")) bits += "secret, never shown"
         return if (bits.isEmpty()) "" else " [${bits.joinToString(", ")}]"
