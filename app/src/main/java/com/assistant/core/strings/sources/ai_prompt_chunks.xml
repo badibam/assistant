@@ -253,8 +253,9 @@ Retrieves the data of one tool (templates and configurations live in tool_data).
   - **System fields**: `"id"`, `"timestamp"`, `"name"`, `"created_at"`, `"updated_at"`, `"tool_instance_id"`, `"tooltype"`
   - **Data fields**: `"data.value"`, `"data.text"`, `"data.quantity"`, and so on (depending on the tool type)
   - **Custom fields**: `"extra.notes"`, `"extra.mood"`, and so on (depending on the config)
+  - **State**: `"state.read"`, `"state.running"`, and so on: what the app and its actions wrote on the entry, described in the data schema. `state.running` holds the start of each DURATION field running now
   - **No wildcard**: each field has to be listed on its own
-  - **Refused**: `"data"` and `"extra"` alone. They are containers: name a field inside one (`"data.value"`). Any other path containing a dot is refused too. So is a path one level deeper: a field holding an object or a list is asked for whole (`"extra.sleep"`, not `"extra.sleep.start"`).
+  - **Refused**: `"data"`, `"extra"` and `"state"` alone. They are containers: name a field inside one (`"data.value"`). Any other path containing a dot is refused too. So is a path one level deeper: a field holding an object or a list is asked for whole (`"extra.sleep"`, not `"extra.sleep.start"`).
 - `period_start` (string, optional): start of the time filter, at the root of the params (not inside a `period` object). Formats in Part E.
 - `period_end` (string, optional): end of the time filter, at the root of the params. Independent of `period_start`.
 - `limit` (number, optional): maximum number of entries per page

@@ -1181,8 +1181,9 @@ class ToolDataService(private val context: Context) : ExecutableService {
             }
         }
 
-        filterJsonField(entry, "data", parsed.data)?.let { filtered["data"] = it }
-        filterJsonField(entry, "extra", parsed.custom)?.let { filtered["extra"] = it }
+        parsed.inside.forEach { (container, keys) ->
+            filterJsonField(entry, container, keys)?.let { filtered[container] = it }
+        }
 
         return filtered
     }

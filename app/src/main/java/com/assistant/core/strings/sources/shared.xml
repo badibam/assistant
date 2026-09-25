@@ -187,7 +187,7 @@
     <string name="ai_error_tool_data_fields_not_array">The \'fields\' parameter must be a non-empty array. Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->
-    <string name="ai_error_field_invalid_pattern">Unreadable field: %1$s. A field is either a root field with no dot (id, timestamp, name), or data.field_name, or extra.field_name. \'data\' and \'extra\' on their own are refused: they are containers, a field inside them has to be named. A field holding an object or a list is asked for whole: extra.field_name, not extra.field_name.start.</string>
+    <string name="ai_error_field_invalid_pattern">Unreadable field: %1$s. A field is either a root field with no dot (id, timestamp, name), or data.field_name, or extra.field_name, or state.key. \'data\', \'extra\' and \'state\' on their own are refused: they are containers, a field inside them has to be named. A field holding an object or a list is asked for whole: extra.field_name, not extra.field_name.start.</string>
 
     <!-- AI Errors - Rejected parameters -->
     <string name="ai_error_param_period_object">The \'period\' parameter does not exist. The time filter is set with \'period_start\' and \'period_end\' at the root of the params, never inside a nested object.</string>
