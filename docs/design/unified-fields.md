@@ -19,6 +19,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 9. **Le tracking a un champ principal `value`.** Déclaré par le type d'outil dans `data`, son type de champ est fixé par la config de l'instance ; le changer est une migration de champ. Les modes rapides du tracking agissent toujours sur `value` ; les champs de `extra` se remplissent dans la fenêtre d'édition — comme aujourd'hui, où la saisie rapide n'écrit que la valeur. Si les valeurs par défaut arrivent, la saisie rapide en remplit `extra`.
 10. **Un suivi numérique porte son unité dans chaque entrée.** Le tracking déclare deux champs fixes : `value` (NUMERIC, un simple nombre) et `unit` (CHOICE, dont les options sont les unités déclarées dans la config du suivi). Un raccourci impose son unité, prise dans cette liste ; une saisie libre la choisit. Vaut aussi pour un suivi à une seule unité (`units: ["kg"]`) : un seul modèle, et l'unité se lit toujours dans l'entrée. Une entrée a exactement une valeur et une unité ; les raccourcis se suppriment librement ; les statistiques regroupent par unité ; renommer une unité est une migration d'option de CHOICE. La valeur NUMERIC en général reste un nombre, son unité dans la config du champ.
+11. **Une copie de la config dans une entrée est un fait quand l'entrée doit continuer de dire ce qu'elle disait à sa création ; sinon c'est une dérivation, calculée à la lecture.** Faits : `common_title`, `common_content`, `priority` d'une occurrence de message (ce qui est parti ne se réécrit pas) — champs de `data` écrits par le système ; l'unité d'un suivi numérique. Dérivations, qui ne se stockent plus : `true_label` / `false_label` d'une entrée booléenne, `raw` du tracking.
 
 ## Écarté
 
@@ -42,9 +43,6 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 - L'unité par défaut d'une saisie libre dans un suivi numérique : la première de la liste, ou celle de la dernière entrée.
 - Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
-- `raw` du tracking : dérivé, à ne plus stocker (dette du manifeste).
-- `true_label` et `false_label` recopiés de la config dans chaque entrée booléenne du tracking.
-- Les copies `common_title`, `common_content`, `priority` sur une occurrence de message : champs ou état.
 - Types à ajouter : tags / pastille, étiquette du tracking.
 - Réglages d'un champ : valeur par défaut, validation du choix contre ses options, label affiché ou non.
 - Questionnaire, réponses multiples et ordonnées des modules de communication, Données structurées : à exprimer avec les champs.
