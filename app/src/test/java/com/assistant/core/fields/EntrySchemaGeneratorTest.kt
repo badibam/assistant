@@ -63,7 +63,7 @@ class EntrySchemaGeneratorTest {
     /** A user's field lives in extra, never in data, so a fixed field added later cannot collide with it. */
     @Test
     fun userFields_liveInExtra() {
-        val schema = schemaOf(journal, extra = listOf(field("mood", FieldType.NUMERIC)))
+        val schema = schemaOf(journal, extra = listOf(field("mood", FieldType.NUMERIC, mapOf("decimals" to 0))))
 
         assertTrue(schema.accepts("""{ "name": "Day", "data": { "content": "..." }, "extra": { "mood": 3 } }"""))
         assertFalse(schema.accepts("""{ "name": "Day", "data": { "content": "...", "mood": 3 } }"""))

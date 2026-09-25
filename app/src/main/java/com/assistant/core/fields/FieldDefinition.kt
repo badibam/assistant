@@ -153,7 +153,7 @@ fun FieldDefinition.formatValue(value: Any?, context: Context): String {
 }
 
 /**
- * Format NUMERIC value with decimals and unit
+ * Format NUMERIC value with exactly its decimals (72 with 2 decimals is 72.00) and its unit
  */
 private fun formatNumericValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
     val number = (value as? Number)?.toDouble() ?: return s.shared("label_no_value")
@@ -161,12 +161,7 @@ private fun formatNumericValue(value: Any?, config: Map<String, Any>?, s: String
     val decimals = (config?.get("decimals") as? Number)?.toInt() ?: 0
     val unit = config?.get("unit") as? String
 
-    // Format number, removing trailing zeros
-    val formatted = if (decimals > 0) {
-        String.format("%.${decimals}f", number).trimEnd('0').trimEnd('.')
-    } else {
-        number.toInt().toString()
-    }
+    val formatted = String.format("%.${decimals}f", number)
 
     val unitSuffix = unit?.let { " $it" } ?: ""
     return "$formatted$unitSuffix"

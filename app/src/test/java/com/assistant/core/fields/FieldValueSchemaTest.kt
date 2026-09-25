@@ -50,12 +50,12 @@ class FieldValueSchemaTest {
 
     /** The decimals are checked exactly: 0.3 is one decimal, 0.35 is two. */
     @Test
-    fun numeric_isHeldToItsBoundsAndDecimals() {
+    fun numeric_isHeldToItsBounds() {
         val schema = schemaFor("""{ "type": "NUMERIC", "config": { "min": 0, "max": 10, "decimals": 1 } }""")
 
         assertTrue(schema.accepts("0.3"))
         assertTrue(schema.accepts("10"))
-        assertFalse(schema.accepts("0.35"))
+        assertTrue("decimals are rounded at the write, not refused", schema.accepts("0.35"))
         assertFalse(schema.accepts("10.1"))
         assertFalse(schema.accepts("-1"))
     }

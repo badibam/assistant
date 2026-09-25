@@ -17,6 +17,9 @@ import com.assistant.core.themes.TagColor
  */
 object FieldTypeSettings {
 
+    /** The decimals a numeric setting takes: a bound or a step of a field. */
+    private const val SETTING_DECIMALS = 2
+
     /**
      * A field definition: its common settings, then a variant on its type bringing that type's
      * "config".
@@ -45,9 +48,9 @@ object FieldTypeSettings {
     private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
         val settings = configNodes(type, text)
         if (settings.isEmpty()) return emptyList()
-        // A scale needs its bounds and a choice its options: their config is required
+        // A number needs its decimals, a scale its bounds and a choice its options: their config is required
         return listOf(SettingNode.Group("config", text("field_config_section_title"), settings,
-            required = type == FieldType.SCALE || type == FieldType.CHOICE))
+            required = type == FieldType.NUMERIC || type == FieldType.SCALE || type == FieldType.CHOICE))
     }
 
     /** The settings a field of [type] holds in its "config". */
@@ -60,7 +63,7 @@ object FieldTypeSettings {
         )
         FieldType.NUMERIC -> listOf(
             unit(text), number("min", "field_config_min", text), number("max", "field_config_max", text),
-            wholeNumber("decimals", "field_config_decimals", text, default = 0),
+            wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true),
             number("step", "field_config_step", text)
         )
         FieldType.SCALE -> listOf(
@@ -125,11 +128,12 @@ object FieldTypeSettings {
     private fun choice(values: List<String>, labels: Map<String, String> = emptyMap()): Map<String, Any> =
         mapOf("options" to ChoiceSettings.storedOptions(values, labels))
 
+    /** A setting that is a number, a bound or a step, with the decimals a setting may need. */
     private fun number(name: String, labelKey: String, text: (String) -> String, required: Boolean = false, default: Any? = null) =
-        field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default)
+        field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default, config = mapOf("decimals" to SETTING_DECIMALS))
 
-    private fun wholeNumber(name: String, labelKey: String, text: (String) -> String, default: Int) =
-        field(name, labelKey, FieldType.NUMERIC, text, default = default, config = mapOf("min" to 0, "decimals" to 0))
+    private fun wholeNumber(name: String, labelKey: String, text: (String) -> String, default: Int, required: Boolean = false) =
+        field(name, labelKey, FieldType.NUMERIC, text, required = required, default = default, config = mapOf("min" to 0, "decimals" to 0))
 
     private fun label(name: String, labelKey: String, text: (String) -> String) =
         field(name, labelKey, FieldType.TEXT, text, config = mapOf("length" to TextLength.SHORT.name))

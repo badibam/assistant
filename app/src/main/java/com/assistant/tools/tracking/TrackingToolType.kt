@@ -45,6 +45,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         return """
         {
             "type": "numeric",
+            "value": { "decimals": 0 },
             "items": [],
             "name": "",
             "description": "",
@@ -130,9 +131,10 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             .put("items", JSONObject().put("type", "object").put("properties", item)
                 .put("required", org.json.JSONArray().put("name")).put("additionalProperties", false)))
 
-        // A scale needs its bounds and a choice its options: their value settings are required
+        // A number needs its decimals, a scale its bounds and a choice its options: their value
+        // settings are required
         val required = org.json.JSONArray().put("type")
-        if (kind == TrackingKind.SCALE || kind == TrackingKind.CHOICE) required.put("value")
+        if (kind == TrackingKind.NUMERIC || kind == TrackingKind.SCALE || kind == TrackingKind.CHOICE) required.put("value")
 
         return Schema(
             id = kind.configSchemaId,

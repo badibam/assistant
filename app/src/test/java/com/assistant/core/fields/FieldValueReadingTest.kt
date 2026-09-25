@@ -19,6 +19,8 @@ class FieldValueReadingTest {
         "field_reading_boolean" to "true: %1\$s; false: %2\$s.",
         "field_reading_options" to "Options: %1\$s.",
         "field_reading_open" to "Others accepted.",
+        "field_reading_whole" to "Whole.",
+        "field_reading_decimals" to "%1\$d decimals.",
         "field_reading_ordered" to "A ranking."
     )
     private val text: (String) -> String = { texts[it] ?: it }
@@ -38,7 +40,8 @@ class FieldValueReadingTest {
 
     @Test
     fun aNumberSaysItsUnit() {
-        assertEquals("In km.", schemaOf(field(FieldType.NUMERIC, mapOf("unit" to "km"))).getString("description"))
+        assertEquals("In km. 1 decimals.", schemaOf(field(FieldType.NUMERIC, mapOf("unit" to "km", "decimals" to 1))).getString("description"))
+        assertEquals("Whole.", schemaOf(field(FieldType.NUMERIC, mapOf("decimals" to 0))).getString("description"))
     }
 
     @Test
@@ -66,8 +69,8 @@ class FieldValueReadingTest {
     /** The user's own description follows what the settings say. */
     @Test
     fun theUsersDescriptionFollows() {
-        val walk = field(FieldType.NUMERIC, mapOf("unit" to "km"), description = "Walked today")
-        assertEquals("In km. Walked today", schemaOf(walk).getString("description"))
+        val walk = field(FieldType.NUMERIC, mapOf("unit" to "km", "decimals" to 1), description = "Walked today")
+        assertEquals("In km. 1 decimals. Walked today", schemaOf(walk).getString("description"))
     }
 
     /** A value whose settings add nothing gets no description at all rather than an empty one. */

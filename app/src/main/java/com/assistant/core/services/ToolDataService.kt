@@ -17,6 +17,8 @@ import com.assistant.core.utils.JsonUtils
 import org.json.JSONObject
 import java.util.*
 import com.assistant.core.validation.FieldPatternGrammar
+import com.assistant.core.fields.NumericPrecision
+import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.validation.SystemManagedFields
 import com.assistant.core.validation.Schema
@@ -99,13 +101,15 @@ class ToolDataService(private val context: Context) : ExecutableService {
             else -> return OperationResult.error(s.shared("service_error_invalid_timestamp_format").format(params.opt("timestamp").toString()))
         }
 
-        val finalDataJson = dataJson
+        // A NUMERIC value holds the decimals its field says: rounded, not refused
+        val finalDataJson = NumericPrecision.roundAll(dataJson, declaredFields(target))!!
+        val finalExtraJson = NumericPrecision.roundAll(extraJson, userFields(target))
 
         // An open choice's new values join its options, in the same transaction as the entry
-        val grownConfig = configWithNewOptions(target, finalDataJson, extraJson)
+        val grownConfig = configWithNewOptions(target, finalDataJson, finalExtraJson)
         val checked = grownConfig?.let { target.withConfig(it) } ?: target
 
-        validateEntry(checked, name, timestamp, finalDataJson, extraJson, stateJson)
+        validateEntry(checked, name, timestamp, finalDataJson, finalExtraJson, stateJson)
             ?.let { return OperationResult.error(it) }
 
         val now = System.currentTimeMillis()
@@ -118,7 +122,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
             data = finalDataJson,
             createdAt = now,
             updatedAt = now,
-            extra = extraJson,
+            extra = finalExtraJson,
             state = stateJson
         )
 
@@ -227,9 +231,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
         val mergedExtra = mergeObject(existingEntity.extra, extraJson)
         val mergedState = mergeObject(existingEntity.state, stateJson)
 
+        // A NUMERIC value holds the decimals its field says: rounded, not refused
         val updatedEntity = existingEntity.copy(
-            data = mergedData,
-            extra = mergedExtra,
+            data = NumericPrecision.roundAll(mergedData, declaredFields(target))!!,
+            extra = NumericPrecision.roundAll(mergedExtra, userFields(target)),
             state = mergedState,
             timestamp = timestamp ?: existingEntity.timestamp,
             name = name ?: existingEntity.name,
@@ -1057,6 +1062,14 @@ class ToolDataService(private val context: Context) : ExecutableService {
         )
     }
 
+    /** The fields the tool type declares in the entries' data, for [target]'s config. */
+    private fun declaredFields(target: WriteTarget.Ready): List<FieldDefinition> =
+        ToolTypeManager.getToolType(target.tool.tooltype)?.getEntryFields(target.config, context)?.data?.map { it.definition } ?: emptyList()
+
+    /** The user's fields of [target], from its config's extra_fields. */
+    private fun userFields(target: WriteTarget.Ready): List<FieldDefinition> =
+        target.config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
+
     /**
      * Check an entry exactly as it is about to be stored: against its tool's data schema, custom
      * fields included, then against the value rules a schema cannot state (a RANGE's start <= end).
@@ -1091,10 +1104,7 @@ class ToolDataService(private val context: Context) : ExecutableService {
         if (!result.isValid) return result.errorMessage ?: s.shared("service_error_validation_failed").format("")
 
         // What the schema cannot say, field by field: the tool type's fields and the user's
-        val declared = ToolTypeManager.getToolType(target.tool.tooltype)
-            ?.getEntryFields(target.config, context)?.data?.map { it.definition } ?: emptyList()
-        val userFields = target.config.optJSONArray("extra_fields")?.toFieldDefinitions() ?: emptyList()
-        for ((fields, values) in listOf(declared to data, userFields to extra)) {
+        for ((fields, values) in listOf(declaredFields(target) to data, userFields(target) to extra)) {
             for (field in fields) {
                 val fieldResult = FieldValueValidator.validate(field, values?.get(field.name), context)
                 if (!fieldResult.isValid) {

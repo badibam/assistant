@@ -153,15 +153,13 @@ object FieldConfigValidator {
 
     /**
      * Validates NUMERIC field config.
-     * Config: {unit?, min?, max?, decimals?, step?}
+     * Config: {unit?, min?, max?, decimals, step?}
      */
     private fun validateNumericConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
-        // Config is optional for NUMERIC
-        if (config == null) return ValidationResult(isValid = true)
 
         // Validate min <= max if both defined
-        val min = config["min"] as? Number
-        val max = config["max"] as? Number
+        val min = config?.get("min") as? Number
+        val max = config?.get("max") as? Number
         if (min != null && max != null && min.toDouble() > max.toDouble()) {
             return ValidationResult(
                 isValid = false,
@@ -169,9 +167,9 @@ object FieldConfigValidator {
             )
         }
 
-        // Validate decimals >= 0
-        val decimals = config["decimals"] as? Number
-        if (decimals != null && decimals.toInt() < 0) {
+        // Every number says how many decimals it takes: 0 is a whole number
+        val decimals = config?.get("decimals") as? Number
+        if (decimals == null || decimals.toInt() < 0) {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_numeric_decimals")
@@ -179,7 +177,7 @@ object FieldConfigValidator {
         }
 
         // Validate step > 0 if defined
-        val step = config["step"] as? Number
+        val step = config?.get("step") as? Number
         if (step != null && step.toDouble() <= 0) {
             return ValidationResult(
                 isValid = false,

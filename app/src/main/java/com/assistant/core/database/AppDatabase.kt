@@ -28,6 +28,7 @@ import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.SettingsAtV33
 import com.assistant.core.versioning.ChoiceOptionsAtV37
 import com.assistant.core.versioning.FieldsAtV36
+import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -68,7 +69,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 37
+        const val VERSION = 38
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1355,6 +1356,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_37_38 = object : Migration(37, 38) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Every NUMERIC says its decimals: see NumericDecimalsAtV38. Configs only.
+                var rewritten = 0
+                database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A config that cannot be read stays as it was and is logged
+                        try {
+                            val config = NumericDecimalsAtV38.config(cursor.getString(1), org.json.JSONObject(cursor.getString(2)))
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?", arrayOf(config.toString(), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 37->38: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 37->38: $rewritten config(s) rewritten", "INFO")
+            }
+        }
+
         private val MIGRATION_36_37 = object : Migration(36, 37) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A CHOICE option becomes a group holding its value, label and color: see
@@ -1606,7 +1628,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_33_34,
                     MIGRATION_34_35,
                     MIGRATION_35_36,
-                    MIGRATION_36_37
+                    MIGRATION_36_37,
+                    MIGRATION_37_38
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

@@ -2,7 +2,6 @@ package com.assistant.core.fields
 
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.math.pow
 
 /**
  * The JSON schema of one field's value, from its type and config.
@@ -58,7 +57,13 @@ object FieldValueSchema {
         }
 
         val parts = when (fieldDef.type) {
-            FieldType.NUMERIC, FieldType.RANGE ->
+            FieldType.NUMERIC -> listOfNotNull(
+                setting("unit")?.let { text("field_reading_unit").format(it) },
+                NumericPrecision.decimalsOf(fieldDef).let { d ->
+                    if (d == 0) text("field_reading_whole") else text("field_reading_decimals").format(d)
+                }
+            )
+            FieldType.RANGE ->
                 listOfNotNull(setting("unit")?.let { text("field_reading_unit").format(it) })
             FieldType.SCALE ->
                 if (setting("min_label") == null && setting("max_label") == null) emptyList()
@@ -111,17 +116,13 @@ object FieldValueSchema {
                 JSONObject().apply {
                     put("type", "number")
 
-                    fieldDef.config?.let { config ->
-                        (config["min"] as? Number)?.let { put("minimum", it) }
-                        (config["max"] as? Number)?.let { put("maximum", it) }
+                    val config = fieldDef.config
+                    (config?.get("min") as? Number)?.let { put("minimum", it) }
+                    (config?.get("max") as? Number)?.let { put("maximum", it) }
 
-                        // multipleOf for decimals validation
-                        val decimals = (config["decimals"] as? Number)?.toInt() ?: 0
-                        if (decimals > 0) {
-                            val multipleOf = 10.0.pow(-decimals.toDouble())
-                            put("multipleOf", multipleOf)
-                        }
-                    }
+                    // Its decimals are a precision, not a rule: a write is rounded to them
+                    // (NumericPrecision), so the schema holds any number
+                    NumericPrecision.decimalsOf(fieldDef)
 
                     if (fieldDef.description != null) {
                         put("description", fieldDef.description)

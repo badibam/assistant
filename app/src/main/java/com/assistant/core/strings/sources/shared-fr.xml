@@ -188,6 +188,8 @@
 
     <!-- AI Errors - Field grammar -->
     <string name="field_reading_unit">En %1$s.</string>
+    <string name="field_reading_whole">Un nombre entier : une valeur à décimales est arrondie.</string>
+    <string name="field_reading_decimals">%1$d décimale(s) : une valeur qui en a plus est arrondie.</string>
     <string name="field_reading_scale">Échelle de %1$s à %2$s.</string>
     <string name="field_reading_bound">%1$s (%2$s)</string>
     <string name="field_reading_boolean">true : %1$s ; false : %2$s.</string>
@@ -1164,7 +1166,7 @@
     <string name="field_validation_config_not_null">Le type %1$s ne nécessite pas de configuration</string>
     <string name="field_validation_text_length_invalid">La longueur de texte \'%1$s\' est invalide. Valeurs possibles : SHORT, MEDIUM, LONG, UNLIMITED</string>
     <string name="field_validation_numeric_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
-    <string name="field_validation_numeric_decimals">Le nombre de décimales doit être supérieur ou égal à 0</string>
+    <string name="field_validation_numeric_decimals">Le nombre de décimales est obligatoire : 0 pour un nombre entier, ou plus</string>
     <string name="field_validation_numeric_step">L\'incrément doit être supérieur à 0</string>
     <string name="field_validation_scale_min_max_required">Le type SCALE nécessite les valeurs min et max</string>
     <string name="field_validation_scale_min_max_order">La valeur minimale doit être strictement inférieure à la valeur maximale</string>
