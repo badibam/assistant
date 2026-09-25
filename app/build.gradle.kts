@@ -311,9 +311,11 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
-// Some tests read files rather than classes -- the icon index and the generated drawables --
-// so gradle has to know about them, or a regenerated icon set leaves the tests "up to date".
+// Some tests read files rather than classes -- the icon index and the generated drawables, the
+// L1 prompt whose examples they check -- so gradle has to know about them, or a regenerated icon
+// set or an edited prompt leaves the tests "up to date".
 tasks.withType<Test>().configureEach {
     inputs.dir("src/main/assets/icons")
     inputs.dir("src/main/res/drawable")
+    inputs.file("src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml")
 }
