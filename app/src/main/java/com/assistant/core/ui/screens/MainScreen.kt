@@ -89,13 +89,12 @@ fun MainScreen() {
 
         // Load zone_groups
         coordinator.executeWithLoading(
-            operation = "app_config.get_zone_groups",
-            params = emptyMap(),
+            operation = "app_config.get",
+            params = mapOf("category" to com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN),
             onLoading = { isLoading = it },
             onError = { error -> errorMessage = error }
         )?.let { result ->
-            zoneGroups = (result.data?.get("zone_groups") as? List<*>)
-                ?.filterIsInstance<String>() ?: emptyList()
+            zoneGroups = ((result.data?.get("settings") as Map<*, *>)["zone_groups"] as List<*>).map { it as String }
         }
     }
 
@@ -117,13 +116,12 @@ fun MainScreen() {
                 is DataChangeEvent.AppConfigChanged -> {
                     // Reload zone_groups when app config changes
                     coordinator.executeWithLoading(
-                        operation = "app_config.get_zone_groups",
-                        params = emptyMap(),
+                        operation = "app_config.get",
+                        params = mapOf("category" to com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN),
                         onLoading = { isLoading = it },
                         onError = { error -> errorMessage = error }
                     )?.let { result ->
-                        zoneGroups = (result.data?.get("zone_groups") as? List<*>)
-                            ?.filterIsInstance<String>() ?: emptyList()
+                        zoneGroups = ((result.data?.get("settings") as Map<*, *>)["zone_groups"] as List<*>).map { it as String }
                     }
                 }
                 else -> {} // Ignore other events
@@ -148,10 +146,9 @@ fun MainScreen() {
 
     // Show MainScreenConfigScreen when requested
     if (showMainScreenConfig) {
-        MainScreenConfigScreen(
-            onBack = {
-                showMainScreenConfig = false
-            }
+        com.assistant.core.ui.screens.settings.AppSettingsScreen(
+            category = com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN,
+            onBack = { showMainScreenConfig = false }
         )
         return // Exit MainScreen composition when showing config
     }
@@ -182,30 +179,27 @@ fun MainScreen() {
 
     // Show Format settings screen when requested
     if (showFormat) {
-        FormatSettingsScreen(
-            onBack = {
-                showFormat = false
-            }
+        com.assistant.core.ui.screens.settings.AppSettingsScreen(
+            category = com.assistant.core.database.entities.AppSettingCategories.FORMAT,
+            onBack = { showFormat = false }
         )
         return // Exit MainScreen composition when showing Format settings
     }
 
     // Show AI Limits settings screen when requested
     if (showAILimits) {
-        AILimitsSettingsScreen(
-            onBack = {
-                showAILimits = false
-            }
+        com.assistant.core.ui.screens.settings.AppSettingsScreen(
+            category = com.assistant.core.database.entities.AppSettingCategories.AI_LIMITS,
+            onBack = { showAILimits = false }
         )
         return // Exit MainScreen composition when showing AI Limits settings
     }
 
     // Show Validation settings screen when requested
     if (showValidation) {
-        ValidationSettingsScreen(
-            onBack = {
-                showValidation = false
-            }
+        com.assistant.core.ui.screens.settings.AppSettingsScreen(
+            category = com.assistant.core.database.entities.AppSettingCategories.VALIDATION_CONFIG,
+            onBack = { showValidation = false }
         )
         return // Exit MainScreen composition when showing Validation settings
     }

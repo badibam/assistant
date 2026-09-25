@@ -17,6 +17,7 @@ import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
+import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
 import org.json.JSONObject
@@ -706,6 +707,11 @@ class BackupService(private val context: Context) : ExecutableService {
                     )
                     category.put("settings", transformedSettings)
                 }
+            }
+
+            // After the category transformations above, which read the older forms
+            if (fromVersion < 42 && toVersion >= 42) {
+                FormatNullsAtV42.backup(data)
             }
 
             // Transform automation schedules (fix SchedulePattern types for v10 → v11)

@@ -36,16 +36,6 @@ object LocaleUtils {
         }
     }
     
-    /**
-     * Set app locale override
-     * @param context Application context
-     * @param locale Locale to set, or null to use system default
-     */
-    suspend fun setAppLocale(context: Context, locale: Locale?) {
-        val appConfigService = AppConfigService(context)
-        val localeTag = locale?.toLanguageTag()
-        appConfigService.setLocaleOverride(localeTag)
-    }
     
     /**
      * Get available locales for the app

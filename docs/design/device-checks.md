@@ -4,7 +4,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
-- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 41) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
+- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 42) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
@@ -51,8 +51,8 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Réglages et affichage
 
+- Écrans de réglages générés (format, limites IA, validation, écran d'accueil) : chacun s'ouvre sur les valeurs stockées, s'enregistre et se retrouve à la réouverture ; fuseau et langue à « Aucun » suivent le téléphone ; un changement du fuseau ou du début de journée est suivi aussitôt par l'historique ; les groupes de zones ajoutés apparaissent sur l'accueil et dans l'écran de zone. L'écran de validation, qui était un bouchon, fonctionne.
 - Fournisseurs d'IA, écran généré, pour Claude, OpenAI et DeepSeek : la clé s'affiche masquée et l'œil la montre ; les modèles se listent à l'ouverture pour une clé enregistrée, et après saisie d'une nouvelle clé ; effort obligatoire pour DeepSeek ; enregistrer, rouvrir, retrouver les valeurs ; une session de chat part avec le modèle choisi.
-- Écran des limites IA : les quatre curseurs s'enregistrent et se retrouvent à la réouverture. Les curseurs du format vont jusqu'à 24 heures et 30 jours, et l'écran s'enregistre.
 - Fuseau de l'app différent de celui du téléphone : l'historique range chaque entrée dans le jour affiché sur elle, le sélecteur de période et l'éditeur de planning montrent l'heure de l'app, « aujourd'hui » et « hier » du journal suivent. Un début de semaine changé est suivi par l'historique et les sélecteurs de période.
 - Icônes : couleur du thème partout, et le sélecteur s'ouvre, cherche et parcourt une catégorie sans lenteur.
 - Touche Retour : outil → zone → accueil → confirmation avant de fermer ; annule sur la création de zone, les réglages Claude/OpenAI et une entrée de journal en modification ; ferme les fenêtres sans effet de bord.

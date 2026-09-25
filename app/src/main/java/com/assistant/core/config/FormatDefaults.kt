@@ -11,10 +11,8 @@ import java.util.Locale
  * This respects user's system preferences while maintaining deterministic behavior.
  *
  * Used by:
- * - DefaultFormatSettings (database initialization)
+ * - AppSettingsDefaults (the format category's first row)
  * - DateTimeConfig (data class defaults)
- * - FormatSettingsScreen (UI initial values)
- * - AppConfigService (getters with fallbacks)
  *
  * IMPORTANT: All defaults must be defined here and nowhere else.
  */
@@ -90,8 +88,6 @@ object FormatDefaults {
     {
         "week_start_day": "$WEEK_START_DAY",
         "day_start_hour": $DAY_START_HOUR,
-        "locale_override": null,
-        "timezone_override": null,
         "use_24_hour_format": $use24Hour,
         "date_format_pattern": "$datePattern",
         "time_separator": "$TIME_SEPARATOR",

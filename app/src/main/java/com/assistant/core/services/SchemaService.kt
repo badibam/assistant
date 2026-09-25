@@ -133,11 +133,8 @@ class SchemaService(private val context: Context) : ExecutableService {
         return when {
             schemaId == ZoneSettings.SCHEMA_ID -> ZoneSettings.schema(context)
             schemaId.startsWith("field_type_") -> FieldTypeSchemas.getSchema(schemaId, context)
-            schemaId.startsWith("app_config_") -> {
-                // TODO: Get app config schemas from AppConfigService
-                LogManager.service("App config schema requested: $schemaId - STUB implementation")
-                null
-            }
+            schemaId.startsWith("app_config_") -> com.assistant.core.config.AppSettings.CATEGORIES
+                .find { schemaId == "app_config_$it" }?.let { com.assistant.core.config.AppSettings.schema(it, context) }
             schemaId == "ai_message_response" -> {
                 // AI message response schema
                 LogManager.service("AI schema requested: $schemaId - using AIMessageSchemas")

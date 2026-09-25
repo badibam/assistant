@@ -402,10 +402,8 @@
     <string name="app_config_format_day_start_hour">Heure de début de journée</string>
     <string name="app_config_format_locale_override">Locale personnalisée</string>
     <string name="app_config_format_timezone_override">Fuseau horaire personnalisé</string>
-    <string name="app_config_format_use_24_hour_format">Format 24h</string>
     <string name="app_config_format_date_format_pattern">Pattern de format de date</string>
     <string name="app_config_format_time_separator">Séparateur d\'heure</string>
-    <string name="app_config_format_relative_label_limits">Limites labels relatifs</string>
     <string name="app_config_format_hour_limit">Limite heures</string>
     <string name="app_config_format_day_limit">Limite jours</string>
     <string name="app_config_format_week_limit">Limite semaines</string>
@@ -687,7 +685,6 @@
     <!-- SCHEMA DISPLAY NAMES - For schema identification in AI system -->
     <string name="zone_config_schema_display_name">Configuration de zone</string>
     <string name="zone_config_schema_description">Schéma de configuration pour les zones</string>
-    <string name="app_config_format_schema_display_name">Réglages de format</string>
 
     <!-- APP CONFIG SCHEMA - Descriptions pour validation configuration application -->
     <string name="app_config_schema_format_week_start_day">Jour de début de semaine</string>
@@ -697,7 +694,6 @@
     <string name="app_config_schema_format_use_24_hour_format">Format 24h pour affichage heure (null pour utiliser défaut locale)</string>
     <string name="app_config_schema_format_date_format_pattern">Pattern de format de date (null pour utiliser défaut locale)</string>
     <string name="app_config_schema_format_time_separator">Séparateur pour affichage heure (: ou h)</string>
-    <string name="app_config_schema_format_relative_label_limits">Limites pour affichage relatif des périodes</string>
     <string name="app_config_schema_format_hour_limit">Nombre d\'heures avant passage à jours</string>
     <string name="app_config_schema_format_day_limit">Nombre de jours avant passage à semaines</string>
     <string name="app_config_schema_format_week_limit">Nombre de semaines avant passage à mois</string>
@@ -871,45 +867,30 @@
     <string name="settings_format">Format et dates</string>
     <string name="settings_format_description">Configurer les formats temporels et d\'affichage</string>
     <string name="settings_format_subtitle">Configuration date/heure</string>
-    <string name="settings_format_error_load">Erreur de chargement : %1$s</string>
-    <string name="settings_format_error_save">Erreur de sauvegarde : %1$s</string>
     <string name="settings_format_timezone">Fuseau horaire</string>
-    <string name="settings_format_use_system_timezone">Utiliser le fuseau système</string>
-    <string name="settings_format_current_timezone">Actuel : %1$s</string>
     <string name="settings_format_locale_section">Langue et région</string>
-    <string name="settings_format_use_system_locale">Utiliser la locale système</string>
-    <string name="settings_format_locale">Locale</string>
-    <string name="settings_format_current_locale">Actuelle : %1$s</string>
     <string name="settings_format_display_section">Formats d\'affichage</string>
     <string name="settings_format_24h">Format 24h (sinon 12h)</string>
-    <string name="settings_format_24h_loading">Format 24h : %1$s</string>
-    <string name="settings_format_date_format">Format de date</string>
-    <string name="settings_format_date_format_loading">Format de date : %1$s</string>
     <string name="settings_format_business_section">Logique métier (périodes)</string>
-    <string name="settings_format_day_start_hour">Heure de début de journée (périodes quotidiennes)</string>
-    <string name="settings_format_hour_value">%1$dh</string>
     <string name="settings_format_relative_section">Labels relatifs (périodes)</string>
-    <string name="settings_format_relative_description">Limites pour affichage relatif (« il y a X heures », etc.)</string>
 
     <string name="settings_ai_limits">Limites IA</string>
     <string name="settings_ai_limits_description">Configurer les limites des boucles autonomes de l\'IA</string>
     <string name="app_config_ai_limits_chat">Appels IA d\'affilée, chat</string>
     <string name="app_config_ai_limits_automation">Appels IA par automation</string>
-    <string name="app_config_schema_ai_limits_chat">Nombre maximal d\'appels IA d\'affilée dans un chat, compté depuis le dernier message de l\'utilisateur</string>
-    <string name="app_config_schema_ai_limits_automation">Nombre maximal d\'appels IA sur toute une session d\'automation</string>
     <string name="settings_ai_limits_chat_help">Compté depuis ton dernier message : au-delà, l\'IA s\'arrête et te rend la main.</string>
     <string name="settings_ai_limits_automation_help">Compté sur toute la session, puisque personne n\'intervient : au-delà, l\'automation se termine.</string>
     <string name="app_config_ai_data_chat">Taille des données avant confirmation, chat (caractères)</string>
     <string name="app_config_ai_data_automation">Taille des données admise, automation (caractères)</string>
-    <string name="app_config_schema_ai_data_chat">Nombre de caractères de données au-delà duquel un chat demande à l\'utilisateur avant de les envoyer à l\'IA</string>
-    <string name="app_config_schema_ai_data_automation">Nombre de caractères de données au-delà duquel une automation refuse de les envoyer à l\'IA</string>
     <string name="settings_ai_data_chat_help">Au-delà, les données demandées, par tes pointeurs ou par l\'IA, attendent que tu les envoies ou les refuses.</string>
     <string name="settings_ai_data_automation_help">Au-delà, les données ne partent pas : l\'IA est invitée à resserrer sa demande. Visible dans l\'historique d\'exécution.</string>
-    <string name="settings_ai_limits_error_load">Impossible de charger les limites IA : %1$s</string>
-    <string name="settings_ai_limits_error_save">Impossible d\'enregistrer les limites IA : %1$s</string>
 
     <string name="settings_validation">Validation IA</string>
     <string name="settings_validation_description">Configurer quand l\'IA doit demander validation</string>
+    <string name="app_config_validate_app_config_changes">Modifications des réglages de l\'app</string>
+    <string name="app_config_validate_zone_config_changes">Modifications des zones</string>
+    <string name="app_config_validate_tool_config_changes">Modifications des réglages des outils</string>
+    <string name="app_config_validate_tool_data_changes">Modifications des données des outils</string>
 
     <string name="settings_ui">Interface utilisateur</string>
     <string name="settings_ui_description">Configurer l\'apparence et le comportement de l\'interface</string>
@@ -1426,8 +1407,6 @@
     <string name="label_tools_and_automations">Outils et automations</string>
     <string name="dialog_edit_group">Modifier le groupe</string>
     <string name="dialog_create_group">Créer un groupe</string>
-    <string name="label_group_name">Nom du groupe</string>
-    <string name="message_no_tool_groups">Aucun groupe d\'outils défini</string>
     <string name="message_no_zone_groups">Aucun groupe de zones défini</string>
     <string name="message_no_zones_in_group">Aucune zone dans ce groupe</string>
     <string name="message_no_ungrouped_zones">Aucune zone hors groupe</string>
@@ -1441,7 +1420,6 @@
     <string name="zone_schema_group">Groupe d\'organisation de la zone</string>
 
     <!-- Groups - Service errors -->
-    <string name="service_error_invalid_zone_groups">Les groupes de zones sont invalides</string>
 
     <!-- History -->
     <string name="history_title">Historique des discussions</string>
@@ -1514,7 +1492,6 @@
     <string name="label_no">Non</string>
     <string name="label_start">Début</string>
     <string name="label_end">Fin</string>
-    <string name="message_saved">Enregistré</string>
     <string name="message_error_simple">Une erreur est survenue</string>
     <string name="error_missing_tooltype">Le paramètre tooltype est manquant</string>
     <string name="error_missing_config">Le paramètre config est manquant</string>
@@ -1530,13 +1507,10 @@
     <string name="error_operation_cancelled">Opération annulée</string>
     <string name="error_resume_session">Impossible de reprendre la conversation</string>
     <string name="error_unknown">Erreur inconnue</string>
-    <string name="app_config_format_schema_description">Formats de date, d\'heure et d\'affichage de l\'app</string>
     <string name="service_error_invalid_timestamp_format">Horodatage illisible : %1$s</string>
     <string name="service_error_duration_running">La durée %1$s est déjà en cours</string>
     <string name="service_error_duration_not_running">La durée %1$s n\'est pas en cours</string>
     <string name="service_error_duration_unknown">Aucun champ de durée %3$s dans %2$s de l\'entrée %1$s</string>
-    <string name="service_error_tool_groups_empty_name">Un nom de groupe ne peut pas être vide</string>
-    <string name="service_error_tool_groups_duplicate">Le groupe \'%1$s\' existe déjà</string>
     <string name="service_error_operation_failed">Échec de l\'opération</string>
     <string name="verbalize_unknown_operation">Opération inconnue : %1$s</string>
     <string name="tools_config_error_zone_update">Impossible de déplacer l\'outil dans cette zone</string>

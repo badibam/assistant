@@ -64,9 +64,9 @@ fun CreateZoneScreen(
     // The zone groups of the main screen
     var availableZoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }
     LaunchedEffect(Unit) {
-        val result = coordinator.processUserAction("app_config.get_zone_groups", emptyMap())
+        val result = coordinator.processUserAction("app_config.get", mapOf("category" to com.assistant.core.database.entities.AppSettingCategories.MAIN_SCREEN))
         if (result.isSuccess) {
-            availableZoneGroups = (result.data?.get("zone_groups") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+            availableZoneGroups = ((result.data?.get("settings") as Map<*, *>)["zone_groups"] as List<*>).map { it as String }
         }
     }
 

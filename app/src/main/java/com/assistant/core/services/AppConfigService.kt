@@ -8,7 +8,9 @@ import com.assistant.core.database.AppDatabase
 import com.assistant.core.database.entities.AppSettingsCategory
 import com.assistant.core.database.entities.AppSettingCategories
 import com.assistant.core.config.AppSettingsDefaults
-import com.assistant.core.schemas.AppConfigSchemaProvider
+import com.assistant.core.config.AppSettings
+import com.assistant.core.utils.AppConfigManager
+import com.assistant.core.utils.JsonUtils
 import com.assistant.core.validation.SchemaValidator
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.services.OperationResult
@@ -29,206 +31,75 @@ class AppConfigService(private val context: Context) : ExecutableService {
     private val settingsDao = database.appSettingsCategoryDao()
     private val s = Strings.`for`(context = context)
 
-    /**
-     * Format configuration
-     */
-    suspend fun getWeekStartDay(): String {
-        val settings = getFormatSettings()
-        return settings.getString("week_start_day")
-    }
+    // ===== Reading =====
 
-    suspend fun getDayStartHour(): Int {
-        val settings = getFormatSettings()
-        return settings.getInt("day_start_hour")
-    }
+    suspend fun getWeekStartDay(): String = getFormatSettings().getString("week_start_day")
 
-    suspend fun getLocaleOverride(): String? {
-        val settings = getFormatSettings()
-        return settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() }
-    }
+    suspend fun getDayStartHour(): Int = getFormatSettings().getInt("day_start_hour")
 
-    suspend fun setWeekStartDay(day: String) {
-        // Store lowercase in DB for consistency with FormatDefaults
-        updateFormatSetting("week_start_day", day.lowercase())
-    }
+    /** The locale the app formats with, or null to follow the phone. */
+    suspend fun getLocaleOverride(): String? =
+        AppSettings.read(AppSettingCategories.FORMAT, getFormatSettings(), context).string("locale_override")
 
-    suspend fun setDayStartHour(hour: Int) {
-        updateFormatSetting("day_start_hour", hour)
-    }
+    /** Relative label limits for period display, required by the format declaration. */
+    suspend fun getRelativeLabelLimits(): JSONObject = getFormatSettings().getJSONObject("relative_label_limits")
 
-    /**
-     * Relative label limits for period display. Required by the format schema: a missing
-     * key is a corrupted config and fails here rather than falling back.
-     */
-    suspend fun getRelativeLabelLimits(): org.json.JSONObject {
-        return getFormatSettings().getJSONObject("relative_label_limits")
-    }
-
-    /**
-     * Set relative label limits for period display.
-     */
-    suspend fun setRelativeLabelLimits(
-        hourLimit: Int,
-        dayLimit: Int,
-        weekLimit: Int,
-        monthLimit: Int,
-        yearLimit: Int
-    ) {
-        val limits = org.json.JSONObject().apply {
-            put("hour_limit", hourLimit)
-            put("day_limit", dayLimit)
-            put("week_limit", weekLimit)
-            put("month_limit", monthLimit)
-            put("year_limit", yearLimit)
-        }
-        updateFormatSetting("relative_label_limits", limits)
-    }
-
-    suspend fun setLocaleOverride(locale: String?) {
-        updateFormatSetting("locale_override", locale)
-    }
-
-    /**
-     * Main screen configuration
-     */
     suspend fun getZoneGroups(): List<String> {
-        val settings = getMainScreenSettings()
-        val groupsJson = settings.getJSONArray("zone_groups")
+        val groupsJson = readSettings(AppSettingCategories.MAIN_SCREEN).getJSONArray("zone_groups")
         return (0 until groupsJson.length()).map { groupsJson.getString(it) }
-    }
-
-    suspend fun setZoneGroups(groups: List<String>) {
-        updateMainScreenSetting("zone_groups", JSONArray(groups))
     }
 
     private suspend fun getFormatSettings(): JSONObject = readSettings(AppSettingCategories.FORMAT)
 
     /**
-     * Change one format setting, then check the whole stored object against the format
-     * schema before writing it. JSON nulls are left out of the check: they are how an
-     * optional override says "follow the phone", and the schema reads a missing key the same.
-     */
-    private suspend fun updateFormatSetting(key: String, value: Any?) {
-        val settings = getFormatSettings()
-        settings.put(key, value ?: JSONObject.NULL)
-
-        @Suppress("UNCHECKED_CAST")
-        val data = com.assistant.core.utils.JsonUtils.toMap(settings).filterValues { it != null } as Map<String, Any>
-        val schema = AppConfigSchemaProvider.getSchema("app_config_format", context)
-            ?: throw IllegalStateException("App config format schema not found")
-        val validation = SchemaValidator.validate(schema, data, context)
-        if (!validation.isValid) {
-            throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
-        }
-
-        settingsDao.updateSettings(AppSettingCategories.FORMAT, settings.toString())
-    }
-
-    /**
-     * Get comprehensive date/time configuration.
-     * Includes timezone, locale, display formats, and business logic parameters.
+     * Comprehensive date/time configuration, read through the format declaration: an absent
+     * override follows the phone.
      *
      * Note: week_start_day is stored lowercase in DB but returned uppercase for DayOfWeek compatibility.
-     *
-     * @return DateTimeConfig with all date/time related settings
      */
     suspend fun getDateTimeConfig(): DateTimeConfig {
-        val settings = getFormatSettings()
+        val settings = AppSettings.read(AppSettingCategories.FORMAT, getFormatSettings(), context)
         return DateTimeConfig(
-            timezoneOverride = settings.optString("timezone_override").takeIf { it != "null" && it.isNotBlank() },
-            localeOverride = settings.optString("locale_override").takeIf { it != "null" && it.isNotBlank() },
-            // null or absent follows the phone; anything but a boolean is a corrupted setting
-            use24HourFormat = when (val value = settings.opt("use_24_hour_format")) {
-                null, JSONObject.NULL -> null
-                is Boolean -> value
-                else -> throw IllegalStateException("use_24_hour_format is neither a boolean nor null: $value")
-            },
-            dateFormatPattern = settings.optString("date_format_pattern").takeIf { it != "null" && it.isNotBlank() },
-            timeSeparator = settings.getString("time_separator"),
-            dayStartHour = settings.getInt("day_start_hour"),
-            weekStartDay = settings.getString("week_start_day").uppercase()  // Convert to uppercase for DayOfWeek
+            timezoneOverride = settings.string("timezone_override"),
+            localeOverride = settings.string("locale_override"),
+            use24HourFormat = settings.value("use_24_hour_format") as Boolean?,
+            dateFormatPattern = settings.string("date_format_pattern"),
+            timeSeparator = settings.string("time_separator")!!,
+            dayStartHour = settings.number("day_start_hour")!!.toInt(),
+            weekStartDay = settings.string("week_start_day")!!.uppercase()
         )
     }
 
-    /**
-     * Set timezone override for date/time display and conversion.
-     * If null, uses system default timezone.
-     *
-     * @param timezone Timezone ID (e.g., "Europe/Paris", "UTC") or null for system default
-     */
-    suspend fun setTimezoneOverride(timezone: String?) {
-        updateFormatSetting("timezone_override", timezone)
-    }
-
-    /**
-     * Set whether to use 24-hour format for time display.
-     * If null, uses system/locale default.
-     *
-     * @param use24h True for 24h, false for 12h, null for system default
-     */
-    suspend fun setUse24HourFormat(use24h: Boolean?) {
-        updateFormatSetting("use_24_hour_format", use24h)
-    }
-
-    /**
-     * Set date format pattern for display.
-     * If null, uses locale default.
-     *
-     * @param pattern Date pattern (e.g., "dd/MM/yyyy", "MM/dd/yyyy") or null for locale default
-     */
-    suspend fun setDateFormatPattern(pattern: String?) {
-        updateFormatSetting("date_format_pattern", pattern)
-    }
-
-    /**
-     * Set time separator for display.
-     *
-     * @param separator Time separator (e.g., ":", "h")
-     */
-    suspend fun setTimeSeparator(separator: String) {
-        updateFormatSetting("time_separator", separator)
-    }
-
-    /**
-     * Get structured AI limits configuration
-     */
     suspend fun getAILimits(): AILimitsConfig =
-        AILimitsConfig.fromSettingsJson(getAILimitsSettings())
-
-    private suspend fun getAILimitsSettings(): JSONObject = readSettings(AppSettingCategories.AI_LIMITS)
-
-    /** Store both AI limits, checked against the ai_limits schema before writing. */
-    suspend fun setAILimits(limits: AILimitsConfig) {
-        val settings = JSONObject(limits.toSettingsJson())
-
-        @Suppress("UNCHECKED_CAST")
-        val data = com.assistant.core.utils.JsonUtils.toMap(settings) as Map<String, Any>
-        val schema = AppConfigSchemaProvider.getSchema("app_config_ai_limits", context)
-            ?: throw IllegalStateException("App config AI limits schema not found")
-        val validation = SchemaValidator.validate(schema, data, context)
-        if (!validation.isValid) {
-            throw IllegalArgumentException("Invalid configuration: ${validation.errorMessage}")
-        }
-
-        settingsDao.updateSettings(AppSettingCategories.AI_LIMITS, settings.toString())
-    }
+        AILimitsConfig.fromSettingsJson(readSettings(AppSettingCategories.AI_LIMITS))
 
     /**
      * Get structured validation configuration
-     * Hierarchy: app > zone > tool > session > AI request (OR logic)
+     * Hierarchy: app > tool > session > AI request (OR logic)
      */
     suspend fun getValidationConfig(): ValidationConfig =
         ValidationConfig.fromSettingsJson(readSettings(AppSettingCategories.VALIDATION_CONFIG))
 
-    private suspend fun getMainScreenSettings(): JSONObject = readSettings(AppSettingCategories.MAIN_SCREEN)
+    // ===== Writing =====
 
-    private suspend fun updateMainScreenSetting(key: String, value: Any?) {
-        val settings = getMainScreenSettings()
-        settings.put(key, value)
+    /**
+     * Replace the settings of [category] with [settings], once they are checked against the
+     * schema generated from the category's declaration (AppSettings). The cached settings are
+     * read again, so what is stored is what the app uses.
+     *
+     * @return The error to hand back, or null once stored
+     */
+    suspend fun setSettings(category: String, settings: JSONObject): String? {
+        if (category !in AppSettings.CATEGORIES) return s.shared("service_error_unknown_category").format(category)
+        val validation = SchemaValidator.validate(AppSettings.schema(category, context), JsonUtils.toMap(settings), context)
+        if (!validation.isValid) return validation.errorMessage ?: s.shared("message_validation_error_simple")
 
-        // No validation schema for main screen settings yet - simple storage
-        settingsDao.updateSettings(AppSettingCategories.MAIN_SCREEN, settings.toString())
-        LogManager.service("Updated main screen setting: $key = $value")
+        readSettings(category) // a category never written gets its row first
+        settingsDao.updateSettings(category, settings.toString())
+        AppConfigManager.refresh(context)
+        DataChangeNotifier.notifyAppConfigChanged()
+        LogManager.service("Updated settings of category $category")
+        return null
     }
 
     /**
@@ -251,20 +122,18 @@ class AppConfigService(private val context: Context) : ExecutableService {
         return when (operation) {
             "get" -> {
                 val category = params.optString("category")
-                when (category) {
-                    AppSettingCategories.FORMAT -> {
-                        val settings = getFormatSettings()
-                        OperationResult.success(mapOf("settings" to settings.toMap()))
-                    }
-                    AppSettingCategories.AI_LIMITS -> {
-                        val settings = getAILimitsSettings()
-                        OperationResult.success(mapOf("settings" to settings.toMap()))
-                    }
-                    else -> {
-                        LogManager.service("Unknown category: $category", "WARN")
-                        OperationResult.error(s.shared("service_error_unknown_category").format(category))
-                    }
+                if (category !in AppSettings.CATEGORIES) {
+                    LogManager.service("Unknown category: $category", "WARN")
+                    return OperationResult.error(s.shared("service_error_unknown_category").format(category))
                 }
+                OperationResult.success(mapOf("settings" to JsonUtils.toMap(readSettings(category))))
+            }
+            "set" -> {
+                val category = params.optString("category")
+                val settings = params.optJSONObject("settings")
+                    ?: return OperationResult.error(s.shared("ai_error_param_config_required"))
+                setSettings(category, settings)?.let { return OperationResult.error(it) }
+                OperationResult.success(mapOf("category" to category))
             }
             "get_current_datetime" -> {
                 // Milliseconds, as everything inside speaks: CommandExecutor turns the timestamp
@@ -272,42 +141,11 @@ class AppConfigService(private val context: Context) : ExecutableService {
                 val currentTimestamp = System.currentTimeMillis()
                 OperationResult.success(mapOf("timestamp" to currentTimestamp))
             }
-            "get_zone_groups" -> {
-                val groups = getZoneGroups()
-                OperationResult.success(mapOf("zone_groups" to groups))
-            }
-            "set_zone_groups" -> {
-                val groupsParam = params.opt("zone_groups")
-                val groups = when (groupsParam) {
-                    is JSONArray -> (0 until groupsParam.length()).map { groupsParam.getString(it) }
-                    is List<*> -> groupsParam.filterIsInstance<String>()
-                    else -> {
-                        LogManager.service("Invalid zone_groups parameter type", "ERROR")
-                        return OperationResult.error(s.shared("service_error_invalid_zone_groups"))
-                    }
-                }
-                setZoneGroups(groups)
-                DataChangeNotifier.notifyAppConfigChanged()
-                LogManager.service("Zone groups updated: $groups")
-                OperationResult.success(mapOf("zone_groups" to groups))
-            }
             else -> {
                 LogManager.service("Unknown operation: $operation", "WARN")
                 OperationResult.error(s.shared("service_error_unknown_operation").format(operation))
             }
         }
-    }
-    
-    private fun JSONObject.toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        keys().forEach { key ->
-            val value = get(key)
-            map[key] = when (value) {
-                JSONObject.NULL -> null
-                else -> value
-            } ?: ""
-        }
-        return map
     }
 
     /**

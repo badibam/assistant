@@ -31,6 +31,7 @@ import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.ToolConfigsAtV39
 import com.assistant.core.versioning.CatchUpAtV41
+import com.assistant.core.versioning.FormatNullsAtV42
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -71,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 41
+        const val VERSION = 42
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1358,6 +1359,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_41_42 = object : Migration(41, 42) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // The format settings say "follow the phone" by an absence: see FormatNullsAtV42
+                database.query("SELECT category, settings FROM app_settings_categories").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        // A row that cannot be read stays as it was and is logged
+                        try {
+                            val settings = FormatNullsAtV42.settings(category, org.json.JSONObject(cursor.getString(1)))
+                            database.execSQL("UPDATE app_settings_categories SET settings = ? WHERE category = ?", arrayOf<Any?>(settings.toString(), category))
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 41->42: settings of $category left as they were: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 41->42: format settings without nulls", "INFO")
+            }
+        }
+
         private val MIGRATION_40_41 = object : Migration(40, 41) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // A scheduled automation stores its explicit catch-up choice, and a limited window
@@ -1743,7 +1763,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_37_38,
                     MIGRATION_38_39,
                     MIGRATION_39_40,
-                    MIGRATION_40_41
+                    MIGRATION_40_41,
+                    MIGRATION_41_42
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {
