@@ -4,7 +4,7 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs (`docs/design/unified-fields.md`) : modèle posé, implémentation en quatre blocs. Blocs A et B faits ; prochain : bloc C, l'IA (le prompt parle encore de l'ancienne forme des entrées de tracking).
+- Un seul système de champs (`docs/design/unified-fields.md`) : blocs A et B faits, bloc C commencé (dates et durées en ISO). Prochain : `state` et chronomètre pour l'IA, puis les configs en champs (`docs/design/config-fields.md`, blocs A à D), puis la fin du bloc C.
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 

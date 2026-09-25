@@ -44,7 +44,7 @@ L'app n'a pas à rester utilisable entre deux blocs ; chaque commit compile et g
   - les copies envoyées d'un message (`common_title`, `common_content`, `priority`) restent sans marque `system_managed`, faute de quoi le scheduler, qui écrit par le dispatcher, verrait ses écritures retirées ;
   - changer le type d'un suivi efface ses entrées après confirmation ; changer les réglages de `value` ou les unités garde les entrées telles quelles, après avertissement ;
   - une saisie libre prend la première unité de la liste.
-- **C. L'IA** : prompt L1, `SchemaModelView` (durées ISO 8601, `state`), grammaire des chemins, modules de communication en listes de champs, valeurs proposées dans la demande de validation, rejeu du prompt.
+- **C. L'IA** — en cours. Fait : les dates et durées d'une entrée passent en ISO 8601 là où son schéma les marque (`ModelValues`, `SchemaModelView`). Reste, dans l'ordre : `state.x` dans la grammaire des chemins et les commandes `START_DURATION` / `STOP_DURATION` ; puis le chantier `config-fields.md` (blocs A à D) ; puis le prompt L1, réécrit une seule fois, les modules de communication en listes de champs, les valeurs proposées dans la demande de validation, le rejeu du prompt.
 - **D. Le pointeur** : choix des champs et filtres par valeur.
 
 ## Écarté
@@ -77,5 +77,4 @@ L'app n'a pas à rester utilisable entre deux blocs ; chaque commit compile et g
 - RÉFÉRENCE, à spécifier : les niveaux qu'on peut viser (zone, outil, entrée, champ d'une entrée), probablement la même désignation de cible que le pointeur ; saisie par sélecteur ; cible supprimée (l'identifiant reste, affiché « supprimé »).
 - Données structurées exprimées avec le modèle : propriétés = champs de `extra`, objets imbriqués à plat (un groupement éventuel est de l'affichage), colonnes de liste, recherche et tri à l'outil. La spec `structured-data-tooltype.md` et son schéma JSON propre sont à réécrire en conséquence.
 - Vérification sur papier restante : filtres du pointeur, Graphique.
-- La config des outils en champs : plus tard, un chantier à part.
 - Les migrations : tracking (forme des données, secondes → millisecondes), `custom_fields` → `extra`, état sorti de `data` vers `state`.
