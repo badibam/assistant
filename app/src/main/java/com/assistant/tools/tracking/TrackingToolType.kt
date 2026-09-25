@@ -45,23 +45,7 @@ object TrackingToolType : ToolTypeContract {
         return s.tool("description")
     }
 
-    override fun getDefaultConfig(): String {
-        return """
-        {
-            "type": "numeric",
-            "value": { "decimals": 0 },
-            "items": [],
-            "name": "",
-            "description": "",
-            "icon_name": "activity",
-            "management": "manual",
-            "validate_config": false,
-            "validate_data": false,
-            "always_send": false,
-            "display_mode": "LINE"
-        }
-        """.trimIndent()
-    }
+    override fun getDefaultDisplayMode(): String = "LINE"
 
     /**
      * A tracking tool's settings: what it follows ("type"), and for that type
@@ -82,7 +66,7 @@ object TrackingToolType : ToolTypeContract {
 
         return listOf(SettingNode.Variant(
             selector = field("type", s.tool("config_label_tracking_type"), s.tool("schema_config_type"), FieldType.CHOICE,
-                config = mapOf("options" to ChoiceSettings.storedOptions(kinds, kinds.associateWith { s.tool("config_option_$it") }))),
+                default = TrackingKind.NUMERIC.key, config = mapOf("options" to ChoiceSettings.storedOptions(kinds, kinds.associateWith { s.tool("config_option_$it") }))),
             cases = TrackingKind.entries.associate { kind ->
                 val item = listOfNotNull(
                     field("name", shared.shared("label_name"), s.tool("schema_config_item_name"), FieldType.TEXT, required = true, config = short),

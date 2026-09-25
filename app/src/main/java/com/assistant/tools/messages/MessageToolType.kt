@@ -79,25 +79,7 @@ object MessageToolType : ToolTypeContract {
         return listOf("execute")
     }
 
-    override fun getDefaultConfig(): String {
-        return """
-        {
-            "name": "",
-            "description": "",
-            "icon_name": "bell",
-            "display_mode": "LINE",
-            "management": "manual",
-            "validate_config": false,
-            "validate_data": false,
-            "always_send": false,
-            "enabled": true,
-            "priority": "default",
-            "external_notifications": true,
-            "creation_horizon_days": 2,
-            "validity_window_minutes": 60
-        }
-        """.trimIndent()
-    }
+    override fun getDefaultDisplayMode(): String = "LINE"
 
     // ========================================
     // Schemas (SchemaProvider interface)

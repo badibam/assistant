@@ -87,4 +87,22 @@ class SettingsSchemaGeneratorTest {
         val timer = SchemaModelView.forModel(schema, paris).getJSONArray("oneOf").getJSONObject(1)
         assertEquals("PT1H", timer.getJSONObject("properties").getJSONObject("window").getString("default"))
     }
+
+    /** A new config holds the declared defaults, a variant's own under its default option. */
+    @Test
+    fun theDefaultsMakeTheNewConfig() {
+        val withDefault = listOf(
+            field("name", FieldType.TEXT, required = true),
+            SettingNode.Variant(
+                selector = field("kind", FieldType.CHOICE, default = "timer"),
+                cases = mapOf("numeric" to emptyList(), "timer" to listOf(field("window", FieldType.DURATION, default = 3_600_000L)))
+            )
+        )
+
+        val config = SettingDefaults.of(withDefault)
+
+        assertEquals("timer", config.getString("kind"))
+        assertEquals(3_600_000L, config.getLong("window"))
+        assertFalse("no default, no value", config.has("name"))
+    }
 }

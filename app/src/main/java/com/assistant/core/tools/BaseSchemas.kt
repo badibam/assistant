@@ -40,7 +40,7 @@ object BaseSchemas {
      * @throws IllegalStateException if the tool's config cannot be loaded or its fields read
      */
     fun getEntrySchema(toolType: ToolTypeContract, toolInstanceId: String?, context: Context): String {
-        val config = if (toolInstanceId == null) org.json.JSONObject(toolType.getDefaultConfig())
+        val config = if (toolInstanceId == null) ToolConfigSettings.defaults(toolType, context)
                      else loadToolConfig(toolInstanceId, context)
         return getEntrySchemaOrThrow(toolType, config, toolInstanceId, context)
     }

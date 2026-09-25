@@ -39,21 +39,7 @@ object JournalToolType : ToolTypeContract {
         return s.tool("description")
     }
 
-    override fun getDefaultConfig(): String {
-        return """
-        {
-            "name": "",
-            "description": "",
-            "icon_name": "book-open",
-            "display_mode": "EXTENDED",
-            "management": "manual",
-            "validate_config": false,
-            "validate_data": false,
-            "always_send": false,
-            "sort_order": "descending"
-        }
-        """.trimIndent()
-    }
+    override fun getDefaultDisplayMode(): String = "EXTENDED"
 
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "journal", context = context)

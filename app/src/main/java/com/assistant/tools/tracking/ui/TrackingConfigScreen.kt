@@ -84,7 +84,7 @@ fun TrackingConfigScreen(
 
     // The whole config, the single source of truth of the screen; the user's fields apart,
     // since their editor and their migration work on definitions
-    var config by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject(TrackingToolType.getDefaultConfig())) }
+    var config by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(com.assistant.core.tools.ToolConfigSettings.defaults(TrackingToolType, context)) }
     var initialConfig by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
     var customFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }
     var oldCustomFields by rememberSaveable(stateSaver = FieldDefinitionsSaver) { mutableStateOf<List<FieldDefinition>>(emptyList()) }

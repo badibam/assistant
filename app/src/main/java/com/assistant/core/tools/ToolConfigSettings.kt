@@ -23,7 +23,7 @@ object ToolConfigSettings {
     private val DISPLAY_MODES = listOf("ICON", "MINIMAL", "LINE", "CONDENSED", "EXTENDED", "SQUARE", "FULL")
 
     /** The settings every tool has, whatever its type. */
-    fun commonNodes(context: Context): List<SettingNode> {
+    fun commonNodes(toolType: ToolTypeContract, context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
         val text: (String) -> String = s::shared
         return listOf(
@@ -34,11 +34,13 @@ object ToolConfigSettings {
                     config = mapOf("length" to TextLength.MEDIUM.name)),
                 // Checked against the icon index by the service (ToolInstanceService)
                 field("icon_name", text("tools_config_label_icon"), FieldType.TEXT, text("tools_base_schema_config_icon_name"),
-                    config = mapOf("length" to TextLength.SHORT.name)),
+                    default = toolType.getDefaultIconName(), config = mapOf("length" to TextLength.SHORT.name)),
                 field("management", text("tools_config_label_management"), FieldType.CHOICE, text("tools_base_schema_config_management"),
-                    required = true, config = choice(listOf("manual", "ai"), mapOf("manual" to text("tools_config_option_manual"), "ai" to text("tools_config_option_ai")))),
+                    required = true, default = "manual",
+                    config = choice(listOf("manual", "ai"), mapOf("manual" to text("tools_config_option_manual"), "ai" to text("tools_config_option_ai")))),
                 field("display_mode", text("tools_config_label_display_mode"), FieldType.CHOICE, text("tools_base_schema_config_display_mode"),
-                    required = true, config = choice(DISPLAY_MODES, DISPLAY_MODES.associateWith { text("tools_config_display_${it.lowercase()}") })),
+                    required = true, default = toolType.getDefaultDisplayMode(),
+                    config = choice(DISPLAY_MODES, DISPLAY_MODES.associateWith { text("tools_config_display_${it.lowercase()}") })),
                 field("group", text("label_group"), FieldType.TEXT, text("tools_base_schema_config_group"),
                     config = mapOf("length" to TextLength.SHORT.name)),
                 field("validate_config", text("tools_config_label_config_validation"), FieldType.BOOLEAN, text("tools_base_schema_config_validate_config"), default = false),
@@ -52,7 +54,11 @@ object ToolConfigSettings {
 
     /** The whole config of a tool of [toolType]: the common settings, then its type's. */
     fun nodes(toolType: ToolTypeContract, context: Context): List<SettingNode> =
-        commonNodes(context) + toolType.getConfigSettings(context)
+        commonNodes(toolType, context) + toolType.getConfigSettings(context)
+
+    /** What a new tool of [toolType] starts from: its declared defaults (SettingDefaults). */
+    fun defaults(toolType: ToolTypeContract, context: Context): org.json.JSONObject =
+        com.assistant.core.fields.settings.SettingDefaults.of(nodes(toolType, context))
 
     /** The schema a config of [toolType] is held to, under [id]. */
     fun schema(toolType: ToolTypeContract, id: String, context: Context): Schema {

@@ -37,22 +37,7 @@ object NotesToolType : ToolTypeContract {
         return s.tool("description")
     }
 
-    override fun getDefaultConfig(): String {
-        val notesSpecificConfig = """
-        {
-            "name": "",
-            "description": "",
-            "icon_name": "sticky-note",
-            "display_mode": "EXTENDED",
-            "management": "manual",
-            "validate_config": false,
-            "validate_data": false,
-            "always_send": false
-        }
-        """.trimIndent()
-
-        return notesSpecificConfig
-    }
+    override fun getDefaultDisplayMode(): String = "EXTENDED"
 
     override fun getFormFieldName(fieldName: String, context: Context): String {
         val s = Strings.`for`(tool = "notes", context = context)

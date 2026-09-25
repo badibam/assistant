@@ -34,10 +34,8 @@ interface ToolTypeContract {
      */
     fun getDescription(context: Context): String
 
-    /**
-     * Default configuration JSON for new instances of this tool type
-     */
-    fun getDefaultConfig(): String
+    /** The display mode a new tool of this type is shown in, in its zone. */
+    fun getDefaultDisplayMode(): String
     
     // Schema Provider Implementation
     // SchemaProvider methods are inherited from SchemaProvider interface
