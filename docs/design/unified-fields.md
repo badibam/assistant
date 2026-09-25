@@ -22,6 +22,8 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 11. **Une copie de la config dans une entrée est un fait quand l'entrée doit continuer de dire ce qu'elle disait à sa création ; sinon c'est une dérivation, calculée à la lecture.** Faits : `common_title`, `common_content`, `priority` d'une occurrence de message (ce qui est parti ne se réécrit pas) — champs de `data` écrits par le système ; l'unité d'un suivi numérique. Dérivations, qui ne se stockent plus : `true_label` / `false_label` d'une entrée booléenne, `raw` du tracking.
 12. **Une valeur par défaut est une suggestion, appliquée par qui agit, jamais par le service.** Le formulaire la préremplit (l'utilisateur peut l'effacer) ; une action rapide l'applique, le geste voulant dire « comme d'habitude » ; l'IA la lit dans le schéma et l'écrit ou non, explicitement. Le service n'écrit jamais une valeur qu'on ne lui a pas donnée : un champ absent veut dire « pas de réponse ». Aujourd'hui `default_value` est déclaré dans le schéma de config de chaque type de champ, mais ni l'éditeur ni le service ne s'en servent.
 13. **Tags et pastilles sont deux réglages de CHOICE, pas des types.** Chaque option peut porter une couleur, prise dans la palette du thème : un choix avec couleurs s'affiche en pastilles. Un choix peut avoir un vocabulaire ouvert : une valeur nouvelle, de l'interface ou de l'IA, est ajoutée aux options de la config dans la même opération que l'écriture de l'entrée, puis validée normalement ; fermé, il refuse comme aujourd'hui. Des tags sont un CHOICE multiple ouvert. Un champ passe de fermé à ouvert sans migration. Les quasi-doublons (« Travail » / « travail » / « boulot ») se traitent à l'implémentation.
+14. **Le tracking a un type « occurrence », sans champ `value`.** L'entrée est le fait qu'une chose a eu lieu : `name` + `timestamp`, et des champs de `extra` si l'utilisateur en ajoute. Les statistiques sont des comptages par nom et par période ; la saisie rapide est un appui sur le raccourci. C'est la seule exception à la décision 9 : les modes rapides n'ont rien à faire sur une occurrence.
+15. **`name` et `timestamp` sont des champs déclarés par le core, rangés dans leurs colonnes.** Le core les déclare avec le vocabulaire des champs (`name` TEXT court, `timestamp` DATETIME) : même saisie, affichage, validation et description pour l'IA que les autres. Ils restent en colonnes, communes à tous les outils : l'historique trie par date, le pointeur filtre par période, `timestamp` est indexé. Le rangement par auteur a donc quatre niveaux : le core → colonnes, le type d'outil → `data`, l'utilisateur → `extra`, l'app et les actions → `state`.
 
 ## Écarté
 
@@ -32,6 +34,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 - Un tracking sans champ principal, chaque suivi n'étant que des champs de `extra` : les modes rapides ne sauraient plus sur quel champ agir. Revenir vers cette forme reste une migration mécanique (`data.value` déplacé dans `extra`) ; l'inverse demanderait de choisir un champ principal par suivi.
 - Pour l'unité d'un suivi numérique : une seule unité par suivi (bloque l'alimentation, les médicaments, le sport, où chaque chose mesurée a la sienne) ; une unité texte libre par entrée (« g », « gr », « grammes ») ; l'unité dérivée du raccourci et non stockée (l'IA devrait la chercher ailleurs, et un raccourci ne pourrait plus se supprimer) ; un champ NUMERIC par unité (une entrée pourrait en remplir deux ou aucun, et le champ principal disparaît).
 - La valeur par défaut appliquée par le service à toute création sans valeur : elle invente des données (une humeur « Neutre » jamais donnée, un booléen `false` jamais vérifié) et empêche de laisser un champ vide exprès.
+- Un compteur à +1 ou un booléen à `true` pour une occurrence : une valeur qui ne dit rien. Un outil « Événements » à part : un tracking amputé qui dupliquerait écran, historique et raccourcis.
 - `user` comme nom de `extra` : s'opposerait à « IA » dans le reste de l'app.
 
 ## État du code au 2026-09-25
@@ -46,7 +49,7 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 
 - L'unité par défaut d'une saisie libre dans un suivi numérique : la première de la liste, ou celle de la dernière entrée.
 - Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
-- L'étiquette du tracking (une entrée qui n'est qu'un nom et un moment).
+- Ce que `name` veut dire pour chaque outil (nom du raccourci dans le tracking, titre d'une note).
 - Réglage d'un champ : label affiché ou non. (La validation d'un CHOICE contre ses options existe déjà : `enum` dans le schéma généré.)
 - Questionnaire, réponses multiples et ordonnées des modules de communication, Données structurées : à exprimer avec les champs.
 - La config des outils en champs : plus tard, un chantier à part.
