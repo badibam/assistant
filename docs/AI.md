@@ -559,12 +559,16 @@ suspend fun buildPromptData(sessionId: String): PromptData {
 ### Signature AIProvider
 ```kotlin
 interface AIProvider {
+    fun getProviderId(): String
     fun getDisplayName(): String
-    fun getConfigSchema(): String
-    @Composable fun getConfigScreen(config: String, onSave: (String) -> Unit)
+    fun getConfigSettings(context: Context): List<SettingNode>
+    fun getConfigHelp(context: Context): String
+    suspend fun listModels(apiKey: String): ProviderModels
     suspend fun query(promptData: PromptData, config: String): AIResponse
 }
 ```
+
+**Config** : déclarée avec les champs (`getConfigSettings`) ; la clé d'API est un réglage `secret`, saisi masqué. Le schéma (`AIProviderSettings.schema`), contre lequel `AIProviderConfigService` vérifie toute écriture, et l'écran (`AIProviderConfigScreen`) en sont générés ; le modèle se choisit parmi ceux que liste `listModels` pour la clé saisie. Le code lit une config par `AIProviderSettings.read`.
 
 **Responsabilités provider** : Parser config, transformer promptData (structure spécifique API), fusionner messages (contraintes alternance si applicable), appeler API HTTP, parser réponse (content, tokens, erreurs).
 

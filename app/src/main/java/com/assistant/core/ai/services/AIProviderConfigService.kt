@@ -117,9 +117,8 @@ class AIProviderConfigService(private val context: Context) : ExecutableService 
             val provider = registry.getProvider(providerId)
                 ?: return OperationResult.error(s.shared("ai_error_unknown_provider").format(providerId))
 
-            // Validate configuration against provider schema
-            val schema = provider.getSchema("ai_provider_${providerId}_config", context)
-                ?: return OperationResult.error(s.shared("ai_error_schema_not_found"))
+            // Validate configuration against the schema generated from the provider's declaration
+            val schema = com.assistant.core.ai.providers.AIProviderSettings.schema(provider, context)
 
             // Parse config JSON and convert to Map
             val configData = try {

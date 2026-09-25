@@ -1,30 +1,8 @@
 package com.assistant.core.ai.providers
 
 import android.content.Context
-import androidx.compose.runtime.Composable
 import com.assistant.core.ai.data.PromptData
-import com.assistant.core.ai.providers.ui.OpenAIConfigScreen
-import com.assistant.core.validation.Schema
-
-/**
- * Model information from OpenAI API
- * Shared data class for all OpenAI provider variants
- */
-data class OpenAIModelInfo(
-    val id: String,
-    val created: Long,
-    val ownedBy: String
-)
-
-/**
- * Result of fetching available models from OpenAI API
- * Shared data class for all OpenAI provider variants
- */
-data class OpenAIFetchModelsResult(
-    val success: Boolean,
-    val models: List<OpenAIModelInfo>,
-    val errorMessage: String?
-)
+import com.assistant.core.fields.settings.SettingNode
 
 /**
  * OpenAI AI Provider - Standard variant
@@ -50,8 +28,7 @@ data class OpenAIFetchModelsResult(
 class OpenAIStandardProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other OpenAI variants
-    // Exposed as internal to allow OpenAIConfigScreen to access it
-    internal val core = OpenAIProviderCore(context, "openai_standard")
+    private val core = OpenAIProviderCore(context, "openai_standard")
 
     // ========================================================================================
     // AIProvider Implementation
@@ -61,38 +38,11 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "OpenAI"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    /**
-     * Configuration UI for OpenAI standard provider
-     * Passes core and displayName to shared config screen
-     */
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        OpenAIConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     /**
      * Send query to OpenAI API with PromptData
@@ -127,8 +77,7 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
 class OpenAIEconomicProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other OpenAI variants
-    // Exposed as internal to allow OpenAIConfigScreen to access it
-    internal val core = OpenAIProviderCore(context, "openai_economic")
+    private val core = OpenAIProviderCore(context, "openai_economic")
 
     // ========================================================================================
     // AIProvider Implementation
@@ -138,38 +87,11 @@ class OpenAIEconomicProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "OpenAI (économique)"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    /**
-     * Configuration UI for OpenAI economic provider
-     * Passes core and displayName to shared config screen
-     */
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        OpenAIConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     /**
      * Send query to OpenAI API with PromptData

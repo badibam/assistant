@@ -149,15 +149,16 @@ fun AIProvidersScreen(
 
             // Render provider config screen after config is loaded
             if (!isLoadingConfig) {
-                provider.getConfigScreen(
+                com.assistant.core.ai.providers.ui.AIProviderConfigScreen(
+                    provider = it,
                     config = existingConfig,
-                    onSave = { configJson ->
+                    onSave = { config ->
                         coroutineScope.launch {
                             val result = coordinator.processUserAction(
                                 "ai_provider_config.set",
                                 mapOf(
                                     "provider_id" to providerId,
-                                    "config" to JsonUtils.toMap(configJson)
+                                    "config" to JsonUtils.toMap(config)
                                 )
                             )
 

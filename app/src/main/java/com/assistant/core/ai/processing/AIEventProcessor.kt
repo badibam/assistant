@@ -1774,9 +1774,11 @@ class AIEventProcessor(
             val aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao()
             val effectiveProviderId = providerId ?: aiDao.getActiveProviderConfig()?.providerId
             val modelId = effectiveProviderId
-                ?.let { aiDao.getProviderConfig(it) }
-                ?.let { JSONObject(it.configJson).optString("model", "") }
-                ?.takeIf { it.isNotEmpty() }
+                ?.let { id -> aiDao.getProviderConfig(id)?.let { config -> id to config } }
+                ?.let { (id, config) ->
+                    val provider = com.assistant.core.ai.providers.AIProviderRegistry(context).getProvider(id) ?: return@let null
+                    com.assistant.core.ai.providers.AIProviderSettings.read(provider, JSONObject(config.configJson), context).string("model")
+                }
             if (modelId == null) {
                 LogManager.aiSession("callPricing: no model in the config of provider $effectiveProviderId", "ERROR")
                 return null

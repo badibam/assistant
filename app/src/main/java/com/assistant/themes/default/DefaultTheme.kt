@@ -537,6 +537,10 @@ object DefaultTheme : ThemeContract {
             onChange
         }
         
+        // A password is masked, and shown while the eye is on
+        val isPassword = fieldType == FieldType.PASSWORD
+        var revealed by remember { mutableStateOf(false) }
+
         OutlinedTextField(
             value = value,
             onValueChange = filteredOnChange,
@@ -545,6 +549,19 @@ object DefaultTheme : ThemeContract {
             readOnly = isReadOnly,
             enabled = state != ComponentState.DISABLED,
             keyboardOptions = keyboardOptions,
+            visualTransformation = if (isPassword && !revealed) androidx.compose.ui.text.input.PasswordVisualTransformation()
+                else androidx.compose.ui.text.input.VisualTransformation.None,
+            trailingIcon = if (isPassword) {
+                {
+                    androidx.compose.material3.IconButton(onClick = { revealed = !revealed }) {
+                        Icon(
+                            painter = painterResource(if (revealed) com.assistant.R.drawable.lucide_eye_off else com.assistant.R.drawable.lucide_eye),
+                            contentDescription = null,
+                            tint = CurrentTheme.getCurrentColorScheme().onSurface
+                        )
+                    }
+                }
+            } else null,
             modifier = Modifier
                 .fillMaxWidth()
                 .let { mod ->

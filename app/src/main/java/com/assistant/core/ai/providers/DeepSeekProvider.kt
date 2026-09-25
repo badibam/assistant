@@ -1,10 +1,8 @@
 package com.assistant.core.ai.providers
 
 import android.content.Context
-import androidx.compose.runtime.Composable
 import com.assistant.core.ai.data.PromptData
-import com.assistant.core.ai.providers.ui.ClaudeConfigScreen
-import com.assistant.core.validation.Schema
+import com.assistant.core.fields.settings.SettingNode
 
 /**
  * DeepSeek AI Provider - Standard variant
@@ -20,41 +18,17 @@ import com.assistant.core.validation.Schema
  */
 class DeepSeekStandardProvider(private val context: Context) : AIProvider {
 
-    // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "deepseek_standard", MessagesApi.DEEPSEEK)
+    private val core = ClaudeProviderCore(context, "deepseek_standard", MessagesApi.DEEPSEEK)
 
     override fun getProviderId(): String = "deepseek_standard"
 
     override fun getDisplayName(): String = "DeepSeek"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        ClaudeConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     override suspend fun query(promptData: PromptData, config: String): AIResponse {
         return core.query(promptData, config)
@@ -69,41 +43,17 @@ class DeepSeekStandardProvider(private val context: Context) : AIProvider {
  */
 class DeepSeekEconomicProvider(private val context: Context) : AIProvider {
 
-    // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "deepseek_economic", MessagesApi.DEEPSEEK)
+    private val core = ClaudeProviderCore(context, "deepseek_economic", MessagesApi.DEEPSEEK)
 
     override fun getProviderId(): String = "deepseek_economic"
 
     override fun getDisplayName(): String = "DeepSeek (économique)"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        ClaudeConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     override suspend fun query(promptData: PromptData, config: String): AIResponse {
         return core.query(promptData, config)

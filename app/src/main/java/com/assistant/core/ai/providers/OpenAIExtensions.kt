@@ -2,7 +2,6 @@ package com.assistant.core.ai.providers
 
 import com.assistant.core.ai.data.*
 import kotlinx.serialization.json.*
-import org.json.JSONObject
 import com.assistant.core.utils.LogManager
 
 /**
@@ -27,20 +26,18 @@ import com.assistant.core.utils.LogManager
  * - Session messages transformed with proper role mapping
  * - Current datetime appended at the end
  *
- * @param config Provider configuration (api_key, model, temperature, etc.)
+ * @param model The model asked for
+ * @param temperature The sampling temperature
+ * @param maxOutputTokens The longest answer asked for
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for OpenAI API /v1/responses endpoint
  */
-internal fun PromptData.toOpenAIJson(config: JSONObject, datetimeText: String): JsonObject {
-    val model = config.getString("model")
-    val temperature = config.optDouble("temperature", 1.0)
-    val maxTokens = config.optInt("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS)
-
+internal fun PromptData.toOpenAIJson(model: String, temperature: Double, maxOutputTokens: Int, datetimeText: String): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("temperature", temperature)
-        put("max_output_tokens", maxTokens)
+        put("max_output_tokens", maxOutputTokens)
 
         // Build input as array of messages
         putJsonArray("input") {

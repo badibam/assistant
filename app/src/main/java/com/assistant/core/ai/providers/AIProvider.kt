@@ -1,16 +1,15 @@
 package com.assistant.core.ai.providers
 
-import androidx.compose.runtime.Composable
+import android.content.Context
 import com.assistant.core.ai.data.PromptData
-import com.assistant.core.ai.providers.AIResponse
-import com.assistant.core.validation.SchemaProvider
+import com.assistant.core.fields.settings.SettingNode
 
 /**
  * Interface for AI providers (Claude, OpenAI, DeepSeek, etc.)
- * Extends SchemaProvider for unified validation with existing architecture
  *
- * Each provider implements this interface to provide AI query capabilities
- * Configuration validation handled via SchemaValidator.validate(schema, configData, context)
+ * A provider declares its settings with the fields (docs/design/config-fields.md): the schema its
+ * config is held to (AIProviderSettings) and its config screen (AIProviderConfigScreen) are
+ * generated from the declaration. The API key is a secret setting.
  *
  * Providers receive PromptData (raw L1-L3 + messages) and:
  * 1. Transform messages to provider-specific format
@@ -18,7 +17,7 @@ import com.assistant.core.validation.SchemaProvider
  * 3. Call provider API
  * 4. Return raw JSON response (orchestrator handles parsing)
  */
-interface AIProvider : SchemaProvider {
+interface AIProvider {
 
     /**
      * Unique provider identifier
@@ -30,21 +29,14 @@ interface AIProvider : SchemaProvider {
      */
     fun getDisplayName(): String
 
-    /**
-     * Configuration UI for this provider
-     *
-     * @param config Current configuration JSON
-     * @param onSave Callback to save configuration
-     * @param onCancel Callback to cancel without saving
-     * @param onReset Callback to reset/delete configuration (nullable)
-     */
-    @Composable
-    fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    )
+    /** The settings of this provider's config: api_key and model at least. */
+    fun getConfigSettings(context: Context): List<SettingNode>
+
+    /** What the config screen says under the form: where to get a key, what the models are. */
+    fun getConfigHelp(context: Context): String
+
+    /** The models [apiKey] gives access to, for the config screen to offer them. */
+    suspend fun listModels(apiKey: String): ProviderModels
 
     /**
      * Send query to AI provider with PromptData
@@ -63,9 +55,18 @@ interface AIProvider : SchemaProvider {
     suspend fun query(promptData: PromptData, config: String): AIResponse
 }
 
+/** A model a provider offers: its identifier, and the name it is shown under. */
+data class ProviderModel(val id: String, val label: String)
+
+/** The models a provider listed, or why it could not. */
+data class ProviderModels(val models: List<ProviderModel>, val error: String? = null)
+
 /**
  * Longest answer asked of a provider when its config sets none. Without streaming nothing arrives
  * before the whole answer is generated: a long answer is a long silent wait, which the read
  * timeout has to cover and a mobile network may cut. Anthropic advises about 16k without streaming.
  */
 const val DEFAULT_MAX_OUTPUT_TOKENS = 16_000
+
+/** Longest answer a provider's config may ask for. */
+const val MAX_OUTPUT_TOKENS = 32_000

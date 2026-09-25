@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,8 +27,6 @@ import org.junit.Test
  * input_tokens (uncached only), cache_creation_input_tokens and cache_read_input_tokens.
  */
 class ClaudeExtensionsTest {
-
-    private val config = JSONObject().put("model", "claude-test").put("max_tokens", 1000)
 
     private fun user(text: String) = message(MessageSender.USER, text = text)
     private fun ai(json: String) = message(MessageSender.AI, aiJson = json)
@@ -52,8 +49,7 @@ class ClaudeExtensionsTest {
             level3Content = "L3 app state",
             sessionMessages = history.toList()
         )
-        val cfg = JSONObject(config.toString()).apply { if (effort != null) put("effort", effort) }
-        return prompt.toClaudeJson(cfg, "Current date and time: 2026-09-24T10:00:00+02:00")
+        return prompt.toClaudeJson("claude-test", 1000, effort, "Current date and time: 2026-09-24T10:00:00+02:00")
     }
 
     /** Every cache_control marker in the request, wherever it sits. */

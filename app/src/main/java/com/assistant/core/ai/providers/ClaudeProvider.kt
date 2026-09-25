@@ -1,30 +1,8 @@
 package com.assistant.core.ai.providers
 
 import android.content.Context
-import androidx.compose.runtime.Composable
 import com.assistant.core.ai.data.PromptData
-import com.assistant.core.ai.providers.ui.ClaudeConfigScreen
-import com.assistant.core.validation.Schema
-
-/**
- * Model information from Claude API
- * Shared data class for all Claude provider variants
- */
-data class ClaudeModelInfo(
-    val id: String,
-    val displayName: String,
-    val createdAt: String
-)
-
-/**
- * Result of fetching available models from Claude API
- * Shared data class for all Claude provider variants
- */
-data class FetchModelsResult(
-    val success: Boolean,
-    val models: List<ClaudeModelInfo>,
-    val errorMessage: String?
-)
+import com.assistant.core.fields.settings.SettingNode
 
 /**
  * Claude AI Provider - Standard variant
@@ -49,8 +27,7 @@ data class FetchModelsResult(
 class ClaudeStandardProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other Claude variants
-    // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "claude_standard", MessagesApi.ANTHROPIC)
+    private val core = ClaudeProviderCore(context, "claude_standard", MessagesApi.ANTHROPIC)
 
     // ========================================================================================
     // AIProvider Implementation
@@ -60,38 +37,11 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "Claude"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    /**
-     * Configuration UI for Claude standard provider
-     * Passes core and displayName to shared config screen
-     */
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        ClaudeConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     /**
      * Send query to Claude API with PromptData
@@ -125,8 +75,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
 class ClaudeEconomicProvider(private val context: Context) : AIProvider {
 
     // Core implementation shared with other Claude variants
-    // Exposed as internal to allow ClaudeConfigScreen to access it
-    internal val core = ClaudeProviderCore(context, "claude_economic", MessagesApi.ANTHROPIC)
+    private val core = ClaudeProviderCore(context, "claude_economic", MessagesApi.ANTHROPIC)
 
     // ========================================================================================
     // AIProvider Implementation
@@ -136,38 +85,11 @@ class ClaudeEconomicProvider(private val context: Context) : AIProvider {
 
     override fun getDisplayName(): String = "Claude (économique)"
 
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return core.getSchema(schemaId, context)
-    }
+    override fun getConfigSettings(context: Context): List<SettingNode> = core.configSettings(context)
 
-    override fun getAllSchemaIds(): List<String> {
-        return core.getAllSchemaIds()
-    }
+    override fun getConfigHelp(context: Context): String = core.configHelp(context)
 
-    override fun getFormFieldName(fieldName: String, context: Context): String {
-        return core.getFormFieldName(fieldName, context)
-    }
-
-    /**
-     * Configuration UI for Claude economic provider
-     * Passes core and displayName to shared config screen
-     */
-    @Composable
-    override fun getConfigScreen(
-        config: String,
-        onSave: (String) -> Unit,
-        onCancel: () -> Unit,
-        onReset: (() -> Unit)?
-    ) {
-        ClaudeConfigScreen(
-            core = core,
-            displayName = getDisplayName(),
-            config = config,
-            onSave = onSave,
-            onCancel = onCancel,
-            onReset = onReset
-        )
-    }
+    override suspend fun listModels(apiKey: String): ProviderModels = core.fetchAvailableModels(apiKey)
 
     /**
      * Send query to Claude API with PromptData

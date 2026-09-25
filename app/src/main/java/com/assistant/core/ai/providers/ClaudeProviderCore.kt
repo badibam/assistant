@@ -3,10 +3,11 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.utils.LogManager
-import com.assistant.core.validation.Schema
-import com.assistant.core.validation.SchemaCategory
-import com.assistant.core.validation.SchemaProvider
-import com.assistant.core.validation.FieldLimits
+import com.assistant.core.fields.ChoiceSettings
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.TextLength
+import com.assistant.core.fields.settings.SettingNode
 import com.assistant.core.strings.Strings
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -70,7 +71,7 @@ internal enum class MessagesApi(
  *
  * Contains all shared logic for Claude API integration:
  * - HTTP client configuration with 2-minute timeout
- * - Schema management for configuration validation
+ * - Declaration of the config's settings
  * - Model fetching from Claude API
  * - Query execution with prompt caching
  * - Response parsing with token metrics
@@ -90,7 +91,7 @@ internal class ClaudeProviderCore(
     private val context: Context,
     private val variantId: String,
     val api: MessagesApi
-) : SchemaProvider {
+) {
 
     companion object {
         private const val ANTHROPIC_VERSION = "2023-06-01"
@@ -114,98 +115,34 @@ internal class ClaudeProviderCore(
     }
 
     // ========================================================================================
-    // SchemaProvider Implementation
+    // Settings
     // ========================================================================================
 
     /**
-     * Get schema by ID
-     * Uses variantId to generate unique schema IDs per variant
+     * The settings of this variant's config: its API key (secret), the model, the longest answer,
+     * and the reasoning effort when the endpoint declares levels (required then: DeepSeek thinks
+     * by default, so the user picks one explicitly).
      */
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return when (schemaId) {
-            "ai_provider_${variantId}_config" -> createClaudeConfigSchema(context)
-            else -> null
-        }
-    }
-
-    /**
-     * Get all schema IDs supported by this provider variant
-     */
-    override fun getAllSchemaIds(): List<String> {
-        return listOf("ai_provider_${variantId}_config")
-    }
-
-    /**
-     * Get human-readable field name for schema validation errors
-     */
-    override fun getFormFieldName(fieldName: String, context: Context): String {
+    fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
-        return when (fieldName) {
-            "api_key" -> s.shared("${api.stringPrefix}_api_key")
-            "model" -> s.shared("ai_provider_claude_model")
-            "max_tokens" -> s.shared("ai_provider_claude_max_tokens")
-            "effort" -> s.shared("ai_provider_claude_effort")
-            else -> fieldName
-        }
-    }
-
-    /**
-     * Create configuration schema for this Claude variant
-     *
-     * Schema defines required fields:
-     * - api_key: API key for Claude API authentication
-     * - model: Model ID (e.g., "claude-sonnet-4-5-20250929")
-     * - max_tokens: Maximum response length (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
-     * - effort: output_config.effort, required when the endpoint declares effort levels
-     */
-    private fun createClaudeConfigSchema(context: Context): Schema {
-        val s = Strings.`for`(context = context)
-        val hasEffort = api.effortLevels.isNotEmpty()
-
-        val effortProperty = if (hasEffort) """,
-                "effort": {
-                    "type": "string",
-                    "enum": [${api.effortLevels.joinToString(", ") { "\"$it\"" }}],
-                    "description": "${s.shared("ai_provider_claude_schema_effort")}"
-                }""" else ""
-        val required = if (hasEffort) "\"api_key\", \"model\", \"effort\"" else "\"api_key\", \"model\""
-
-        val content = """
-        {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                    "description": "${s.shared("${api.stringPrefix}_schema_api_key")}"
-                },
-                "model": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "${s.shared("${api.stringPrefix}_schema_model")}"
-                },
-                "max_tokens": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 32000,
-                    "default": $DEFAULT_MAX_OUTPUT_TOKENS,
-                    "description": "${s.shared("ai_provider_claude_schema_max_tokens")}"
-                }$effortProperty
-            },
-            "required": [$required],
-            "additionalProperties": false
-        }
-        """.trimIndent()
-
-        return Schema(
-            id = "ai_provider_${variantId}_config",
-            displayName = s.shared("${api.stringPrefix}_config_display_name"),
-            description = s.shared("${api.stringPrefix}_config_description"),
-            category = SchemaCategory.AI_PROVIDER,
-            content = content
+        val text = { name: String -> FieldDefinition(name, "", null, FieldType.TEXT, false, mapOf("length" to TextLength.SHORT.name)) }
+        return listOfNotNull(
+            SettingNode.Field(text("api_key").copy(displayName = s.shared("${api.stringPrefix}_api_key"),
+                description = s.shared("${api.stringPrefix}_schema_api_key")), required = true, secret = true),
+            // Chosen among the models the key gives access to, by the config screen
+            SettingNode.Field(text("model").copy(displayName = s.shared("ai_provider_model"),
+                description = s.shared("${api.stringPrefix}_schema_model")), required = true),
+            SettingNode.Field(FieldDefinition("max_tokens", s.shared("ai_provider_claude_max_tokens"), s.shared("ai_provider_claude_schema_max_tokens"),
+                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS),
+            if (api.effortLevels.isEmpty()) null
+            else SettingNode.Field(FieldDefinition("effort", s.shared("ai_provider_claude_effort"), s.shared("ai_provider_claude_schema_effort"),
+                FieldType.CHOICE, false, mapOf("options" to ChoiceSettings.storedOptions(api.effortLevels,
+                    api.effortLevels.associateWith { s.shared("ai_provider_claude_effort_$it") }))), required = true)
         )
     }
+
+    /** Where to get a key, and what the models are. */
+    fun configHelp(context: Context): String = Strings.`for`(context = context).shared("${api.stringPrefix}_help")
 
     // ========================================================================================
     // Public API for Provider Variants
@@ -218,9 +155,9 @@ internal class ClaudeProviderCore(
      * Also triggers background refresh of model pricing data (non-blocking).
      *
      * @param apiKey The Claude API key for authentication
-     * @return FetchModelsResult with success status, models list, and optional error
+     * @return The models, or the error that prevented listing them
      */
-    suspend fun fetchAvailableModels(apiKey: String): FetchModelsResult = withContext(Dispatchers.IO) {
+    suspend fun fetchAvailableModels(apiKey: String): ProviderModels = withContext(Dispatchers.IO) {
         try {
             LogManager.aiService("ClaudeProviderCore.fetchAvailableModels() - Variant: $variantId")
 
@@ -251,11 +188,7 @@ internal class ClaudeProviderCore(
                     "HTTP ${response.code}"
                 }
 
-                return@withContext FetchModelsResult(
-                    success = false,
-                    models = emptyList(),
-                    errorMessage = errorMessage
-                )
+                return@withContext ProviderModels(emptyList(), errorMessage)
             }
 
             // Parse successful response
@@ -265,45 +198,27 @@ internal class ClaudeProviderCore(
 
             if (dataArray == null) {
                 LogManager.aiService("Claude API response missing 'data' field", "ERROR")
-                return@withContext FetchModelsResult(
-                    success = false,
-                    models = emptyList(),
-                    errorMessage = "Invalid API response"
-                )
+                return@withContext ProviderModels(emptyList(), "Invalid API response")
             }
 
             // Parse models
-            val models = mutableListOf<ClaudeModelInfo>()
+            val models = mutableListOf<ProviderModel>()
             for (i in 0 until dataArray.length()) {
                 val modelObj = dataArray.optJSONObject(i)
                 if (modelObj != null) {
                     // The OpenAI-format model list (DeepSeek) has no display_name: the ID is the name
                     val id = modelObj.optString("id", "")
-                    models.add(
-                        ClaudeModelInfo(
-                            id = id,
-                            displayName = modelObj.optString("display_name", "").ifEmpty { id },
-                            createdAt = modelObj.optString("created_at", "")
-                        )
-                    )
+                    models.add(ProviderModel(id = id, label = modelObj.optString("display_name", "").ifEmpty { id }))
                 }
             }
 
             LogManager.aiService("Successfully fetched ${models.size} models from Claude API")
 
-            FetchModelsResult(
-                success = true,
-                models = models,
-                errorMessage = null
-            )
+            ProviderModels(models)
 
         } catch (e: Exception) {
             LogManager.aiService("Failed to fetch Claude models: ${e.message}", "ERROR", e)
-            FetchModelsResult(
-                success = false,
-                models = emptyList(),
-                errorMessage = e.message ?: "Unknown error"
-            )
+            ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
     }
 
@@ -325,12 +240,18 @@ internal class ClaudeProviderCore(
         LogManager.aiService("ClaudeProviderCore.query() - Variant: $variantId, Messages: ${promptData.sessionMessages.size}")
 
         try {
-            // Parse config
-            val configJson = JSONObject(config)
-            val apiKey = configJson.getString("api_key")
+            // Read the config through its declaration: an absent max_tokens is its default
+            val settings = com.assistant.core.fields.settings.SettingValues(configSettings(context), JSONObject(config))
+            val apiKey = settings.string("api_key") ?: error("Provider config has no api_key")
+            val requestedModel = settings.string("model") ?: error("Provider config has no model")
 
             // Transform PromptData to Claude JSON via extension
-            val requestJson = promptData.toClaudeJson(configJson, promptData.buildDatetimeMessage(context))
+            val requestJson = promptData.toClaudeJson(
+                model = requestedModel,
+                maxTokens = settings.number("max_tokens")!!.toInt(),
+                effort = if (api.effortLevels.isEmpty()) null else settings.string("effort"),
+                datetimeText = promptData.buildDatetimeMessage(context)
+            )
             val requestBody = requestJson.toString()
 
             LogManager.aiService("Built Claude request: ${requestBody.length} characters")
@@ -400,7 +321,6 @@ internal class ClaudeProviderCore(
 
             // Refuse a substituted model: what comes back is not what the config asked for.
             if (api.verifiesAnsweringModel && aiResponse.success) {
-                val requestedModel = configJson.getString("model")
                 val answeringModel = jsonResponse.jsonObject["model"]?.jsonPrimitive?.contentOrNull
                 if (answeringModel != requestedModel) {
                     LogManager.aiService("Model substituted: requested $requestedModel, answered by $answeringModel", "ERROR")

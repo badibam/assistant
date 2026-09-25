@@ -39,7 +39,8 @@ interface SettingEditor {
  * The form of any settings declaration (docs/design/config-fields.md, decision 3): a field by the
  * input of its field type, a group as a card, a list with add, remove and reorder, a variant with
  * the settings of the option chosen, a section as a titled card over settings stored beside it.
- * A setting the app writes itself (SettingNode.Field.systemWritten) is not shown.
+ * A setting the app writes itself (SettingNode.Field.systemWritten) is not shown; a secret one
+ * is entered masked.
  *
  * Stateless: [config] is the object being edited, and every change hands a new one to [onChange].
  *
@@ -94,9 +95,19 @@ private fun NodeForm(
             val name = node.definition.name
             val stored = config.opt(name)?.takeIf { it != JSONObject.NULL }
             val editor = editors[name]
-            if (editor != null) editor.Edit(stored) { set(name, it) }
-            // An absent setting shows the value its absence means
-            else FieldInput(node.definition, stored ?: node.default, { set(name, it) }, context)
+            when {
+                editor != null -> editor.Edit(stored) { set(name, it) }
+                // A secret is entered masked, whatever its field type says of its length
+                node.secret -> UI.FormField(
+                    label = node.definition.displayName,
+                    value = stored?.toString() ?: "",
+                    onChange = { set(name, it.ifEmpty { null }) },
+                    fieldType = com.assistant.core.ui.FieldType.PASSWORD,
+                    required = node.required
+                )
+                // An absent setting shows the value its absence means
+                else -> FieldInput(node.definition, stored ?: node.default, { set(name, it) }, context)
+            }
         }
 
         is SettingNode.Group -> {

@@ -3,10 +3,10 @@ package com.assistant.core.ai.providers
 import android.content.Context
 import com.assistant.core.ai.data.PromptData
 import com.assistant.core.utils.LogManager
-import com.assistant.core.validation.Schema
-import com.assistant.core.validation.SchemaCategory
-import com.assistant.core.validation.SchemaProvider
-import com.assistant.core.validation.FieldLimits
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.TextLength
+import com.assistant.core.fields.settings.SettingNode
 import com.assistant.core.strings.Strings
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
 internal class OpenAIProviderCore(
     private val context: Context,
     private val variantId: String
-) : SchemaProvider {
+) {
 
     companion object {
         private const val OPENAI_API_BASE_URL = "https://api.openai.com"
@@ -64,95 +64,31 @@ internal class OpenAIProviderCore(
     }
 
     // ========================================================================================
-    // SchemaProvider Implementation
+    // Settings
     // ========================================================================================
 
-    /**
-     * Get schema by ID
-     * Uses variantId to generate unique schema IDs per variant
-     */
-    override fun getSchema(schemaId: String, context: Context, toolInstanceId: String?): Schema? {
-        return when (schemaId) {
-            "ai_provider_${variantId}_config" -> createOpenAIConfigSchema(context)
-            else -> null
-        }
-    }
-
-    /**
-     * Get all schema IDs supported by this provider variant
-     */
-    override fun getAllSchemaIds(): List<String> {
-        return listOf("ai_provider_${variantId}_config")
-    }
-
-    /**
-     * Get human-readable field name for schema validation errors
-     */
-    override fun getFormFieldName(fieldName: String, context: Context): String {
+    /** The settings of this variant's config: its API key (secret), the model, temperature and longest answer. */
+    fun configSettings(context: Context): List<SettingNode> {
         val s = Strings.`for`(context = context)
-        return when (fieldName) {
-            "api_key" -> s.shared("ai_provider_openai_api_key")
-            "model" -> s.shared("ai_provider_openai_model")
-            "temperature" -> s.shared("ai_provider_openai_temperature")
-            "max_output_tokens" -> s.shared("ai_provider_openai_max_output_tokens")
-            else -> fieldName
-        }
-    }
-
-    /**
-     * Create configuration schema for this OpenAI variant
-     *
-     * Schema defines required fields:
-     * - api_key: API key for OpenAI API authentication
-     * - model: Model ID (e.g., "gpt-4.1", "gpt-4.1-mini")
-     * - temperature: Sampling temperature (optional, default 1.0)
-     * - max_output_tokens: Maximum response length (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
-     */
-    private fun createOpenAIConfigSchema(context: Context): Schema {
-        val s = Strings.`for`(context = context)
-
-        val content = """
-        {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": ${FieldLimits.MEDIUM_LENGTH},
-                    "description": "${s.shared("ai_provider_openai_schema_api_key")}"
-                },
-                "model": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "${s.shared("ai_provider_openai_schema_model")}"
-                },
-                "temperature": {
-                    "type": "number",
-                    "minimum": 0.0,
-                    "maximum": 2.0,
-                    "default": 1.0,
-                    "description": "${s.shared("ai_provider_openai_schema_temperature")}"
-                },
-                "max_output_tokens": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 32000,
-                    "default": $DEFAULT_MAX_OUTPUT_TOKENS,
-                    "description": "${s.shared("ai_provider_openai_schema_max_output_tokens")}"
-                }
-            },
-            "required": ["api_key", "model"],
-            "additionalProperties": false
-        }
-        """.trimIndent()
-
-        return Schema(
-            id = "ai_provider_${variantId}_config",
-            displayName = s.shared("ai_provider_openai_config_display_name"),
-            description = s.shared("ai_provider_openai_config_description"),
-            category = SchemaCategory.AI_PROVIDER,
-            content = content
+        fun text(name: String, secret: Boolean = false) = SettingNode.Field(
+            FieldDefinition(name, s.shared("ai_provider_openai_$name"), s.shared("ai_provider_openai_schema_$name"), FieldType.TEXT, false,
+                mapOf("length" to TextLength.SHORT.name)),
+            required = true, secret = secret)
+        return listOf(
+            text("api_key", secret = true),
+            // Chosen among the models the key gives access to, by the config screen
+            text("model"),
+            SettingNode.Field(FieldDefinition("temperature", s.shared("ai_provider_openai_temperature"), s.shared("ai_provider_openai_schema_temperature"),
+                FieldType.NUMERIC, false, mapOf("min" to 0, "max" to 2, "decimals" to 1)), default = 1.0),
+            SettingNode.Field(FieldDefinition("max_output_tokens", s.shared("ai_provider_openai_max_output_tokens"), s.shared("ai_provider_openai_schema_max_output_tokens"),
+                FieldType.NUMERIC, false, mapOf("min" to 1, "max" to MAX_OUTPUT_TOKENS, "decimals" to 0)), default = DEFAULT_MAX_OUTPUT_TOKENS)
         )
+    }
+
+    /** Where to get a key, and what temperature does. */
+    fun configHelp(context: Context): String {
+        val s = Strings.`for`(context = context)
+        return s.shared("ai_provider_openai_help") + "\n\n" + s.shared("ai_provider_openai_temperature_help")
     }
 
     // ========================================================================================
@@ -165,9 +101,9 @@ internal class OpenAIProviderCore(
      * Makes HTTP GET request to /v1/models endpoint to retrieve list of available models.
      *
      * @param apiKey The OpenAI API key for authentication
-     * @return OpenAIFetchModelsResult with success status, models list, and optional error
+     * @return The models, or the error that prevented listing them
      */
-    suspend fun fetchAvailableModels(apiKey: String): OpenAIFetchModelsResult = withContext(Dispatchers.IO) {
+    suspend fun fetchAvailableModels(apiKey: String): ProviderModels = withContext(Dispatchers.IO) {
         try {
             LogManager.aiService("OpenAIProviderCore.fetchAvailableModels() - Variant: $variantId")
 
@@ -194,11 +130,7 @@ internal class OpenAIProviderCore(
                     "HTTP ${response.code}"
                 }
 
-                return@withContext OpenAIFetchModelsResult(
-                    success = false,
-                    models = emptyList(),
-                    errorMessage = errorMessage
-                )
+                return@withContext ProviderModels(emptyList(), errorMessage)
             }
 
             // Parse successful response
@@ -208,41 +140,22 @@ internal class OpenAIProviderCore(
 
             if (dataArray == null) {
                 LogManager.aiService("OpenAI API response missing 'data' field", "ERROR")
-                return@withContext OpenAIFetchModelsResult(
-                    success = false,
-                    models = emptyList(),
-                    errorMessage = "Invalid API response"
-                )
+                return@withContext ProviderModels(emptyList(), "Invalid API response")
             }
 
             // Parse models
-            val models = mutableListOf<OpenAIModelInfo>()
-            dataArray.forEach { modelElement ->
-                val modelObj = modelElement.jsonObject
-                models.add(
-                    OpenAIModelInfo(
-                        id = modelObj["id"]?.jsonPrimitive?.content ?: "",
-                        created = modelObj["created"]?.jsonPrimitive?.long ?: 0L,
-                        ownedBy = modelObj["owned_by"]?.jsonPrimitive?.content ?: ""
-                    )
-                )
+            // The list names models by their identifier alone
+            val models = dataArray.mapNotNull { element ->
+                element.jsonObject["id"]?.jsonPrimitive?.content?.let { ProviderModel(id = it, label = it) }
             }
 
             LogManager.aiService("Successfully fetched ${models.size} models from OpenAI API")
 
-            OpenAIFetchModelsResult(
-                success = true,
-                models = models,
-                errorMessage = null
-            )
+            ProviderModels(models)
 
         } catch (e: Exception) {
             LogManager.aiService("Failed to fetch OpenAI models: ${e.message}", "ERROR", e)
-            OpenAIFetchModelsResult(
-                success = false,
-                models = emptyList(),
-                errorMessage = e.message ?: "Unknown error"
-            )
+            ProviderModels(emptyList(), e.message ?: "Unknown error")
         }
     }
 
@@ -268,12 +181,17 @@ internal class OpenAIProviderCore(
         LogManager.aiService("OpenAIProviderCore.query() - Variant: $variantId, Messages: ${promptData.sessionMessages.size}")
 
         try {
-            // Parse config
-            val configJson = org.json.JSONObject(config)
-            val apiKey = configJson.getString("api_key")
+            // Read the config through its declaration: an absent setting is its default
+            val settings = com.assistant.core.fields.settings.SettingValues(configSettings(context), org.json.JSONObject(config))
+            val apiKey = settings.string("api_key") ?: error("Provider config has no api_key")
 
             // Transform PromptData to OpenAI JSON via extension
-            val requestJson = promptData.toOpenAIJson(configJson, promptData.buildDatetimeMessage(context))
+            val requestJson = promptData.toOpenAIJson(
+                model = settings.string("model") ?: error("Provider config has no model"),
+                temperature = settings.number("temperature")!!.toDouble(),
+                maxOutputTokens = settings.number("max_output_tokens")!!.toInt(),
+                datetimeText = promptData.buildDatetimeMessage(context)
+            )
             val requestBody = requestJson.toString()
 
             LogManager.aiService("Built OpenAI request: ${requestBody.length} characters")

@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -42,7 +41,7 @@ class OpenAIExtensionsTest {
             level2Content = "L2 user data",
             level3Content = "L3 app state",
             sessionMessages = history.toList()
-        ).toOpenAIJson(JSONObject().put("model", "gpt-test"), "Current date and time: 2026-09-24T10:00:00+02:00")
+        ).toOpenAIJson("gpt-test", 1.0, 1000, "Current date and time: 2026-09-24T10:00:00+02:00")
 
     private fun JsonObject.input() = this["input"]!!.jsonArray.map { it.jsonObject }
 

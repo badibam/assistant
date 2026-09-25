@@ -946,20 +946,17 @@
 
     <!-- AI PROVIDERS - Claude specific -->
     <string name="ai_provider_claude_api_key">Claude API key</string>
-    <string name="ai_provider_claude_model">Model</string>
+    <string name="ai_provider_model">Model</string>
     <string name="ai_provider_claude_max_tokens">Token limit</string>
     <string name="ai_provider_claude_help">Get your API key at console.anthropic.com</string>
     <string name="ai_provider_claude_schema_api_key">Anthropic authentication API key</string>
     <string name="ai_provider_claude_schema_model">Claude model to use</string>
     <string name="ai_provider_claude_schema_max_tokens">Maximum token limit for the answers</string>
-    <string name="ai_provider_claude_config_display_name">Claude configuration</string>
-    <string name="ai_provider_claude_config_description">Configuration for Anthropic\'s Claude provider</string>
-    <string name="ai_provider_claude_fetch_models">Load the available models</string>
-    <string name="ai_provider_claude_fetching_models">Retrieving the models...</string>
-    <string name="ai_provider_claude_models_loaded">%1$d models loaded</string>
-    <string name="ai_provider_claude_no_models">No model available</string>
-    <string name="ai_provider_claude_fetch_error">Error: %1$s</string>
-    <string name="ai_provider_claude_enter_api_key_first">Please enter an API key first</string>
+    <string name="ai_provider_fetch_models">Load the available models</string>
+    <string name="ai_provider_fetching_models">Retrieving the models...</string>
+    <string name="ai_provider_no_models">No model available</string>
+    <string name="ai_provider_fetch_error">Error: %1$s</string>
+    <string name="ai_provider_enter_api_key_first">Please enter an API key first</string>
     <string name="ai_provider_claude_effort">Reasoning effort</string>
     <string name="ai_provider_claude_schema_effort">Reasoning effort asked of the model</string>
     <string name="ai_provider_claude_effort_low">Low</string>
@@ -971,8 +968,6 @@
     <string name="ai_provider_deepseek_help">Get your API key at platform.deepseek.com</string>
     <string name="ai_provider_deepseek_schema_api_key">DeepSeek authentication API key</string>
     <string name="ai_provider_deepseek_schema_model">DeepSeek model to use</string>
-    <string name="ai_provider_deepseek_config_display_name">DeepSeek configuration</string>
-    <string name="ai_provider_deepseek_config_description">Configuration for the DeepSeek provider, through its Anthropic-compatible API</string>
 
     <!-- AI PROVIDERS - OpenAI specific -->
     <string name="ai_provider_openai_api_key">OpenAI API key</string>
@@ -984,14 +979,6 @@
     <string name="ai_provider_openai_schema_model">OpenAI model to use</string>
     <string name="ai_provider_openai_schema_temperature">Sampling temperature (0.0 to 2.0)</string>
     <string name="ai_provider_openai_schema_max_output_tokens">Maximum token limit for the answers</string>
-    <string name="ai_provider_openai_config_display_name">OpenAI configuration</string>
-    <string name="ai_provider_openai_config_description">Configuration for the OpenAI provider</string>
-    <string name="ai_provider_openai_fetch_models">Load the available models</string>
-    <string name="ai_provider_openai_fetching_models">Retrieving the models...</string>
-    <string name="ai_provider_openai_models_loaded">%1$d models loaded</string>
-    <string name="ai_provider_openai_no_models">No model available</string>
-    <string name="ai_provider_openai_fetch_error">Error: %1$s</string>
-    <string name="ai_provider_openai_enter_api_key_first">Please enter an API key first</string>
 
     <!-- AI ERRORS - Provider related (additional) -->
     <string name="ai_error_no_provider_configured">No AI provider configured. Please configure a provider in the settings.</string>

@@ -2,7 +2,6 @@ package com.assistant.core.ai.providers
 
 import com.assistant.core.ai.data.*
 import kotlinx.serialization.json.*
-import org.json.JSONObject
 
 /**
  * Claude-specific extensions for PromptData transformation and response parsing
@@ -32,24 +31,21 @@ internal data class FusedMessage(
  * - Current datetime appended at the end (always fresh, never cached)
  * - Cache_control on last block of last history message (4th breakpoint)
  *
- * @param config Provider configuration (api_key, model, max_tokens, etc.)
+ * @param model The model asked for
+ * @param maxTokens The longest answer asked for
+ * @param effort The reasoning effort, for an endpoint that declares levels (DeepSeek); null otherwise
  * @param datetimeText The dated closing message (buildDatetimeMessage), built by the caller:
  *   it reads the clock and the strings, which keeps this function pure and testable
  * @return JsonObject ready for Claude API /v1/messages endpoint
  */
-internal fun PromptData.toClaudeJson(config: JSONObject, datetimeText: String): JsonObject {
-    val model = config.getString("model")
-    val maxTokens = config.optInt("max_tokens", DEFAULT_MAX_OUTPUT_TOKENS)
-    // Present only when the endpoint declares effort levels (schema-enforced, see MessagesApi)
-    val effort = config.optString("effort", "")
-
+internal fun PromptData.toClaudeJson(model: String, maxTokens: Int, effort: String?, datetimeText: String): JsonObject {
     return buildJsonObject {
         put("model", model)
         put("max_tokens", maxTokens)
 
         // No "thinking" field alongside: a 400 seen through Claude Code (anthropics/claude-code#65863)
         // points to the pair being mutually exclusive on DeepSeek (not measured here)
-        if (effort.isNotEmpty()) {
+        if (effort != null) {
             putJsonObject("output_config") {
                 put("effort", effort)
             }
