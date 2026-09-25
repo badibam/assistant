@@ -2,7 +2,6 @@
 
 ## dev_base @ b263dd7
 ## universel @ 5f92093
-! 2142abc  tracking stores its derived 'raw' display text in data; moving it to read time touches every read path (AI queries, backup), deferred to the tracking rewrite
 ! 75da8fc  OpenAI base URL and LiteLLM price list are hardcoded; a configurable host needs a decision on model listing and pricing for unknown hosts
 - f6a60f3  generated files stay versioned (icon drawables and index, from scripts/generate_icons.py over third_party/lucide): the build must never need the generator or its inputs
 ## android @ a500d4f
