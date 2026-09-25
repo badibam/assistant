@@ -35,7 +35,15 @@ Conception en cours, commencée le 2026-09-25. Regroupe les items de `NOTES.md` 
 L'app n'a pas à rester utilisable entre deux blocs ; chaque commit compile et garde la suite verte. L'ancien code d'un outil part dans le commit qui le fait passer au modèle. Recette sur l'appareil une fois, à la fin.
 
 - **A. La couche des champs** (`core/fields`) — faite : DURÉE (`Duration.kt`), réglages de CHOICE (`Choice.kt`, couleurs `TagColor` fournies par le thème, `option_labels` pour les options techniques d'un champ déclaré), déclarations et schéma généré (`EntryFields.kt`), composant d'affichage (`FieldValueDisplay.kt`), calcul du chronomètre (`RunningDurations.kt`).
-- **B. Les outils et le stockage**, en une migration de base (35 → 36) et une transformation des sauvegardes : `custom_fields` → `extra`, colonne `state`, forme du tracking, millisecondes, fin de `raw` et des libellés copiés. Les quatre outils passent sur leurs déclarations (méthode à ajouter à `ToolTypeContract`) et leurs écrans sur les composants ; modes rapides du tracking réécrits, `TimerManager` supprimé. Reste du bloc A qui attend la colonne `state` ou le renommage en `extra` : les opérations `start_duration` / `stop_duration` du dispatcher, et l'ajout des valeurs nouvelles d'un CHOICE ouvert aux options, dans la transaction de l'écriture (`ChoiceSettings.newOptionsIn`, `withOptionsAdded`).
+- **B. Les outils et le stockage** — fait : migration 35 → 36 et import des sauvegardes par `FieldsAtV36`, déclarations des quatre outils (`getEntryFields`), schéma d'entrée généré (`BaseSchemas.getEntrySchema`), opérations `start_duration` / `stop_duration`, CHOICE ouvert qui grandit dans la transaction de l'écriture, `TimerManager` et `raw` supprimés. Tranché en codant :
+  - config d'un suivi : `type`, `value` (les réglages du champ principal, tenus au schéma de config de son type de champ), `units` (numérique), `items` (raccourcis `name`, `value`, `unit`), `allow_decrement` (compteur) ;
+  - les libellés oui/non passent du raccourci au champ `value`, une paire par outil (la migration prend ceux du premier raccourci) ;
+  - la clé de config `custom_fields` devient `extra_fields` ;
+  - l'état s'écrit par le paramètre `state` de `tool_data.create` / `update`, fusionné comme `extra` ; `tool_data.get` filtre `running` pour retrouver un chronomètre ;
+  - les notes n'ont plus de nom (toutes portaient « Note ») ;
+  - les copies envoyées d'un message (`common_title`, `common_content`, `priority`) restent sans marque `system_managed`, faute de quoi le scheduler, qui écrit par le dispatcher, verrait ses écritures retirées ;
+  - changer le type d'un suivi efface ses entrées après confirmation ; changer les réglages de `value` ou les unités garde les entrées telles quelles, après avertissement ;
+  - une saisie libre prend la première unité de la liste.
 - **C. L'IA** : prompt L1, `SchemaModelView` (durées ISO 8601, `state`), grammaire des chemins, modules de communication en listes de champs, valeurs proposées dans la demande de validation, rejeu du prompt.
 - **D. Le pointeur** : choix des champs et filtres par valeur.
 
@@ -62,7 +70,6 @@ L'app n'a pas à rester utilisable entre deux blocs ; chaque commit compile et g
 
 ## Ouvert
 
-- L'unité par défaut d'une saisie libre dans un suivi numérique : la première de la liste, ou celle de la dernière entrée.
 - Un champ obligatoire dans `extra` : une saisie rapide ouvrirait alors la fenêtre d'édition préremplie.
 - Ce que `name` veut dire pour chaque outil (nom du raccourci dans le tracking, titre d'une note).
 - Réglage d'un champ : label affiché ou non. (La validation d'un CHOICE contre ses options existe déjà : `enum` dans le schéma généré.)

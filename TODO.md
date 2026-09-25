@@ -4,11 +4,13 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Un seul système de champs (`docs/design/unified-fields.md`) : modèle posé, implémentation en quatre blocs. Bloc A fait ; prochain : bloc B, les outils et la migration de base 35 → 36.
+- Un seul système de champs (`docs/design/unified-fields.md`) : modèle posé, implémentation en quatre blocs. Blocs A et B faits ; prochain : bloc C, l'IA (le prompt parle encore de l'ancienne forme des entrées de tracking).
 
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 
 ## En attente d'un déclencheur
+
+- `ToolTypeContract.getAvailableOperations` n'a aucun appelant (le tracking y liste des opérations qui n'existent pas) — à supprimer avec ses quatre implémentations au prochain passage sur le contrat.
 
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
