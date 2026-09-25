@@ -599,7 +599,7 @@ DeepSeek passe par `ClaudeProviderCore` sur son endpoint `/anthropic` (`Messages
 - Effort (`output_config.effort`) obligatoire dans la config, parmi `low`/`high`/`max` : le raisonnement est actif par défaut chez DeepSeek, les autres valeurs n'en sont que des alias.
 - Substitution de modèle : un nom `claude-*` est servi par `deepseek-flash` sans erreur, et le champ `model` de la réponse le révèle. Toute réponse dont le `model` diffère du modèle demandé est rejetée (erreur définitive). Mesuré le 2026-09-19 ; un ID inconnu, lui, reçoit une erreur explicite.
 - Pas de suffixe `[1m]` sur l'ID du modèle. L'API l'accepte et répond avec le modèle sans suffixe (mesuré le 2026-09-19) ; son effet sur la taille du contexte n'est pas mesuré. La doc Claude Code le décrit comme un réglage de la fenêtre de contexte de Claude Code lui-même.
-- `cache_control` ignoré : le cache de contexte de DeepSeek est automatique.
+- `cache_control` ignoré : le cache de contexte de DeepSeek est automatique. Il reprend d'un appel à l'autre tout le début identique, conversation comprise, message daté final et raisonnement retiré n'y changeant rien (mesuré le 2026-09-25) ; ce qui change avant l'historique, comme un L3 reconstruit, l'arrête là.
 - La réponse commence par un bloc `thinking` : le parsing lit le bloc `text`.
 
 ### Configuration
