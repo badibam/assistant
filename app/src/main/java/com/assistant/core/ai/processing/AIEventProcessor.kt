@@ -1839,14 +1839,14 @@ class AIEventProcessor(
 
                         if (modelId.isNotEmpty()) {
                             // Get model pricing
-                            val modelPrice = com.assistant.core.ai.utils.ModelPriceManager.getModelPrice(effectiveProviderId, modelId)
+                            val modelPrice = com.assistant.core.ai.utils.ModelPriceManager.getModelPrice(context, modelId)
 
                             if (modelPrice != null) {
                                 // Calculate costs (use 0.0 if cache prices not available)
-                                val inputCost = updatedTokens.totalUncachedInputTokens * modelPrice.inputCostPerToken
+                                val inputCost = updatedTokens.totalUncachedInputTokens * (modelPrice.inputCostPerToken ?: 0.0)
                                 val cacheWriteCost = updatedTokens.totalCacheWriteTokens * (modelPrice.cacheWriteCostPerToken ?: 0.0)
                                 val cacheReadCost = updatedTokens.totalCacheReadTokens * (modelPrice.cacheReadCostPerToken ?: 0.0)
-                                val outputCost = updatedTokens.totalOutputTokens * modelPrice.outputCostPerToken
+                                val outputCost = updatedTokens.totalOutputTokens * (modelPrice.outputCostPerToken ?: 0.0)
                                 val totalCost = inputCost + cacheWriteCost + cacheReadCost + outputCost
 
                                 // Create cost breakdown

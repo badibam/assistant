@@ -1,53 +1,49 @@
 package com.assistant.core.ai.utils
 
 import android.content.Context
-import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Model price information from LiteLLM pricing database
+ * Model price information from LiteLLM pricing database.
+ * A price missing from the list is null, never 0: a missing price is not a free one.
  */
 data class ModelPrice(
     val modelId: String,
-    val inputCostPerToken: Double,
-    val outputCostPerToken: Double,
-    val cacheWriteCostPerToken: Double?,  // Generic (Claude, OpenAI, etc.)
-    val cacheReadCostPerToken: Double?,   // Generic (Claude, OpenAI, etc.)
-    val provider: String,
-    val maxInputTokens: Int?,
-    val maxOutputTokens: Int?
+    val inputCostPerToken: Double?,
+    val outputCostPerToken: Double?,
+    val cacheWriteCostPerToken: Double?,
+    val cacheReadCostPerToken: Double?
 )
 
 /**
- * Singleton manager for AI model pricing
+ * Prices of AI models, from LiteLLM's public list, available whenever a call needs them.
  *
- * Fetches and caches model pricing data from LiteLLM's public pricing database
- * Similar pattern to AppConfigManager but for model pricing
+ * The last list downloaded is kept on the phone and read back on first use, network or not,
+ * whichever way the app was started (screen or background automation). A list older than a day
+ * is downloaded again in the background. A model missing from a list older than an hour is
+ * looked up in a fresh download at once: it may be newer than the copy.
  *
- * Usage:
- * - Initialize at app startup: ModelPriceManager.initialize(context)
- * - Get price: ModelPriceManager.getModelPrice(providerId, modelId)
- * - Refresh pricing: ModelPriceManager.refresh() (called automatically when fetching models)
+ * A model absent even from a fresh list has no price: its calls get an unknown cost.
  */
 object ModelPriceManager {
 
     private const val LITELLM_PRICING_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+    private const val FILE_NAME = "model_prices.json"
     private const val TIMEOUT_SECONDS = 30L
-
-    // In-memory cache of model prices indexed by LiteLLM model ID
-    @Volatile
-    private var priceCache: Map<String, ModelPrice> = emptyMap()
-
-    @Volatile
-    private var isInitialized = false
-
-    @Volatile
-    private var lastFetchTimestamp: Long = 0
+    private const val STALE_AFTER_MS = 24 * 3600_000L
+    private const val MISSING_MODEL_RETRY_AFTER_MS = 3600_000L
 
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -56,203 +52,105 @@ object ModelPriceManager {
             .build()
     }
 
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val lock = Mutex()
+
+    // The list in memory, as last read from the phone or downloaded; null until first use
+    @Volatile private var prices: Map<String, ModelPrice>? = null
+    @Volatile private var fetchedAt: Long = 0L
+
     /**
-     * Initialize pricing cache from LiteLLM database
-     * Must be called at app startup
-     *
-     * Fetches asynchronously - failures are logged but don't block initialization
+     * Price of a model, by its exact ID in the provider's config, or null if unknown.
      */
-    suspend fun initialize(context: Context) {
-        if (isInitialized) return
+    suspend fun getModelPrice(context: Context, modelId: String): ModelPrice? =
+        getModelPrice(context.applicationContext.filesDir, modelId)
 
-        LogManager.aiService("ModelPriceManager.initialize() - Starting fetch from LiteLLM")
+    /** Same, with the copy kept in [dir]. */
+    internal suspend fun getModelPrice(dir: File, modelId: String): ModelPrice? {
+        val file = File(dir, FILE_NAME)
+        lock.withLock {
+            if (prices == null) {
+                if (file.exists()) readCopy(file) else download(file)
+            }
+        }
 
+        val age = System.currentTimeMillis() - fetchedAt
+        prices?.get(modelId)?.let { price ->
+            if (age > STALE_AFTER_MS) backgroundScope.launch {
+                // Calls in a row each ask; the first download serves them all
+                lock.withLock { if (System.currentTimeMillis() - fetchedAt > STALE_AFTER_MS) download(file) }
+            }
+            return price
+        }
+
+        // Missing: the copy may predate the model
+        if (age > MISSING_MODEL_RETRY_AFTER_MS) {
+            lock.withLock { if (System.currentTimeMillis() - fetchedAt > MISSING_MODEL_RETRY_AFTER_MS) download(file) }
+        }
+        return prices?.get(modelId).also {
+            if (it == null) LogManager.aiService("ModelPriceManager: no price for model '$modelId'", "WARN")
+        }
+    }
+
+    /** Read the copy kept on the phone. Its age is its file's. */
+    private suspend fun readCopy(file: File) = withContext(Dispatchers.IO) {
         try {
-            fetchAndCachePricing(context)
-            isInitialized = true
-            LogManager.aiService("ModelPriceManager initialized: ${priceCache.size} models loaded")
+            prices = parse(file.readText())
+            fetchedAt = file.lastModified()
+            LogManager.aiService("ModelPriceManager: ${prices?.size} prices read from the phone's copy")
         } catch (e: Exception) {
-            LogManager.aiService("ModelPriceManager initialization failed: ${e.message}", "WARN", e)
-            // Initialize with empty cache on failure - allows app to continue
-            priceCache = emptyMap()
-            isInitialized = true
+            LogManager.aiService("ModelPriceManager: phone's copy unreadable (${e.message}), downloading", "WARN")
+            download(file)
         }
     }
 
     /**
-     * Refresh pricing data from LiteLLM
-     * Called automatically when providers fetch available models
+     * Download the list and keep it on the phone. A failure keeps whatever list was there:
+     * its prices are still the best known, and the next call tries again.
      */
-    suspend fun refresh() {
-        LogManager.aiService("ModelPriceManager.refresh() - Refreshing pricing data")
-
+    private suspend fun download(file: File) = withContext(Dispatchers.IO) {
         try {
-            // Only fetch if last fetch was more than 1 hour ago (avoid excessive API calls)
-            val now = System.currentTimeMillis()
-            if (now - lastFetchTimestamp < 3600_000) {
-                LogManager.aiService("ModelPriceManager.refresh() - Skipping, last fetch was ${(now - lastFetchTimestamp) / 1000}s ago")
-                return
+            val request = Request.Builder().url(LITELLM_PRICING_URL).get().build()
+            val body = httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
+                response.body?.string() ?: throw Exception("Empty response body")
             }
+            val parsed = parse(body)
 
-            fetchAndCachePricing(null)
-            LogManager.aiService("ModelPriceManager refreshed: ${priceCache.size} models loaded")
+            // Written aside then moved, so a cut write never leaves a broken copy
+            val partial = File(file.parentFile, "$FILE_NAME.part")
+            partial.writeText(body)
+            if (!partial.renameTo(file)) throw Exception("Could not replace ${file.name}")
+
+            prices = parsed
+            fetchedAt = System.currentTimeMillis()
+            LogManager.aiService("ModelPriceManager: ${parsed.size} prices downloaded")
         } catch (e: Exception) {
-            LogManager.aiService("ModelPriceManager refresh failed: ${e.message}", "WARN", e)
-            // Keep existing cache on failure
+            LogManager.aiService("ModelPriceManager: download failed: ${e.message}", "WARN")
+            if (prices == null) prices = emptyMap()
         }
     }
 
-    /**
-     * Get model price by provider and model ID
-     *
-     * @param providerId Provider identifier (e.g., "claude", "openai")
-     * @param modelId Provider-specific model ID
-     * @return ModelPrice if available, null if model not found or pricing unavailable
-     */
-    fun getModelPrice(providerId: String, modelId: String): ModelPrice? {
-        if (!isInitialized) {
-            LogManager.aiService("ModelPriceManager.getModelPrice() called before initialization", "WARN")
-            return null
+    /** Drop the list in memory, as a new process would start. */
+    internal fun forgetForTest() {
+        prices = null
+        fetchedAt = 0L
+    }
+
+    internal fun parse(json: String): Map<String, ModelPrice> {
+        val list = JSONObject(json)
+        val parsed = mutableMapOf<String, ModelPrice>()
+        list.keys().forEach { modelId ->
+            val model = list.optJSONObject(modelId) ?: return@forEach
+            fun price(key: String): Double? = if (model.has(key)) model.optDouble(key).takeUnless { it.isNaN() } else null
+            parsed[modelId] = ModelPrice(
+                modelId = modelId,
+                inputCostPerToken = price("input_cost_per_token"),
+                outputCostPerToken = price("output_cost_per_token"),
+                cacheWriteCostPerToken = price("cache_creation_input_token_cost"),
+                cacheReadCostPerToken = price("cache_read_input_token_cost")
+            )
         }
-
-        // Map provider model ID to LiteLLM ID
-        val liteLLMId = mapProviderModelToLiteLLMId(providerId, modelId) ?: return null
-
-        val price = priceCache[liteLLMId]
-
-        if (price == null) {
-            LogManager.aiService("ModelPriceManager.getModelPrice() - Price not found for provider=$providerId, modelId=$modelId, mapped=$liteLLMId", "DEBUG")
-        }
-
-        return price
-    }
-
-    /**
-     * Map provider-specific model ID to LiteLLM model ID
-     *
-     * LiteLLM uses standardized model IDs across providers
-     * This function handles provider-specific naming variations
-     *
-     * Examples:
-     * - Claude: "claude-3-5-sonnet-20241022" → "claude-3-5-sonnet-20241022" (direct match)
-     * - OpenAI: "gpt-4o" → "gpt-4o" (direct match)
-     * - Custom names → Standard LiteLLM IDs
-     *
-     * @param providerId Provider identifier
-     * @param modelId Provider-specific model ID
-     * @return LiteLLM standardized model ID, or null if mapping not found
-     */
-    fun mapProviderModelToLiteLLMId(providerId: String, modelId: String): String? {
-        return when (providerId) {
-            "claude" -> mapClaudeModel(modelId)
-            "openai" -> mapOpenAIModel(modelId)
-            // Extensible for other providers
-            else -> {
-                // Fallback: try model ID directly
-                LogManager.aiService("ModelPriceManager.mapProviderModelToLiteLLMId() - Unknown provider $providerId, trying direct model ID", "DEBUG")
-                modelId
-            }
-        }
-    }
-
-    // ========================================================================================
-    // Private Implementation
-    // ========================================================================================
-
-    /**
-     * Fetch pricing data from LiteLLM and cache in memory
-     */
-    private suspend fun fetchAndCachePricing(context: Context?) = withContext(Dispatchers.IO) {
-        val s = context?.let { Strings.`for`(context = it) }
-
-        LogManager.aiService("ModelPriceManager.fetchAndCachePricing() - Fetching from $LITELLM_PRICING_URL")
-
-        val request = Request.Builder()
-            .url(LITELLM_PRICING_URL)
-            .get()
-            .build()
-
-        val response = httpClient.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            val errorMsg = s?.shared("error_model_prices_fetch_failed")
-                ?: "Failed to fetch model prices"
-            LogManager.aiService("$errorMsg: HTTP ${response.code}", "ERROR")
-            throw Exception("HTTP ${response.code}")
-        }
-
-        val responseBody = response.body?.string()
-            ?: throw Exception("Empty response body")
-
-        // Parse JSON
-        val pricingJson = JSONObject(responseBody)
-        val newCache = mutableMapOf<String, ModelPrice>()
-
-        pricingJson.keys().forEach { modelId ->
-            try {
-                val modelData = pricingJson.getJSONObject(modelId)
-
-                val inputCost = modelData.optDouble("input_cost_per_token", 0.0)
-                val outputCost = modelData.optDouble("output_cost_per_token", 0.0)
-                val cacheWriteCost = modelData.optDouble("cache_creation_input_token_cost", Double.NaN)
-                val cacheReadCost = modelData.optDouble("cache_read_input_token_cost", Double.NaN)
-                val provider = modelData.optString("litellm_provider", "unknown")
-                val maxInputTokens = modelData.optInt("max_input_tokens", -1)
-                val maxOutputTokens = modelData.optInt("max_output_tokens", -1)
-
-                newCache[modelId] = ModelPrice(
-                    modelId = modelId,
-                    inputCostPerToken = inputCost,
-                    outputCostPerToken = outputCost,
-                    cacheWriteCostPerToken = if (cacheWriteCost.isNaN()) null else cacheWriteCost,
-                    cacheReadCostPerToken = if (cacheReadCost.isNaN()) null else cacheReadCost,
-                    provider = provider,
-                    maxInputTokens = if (maxInputTokens > 0) maxInputTokens else null,
-                    maxOutputTokens = if (maxOutputTokens > 0) maxOutputTokens else null
-                )
-            } catch (e: Exception) {
-                LogManager.aiService("Failed to parse pricing for model $modelId: ${e.message}", "WARN")
-                // Continue with other models
-            }
-        }
-
-        priceCache = newCache
-        lastFetchTimestamp = System.currentTimeMillis()
-
-        LogManager.aiService("ModelPriceManager.fetchAndCachePricing() - Cached ${newCache.size} model prices")
-    }
-
-    /**
-     * Map Claude model names to LiteLLM IDs
-     * Generally direct match, but can handle variations
-     */
-    private fun mapClaudeModel(modelId: String): String {
-        // Claude model IDs typically match LiteLLM directly
-        // e.g., "claude-3-5-sonnet-20241022" → "claude-3-5-sonnet-20241022"
-        return modelId
-    }
-
-    /**
-     * Map OpenAI model names to LiteLLM IDs
-     * Generally direct match, but can handle variations
-     */
-    private fun mapOpenAIModel(modelId: String): String {
-        // OpenAI model IDs typically match LiteLLM directly
-        // e.g., "gpt-4o" → "gpt-4o"
-        return modelId
-    }
-
-    /**
-     * Get all cached model IDs (for debugging)
-     */
-    fun getCachedModelIds(): List<String> {
-        return priceCache.keys.toList()
-    }
-
-    /**
-     * Check if pricing data is available
-     */
-    fun isPricingAvailable(): Boolean {
-        return isInitialized && priceCache.isNotEmpty()
+        return parsed
     }
 }

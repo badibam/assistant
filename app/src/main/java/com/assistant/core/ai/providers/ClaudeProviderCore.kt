@@ -224,15 +224,6 @@ internal class ClaudeProviderCore(
         try {
             LogManager.aiService("ClaudeProviderCore.fetchAvailableModels() - Variant: $variantId")
 
-            // Refresh model prices in parallel (non-blocking)
-            launch {
-                try {
-                    com.assistant.core.ai.utils.ModelPriceManager.refresh()
-                } catch (e: Exception) {
-                    LogManager.aiService("Failed to refresh model prices: ${e.message}", "WARN")
-                }
-            }
-
             // Build request: DeepSeek lists models on its OpenAI-format endpoint (Bearer auth)
             val requestBuilder = Request.Builder().url(api.modelsUrl).get()
             when (api) {
