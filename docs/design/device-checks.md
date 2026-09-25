@@ -22,12 +22,15 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Fermer l'app de force pendant une attente (validation, question, données volumineuses), la rouvrir : les boutons reviennent.
 - Rotation pendant la composition : deux blocs, un pointeur ouvert sur le second avec zone, outil, contexte et période choisis. Après la rotation, la fenêtre et les choix sont là, et le pointeur arrive dans le second bloc.
 - Prompt L1 modifié : rejouer `docs/ai-prompt-replay.md`.
+- Mode avion puis message CHAT : échec immédiat avec un message réseau, rien ne part (les NOTES disaient que l'appel partait quand même).
+- Interrompre pendant que l'IA réfléchit, réseau coupé ou non : le composeur revient tout de suite, avec « Round IA interrompu » et la note de coût inconnu ; le coût de la session s'affiche en « ≥ ».
 
 ## Automations
 
 - Rattrapage réel : automation programmée, app fermée plusieurs jours. Voir quelle session est reprise et ce que montre l'écran d'historique ; une donnée de la date prévue est écrite avec un timestamp ISO explicite.
 - Créer une automation planifiée : sa prochaine exécution s'affiche sur sa carte. La fenêtre de rattrapage se saisit dans l'éditeur.
 - Seuil de données bas : le refus apparaît dans l'historique d'exécution, et l'IA resserre sa requête.
+- Lancer une automation, couper le réseau pendant l'appel, puis Stop : la session se ferme tout de suite. Sans Stop, elle attend le réseau si l'appel n'était pas parti, ou s'arrête avec « Requête envoyée, réponse perdue » et un coût en « ≥ » sur sa carte.
 
 ## Outils et saisie
 
