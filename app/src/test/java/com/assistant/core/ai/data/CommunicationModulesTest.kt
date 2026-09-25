@@ -38,6 +38,9 @@ class CommunicationModulesTest {
     fun aModuleIsFieldsTheAiNames() {
         assertTrue(accepts(zoneQuestion))
         assertTrue("a confirmation has no field", accepts("""{ "fields": [] }"""))
+        // What the app's validator checks of it: an empty list is dropped before checking
+        assertTrue("a confirmation without its empty list", accepts("""{}"""))
+        assertEquals(emptyList<Any>(), CommunicationModules.fieldsOf(JSONObject("{}")))
         assertFalse("a field without its key", accepts("""{ "fields": [{ "display_name": "Why", "type": "TEXT" }] }"""))
         assertFalse("a type's settings are those of any field",
             accepts("""{ "fields": [{ "name": "mood", "display_name": "Mood", "type": "SCALE" }] }"""))

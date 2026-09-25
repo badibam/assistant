@@ -58,13 +58,16 @@ object CommunicationModules {
             default = false
         )
 
-    /** The declaration of a module: its fields, none for a confirmation. */
+    /**
+     * The declaration of a module: its fields, none for a confirmation. Not required: an empty
+     * list and no list both ask for a confirmation, and the validator drops an empty list before
+     * checking, so a required one would refuse the confirmation it was written for.
+     */
     fun declarationNodes(text: (String) -> String): List<SettingNode> = listOf(
         SettingNode.ListOf(
             name = "fields",
             label = text("ai_module_fields"),
             item = SettingNode.Item.Of(fieldNodes(text)),
-            required = true,
             fieldDefinitions = true
         )
     )
@@ -101,7 +104,7 @@ object CommunicationModules {
 
     /** The fields of a declaration, which [check] has found valid. */
     fun fieldsOf(declaration: JSONObject): List<SettingNode.Field> {
-        val list = declaration.getJSONArray("fields")
+        val list = declaration.optJSONArray("fields") ?: return emptyList()
         return (0 until list.length()).map { i ->
             val field = list.getJSONObject(i)
             SettingNode.Field(field.toFieldDefinition(), required = field.optBoolean("required", false))
