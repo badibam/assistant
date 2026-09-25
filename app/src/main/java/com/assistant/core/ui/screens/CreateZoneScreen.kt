@@ -1,31 +1,33 @@
 package com.assistant.core.ui.screens
 
-import com.assistant.core.ui.StringListSaver
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ui.UI
 import com.assistant.core.ui.*
-import com.assistant.core.ui.components.GroupListEditor
 import com.assistant.core.strings.Strings
 import com.assistant.core.database.entities.Zone
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
+import com.assistant.core.fields.settings.SettingEditor
+import com.assistant.core.fields.settings.SettingsForm
+import com.assistant.core.schemas.ZoneSettings
+import com.assistant.core.utils.JsonUtils
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import com.assistant.core.utils.LogManager
+import org.json.JSONObject
 
 /**
- * Screen for creating/editing a zone
- * Uses hybrid system: Compose layouts + UI.* visual components
+ * Screen for creating or editing a zone: the form of its declaration (ZoneSettings), with the
+ * icon picker and the main screen's zone groups drawn by their own editors. It saves through
+ * the service, which checks the zone and says what it refuses.
  */
 @Composable
 fun CreateZoneScreen(
@@ -43,142 +45,65 @@ fun CreateZoneScreen(
     val s = remember { Strings.`for`(context = context) }
     val coroutineScope = rememberCoroutineScope()
     val coordinator = remember { Coordinator(context) }
-    
-    // Form state - persistent across orientation changes
-    var name by rememberSaveable(existingZone) { mutableStateOf(existingZone?.name.orEmpty()) }
-    var description by rememberSaveable(existingZone) { mutableStateOf(existingZone?.description.orEmpty()) }
-    var iconName by rememberSaveable(existingZone) { mutableStateOf(existingZone?.icon_name.orEmpty()) }
-    var color by rememberSaveable { mutableStateOf(String()) } // Note: Zone entity doesn't have color field
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val nodes = remember { ZoneSettings.nodes(context) }
+    val isEditing = existingZone != null
 
-    // Parse tool_groups from existing zone
-    val initialToolGroups = remember(existingZone) {
-        existingZone?.tool_groups?.let { jsonString ->
-            try {
-                val jsonArray = JSONArray(jsonString)
-                (0 until jsonArray.length()).map { jsonArray.getString(it) }
-            } catch (e: Exception) {
-                emptyList()
+    // The zone's settings as one object, the form's single source of truth
+    var settings by rememberSaveable(existingZone, stateSaver = JsonObjectSaver) {
+        mutableStateOf(JSONObject().apply {
+            existingZone?.let { zone ->
+                put("name", zone.name)
+                zone.description?.let { put("description", it) }
+                zone.icon_name?.let { put("icon_name", it) }
+                zone.tool_groups?.let { put("tool_groups", JSONArray(it)) }
             }
-        } ?: emptyList()
+            (existingZone?.group ?: preSelectedGroup)?.let { put("group", it) }
+        })
     }
-    var toolGroups by rememberSaveable(initialToolGroups, stateSaver = StringListSaver) { mutableStateOf(initialToolGroups) }
 
-    // Parse zone group from existing zone, or use preselected group for new zones
-    val initialZoneGroup = remember(existingZone, preSelectedGroup) {
-        existingZone?.group ?: preSelectedGroup
-    }
-    var zoneGroup by rememberSaveable(initialZoneGroup) { mutableStateOf(initialZoneGroup) }
-
-    // Load available zone_groups from app_config
+    // The zone groups of the main screen
     var availableZoneGroups by remember { mutableStateOf<List<String>>(emptyList()) }
-
     LaunchedEffect(Unit) {
         val result = coordinator.processUserAction("app_config.get_zone_groups", emptyMap())
-        if (result.status == com.assistant.core.commands.CommandStatus.SUCCESS) {
-            availableZoneGroups = (result.data?.get("zone_groups") as? List<*>)
-                ?.filterIsInstance<String>() ?: emptyList()
+        if (result.isSuccess) {
+            availableZoneGroups = (result.data?.get("zone_groups") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         }
     }
 
-    val isEditing = existingZone != null
-    
-    // Handle save logic
-    val handleSave = {
-        // Validation via SchemaValidator avant sauvegarde
-        val zoneData = mutableMapOf<String, Any>(
-            "name" to name.trim(),
-            "description" to description.trim()
-        )
-        if (iconName.isNotBlank()) zoneData["icon_name"] = iconName
-
-        // Add tool_groups if not empty
-        if (toolGroups.isNotEmpty()) {
-            zoneData["tool_groups"] = toolGroups
+    val editors = mapOf(
+        "icon_name" to object : SettingEditor {
+            @Composable
+            override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+                com.assistant.core.ui.components.IconSelector(current = value as? String ?: "", suggested = ZoneSettings.SUGGESTED_ICONS, onChange = { onChange(it) })
+            }
+        },
+        "group" to object : SettingEditor {
+            @Composable
+            override fun Edit(value: Any?, onChange: (Any?) -> Unit) {
+                com.assistant.core.ui.components.GroupSelector(availableGroups = availableZoneGroups, selectedGroup = value as? String,
+                    onGroupSelected = { onChange(it) }, label = s.shared("label_group"))
+            }
         }
+    )
 
-        // Add group only if selected (null = no group, field not included in validation)
-        zoneGroup?.let { zoneData["group"] = it }
-        
-        try {
-            val schema = com.assistant.core.schemas.ZoneSchemaProvider.getSchema("zone_config", context)
-            val validation = if (schema != null) {
-                com.assistant.core.validation.SchemaValidator.validate(schema, zoneData, context)
+    fun save() {
+        coroutineScope.launch {
+            val given = JsonUtils.toMap(settings)
+            val result = if (existingZone != null) {
+                // Every setting is sent: an absent one is sent as null, which empties it
+                val params = mutableMapOf<String, Any?>("zone_id" to existingZone.id)
+                listOf("name", "description", "icon_name", "group", "tool_groups").forEach { params[it] = given[it] ?: JSONObject.NULL }
+                coordinator.processUserAction("zones.update", params)
             } else {
-                com.assistant.core.validation.ValidationResult.error("Zone config schema not found")
+                coordinator.processUserAction("zones.create", given)
             }
-            
-            if (validation.isValid) {
-                // Validation successful, proceed to save
-                coroutineScope.launch {
-                    try {
-                        if (isEditing) {
-                            // Handle update
-                            val updateParams = mutableMapOf<String, Any>(
-                                "zone_id" to existingZone!!.id,
-                                "name" to name.trim(),
-                                "description" to (description.takeIf { it.isNotBlank() } ?: "")
-                            )
-                            if (iconName.isNotBlank()) updateParams["icon_name"] = iconName
-
-                            // Add tool_groups to update params
-                            if (toolGroups.isNotEmpty()) {
-                                updateParams["tool_groups"] = toolGroups
-                            } else {
-                                // Explicitly set to null to clear tool_groups
-                                updateParams["tool_groups"] = org.json.JSONObject.NULL
-                            }
-
-                            // Add group to update params (explicit null to clear group)
-                            val groupToUpdate = zoneGroup
-                            if (groupToUpdate != null) {
-                                updateParams["group"] = groupToUpdate
-                            } else {
-                                updateParams["group"] = org.json.JSONObject.NULL
-                            }
-
-                            LogManager.ui("CreateZoneScreen - Updating zone with params: $updateParams", "DEBUG")
-
-                            val result = coordinator.processUserAction("zones.update", updateParams)
-                            if (result.isSuccess) onUpdate?.invoke()
-                            else errorMessage = result.error ?: s.shared("error_operation_failed")
-                        } else {
-                            // Handle create
-                            val createParams = mutableMapOf<String, Any>(
-                                "name" to name.trim(),
-                                "description" to (description.takeIf { it.isNotBlank() } ?: "")
-                            )
-                            if (iconName.isNotBlank()) createParams["icon_name"] = iconName
-
-                            // Add tool_groups to create params
-                            if (toolGroups.isNotEmpty()) {
-                                createParams["tool_groups"] = toolGroups
-                            }
-
-                            // Add group to create params
-                            zoneGroup?.let { createParams["group"] = it }
-
-                            LogManager.ui("CreateZoneScreen - Creating zone with params: $createParams", "DEBUG")
-
-                            val result = coordinator.processUserAction("zones.create", createParams)
-                            if (result.isSuccess) onCreate?.invoke()
-                            else errorMessage = result.error ?: s.shared("error_operation_failed")
-                        }
-                    } catch (e: Exception) {
-                        errorMessage = s.shared("message_error").format(e.message ?: "")
-                    }
-                }
-            } else {
-                // Validation failed, show error via Toast
-                UI.Toast(context, validation.errorMessage ?: s.shared("message_validation_error_simple"), Duration.LONG)
+            when {
+                !result.isSuccess -> UI.Toast(context, result.error ?: s.shared("error_operation_failed"), Duration.LONG)
+                isEditing -> onUpdate?.invoke()
+                else -> onCreate?.invoke()
             }
-            
-        } catch (e: Exception) {
-            // Technical validation failure
-            UI.Toast(context, s.shared("message_error").format(e.message ?: ""), Duration.LONG)
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -186,106 +111,42 @@ fun CreateZoneScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title - centered (MainScreen pattern)
         UI.Text(
             text = if (isEditing) s.shared("action_edit_zone") else s.shared("action_create_zone"),
             type = TextType.TITLE,
             fillMaxWidth = true,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
-        
-        // Form fields
-        UI.FormField(
-            label = s.shared("label_zone_name"),
-            value = name,
-            onChange = { name = it },
-            fieldType = FieldType.TEXT,
-            required = true
-        )
-        
-        UI.FormField(
-            label = s.shared("label_description"),
-            value = description,
-            onChange = { description = it },
-            fieldType = FieldType.TEXT_MEDIUM,
-            required = false
-        )
 
-        com.assistant.core.ui.components.IconSelector(
-            current = iconName,
-            suggested = ZONE_SUGGESTED_ICONS,
-            onChange = { iconName = it }
-        )
+        SettingsForm(nodes, settings, { settings = it }, context, editors)
 
-        // Zone group selector
-        com.assistant.core.ui.components.GroupSelector(
-            availableGroups = availableZoneGroups,
-            selectedGroup = zoneGroup,
-            onGroupSelected = { newGroup ->
-                LogManager.ui("CreateZoneScreen - Zone group changed to: '$newGroup'", "DEBUG")
-                zoneGroup = newGroup
-            },
-            label = s.shared("label_group")
-        )
-
-        // Tool groups editor
-        GroupListEditor(
-            groups = toolGroups,
-            onGroupsChange = { toolGroups = it },
-            label = s.shared("label_tool_groups")
-        )
-
-        // Actions
         UI.FormActions {
             UI.ActionButton(
                 action = if (isEditing) ButtonAction.SAVE else ButtonAction.CREATE,
-                onClick = { handleSave() }
+                onClick = { save() }
             )
 
             UI.ActionButton(
                 action = ButtonAction.CANCEL,
                 onClick = onCancel
             )
-            
-            if (isEditing && onDelete != null) {
+
+            if (existingZone != null && onDelete != null) {
                 UI.ActionButton(
                     action = ButtonAction.DELETE,
                     requireConfirmation = true,
-                    confirmMessage = "${s.shared("message_delete_zone_confirmation").format(name.trim())} ${s.shared("message_irreversible_action")}",
+                    confirmMessage = "${s.shared("message_delete_zone_confirmation").format(existingZone.name)} ${s.shared("message_irreversible_action")}",
                     onClick = {
                         coroutineScope.launch {
-                            try {
-                                val result = coordinator.processUserAction(
-                                    "zones.delete",
-                                    mapOf("zone_id" to existingZone!!.id)
-                                )
-                                if (result.isSuccess) onDelete?.invoke()
-                                else errorMessage = result.error ?: s.shared("error_operation_failed")
-                            } catch (e: Exception) {
-                                errorMessage = s.shared("message_error").format(e.message ?: "")
-                            }
+                            val result = coordinator.processUserAction("zones.delete", mapOf("zone_id" to existingZone.id))
+                            if (result.isSuccess) onDelete.invoke()
+                            else UI.Toast(context, result.error ?: s.shared("error_operation_failed"), Duration.LONG)
                         }
                     }
                 )
             }
         }
-        
-    }
-    
-    // Error handling with Toast
-    errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            UI.Toast(context, message, Duration.LONG)
-            errorMessage = null
-        }
     }
 }
-
-/** Where the icon picker starts for a zone: the themes zones are usually made of. */
-private val ZONE_SUGGESTED_ICONS = listOf(
-    "heart", "dumbbell", "briefcase", "house", "wallet", "graduation-cap",
-    "users", "leaf", "book-open", "utensils", "plane", "music", "palette", "folder"
-)

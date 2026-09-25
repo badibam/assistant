@@ -9,7 +9,7 @@ import com.assistant.core.tools.ToolConfigSettings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.Schema
-import com.assistant.core.schemas.ZoneSchemaProvider
+import com.assistant.core.schemas.ZoneSettings
 import com.assistant.core.fields.settings.FieldTypeSchemas
 import com.assistant.core.ai.data.AIMessageSchemas
 import com.assistant.core.ai.data.CommunicationModuleSchemas
@@ -131,11 +131,7 @@ class SchemaService(private val context: Context) : ExecutableService {
      */
     private fun getSystemSchema(schemaId: String): Schema? {
         return when {
-            schemaId.startsWith("zone_") -> {
-                // Use ZoneSchemaProvider for zone schemas
-                LogManager.service("System schema requested: $schemaId - using ZoneSchemaProvider")
-                ZoneSchemaProvider.getSchema(schemaId, context)
-            }
+            schemaId == ZoneSettings.SCHEMA_ID -> ZoneSettings.schema(context)
             schemaId.startsWith("field_type_") -> FieldTypeSchemas.getSchema(schemaId, context)
             schemaId.startsWith("app_config_") -> {
                 // TODO: Get app config schemas from AppConfigService

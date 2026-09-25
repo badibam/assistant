@@ -61,7 +61,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
-        // Parse tool_groups if provided (validation already done by ActionValidator)
+        // Parse tool_groups if provided (checked with the rest, checkZone)
         val toolGroupsJson = if (params.has("tool_groups")) {
             params.optJSONArray("tool_groups")?.toString()
         } else {
@@ -90,6 +90,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         LogManager.service("ZoneService.handleCreate - Created zone with group: '${newZone.group}'", "DEBUG")
 
+        checkZone(newZone)?.let { return OperationResult.error(it) }
         if (token.isCancelled) return OperationResult.cancelled()
 
         zoneDao.insertZone(newZone)
@@ -130,6 +131,25 @@ class ZoneService(private val context: Context) : ExecutableService {
     }
 
     /**
+     * Check a zone's settings exactly as they are about to be stored, against the schema
+     * generated from their declaration (ZoneSettings). Every write goes through here, whoever
+     * makes it -- the zone screen or the AI.
+     *
+     * @return The error to hand back, or null when the zone is valid
+     */
+    private fun checkZone(zone: Zone): String? {
+        val settings = buildMap<String, Any?> {
+            put("name", zone.name)
+            zone.description?.let { put("description", it) }
+            zone.icon_name?.let { put("icon_name", it) }
+            zone.group?.let { put("group", it) }
+            zone.tool_groups?.let { put("tool_groups", JsonUtils.toList(it)) }
+        }
+        val result = com.assistant.core.validation.SchemaValidator.validate(com.assistant.core.schemas.ZoneSettings.schema(context), settings, context)
+        return if (result.isValid) null else result.errorMessage ?: s.shared("message_validation_error_simple")
+    }
+
+    /**
      * A text parameter as given: null when it is JSON null or blank, which is how a command
      * empties a field. optString alone would read JSON null as the text "null".
      */
@@ -152,7 +172,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // Parse tool_groups if provided (validation already done by ActionValidator)
+        // Parse tool_groups if provided (checked with the rest, checkZone)
         val toolGroupsJson = if (params.has("tool_groups")) {
             // Allow explicit null to clear tool_groups
             val toolGroupsValue = params.opt("tool_groups")
@@ -206,6 +226,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         LogManager.service("ZoneService.handleUpdate - Updated zone with group: '${updatedZone.group}'", "DEBUG")
 
+        checkZone(updatedZone)?.let { return OperationResult.error(it) }
         zoneDao.updateZone(updatedZone)
 
         // Notify UI of zones change

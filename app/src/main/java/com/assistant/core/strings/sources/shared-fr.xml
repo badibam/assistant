@@ -142,7 +142,6 @@
 
     <!-- Validation reasons -->
     <string name="validation_reason_app_config">Configuration application</string>
-    <string name="validation_reason_zone_config">Zone %1$s</string>
     <string name="validation_reason_tool_config">Outil %1$s</string>
     <string name="validation_reason_session">Validation de session activée</string>
     <string name="validation_reason_ai_request">Demande de l\'IA</string>
@@ -708,13 +707,6 @@
     <string name="zone_schema_name">Nom de la zone</string>
     <string name="zone_schema_description">Description facultative de ce que contient la zone</string>
     <string name="zone_schema_icon_name">Nom de l\'icône de la zone (un nom d\'icône Lucide)</string>
-    <string name="zone_schema_color">Couleur de la zone</string>
-    <string name="zone_schema_validate_zone_config_changes">Requiert validation pour modifications de configuration de cette zone</string>
-    <string name="zone_schema_validate_tool_config_changes">Requiert validation pour modifications de configuration des outils de cette zone</string>
-    <string name="zone_schema_validate_tool_data_changes">Requiert validation pour modifications de données des outils de cette zone</string>
-    <string name="label_validate_zone_config_changes">Validation config zone</string>
-    <string name="label_validate_tool_config_changes">Validation config outils</string>
-    <string name="label_validate_tool_data_changes">Validation données outils</string>
 
     <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
     <string name="scope_all_instances">Tous les outils</string>
@@ -1534,7 +1526,6 @@
     <string name="label_no">Non</string>
     <string name="label_start">Début</string>
     <string name="label_end">Fin</string>
-    <string name="label_color">Couleur</string>
     <string name="message_saved">Enregistré</string>
     <string name="message_error_simple">Une erreur est survenue</string>
     <string name="error_missing_tooltype">Le paramètre tooltype est manquant</string>

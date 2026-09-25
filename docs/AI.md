@@ -245,7 +245,7 @@ Les seuils de taille des données sont décrits avec l'attente de confirmation, 
 - **EnrichmentProcessor** : Génération commands depuis enrichments UI
 - **CommandTransformer** : Transformation DataCommand → ExecutableCommand
 - **CommandExecutor** : Point unique exécution + génération SystemMessage
-- **ValidationResolver** : Résolution hiérarchie validation (app > zone > tool > session > AI request)
+- **ValidationResolver** : Résolution hiérarchie validation (app > tool > session > AI request)
 
 ### Command Processing Pipeline
 ```
@@ -418,7 +418,7 @@ Event NetworkErrorOccurred:
 ### Validation et Communication
 
 **Validation** :
-- `ValidationResolver` analyse hiérarchie (app > zone > tool > session > AI request)
+- `ValidationResolver` analyse hiérarchie (app > tool > session > AI request)
 - Si requis : `WaitingContext.Validation` créé avec `ValidationContext` + `cancelMessageId`
 - Phase `WAITING_VALIDATION`
 - Fallback message SYSTEM créé AVANT suspension
@@ -643,7 +643,7 @@ if (isLastAIMessage && aiState.waitingContext is WaitingContext.Communication) {
 7. Transition `CALLING_AI` → renvoyer à IA
 
 ### Validation des actions IA
-**Hiérarchie OR** : app > zone > tool > session > AI request. Si UN niveau true → validation requise. `validationRequest` = Boolean dans AIMessage.
+**Hiérarchie OR** : app > tool > session > AI request. Si UN niveau true → validation requise. `validationRequest` = Boolean dans AIMessage.
 
 **Flow** : ValidationResolver analyse actions → génère ValidationContext (actions verbalisées + raisons + warnings config) → `WaitingContext.Validation` créé → UI affiche inline → user valide/refuse → `resumeWithValidation(validated)`.
 

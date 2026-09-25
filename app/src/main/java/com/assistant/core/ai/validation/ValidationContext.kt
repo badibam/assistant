@@ -50,13 +50,11 @@ data class VerbalizedAction(
  *
  * Hierarchy (highest to lowest priority):
  * 1. APP_CONFIG - Application-level config
- * 2. ZONE_CONFIG - Zone-level config
- * 3. TOOL_CONFIG - Tool instance-level config
+ * 2. TOOL_CONFIG - Tool instance-level config
  *
  * Session-level and AI-level validation don't use triggers (handled separately)
  */
 enum class ValidationTrigger {
     APP_CONFIG,      // Validation triggered by app configuration
-    ZONE_CONFIG,     // Validation triggered by zone configuration
     TOOL_CONFIG      // Validation triggered by tool instance configuration
 }

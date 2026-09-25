@@ -14,10 +14,10 @@ import org.json.JSONObject
 /**
  * Resolves validation hierarchy and generates context for UI
  *
- * Architecture: app > zone > outil > session > validationRequest (OR logic)
+ * Architecture: app > outil > session > validationRequest (OR logic)
  *
  * This resolver:
- * 1. Analyzes each action against all config levels (app/zone/tool/session/AI)
+ * 1. Analyzes each action against all config levels (app/tool/session/AI)
  * 2. Determines if validation is required (any level = true)
  * 3. Generates verbalized actions with warnings and reasons
  * 4. Returns ValidationResult with ValidationContext for UI display
@@ -90,7 +90,7 @@ class ValidationResolver(private val context: Context) {
 
     /**
      * Analyzes a single action according to configs and determines validation/warning/trigger
-     * Implements hierarchy: app > zone > outil
+     * Implements hierarchy: app > outil
      */
     private suspend fun analyzeAction(
         action: DataCommand,
@@ -112,40 +112,13 @@ class ValidationResolver(private val context: Context) {
             }
 
             ActionScope.ZONE_CONFIG -> {
-                val operation = actionType.operation
-                val zoneId = extractZoneId(action)
-
-                when (operation) {
-                    "create" -> {
-                        // CREATE_ZONE: Zone doesn't exist yet, check app config only
-                        val appRequires = appConfig.validateZoneConfigChanges
-                        ActionAnalysis(
-                            actionId = action.id,
-                            requiresValidation = appRequires,
-                            requiresWarning = appRequires,
-                            trigger = if (appRequires) ValidationTrigger.APP_CONFIG else null
-                        )
-                    }
-                    else -> {
-                        // UPDATE_ZONE, DELETE_ZONE: Zone exists, check app + zone configs
-                        val zoneConfig = loadZoneConfig(zoneId)
-                        val zoneRequires = zoneConfig.optBoolean("validate_zone_config_changes", false)
-                        val appRequires = appConfig.validateZoneConfigChanges
-
-                        val requiresValidation = appRequires || zoneRequires
-                        ActionAnalysis(
-                            actionId = action.id,
-                            requiresValidation = requiresValidation,
-                            requiresWarning = requiresValidation,
-                            trigger = when {
-                                appRequires -> ValidationTrigger.APP_CONFIG
-                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
-                                else -> null
-                            },
-                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() }
-                        )
-                    }
-                }
+                val requiresValidation = appConfig.validateZoneConfigChanges
+                ActionAnalysis(
+                    actionId = action.id,
+                    requiresValidation = requiresValidation,
+                    requiresWarning = requiresValidation,
+                    trigger = if (requiresValidation) ValidationTrigger.APP_CONFIG else null
+                )
             }
 
             ActionScope.TOOL_CONFIG -> {
@@ -154,48 +127,32 @@ class ValidationResolver(private val context: Context) {
 
                 when (operation) {
                     "create" -> {
-                        // CREATE_TOOL: Tool doesn't exist yet, check app + zone configs only
-                        // Zone ID should be in params for tool creation
-                        val zoneId = action.params["zone_id"] as? String ?: ""
-                        val zoneConfig = if (zoneId.isNotEmpty()) loadZoneConfig(zoneId) else JSONObject()
-
-                        val zoneRequires = zoneConfig.optBoolean("validate_tool_config_changes", false)
+                        // CREATE_TOOL: Tool doesn't exist yet, check app config only
                         val appRequires = appConfig.validateToolConfigChanges
-
-                        val requiresValidation = appRequires || zoneRequires
                         ActionAnalysis(
                             actionId = action.id,
-                            requiresValidation = requiresValidation,
-                            requiresWarning = requiresValidation,
-                            trigger = when {
-                                appRequires -> ValidationTrigger.APP_CONFIG
-                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
-                                else -> null
-                            },
-                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() }
+                            requiresValidation = appRequires,
+                            requiresWarning = appRequires,
+                            trigger = if (appRequires) ValidationTrigger.APP_CONFIG else null
                         )
                     }
                     else -> {
-                        // UPDATE_TOOL_CONFIG, DELETE_TOOL: Tool exists, check app + zone + tool configs
+                        // UPDATE_TOOL_CONFIG, DELETE_TOOL: Tool exists, check app + tool configs
                         val toolConfig = loadToolSettings(toolInstanceId)
-                        val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
                         val toolRequires = toolConfig.boolean("validate_config")
-                        val zoneRequires = zoneConfig.optBoolean("validate_tool_config_changes", false)
                         val appRequires = appConfig.validateToolConfigChanges
 
-                        val requiresValidation = appRequires || zoneRequires || toolRequires
+                        val requiresValidation = appRequires || toolRequires
                         ActionAnalysis(
                             actionId = action.id,
                             requiresValidation = requiresValidation,
                             requiresWarning = requiresValidation,
                             trigger = when {
                                 appRequires -> ValidationTrigger.APP_CONFIG
-                                zoneRequires -> ValidationTrigger.ZONE_CONFIG
                                 toolRequires -> ValidationTrigger.TOOL_CONFIG
                                 else -> null
                             },
-                            zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
                             toolName = toolConfig.string("name")
                         )
                     }
@@ -205,24 +162,20 @@ class ValidationResolver(private val context: Context) {
             ActionScope.TOOL_DATA -> {
                 val toolInstanceId = extractToolInstanceId(action)
                 val toolConfig = loadToolSettings(toolInstanceId)
-                val zoneConfig = loadZoneConfigForTool(toolInstanceId)
 
                 val toolRequires = toolConfig.boolean("validate_data")
-                val zoneRequires = zoneConfig.optBoolean("validate_tool_data_changes", false)
                 val appRequires = appConfig.validateToolDataChanges
 
-                val requiresValidation = appRequires || zoneRequires || toolRequires
+                val requiresValidation = appRequires || toolRequires
                 ActionAnalysis(
                     actionId = action.id,
                     requiresValidation = requiresValidation,
                     requiresWarning = requiresValidation,  // Config = warning
                     trigger = when {
                         appRequires -> ValidationTrigger.APP_CONFIG
-                        zoneRequires -> ValidationTrigger.ZONE_CONFIG
                         toolRequires -> ValidationTrigger.TOOL_CONFIG
                         else -> null
                     },
-                    zoneName = zoneConfig.optString("name").takeIf { it.isNotBlank() },
                     toolName = toolConfig.string("name")
                 )
             }
@@ -255,8 +208,6 @@ class ValidationResolver(private val context: Context) {
                 analysis.trigger == ValidationTrigger.APP_CONFIG ->
                     s.shared("validation_reason_app_config")
 
-                analysis.trigger == ValidationTrigger.ZONE_CONFIG ->
-                    s.shared("validation_reason_zone_config").format(analysis.zoneName ?: "")
 
                 analysis.trigger == ValidationTrigger.TOOL_CONFIG ->
                     s.shared("validation_reason_tool_config").format(analysis.toolName ?: "")
@@ -320,31 +271,6 @@ class ValidationResolver(private val context: Context) {
     }
 
     /**
-     * Loads zone configuration JSON
-     */
-    private suspend fun loadZoneConfig(zoneId: String): JSONObject {
-        return try {
-            val result = coordinator.processUserAction("zones.get", mapOf(
-                "zone_id" to zoneId
-            ))
-
-            if (result.status == CommandStatus.SUCCESS) {
-                // zones.get returns "zone" map (zones don't have config_json - they're simpler entities)
-                // For now, zones don't have validation configs, so we return empty JSON
-                // Future: could add config_json field to Zone entity if needed
-                LogManager.aiService("ValidationResolver: Zone $zoneId loaded (zones don't have config_json yet)", "DEBUG")
-                JSONObject()
-            } else {
-                LogManager.aiService("ValidationResolver: Failed to load zone $zoneId: ${result.error}", "WARN")
-                JSONObject()
-            }
-        } catch (e: Exception) {
-            LogManager.aiService("ValidationResolver: Exception loading zone config: ${e.message}", "ERROR", e)
-            JSONObject()
-        }
-    }
-
-    /**
      * The config of the tool [toolInstanceId], read through its declaration.
      *
      * @throws IllegalStateException when the tool cannot be read: whether it asks for validation
@@ -360,36 +286,6 @@ class ValidationResolver(private val context: Context) {
             throw IllegalStateException("Cannot read tool $toolInstanceId to know whether it asks for validation: ${result.error}")
         }
         return com.assistant.core.tools.ToolConfigSettings.read(tooltype, config, context)
-    }
-
-    /**
-     * Loads zone configuration for a tool instance (via tool's zone_id)
-     */
-    private suspend fun loadZoneConfigForTool(toolInstanceId: String): JSONObject {
-        return try {
-            // First get tool to find zone_id
-            val toolResult = coordinator.processUserAction("tools.get", mapOf(
-                "tool_instance_id" to toolInstanceId
-            ))
-
-            if (toolResult.status == CommandStatus.SUCCESS) {
-                // tools.get returns "tool_instance" map containing zone_id
-                val toolInstance = toolResult.data?.get("tool_instance") as? Map<*, *>
-                val zoneId = toolInstance?.get("zone_id") as? String
-                if (zoneId != null) {
-                    loadZoneConfig(zoneId)
-                } else {
-                    LogManager.aiService("ValidationResolver: Tool $toolInstanceId has no zone_id", "WARN")
-                    JSONObject()
-                }
-            } else {
-                LogManager.aiService("ValidationResolver: Failed to load tool for zone lookup: ${toolResult.error}", "WARN")
-                JSONObject()
-            }
-        } catch (e: Exception) {
-            LogManager.aiService("ValidationResolver: Exception loading zone config for tool: ${e.message}", "ERROR", e)
-            JSONObject()
-        }
     }
 
     // =============================
@@ -439,16 +335,6 @@ class ValidationResolver(private val context: Context) {
     }
 
     /**
-     * Extracts zone_id from action params
-     */
-    private fun extractZoneId(action: DataCommand): String {
-        return action.params["zone_id"] as? String
-            ?: action.params["id"] as? String
-            ?: action.params["zone_id"] as? String
-            ?: ""
-    }
-
-    /**
      * Extracts tool_instance_id from action params
      */
     private fun extractToolInstanceId(action: DataCommand): String {
@@ -470,9 +356,8 @@ class ValidationResolver(private val context: Context) {
 internal data class ActionAnalysis(
     val actionId: String,
     val requiresValidation: Boolean,
-    val requiresWarning: Boolean,  // true if validated by CONFIG (app/zone/tool)
+    val requiresWarning: Boolean,  // true if validated by CONFIG (app/tool)
     val trigger: ValidationTrigger?,  // null if no config validation
-    val zoneName: String? = null,
     val toolName: String? = null
 )
 

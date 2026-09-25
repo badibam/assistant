@@ -142,7 +142,6 @@
 
     <!-- Validation reasons -->
     <string name="validation_reason_app_config">Application configuration</string>
-    <string name="validation_reason_zone_config">Zone %1$s</string>
     <string name="validation_reason_tool_config">Tool %1$s</string>
     <string name="validation_reason_session">Session validation enabled</string>
     <string name="validation_reason_ai_request">Request from the AI</string>
@@ -708,13 +707,6 @@
     <string name="zone_schema_name">Name of the zone</string>
     <string name="zone_schema_description">Optional description of what the zone holds</string>
     <string name="zone_schema_icon_name">Name of the zone\'s icon (a Lucide icon name)</string>
-    <string name="zone_schema_color">Colour of the zone</string>
-    <string name="zone_schema_validate_zone_config_changes">Requires validation for configuration changes of this zone</string>
-    <string name="zone_schema_validate_tool_config_changes">Requires validation for configuration changes of the tools of this zone</string>
-    <string name="zone_schema_validate_tool_data_changes">Requires validation for data changes of the tools of this zone</string>
-    <string name="label_validate_zone_config_changes">Zone config validation</string>
-    <string name="label_validate_tool_config_changes">Tool config validation</string>
-    <string name="label_validate_tool_data_changes">Tool data validation</string>
 
     <!-- SCOPE SELECTOR - Hierarchical navigation labels -->
     <string name="scope_all_instances">All the tools</string>
@@ -1534,7 +1526,6 @@
     <string name="label_no">No</string>
     <string name="label_start">Start</string>
     <string name="label_end">End</string>
-    <string name="label_color">Color</string>
     <string name="message_saved">Saved</string>
     <string name="message_error_simple">An error occurred</string>
     <string name="error_missing_tooltype">The tooltype parameter is missing</string>
