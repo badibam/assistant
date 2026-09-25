@@ -54,7 +54,7 @@ fun FieldInput(
                 value = value?.toString() ?: "",
                 onChange = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
                 fieldType = uiFieldType,
-                required = false
+                required = required
             )
         }
 
@@ -83,7 +83,7 @@ fun FieldInput(
                     onChange(if (decimals == 0) newValue.toLongOrNull() else newValue.toDoubleOrNull())
                 },
                 fieldType = UIFieldType.NUMERIC,
-                required = false
+                required = required
             )
         }
 
@@ -106,7 +106,7 @@ fun FieldInput(
                 step = step,
                 minLabel = minLabel,
                 maxLabel = maxLabel,
-                required = false
+                required = required
             )
         }
 
@@ -129,7 +129,7 @@ fun FieldInput(
                 onCheckedChange = { newValue -> onChange(newValue) },
                 trueLabel = trueLabel,
                 falseLabel = falseLabel,
-                required = false
+                required = required
             )
         }
 
@@ -167,7 +167,7 @@ fun FieldInput(
                                 onChange(mapOf("start" to newStart, "end" to endValue))
                             },
                             fieldType = UIFieldType.NUMERIC,
-                            required = false
+                            required = required
                         )
                     }
 
@@ -182,7 +182,7 @@ fun FieldInput(
                                 onChange(mapOf("start" to startValue, "end" to newEnd))
                             },
                             fieldType = UIFieldType.NUMERIC,
-                            required = false
+                            required = required
                         )
                     }
                 }
@@ -202,15 +202,17 @@ fun FieldInput(
             }
 
             // Use FormField that opens DatePicker on click
-            UI.FormField(
-                label = fieldDef.displayName,
-                value = displayDate,
-                onChange = {}, // Read-only, use picker
-                fieldType = UIFieldType.TEXT,
-                required = false,
-                readonly = true,
-                onClick = { showPicker = true }
-            )
+            Clearable(showClear = !required && value != null, onClear = { onChange(null) }) {
+                UI.FormField(
+                    label = fieldDef.displayName,
+                    value = displayDate,
+                    onChange = {}, // Read-only, use picker
+                    fieldType = UIFieldType.TEXT,
+                    required = required,
+                    readonly = true,
+                    onClick = { showPicker = true }
+                )
+            }
 
             if (showPicker) {
                 UI.DatePicker(
@@ -236,15 +238,17 @@ fun FieldInput(
             val displayTime = timeStr.ifEmpty { "" }
 
             // Use FormField that opens TimePicker on click
-            UI.FormField(
-                label = fieldDef.displayName,
-                value = displayTime,
-                onChange = {}, // Read-only, use picker
-                fieldType = UIFieldType.TEXT,
-                required = false,
-                readonly = true,
-                onClick = { showPicker = true }
-            )
+            Clearable(showClear = !required && value != null, onClear = { onChange(null) }) {
+                UI.FormField(
+                    label = fieldDef.displayName,
+                    value = displayTime,
+                    onChange = {}, // Read-only, use picker
+                    fieldType = UIFieldType.TEXT,
+                    required = required,
+                    readonly = true,
+                    onClick = { showPicker = true }
+                )
+            }
 
             if (showPicker) {
                 UI.TimePicker(
@@ -280,30 +284,27 @@ fun FieldInput(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                UI.Text(
-                    text = fieldDef.displayName,
-                    type = TextType.LABEL,
-                    fillMaxWidth = true
-                )
+                // Date field, under the field's label, which says whether it is required;
+                // an optional moment once chosen can be emptied
+                Clearable(showClear = !required && timestamp != null, onClear = { onChange(null) }) {
+                    UI.FormField(
+                        label = fieldDef.displayName,
+                        value = displayDate,
+                        onChange = {},
+                        fieldType = UIFieldType.TEXT,
+                        required = required,
+                        readonly = true,
+                        onClick = { showDatePicker = true }
+                    )
+                }
 
-                // Date field
-                UI.FormField(
-                    label = "",
-                    value = displayDate,
-                    onChange = {},
-                    fieldType = UIFieldType.TEXT,
-                    required = false,
-                    readonly = true,
-                    onClick = { showDatePicker = true }
-                )
-
-                // Time field
+                // Time field: the other half of the same value, its label already said
                 UI.FormField(
                     label = "",
                     value = displayTime,
                     onChange = {},
                     fieldType = UIFieldType.TEXT,
-                    required = false,
+                    required = true,
                     readonly = true,
                     onClick = { showTimePicker = true }
                 )
@@ -341,6 +342,29 @@ fun FieldInput(
 
         com.assistant.core.fields.FieldType.DURATION -> {
             DurationInput(fieldDef, value, onChange, context)
+        }
+    }
+}
+
+/**
+ * [content], a field's input, with a button emptying the field beside it when [showClear]: an
+ * optional value chosen through a picker can otherwise never be taken back.
+ */
+@Composable
+private fun Clearable(showClear: Boolean, onClear: () -> Unit, content: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.weight(1f)) { content() }
+        if (showClear) {
+            UI.ActionButton(
+                action = com.assistant.core.ui.ButtonAction.DELETE,
+                display = com.assistant.core.ui.ButtonDisplay.ICON,
+                size = com.assistant.core.ui.Size.S,
+                onClick = onClear
+            )
         }
     }
 }
