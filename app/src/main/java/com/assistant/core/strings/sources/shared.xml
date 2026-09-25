@@ -583,6 +583,7 @@
     <string name="field_config_ordered">Ranking (the options in a chosen order)</string>
     <string name="field_config_open">Open (a new value is added to the options)</string>
     <string name="field_choice_rank">%1$s. %2$s</string>
+    <string name="field_choice_none">None</string>
     <string name="field_choice_new_value">Other value</string>
     <string name="field_config_option_value">Option</string>
     <string name="field_config_option_label">Label shown</string>

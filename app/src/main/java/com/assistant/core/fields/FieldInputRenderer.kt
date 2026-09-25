@@ -25,6 +25,7 @@ import com.assistant.core.utils.LogManager
  * @param onChange Callback when the value changes
  * @param context Android context for strings and formatting
  * @param modifier Optional modifier for the composable
+ * @param required Whether a value must be given: an optional single choice can be emptied
  */
 @Composable
 fun FieldInput(
@@ -32,7 +33,8 @@ fun FieldInput(
     value: Any?,
     onChange: (Any?) -> Unit,
     context: Context,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    required: Boolean = false
 ) {
     when (fieldDef.type) {
         com.assistant.core.fields.FieldType.TEXT -> {
@@ -71,9 +73,14 @@ fun FieldInput(
             // TODO: Replace with dedicated NumericInput component with +/- buttons
             UI.FormField(
                 label = fieldDef.displayName + (unit?.let { " ($it)" } ?: ""),
-                value = if (value != null) numValue.toString() else "",
+                // A whole number reads and writes as one: 16000, not 16000.0
+                value = when {
+                    value == null -> ""
+                    decimals == 0 -> numValue.toLong().toString()
+                    else -> numValue.toString()
+                },
                 onChange = { newValue ->
-                    onChange(newValue.toDoubleOrNull())
+                    onChange(if (decimals == 0) newValue.toLongOrNull() else newValue.toDoubleOrNull())
                 },
                 fieldType = UIFieldType.NUMERIC,
                 required = false
@@ -104,7 +111,7 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.CHOICE -> {
-            ChoiceInput(fieldDef, value, onChange, context)
+            ChoiceInput(fieldDef, value, onChange, context, required)
         }
 
         com.assistant.core.fields.FieldType.BOOLEAN -> {
@@ -622,7 +629,8 @@ private fun ChoiceInput(
     fieldDef: FieldDefinition,
     value: Any?,
     onChange: (Any?) -> Unit,
-    context: Context
+    context: Context,
+    required: Boolean
 ) {
     val s = Strings.`for`(context = context)
     val settings = ChoiceSettings.fromConfig(fieldDef.config)
@@ -637,12 +645,15 @@ private fun ChoiceInput(
     ) {
         when (settings.shape) {
             ChoiceShape.SINGLE -> {
+                // Shown by their labels; an optional choice offers "none" first, which empties it
+                val none = s.shared("field_choice_none")
+                val byLabel = options.associateBy { settings.labelOf(it) }
                 UI.FormSelection(
                     label = fieldDef.displayName,
-                    options = options,
-                    selected = value?.toString() ?: "",
-                    onSelect = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
-                    required = false
+                    options = (if (required) emptyList() else listOf(none)) + byLabel.keys,
+                    selected = value?.toString()?.let { settings.labelOf(it) } ?: (if (required) "" else none),
+                    onSelect = { label -> onChange(byLabel[label]) },
+                    required = required
                 )
             }
 
@@ -660,7 +671,7 @@ private fun ChoiceInput(
                             val newList = if (checked) selectedItems + option else selectedItems - option
                             onChange(if (newList.isEmpty()) null else newList)
                         },
-                        label = option
+                        label = settings.labelOf(option)
                     )
                 }
             }
@@ -684,7 +695,7 @@ private fun ChoiceInput(
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             UI.Text(
-                                text = s.shared("field_choice_rank").format((index + 1).toString(), option),
+                                text = s.shared("field_choice_rank").format((index + 1).toString(), settings.labelOf(option)),
                                 type = TextType.BODY
                             )
                         }

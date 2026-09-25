@@ -106,7 +106,7 @@ private fun NodeForm(
                     required = node.required
                 )
                 // An absent setting shows the value its absence means
-                else -> FieldInput(node.definition, stored ?: node.default, { set(name, it) }, context)
+                else -> FieldInput(node.definition, stored ?: node.default, { set(name, it) }, context, required = node.required)
             }
         }
 
@@ -131,7 +131,7 @@ private fun NodeForm(
             val chosen = config.optString(selector).ifEmpty { node.selector.default?.toString() }
             FieldInput(node.selector.definition, chosen, { option ->
                 if (option != null && option != chosen) onChange(SettingVariants.switched(config, level, node, option.toString()))
-            }, context)
+            }, context, required = true)
             node.cases[chosen]?.let { NodesForm(it, level, config, onChange, context, editors) }
         }
 
