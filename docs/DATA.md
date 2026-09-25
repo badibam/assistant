@@ -143,106 +143,25 @@ data class SelectionResult(
 **Périodes** : Stockées dans `timestampSelection` (non visible dans SelectionResult, géré en interne par ZoneScopeSelector)
 
 ##
-## Validation par Schema ID
+## Validation par schéma
 
-### Architecture Schema
+Aucun schéma n'est écrit à la main ni nommé dans une donnée : ils sont générés depuis des déclarations (`docs/design/config-fields.md`, `docs/design/unified-fields.md`).
 
-Système de validation basé sur identifiants de schémas explicites avec objets Schema autonomes.
+- **Entrées** : le schéma se génère depuis les champs que le type d'outil déclare (`getEntryFields`) et les champs de l'utilisateur (`extra_fields`), par `BaseSchemas.getEntrySchema`. `ToolDataService` valide toute écriture, quel que soit l'appelant, après avoir arrondi les nombres à leurs décimales (`NumericPrecision`) ; `FieldValueValidator` ajoute ce qu'un schéma ne sait pas dire (le début d'une plage avant sa fin).
+- **Configs d'outil** : le schéma se génère depuis la partie commune (`ToolConfigSettings`) et la partie du type d'outil (`getConfigSettings`), par `SettingsSchemaGenerator` ; une variante (le `type` d'un suivi) devient un `oneOf`. `ToolInstanceService` valide toute écriture de config.
+- **Lecture** : une config se lit par `ToolConfigSettings.read` (`SettingValues`) ; un réglage absent vaut son défaut déclaré, jamais un repli écrit sur place.
+- **Face à l'IA** : un schéma se demande par `tooltype` (config), `tool_instance_id` (entrées) ou `id` (les autres : `zone_config`, `field_type_TEXT`…). Son nom calculé (`tracking_config`, `tracking_data`) ne sert qu'à ne pas renvoyer deux fois le même schéma.
 
-```kotlin
-data class Schema(
-    val id: String, // "tracking_config_numeric"
-    val content: String // JSON Schema complet
-)
-```
+Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant. Dans `data`, le service retire tout champ marqué de ce qu'on lui envoie (`SystemManagedFields`) ; à la racine, il ne lit que des paramètres nommés.
 
-### Patterns de Validation
-
-#### Configuration d'outils
-
-Le `schema_id` est intégré dans les données de configuration au même niveau que les champs métier :
-
-```kotlin
-val configData = mapOf(
-    "schema_id" to "tracking_config_numeric", // Pour validation
-    "data_schema_id" to "tracking_data_numeric", // Pour usage runtime
-    "name" to "Mon suivi",
-    "type" to "numeric"
-)
-
-// Validation via helper unifié
-UI.ValidationHelper.validateAndSave(
-    toolTypeName = "tracking",
-    configData = configData,
-    context = context,
-    schemaType = "config",
-    onSuccess = { configJson -> /* sauvegarde */ }
-)
-```
-
-#### Données d'entrée
-
-Toute entrée est validée par `ToolDataService` avant d'être écrite, quel que soit l'appelant — écran, IA, planificateur, lot. Le service lit le `data_schema_id` dans la config de l'outil (pas dans les paramètres), l'enrichit des champs personnalisés de cette config (`CustomFieldsSchemaGenerator`), et valide l'entrée telle qu'elle sera stockée : après la fusion pour une modification, après l'ajout des champs calculés (le `raw` du tracking, déclaré `system_managed`). Viennent ensuite les règles qu'un schéma ne sait pas dire, par `FieldValueValidator` (le début d'une plage avant sa fin). Une entrée refusée n'écrit rien.
-
-Un champ marqué `"system_managed": true` est à l'app de le produire, jamais à l'appelant, et la marque est la règle. Dans `data`, le service retire tout champ marqué de ce qu'on lui envoie avant de produire le sien (`SystemManagedFields`). À la racine, il ne lit que des paramètres nommés et tire lui-même les champs marqués : `tooltype` de l'outil, `schema_id` de sa config, les dates de l'horloge. Un nouveau champ marqué dans `data` est donc protégé sans autre changement ; un nouveau champ marqué à la racine demande que le service sache le produire.
-
-La validation que font les écrans et `ActionValidator` avant d'appeler le service sert à répondre tôt, dans le formulaire ou à l'IA ; elle n'est pas la garde.
-
-### Schémas de Base
-
-BaseSchemas définit les champs communs incluant les identifiants de schémas :
-
-**Configuration** : `schema_id`, `data_schema_id`, `name`, `description`, `management`, `display_mode`, etc.
-
-**Données** : `schema_id`, `tool_instance_id`, `tooltype`, `name`, `timestamp`, `created_at`, etc.
-
-### Validation Partielle (Updates)
-
-**Principe** : UPDATEs peuvent fournir uniquement les champs modifiés. Mode `partialValidation` ignore les contraintes `required`.
-
-**UI vs IA** :
-- **UI** : Charge entrée complète → envoie toutes données → `partialValidation = false`
-- **IA** : Envoie uniquement champs modifiés → `partialValidation = true`
-
-**Implémentation** :
-```kotlin
-// ActionValidator détecte automatiquement
-val partialValidation = operation in listOf("update", "batch_update")
-SchemaValidator.validate(schema, data, context, partialValidation)
-```
-
-Mode partial retire `required` arrays du schéma (récursivement), valide types/formats des champs présents. Service merge avec données existantes.
+La validation que font les écrans avant d'appeler le service sert à répondre tôt dans le formulaire ; elle n'est pas la garde.
 
 **Champ `id`** : pas `system_managed`, puisqu'une modification le nomme pour désigner l'entrée. Une création l'ignore : le service génère l'identifiant.
-
-### ValidationHelper
-
-API centralisée pour validation de configuration avec extraction automatique du schema_id :
-
-```kotlin
-object ValidationHelper {
-    fun validateAndSave(
-        toolTypeName: String,
-        configData: Map<String, Any>,
-        context: Context,
-        schemaType: String,
-        onSuccess: (String) -> Unit
-    ): Boolean
-}
-```
 
 ##
 ## Propagation des modifications
 
 Une écriture passe par le service, qui écrit en base via son DAO puis signale le changement avec `DataChangeNotifier` — les écrans qui en dépendent se rechargent. Il n'y a pas de journal d'événements : aucune table n'enregistre les modifications, et l'état en base est la seule source. Ce que l'utilisateur et l'IA lisent comme un historique, ce sont les entrées elles-mêmes et les sessions, pas une suite d'événements rejouable.
-
-### Schémas Auto-descriptifs
-
-```kotlin
-// Récupération et validation via schema ID
-val schema = toolType.getSchema(schemaId, context)
-val validation = SchemaValidator.validate(schema, data, context)
-```
 
 ### Verbalisation
 
@@ -395,26 +314,18 @@ private fun transformTrackingConfig(json: JSONObject, version: Int): JSONObject 
 
 #### Service Implementation
 - Hériter `ExecutableService`
-- **Configs** : utiliser `UI.ValidationHelper.validateAndSave()` avec schema_id dans les données
-- **Données** : ajouter `schema_id` aux paramètres service, récupérer via `params.optString("schema_id")`
-- Validation directe via `SchemaValidator.validate(schema, data, context)`
+- Validation par le service contre le schéma généré (voir « Validation par schéma »)
 - Logs d'erreur explicites et gestion token cancellation
-
-#### Schema ID Management
-- **Configuration** : `schema_id` et `data_schema_id` ajoutés automatiquement lors du nettoyage des données
-- **Données d'entrée** : `schema_id` calculé selon pattern `${tooltype}_data_${type}` dans InputManager
-- **Service validation** : schema_id ajouté à `fullDataMap` au niveau racine pour validation
 
 #### Discovery Pattern
 - Jamais d'imports hardcodés dans Core
 - Services découverts via ToolTypeManager
 - Extension automatique par ajout au Scanner
-- ToolTypes implémentent `getSchema(schemaId, context): Schema?`
+- ToolTypes déclarent `getEntryFields` et `getConfigSettings` ; leurs schémas sont générés
 
 #### Data Consistency
 - Écriture par le service, puis notification via `DataChangeNotifier` (pas de journal d'événements)
-- Validation centralisée via objets Schema explicites
-- Schémas autonomes avec ID déterministes
+- Validation centralisée par les services, contre des schémas générés
 
 ---
 

@@ -49,9 +49,9 @@ Dossier tools/[type]/ contient :
 - ui/ (ConfigScreen et DisplayComponent)
 
 ### Interface ToolTypeContract
-Interface principale implémentant SchemaProvider avec méthodes pour :
-- **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultConfig(), getAvailableOperations()
-- **Schémas** : getAllSchemaIds(), getSchema(schemaId, context) via SchemaProvider
+Interface principale avec méthodes pour :
+- **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getAvailableOperations()
+- **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés
 - **Interface utilisateur** : getConfigScreen() @Composable
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
@@ -63,9 +63,8 @@ Interface principale implémentant SchemaProvider avec méthodes pour :
 **Règle d'or** : Toujours copier-coller Tracking d'abord, adapter ensuite.
 
 ### Ordre d'Implémentation
-1. **ToolType** avec configuration complète par défaut
-2. **Schémas externes** (MyToolSchemas.kt)
-3. **ConfigScreen** avec ToolGeneralConfigSection
+1. **ToolType** avec ses déclarations (getEntryFields, getConfigSettings, défauts compris)
+2. **ConfigScreen** avec ToolGeneralConfigSection
 4. **Service** avec validation stricte
 5. **UI screens** avec parsing robuste
 6. **Enregistrement** dans ToolTypeScanner
@@ -91,8 +90,8 @@ Class implémentant ExecutableService avec :
 
 ### ToolType Implementation
 Class implémentant ToolTypeContract avec :
-- getDisplayName(), getDescription(), getDefaultConfig()
-- getAllSchemaIds(), getSchema(schemaId, context)
+- getDisplayName(), getDescription(), getDefaultDisplayMode()
+- getEntryFields(), getConfigSettings()
 - getConfigScreen() @Composable
 - getService(), getDao(), getDatabaseEntities()
 
@@ -196,9 +195,8 @@ Validation unifiée pour tous les types d'outils via SchemaValidator.
 
 ### API Standard
 - Récupération ToolType via ToolTypeManager.getToolType()
-- Récupération schémas : `getSchema(schemaId, context, toolInstanceId)` - toolInstanceId **requis** pour les schémas data (enrichissement custom fields)
-- Validation données métier avec schemaType = "data"
-- Validation configuration avec schemaType = "config"
+- Schéma des entrées d'un outil : `BaseSchemas.getEntrySchema` (champs de l'utilisateur compris) ; schéma de config : `ToolConfigSettings.schema`
+- Les services valident toute écriture (`ToolDataService`, `ToolInstanceService`)
 - Gestion résultat : isValid et errorMessage traduit automatiquement
 
 ### Validation Service Pattern
@@ -210,33 +208,15 @@ Service execute() valide automatiquement via ToolType puis retourne OperationRes
 - Toast automatique pour erreurs via LaunchedEffect
 - FormActions avec bouton SAVE enabled selon validation
 
-## Schema Provider Pattern
-
-### Relation ToolType ↔ SchemaProvider ↔ Schema IDs
-ToolTypeContract étend SchemaProvider pour accès aux schémas via IDs.
-
-**ToolTypeManager.getSchemaIdsForTooltype()**
-```kotlin
-// Récupère tous les schema IDs d'un tooltype via SchemaProvider
-val schemaIds = ToolTypeManager.getSchemaIdsForTooltype("tracking")
-// Retourne: ["tracking_config_numeric", "tracking_data_numeric", ...]
-```
-
-**Règle importante** : Pas de présomption de patterns de noms. Utiliser SchemaProvider.getAllSchemaIds() pour découverte.
-
 ## BaseSchemas et Configuration
 
-### Champs Obligatoires Configuration
-- **schema_id** : ID du schéma de validation config
-- **data_schema_id** : ID du schéma de validation data
+### Réglages communs (`ToolConfigSettings`)
 - **name** : Nom de l'instance
 - **description** : Description
 - **management** : Mode de gestion (AI/USER/HYBRID)
 - **display_mode** : Mode d'affichage (ICON/MINIMAL/LINE/etc.)
 - **validateConfig** : Boolean - Requiert validation utilisateur avant modification configuration (default: false)
 - **validateData** : Boolean - Requiert validation utilisateur avant modification données (default: false)
-
-**IMPORTANT** : `schema_id` et `data_schema_id` sont des champs de configuration uniquement. Ne jamais les inclure dans `data.properties` des schémas data : le service valide une entrée contre le schéma qu'il génère depuis la config de l'outil (`BaseSchemas.getEntrySchema`).
 
 ### Champ always_send (Level 2 AI)
 ```kotlin
@@ -272,7 +252,7 @@ Inclure TOUTES les variables vérifiées dans le scope comme dépendances pour �
 - Event sourcing pour toutes modifications
 
 ### Interface Contracts
-- ToolTypeContract étend SchemaProvider pour validation unifiée
+- ToolTypeContract déclare ses champs et réglages ; les schémas en sont générés
 - ExecutableService pour logique métier
 - SchemaValidator pour validation UI/Service
 
