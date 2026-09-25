@@ -3,11 +3,11 @@ package com.assistant.core.versioning
 import org.json.JSONObject
 
 /**
- * Brings the NUMERIC fields of a tool config to their v38 form, where every number says how many
- * decimals it takes (0 is a whole number). One that said nothing takes 2.
+ * Brings the NUMERIC and RANGE fields of a tool config to their v38 form, where every number says
+ * how many decimals it takes (0 is a whole number). One that said nothing takes 2.
  *
- * A config holds NUMERIC definitions in its user's fields ("extra_fields") and in the value
- * settings of a numeric tracking tool ("value"); a counter's are set by its code. Shared by the
+ * A config holds such definitions in its user's fields ("extra_fields"), and a NUMERIC one in the
+ * value settings of a numeric tracking tool ("value"); a counter's are set by its code. Shared by the
  * database migration and the backup import.
  */
 object NumericDecimalsAtV38 {
@@ -20,7 +20,7 @@ object NumericDecimalsAtV38 {
         next.optJSONArray("extra_fields")?.let { fields ->
             for (i in 0 until fields.length()) {
                 val field = fields.getJSONObject(i)
-                if (field.optString("type") == "NUMERIC") {
+                if (field.optString("type") in setOf("NUMERIC", "RANGE")) {
                     val settings = field.optJSONObject("config") ?: JSONObject().also { field.put("config", it) }
                     decimals(settings)
                 }

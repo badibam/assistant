@@ -133,7 +133,7 @@ class FieldValueSchemaTest {
     /** Both ends are required and bounded; start <= end is not a schema rule and passes here. */
     @Test
     fun range_needsBothEndsWithinBounds() {
-        val schema = schemaFor("""{ "type": "RANGE", "config": { "min": 0, "max": 10 } }""")
+        val schema = schemaFor("""{ "type": "RANGE", "config": { "min": 0, "max": 10, "decimals": 0 } }""")
 
         assertTrue(schema.accepts("""{ "start": 2, "end": 8 }"""))
         assertFalse(schema.accepts("""{ "start": 2 }"""))

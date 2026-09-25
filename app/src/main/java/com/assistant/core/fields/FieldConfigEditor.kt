@@ -537,7 +537,15 @@ private fun RangeConfigEditor(
     var unit by rememberSaveable { mutableStateOf(config?.get("unit")?.toString() ?: "") }
     var min by rememberSaveable { mutableStateOf(config?.get("min")?.toString() ?: "") }
     var max by rememberSaveable { mutableStateOf(config?.get("max")?.toString() ?: "") }
-    var decimals by rememberSaveable { mutableStateOf(config?.get("decimals")?.toString() ?: "") }
+    var decimals by rememberSaveable { mutableStateOf(config?.get("decimals")?.toString() ?: "0") }
+
+    // A range always says its decimals: a new one starts at 0, whole numbers
+    LaunchedEffect(Unit) {
+        if (config?.get("decimals") == null) {
+            mutableConfig["decimals"] = 0
+            onConfigChange(mutableConfig)
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         UI.FormField(

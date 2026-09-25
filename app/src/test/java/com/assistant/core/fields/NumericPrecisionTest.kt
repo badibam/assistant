@@ -37,6 +37,16 @@ class NumericPrecisionTest {
         assertEquals(1.25, rounded.getDouble("other"), 0.0)
     }
 
+    /** A range's two bounds are rounded alike. */
+    @Test
+    fun aRangesBoundsAreRounded() {
+        val range = FieldDefinition("r", "R", null, FieldType.RANGE, false, mapOf("decimals" to 1))
+        val rounded = JSONObject(NumericPrecision.roundAll("""{ "r": { "start": 1.26, "end": 3.04 } }""", listOf(range))!!).getJSONObject("r")
+
+        assertEquals(1.3, rounded.getDouble("start"), 0.0)
+        assertEquals(3.0, rounded.getDouble("end"), 0.0)
+    }
+
     /** Every NUMERIC declares its decimals: one that does not is a declaration to fix, said loudly. */
     @Test
     fun aNumericWithoutDecimalsIsRefused() {

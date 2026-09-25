@@ -57,14 +57,12 @@ object FieldValueSchema {
         }
 
         val parts = when (fieldDef.type) {
-            FieldType.NUMERIC -> listOfNotNull(
+            FieldType.NUMERIC, FieldType.RANGE -> listOfNotNull(
                 setting("unit")?.let { text("field_reading_unit").format(it) },
                 NumericPrecision.decimalsOf(fieldDef).let { d ->
                     if (d == 0) text("field_reading_whole") else text("field_reading_decimals").format(d)
                 }
             )
-            FieldType.RANGE ->
-                listOfNotNull(setting("unit")?.let { text("field_reading_unit").format(it) })
             FieldType.SCALE ->
                 if (setting("min_label") == null && setting("max_label") == null) emptyList()
                 else listOf(text("field_reading_scale").format(bound("min", "min_label"), bound("max", "max_label")))
@@ -196,6 +194,8 @@ object FieldValueSchema {
             }
 
             FieldType.RANGE -> {
+                // Its decimals are a precision, rounded at the write (NumericPrecision)
+                NumericPrecision.decimalsOf(fieldDef)
                 JSONObject().apply {
                     put("type", "object")
 

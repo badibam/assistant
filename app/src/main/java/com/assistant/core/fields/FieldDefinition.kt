@@ -161,7 +161,7 @@ private fun formatNumericValue(value: Any?, config: Map<String, Any>?, s: String
     val decimals = (config?.get("decimals") as? Number)?.toInt() ?: 0
     val unit = config?.get("unit") as? String
 
-    val formatted = String.format("%.${decimals}f", number)
+    val formatted = NumericPrecision.format(number, decimals)
 
     val unitSuffix = unit?.let { " $it" } ?: ""
     return "$formatted$unitSuffix"
@@ -241,18 +241,8 @@ private fun formatRangeValue(value: Any?, config: Map<String, Any>?, s: StringsC
     val decimals = (config?.get("decimals") as? Number)?.toInt() ?: 0
     val unit = config?.get("unit") as? String
 
-    // Format numbers, removing trailing zeros
-    val formattedStart = if (decimals > 0) {
-        String.format("%.${decimals}f", start).trimEnd('0').trimEnd('.')
-    } else {
-        start.toInt().toString()
-    }
-
-    val formattedEnd = if (decimals > 0) {
-        String.format("%.${decimals}f", end).trimEnd('0').trimEnd('.')
-    } else {
-        end.toInt().toString()
-    }
+    val formattedStart = NumericPrecision.format(start, decimals)
+    val formattedEnd = NumericPrecision.format(end, decimals)
 
     val unitSuffix = unit?.let { " $it" } ?: ""
     return "$formattedStart - $formattedEnd$unitSuffix"

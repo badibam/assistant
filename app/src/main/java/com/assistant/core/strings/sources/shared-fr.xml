@@ -1182,7 +1182,7 @@
     <string name="field_validation_choice_default_type_multiple">La valeur par défaut doit être un tableau pour un choix multiple</string>
     <string name="field_validation_boolean_label_empty">Les labels vrai/faux ne peuvent pas être vides</string>
     <string name="field_validation_range_min_max">La valeur minimale doit être inférieure ou égale à la valeur maximale</string>
-    <string name="field_validation_range_decimals">Le nombre de décimales doit être supérieur ou égal à 0</string>
+    <string name="field_validation_range_decimals">Le nombre de décimales est obligatoire : 0 pour des nombres entiers, ou plus</string>
     <string name="field_validation_range_default_incomplete">La valeur par défaut doit contenir start et end</string>
     <string name="field_validation_range_default_order">Dans la valeur par défaut, start doit être inférieur ou égal à end</string>
     <string name="field_validation_date_default_format">La valeur par défaut doit être au format ISO 8601 (YYYY-MM-DD)</string>

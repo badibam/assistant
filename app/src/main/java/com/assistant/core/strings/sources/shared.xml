@@ -1182,7 +1182,7 @@
     <string name="field_validation_choice_default_type_multiple">The default value must be an array for a multiple choice</string>
     <string name="field_validation_boolean_label_empty">The true/false labels cannot be empty</string>
     <string name="field_validation_range_min_max">The minimum value must be less than or equal to the maximum value</string>
-    <string name="field_validation_range_decimals">The number of decimals must be greater than or equal to 0</string>
+    <string name="field_validation_range_decimals">The number of decimals is required: 0 for whole numbers, or more</string>
     <string name="field_validation_range_default_incomplete">The default value must contain start and end</string>
     <string name="field_validation_range_default_order">In the default value, start must be less than or equal to end</string>
     <string name="field_validation_date_default_format">The default value must be in ISO 8601 format (YYYY-MM-DD)</string>

@@ -48,9 +48,10 @@ object FieldTypeSettings {
     private fun caseNodes(type: FieldType, text: (String) -> String): List<SettingNode> {
         val settings = configNodes(type, text)
         if (settings.isEmpty()) return emptyList()
-        // A number needs its decimals, a scale its bounds and a choice its options: their config is required
+        // A number or a range needs its decimals, a scale its bounds and a choice its options:
+        // their config is required
         return listOf(SettingNode.Group("config", text("field_config_section_title"), settings,
-            required = type == FieldType.NUMERIC || type == FieldType.SCALE || type == FieldType.CHOICE))
+            required = type in setOf(FieldType.NUMERIC, FieldType.RANGE, FieldType.SCALE, FieldType.CHOICE)))
     }
 
     /** The settings a field of [type] holds in its "config". */
@@ -94,7 +95,7 @@ object FieldTypeSettings {
         )
         FieldType.RANGE -> listOf(
             number("min", "field_config_min", text), number("max", "field_config_max", text), unit(text),
-            wholeNumber("decimals", "field_config_decimals", text, default = 0)
+            wholeNumber("decimals", "field_config_decimals", text, default = 0, required = true)
         )
         FieldType.DATE -> emptyList()
         FieldType.TIME -> listOf(clockFormat("format", text))

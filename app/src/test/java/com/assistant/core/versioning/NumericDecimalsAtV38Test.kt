@@ -12,13 +12,15 @@ class NumericDecimalsAtV38Test {
         val config = JSONObject("""{ "extra_fields": [
             { "name": "walk", "type": "NUMERIC", "config": { "unit": "km" } },
             { "name": "steps", "type": "NUMERIC" },
-            { "name": "count", "type": "NUMERIC", "config": { "decimals": 0 } } ] }""")
+            { "name": "count", "type": "NUMERIC", "config": { "decimals": 0 } },
+            { "name": "hours", "type": "RANGE", "config": { "unit": "h" } } ] }""")
 
         val fields = NumericDecimalsAtV38.config("journal", config).getJSONArray("extra_fields")
 
         assertEquals(2, fields.getJSONObject(0).getJSONObject("config").getInt("decimals"))
         assertEquals(2, fields.getJSONObject(1).getJSONObject("config").getInt("decimals"))
         assertEquals("a declared precision is kept", 0, fields.getJSONObject(2).getJSONObject("config").getInt("decimals"))
+        assertEquals("a range too", 2, fields.getJSONObject(3).getJSONObject("config").getInt("decimals"))
     }
 
     @Test
