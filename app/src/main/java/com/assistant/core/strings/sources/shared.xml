@@ -187,6 +187,7 @@
     <string name="ai_error_tool_data_fields_not_array">The \'fields\' parameter must be a non-empty array. Example: \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->
+    <string name="ai_error_duration_field_path">Unreadable DURATION field: %1$s. Name it by its path, data.field_name or extra.field_name.</string>
     <string name="ai_error_field_invalid_pattern">Unreadable field: %1$s. A field is either a root field with no dot (id, timestamp, name), or data.field_name, or extra.field_name, or state.key. \'data\', \'extra\' and \'state\' on their own are refused: they are containers, a field inside them has to be named. A field holding an object or a list is asked for whole: extra.field_name, not extra.field_name.start.</string>
 
     <!-- AI Errors - Rejected parameters -->
@@ -265,6 +266,8 @@
     <string name="action_verbalize_delete_tool">Deletion of the tool \"%1$s\"</string>
     <string name="action_verbalize_create_data">Use of the tool \"%1$s\" (zone \"%2$s\"): %3$d entry/entries added</string>
     <string name="action_verbalize_update_data">Use of the tool \"%1$s\" (zone \"%2$s\"): %3$d entry/entries modified</string>
+    <string name="action_verbalize_start_duration">Use of the tool \"%1$s\" (zone \"%2$s\"): stopwatch started</string>
+    <string name="action_verbalize_stop_duration">Use of the tool \"%1$s\" (zone \"%2$s\"): stopwatch stopped</string>
     <string name="action_verbalize_delete_data">Use of the tool \"%1$s\" (zone \"%2$s\"): %3$d entry/entries deleted</string>
     <string name="action_verbalize_update_app_config">Modification of the application configuration</string>
     <string name="action_verbalize_schema_get">Retrieval of the schema \"%1$s\"</string>

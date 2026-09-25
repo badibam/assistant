@@ -260,6 +260,7 @@ Retrieves the data of one tool (templates and configurations live in tool_data).
 - `period_end` (string, optional): end of the time filter, at the root of the params. Independent of `period_start`.
 - `limit` (number, optional): maximum number of entries per page
 - `page` (number, optional): page number, starting at 1
+- `running` (boolean, optional): `true` for the entries with a DURATION field running now alone, to find a stopwatch to stop
 
 **Automatic config extract**: every TOOL_DATA answer includes a `config_extract` holding the configuration fields that matter for reading the data (type, min/max, options, extra_fields, and so on). Use them to understand the context of the values returned.
 
@@ -398,6 +399,20 @@ Deletes data in a batch.
 - `tool_instance_id` (string, **required**)
 - `tooltype` (string, **required**)
 - `ids` (array, **required**): list of the IDs to delete
+
+### START_DURATION / STOP_DURATION
+
+Starts or stops the stopwatch of a DURATION field of one entry. Starting writes the instant in the entry's `state.running`; stopping adds the time elapsed to the field's value. Starting again after a stop keeps counting. In a tracking tool, starting an activity stops the one running.
+
+**Parameters**:
+
+- `tool_instance_id` (string, **required**)
+- `id` (string, **required**): the entry. To start a new activity, create its entry first with CREATE_DATA, without a value
+- `field` (string, **required**): the DURATION field, by the path you read it with: `"data.value"`, `"extra.sleep"`
+
+```json
+{ "type": "STOP_DURATION", "params": { "tool_instance_id": "tracking_work_123", "id": "entry_456", "field": "data.value" } }
+```
 
 ### CREATE_TOOL
 

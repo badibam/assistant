@@ -210,6 +210,8 @@ class AICommandProcessor(private val context: Context) {
                 params = command.params,
                 isActionCommand = true
             )
+            "START_DURATION" -> durationCommand(command, "start_duration")
+            "STOP_DURATION" -> durationCommand(command, "stop_duration")
 
             // Tool instance actions
             "CREATE_TOOL" -> {
@@ -292,6 +294,8 @@ class AICommandProcessor(private val context: Context) {
                 params = command.params,
                 isActionCommand = true
             )
+            "START_DURATION" -> durationCommand(command, "start_duration")
+            "STOP_DURATION" -> durationCommand(command, "stop_duration")
 
             // Tool instance actions
             "CREATE_TOOL" -> {
@@ -344,6 +348,34 @@ class AICommandProcessor(private val context: Context) {
                 null
             }
         }
+    }
+
+    /**
+     * A stopwatch command: the model names the entry by its id and the DURATION field by the
+     * same path it reads it with ("data.value", "extra.sleep"); the service takes the entry,
+     * the object the field lives in, and its name.
+     *
+     * @throws IllegalArgumentException when [field] is not a path inside data or extra
+     */
+    private fun durationCommand(command: DataCommand, operation: String): ExecutableCommand {
+        val path = command.params["field"] as? String ?: ""
+        val parsed = FieldPatternGrammar.parse(listOf(path))
+        val (container, names) = parsed.inside.entries.singleOrNull()
+            ?.takeIf { it.key == "data" || it.key == "extra" }
+            ?.toPair()
+            ?: throw IllegalArgumentException(s.shared("ai_error_duration_field_path").format(path))
+
+        return ExecutableCommand(
+            resource = "tool_data",
+            operation = operation,
+            params = mapOf(
+                "tool_instance_id" to command.params["tool_instance_id"],
+                "id" to command.params["id"],
+                "container" to container,
+                "field" to names.single()
+            ),
+            isActionCommand = true
+        )
     }
 
     /**

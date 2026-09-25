@@ -93,7 +93,7 @@ object AIMessageSchemas {
                 "properties": {
                   "type": {
                     "type": "string",
-                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE"]
+                    "enum": ["CREATE_DATA", "UPDATE_DATA", "DELETE_DATA", "START_DURATION", "STOP_DURATION", "CREATE_TOOL", "UPDATE_TOOL", "DELETE_TOOL", "CREATE_ZONE", "UPDATE_ZONE", "DELETE_ZONE"]
                   },
                   "params": {
                     "type": "object"

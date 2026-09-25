@@ -195,6 +195,9 @@ object CommandTransformer {
         // Add fields filter if specified (field selection for data queries)
         command.params["fields"]?.let { params["fields"] = it }
 
+        // Only the entries with a DURATION field running, to find a stopwatch to stop
+        command.params["running"]?.let { params["running"] = it }
+
         return ExecutableCommand(
             resource = "tool_data",
             operation = "get",

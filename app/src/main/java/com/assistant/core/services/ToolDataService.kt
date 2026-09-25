@@ -951,6 +951,10 @@ class ToolDataService(private val context: Context) : ExecutableService {
                     count
                 )
             }
+            "start_duration", "stop_duration" -> {
+                val toolInfo = getToolInfo(params.optString("tool_instance_id"), context)
+                s.shared("action_verbalize_${operation}").format(toolInfo.name, toolInfo.zoneName)
+            }
             "delete", "batch_delete" -> {
                 val toolInstanceId = params.optString("tool_instance_id")
                 val toolInfo = getToolInfo(toolInstanceId, context)

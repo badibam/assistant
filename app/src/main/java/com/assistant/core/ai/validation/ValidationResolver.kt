@@ -426,6 +426,10 @@ class ValidationResolver(private val context: Context) {
                                   "BATCH_CREATE_DATA", "BATCH_UPDATE_DATA", "BATCH_DELETE_DATA") ->
                 ParsedActionType(ActionScope.TOOL_DATA, extractOperation(action.type))
 
+            // Starting or stopping a stopwatch writes the entry, as any update of it does
+            action.type in listOf("START_DURATION", "STOP_DURATION") ->
+                ParsedActionType(ActionScope.TOOL_DATA, "update")
+
             else -> {
                 LogManager.aiService("ValidationResolver: Unknown action type ${action.type}, defaulting to TOOL_DATA", "WARN")
                 ParsedActionType(ActionScope.TOOL_DATA, "unknown")

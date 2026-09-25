@@ -187,6 +187,7 @@
     <string name="ai_error_tool_data_fields_not_array">Le paramètre \'fields\' doit être un tableau non vide. Exemple : \"fields\": [\"id\", \"timestamp\", \"data.value\"]</string>
 
     <!-- AI Errors - Field grammar -->
+    <string name="ai_error_duration_field_path">Champ DURÉE illisible : %1$s. Il se nomme par son chemin, data.nom_du_champ ou extra.nom_du_champ.</string>
     <string name="ai_error_field_invalid_pattern">Champ illisible : %1$s. Un champ est soit un champ racine sans point (id, timestamp, name), soit data.nom_du_champ, soit extra.nom_du_champ, soit state.clé. \'data\', \'extra\' et \'state\' seuls sont refusés : ce sont des conteneurs, il faut nommer un champ dedans. Un champ qui contient un objet ou une liste se demande en entier : extra.nom_du_champ, pas extra.nom_du_champ.start.</string>
 
     <!-- AI Errors - Rejected parameters -->
@@ -265,6 +266,8 @@
     <string name="action_verbalize_delete_tool">Suppression de l\'outil \"%1$s\"</string>
     <string name="action_verbalize_create_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : ajout de %3$d entrée(s)</string>
     <string name="action_verbalize_update_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : modification de %3$d entrée(s)</string>
+    <string name="action_verbalize_start_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre démarré</string>
+    <string name="action_verbalize_stop_duration">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : chronomètre arrêté</string>
     <string name="action_verbalize_delete_data">Utilisation de l\'outil \"%1$s\" (zone \"%2$s\") : suppression de %3$d entrée(s)</string>
     <string name="action_verbalize_update_app_config">Modification de la configuration de l\'application</string>
     <string name="action_verbalize_schema_get">Récupération du schéma \"%1$s\"</string>
