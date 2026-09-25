@@ -13,14 +13,12 @@ import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 
 /**
  * AI Client - pure logic for interfacing with AI providers
  *
  * Responsibilities:
  * - Convert PromptResult to provider-specific format
- * - Parse provider responses to AIMessage
  * - Handle provider errors (NO FALLBACKS without explicit configuration)
  * - Uses AIProviderConfigService for configurations (no direct DB access)
  */
@@ -188,116 +186,6 @@ class AIClient(private val context: Context) {
             LogManager.aiService("Failed to get active provider: ${result.error}", "ERROR")
             null
         }
-    }
-
-    // ========================================================================================
-    // Private Implementation
-    // ========================================================================================
-
-    /**
-     * Parse AI provider response JSON to AIMessage object
-     */
-    private fun parseAIResponse(responseJson: String): AIMessage? {
-        return try {
-            LogManager.aiService("Parsing AI response JSON: ${responseJson.length} characters")
-
-            val json = JSONObject(responseJson)
-
-            // Parse required preText
-            val preText = json.getString("pre_text")
-
-            // Parse optional validationRequest (boolean: true = validation required)
-            val validationRequest = if (json.has("validation_request")) {
-                json.optBoolean("validation_request", false)
-            } else null
-
-            val dataCommands = json.optJSONArray("data_commands")?.let { array ->
-                (0 until array.length()).map { index ->
-                    val commandJson = array.getJSONObject(index)
-                    DataCommand(
-                        id = commandJson.getString("id"),
-                        type = commandJson.getString("type"),
-                        params = parseParams(commandJson.getJSONObject("params")),
-                        isRelative = commandJson.optBoolean("is_relative", false)
-                    )
-                }
-            }
-
-            val actionCommands = json.optJSONArray("action_commands")?.let { array ->
-                (0 until array.length()).map { index ->
-                    val commandJson = array.getJSONObject(index)
-                    DataCommand(
-                        id = commandJson.getString("id"),
-                        type = commandJson.getString("type"),
-                        params = parseParams(commandJson.getJSONObject("params")),
-                        isRelative = commandJson.optBoolean("is_relative", false)
-                    )
-                }
-            }
-
-            val postText = json.optString("post_text", "").takeIf { it.isNotEmpty() }
-
-            val communicationModule = json.optJSONObject("communication_module")?.let { moduleJson ->
-                try {
-                    val type = moduleJson.getString("type")
-                    val dataJson = moduleJson.getJSONObject("data")
-                    val data = parseParams(dataJson)
-
-                    // Validate via CommunicationModuleSchemas
-                    val schema = CommunicationModuleSchemas.getSchema(type, context)
-                    if (schema == null) {
-                        LogManager.aiService("Unknown communication module type: $type", "WARN")
-                        return@let null
-                    }
-
-                    val validation = com.assistant.core.validation.SchemaValidator.validate(schema, data, context)
-                    if (!validation.isValid) {
-                        LogManager.aiService("Invalid communication module data for type $type: ${validation.errorMessage}", "WARN")
-                        return@let null
-                    }
-
-                    // Create appropriate module instance
-                    when (type) {
-                        "MultipleChoice" -> CommunicationModule.MultipleChoice(type, data)
-                        "Validation" -> CommunicationModule.Validation(type, data)
-                        else -> {
-                            LogManager.aiService("Unsupported communication module type: $type", "WARN")
-                            null
-                        }
-                    }
-                } catch (e: Exception) {
-                    LogManager.aiService("Failed to parse communication module: ${e.message}", "WARN", e)
-                    null
-                }
-            }
-
-            val aiMessage = AIMessage(
-                preText = preText,
-                validationRequest = validationRequest,
-                dataCommands = dataCommands,
-                actionCommands = actionCommands,
-                postText = postText,
-                keepControl = null,
-                communicationModule = communicationModule,
-                completed = null
-            )
-
-            LogManager.aiService("Successfully parsed AIMessage: preText present, ${actionCommands?.size ?: 0} actionCommands, ${dataCommands?.size ?: 0} dataCommands")
-
-            aiMessage
-
-        } catch (e: Exception) {
-            LogManager.aiService("Failed to parse AI response: ${e.message}", "ERROR", e)
-            null
-        }
-    }
-
-    private fun parseParams(paramsJson: JSONObject): Map<String, Any> {
-        val params = mutableMapOf<String, Any>()
-        paramsJson.keys().forEach { key ->
-            params[key] = paramsJson.get(key)
-        }
-        return params
     }
 }
 
