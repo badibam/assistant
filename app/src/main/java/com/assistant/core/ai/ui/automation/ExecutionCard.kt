@@ -48,6 +48,7 @@ fun ExecutionCard(
     totalRoundtrips: Int,
     totalTokens: Int,
     cost: Double?,
+    costIsLowerBound: Boolean,
     livePhase: Phase? = null, // Real-time phase from AIState if this session is active
     onViewClick: () -> Unit
 ) {
@@ -162,7 +163,9 @@ fun ExecutionCard(
                 // Right column: Cost
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
                     UI.Text(
-                        text = AIFormatUtils.formatCost(cost),
+                        text = AIFormatUtils.formatCost(cost).let {
+                            if (costIsLowerBound) s.shared("ai_cost_at_least").format(it) else it
+                        },
                         type = TextType.CAPTION
                     )
                 }

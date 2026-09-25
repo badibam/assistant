@@ -69,6 +69,8 @@ fun SessionCostDisplay(sessionId: String) {
     // Display cost data
     costData?.let { data ->
         val priceAvailable = data["price_available"] as? Boolean ?: false
+        // Calls that went out with unknown usage: the total only covers the others
+        val callsWithUnknownUsage = data["calls_with_unknown_usage"] as? Int ?: 0
 
         UI.Card(type = CardType.DEFAULT) {
             Column(
@@ -158,10 +160,19 @@ fun SessionCostDisplay(sessionId: String) {
                             type = TextType.SUBTITLE
                         )
                         UI.Text(
-                            text = formatCost(totalCost, s),
+                            text = formatCost(totalCost, s).let {
+                                if (callsWithUnknownUsage > 0) s.shared("ai_cost_at_least").format(it) else it
+                            },
                             type = TextType.SUBTITLE
                         )
                     }
+                }
+
+                if (callsWithUnknownUsage > 0) {
+                    UI.Text(
+                        text = s.shared("ai_cost_unknown_calls").format(callsWithUnknownUsage),
+                        type = TextType.CAPTION
+                    )
                 }
             }
         }

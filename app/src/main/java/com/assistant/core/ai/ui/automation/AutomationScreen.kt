@@ -168,22 +168,7 @@ fun AutomationScreen(
 
                     sessions = sessionsList.map { sessionMap ->
                         // Parse tokens JSON
-                        val tokensJson = sessionMap["tokens_json"] as? String
-                        val tokens = if (tokensJson != null) {
-                            try {
-                                val json = JSONObject(tokensJson)
-                                SessionTokens(
-                                    totalUncachedInputTokens = json.optInt("total_uncached_input_tokens", 0),
-                                    totalCacheWriteTokens = json.optInt("total_cache_write_tokens", 0),
-                                    totalCacheReadTokens = json.optInt("total_cache_read_tokens", 0),
-                                    totalOutputTokens = json.optInt("total_output_tokens", 0)
-                                )
-                            } catch (e: Exception) {
-                                SessionTokens(0, 0, 0, 0)
-                            }
-                        } else {
-                            SessionTokens(0, 0, 0, 0)
-                        }
+                        val tokens = SessionTokens.fromJson(sessionMap["tokens_json"] as? String)
 
                         // Parse cost JSON
                         val costJson = sessionMap["cost_json"] as? String
@@ -226,7 +211,8 @@ fun AutomationScreen(
                             duration = duration,
                             totalRoundtrips = sessionMap["total_roundtrips"] as? Int ?: 0,
                             totalTokens = totalTokens,
-                            cost = cost
+                            cost = cost,
+                            costIsLowerBound = tokens.callsWithUnknownUsage > 0
                         )
                     }
 
@@ -468,6 +454,7 @@ fun AutomationScreen(
                         totalRoundtrips = session.totalRoundtrips,
                         totalTokens = session.totalTokens,
                         cost = session.cost,
+                        costIsLowerBound = session.costIsLowerBound,
                         livePhase = livePhase,
                         onViewClick = { onNavigateToExecution(session.sessionId) }
                     )
@@ -498,5 +485,6 @@ data class ExecutionSummary(
     val duration: Long,
     val totalRoundtrips: Int,
     val totalTokens: Int,
-    val cost: Double?
+    val cost: Double?,
+    val costIsLowerBound: Boolean // Some calls went out with unknown usage
 )

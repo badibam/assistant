@@ -23,7 +23,8 @@ data class SessionCost(
     val cacheReadCost: Double?,
     val outputCost: Double?,
     val totalCost: Double?,                 // null if price unavailable
-    val priceAvailable: Boolean
+    val priceAvailable: Boolean,
+    val callsWithUnknownUsage: Int          // > 0: totalCost is only a lower bound
 )
 
 /**
@@ -94,7 +95,8 @@ object SessionCostCalculator {
                     cacheReadCost = costBreakdown.cacheReadCost,
                     outputCost = costBreakdown.outputCost,
                     totalCost = costBreakdown.totalCost,
-                    priceAvailable = true
+                    priceAvailable = true,
+                    callsWithUnknownUsage = tokens.callsWithUnknownUsage
                 )
             } else {
                 // Only tokens available, no cost (price was unavailable at time of calculation)
@@ -115,7 +117,8 @@ object SessionCostCalculator {
                     cacheReadCost = null,
                     outputCost = null,
                     totalCost = null,
-                    priceAvailable = false
+                    priceAvailable = false,
+                    callsWithUnknownUsage = tokens.callsWithUnknownUsage
                 )
             }
 

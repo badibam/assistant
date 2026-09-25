@@ -275,6 +275,7 @@
     <string name="ai_error_network_unavailable">Réseau indisponible</string>
     <string name="ai_error_network_timeout_retries">Timeout réseau après %1$d tentatives: %2$s</string>
     <string name="ai_error_network_call_failed">Échec de l\'appel IA</string>
+    <string name="ai_error_response_lost">Requête envoyée, réponse perdue : son coût est inconnu</string>
     <string name="ai_error_session_timeout_automation">Durée maximale de session automation dépassée (%1$d min), arrêt forcé</string>
     <string name="ai_error_timeout">Délai dépassé</string>
     <string name="ai_error_limit_reached">Limite atteinte</string>
@@ -325,6 +326,7 @@
 
     <!-- AI Round Interruption -->
     <string name="ai_round_interrupted">Round IA interrompu</string>
+    <string name="ai_call_cut_after_sending">La requête était déjà partie quand elle a été coupée : son coût est inconnu</string>
 
     <!-- AI Session Scheduler -->
     <string name="ai_scheduler_slot_occupied">Slot occupé</string>
@@ -337,6 +339,8 @@
     <string name="ai_cost_output">Sortie</string>
     <string name="ai_cost_tokens">tokens</string>
     <string name="ai_cost_unavailable">Prix indisponible</string>
+    <string name="ai_cost_unknown_calls">Appels au coût inconnu : %d</string>
+    <string name="ai_cost_at_least">≥ %s</string>
     <string name="ai_cost_loading">Chargement des coûts…</string>
     <string name="ai_cost_currency_usd">USD</string>
     <string name="ai_cost_breakdown_title">Détail des coûts</string>

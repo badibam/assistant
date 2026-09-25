@@ -790,6 +790,7 @@ class AISessionService(private val context: Context) : ExecutableService {
                 put("total_cache_read_tokens", cost.totalCacheReadTokens)
                 put("total_output_tokens", cost.totalOutputTokens)
                 put("price_available", cost.priceAvailable)
+                put("calls_with_unknown_usage", cost.callsWithUnknownUsage)
                 put("currency", "USD")
 
                 // Only include cost fields if price is available

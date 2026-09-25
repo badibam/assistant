@@ -528,6 +528,8 @@ class AIEventProcessor(
         }
 
         val s = com.assistant.core.strings.Strings.`for`(context = context)
+        // Tells, even after a cancellation, whether the request had gone out to the provider
+        val requestSent = com.assistant.core.ai.providers.RequestSent()
 
         try {
 
@@ -627,7 +629,7 @@ class AIEventProcessor(
 
             // Call AI provider with determined providerId
             LogManager.aiSession("callAI: Calling AI provider (providerId: $providerId)", "DEBUG")
-            val response = aiClient.query(promptData, providerId)
+            val response = withContext(requestSent) { aiClient.query(promptData, providerId) }
 
             // Stop and Interrupt cancel this call, but a response can land in the instant between
             // the answer and the cancellation: the session must still be the one that asked
@@ -680,6 +682,8 @@ class AIEventProcessor(
                 val failure = response.failure ?: AIFailure.REFUSED
                 LogManager.aiSession("callAI: AI provider error ($failure): $errorMessage", "ERROR")
 
+                if (failure == AIFailure.LOST) recordCallWithUnknownUsage(sessionId)
+
                 if (failure != AIFailure.NETWORK) {
                     // The provider was reached, or may have been (LOST): retrying on a timer
                     // would bill the same call again
@@ -695,7 +699,7 @@ class AIEventProcessor(
                         systemMessage = com.assistant.core.ai.data.SystemMessage(
                             type = SystemMessageType.PROVIDER_ERROR,
                             commandResults = emptyList(),
-                            summary = errorMessage,
+                            summary = if (failure == AIFailure.LOST) s.shared("ai_error_response_lost") else errorMessage,
                             formattedData = null
                         ),
                         executionMetadata = null,
@@ -731,8 +735,26 @@ class AIEventProcessor(
             }
 
         } catch (e: CancellationException) {
-            // Stop or Interrupt: whoever cancelled has already moved the session on
-            LogManager.aiSession("callAI: AI call cancelled", "INFO")
+            // Stop or Interrupt: whoever cancelled has already moved the session on. A request
+            // that had gone out may still be billed: say so, and count it in the session's cost.
+            LogManager.aiSession("callAI: AI call cancelled (request sent: ${requestSent.sent})", "INFO")
+            if (requestSent.sent) {
+                withContext(NonCancellable) {
+                    messageRepository.storeMessage(sessionId, SessionMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        timestamp = System.currentTimeMillis(),
+                        sender = MessageSender.SYSTEM,
+                        richContent = null,
+                        textContent = s.shared("ai_call_cut_after_sending"),
+                        aiMessage = null,
+                        aiMessageJson = null,
+                        systemMessage = null,
+                        executionMetadata = null,
+                        excludeFromPrompt = true // Audit only
+                    ))
+                    recordCallWithUnknownUsage(sessionId)
+                }
+            }
             throw e
         } catch (e: Exception) {
             LogManager.aiSession("callAI failed: ${e.message}", "ERROR", e)
@@ -1878,6 +1900,25 @@ class AIEventProcessor(
 
         } catch (e: Exception) {
             LogManager.aiSession("updateSessionTokensAndCost: Failed to update session: ${e.message}", "ERROR", e)
+        }
+    }
+
+    /**
+     * Count, in the session's tokens, a call that went out and whose usage never came back.
+     * The stored cost is left as is: it now covers the known calls only, a lower bound.
+     */
+    private suspend fun recordCallWithUnknownUsage(sessionId: String) {
+        try {
+            val aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao()
+            val session = aiDao.getSession(sessionId) ?: run {
+                LogManager.aiSession("recordCallWithUnknownUsage: Session $sessionId not found", "ERROR")
+                return
+            }
+            val tokens = com.assistant.core.ai.data.SessionTokens.fromJson(session.tokensJson).addCallWithUnknownUsage()
+            aiDao.updateSessionTokensAndCost(sessionId, tokens.toJson(), session.costJson)
+            LogManager.aiSession("Session $sessionId: ${tokens.callsWithUnknownUsage} call(s) with unknown usage", "INFO")
+        } catch (e: Exception) {
+            LogManager.aiSession("recordCallWithUnknownUsage: Failed: ${e.message}", "ERROR", e)
         }
     }
 
