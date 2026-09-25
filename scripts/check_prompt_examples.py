@@ -11,7 +11,8 @@ This reads the prompt's JSON examples and asks five questions of them:
 
   1. does every example parse as JSON;
   2. does every custom field type it names still exist in FieldType;
-  3. does every key the base data schema declares carry a value of the declared type;
+  3. does every key the base config schema or the core's entry fields declare carry a value of
+     the declared type;
   4. does every object carry the fields its schema requires;
   5. does every icon it names exist -- the icon index is the app's, so a name the model would
      copy from an example is a name the app accepts.
@@ -30,8 +31,9 @@ is which -- a data entry is only a data entry inside CREATE_DATA -- so it works 
 
   - a response (pre_text and the rest): the AI message schema;
   - a communication module's data: that module's schema;
-  - a CREATE_DATA entry: the base data schema, where a key the command's params carry counts
-    as present, since the service copies tool_instance_id and tooltype into every entry;
+  - a CREATE_DATA entry: the keys every entry schema requires, whatever its tool (the list
+    EntrySchemaGenerator starts from), where a key the command's params carry counts as
+    present, since the service copies tool_instance_id and tooltype into every entry;
   - a CREATE_TOOL config: the base config schema;
   - a custom field definition: its field type's schema, and that of its config.
 
@@ -58,6 +60,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PROMPT = ROOT / "app/src/main/java/com/assistant/core/strings/sources/ai_prompt_chunks.xml"
 FIELD_TYPE = ROOT / "app/src/main/java/com/assistant/core/fields/FieldType.kt"
 BASE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/tools/BaseSchemas.kt"
+ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
 MODULE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/CommunicationModuleSchemas.kt"
 FIELD_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/fields/FieldTypeSchemaProvider.kt"
@@ -106,8 +109,35 @@ def field_type_names():
     return set(re.findall(r"^\s{4}([A-Z][A-Z_0-9]*)\s*,", body, re.M))
 
 
+# A field type of the core's entry fields, against the JSON type its value schema declares.
+CORE_FIELD_TYPES = {"TEXT": "string", "DATETIME": "number"}
+
+
+def core_field_types():
+    """What the core's entry fields (CoreFields) hold: {key: (json_type, seen_as_iso_string)}.
+
+    Their schema is generated (FieldValueSchema), so it is read from their declaration: a
+    DATETIME is epoch-millis at rest and ISO to the model.
+    """
+    source = ENTRY_FIELDS.read_text(encoding="utf-8")
+    declared = {}
+    for name, field_type in re.findall(r'name = "(\w+)",.*?type = FieldType\.(\w+)', source, re.S):
+        if field_type in CORE_FIELD_TYPES:
+            declared[name] = (CORE_FIELD_TYPES[field_type], field_type == "DATETIME")
+    return declared
+
+
+def entry_required():
+    """The keys every entry schema requires, whatever its tool."""
+    source = ENTRY_FIELDS.read_text(encoding="utf-8")
+    match = re.search(r"val required = mutableListOf\(([^)]*)\)", source)
+    if not match:
+        raise LookupError(f"the required list of the entry schema not found in {ENTRY_FIELDS.name}")
+    return re.findall(r'"(\w+)"', match.group(1))
+
+
 def declared_property_types():
-    """What the base data schema says each of its properties holds, as the model sees it.
+    """What the base config schema says each of its properties holds, as the model sees it.
 
     Returns {key: (json_type, seen_as_iso_string)}. A property marked epoch-millis is a
     number at rest and an ISO string to the model, which is the only place the two views
@@ -272,7 +302,7 @@ def main():
 
     text = PROMPT.read_text(encoding="utf-8")
     types = field_type_names()
-    declared = declared_property_types()
+    declared = {**declared_property_types(), **core_field_types()}
     icon_names = {icon["name"] for icon in json.loads(ICON_INDEX.read_text(encoding="utf-8"))["icons"]}
 
     problems = []
@@ -315,7 +345,7 @@ def main():
         required_lists(MESSAGE_SCHEMAS, "getAIMessageResponseSchemaContent")[0],
         {module: required_lists(MODULE_SCHEMAS, f"get{module}Schema")[0]
          for module in ("MultipleChoice", "Validation")},
-        required_lists(BASE_SCHEMAS, "getBaseDataSchema")[0],
+        entry_required(),
         required_lists(BASE_SCHEMAS, "getBaseConfigSchema")[0],
         field_type_schemas(),
     )
