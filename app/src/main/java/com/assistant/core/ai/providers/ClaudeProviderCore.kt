@@ -94,16 +94,22 @@ internal class ClaudeProviderCore(
 
     companion object {
         private const val ANTHROPIC_VERSION = "2023-06-01"
-        private const val TIMEOUT_MINUTES = 2L  // 2 minutes timeout per HTTP request
+        // Failing to connect means nothing was sent: the sooner it is known, the sooner an
+        // automation waits for the network, at no cost
+        private const val CONNECT_TIMEOUT_SECONDS = 15L
+        // No streaming: nothing arrives until the whole answer is generated, so this covers
+        // the full generation of a long answer
+        private const val READ_TIMEOUT_MINUTES = 10L
+        private const val WRITE_TIMEOUT_MINUTES = 2L
     }
 
     // Shared OkHttp client instance with configured timeouts
     // Lazy initialization ensures client is only created when needed
     private val httpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
-            .readTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
-            .writeTimeout(TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
+            .writeTimeout(WRITE_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .build()
     }
 
@@ -369,7 +375,7 @@ internal class ClaudeProviderCore(
                 .build()
 
             // Execute request: cancelling the session's call cancels this one
-            val response = httpClient.newCall(request).awaitReply()
+            val response = httpClient.awaitReply(request)
             val responseBody = response.body
 
             if (!response.isSuccessful) {

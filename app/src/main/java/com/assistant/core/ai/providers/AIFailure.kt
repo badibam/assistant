@@ -19,6 +19,12 @@ enum class AIFailure {
     NETWORK,
 
     /**
+     * The request went out whole and no answer came back: the connection dropped, or the read
+     * timeout expired. The provider may have billed it, so it is not retried.
+     */
+    LOST,
+
+    /**
      * The provider was reached and refused this call for now: rate limit, overload, exhausted
      * credit. Retrying the same prompt bills again for the same refusal, so the session stops
      * and says why.
@@ -35,11 +41,15 @@ enum class AIFailure {
 /**
  * Classify a failure raised while the call was in flight.
  *
- * Only an I/O error means the provider was never reached. Anything else happened after contact,
- * or inside our own handling, and retrying it on a timer would repeat whatever went wrong.
+ * An I/O error before the request went out whole means the provider was never reached; one after
+ * it is a lost answer (awaitReply() tells them apart). Anything else happened after contact, or
+ * inside our own handling, and retrying it on a timer would repeat whatever went wrong.
  */
-fun aiFailureOf(e: Throwable): AIFailure =
-    if (e is java.io.IOException) AIFailure.NETWORK else AIFailure.REFUSED
+fun aiFailureOf(e: Throwable): AIFailure = when (e) {
+    is ResponseLostException -> AIFailure.LOST
+    is java.io.IOException -> AIFailure.NETWORK
+    else -> AIFailure.REFUSED
+}
 
 /**
  * Classify a failure the provider answered with, from its HTTP status.

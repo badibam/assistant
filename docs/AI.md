@@ -445,11 +445,11 @@ Event NetworkErrorOccurred:
 
 **NetworkUtils** : `isNetworkAvailable(context)` pour vérification connectivité (core/utils).
 
-**Timeout HTTP** : 2 minutes (OkHttp config providers).
+**Timeout HTTP** (providers) : connexion 15 s, lecture 10 min, écriture 2 min. Sans streaming, rien n'arrive avant la fin de la génération : le délai de lecture couvre une réponse longue entière.
 
 **Appel en cours** : `callAI` tourne dans sa propre tâche, hors de la boucle qui traite les changements d'état. `SessionCompleted` (dont STOP) et `AIRoundInterrupted` (Interrompre, CHAT) l'annulent avant la transition, ce qui ferme la connexion HTTP (`Call.awaitReply()`) : rien n'est gardé de la réponse. Interrompre passe par `INTERRUPTED`, le temps d'écrire le message d'interruption, puis revient à `IDLE`.
 
-**Nature de l'échec** : `AIResponse.failure` (`AIFailure`), posé par le provider là où l'échec se produit — jamais déduit du texte du message. `NETWORK` (rien n'a atteint le provider) = retry ; `REFUSED` (429, 529, crédit épuisé) et `CONFIG` (clé, modèle, requête) = `ProviderErrorOccurred`, la session s'arrête. Un provider ne formule donc plus ses messages d'erreur pour tomber du bon côté d'un test de chaîne.
+**Nature de l'échec** : `AIResponse.failure` (`AIFailure`), posé par le provider là où l'échec se produit — jamais déduit du texte du message. `NETWORK` (rien n'a atteint le provider) = retry ; `LOST` (requête partie en entier, réponse jamais reçue : connexion coupée ou délai de lecture dépassé) = arrêt comme un refus, car le provider l'a peut-être facturée — `Call.awaitReply()` fait la différence, et marque le corps « one-shot » pour qu'OkHttp ne renvoie jamais de lui-même une requête déjà partie ; `REFUSED` (429, 529, crédit épuisé) et `CONFIG` (clé, modèle, requête) = `ProviderErrorOccurred`, la session s'arrête. Un provider ne formule donc plus ses messages d'erreur pour tomber du bon côté d'un test de chaîne.
 
 **AUTOMATION** :
 - Check réseau avant appel → offline = phase `WAITING_NETWORK_RETRY`

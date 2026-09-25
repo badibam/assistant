@@ -681,7 +681,8 @@ class AIEventProcessor(
                 LogManager.aiSession("callAI: AI provider error ($failure): $errorMessage", "ERROR")
 
                 if (failure != AIFailure.NETWORK) {
-                    // The provider was reached: retrying on a timer would bill the same call again
+                    // The provider was reached, or may have been (LOST): retrying on a timer
+                    // would bill the same call again
                     // Create system message (visible in UI, excluded from prompt)
                     val systemErrorMessage = SessionMessage(
                         id = java.util.UUID.randomUUID().toString(),
