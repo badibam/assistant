@@ -14,6 +14,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Session CHAT avec DeepSeek : elle passe, et son coût s'affiche sans « ≥ ».
 - Après la mise à jour : une ancienne session affiche ses tokens et un coût en « ≥ » ; une nouvelle, un coût exact, le même dans la fiche de coût et sur la carte d'historique d'automation.
 - Démarrer l'app en mode avion après l'avoir déjà utilisée en ligne : une session affiche quand même son coût (prix gardés sur le téléphone).
+- Importer une sauvegarde faite avant la mise à jour : les conversations reviennent, leur coût en « ≥ ».
 - « Quelle heure est-il ? », puis créer une entrée datée d'hier : la date est juste. Les résultats de données reçus par l'IA sont en ISO 8601.
 - Après `CREATE_ZONE` puis `CREATE_TOOL`, l'IA enchaîne sans redemander la liste des zones ni des outils.
 - Une IA qui enchaîne plus de 10 appels seule s'arrête et rend la main avec un message.
