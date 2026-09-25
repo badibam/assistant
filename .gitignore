@@ -59,3 +59,6 @@ app/src/main/res/values*/strings_generated.xml
 
 # Kotlin incremental build state
 .kotlin/
+
+# Python bytecode cache
+__pycache__/
