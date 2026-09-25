@@ -30,6 +30,7 @@ import com.assistant.core.versioning.ChoiceOptionsAtV37
 import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.NumericDecimalsAtV38
 import com.assistant.core.versioning.ToolConfigsAtV39
+import com.assistant.core.versioning.CatchUpAtV41
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
 import androidx.room.migration.Migration
@@ -70,7 +71,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 40
+        const val VERSION = 41
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1357,6 +1358,61 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_40_41 = object : Migration(40, 41) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A scheduled automation stores its explicit catch-up choice, and a limited window
+                // in milliseconds: see CatchUpAtV41. No RENAME COLUMN before SQLite 3.25 and
+                // minSdk 26 ships 3.19, so the table is recreated with its indices.
+                database.execSQL("""
+                    CREATE TABLE automations_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        zone_id TEXT NOT NULL,
+                        seed_session_id TEXT NOT NULL,
+                        schedule_json TEXT,
+                        trigger_ids_json TEXT NOT NULL,
+                        catch_up TEXT,
+                        catch_up_window INTEGER,
+                        dismiss_older_instances INTEGER NOT NULL,
+                        provider_id TEXT NOT NULL,
+                        is_enabled INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        last_execution_id TEXT,
+                        execution_history_json TEXT NOT NULL,
+                        `group` TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO automations_new (id, name, zone_id, seed_session_id, schedule_json, trigger_ids_json,
+                        dismiss_older_instances, provider_id, is_enabled, created_at, updated_at, last_execution_id,
+                        execution_history_json, `group`)
+                    SELECT id, name, zone_id, seed_session_id, schedule_json, trigger_ids_json,
+                        dismiss_older_instances, provider_id, is_enabled, created_at, updated_at, last_execution_id,
+                        execution_history_json, `group`
+                    FROM automations
+                """)
+                var converted = 0
+                database.query("SELECT id, schedule_json, catch_up_window_minutes FROM automations").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val scheduled = !cursor.isNull(1)
+                        val minutes = if (cursor.isNull(2)) null else cursor.getLong(2)
+                        val (choice, window) = CatchUpAtV41.of(scheduled, minutes)
+                        database.execSQL("UPDATE automations_new SET catch_up = ?, catch_up_window = ? WHERE id = ?",
+                            arrayOf<Any?>(choice, window, cursor.getString(0)))
+                        if (choice != null) converted++
+                    }
+                }
+                database.execSQL("DROP TABLE automations")
+                database.execSQL("ALTER TABLE automations_new RENAME TO automations")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_zone_id ON automations(zone_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_is_enabled ON automations(is_enabled)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_automations_seed_session_id ON automations(seed_session_id)")
+                LogManager.database("MIGRATION 40->41: $converted scheduled automation(s) given their catch-up choice", "INFO")
+            }
+        }
+
         private val MIGRATION_39_40 = object : Migration(39, 40) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // zones loses color, which nothing wrote nor showed. No DROP COLUMN before SQLite
@@ -1686,7 +1742,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_36_37,
                     MIGRATION_37_38,
                     MIGRATION_38_39,
-                    MIGRATION_39_40
+                    MIGRATION_39_40,
+                    MIGRATION_40_41
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

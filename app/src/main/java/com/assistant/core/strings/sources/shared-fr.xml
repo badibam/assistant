@@ -165,16 +165,16 @@
     <!-- Automations - Catch-up settings -->
     <string name="automation_catch_up_title">Si l\'app n\'a pas tourné à l\'heure prévue</string>
     <string name="automation_catch_up_window">Rattraper jusqu\'à</string>
-    <string name="automation_catch_up_unit">Unité</string>
     <string name="automation_catch_up_unlimited">Sans limite</string>
-    <string name="automation_catch_up_minutes">minutes</string>
-    <string name="automation_catch_up_hours">heures</string>
-    <string name="automation_catch_up_days">jours</string>
-    <string name="automation_catch_up_weeks">semaines</string>
     <string name="automation_catch_up_run_every">Exécutions manquées</string>
     <string name="automation_catch_up_every_occurrence">Chacune</string>
     <string name="automation_catch_up_latest_only">La plus récente</string>
     <string name="automation_catch_up_required">Indique jusqu\'où rattraper une exécution manquée avant d\'enregistrer.</string>
+    <string name="automation_catch_up_without_schedule">Une automation sans planification n\'a rien à rattraper : ses réglages de rattrapage vont avec une planification.</string>
+    <string name="automation_catch_up_limited">Jusqu\'à un délai</string>
+    <string name="automation_catch_up_delay">Délai</string>
+    <string name="automation_is_enabled">Activée</string>
+    <string name="automation_schedule">Planification</string>
 
     <!-- AI Errors - Command transformation -->
     <string name="ai_error_command_prefix">Commande[%1$d] (%2$s) : %3$s</string>

@@ -2,6 +2,8 @@ package com.assistant.core.ai.services
 
 import android.content.Context
 import com.assistant.core.ai.data.Automation
+import com.assistant.core.ai.data.AutomationSettings
+import com.assistant.core.fields.settings.SettingValues
 import com.assistant.core.ai.database.AutomationEntity
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.database.AppDatabase
@@ -92,67 +94,52 @@ class AutomationService(private val context: Context) : ExecutableService {
 
     /**
      * Create new automation
+     *
+     * Its settings (AutomationSettings) are given as their declaration describes them: "schedule"
+     * an object, "catch_up" an object with the schedule and only with it.
      */
     private suspend fun createAutomation(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // Extract required parameters
-        val name = params.optString("name").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error(s.shared("error_param_name_required"))
         val zoneId = params.optString("zone_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("error_param_zone_id_required"))
         val seedSessionId = params.optString("seed_session_id").takeIf { it.isNotEmpty() }
             ?: return OperationResult.error(s.shared("error_param_seed_session_required"))
-        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() }
-            ?: return OperationResult.error(s.shared("error_param_provider_id_required"))
-
-        LogManager.service("Creating automation: name=$name, zoneId=$zoneId", "DEBUG")
-
-        // Parse optional schedule (no nextExecutionTime calculation - dynamic via AutomationScheduler)
-        val scheduleJson = params.optString("schedule").takeIf { it.isNotEmpty() }
-        val schedule = scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) }
 
         // Parse trigger IDs
         val triggerIdsArray = params.optJSONArray("trigger_ids") ?: JSONArray()
         val triggerIds = (0 until triggerIdsArray.length()).map { triggerIdsArray.getString(it) }
 
-        // Create automation entity
         val automationId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
 
-        // Parse optional group
-        val group = params.optString("group").takeIf { it.isNotEmpty() }
-
-        val entity = AutomationEntity(
+        val entity = withSettings(AutomationEntity(
             id = automationId,
-            name = name,
+            name = "",
             zoneId = zoneId,
             seedSessionId = seedSessionId,
-            scheduleJson = schedule?.let { json.encodeToString(it) },
+            scheduleJson = null,
             triggerIdsJson = json.encodeToString(triggerIds),
-            catchUpWindowMinutes = if (params.has("catch_up_window_minutes") && !params.isNull("catch_up_window_minutes"))
-                params.getLong("catch_up_window_minutes")
-            else
-                null,
-            dismissOlderInstances = params.optBoolean("dismiss_older_instances", false),
-            providerId = providerId,
-            isEnabled = params.optBoolean("is_enabled", true),
-            group = group,
+            catchUp = null,
+            catchUpWindow = null,
+            dismissOlderInstances = false,
+            providerId = "",
+            isEnabled = true,
+            group = null,
             createdAt = now,
             updatedAt = now,
             lastExecutionId = null,
             executionHistoryJson = json.encodeToString(emptyList<String>())
-        )
+        ), settingsGiven(params, null)).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
 
+        LogManager.service("Creating automation: name=${entity.name}, zoneId=$zoneId", "DEBUG")
         dao.insertAutomation(entity)
 
         LogManager.service("Successfully created automation: $automationId", "INFO")
 
-        // Convert timestamp to ISO 8601 for output
-        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
         return OperationResult.success(mapOf(
             "automation_id" to automationId,
-            "name" to name,
+            "name" to entity.name,
             "zone_id" to zoneId,
             "created_at" to now
         ))
@@ -160,6 +147,8 @@ class AutomationService(private val context: Context) : ExecutableService {
 
     /**
      * Update existing automation
+     *
+     * A partial update: a setting left out keeps its value, a setting given as null is removed.
      */
     private suspend fun updateAutomation(params: JSONObject, token: CancellationToken): OperationResult {
         if (token.isCancelled) return OperationResult.cancelled()
@@ -172,84 +161,98 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        // Update fields if provided
-        val name = params.optString("name").takeIf { it.isNotEmpty() } ?: entity.name
         val newZoneId = params.optString("zone_id").takeIf { it.isNotBlank() }
-        val providerId = params.optString("provider_id").takeIf { it.isNotEmpty() } ?: entity.providerId
-
-        // Parse schedule if provided (no nextExecutionTime calculation - dynamic via AutomationScheduler)
-        val scheduleJson = params.optString("schedule")
-        val schedule = when {
-            scheduleJson == "null" -> null // Explicit removal
-            scheduleJson.isNotEmpty() -> {
-                // MAJOR: Catch JSON parsing errors and return clear error message to AI
-                try {
-                    json.decodeFromString<ScheduleConfig>(scheduleJson)
-                } catch (e: Exception) {
-                    LogManager.service("Invalid schedule JSON format: ${e.message}", "ERROR", e)
-                    return OperationResult.error("Invalid schedule JSON format: ${e.message}")
-                }
-            }
-            else -> entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) }
-        }
 
         // Parse trigger IDs if provided
         val triggerIdsArray = params.optJSONArray("trigger_ids")
-        val triggerIds = if (triggerIdsArray != null) {
-            (0 until triggerIdsArray.length()).map { triggerIdsArray.getString(it) }
-        } else {
-            json.decodeFromString<List<String>>(entity.triggerIdsJson)
-        }
+        val triggerIdsJson = triggerIdsArray?.let { array -> json.encodeToString((0 until array.length()).map { array.getString(it) }) }
+            ?: entity.triggerIdsJson
 
-        val dismissOlderInstances = if (params.has("dismiss_older_instances"))
-            params.getBoolean("dismiss_older_instances")
-        else
-            entity.dismissOlderInstances
-
-        // An explicit null clears the window (no limit); an absent key keeps what is stored
-        val catchUpWindowMinutes = if (params.has("catch_up_window_minutes"))
-            if (params.isNull("catch_up_window_minutes")) null else params.getLong("catch_up_window_minutes")
-        else
-            entity.catchUpWindowMinutes
-
-        // Parse optional group (allow updating)
-        val group = if (params.has("group")) {
-            params.optString("group").takeIf { it.isNotEmpty() }
-        } else {
-            entity.group // Keep existing if not provided
-        }
-
-        // Store old zone_id for notification
-        val oldZoneId = entity.zoneId
-
-        val updatedEntity = entity.copy(
-            name = name,
-            zoneId = newZoneId ?: entity.zoneId, // Update zone if provided
-            providerId = providerId,
-            scheduleJson = schedule?.let { json.encodeToString(it) },
-            triggerIdsJson = json.encodeToString(triggerIds),
-            catchUpWindowMinutes = catchUpWindowMinutes,
-            dismissOlderInstances = dismissOlderInstances,
-            group = group,
+        val updatedEntity = withSettings(entity.copy(
+            zoneId = newZoneId ?: entity.zoneId,
+            triggerIdsJson = triggerIdsJson,
             updatedAt = System.currentTimeMillis()
-        )
+        ), settingsGiven(params, settingsOf(entity))).getOrElse { return OperationResult.error(it.message ?: s.shared("message_validation_error_simple")) }
 
         dao.updateAutomation(updatedEntity)
 
         // Notify UI of automation change in affected zones
-        if (newZoneId != null && newZoneId != oldZoneId) {
-            // Automation moved to different zone - notify both old and new zones
+        if (newZoneId != null && newZoneId != entity.zoneId) {
             com.assistant.core.utils.DataChangeNotifier.notifyZonesChanged()
-            LogManager.service("Automation $automationId moved from zone $oldZoneId to $newZoneId", "DEBUG")
+            LogManager.service("Automation $automationId moved from zone ${entity.zoneId} to $newZoneId", "DEBUG")
         }
 
         LogManager.service("Successfully updated automation: $automationId", "INFO")
 
         return OperationResult.success(mapOf(
             "automation_id" to automationId,
-            "name" to name,
+            "name" to updatedEntity.name,
             "zone_id" to updatedEntity.zoneId,
             "updated" to true
+        ))
+    }
+
+    /** The settings an automation stores, as its declaration describes them (AutomationSettings). */
+    private fun settingsOf(entity: AutomationEntity): JSONObject = JSONObject().apply {
+        put("name", entity.name)
+        put("provider_id", entity.providerId)
+        entity.group?.let { put("group", it) }
+        put("is_enabled", entity.isEnabled)
+        entity.scheduleJson?.let { put("schedule", JSONObject(it)) }
+        entity.catchUp?.let { limit ->
+            put("catch_up", JSONObject().apply {
+                put("limit", limit)
+                entity.catchUpWindow?.let { put("window", it) }
+                put("dismiss_older_instances", entity.dismissOlderInstances)
+            })
+        }
+    }
+
+    /**
+     * [stored] with the settings [params] give: a setting left out keeps its value, a setting
+     * given as null is removed. Without [stored], a creation, only what is given.
+     */
+    private fun settingsGiven(params: JSONObject, stored: JSONObject?): JSONObject {
+        val settings = stored?.let { JSONObject(it.toString()) } ?: JSONObject()
+        listOf("name", "provider_id", "group", "is_enabled", "schedule", "catch_up").forEach { key ->
+            if (!params.has(key)) return@forEach
+            if (params.isNull(key)) settings.remove(key) else settings.put(key, params.get(key))
+        }
+        return settings
+    }
+
+    /**
+     * [entity] holding [settings], once they are checked against the schema generated from their
+     * declaration, and against the rule it cannot say: the catch-up settings come with a schedule
+     * and only with it.
+     */
+    private fun withSettings(entity: AutomationEntity, settings: JSONObject): Result<AutomationEntity> {
+        val checked = com.assistant.core.validation.SchemaValidator.validate(
+            AutomationSettings.schema(context), com.assistant.core.utils.JsonUtils.toMap(settings), context)
+        if (!checked.isValid) return Result.failure(IllegalArgumentException(checked.errorMessage))
+        val schedule = settings.optJSONObject("schedule")
+        val catchUp = settings.optJSONObject("catch_up")
+        if (schedule != null && catchUp == null) return Result.failure(IllegalArgumentException(s.shared("automation_catch_up_required")))
+        if (schedule == null && catchUp != null) return Result.failure(IllegalArgumentException(s.shared("automation_catch_up_without_schedule")))
+
+        // A schedule the scheduler cannot read is refused here rather than failing each tick
+        val scheduleJson = schedule?.toString()?.also {
+            try {
+                json.decodeFromString<ScheduleConfig>(it)
+            } catch (e: Exception) {
+                return Result.failure(IllegalArgumentException("Invalid schedule: ${e.message}"))
+            }
+        }
+        return Result.success(entity.copy(
+            name = settings.getString("name"),
+            providerId = settings.getString("provider_id"),
+            group = settings.optString("group").takeIf { it.isNotEmpty() },
+            isEnabled = SettingValues(AutomationSettings.nodes(context), settings).boolean("is_enabled"),
+            scheduleJson = scheduleJson,
+            catchUp = catchUp?.getString("limit"),
+            catchUpWindow = catchUp?.takeIf { it.has("window") }?.getLong("window"),
+            // Without a schedule nothing is missed: the column holds its declared default
+            dismissOlderInstances = SettingValues(AutomationSettings.catchUpNodes(context), catchUp ?: JSONObject()).boolean("dismiss_older_instances")
         ))
     }
 
@@ -403,10 +406,8 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationById(automationId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        val automation = entityToAutomation(entity)
-
         return OperationResult.success(mapOf(
-            "automation" to automationToMap(automation)
+            "automation" to automationToMap(entity)
         ))
     }
 
@@ -425,10 +426,8 @@ class AutomationService(private val context: Context) : ExecutableService {
         val entity = dao.getAutomationBySeedSession(seedSessionId)
             ?: return OperationResult.error(s.shared("error_automation_not_found"))
 
-        val automation = entityToAutomation(entity)
-
         return OperationResult.success(mapOf(
-            "automation" to automationToMap(automation)
+            "automation" to automationToMap(entity)
         ))
     }
 
@@ -444,11 +443,9 @@ class AutomationService(private val context: Context) : ExecutableService {
         LogManager.service("Listing automations for zone: $zoneId", "DEBUG")
 
         val entities = dao.getAutomationsByZone(zoneId)
-        val automations = entities.map { entityToAutomation(it) }
-
         return OperationResult.success(mapOf(
-            "automations" to automations.map { automationToMap(it) },
-            "count" to automations.size,
+            "automations" to entities.map { automationToMap(it) },
+            "count" to entities.size,
             "zone_id" to zoneId
         ))
     }
@@ -462,11 +459,9 @@ class AutomationService(private val context: Context) : ExecutableService {
         LogManager.service("Listing all automations", "DEBUG")
 
         val entities = dao.getAllAutomations()
-        val automations = entities.map { entityToAutomation(it) }
-
         return OperationResult.success(mapOf(
-            "automations" to automations.map { automationToMap(it) },
-            "count" to automations.size
+            "automations" to entities.map { automationToMap(it) },
+            "count" to entities.size
         ))
     }
 
@@ -538,52 +533,19 @@ class AutomationService(private val context: Context) : ExecutableService {
     }
 
     /**
-     * Convert entity to domain model
+     * An automation as a result gives it: what locates it and its history, then its settings in
+     * the form their declaration describes (settingsOf). Automation.fromResult reads it back.
      */
-    private fun entityToAutomation(entity: AutomationEntity): Automation {
-        return Automation(
-            id = entity.id,
-            name = entity.name,
-            zoneId = entity.zoneId,
-            seedSessionId = entity.seedSessionId,
-            schedule = entity.scheduleJson?.let { json.decodeFromString<ScheduleConfig>(it) },
-            triggerIds = json.decodeFromString<List<String>>(entity.triggerIdsJson),
-            catchUpWindowMinutes = entity.catchUpWindowMinutes,
-            dismissOlderInstances = entity.dismissOlderInstances,
-            providerId = entity.providerId,
-            isEnabled = entity.isEnabled,
-            group = entity.group,
-            createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt,
-            lastExecutionId = entity.lastExecutionId,
-            executionHistory = json.decodeFromString<List<String>>(entity.executionHistoryJson)
-        )
-    }
-
-    /**
-     * Convert automation to map for CommandResult
-     * Converts timestamps to ISO 8601 format for output
-     */
-    private fun automationToMap(automation: Automation): Map<String, Any?> {
-        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
-        return mapOf(
-            "id" to automation.id,
-            "name" to automation.name,
-            "zone_id" to automation.zoneId,
-            "seed_session_id" to automation.seedSessionId,
-            "schedule" to automation.schedule?.let { json.encodeToString(it) },
-            "trigger_ids" to automation.triggerIds,
-            "catch_up_window_minutes" to automation.catchUpWindowMinutes,
-            "dismiss_older_instances" to automation.dismissOlderInstances,
-            "provider_id" to automation.providerId,
-            "is_enabled" to automation.isEnabled,
-            "created_at" to automation.createdAt,
-            "updated_at" to automation.updatedAt,
-            "last_execution_id" to automation.lastExecutionId,
-            "execution_history" to automation.executionHistory,
-            "group" to automation.group
-        )
-    }
+    private fun automationToMap(entity: AutomationEntity): Map<String, Any?> = mapOf(
+        "id" to entity.id,
+        "zone_id" to entity.zoneId,
+        "seed_session_id" to entity.seedSessionId,
+        "trigger_ids" to json.decodeFromString<List<String>>(entity.triggerIdsJson),
+        "created_at" to entity.createdAt,
+        "updated_at" to entity.updatedAt,
+        "last_execution_id" to entity.lastExecutionId,
+        "execution_history" to json.decodeFromString<List<String>>(entity.executionHistoryJson)
+    ) + com.assistant.core.utils.JsonUtils.toMap(settingsOf(entity))
 
     /**
      * Verbalize automation operations (not exposed to AI typically)

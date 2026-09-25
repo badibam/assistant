@@ -304,10 +304,12 @@ tick() {
 
 ### Exécutions manquées
 
-Quand l'app n'a pas tourné à l'heure prévue, deux réglages par automation programmée, tous deux dans l'éditeur sous le planning :
+Quand l'app n'a pas tourné à l'heure prévue, les réglages `catch_up` d'une automation programmée (déclarés dans `AutomationSettings.catchUpNodes`, présents avec la planification et seulement avec elle ; `AutomationService` refuse le reste) :
 
-- **`catchUpWindowMinutes`** : jusqu'où rattraper. Au-delà de ce retard, l'occurrence est sautée — une ligne de log, pas de session (l'historique est fait de sessions ; une session vide « sautée » serait une forme de plus à gérer partout). `null` = sans limite. Obligatoire à la saisie, sans valeur par défaut.
-- **`dismissOlderInstances`** : parmi les occurrences dues, ne lancer que la plus récente. Ne se déduit pas de la fenêtre.
+- **`limit`** : `limited` ou `unlimited`, choisi explicitement, sans valeur par défaut. `limited` apporte **`window`**, une DURÉE en millisecondes : au-delà de ce retard, l'occurrence est sautée — une ligne de log, pas de session (l'historique est fait de sessions ; une session vide « sautée » serait une forme de plus à gérer partout).
+- **`dismiss_older_instances`** : parmi les occurrences dues, ne lancer que la plus récente. Ne se déduit pas de la fenêtre.
+
+Les réglages d'une automation (nom, fournisseur, groupe, activation, planification, rattrapage) sont déclarés dans `AutomationSettings` ; `AutomationService` vérifie toute écriture contre le schéma généré, et `Automation.fromResult` est le seul lecteur de ses résultats.
 
 La recherche de la prochaine occurrence démarre au plus tôt à `maintenant − fenêtre` (`AutomationScheduler.searchStart`). La plus récente due se trouve par dichotomie sur le départ de la recherche (`lastDueOccurrence`) : le calculateur ne répond que « la première après cet instant », et cette réponse ne décroît jamais quand l'instant grandit.
 

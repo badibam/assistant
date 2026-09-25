@@ -165,16 +165,16 @@
     <!-- Automations - Catch-up settings -->
     <string name="automation_catch_up_title">If the app was not running at the planned time</string>
     <string name="automation_catch_up_window">Catch up to</string>
-    <string name="automation_catch_up_unit">Unit</string>
     <string name="automation_catch_up_unlimited">No limit</string>
-    <string name="automation_catch_up_minutes">minutes</string>
-    <string name="automation_catch_up_hours">hours</string>
-    <string name="automation_catch_up_days">days</string>
-    <string name="automation_catch_up_weeks">weeks</string>
     <string name="automation_catch_up_run_every">Missed runs</string>
     <string name="automation_catch_up_every_occurrence">Each one</string>
     <string name="automation_catch_up_latest_only">The most recent one</string>
     <string name="automation_catch_up_required">Say how far back a missed run is caught up before saving.</string>
+    <string name="automation_catch_up_without_schedule">An automation without schedule has nothing to catch up: its catch-up settings come with a schedule.</string>
+    <string name="automation_catch_up_limited">Up to a delay</string>
+    <string name="automation_catch_up_delay">Delay</string>
+    <string name="automation_is_enabled">Enabled</string>
+    <string name="automation_schedule">Schedule</string>
 
     <!-- AI Errors - Command transformation -->
     <string name="ai_error_command_prefix">Command[%1$d] (%2$s): %3$s</string>

@@ -430,12 +430,9 @@ private fun SeedMode(
     var segments by rememberSaveable(stateSaver = MessageSegmentsSaver) { mutableStateOf<List<MessageSegment>>(emptyList()) } // Composer editing (local temp state)
     var displaySegments by remember { mutableStateOf<List<MessageSegment>>(emptyList()) } // Display from DB (source of truth)
     var scheduleConfig by remember { mutableStateOf<com.assistant.core.utils.ScheduleConfig?>(null) }
-    // Catch-up window, in minutes; null means no limit. catchUpUnitChosen tells that null apart
-    // from "nothing picked yet", which is the state a newly scheduled automation starts in and
-    // which the save refuses: the setting is required and has no sensible default.
-    var catchUpWindowMinutes by remember { mutableStateOf<Long?>(null) }
-    var catchUpUnitChosen by remember { mutableStateOf(false) }
-    var runEveryMissed by remember { mutableStateOf(false) }
+    // What the automation does about missed runs, as its declaration describes it
+    // (AutomationSettings.catchUpNodes): edited while a schedule is set, sent with it
+    var catchUp by remember { mutableStateOf(org.json.JSONObject()) }
     var triggersCount by remember { mutableStateOf(0) }
     var userMessageId by remember { mutableStateOf<String?>(null) } // ID of the USER message in SEED session
 
@@ -462,34 +459,13 @@ private fun SeedMode(
                 @Suppress("UNCHECKED_CAST")
                 val automationMap = result.data?.get("automation") as? Map<String, Any>
                 if (automationMap != null) {
-                    // Parse automation data
-                    val scheduleJson = automationMap["schedule"] as? String
-                    automation = Automation(
-                        id = automationMap["id"] as String,
-                        name = automationMap["name"] as String,
-                        zoneId = automationMap["zone_id"] as String,
-                        seedSessionId = automationMap["seed_session_id"] as String,
-                        schedule = scheduleJson?.let {
-                            kotlinx.serialization.json.Json.decodeFromString(it)
-                        },
-                        triggerIds = (automationMap["trigger_ids"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-                        catchUpWindowMinutes = (automationMap["catch_up_window_minutes"] as? Number)?.toLong(),
-                        dismissOlderInstances = automationMap["dismiss_older_instances"] as? Boolean ?: false,
-                        providerId = automationMap["provider_id"] as String,
-                        isEnabled = automationMap["is_enabled"] as? Boolean ?: true,
-                        createdAt = (automationMap["created_at"] as? Number)?.toLong() ?: 0L,
-                        updatedAt = (automationMap["updated_at"] as? Number)?.toLong() ?: 0L,
-                        lastExecutionId = automationMap["last_execution_id"] as? String,
-                        executionHistory = (automationMap["execution_history"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
-                    )
+                    automation = Automation.fromResult(automationMap)
 
                     // Initialize states from automation
                     scheduleConfig = automation?.schedule
-                    catchUpWindowMinutes = automation?.catchUpWindowMinutes
-                    // An automation already carrying a schedule has been through this form, so a
-                    // null window is a deliberate "no limit"; one without has never been asked.
-                    catchUpUnitChosen = automation?.schedule != null
-                    runEveryMissed = automation?.dismissOlderInstances == false
+                    catchUp = (automationMap["catch_up"] as? Map<*, *>)
+                        ?.let { com.assistant.core.utils.JsonUtils.toJSONObject(com.assistant.core.utils.JsonUtils.toMap(it)) }
+                        ?: org.json.JSONObject()
                     triggersCount = automation?.triggerIds?.size ?: 0
 
                     LogManager.aiUI("SeedMode loaded automation: ${automation?.id}", "DEBUG")
@@ -824,14 +800,8 @@ private fun SeedMode(
                     onSegmentsChange = { segments = it },
                     scheduleConfig = scheduleConfig,
                     onConfigureSchedule = { showScheduleEditor = true },
-                    catchUpWindowMinutes = catchUpWindowMinutes,
-                    catchUpUnitChosen = catchUpUnitChosen,
-                    onCatchUpWindowChange = { minutes, chosen ->
-                        catchUpWindowMinutes = minutes
-                        catchUpUnitChosen = chosen
-                    },
-                    runEveryMissed = runEveryMissed,
-                    onRunEveryMissedChange = { runEveryMissed = it },
+                    catchUp = catchUp,
+                    onCatchUpChange = { catchUp = it },
                     triggersCount = triggersCount,
                     onConfigureTriggers = { showTriggersEditor = true },
                     onRefresh = {
@@ -914,24 +884,12 @@ private fun SeedMode(
                                 val updateParams = mutableMapOf<String, Any>(
                                     "automation_id" to automation!!.id
                                 )
-                                scheduleConfig?.let {
-                                    updateParams["schedule"] = kotlinx.serialization.json.Json.encodeToString(
-                                        com.assistant.core.utils.ScheduleConfig.serializer(),
-                                        it
-                                    )
-                                }
-
-                                if (scheduleConfig != null) {
-                                    if (!catchUpUnitChosen) {
-                                        errorMessage = s.shared("automation_catch_up_required")
-                                        return@launch
-                                    }
-                                    // JSONObject.NULL is how an explicit "no limit" travels; a
-                                    // missing key would mean "keep what is stored" instead.
-                                    updateParams["catch_up_window_minutes"] =
-                                        catchUpWindowMinutes ?: org.json.JSONObject.NULL
-                                    updateParams["dismiss_older_instances"] = !runEveryMissed
-                                }
+                                // Both sent every time: null removes them, and the catch-up
+                                // settings exist with a schedule only
+                                updateParams["schedule"] = scheduleConfig?.let {
+                                    org.json.JSONObject(kotlinx.serialization.json.Json.encodeToString(com.assistant.core.utils.ScheduleConfig.serializer(), it))
+                                } ?: org.json.JSONObject.NULL
+                                updateParams["catch_up"] = if (scheduleConfig != null) catchUp else org.json.JSONObject.NULL
 
                                 val result = coordinator.processUserAction("automations.update", updateParams)
                                 if (result.status == CommandStatus.SUCCESS) {

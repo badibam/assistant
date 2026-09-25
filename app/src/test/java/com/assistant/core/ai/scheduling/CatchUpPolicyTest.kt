@@ -41,7 +41,7 @@ class CatchUpPolicyTest {
             lastExecutionTime = lastRun,
             automationUpdatedAt = at(2025, 3, 1, 12, 0),
             scheduleStartDate = null,
-            catchUpWindowMinutes = null,
+            catchUpWindow = null,
             now = at(2025, 3, 15, 10, 0)
         )
 
@@ -60,7 +60,7 @@ class CatchUpPolicyTest {
             lastExecutionTime = at(2025, 3, 10, 9, 0),
             automationUpdatedAt = edited,
             scheduleStartDate = null,
-            catchUpWindowMinutes = null,
+            catchUpWindow = null,
             now = at(2025, 3, 15, 10, 0)
         )
 
@@ -76,7 +76,7 @@ class CatchUpPolicyTest {
             lastExecutionTime = 0L,
             automationUpdatedAt = 0L,
             scheduleStartDate = scheduleStart,
-            catchUpWindowMinutes = null,
+            catchUpWindow = null,
             now = at(2025, 3, 15, 10, 0)
         )
 
@@ -92,7 +92,7 @@ class CatchUpPolicyTest {
             lastExecutionTime = 0L,
             automationUpdatedAt = 0L,
             scheduleStartDate = null,
-            catchUpWindowMinutes = null,
+            catchUpWindow = null,
             now = now
         )
 
@@ -114,13 +114,13 @@ class CatchUpPolicyTest {
             lastExecutionTime = longAgo,
             automationUpdatedAt = 0L,
             scheduleStartDate = null,
-            catchUpWindowMinutes = 60,
+            catchUpWindow = 60 * minute,
             now = now
         )
 
         assertEquals(now - 60 * minute, start)
         assertTrue(
-            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, null, 60, now)
+            CatchUpPolicy.windowSkippedOccurrences(longAgo, 0L, null, 60 * minute, now)
         )
     }
 
@@ -134,13 +134,13 @@ class CatchUpPolicyTest {
             lastExecutionTime = lastRun,
             automationUpdatedAt = 0L,
             scheduleStartDate = null,
-            catchUpWindowMinutes = 120,
+            catchUpWindow = 120 * minute,
             now = now
         )
 
         assertEquals(lastRun, start)
         assertFalse(
-            CatchUpPolicy.windowSkippedOccurrences(lastRun, 0L, null, 120, now)
+            CatchUpPolicy.windowSkippedOccurrences(lastRun, 0L, null, 120 * minute, now)
         )
     }
 

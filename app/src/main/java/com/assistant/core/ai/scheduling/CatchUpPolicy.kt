@@ -28,22 +28,22 @@ object CatchUpPolicy {
      * @param lastExecutionTime when the last completed run was scheduled for, or 0 if there is none
      * @param automationUpdatedAt when the automation was last modified
      * @param scheduleStartDate the schedule's own start, or null
-     * @param catchUpWindowMinutes how late an occurrence may still run, or null for no limit
+     * @param catchUpWindow how late an occurrence may still run, in milliseconds, or null for no limit
      * @return the instant to search from
      */
     fun searchStart(
         lastExecutionTime: Long,
         automationUpdatedAt: Long,
         scheduleStartDate: Long?,
-        catchUpWindowMinutes: Long?,
+        catchUpWindow: Long?,
         now: Long
     ): Long {
         val referenceTime = maxOf(lastExecutionTime, automationUpdatedAt)
         val base = if (referenceTime > 0) referenceTime else (scheduleStartDate ?: now)
 
-        if (catchUpWindowMinutes == null) return base
+        if (catchUpWindow == null) return base
 
-        val windowStart = now - catchUpWindowMinutes * 60_000L
+        val windowStart = now - catchUpWindow
         return if (windowStart <= base) base else windowStart
     }
 
@@ -57,13 +57,13 @@ object CatchUpPolicy {
         lastExecutionTime: Long,
         automationUpdatedAt: Long,
         scheduleStartDate: Long?,
-        catchUpWindowMinutes: Long?,
+        catchUpWindow: Long?,
         now: Long
     ): Boolean {
-        if (catchUpWindowMinutes == null) return false
+        if (catchUpWindow == null) return false
         val referenceTime = maxOf(lastExecutionTime, automationUpdatedAt)
         val base = if (referenceTime > 0) referenceTime else (scheduleStartDate ?: now)
-        return now - catchUpWindowMinutes * 60_000L > base
+        return now - catchUpWindow > base
     }
 
     /**

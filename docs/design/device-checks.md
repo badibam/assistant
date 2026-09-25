@@ -4,7 +4,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
-- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 40) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
+- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 41) : l'app démarre, l'historique des conversations est intact, chaque zone garde ses outils, ses groupes et son icône, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.
@@ -30,6 +30,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Automations
 
+- Rattrapage après la mise à jour : une automation programmée « sans limite » le reste, une fenêtre de 3 heures se relit « jusqu'à un délai » de 3 h. Dans l'éditeur : sans choix, l'enregistrement est refusé ; « jusqu'à un délai » demande la durée ; retirer la planification puis enregistrer retire aussi le rattrapage.
 - Rattrapage réel : automation programmée, app fermée plusieurs jours. Voir quelle session est reprise et ce que montre l'écran d'historique ; une donnée de la date prévue est écrite avec un timestamp ISO explicite.
 - Créer une automation planifiée : sa prochaine exécution s'affiche sur sa carte. La fenêtre de rattrapage se saisit dans l'éditeur.
 - Seuil de données bas : le refus apparaît dans l'historique d'exécution, et l'IA resserre sa requête.

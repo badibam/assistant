@@ -32,11 +32,8 @@ fun AutomationEditorFooter(
     onSegmentsChange: (List<MessageSegment>) -> Unit,
     scheduleConfig: ScheduleConfig?,
     onConfigureSchedule: () -> Unit,
-    catchUpWindowMinutes: Long?,
-    catchUpUnitChosen: Boolean,
-    onCatchUpWindowChange: (minutes: Long?, unitChosen: Boolean) -> Unit,
-    runEveryMissed: Boolean,
-    onRunEveryMissedChange: (Boolean) -> Unit,
+    catchUp: org.json.JSONObject,
+    onCatchUpChange: (org.json.JSONObject) -> Unit,
     triggersCount: Int,
     onConfigureTriggers: () -> Unit,
     onRefresh: () -> Unit,  // Refresh message from composer (update DB + reload preview)
@@ -117,16 +114,18 @@ fun AutomationEditorFooter(
             }
         }
 
-        // Catch-up settings, only meaningful once there is a schedule to miss
+        // Catch-up settings, only meaningful once there is a schedule to miss: the form of their
+        // declaration, a limit chosen explicitly and a delay when limited
         if (scheduleConfig != null) {
-            CatchUpSettings(
-                automationId = automation?.id,
-                windowMinutes = catchUpWindowMinutes,
-                unitChosen = catchUpUnitChosen,
-                onWindowChange = onCatchUpWindowChange,
-                runEveryMissed = runEveryMissed,
-                onRunEveryMissedChange = onRunEveryMissedChange
-            )
+            UI.Card(type = CardType.DEFAULT) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    UI.Text(s.shared("automation_catch_up_title"), TextType.SUBTITLE)
+                    com.assistant.core.fields.settings.SettingsForm(
+                        remember { com.assistant.core.ai.data.AutomationSettings.catchUpNodes(context) },
+                        catchUp, onCatchUpChange, context
+                    )
+                }
+            }
         }
 
         // Form actions

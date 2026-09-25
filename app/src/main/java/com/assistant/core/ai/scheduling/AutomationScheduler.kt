@@ -54,7 +54,7 @@ class AutomationScheduler(private val context: Context) {
             lastExecutionTime = lastExecutionTime,
             automationUpdatedAt = automation.updatedAt,
             scheduleStartDate = schedule.startDate,
-            catchUpWindowMinutes = automation.catchUpWindowMinutes,
+            catchUpWindow = automation.catchUpWindow,
             now = now
         )
 
@@ -62,13 +62,13 @@ class AutomationScheduler(private val context: Context) {
                 lastExecutionTime = lastExecutionTime,
                 automationUpdatedAt = automation.updatedAt,
                 scheduleStartDate = schedule.startDate,
-                catchUpWindowMinutes = automation.catchUpWindowMinutes,
+                catchUpWindow = automation.catchUpWindow,
                 now = now
             )
         ) {
             LogManager.aiSession(
                 "AutomationScheduler: Automation ${automation.id} skips what is older than its catch-up window " +
-                "of ${automation.catchUpWindowMinutes} min (search starts at ${formatTimestamp(start)})",
+                "of ${automation.catchUpWindow} ms (search starts at ${formatTimestamp(start)})",
                 "INFO"
             )
         }
@@ -174,7 +174,7 @@ class AutomationScheduler(private val context: Context) {
                     "(lastCompleted=${lastCompletedSession?.scheduledExecutionTime?.let { formatTimestamp(it) }}, " +
                     "updatedAt=${formatTimestamp(automation.updatedAt)}, " +
                     "startDate=${schedule.startDate?.let { formatTimestamp(it) }}, " +
-                    "catchUpWindowMinutes=${automation.catchUpWindowMinutes ?: "unlimited"}, " +
+                    "catchUpWindow=${automation.catchUpWindow ?: "unlimited"}, " +
                     "fromTimestamp=${formatTimestamp(fromTimestamp)})",
                     "DEBUG"
                 )
