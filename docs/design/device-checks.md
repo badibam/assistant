@@ -4,7 +4,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 
 ## Mise à jour et démarrage
 
-- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 34) : l'app démarre, l'historique des conversations est intact, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
+- Installer la mise à jour par-dessus la version du téléphone (migrations jusqu'à la base 35) : l'app démarre, l'historique des conversations est intact, les outils et leurs icônes s'ouvrent, une config portant un champ DATE ou DATETIME s'enregistre.
 - Réglages après la mise à jour : format (fuseau, début de semaine, 24 h) inchangé et enregistrable, validation avec ses quatre choix, limites IA à 10, 20, 15 000 et 100 000.
 - Écran des journaux : il s'ouvre, et filtré sur « Error » il montre aussi les erreurs anciennes. Y chercher des lignes `MIGRATION` et `No JSON form`.
 - Volume du journal : compter les lignes par niveau sur deux minutes d'usage normal, pour voir ce que produit encore le DEBUG.

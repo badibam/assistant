@@ -226,7 +226,12 @@ class AIMessageRepository(
             inputTokens = message.inputTokens,
             cacheWriteTokens = message.cacheWriteTokens,
             cacheReadTokens = message.cacheReadTokens,
-            outputTokens = message.outputTokens
+            outputTokens = message.outputTokens,
+            modelId = message.pricing?.modelId,
+            inputPrice = message.pricing?.inputPrice,
+            cacheWritePrice = message.pricing?.cacheWritePrice,
+            cacheReadPrice = message.pricing?.cacheReadPrice,
+            outputPrice = message.pricing?.outputPrice
         )
     }
 
@@ -258,7 +263,16 @@ class AIMessageRepository(
             inputTokens = entity.inputTokens,
             cacheWriteTokens = entity.cacheWriteTokens,
             cacheReadTokens = entity.cacheReadTokens,
-            outputTokens = entity.outputTokens
+            outputTokens = entity.outputTokens,
+            pricing = entity.modelId?.let {
+                com.assistant.core.ai.data.CallPricing(
+                    modelId = it,
+                    inputPrice = entity.inputPrice,
+                    cacheWritePrice = entity.cacheWritePrice,
+                    cacheReadPrice = entity.cacheReadPrice,
+                    outputPrice = entity.outputPrice
+                )
+            }
         )
     }
 }

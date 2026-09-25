@@ -659,7 +659,8 @@ class AIEventProcessor(
                     inputTokens = response.inputTokens,
                     cacheWriteTokens = response.cacheWriteTokens,
                     cacheReadTokens = response.cacheReadTokens,
-                    outputTokens = response.tokensUsed
+                    outputTokens = response.tokensUsed,
+                    pricing = callPricing(providerId, response)
                 )
 
                 messageRepository.storeMessage(sessionId, aiMessage)
@@ -1900,6 +1901,31 @@ class AIEventProcessor(
 
         } catch (e: Exception) {
             LogManager.aiSession("updateSessionTokensAndCost: Failed to update session: ${e.message}", "ERROR", e)
+        }
+    }
+
+    /**
+     * The model and prices of the call that just answered, as they are now. Prices unknown for
+     * the model are stored as unknown; no model in the provider config gives no pricing at all.
+     */
+    private suspend fun callPricing(providerId: String?, response: com.assistant.core.ai.providers.AIResponse): CallPricing? {
+        return try {
+            val aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao()
+            val effectiveProviderId = providerId ?: aiDao.getActiveProviderConfig()?.providerId
+            val modelId = effectiveProviderId
+                ?.let { aiDao.getProviderConfig(it) }
+                ?.let { JSONObject(it.configJson).optString("model", "") }
+                ?.takeIf { it.isNotEmpty() }
+            if (modelId == null) {
+                LogManager.aiSession("callPricing: no model in the config of provider $effectiveProviderId", "ERROR")
+                return null
+            }
+            val inputTokens = response.inputTokens + response.cacheWriteTokens + response.cacheReadTokens
+            com.assistant.core.ai.utils.ModelPriceManager.getModelPrice(context, modelId)?.forCall(inputTokens)
+                ?: CallPricing(modelId, null, null, null, null)
+        } catch (e: Exception) {
+            LogManager.aiSession("callPricing: failed: ${e.message}", "ERROR", e)
+            null
         }
     }
 

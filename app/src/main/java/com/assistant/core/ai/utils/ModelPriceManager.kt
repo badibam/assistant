@@ -1,6 +1,7 @@
 package com.assistant.core.ai.utils
 
 import android.content.Context
+import com.assistant.core.ai.data.CallPricing
 import com.assistant.core.utils.LogManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,11 +17,38 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Model price information from LiteLLM pricing database.
+ * Model price information from LiteLLM pricing database, per token.
  * A price missing from the list is null, never 0: a missing price is not a free one.
  */
 data class ModelPrice(
     val modelId: String,
+    val inputCostPerToken: Double?,
+    val outputCostPerToken: Double?,
+    val cacheWriteCostPerToken: Double?,
+    val cacheReadCostPerToken: Double?,
+    // Higher prices for a call whose input exceeds a size, lowest threshold first
+    val tiers: List<PriceTier> = emptyList()
+) {
+    /**
+     * The prices that apply to one call, given its whole input: uncached, written to and read
+     * from the cache. Above a tier's threshold, the tier's prices replace those it lists; the
+     * others keep the base price, as LiteLLM lists only what changes.
+     */
+    fun forCall(inputTokens: Int): CallPricing {
+        val tier = tiers.lastOrNull { inputTokens > it.aboveInputTokens }
+        return CallPricing(
+            modelId = modelId,
+            inputPrice = tier?.inputCostPerToken ?: inputCostPerToken,
+            cacheWritePrice = tier?.cacheWriteCostPerToken ?: cacheWriteCostPerToken,
+            cacheReadPrice = tier?.cacheReadCostPerToken ?: cacheReadCostPerToken,
+            outputPrice = tier?.outputCostPerToken ?: outputCostPerToken
+        )
+    }
+}
+
+/** Prices LiteLLM lists as `..._above_<N>k_tokens`: they apply above N thousand input tokens. */
+data class PriceTier(
+    val aboveInputTokens: Int,
     val inputCostPerToken: Double?,
     val outputCostPerToken: Double?,
     val cacheWriteCostPerToken: Double?,
@@ -44,6 +72,7 @@ object ModelPriceManager {
     private const val TIMEOUT_SECONDS = 30L
     private const val STALE_AFTER_MS = 24 * 3600_000L
     private const val MISSING_MODEL_RETRY_AFTER_MS = 3600_000L
+    private val TIER_KEY = Regex("(?:input_cost_per_token|output_cost_per_token|cache_creation_input_token_cost|cache_read_input_token_cost)_above_(\\d+)k_tokens")
 
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -143,12 +172,27 @@ object ModelPriceManager {
         list.keys().forEach { modelId ->
             val model = list.optJSONObject(modelId) ?: return@forEach
             fun price(key: String): Double? = if (model.has(key)) model.optDouble(key).takeUnless { it.isNaN() } else null
+
+            // Only the plain tier keys: the _flex, _priority and _batches ones price modes the app does not use
+            val thresholds = model.keys().asSequence()
+                .mapNotNull { TIER_KEY.matchEntire(it)?.groupValues?.get(1)?.toInt() }
+                .distinct().sorted().toList()
+
             parsed[modelId] = ModelPrice(
                 modelId = modelId,
                 inputCostPerToken = price("input_cost_per_token"),
                 outputCostPerToken = price("output_cost_per_token"),
                 cacheWriteCostPerToken = price("cache_creation_input_token_cost"),
-                cacheReadCostPerToken = price("cache_read_input_token_cost")
+                cacheReadCostPerToken = price("cache_read_input_token_cost"),
+                tiers = thresholds.map { k ->
+                    PriceTier(
+                        aboveInputTokens = k * 1000,
+                        inputCostPerToken = price("input_cost_per_token_above_${k}k_tokens"),
+                        outputCostPerToken = price("output_cost_per_token_above_${k}k_tokens"),
+                        cacheWriteCostPerToken = price("cache_creation_input_token_cost_above_${k}k_tokens"),
+                        cacheReadCostPerToken = price("cache_read_input_token_cost_above_${k}k_tokens")
+                    )
+                }
             )
         }
         return parsed

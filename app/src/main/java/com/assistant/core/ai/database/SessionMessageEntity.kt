@@ -44,7 +44,14 @@ data class SessionMessageEntity(
     @ColumnInfo(name = "input_tokens") val inputTokens: Int = 0,           // Uncached input tokens (from API, already excludes cache tokens)
     @ColumnInfo(name = "cache_write_tokens") val cacheWriteTokens: Int = 0,      // Cache write tokens (generic, all providers)
     @ColumnInfo(name = "cache_read_tokens") val cacheReadTokens: Int = 0,       // Cache read tokens (generic, all providers)
-    @ColumnInfo(name = "output_tokens") val outputTokens: Int = 0           // Output tokens generated
+    @ColumnInfo(name = "output_tokens") val outputTokens: Int = 0,          // Output tokens generated
+
+    // Model and prices per token of the AI call, as at the time of the call (null: unknown)
+    @ColumnInfo(name = "model_id") val modelId: String? = null,
+    @ColumnInfo(name = "input_price") val inputPrice: Double? = null,
+    @ColumnInfo(name = "cache_write_price") val cacheWritePrice: Double? = null,
+    @ColumnInfo(name = "cache_read_price") val cacheReadPrice: Double? = null,
+    @ColumnInfo(name = "output_price") val outputPrice: Double? = null
 )
 
 /**

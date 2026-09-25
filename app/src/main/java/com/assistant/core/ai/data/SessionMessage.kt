@@ -26,7 +26,21 @@ data class SessionMessage(
     val inputTokens: Int = 0,           // Uncached input tokens (from API)
     val cacheWriteTokens: Int = 0,      // Cache write tokens
     val cacheReadTokens: Int = 0,       // Cache read tokens
-    val outputTokens: Int = 0           // Output tokens generated
+    val outputTokens: Int = 0,          // Output tokens generated
+    val pricing: CallPricing? = null    // AI messages: the model and prices of their call
+)
+
+/**
+ * The model that answered an AI call and the prices applied to it, per token, as they were at
+ * the time of the call. A null price is unknown: the call's cost is unknown if that category
+ * has tokens. The cost itself is not stored: it is tokens times prices.
+ */
+data class CallPricing(
+    val modelId: String,
+    val inputPrice: Double?,
+    val cacheWritePrice: Double?,
+    val cacheReadPrice: Double?,
+    val outputPrice: Double?
 )
 
 /**

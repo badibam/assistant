@@ -66,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 34
+        const val VERSION = 35
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1254,6 +1254,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_34_35 = object : Migration(34, 35) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Each AI message keeps the model and prices of its call. Messages from before
+                // have none: their prices stay unknown rather than today's applied after the fact.
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN model_id TEXT")
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN input_price REAL")
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN cache_write_price REAL")
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN cache_read_price REAL")
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN output_price REAL")
+                LogManager.database("MIGRATION 34->35: price columns added to session_messages", "INFO")
+            }
+        }
+
         private val MIGRATION_33_34 = object : Migration(33, 34) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // ai_limits gains the two data size thresholds: see AILimitsAtV34. Settings that
@@ -1420,7 +1433,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_30_31,
                     MIGRATION_31_32,
                     MIGRATION_32_33,
-                    MIGRATION_33_34
+                    MIGRATION_33_34,
+                    MIGRATION_34_35
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

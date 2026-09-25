@@ -217,6 +217,11 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("cache_write_tokens", message.cacheWriteTokens)
                                 put("cache_read_tokens", message.cacheReadTokens)
                                 put("output_tokens", message.outputTokens)
+                                put("model_id", message.modelId)
+                                put("input_price", message.inputPrice)
+                                put("cache_write_price", message.cacheWritePrice)
+                                put("cache_read_price", message.cacheReadPrice)
+                                put("output_price", message.outputPrice)
                             })
                         }
                     })
@@ -556,7 +561,13 @@ class BackupService(private val context: Context) : ExecutableService {
                         inputTokens = item.optInt("input_tokens", 0),
                         cacheWriteTokens = item.optInt("cache_write_tokens", 0),
                         cacheReadTokens = item.optInt("cache_read_tokens", 0),
-                        outputTokens = item.optInt("output_tokens", 0)
+                        outputTokens = item.optInt("output_tokens", 0),
+                        // Absent from backups before v35: the prices of those calls are unknown
+                        modelId = item.optString("model_id", null),
+                        inputPrice = item.optPrice("input_price"),
+                        cacheWritePrice = item.optPrice("cache_write_price"),
+                        cacheReadPrice = item.optPrice("cache_read_price"),
+                        outputPrice = item.optPrice("output_price")
                     )
                 )
             }
@@ -731,3 +742,7 @@ class BackupService(private val context: Context) : ExecutableService {
         }
     }
 }
+
+/** A price stored in a backup, or null when absent: an unknown price, never 0. */
+private fun JSONObject.optPrice(key: String): Double? =
+    if (has(key) && !isNull(key)) getDouble(key) else null
