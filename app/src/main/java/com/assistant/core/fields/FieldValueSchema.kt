@@ -25,6 +25,18 @@ object FieldValueSchema {
     const val DURATION_MILLIS = "duration-millis"
 
     /**
+     * The schema of a field's value as a reader gets it -- the AI, an entry or a setting alike:
+     * what it is held to, its label as the title, and in its description what the value means
+     * ([reading]) before what the field's own description says.
+     */
+    fun forReader(field: FieldDefinition, text: (String) -> String): JSONObject {
+        val schema = of(field).put("title", field.displayName)
+        val description = listOfNotNull(reading(field, text), field.description).joinToString(" ")
+        if (description.isNotEmpty()) schema.put("description", description)
+        return schema
+    }
+
+    /**
      * What a reader needs besides the value to understand it, from the field's settings: its
      * unit, what the bounds of a scale or the two answers of a boolean mean, a choice's options
      * and whether it is open or a ranking. Null when the value says it all.
@@ -151,12 +163,7 @@ object FieldValueSchema {
 
                         val itemSchema = JSONObject().apply {
                             put("type", "string")
-                            fieldDef.config?.let { config ->
-                                (config["options"] as? List<*>)?.let { options ->
-                                    val enumArray = JSONArray(options)
-                                    put("enum", enumArray)
-                                }
-                            }
+                            put("enum", JSONArray(ChoiceSettings.fromConfig(fieldDef.config).options))
                         }
                         put("items", itemSchema)
                         put("uniqueItems", true)
@@ -169,13 +176,7 @@ object FieldValueSchema {
                     // Single choice: string with enum validation
                     JSONObject().apply {
                         put("type", "string")
-
-                        fieldDef.config?.let { config ->
-                            (config["options"] as? List<*>)?.let { options ->
-                                val enumArray = JSONArray(options)
-                                put("enum", enumArray)
-                            }
-                        }
+                        put("enum", JSONArray(ChoiceSettings.fromConfig(fieldDef.config).options))
 
                         if (fieldDef.description != null) {
                             put("description", fieldDef.description)

@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.assistant.core.ai.data.MessageSender
 import com.assistant.core.ai.data.SessionType
+import com.assistant.core.versioning.ChoiceOptionsAtV37
 import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.JsonTransformers
 import com.assistant.core.versioning.KeyCaseRenames
@@ -685,6 +686,9 @@ class BackupService(private val context: Context) : ExecutableService {
 
             if (fromVersion < 36 && toVersion >= 36) {
                 FieldsAtV36.backup(data)
+            }
+            if (fromVersion < 37 && toVersion >= 37) {
+                ChoiceOptionsAtV37.backup(data)
             }
 
             // Transform app settings

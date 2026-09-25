@@ -21,7 +21,7 @@ import com.assistant.core.ui.FieldType as UIFieldType
  * - TEXT: length?
  * - NUMERIC: unit?, min?, max?, decimals?, step?
  * - SCALE: min (required), max (required), min_label?, max_label?, step?
- * - CHOICE: options (required, min 2), multiple?, ordered?, open?, option_colors?
+ * - CHOICE: options (required, min 2, each {value, color?}), multiple?, ordered?, open?
  * - BOOLEAN: true_label?, false_label?
  * - RANGE: min?, max?, unit?, decimals?
  * - DATE: nothing
@@ -310,7 +310,7 @@ private fun ScaleConfigEditor(
 
 /**
  * Configuration editor for CHOICE type.
- * Config: {options (required, min 2), multiple?, ordered?, open?, option_colors?}
+ * Config: {options (required, min 2, each {value, color?}), multiple?, ordered?, open?}
  */
 @Composable
 private fun ChoiceConfigEditor(
@@ -331,10 +331,7 @@ private fun ChoiceConfigEditor(
     /** Writes the options and their colors back, dropping the colors of options gone or emptied. */
     fun publish(colors: Map<String, com.assistant.core.themes.TagColor> = ChoiceSettings.fromConfig(mutableConfig).colors) {
         val kept = options.filter { it.isNotEmpty() }
-        mutableConfig["options"] = kept
-        val keptColors = colors.filterKeys { it in kept }
-        if (keptColors.isEmpty()) mutableConfig.remove("option_colors")
-        else mutableConfig["option_colors"] = keptColors.mapValues { it.value.name }
+        mutableConfig["options"] = ChoiceSettings.storedOptions(kept, colors = colors.filterKeys { it in kept })
         onConfigChange(mutableConfig)
     }
 

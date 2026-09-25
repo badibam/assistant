@@ -248,7 +248,7 @@ object FieldConfigValidator {
 
     /**
      * Validates CHOICE field config.
-     * Config: {options (required, min 2), multiple?, ordered?, open?, option_colors?}
+     * Config: {options (required, min 2, each {value, color?}), multiple?, ordered?, open?}
      */
     private fun validateChoiceConfig(config: Map<String, Any>?, s: com.assistant.core.strings.StringsContext): ValidationResult {
         // Config is required for CHOICE
@@ -259,14 +259,15 @@ object FieldConfigValidator {
             )
         }
 
-        // options array is required
-        val options = config["options"] as? List<*>
-        if (options == null) {
+        // options array is required, each option a group with a value
+        val stored = config["options"] as? List<*>
+        if (stored == null || stored.any { (it as? Map<*, *>)?.get("value") !is String }) {
             return ValidationResult(
                 isValid = false,
                 errorMessage = s.shared("field_validation_choice_options_required")
             )
         }
+        val options = stored.map { (it as Map<*, *>)["value"] as String }
 
         // Minimum 2 options
         if (options.size < 2) {
@@ -304,28 +305,14 @@ object FieldConfigValidator {
             )
         }
 
-        // Each color belongs to an option, and is a name of the tag color vocabulary
-        val colors = config["option_colors"]
-        if (colors != null) {
-            if (colors !is Map<*, *>) {
+        // A color is a name of the tag color vocabulary
+        for (option in stored) {
+            val color = (option as Map<*, *>)["color"] ?: continue
+            if (com.assistant.core.themes.TagColor.entries.none { it.name == color }) {
                 return ValidationResult(
                     isValid = false,
-                    errorMessage = s.shared("field_validation_choice_colors_type")
+                    errorMessage = s.shared("field_validation_choice_color_unknown").format(color.toString())
                 )
-            }
-            for ((option, color) in colors) {
-                if (option !in options) {
-                    return ValidationResult(
-                        isValid = false,
-                        errorMessage = s.shared("field_validation_choice_color_unknown_option").format(option.toString())
-                    )
-                }
-                if (com.assistant.core.themes.TagColor.entries.none { it.name == color }) {
-                    return ValidationResult(
-                        isValid = false,
-                        errorMessage = s.shared("field_validation_choice_color_unknown").format(color.toString())
-                    )
-                }
             }
         }
 

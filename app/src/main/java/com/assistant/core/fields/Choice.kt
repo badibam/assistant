@@ -53,26 +53,45 @@ data class ChoiceSettings(
     }
 
     companion object {
+        /**
+         * Each option is stored as a group: its value, and the label and color that describe it,
+         * kept together ({"value": "work", "color": "BLUE"}).
+         */
         fun fromConfig(config: Map<String, Any>?): ChoiceSettings {
             val multiple = config?.get("multiple") as? Boolean ?: false
             val ordered = config?.get("ordered") as? Boolean ?: false
+            val stored = (config?.get("options") as? List<*>)?.map { it as Map<*, *> } ?: emptyList()
             return ChoiceSettings(
-                options = (config?.get("options") as? List<*>)?.map { it.toString() } ?: emptyList(),
+                options = stored.map { it["value"].toString() },
                 shape = when {
                     ordered -> ChoiceShape.ORDERED
                     multiple -> ChoiceShape.MULTIPLE
                     else -> ChoiceShape.SINGLE
                 },
                 open = config?.get("open") as? Boolean ?: false,
-                colors = (config?.get("option_colors") as? Map<*, *>)
-                    ?.map { (option, color) -> option.toString() to TagColor.valueOf(color.toString()) }
-                    ?.toMap()
-                    ?: emptyMap(),
-                labels = (config?.get("option_labels") as? Map<*, *>)
-                    ?.map { (option, label) -> option.toString() to label.toString() }
-                    ?.toMap()
-                    ?: emptyMap()
+                colors = stored.mapNotNull { option ->
+                    option["color"]?.let { option["value"].toString() to TagColor.valueOf(it.toString()) }
+                }.toMap(),
+                labels = stored.mapNotNull { option ->
+                    option["label"]?.let { option["value"].toString() to it.toString() }
+                }.toMap()
             )
+        }
+
+        /**
+         * The stored form of [values], each with its label and color if it has one: what a
+         * config's "options" holds. The single place that writes it.
+         */
+        fun storedOptions(
+            values: List<String>,
+            labels: Map<String, String> = emptyMap(),
+            colors: Map<String, TagColor> = emptyMap()
+        ): List<Map<String, Any>> = values.map { value ->
+            buildMap {
+                put("value", value)
+                labels[value]?.let { put("label", it) }
+                colors[value]?.let { put("color", it.name) }
+            }
         }
     }
 }
@@ -83,6 +102,7 @@ data class ChoiceSettings(
  */
 fun FieldDefinition.withOptionsAdded(added: List<String>): FieldDefinition {
     if (added.isEmpty()) return this
-    val options = ChoiceSettings.fromConfig(config).options
-    return copy(config = (config ?: emptyMap()) + ("options" to options + added))
+    val settings = ChoiceSettings.fromConfig(config)
+    val options = ChoiceSettings.storedOptions(settings.options + added, settings.labels, settings.colors)
+    return copy(config = (config ?: emptyMap()) + ("options" to options))
 }

@@ -1115,7 +1115,6 @@
     <string name="field_type_choice_multiple_description">La valeur est une liste d\'options, sans ordre</string>
     <string name="field_type_choice_ordered_description">La valeur est la liste des options dans l\'ordre choisi, un classement. Exclut multiple et open.</string>
     <string name="field_type_choice_open_description">Une valeur hors des options y est ajoutée par l\'écriture qui l\'apporte ; fermé, elle est refusée. Des tags sont un choix multiple ouvert.</string>
-    <string name="field_type_choice_option_colors_description">Une couleur par option, clé par option ; un choix coloré s\'affiche en pastilles</string>
     <string name="field_type_boolean_display_name">Booléen</string>
     <string name="field_type_boolean_description">Valeur vrai/faux (oui/non)</string>
     <string name="field_type_range_display_name">Intervalle</string>
@@ -1176,8 +1175,6 @@
     <string name="field_validation_choice_options_duplicate">Les options ne peuvent pas contenir de doublons</string>
     <string name="field_validation_choice_flag_type">Le réglage %1$s doit être un booléen</string>
     <string name="field_validation_choice_ordered_exclusive">Un classement ne peut être ni multiple ni ouvert</string>
-    <string name="field_validation_choice_colors_type">Les couleurs des options doivent être un objet, une couleur par option</string>
-    <string name="field_validation_choice_color_unknown_option">Une couleur est donnée à %1$s, qui n\'est pas une option</string>
     <string name="field_validation_choice_color_unknown">Couleur inconnue : %1$s</string>
     <string name="field_validation_choice_default_type_single">La valeur par défaut doit être une chaîne de caractères pour un choix unique</string>
     <string name="field_validation_choice_default_type_multiple">La valeur par défaut doit être un tableau pour un choix multiple</string>

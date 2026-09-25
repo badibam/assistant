@@ -80,27 +80,20 @@ fun JSONObject.toFieldDefinition(): FieldDefinition {
 }
 
 /**
- * Converts a field's config JSONObject to the Map form FieldDefinition holds.
- * JSONArrays become Lists, for fields like "options", and JSONObjects become Maps, for fields
- * like "option_colors".
+ * Converts a field's config JSONObject to the Map form FieldDefinition holds, all the way down:
+ * JSONArrays become Lists and JSONObjects become Maps, inside a list too (a CHOICE's options are
+ * a list of groups).
  */
 fun JSONObject.toFieldConfig(): Map<String, Any> {
     val map = mutableMapOf<String, Any>()
-    keys().forEach { key ->
-        val value = get(key)
-        map[key] = when (value) {
-            is JSONArray -> {
-                val list = mutableListOf<Any>()
-                for (i in 0 until value.length()) {
-                    list.add(value.get(i))
-                }
-                list
-            }
-            is JSONObject -> value.toFieldConfig()
-            else -> value
-        }
-    }
+    keys().forEach { key -> map[key] = toFieldConfigValue(get(key)) }
     return map
+}
+
+private fun toFieldConfigValue(value: Any): Any = when (value) {
+    is JSONArray -> (0 until value.length()).map { toFieldConfigValue(value.get(it)) }
+    is JSONObject -> value.toFieldConfig()
+    else -> value
 }
 
 /**

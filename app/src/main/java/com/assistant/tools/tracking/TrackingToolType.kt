@@ -189,7 +189,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
                         description = s.tool("schema_data_unit"),
                         type = FieldType.CHOICE,
                         alwaysVisible = true,
-                        config = mapOf("options" to units)
+                        config = mapOf("options" to com.assistant.core.fields.ChoiceSettings.storedOptions(units))
                     )
                 )
             )

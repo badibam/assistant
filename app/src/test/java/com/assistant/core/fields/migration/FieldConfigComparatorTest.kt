@@ -1,5 +1,6 @@
 package com.assistant.core.fields.migration
 
+import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.ChoiceShape
 
 import com.assistant.core.fields.FieldDefinition
@@ -47,7 +48,7 @@ class FieldConfigComparatorTest {
     private fun choice(name: String, options: List<String>, multiple: Boolean = false) = field(
         name = name,
         type = FieldType.CHOICE,
-        config = mapOf("options" to options, "multiple" to multiple)
+        config = mapOf("options" to ChoiceSettings.storedOptions(options), "multiple" to multiple)
     )
 
     private fun strategyFor(change: FieldChange) =
@@ -183,7 +184,7 @@ class FieldConfigComparatorTest {
     fun switchingAChoiceToOrdered_stripsTheField() {
         val changes = FieldConfigComparator.compare(
             oldFields = listOf(choice("tags", listOf("work", "home"), multiple = true)),
-            newFields = listOf(field("tags", FieldType.CHOICE, config = mapOf("options" to listOf("work", "home"), "ordered" to true)))
+            newFields = listOf(field("tags", FieldType.CHOICE, config = mapOf("options" to ChoiceSettings.storedOptions(listOf("work", "home")), "ordered" to true)))
         )
 
         val switched = changes.single() as FieldChange.ChoiceShapeChanged

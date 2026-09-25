@@ -418,7 +418,14 @@ object FieldTypeSchemaProvider : SchemaProvider {
                         "options": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "type": "object",
+                                "properties": {
+                                    "value": { "type": "string", "minLength": 1 },
+                                    "label": { "type": "string" },
+                                    "color": { "type": "string", "enum": [$tagColors] }
+                                },
+                                "required": ["value"],
+                                "additionalProperties": false
                             },
                             "minItems": 2,
                             "uniqueItems": true,
@@ -438,14 +445,6 @@ object FieldTypeSchemaProvider : SchemaProvider {
                             "type": "boolean",
                             "default": false,
                             "description": "${s.shared("field_type_choice_open_description")}"
-                        },
-                        "option_colors": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string",
-                                "enum": [$tagColors]
-                            },
-                            "description": "${s.shared("field_type_choice_option_colors_description")}"
                         }
                     },
                     "required": ["options"],

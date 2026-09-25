@@ -16,6 +16,9 @@ import java.time.format.DateTimeParseException
  * the values the schema describes, so both read the same marks (FieldValueSchema.EPOCH_MILLIS
  * and DURATION_MILLIS) and cannot disagree on where a date or a duration sits.
  *
+ * A variant (oneOf, a generated config's shape per option) is followed by the branch whose
+ * selector the value holds.
+ *
  * The schema says where to convert, never the look of a value: a TEXT field holding
  * "2026-09-25T10:00:00" or "PT1H" stays text. A property the schema does not describe is left
  * as it is, and the validation downstream decides what it is worth.
@@ -58,6 +61,14 @@ object ModelValues {
      * leaf through [convert] with the format its schema carries.
      */
     private fun walk(value: Any?, schema: JSONObject, convert: (String, Any) -> Any): Any? {
+        // A variant: the branch whose selector the value holds. None or several leave the value
+        // as it is, for the validation to name what is wrong with it.
+        schema.optJSONArray("oneOf")?.let { branches ->
+            val branch = (0 until branches.length()).map { branches.getJSONObject(it) }
+                .filter { holdsSelectors(value, it) }
+                .singleOrNull()
+            return if (branch != null) walk(value, branch, convert) else value
+        }
         return when (value) {
             null, JSONObject.NULL -> value
             is JSONObject -> {
@@ -94,6 +105,21 @@ object ModelValues {
                 val format = schema.optString("format")
                 if (format.isEmpty()) value else convert(format, value)
             }
+        }
+    }
+
+    /** Whether [value] holds every constant [branch] requires of its properties. */
+    private fun holdsSelectors(value: Any?, branch: JSONObject): Boolean {
+        val properties = branch.optJSONObject("properties") ?: return false
+        return properties.keys().asSequence().all { key ->
+            val property = properties.getJSONObject(key)
+            if (!property.has("const")) return@all true
+            val held = when (value) {
+                is JSONObject -> value.opt(key)
+                is Map<*, *> -> value[key]
+                else -> null
+            }
+            held == property.get("const")
         }
     }
 

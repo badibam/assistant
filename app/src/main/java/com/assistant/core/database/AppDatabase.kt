@@ -26,6 +26,7 @@ import com.assistant.core.versioning.AILimitsAtV32
 import com.assistant.core.versioning.AILimitsAtV34
 import com.assistant.core.versioning.DateFieldBounds
 import com.assistant.core.versioning.SettingsAtV33
+import com.assistant.core.versioning.ChoiceOptionsAtV37
 import com.assistant.core.versioning.FieldsAtV36
 import com.assistant.core.versioning.FormerDefaultIcons
 import com.assistant.core.versioning.KeyCaseRenames
@@ -67,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 36
+        const val VERSION = 37
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1354,6 +1355,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_36_37 = object : Migration(36, 37) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // A CHOICE option becomes a group holding its value, label and color: see
+                // ChoiceOptionsAtV37. Only configs change; entries keep the option's value.
+                var rewritten = 0
+                database.query("SELECT id, tooltype, config_json FROM tool_instances").use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        // A config that cannot be read stays as it was and is logged
+                        try {
+                            val config = ChoiceOptionsAtV37.config(cursor.getString(1), org.json.JSONObject(cursor.getString(2)))
+                            database.execSQL("UPDATE tool_instances SET config_json = ? WHERE id = ?", arrayOf(config.toString(), id))
+                            rewritten++
+                        } catch (e: Exception) {
+                            LogManager.database("MIGRATION 36->37: config of tool $id left as it was: ${e.message}", "ERROR", e)
+                        }
+                    }
+                }
+                LogManager.database("MIGRATION 36->37: $rewritten config(s) rewritten", "INFO")
+            }
+        }
+
         private val MIGRATION_34_35 = object : Migration(34, 35) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Each AI message keeps the model and prices of its call. Messages from before
@@ -1582,7 +1605,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_32_33,
                     MIGRATION_33_34,
                     MIGRATION_34_35,
-                    MIGRATION_35_36
+                    MIGRATION_35_36,
+                    MIGRATION_36_37
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

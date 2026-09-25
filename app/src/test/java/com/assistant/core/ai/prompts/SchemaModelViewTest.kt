@@ -5,6 +5,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.json.JSONObject
+import java.time.ZoneId
 
 /**
  * Covers the view of a schema handed to the model.
@@ -19,7 +20,7 @@ import org.json.JSONObject
 class SchemaModelViewTest {
 
     private fun view(json: String): JSONObject =
-        SchemaModelView.forModel(JSONObject(json))
+        SchemaModelView.forModel(JSONObject(json), ZoneId.of("Europe/Paris"))
 
     /** A marked property is shown as the ISO string the model actually receives. */
     @Test
@@ -126,7 +127,7 @@ class SchemaModelViewTest {
 
         assertEquals(
             JSONObject(source).toString(),
-            SchemaModelView.forModel(JSONObject(source)).toString()
+            SchemaModelView.forModel(JSONObject(source), ZoneId.of("Europe/Paris")).toString()
         )
     }
 }

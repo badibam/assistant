@@ -2,6 +2,7 @@ package com.assistant.core.ai.prompts
 
 import com.assistant.core.fields.FieldValueSchema
 import org.json.JSONArray
+import java.time.ZoneId
 import org.json.JSONObject
 
 /**
@@ -26,30 +27,31 @@ object SchemaModelView {
      * Walks the whole document rather than a known list of places: a marked property can sit
      * anywhere -- at the root of a data schema, under extra, inside a nested object.
      */
-    fun forModel(schema: JSONObject): JSONObject {
+    fun forModel(schema: JSONObject, zone: ZoneId): JSONObject {
         val result = JSONObject()
 
         schema.keys().forEach { key ->
-            result.put(key, convertValue(schema.get(key)))
+            result.put(key, convertValue(schema.get(key), zone))
         }
 
+        // A default is a value, and is shown in the form the model writes
         return when (result.optString("format")) {
-            FieldValueSchema.EPOCH_MILLIS -> asIsoString(result, "date-time")
-            FieldValueSchema.DURATION_MILLIS -> asIsoString(result, "duration")
+            FieldValueSchema.EPOCH_MILLIS -> asIsoString(result, "date-time", zone)
+            FieldValueSchema.DURATION_MILLIS -> asIsoString(result, "duration", zone)
             else -> result
         }
     }
 
-    private fun convertValue(value: Any): Any = when (value) {
-        is JSONObject -> forModel(value)
-        is JSONArray -> convertArray(value)
+    private fun convertValue(value: Any, zone: ZoneId): Any = when (value) {
+        is JSONObject -> forModel(value, zone)
+        is JSONArray -> convertArray(value, zone)
         else -> value
     }
 
-    private fun convertArray(array: JSONArray): JSONArray {
+    private fun convertArray(array: JSONArray, zone: ZoneId): JSONArray {
         val result = JSONArray()
         for (i in 0 until array.length()) {
-            result.put(convertValue(array.get(i)))
+            result.put(convertValue(array.get(i), zone))
         }
         return result
     }
@@ -58,13 +60,16 @@ object SchemaModelView {
      * Replace the numeric constraints with the string ones, and keep everything else the property
      * said -- its description, and whether the system manages it.
      */
-    private fun asIsoString(node: JSONObject, isoFormat: String): JSONObject {
+    private fun asIsoString(node: JSONObject, isoFormat: String, zone: ZoneId): JSONObject {
         val result = JSONObject()
 
         node.keys().forEach { key ->
-            if (key !in setOf("type", "format", "minimum", "maximum")) {
+            if (key !in setOf("type", "format", "minimum", "maximum", "default")) {
                 result.put(key, node.get(key))
             }
+        }
+        if (node.has("default")) {
+            result.put("default", ModelValues.toModel(node.get("default"), node, zone))
         }
 
         result.put("type", "string")

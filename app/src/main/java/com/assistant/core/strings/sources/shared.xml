@@ -1115,7 +1115,6 @@
     <string name="field_type_choice_multiple_description">The value is a list of options, in no particular order</string>
     <string name="field_type_choice_ordered_description">The value is a list of options in the order chosen, a ranking. Excludes multiple and open.</string>
     <string name="field_type_choice_open_description">A value outside the options is added to them by the write that brings it; closed, it is refused. Tags are a multiple open choice.</string>
-    <string name="field_type_choice_option_colors_description">A color per option, by option; a colored choice is shown as tags</string>
     <string name="field_type_boolean_display_name">Boolean</string>
     <string name="field_type_boolean_description">True/false value (yes/no)</string>
     <string name="field_type_range_display_name">Range</string>
@@ -1176,8 +1175,6 @@
     <string name="field_validation_choice_options_duplicate">The options cannot contain duplicates</string>
     <string name="field_validation_choice_flag_type">The %1$s setting must be a boolean</string>
     <string name="field_validation_choice_ordered_exclusive">A ranking can be neither multiple nor open</string>
-    <string name="field_validation_choice_colors_type">The option colors must be an object, a color by option</string>
-    <string name="field_validation_choice_color_unknown_option">A color is given to %1$s, which is not an option</string>
     <string name="field_validation_choice_color_unknown">Unknown color: %1$s</string>
     <string name="field_validation_choice_default_type_single">The default value must be a string for a single choice</string>
     <string name="field_validation_choice_default_type_multiple">The default value must be an array for a multiple choice</string>

@@ -56,10 +56,10 @@ class FieldValueReadingTest {
     /** An open choice lists its options without closing them, and a ranking says it is one. */
     @Test
     fun aChoiceSaysItsOptionsAndWhetherItIsOpenOrARanking() {
-        val open = field(FieldType.CHOICE, mapOf("options" to listOf("work", "family"), "open" to true))
+        val open = field(FieldType.CHOICE, mapOf("options" to ChoiceSettings.storedOptions(listOf("work", "family")), "open" to true))
         assertEquals("Options: work, family. Others accepted.", schemaOf(open).getString("description"))
 
-        val ranking = field(FieldType.CHOICE, mapOf("options" to listOf("a", "b"), "ordered" to true))
+        val ranking = field(FieldType.CHOICE, mapOf("options" to ChoiceSettings.storedOptions(listOf("a", "b")), "ordered" to true))
         assertEquals("Options: a, b. A ranking.", schemaOf(ranking).getString("description"))
     }
 

@@ -145,14 +145,14 @@ object EntrySchemaGenerator {
         // The core's fields. An ABSENT one is not declared, and additionalProperties refuses it.
         coreField(properties, required, CoreFields.name(text), declared.name, text)?.put("minLength", 1)
         coreField(properties, required, CoreFields.timestamp(text), declared.timestamp, text)
-        properties.put("created_at", valueSchema(CoreFields.createdAt(text), text).put("system_managed", true))
-        properties.put("updated_at", valueSchema(CoreFields.updatedAt(text), text).put("system_managed", true))
+        properties.put("created_at", FieldValueSchema.forReader(CoreFields.createdAt(text), text).put("system_managed", true))
+        properties.put("updated_at", FieldValueSchema.forReader(CoreFields.updatedAt(text), text).put("system_managed", true))
 
         // The tool type's fields
         val dataRequired = declared.data.filter { it.required }.map { it.definition.name }
         properties.put("data", objectOf(
             fields = declared.data.associate { fixed ->
-                fixed.definition.name to valueSchema(fixed.definition, text).also {
+                fixed.definition.name to FieldValueSchema.forReader(fixed.definition, text).also {
                     if (fixed.systemWritten) it.put("system_managed", true)
                     // A required text is a text with something in it: an empty one is no answer
                     if (fixed.required && fixed.definition.type == FieldType.TEXT) it.put("minLength", 1)
@@ -165,14 +165,14 @@ object EntrySchemaGenerator {
 
         // The user's fields, all optional
         properties.put("extra", objectOf(
-            fields = extra.associate { it.name to valueSchema(it, text) },
+            fields = extra.associate { it.name to FieldValueSchema.forReader(it, text) },
             required = emptyList(),
             description = text("entry_schema_extra")
         ))
 
         // The entry's state, and the DURATION fields running now
         val state = objectOf(
-            fields = declared.state.associate { it.definition.name to valueSchema(it.definition, text) },
+            fields = declared.state.associate { it.definition.name to FieldValueSchema.forReader(it.definition, text) },
             required = emptyList(),
             description = text("entry_schema_state")
         )
@@ -197,19 +197,7 @@ object EntrySchemaGenerator {
     ): JSONObject? {
         if (usage == CoreFieldUsage.ABSENT) return null
         if (usage == CoreFieldUsage.REQUIRED) required.add(field.name)
-        return valueSchema(field, text).also { properties.put(field.name, it) }
-    }
-
-    /**
-     * The schema of a field's value as a reader gets it: what it is held to, its label as the
-     * title, and in its description what the value means (FieldValueSchema.reading) before what
-     * the field's own description says.
-     */
-    private fun valueSchema(field: FieldDefinition, text: (String) -> String): JSONObject {
-        val schema = FieldValueSchema.of(field).put("title", field.displayName)
-        val description = listOfNotNull(FieldValueSchema.reading(field, text), field.description).joinToString(" ")
-        if (description.isNotEmpty()) schema.put("description", description)
-        return schema
+        return FieldValueSchema.forReader(field, text).also { properties.put(field.name, it) }
     }
 
     private fun locator(description: String, systemManaged: Boolean): JSONObject =

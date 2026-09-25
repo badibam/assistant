@@ -1,5 +1,6 @@
 package com.assistant.core.fields.migration
 
+import com.assistant.core.fields.ChoiceSettings
 import com.assistant.core.fields.FieldDefinition
 
 /**
@@ -200,13 +201,8 @@ object FieldConfigComparator {
         newField: FieldDefinition
     ): List<String> {
         // Extract options arrays from config
-        val oldOptions = (oldField.config?.get("options") as? List<*>)
-            ?.mapNotNull { it as? String }
-            ?: emptyList()
-
-        val newOptions = (newField.config?.get("options") as? List<*>)
-            ?.mapNotNull { it as? String }
-            ?: emptyList()
+        val oldOptions = ChoiceSettings.fromConfig(oldField.config).options
+        val newOptions = ChoiceSettings.fromConfig(newField.config).options
 
         // Find options in old but not in new
         return oldOptions - newOptions.toSet()

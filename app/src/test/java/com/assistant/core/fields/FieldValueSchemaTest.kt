@@ -112,8 +112,8 @@ class FieldValueSchemaTest {
 
     @Test
     fun choice_takesItsOptionsOnly() {
-        val single = schemaFor("""{ "type": "CHOICE", "config": { "options": ["low", "high"] } }""")
-        val multiple = schemaFor("""{ "type": "CHOICE", "config": { "options": ["a", "b", "c"], "multiple": true } }""")
+        val single = schemaFor("""{ "type": "CHOICE", "config": { "options": [{ "value": "low" }, { "value": "high" }] } }""")
+        val multiple = schemaFor("""{ "type": "CHOICE", "config": { "options": [{ "value": "a" }, { "value": "b" }, { "value": "c" }], "multiple": true } }""")
 
         assertTrue(single.accepts("\"low\""))
         assertFalse(single.accepts("\"medium\""))
@@ -167,7 +167,7 @@ class FieldValueSchemaTest {
     /** A ranking is a list of distinct options, and need not hold them all. */
     @Test
     fun orderedChoice_isAListOfDistinctOptions() {
-        val schema = schemaFor("""{ "type": "CHOICE", "config": { "options": ["a", "b", "c"], "ordered": true } }""")
+        val schema = schemaFor("""{ "type": "CHOICE", "config": { "options": [{ "value": "a" }, { "value": "b" }, { "value": "c" }], "ordered": true } }""")
 
         assertTrue(schema.accepts("""["c", "a", "b"]"""))
         assertTrue(schema.accepts("""["b", "a"]"""))

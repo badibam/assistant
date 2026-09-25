@@ -239,8 +239,7 @@ object MessageToolType : ToolTypeContract {
             config = config
         )
         fun choice(vararg options: Pair<String, String>) = mapOf(
-            "options" to options.map { it.first },
-            "option_labels" to options.toMap()
+            "options" to com.assistant.core.fields.ChoiceSettings.storedOptions(options.map { it.first }, labels = options.toMap())
         )
         fun labels(trueLabel: String, falseLabel: String) = mapOf("true_label" to trueLabel, "false_label" to falseLabel)
 
