@@ -62,3 +62,10 @@ interface AIProvider : SchemaProvider {
      */
     suspend fun query(promptData: PromptData, config: String): AIResponse
 }
+
+/**
+ * Longest answer asked of a provider when its config sets none. Without streaming nothing arrives
+ * before the whole answer is generated: a long answer is a long silent wait, which the read
+ * timeout has to cover and a mobile network may cut. Anthropic advises about 16k without streaming.
+ */
+const val DEFAULT_MAX_OUTPUT_TOKENS = 16_000

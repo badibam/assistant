@@ -35,7 +35,7 @@ import com.assistant.core.utils.LogManager
 internal fun PromptData.toOpenAIJson(config: JSONObject, datetimeText: String): JsonObject {
     val model = config.getString("model")
     val temperature = config.optDouble("temperature", 1.0)
-    val maxTokens = config.optInt("max_output_tokens", 32000)
+    val maxTokens = config.optInt("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS)
 
     return buildJsonObject {
         put("model", model)

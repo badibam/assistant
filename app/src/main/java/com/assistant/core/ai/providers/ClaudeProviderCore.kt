@@ -155,7 +155,7 @@ internal class ClaudeProviderCore(
      * Schema defines required fields:
      * - api_key: API key for Claude API authentication
      * - model: Model ID (e.g., "claude-sonnet-4-5-20250929")
-     * - max_tokens: Maximum response length (optional, default 2000)
+     * - max_tokens: Maximum response length (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
      * - effort: output_config.effort, required when the endpoint declares effort levels
      */
     private fun createClaudeConfigSchema(context: Context): Schema {
@@ -189,7 +189,7 @@ internal class ClaudeProviderCore(
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 32000,
-                    "default": 8000,
+                    "default": $DEFAULT_MAX_OUTPUT_TOKENS,
                     "description": "${s.shared("ai_provider_claude_schema_max_tokens")}"
                 }$effortProperty
             },

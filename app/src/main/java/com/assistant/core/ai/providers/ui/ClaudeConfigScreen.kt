@@ -1,5 +1,6 @@
 package com.assistant.core.ai.providers.ui
 
+import com.assistant.core.ai.providers.DEFAULT_MAX_OUTPUT_TOKENS
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -60,7 +61,7 @@ internal fun ClaudeConfigScreen(
     // Form states
     var apiKey by rememberSaveable { mutableStateOf("") }
     var selectedModel by rememberSaveable { mutableStateOf("") }
-    var maxTokens by rememberSaveable { mutableStateOf("8000") }
+    var maxTokens by rememberSaveable { mutableStateOf(DEFAULT_MAX_OUTPUT_TOKENS.toString()) }
     var effort by rememberSaveable { mutableStateOf("") }
 
     // Effort is required when the endpoint declares levels, absent otherwise
@@ -82,7 +83,7 @@ internal fun ClaudeConfigScreen(
             val initialModel = configJson.optString("model", "")
             selectedModel = initialModel
             hadInitialModel = initialModel.isNotEmpty()
-            maxTokens = configJson.optInt("max_tokens", 8000).toString()
+            maxTokens = configJson.optInt("max_tokens", DEFAULT_MAX_OUTPUT_TOKENS).toString()
             effort = configJson.optString("effort", "")
         } catch (e: Exception) {
             // Invalid JSON, keep defaults
@@ -148,7 +149,7 @@ internal fun ClaudeConfigScreen(
             val configData = buildMap<String, Any> {
                 put("api_key", apiKey.trim())
                 put("model", selectedModel)
-                put("max_tokens", maxTokens.toIntOrNull() ?: 8000)
+                put("max_tokens", maxTokens.toIntOrNull() ?: DEFAULT_MAX_OUTPUT_TOKENS)
                 if (needsEffort) put("effort", effort)
             }
 

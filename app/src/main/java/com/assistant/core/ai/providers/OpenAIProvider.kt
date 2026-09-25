@@ -41,7 +41,7 @@ data class OpenAIFetchModelsResult(
  * - API key: OpenAI API key
  * - Model: Model ID (e.g., "gpt-4.1", "gpt-4.1-2025-04-14")
  * - Temperature: Sampling temperature 0.0-2.0 (optional, default 1.0)
- * - Max output tokens: Response length limit (optional, default 2000)
+ * - Max output tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
  * Each variant maintains its own configuration in the database,
  * allowing users to configure both standard and economic variants
@@ -118,7 +118,7 @@ class OpenAIStandardProvider(private val context: Context) : AIProvider {
  * - API key: OpenAI API key (can be same as standard or different)
  * - Model: Model ID (e.g., "gpt-4.1-mini")
  * - Temperature: Sampling temperature 0.0-2.0 (optional, default 1.0)
- * - Max output tokens: Response length limit (optional, default 2000)
+ * - Max output tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
  * Each variant maintains its own configuration in the database,
  * allowing users to configure both standard and economic variants

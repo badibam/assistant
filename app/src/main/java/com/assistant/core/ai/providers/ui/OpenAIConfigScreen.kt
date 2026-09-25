@@ -1,5 +1,6 @@
 package com.assistant.core.ai.providers.ui
 
+import com.assistant.core.ai.providers.DEFAULT_MAX_OUTPUT_TOKENS
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +29,7 @@ import org.json.JSONObject
  * - API key field (required, password type)
  * - Model selection (dynamic from API)
  * - Temperature field (optional, numeric, default 1.0)
- * - Max output tokens field (optional, numeric, default 2000)
+ * - Max output tokens field (optional, numeric, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
  * Validates configuration against provider schema before saving.
  *
@@ -61,7 +62,7 @@ internal fun OpenAIConfigScreen(
     var apiKey by rememberSaveable { mutableStateOf("") }
     var selectedModel by rememberSaveable { mutableStateOf("") }
     var temperature by rememberSaveable { mutableStateOf("1.0") }
-    var maxOutputTokens by rememberSaveable { mutableStateOf("8000") }
+    var maxOutputTokens by rememberSaveable { mutableStateOf(DEFAULT_MAX_OUTPUT_TOKENS.toString()) }
 
     // Track if initial config had a model (to decide auto-selection behavior)
     var hadInitialModel by rememberSaveable { mutableStateOf(false) }
@@ -79,7 +80,7 @@ internal fun OpenAIConfigScreen(
             selectedModel = initialModel
             hadInitialModel = initialModel.isNotEmpty()
             temperature = configJson.optDouble("temperature", 1.0).toString()
-            maxOutputTokens = configJson.optInt("max_output_tokens", 8000).toString()
+            maxOutputTokens = configJson.optInt("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS).toString()
         } catch (e: Exception) {
             // Invalid JSON, keep defaults
             hadInitialModel = false
@@ -152,7 +153,7 @@ internal fun OpenAIConfigScreen(
                 }
 
                 // Always include max_output_tokens
-                val maxTokensValue = maxOutputTokens.toIntOrNull() ?: 8000
+                val maxTokensValue = maxOutputTokens.toIntOrNull() ?: DEFAULT_MAX_OUTPUT_TOKENS
                 put("max_output_tokens", maxTokensValue)
             }
 

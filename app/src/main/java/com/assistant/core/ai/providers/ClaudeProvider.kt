@@ -40,7 +40,7 @@ data class FetchModelsResult(
  * Configuration:
  * - API key: Claude API key from Anthropic
  * - Model: Selected from available models via API
- * - Max tokens: Response length limit (optional, default 2000)
+ * - Max tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
  * Each variant maintains its own configuration in the database,
  * allowing users to configure both standard and economic variants
@@ -116,7 +116,7 @@ class ClaudeStandardProvider(private val context: Context) : AIProvider {
  * Configuration:
  * - API key: Claude API key from Anthropic (can be same as standard or different)
  * - Model: Selected from available models via API (typically haiku models)
- * - Max tokens: Response length limit (optional, default 2000)
+ * - Max tokens: Response length limit (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
  *
  * Each variant maintains its own configuration in the database,
  * allowing users to configure both standard and economic variants

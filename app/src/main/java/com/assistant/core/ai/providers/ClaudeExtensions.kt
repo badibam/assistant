@@ -39,7 +39,7 @@ internal data class FusedMessage(
  */
 internal fun PromptData.toClaudeJson(config: JSONObject, datetimeText: String): JsonObject {
     val model = config.getString("model")
-    val maxTokens = config.optInt("max_tokens", 32000)
+    val maxTokens = config.optInt("max_tokens", DEFAULT_MAX_OUTPUT_TOKENS)
     // Present only when the endpoint declares effort levels (schema-enforced, see MessagesApi)
     val effort = config.optString("effort", "")
 

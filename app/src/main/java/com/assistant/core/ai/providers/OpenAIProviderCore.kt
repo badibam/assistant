@@ -106,7 +106,7 @@ internal class OpenAIProviderCore(
      * - api_key: API key for OpenAI API authentication
      * - model: Model ID (e.g., "gpt-4.1", "gpt-4.1-mini")
      * - temperature: Sampling temperature (optional, default 1.0)
-     * - max_output_tokens: Maximum response length (optional, default 2000)
+     * - max_output_tokens: Maximum response length (optional, default DEFAULT_MAX_OUTPUT_TOKENS)
      */
     private fun createOpenAIConfigSchema(context: Context): Schema {
         val s = Strings.`for`(context = context)
@@ -137,7 +137,7 @@ internal class OpenAIProviderCore(
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 32000,
-                    "default": 8000,
+                    "default": $DEFAULT_MAX_OUTPUT_TOKENS,
                     "description": "${s.shared("ai_provider_openai_schema_max_output_tokens")}"
                 }
             },
