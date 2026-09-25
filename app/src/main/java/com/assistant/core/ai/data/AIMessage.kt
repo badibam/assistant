@@ -211,7 +211,7 @@ data class AIMessage(
  *
  * Exclusive with dataCommands and actionCommands; the question itself is the preText.
  */
-data class CommunicationModule(val declaration: JSONObject) {
+class CommunicationModule(val declaration: JSONObject) {
 
     /** The fields asked for, each with whether an answer needs it. Valid once checked. */
     val fields: List<com.assistant.core.fields.settings.SettingNode.Field> by lazy {
@@ -220,4 +220,14 @@ data class CommunicationModule(val declaration: JSONObject) {
 
     /** The labels of the fields asked for, one per line, for the history of the conversation. */
     fun toText(): String = fields.joinToString("\n") { it.definition.displayName }
+
+    // Equal by content: a module read again from the stored message is the same module. A
+    // JSONObject has no equality of its own, and the state holding a module is compared to
+    // decide whether anything changed. The text is the declaration as it was stored, so the
+    // same message always gives the same text.
+    private val text = declaration.toString()
+
+    override fun equals(other: Any?): Boolean = other is CommunicationModule && other.text == text
+
+    override fun hashCode(): Int = text.hashCode()
 }

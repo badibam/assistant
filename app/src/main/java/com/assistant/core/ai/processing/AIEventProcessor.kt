@@ -308,21 +308,25 @@ class AIEventProcessor(
                 prepareContinuation(state)
             }
 
+            // A waiting phase builds its context once, on entering it (or on a restored session
+            // entering it again). Setting the context emits a new state, which comes back here:
+            // rebuilding it then would loop for as long as the rebuilt context is not equal to
+            // the one already set.
             Phase.WAITING_VALIDATION -> {
                 // Check if validation actually required via ValidationResolver
                 // If yes: create WaitingContext and wait for user
                 // If no: emit ValidationNotRequired to proceed directly to EXECUTING_ACTIONS
-                checkValidationRequired(state)
+                if (state.waitingContext !is WaitingContext.Validation) checkValidationRequired(state)
             }
 
             Phase.WAITING_COMMUNICATION_RESPONSE -> {
                 // Create WaitingContext with communication module for UI display
-                createCommunicationWaitingContext(state)
+                if (state.waitingContext !is WaitingContext.Communication) createCommunicationWaitingContext(state)
             }
 
             Phase.WAITING_DATA_CONFIRMATION -> {
                 // Rebuilt from the stored pending message, so the wait survives a restart
-                createDataConfirmationWaitingContext(state)
+                if (state.waitingContext !is WaitingContext.DataConfirmation) createDataConfirmationWaitingContext(state)
             }
 
             Phase.EXECUTING_DATA_QUERIES -> {
