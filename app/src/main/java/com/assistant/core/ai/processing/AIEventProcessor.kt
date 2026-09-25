@@ -48,6 +48,8 @@ class AIEventProcessor(
 ) {
     private val processingScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var networkRetryJob: Job? = null
+    // The AI call in flight, run apart from the state loop so Stop and Interrupt can cancel it
+    @Volatile private var aiCallJob: Job? = null
     private var sessionClosureJob: Job? = null
     private var initialized = false
     private var stateCollectorJob: Job? = null
@@ -89,6 +91,12 @@ class AIEventProcessor(
      */
     suspend fun emit(event: AIEvent) {
         try {
+            // Stop, Interrupt and every other ending cut the AI call in flight BEFORE the
+            // transition, so no answer can arrive for a session that has moved on
+            if (event is AIEvent.AIRoundInterrupted || event is AIEvent.SessionCompleted) {
+                cancelAICall()
+            }
+
             // Special handling for SchedulerHeartbeat before state transition
             if (event is AIEvent.SchedulerHeartbeat) {
                 handleSchedulerHeartbeat()
@@ -214,6 +222,8 @@ class AIEventProcessor(
             // Side effects are handled by handleStateChange (via StateFlow collector)
             // No need to call explicitly here
 
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             LogManager.aiSession(
                 "Event processing failed: ${event::class.simpleName}, error: ${e.message}",
@@ -284,7 +294,10 @@ class AIEventProcessor(
             }
 
             Phase.CALLING_AI -> {
-                callAI(state)
+                // Off the state loop: the loop stays free to handle Stop and Interrupt while
+                // the provider answers. One call at a time: a new one replaces any leftover.
+                aiCallJob?.cancel()
+                aiCallJob = processingScope.launch { callAI(state) }
             }
 
             Phase.PARSING_AI_RESPONSE -> {
@@ -341,6 +354,7 @@ class AIEventProcessor(
 
                 // Create interruption system message (audit only, excluded from prompt)
                 createInterruptionMessage(state)
+                emit(AIEvent.InterruptionRecorded)
             }
 
             Phase.AWAITING_SESSION_CLOSURE -> {
@@ -615,18 +629,12 @@ class AIEventProcessor(
             LogManager.aiSession("callAI: Calling AI provider (providerId: $providerId)", "DEBUG")
             val response = aiClient.query(promptData, providerId)
 
-            // Check if session was interrupted or closed while we were waiting for response
+            // Stop and Interrupt cancel this call, but a response can land in the instant between
+            // the answer and the cancellation: the session must still be the one that asked
+            currentCoroutineContext().ensureActive()
             val currentState = stateRepository.currentState
-            if (currentState.phase == Phase.INTERRUPTED) {
-                LogManager.aiSession("callAI: Session interrupted during AI call, ignoring response", "INFO")
-                // Transition back to IDLE after ignoring response
-                emit(AIEvent.AIResponseIgnored)
-                return
-            }
-
-            // Check if session was stopped/closed (STOP button clicked)
-            if (currentState.phase == Phase.CLOSED || currentState.sessionId == null || currentState.sessionId != sessionId) {
-                LogManager.aiSession("callAI: Session closed during AI call (phase=${currentState.phase}, sessionId=${currentState.sessionId}), ignoring response", "INFO")
+            if (currentState.phase != Phase.CALLING_AI || currentState.sessionId != sessionId) {
+                LogManager.aiSession("callAI: Session moved on during AI call (phase=${currentState.phase}, sessionId=${currentState.sessionId}), dropping response", "INFO")
                 return
             }
 
@@ -721,6 +729,10 @@ class AIEventProcessor(
                 }
             }
 
+        } catch (e: CancellationException) {
+            // Stop or Interrupt: whoever cancelled has already moved the session on
+            LogManager.aiSession("callAI: AI call cancelled", "INFO")
+            throw e
         } catch (e: Exception) {
             LogManager.aiSession("callAI failed: ${e.message}", "ERROR", e)
 
@@ -1071,6 +1083,17 @@ class AIEventProcessor(
 
         LogManager.aiSession("periodReference: AUTOMATION session $sessionId resolves periods on its scheduled time", "DEBUG")
         return scheduled
+    }
+
+    /**
+     * Cancel the AI call in flight, if any. Cancelling closes its HTTP connection at once.
+     */
+    private fun cancelAICall() {
+        aiCallJob?.let { job ->
+            if (job.isActive) LogManager.aiSession("Cancelling AI call in flight", "INFO")
+            job.cancel()
+        }
+        aiCallJob = null
     }
 
     /**

@@ -135,21 +135,17 @@ sealed class AIEvent {
     /**
      * User interrupted current AI round (CHAT only).
      *
-     * Cancels the current AI call/processing but keeps session active.
-     * If AI response arrives, it will be ignored.
-     * Session remains active and waits for next user message.
-     *
-     * Session continues automatically when user sends next message.
+     * Cancels the AI call in flight, if any, but keeps the session active: it passes through
+     * INTERRUPTED, where the interruption is recorded, then waits for the next user message.
      */
     object AIRoundInterrupted : AIEvent()
 
     /**
-     * AI response ignored after interruption (CHAT only).
+     * Interruption recorded in the session's messages (CHAT only).
      *
-     * Emitted by callAI when response arrives but session is INTERRUPTED.
-     * Transitions back to IDLE.
+     * Emitted by AIEventProcessor on INTERRUPTED. Transitions back to IDLE.
      */
-    object AIResponseIgnored : AIEvent()
+    object InterruptionRecorded : AIEvent()
 
     /**
      * User message sent (triggers enrichment execution).

@@ -8,7 +8,7 @@ import org.junit.Test
 /**
  * Covers the events the user raises: ValidationNotRequired, ValidationReceived,
  * DataConfirmationRequested, DataConfirmationReceived, CommunicationResponseReceived,
- * CommunicationCancelled, AIRoundInterrupted, AIResponseIgnored.
+ * CommunicationCancelled, AIRoundInterrupted, InterruptionRecorded.
  *
  * Two things recur and are checked throughout. A waiting phase leaves a waitingContext on
  * the state, and whatever ends the wait has to clear it, or the interface keeps showing a
@@ -146,11 +146,11 @@ class AIStateMachineUserInteractionTest {
     // ==================== Interruption ====================
 
     /**
-     * Interrupting does not cancel the call that is already out. The session parks at
-     * INTERRUPTED so that the answer, when it lands, is recognised as unwanted.
+     * Interrupting passes through INTERRUPTED, where the interruption is recorded. The call
+     * in flight is cancelled by AIEventProcessor, not by the transition.
      */
     @Test
-    fun interrupting_parksTheSessionToDiscardTheAnswer() {
+    fun interrupting_passesThroughInterrupted() {
         val state = AIStateMachine.transition(
             state = chatAt(Phase.CALLING_AI, waitingContext = someWaitingContext()),
             event = AIEvent.AIRoundInterrupted,
@@ -163,12 +163,12 @@ class AIStateMachineUserInteractionTest {
         assertEquals(T1, state.lastUserInteractionTime)
     }
 
-    /** Once the unwanted answer has been discarded, the session is ready again. */
+    /** Once the interruption is recorded, the session is ready again. */
     @Test
-    fun discardingTheAnswer_returnsToIdle() {
+    fun recordingTheInterruption_returnsToIdle() {
         val state = AIStateMachine.transition(
             state = chatAt(Phase.INTERRUPTED),
-            event = AIEvent.AIResponseIgnored,
+            event = AIEvent.InterruptionRecorded,
             limits = testLimits,
             currentTime = T1
         )

@@ -191,9 +191,8 @@ object AIStateMachine {
             }
 
             is AIEvent.AIRoundInterrupted -> {
-                // User interrupted current AI round (CHAT only)
-                // Stay in INTERRUPTED phase to ignore AI response when it arrives
-                // Will transition to IDLE after response is ignored
+                // User interrupted current AI round (CHAT only). The call in flight was
+                // cancelled before this transition; INTERRUPTED lasts while it is recorded.
                 state.copy(
                     phase = Phase.INTERRUPTED,
                     waitingContext = null, // Clear any waiting context
@@ -203,8 +202,7 @@ object AIStateMachine {
                 )
             }
 
-            is AIEvent.AIResponseIgnored -> {
-                // AI response was ignored after interruption
+            is AIEvent.InterruptionRecorded -> {
                 // Return to IDLE, ready for next user message
                 state.copy(
                     phase = Phase.IDLE,

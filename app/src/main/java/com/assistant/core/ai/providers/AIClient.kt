@@ -10,6 +10,7 @@ import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.services.OperationResult
 import com.assistant.core.strings.Strings
 import com.assistant.core.utils.LogManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -139,6 +140,8 @@ class AIClient(private val context: Context) {
 
                 aiResponse
 
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 LogManager.aiService("AIClient query failed: ${e.message}", "ERROR", e)
                 AIResponse(

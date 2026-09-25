@@ -66,8 +66,7 @@ enum class Phase {
 
     /**
      * AI round interrupted by user (CHAT only).
-     * Session active, waiting for next user message.
-     * If AI response arrives, it will be ignored.
+     * Brief: the call in flight is already cancelled, the interruption is recorded, then IDLE.
      */
     INTERRUPTED,
 

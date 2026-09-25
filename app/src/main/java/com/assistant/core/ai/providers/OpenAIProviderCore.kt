@@ -12,6 +12,7 @@ import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.io.File
@@ -294,9 +295,9 @@ internal class OpenAIProviderCore(
                 .post(requestBody.toRequestBody(mediaType))
                 .build()
 
-            // Execute request
-            val response = httpClient.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
+            // Execute request: cancelling the session's call cancels this one
+            val response = httpClient.newCall(request).awaitReply()
+            val responseBody = response.body
 
             if (!response.isSuccessful) {
                 LogManager.aiService("OpenAI API error: ${response.code} - $responseBody", "ERROR")
@@ -345,6 +346,9 @@ internal class OpenAIProviderCore(
 
             return@withContext aiResponse
 
+        } catch (e: CancellationException) {
+            // Stop or Interrupt cut the call: nothing to report, the caller is gone
+            throw e
         } catch (e: Exception) {
             LogManager.aiService("OpenAI query failed: ${e.message}", "ERROR", e)
             return@withContext AIResponse(

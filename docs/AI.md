@@ -327,7 +327,7 @@ La recherche de la prochaine occurrence démarre au plus tôt à `maintenant −
 
 ### Arrêt AUTOMATION
 **UI boutons** :
-- **STOP** : `stopActiveSession()` → `endReason=CANCELLED` (ne reprendra pas)
+- **STOP** : `stopActiveSession()` → `endReason=CANCELLED` (ne reprendra pas) ; l'appel IA en cours est coupé, sans attendre sa réponse
 
 **Arrêt automatique** :
 - **completed=true** : IA termine son travail → AWAITING_SESSION_CLOSURE (5s) → COMPLETED
@@ -446,6 +446,8 @@ Event NetworkErrorOccurred:
 **NetworkUtils** : `isNetworkAvailable(context)` pour vérification connectivité (core/utils).
 
 **Timeout HTTP** : 2 minutes (OkHttp config providers).
+
+**Appel en cours** : `callAI` tourne dans sa propre tâche, hors de la boucle qui traite les changements d'état. `SessionCompleted` (dont STOP) et `AIRoundInterrupted` (Interrompre, CHAT) l'annulent avant la transition, ce qui ferme la connexion HTTP (`Call.awaitReply()`) : rien n'est gardé de la réponse. Interrompre passe par `INTERRUPTED`, le temps d'écrire le message d'interruption, puis revient à `IDLE`.
 
 **Nature de l'échec** : `AIResponse.failure` (`AIFailure`), posé par le provider là où l'échec se produit — jamais déduit du texte du message. `NETWORK` (rien n'a atteint le provider) = retry ; `REFUSED` (429, 529, crédit épuisé) et `CONFIG` (clé, modèle, requête) = `ProviderErrorOccurred`, la session s'arrête. Un provider ne formule donc plus ses messages d'erreur pour tomber du bon côté d'un test de chaîne.
 
