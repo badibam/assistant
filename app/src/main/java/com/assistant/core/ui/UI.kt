@@ -113,6 +113,33 @@ object UI {
         size: Dp = 8.dp
     ) = CurrentTheme.current.StatusIndicator(color, size)
 
+    /**
+     * A short colored label, such as an option of a colored CHOICE field.
+     *
+     * @param text The label
+     * @param color The color's name; the theme decides what it looks like
+     */
+    @Composable
+    fun Tag(
+        text: String,
+        color: com.assistant.core.themes.TagColor
+    ) = CurrentTheme.current.Tag(text, color)
+
+    /**
+     * A round swatch of a tag color, as the current palette draws it, for choosing one.
+     *
+     * @param color The color's name
+     * @param size The diameter of the swatch
+     */
+    @Composable
+    fun TagSwatch(
+        color: com.assistant.core.themes.TagColor,
+        size: Dp = 24.dp
+    ) = CurrentTheme.current.StatusIndicator(
+        CurrentTheme.current.getTagColor(color, CurrentTheme.currentPaletteId),
+        size
+    )
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

@@ -1,5 +1,7 @@
 package com.assistant.core.fields.migration
 
+import com.assistant.core.fields.ChoiceShape
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,7 +60,7 @@ class FieldDataMigratorTest {
     fun aChoiceThatChangedBetweenOneAndSeveralLosesItsValue() {
         val result = migrate(
             mapOf("tags" to "urgent"),
-            FieldChange.ChoiceMultipleChanged("tags", false, true) to MigrationStrategy.STRIP_FIELD
+            FieldChange.ChoiceShapeChanged("tags", ChoiceShape.SINGLE, ChoiceShape.MULTIPLE) to MigrationStrategy.STRIP_FIELD
         )
 
         assertFalse(result.containsKey("tags"))

@@ -104,52 +104,7 @@ fun FieldInput(
         }
 
         com.assistant.core.fields.FieldType.CHOICE -> {
-            val config = fieldDef.config
-            val options = (config?.get("options") as? List<*>)?.map { it.toString() } ?: emptyList()
-            val multiple = (config?.get("multiple") as? Boolean) ?: false
-
-            if (multiple) {
-                // Multiple choice - checkboxes list
-                // TODO: Replace with dedicated MultiSelect component
-                val selectedItems = (value as? List<*>)?.map { it.toString() } ?: emptyList()
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    UI.Text(
-                        text = fieldDef.displayName,
-                        type = TextType.LABEL,
-                        fillMaxWidth = true
-                    )
-
-                    options.forEach { option ->
-                        val isSelected = selectedItems.contains(option)
-                        UI.Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { checked ->
-                                val newList = if (checked) {
-                                    selectedItems + option
-                                } else {
-                                    selectedItems - option
-                                }
-                                onChange(if (newList.isEmpty()) null else newList)
-                            },
-                            label = option
-                        )
-                    }
-                }
-            } else {
-                // Single choice - dropdown
-                val selectedValue = value?.toString() ?: ""
-                UI.FormSelection(
-                    label = fieldDef.displayName,
-                    options = options,
-                    selected = selectedValue,
-                    onSelect = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
-                    required = false
-                )
-            }
+            ChoiceInput(fieldDef, value, onChange, context)
         }
 
         com.assistant.core.fields.FieldType.BOOLEAN -> {
@@ -660,4 +615,135 @@ private fun loadFieldDefinitionsFromConfig(
     }
 
     return fields
+}
+
+/**
+ * Input for a CHOICE field, by shape: a selection for one option, checkboxes for several, the
+ * options with up and down buttons for a ranking. An open choice adds a box to type a value the
+ * options do not have yet; the write that stores it adds it to them.
+ */
+@Composable
+private fun ChoiceInput(
+    fieldDef: FieldDefinition,
+    value: Any?,
+    onChange: (Any?) -> Unit,
+    context: Context
+) {
+    val s = Strings.`for`(context = context)
+    val settings = ChoiceSettings.fromConfig(fieldDef.config)
+    val selectedItems = (value as? List<*>)?.map { it.toString() } ?: emptyList()
+    // Values given before, not yet in the options, stay on screen until the write adds them
+    val options = settings.options + (if (settings.shape.isList) selectedItems else listOfNotNull(value?.toString()))
+        .filter { it !in settings.options }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        when (settings.shape) {
+            ChoiceShape.SINGLE -> {
+                UI.FormSelection(
+                    label = fieldDef.displayName,
+                    options = options,
+                    selected = value?.toString() ?: "",
+                    onSelect = { newValue -> onChange(if (newValue.isEmpty()) null else newValue) },
+                    required = false
+                )
+            }
+
+            ChoiceShape.MULTIPLE -> {
+                UI.Text(
+                    text = fieldDef.displayName,
+                    type = TextType.LABEL,
+                    fillMaxWidth = true
+                )
+
+                options.forEach { option ->
+                    UI.Checkbox(
+                        checked = option in selectedItems,
+                        onCheckedChange = { checked ->
+                            val newList = if (checked) selectedItems + option else selectedItems - option
+                            onChange(if (newList.isEmpty()) null else newList)
+                        },
+                        label = option
+                    )
+                }
+            }
+
+            ChoiceShape.ORDERED -> {
+                UI.Text(
+                    text = fieldDef.displayName,
+                    type = TextType.LABEL,
+                    fillMaxWidth = true
+                )
+
+                // Nothing ranked yet shows the options as the config lists them; a ranking stored
+                // before an option was added shows that option last. The first move records the
+                // whole order.
+                val ranking = selectedItems + settings.options.filter { it !in selectedItems }
+                ranking.forEachIndexed { index, option ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            UI.Text(
+                                text = s.shared("field_choice_rank").format((index + 1).toString(), option),
+                                type = TextType.BODY
+                            )
+                        }
+                        UI.ActionButton(
+                            action = com.assistant.core.ui.ButtonAction.UP,
+                            display = com.assistant.core.ui.ButtonDisplay.ICON,
+                            size = com.assistant.core.ui.Size.S,
+                            enabled = index > 0,
+                            onClick = {
+                                onChange(ranking.toMutableList().apply { add(index - 1, removeAt(index)) })
+                            }
+                        )
+                        UI.ActionButton(
+                            action = com.assistant.core.ui.ButtonAction.DOWN,
+                            display = com.assistant.core.ui.ButtonDisplay.ICON,
+                            size = com.assistant.core.ui.Size.S,
+                            enabled = index < ranking.size - 1,
+                            onClick = {
+                                onChange(ranking.toMutableList().apply { add(index + 1, removeAt(index)) })
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (settings.open) {
+            var typed by rememberSaveable { mutableStateOf("") }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    UI.FormField(
+                        label = s.shared("field_choice_new_value"),
+                        value = typed,
+                        onChange = { typed = it },
+                        fieldType = UIFieldType.TEXT,
+                        required = false
+                    )
+                }
+                UI.ActionButton(
+                    action = com.assistant.core.ui.ButtonAction.ADD,
+                    display = com.assistant.core.ui.ButtonDisplay.ICON,
+                    size = com.assistant.core.ui.Size.S,
+                    enabled = typed.isNotBlank(),
+                    onClick = {
+                        val added = typed.trim()
+                        onChange(if (settings.shape.isList) (selectedItems + added).distinct() else added)
+                        typed = ""
+                    }
+                )
+            }
+        }
+    }
 }

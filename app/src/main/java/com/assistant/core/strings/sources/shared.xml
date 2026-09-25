@@ -572,6 +572,10 @@
     <string name="field_config_max_label">Maximum label</string>
     <string name="field_config_options">Options</string>
     <string name="field_config_multiple">Multiple selection</string>
+    <string name="field_config_ordered">Ranking (the options in a chosen order)</string>
+    <string name="field_config_open">Open (a new value is added to the options)</string>
+    <string name="field_choice_rank">%1$s. %2$s</string>
+    <string name="field_choice_new_value">Other value</string>
     <string name="field_config_option_add">Add an option</string>
     <string name="field_config_option_delete">Delete the option</string>
     <string name="field_config_option_placeholder">New option</string>
@@ -1092,6 +1096,10 @@
     <string name="field_type_scale_description">Graduated scale between two values with labels</string>
     <string name="field_type_choice_display_name">Choice</string>
     <string name="field_type_choice_description">Single or multiple choice among predefined options</string>
+    <string name="field_type_choice_multiple_description">The value is a list of options, in no particular order</string>
+    <string name="field_type_choice_ordered_description">The value is a list of options in the order chosen, a ranking. Excludes multiple and open.</string>
+    <string name="field_type_choice_open_description">A value outside the options is added to them by the write that brings it; closed, it is refused. Tags are a multiple open choice.</string>
+    <string name="field_type_choice_option_colors_description">A color per option, by option; a colored choice is shown as tags</string>
     <string name="field_type_boolean_display_name">Boolean</string>
     <string name="field_type_boolean_description">True/false value (yes/no)</string>
     <string name="field_type_range_display_name">Range</string>
@@ -1150,7 +1158,11 @@
     <string name="field_validation_choice_options_required">The CHOICE type needs a list of options</string>
     <string name="field_validation_choice_options_min">The CHOICE type needs at least 2 options</string>
     <string name="field_validation_choice_options_duplicate">The options cannot contain duplicates</string>
-    <string name="field_validation_choice_multiple_type">The multiple field must be a boolean</string>
+    <string name="field_validation_choice_flag_type">The %1$s setting must be a boolean</string>
+    <string name="field_validation_choice_ordered_exclusive">A ranking can be neither multiple nor open</string>
+    <string name="field_validation_choice_colors_type">The option colors must be an object, a color by option</string>
+    <string name="field_validation_choice_color_unknown_option">A color is given to %1$s, which is not an option</string>
+    <string name="field_validation_choice_color_unknown">Unknown color: %1$s</string>
     <string name="field_validation_choice_default_type_single">The default value must be a string for a single choice</string>
     <string name="field_validation_choice_default_type_multiple">The default value must be an array for a multiple choice</string>
     <string name="field_validation_boolean_label_empty">The true/false labels cannot be empty</string>
@@ -1175,7 +1187,7 @@
     <string name="migration_fields_removed">%1$d field(s) removed: their data will be erased</string>
     <string name="migration_choice_options_removed">%1$d CHOICE option(s) removed: the data concerned will be erased</string>
     <string name="migration_scale_range_changed">%1$d SCALE field(s) with a changed range: their data will be erased</string>
-    <string name="migration_choice_multiple_changed">%1$d CHOICE field(s) with a changed single/multiple mode: their data will be erased</string>
+    <string name="migration_choice_shape_changed">%1$d CHOICE field(s) switched between one answer, several and a ranking: their data will be erased</string>
     <string name="migration_config_restricted">%1$d field(s) whose configuration is more restrictive: the values that no longer fit will be erased</string>
     <string name="migration_in_progress">Migration running...</string>
     <string name="migration_success">Migration succeeded</string>

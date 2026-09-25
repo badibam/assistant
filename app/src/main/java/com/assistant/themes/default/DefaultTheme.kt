@@ -646,6 +646,45 @@ object DefaultTheme : ThemeContract {
         )
     }
 
+    @Composable
+    override fun Tag(
+        text: String,
+        color: com.assistant.core.themes.TagColor
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    color = getTagColor(color, com.assistant.core.themes.CurrentTheme.currentPaletteId),
+                    shape = RoundedCornerShape(50)
+                )
+                .padding(horizontal = 10.dp, vertical = 2.dp)
+        ) {
+            // Dark text on every tag: the tag colors are soft enough in both palettes to carry it
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = TagTextColor
+            )
+        }
+    }
+
+    override fun getTagColor(color: com.assistant.core.themes.TagColor, paletteId: String): Color {
+        val dark = paletteId == "default_dark"
+        return when (color) {
+            com.assistant.core.themes.TagColor.RED -> if (dark) Color(0xFFE39A9A) else Color(0xFFF4B9B9)
+            com.assistant.core.themes.TagColor.ORANGE -> if (dark) Color(0xFFEFB48C) else Color(0xFFF9CDAE)
+            com.assistant.core.themes.TagColor.YELLOW -> if (dark) Color(0xFFE6D48A) else Color(0xFFF5E8AE)
+            com.assistant.core.themes.TagColor.GREEN -> if (dark) Color(0xFFA6CF9C) else Color(0xFFC6E3BE)
+            com.assistant.core.themes.TagColor.TEAL -> if (dark) Color(0xFF8FCBC4) else Color(0xFFB5E0DA)
+            com.assistant.core.themes.TagColor.BLUE -> if (dark) Color(0xFF9BB8E8) else Color(0xFFBCD0F2)
+            com.assistant.core.themes.TagColor.PURPLE -> if (dark) Color(0xFFC0A6DA) else Color(0xFFD8C6EA)
+            com.assistant.core.themes.TagColor.PINK -> if (dark) Color(0xFFE3A3C6) else Color(0xFFF3C3DC)
+            com.assistant.core.themes.TagColor.GREY -> if (dark) Color(0xFFB8B2C2) else Color(0xFFD9D5E0)
+        }
+    }
+
+    private val TagTextColor = Color(0xFF2E2C3A)
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

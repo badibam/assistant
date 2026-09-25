@@ -3,6 +3,7 @@ package com.assistant.core.fields
 import com.assistant.core.ui.MutableStringListSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -20,7 +21,7 @@ import com.assistant.core.ui.FieldType as UIFieldType
  * - TEXT: length?
  * - NUMERIC: unit?, min?, max?, decimals?, step?
  * - SCALE: min (required), max (required), min_label?, max_label?, step?
- * - CHOICE: options (required, min 2), multiple?
+ * - CHOICE: options (required, min 2), multiple?, ordered?, open?, option_colors?
  * - BOOLEAN: true_label?, false_label?
  * - RANGE: min?, max?, unit?, decimals?
  * - DATE: nothing
@@ -309,7 +310,7 @@ private fun ScaleConfigEditor(
 
 /**
  * Configuration editor for CHOICE type.
- * Config: {options (required, min 2), multiple?}
+ * Config: {options (required, min 2), multiple?, ordered?, open?, option_colors?}
  */
 @Composable
 private fun ChoiceConfigEditor(
@@ -319,25 +320,54 @@ private fun ChoiceConfigEditor(
 ) {
     val s = Strings.`for`(context = context)
     val mutableConfig = remember(config) { config?.toMutableMap() ?: mutableMapOf() }
+    val settings = ChoiceSettings.fromConfig(config)
 
     var options by rememberSaveable(stateSaver = MutableStringListSaver) {
-        mutableStateOf(
-            (config?.get("options") as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList()
-                ?: mutableListOf("", "")
-        )
+        mutableStateOf(settings.options.toMutableList().ifEmpty { mutableListOf("", "") })
     }
-    var multiple by rememberSaveable { mutableStateOf(config?.get("multiple") as? Boolean ?: false) }
+    // The option whose colors are laid out to choose from, if any
+    var coloring by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    /** Writes the options and their colors back, dropping the colors of options gone or emptied. */
+    fun publish(colors: Map<String, com.assistant.core.themes.TagColor> = ChoiceSettings.fromConfig(mutableConfig).colors) {
+        val kept = options.filter { it.isNotEmpty() }
+        mutableConfig["options"] = kept
+        val keptColors = colors.filterKeys { it in kept }
+        if (keptColors.isEmpty()) mutableConfig.remove("option_colors")
+        else mutableConfig["option_colors"] = keptColors.mapValues { it.value.name }
+        onConfigChange(mutableConfig)
+    }
+
+    /** Sets one flag, clearing the ones a ranking excludes so the config stays valid. */
+    fun setFlag(flag: String, on: Boolean) {
+        if (on) mutableConfig[flag] = true else mutableConfig.remove(flag)
+        if (on && flag == "ordered") {
+            mutableConfig.remove("multiple")
+            mutableConfig.remove("open")
+        }
+        if (on && flag != "ordered") mutableConfig.remove("ordered")
+        onConfigChange(mutableConfig)
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Multiple selection toggle
         UI.ToggleField(
             label = s.shared("field_config_multiple"),
-            checked = multiple,
-            onCheckedChange = {
-                multiple = it
-                mutableConfig["multiple"] = it
-                onConfigChange(mutableConfig)
-            },
+            checked = settings.shape == ChoiceShape.MULTIPLE,
+            onCheckedChange = { setFlag("multiple", it) },
+            required = false
+        )
+
+        UI.ToggleField(
+            label = s.shared("field_config_ordered"),
+            checked = settings.shape == ChoiceShape.ORDERED,
+            onCheckedChange = { setFlag("ordered", it) },
+            required = false
+        )
+
+        UI.ToggleField(
+            label = s.shared("field_config_open"),
+            checked = settings.open,
+            onCheckedChange = { setFlag("open", it) },
             required = false
         )
 
@@ -351,19 +381,38 @@ private fun ChoiceConfigEditor(
         options.forEachIndexed { index, option ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
                     UI.FormField(
                         label = "",
                         value = option,
                         onChange = { newValue ->
+                            // The color follows the option it belongs to through the edit
+                            val colors = ChoiceSettings.fromConfig(mutableConfig).colors.toMutableMap()
+                            colors.remove(option)?.let { if (newValue.isNotEmpty()) colors[newValue] = it }
                             options[index] = newValue
-                            mutableConfig["options"] = options.filter { it.isNotEmpty() }
-                            onConfigChange(mutableConfig)
+                            publish(colors)
                         },
                         fieldType = UIFieldType.TEXT,
                         required = true
+                    )
+                }
+
+                // The option's color, or the button to give it one
+                val color = settings.colors[option]
+                if (color != null) {
+                    Box(modifier = Modifier.clickable { coloring = if (coloring == index) null else index }) {
+                        UI.TagSwatch(color)
+                    }
+                } else {
+                    UI.ActionButton(
+                        action = ButtonAction.SELECT,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        enabled = option.isNotEmpty(),
+                        onClick = { coloring = if (coloring == index) null else index }
                     )
                 }
 
@@ -375,8 +424,35 @@ private fun ChoiceConfigEditor(
                         onClick = {
                             // Create new list to trigger recomposition
                             options = options.toMutableList().apply { removeAt(index) }
-                            mutableConfig["options"] = options.filter { it.isNotEmpty() }
-                            onConfigChange(mutableConfig)
+                            coloring = null
+                            publish()
+                        }
+                    )
+                }
+            }
+
+            // The colors to choose from, and the way back to none
+            if (coloring == index && option.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    com.assistant.core.themes.TagColor.entries.forEach { choice ->
+                        Box(modifier = Modifier.clickable {
+                            publish(ChoiceSettings.fromConfig(mutableConfig).colors + (option to choice))
+                            coloring = null
+                        }) {
+                            UI.TagSwatch(choice)
+                        }
+                    }
+                    UI.ActionButton(
+                        action = ButtonAction.RESET,
+                        display = ButtonDisplay.ICON,
+                        size = Size.S,
+                        onClick = {
+                            publish(ChoiceSettings.fromConfig(mutableConfig).colors - option)
+                            coloring = null
                         }
                     )
                 }
@@ -391,8 +467,7 @@ private fun ChoiceConfigEditor(
             onClick = {
                 // Create new list to trigger recomposition
                 options = (options + "").toMutableList()
-                mutableConfig["options"] = options.filter { it.isNotEmpty() }
-                onConfigChange(mutableConfig)
+                publish()
             }
         )
     }

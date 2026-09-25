@@ -159,10 +159,12 @@ object CustomFieldsSchemaGenerator {
             }
 
             FieldType.CHOICE -> {
-                val multiple = (fieldDef.config?.get("multiple") as? Boolean) ?: false
-
-                if (multiple) {
-                    // Multiple choice: array of strings with enum validation
+                // An open choice is held to its options too: the write that brings a new value
+                // adds it to the options first, and the schema is built from that config.
+                if (ChoiceSettings.fromConfig(fieldDef.config).shape.isList) {
+                    // Multiple choice or ranking: array of distinct strings with enum validation.
+                    // A ranking need not hold every option, so an option added later leaves the
+                    // rankings already stored valid.
                     JSONObject().apply {
                         put("type", "array")
 

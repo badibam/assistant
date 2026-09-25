@@ -81,7 +81,8 @@ fun JSONObject.toFieldDefinition(): FieldDefinition {
 
 /**
  * Converts a field's config JSONObject to the Map form FieldDefinition holds.
- * JSONArrays become Lists, for fields like "options".
+ * JSONArrays become Lists, for fields like "options", and JSONObjects become Maps, for fields
+ * like "option_colors".
  */
 fun JSONObject.toFieldConfig(): Map<String, Any> {
     val map = mutableMapOf<String, Any>()
@@ -95,6 +96,7 @@ fun JSONObject.toFieldConfig(): Map<String, Any> {
                 }
                 list
             }
+            is JSONObject -> value.toFieldConfig()
             else -> value
         }
     }
@@ -203,12 +205,11 @@ private fun formatScaleValue(value: Any?, config: Map<String, Any>?, s: StringsC
 }
 
 /**
- * Format CHOICE value (single or multiple)
+ * Format CHOICE value (one option, or a list of them in the order stored, which for a ranking
+ * is the order chosen)
  */
 private fun formatChoiceValue(value: Any?, config: Map<String, Any>?, s: StringsContext): String {
-    val multiple = (config?.get("multiple") as? Boolean) ?: false
-
-    return if (multiple) {
+    return if (ChoiceSettings.fromConfig(config).shape.isList) {
         val list = value as? List<*>
         if (list.isNullOrEmpty()) {
             s.shared("label_no_value")

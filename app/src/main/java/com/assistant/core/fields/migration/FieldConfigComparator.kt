@@ -88,11 +88,11 @@ object FieldConfigComparator {
                 }
 
                 com.assistant.core.fields.FieldType.CHOICE -> {
-                    // Check for CHOICE multiple flag change
-                    val multipleChange = detectChoiceMultipleChange(oldField, newField)
-                    if (multipleChange != null) {
-                        changes.add(multipleChange)
-                        return@forEach // Multiple flag changed, skip other checks
+                    // Check for a CHOICE shape change (single, multiple, ranking)
+                    val shapeChange = detectChoiceShapeChange(oldField, newField)
+                    if (shapeChange != null) {
+                        changes.add(shapeChange)
+                        return@forEach // Shape changed, skip other checks
                     }
 
                     // Check for removed CHOICE options
@@ -175,30 +175,17 @@ object FieldConfigComparator {
     }
 
     /**
-     * Detect CHOICE multiple flag change (single ↔ multiple).
-     *
-     * @param oldField Previous CHOICE field definition
-     * @param newField New CHOICE field definition
-     * @return ChoiceMultipleChanged if multiple flag changed, null otherwise
+     * Detects a CHOICE moving between one option, several and a ranking.
      */
-    private fun detectChoiceMultipleChange(
+    private fun detectChoiceShapeChange(
         oldField: FieldDefinition,
         newField: FieldDefinition
-    ): FieldChange.ChoiceMultipleChanged? {
-        // Get multiple flag (defaults to false if not specified)
-        val oldMultiple = (oldField.config?.get("multiple") as? Boolean) ?: false
-        val newMultiple = (newField.config?.get("multiple") as? Boolean) ?: false
+    ): FieldChange.ChoiceShapeChanged? {
+        val oldShape = com.assistant.core.fields.ChoiceSettings.fromConfig(oldField.config).shape
+        val newShape = com.assistant.core.fields.ChoiceSettings.fromConfig(newField.config).shape
 
-        // Check if multiple flag changed
-        if (oldMultiple != newMultiple) {
-            return FieldChange.ChoiceMultipleChanged(
-                name = oldField.name,
-                oldMultiple = oldMultiple,
-                newMultiple = newMultiple
-            )
-        }
-
-        return null
+        if (oldShape == newShape) return null
+        return FieldChange.ChoiceShapeChanged(name = oldField.name, oldShape = oldShape, newShape = newShape)
     }
 
     /**

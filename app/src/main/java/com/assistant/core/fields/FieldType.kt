@@ -43,8 +43,13 @@ enum class FieldType {
 
     /**
      * Single or multiple choice from predefined options.
-     * Config: {options (required, min 2), multiple?, allow_custom? (not implemented V1)}
-     * Example: Categories, tags, selections
+     * Config: {options (required, min 2), multiple?, ordered?, open?, option_colors?}
+     * - multiple: the value is a list of options, in no particular order
+     * - ordered: the value is a list of options in the order chosen (a ranking); excludes multiple and open
+     * - open: a value outside the options is added to them by the write that brings it; closed, it is refused
+     * - option_colors: a TagColor name per option; a colored choice shows as tags
+     * Tags are a multiple open choice.
+     * Example: Categories, tags, selections, rankings
      */
     CHOICE,
 

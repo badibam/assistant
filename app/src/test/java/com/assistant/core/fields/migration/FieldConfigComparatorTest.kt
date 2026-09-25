@@ -1,5 +1,7 @@
 package com.assistant.core.fields.migration
 
+import com.assistant.core.fields.ChoiceShape
+
 import com.assistant.core.fields.FieldDefinition
 import com.assistant.core.fields.FieldType
 import org.junit.Assert.assertEquals
@@ -170,9 +172,22 @@ class FieldConfigComparatorTest {
             newFields = listOf(choice("tags", listOf("work", "home"), multiple = true))
         )
 
-        val switched = changes.single() as FieldChange.ChoiceMultipleChanged
-        assertFalse(switched.oldMultiple)
-        assertTrue(switched.newMultiple)
+        val switched = changes.single() as FieldChange.ChoiceShapeChanged
+        assertEquals(ChoiceShape.SINGLE, switched.oldShape)
+        assertEquals(ChoiceShape.MULTIPLE, switched.newShape)
+        assertEquals(MigrationStrategy.STRIP_FIELD, strategyFor(switched))
+    }
+
+    /** A set of options turned into a ranking would claim an order nobody chose. */
+    @Test
+    fun switchingAChoiceToOrdered_stripsTheField() {
+        val changes = FieldConfigComparator.compare(
+            oldFields = listOf(choice("tags", listOf("work", "home"), multiple = true)),
+            newFields = listOf(field("tags", FieldType.CHOICE, config = mapOf("options" to listOf("work", "home"), "ordered" to true)))
+        )
+
+        val switched = changes.single() as FieldChange.ChoiceShapeChanged
+        assertEquals(ChoiceShape.ORDERED, switched.newShape)
         assertEquals(MigrationStrategy.STRIP_FIELD, strategyFor(switched))
     }
 

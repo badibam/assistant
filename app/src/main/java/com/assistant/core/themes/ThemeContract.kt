@@ -105,6 +105,22 @@ interface ThemeContract {
         size: Dp
     )
 
+    /**
+     * A short colored label: an option of a CHOICE field whose config gives it a color.
+     * The theme draws it and decides the actual color of [color] in the current palette.
+     */
+    @Composable
+    fun Tag(
+        text: String,
+        color: TagColor
+    )
+
+    /**
+     * The actual color a tag color name takes in [paletteId], for the swatches a color is
+     * chosen from. Every name of TagColor has one in every palette.
+     */
+    fun getTagColor(color: TagColor, paletteId: String): androidx.compose.ui.graphics.Color
+
     // =====================================
     // FEEDBACK SYSTEM
     // =====================================

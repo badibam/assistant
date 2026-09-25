@@ -87,23 +87,21 @@ sealed class FieldChange {
     ) : FieldChange()
 
     /**
-     * A CHOICE field's multiple flag was changed (single ↔ multiple).
-     * Strategy: STRIP_FIELD (remove field from all entries - data structure incompatible)
+     * A CHOICE field changed shape: between one option, several, and a ranking.
+     * Strategy: STRIP_FIELD (remove field from all entries - the stored values no longer say
+     * what the field now asks)
      *
-     * Changing from single to multiple or vice versa changes the data structure:
-     * - Single: value is a String
-     * - Multiple: value is a List<String>
-     *
-     * Existing data would be in the wrong format, so we remove the field from all entries.
+     * One option is a String, several or a ranking a List<String>; and a set of options read as
+     * a ranking would claim an order nobody chose.
      *
      * @param name The field name
-     * @param oldMultiple Previous multiple flag value
-     * @param newMultiple New multiple flag value
+     * @param oldShape Previous shape
+     * @param newShape New shape
      */
-    data class ChoiceMultipleChanged(
+    data class ChoiceShapeChanged(
         val name: String,
-        val oldMultiple: Boolean,
-        val newMultiple: Boolean
+        val oldShape: com.assistant.core.fields.ChoiceShape,
+        val newShape: com.assistant.core.fields.ChoiceShape
     ) : FieldChange()
 
     /**

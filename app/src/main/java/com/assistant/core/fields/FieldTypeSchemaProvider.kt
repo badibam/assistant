@@ -391,6 +391,7 @@ object FieldTypeSchemaProvider : SchemaProvider {
     private fun buildChoiceSchemaJson(context: Context): String {
         val s = Strings.`for`(context = context)
         val commonProps = buildCommonFieldProperties(context, "CHOICE")
+        val tagColors = com.assistant.core.themes.TagColor.entries.joinToString(", ") { "\"${it.name}\"" }
         return """
         {
             "type": "object",
@@ -426,12 +427,25 @@ object FieldTypeSchemaProvider : SchemaProvider {
                         "multiple": {
                             "type": "boolean",
                             "default": false,
-                            "description": "Autoriser sélection multiple"
+                            "description": "${s.shared("field_type_choice_multiple_description")}"
                         },
-                        "allow_custom": {
+                        "ordered": {
                             "type": "boolean",
                             "default": false,
-                            "description": "Autoriser valeurs personnalisées (non implémenté en V1)"
+                            "description": "${s.shared("field_type_choice_ordered_description")}"
+                        },
+                        "open": {
+                            "type": "boolean",
+                            "default": false,
+                            "description": "${s.shared("field_type_choice_open_description")}"
+                        },
+                        "option_colors": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string",
+                                "enum": [$tagColors]
+                            },
+                            "description": "${s.shared("field_type_choice_option_colors_description")}"
                         }
                     },
                     "required": ["options"],

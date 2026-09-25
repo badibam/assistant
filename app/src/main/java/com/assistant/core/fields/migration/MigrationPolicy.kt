@@ -56,7 +56,7 @@ object MigrationPolicy {
 
                 // Remove field from all entries when CHOICE multiple flag changes
                 // (data structure incompatible: String vs List<String>)
-                is FieldChange.ChoiceMultipleChanged -> MigrationStrategy.STRIP_FIELD
+                is FieldChange.ChoiceShapeChanged -> MigrationStrategy.STRIP_FIELD
 
                 // No action needed for cosmetic changes
                 is FieldChange.CosmeticChange -> MigrationStrategy.NONE
@@ -95,7 +95,7 @@ object MigrationPolicy {
         // Count changes by type for user-friendly grouping
         val fieldRemovalCount = changes.count { it is FieldChange.Removed }
         val scaleRangeChangedCount = changes.count { it is FieldChange.ScaleRangeChanged }
-        val choiceMultipleChangedCount = changes.count { it is FieldChange.ChoiceMultipleChanged }
+        val choiceShapeChangedCount = changes.count { it is FieldChange.ChoiceShapeChanged }
         val choiceOptionsRemovedCount = changes.count { it is FieldChange.ChoiceOptionsRemoved }
         val errorCount = changes.count { strategies[it] == MigrationStrategy.ERROR }
 
@@ -108,8 +108,8 @@ object MigrationPolicy {
             lines.add(s.shared("migration_scale_range_changed").format(scaleRangeChangedCount))
         }
 
-        if (choiceMultipleChangedCount > 0) {
-            lines.add(s.shared("migration_choice_multiple_changed").format(choiceMultipleChangedCount))
+        if (choiceShapeChangedCount > 0) {
+            lines.add(s.shared("migration_choice_shape_changed").format(choiceShapeChangedCount))
         }
 
         if (choiceOptionsRemovedCount > 0) {

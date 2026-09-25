@@ -265,7 +265,7 @@ object FieldDataMigrator {
                     when (change) {
                         is FieldChange.Removed -> result.remove(change.name)
                         is FieldChange.ScaleRangeChanged -> result.remove(change.name)
-                        is FieldChange.ChoiceMultipleChanged -> result.remove(change.name)
+                        is FieldChange.ChoiceShapeChanged -> result.remove(change.name)
                         else -> {} // Strategy mismatch, should not happen
                     }
                 }

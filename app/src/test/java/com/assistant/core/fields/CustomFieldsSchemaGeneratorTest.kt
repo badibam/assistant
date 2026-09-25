@@ -162,6 +162,18 @@ class CustomFieldsSchemaGeneratorTest {
         assertFalse(schema.accepts("-1"))
     }
 
+    /** A ranking is a list of distinct options, and need not hold them all. */
+    @Test
+    fun orderedChoice_isAListOfDistinctOptions() {
+        val schema = schemaFor("""{ "type": "CHOICE", "config": { "options": ["a", "b", "c"], "ordered": true } }""")
+
+        assertTrue(schema.accepts("""["c", "a", "b"]"""))
+        assertTrue(schema.accepts("""["b", "a"]"""))
+        assertFalse(schema.accepts("""["a", "a"]"""))
+        assertFalse(schema.accepts("""["a", "z"]"""))
+        assertFalse(schema.accepts("\"a\""))
+    }
+
     /** A duration is whole milliseconds, whatever precision it is entered in. */
     @Test
     fun duration_isWholeMilliseconds() {

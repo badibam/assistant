@@ -572,6 +572,10 @@
     <string name="field_config_max_label">Label maximum</string>
     <string name="field_config_options">Options</string>
     <string name="field_config_multiple">Sélection multiple</string>
+    <string name="field_config_ordered">Classement (les options dans un ordre choisi)</string>
+    <string name="field_config_open">Ouvert (une valeur nouvelle rejoint les options)</string>
+    <string name="field_choice_rank">%1$s. %2$s</string>
+    <string name="field_choice_new_value">Autre valeur</string>
     <string name="field_config_option_add">Ajouter une option</string>
     <string name="field_config_option_delete">Supprimer l\'option</string>
     <string name="field_config_option_placeholder">Nouvelle option</string>
@@ -1092,6 +1096,10 @@
     <string name="field_type_scale_description">Échelle graduée entre deux valeurs avec labels</string>
     <string name="field_type_choice_display_name">Choix</string>
     <string name="field_type_choice_description">Choix unique ou multiple parmi des options prédéfinies</string>
+    <string name="field_type_choice_multiple_description">La valeur est une liste d\'options, sans ordre</string>
+    <string name="field_type_choice_ordered_description">La valeur est la liste des options dans l\'ordre choisi, un classement. Exclut multiple et open.</string>
+    <string name="field_type_choice_open_description">Une valeur hors des options y est ajoutée par l\'écriture qui l\'apporte ; fermé, elle est refusée. Des tags sont un choix multiple ouvert.</string>
+    <string name="field_type_choice_option_colors_description">Une couleur par option, clé par option ; un choix coloré s\'affiche en pastilles</string>
     <string name="field_type_boolean_display_name">Booléen</string>
     <string name="field_type_boolean_description">Valeur vrai/faux (oui/non)</string>
     <string name="field_type_range_display_name">Intervalle</string>
@@ -1150,7 +1158,11 @@
     <string name="field_validation_choice_options_required">Le type CHOICE nécessite une liste d\'options</string>
     <string name="field_validation_choice_options_min">Le type CHOICE nécessite au moins 2 options</string>
     <string name="field_validation_choice_options_duplicate">Les options ne peuvent pas contenir de doublons</string>
-    <string name="field_validation_choice_multiple_type">Le champ multiple doit être un booléen</string>
+    <string name="field_validation_choice_flag_type">Le réglage %1$s doit être un booléen</string>
+    <string name="field_validation_choice_ordered_exclusive">Un classement ne peut être ni multiple ni ouvert</string>
+    <string name="field_validation_choice_colors_type">Les couleurs des options doivent être un objet, une couleur par option</string>
+    <string name="field_validation_choice_color_unknown_option">Une couleur est donnée à %1$s, qui n\'est pas une option</string>
+    <string name="field_validation_choice_color_unknown">Couleur inconnue : %1$s</string>
     <string name="field_validation_choice_default_type_single">La valeur par défaut doit être une chaîne de caractères pour un choix unique</string>
     <string name="field_validation_choice_default_type_multiple">La valeur par défaut doit être un tableau pour un choix multiple</string>
     <string name="field_validation_boolean_label_empty">Les labels vrai/faux ne peuvent pas être vides</string>
@@ -1175,7 +1187,7 @@
     <string name="migration_fields_removed">%1$d champ(s) supprimé(s) : leurs données seront effacées</string>
     <string name="migration_choice_options_removed">%1$d option(s) CHOICE supprimée(s) : données concernées seront effacées</string>
     <string name="migration_scale_range_changed">%1$d champ(s) SCALE avec plage modifiée : leurs données seront effacées</string>
-    <string name="migration_choice_multiple_changed">%1$d champ(s) CHOICE avec mode single/multiple modifié : leurs données seront effacées</string>
+    <string name="migration_choice_shape_changed">%1$d champ(s) CHOICE passé(s) entre une réponse, plusieurs et un classement : leurs données seront effacées</string>
     <string name="migration_config_restricted">%1$d champ(s) dont la configuration est plus restrictive : les valeurs qui n'y entrent plus seront effacées</string>
     <string name="migration_in_progress">Migration en cours...</string>
     <string name="migration_success">Migration réussie</string>
