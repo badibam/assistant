@@ -137,6 +137,7 @@
 
     <!-- Validation UI -->
     <string name="validation_title">The AI wants to carry out the following actions</string>
+    <string name="validation_values_unreadable">The proposed values cannot be shown: %1$s</string>
     <string name="validation_action_confirm">Allow</string>
     <string name="validation_action_refuse">Refuse</string>
 

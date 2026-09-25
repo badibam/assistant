@@ -33,12 +33,16 @@ data class ValidationContext(
  * @param description Human-readable action description (substantive form)
  * @param requiresWarning true if validated by CONFIG (app/zone/tool) - shows orange warning icon
  * @param validationReason Reason for validation (null if action doesn't require validation by itself)
+ * @param entries The entries the action writes, by their fields; none for other actions
+ * @param entriesError Why the entries could not be shown, when a value the AI gave does not read
  */
 data class VerbalizedAction(
     val actionId: String,
     val description: String,
     val requiresWarning: Boolean,
-    val validationReason: String?
+    val validationReason: String?,
+    val entries: List<ProposedEntry> = emptyList(),
+    val entriesError: String? = null
 )
 
 /**

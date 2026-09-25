@@ -223,11 +223,22 @@ class ValidationResolver(private val context: Context) {
 
             LogManager.aiService("ValidationResolver: Action ${action.id} -> description='$description', warning=${analysis.requiresWarning}, reason=$validationReason")
 
+            // The entries a write proposes, shown by their fields. A value that does not read
+            // is said on the card: the action itself will be refused for it.
+            val (entries, entriesError) = try {
+                proposedEntries(action) to null
+            } catch (e: IllegalArgumentException) {
+                LogManager.aiService("ValidationResolver: proposed values of ${action.id} do not read: ${e.message}", "WARN")
+                emptyList<ProposedEntry>() to s.shared("validation_values_unreadable").format(e.message ?: "")
+            }
+
             VerbalizedAction(
                 actionId = action.id,
                 description = description,
                 requiresWarning = analysis.requiresWarning,
-                validationReason = validationReason
+                validationReason = validationReason,
+                entries = entries,
+                entriesError = entriesError
             )
         }
     }
@@ -277,6 +288,23 @@ class ValidationResolver(private val context: Context) {
      *   is then unknown, and an unknown is not taken for a no
      */
     private suspend fun loadToolSettings(toolInstanceId: String): com.assistant.core.fields.settings.SettingValues {
+        val (tooltype, config) = loadTool(toolInstanceId)
+        return com.assistant.core.tools.ToolConfigSettings.read(tooltype, config, context)
+    }
+
+    /** The entries [action] proposes to write, read with the fields of its tool. */
+    private suspend fun proposedEntries(action: DataCommand): List<ProposedEntry> {
+        if (action.params["entries"] == null) return emptyList()
+        val (tooltype, config) = loadTool(extractToolInstanceId(action))
+        return ProposedEntries.of(action, tooltype, config, context)
+    }
+
+    /**
+     * The tooltype and stored config of the tool [toolInstanceId].
+     *
+     * @throws IllegalStateException when the tool cannot be read
+     */
+    private suspend fun loadTool(toolInstanceId: String): Pair<String, JSONObject> {
         val result = coordinator.processUserAction("tools.get", mapOf("tool_instance_id" to toolInstanceId))
         val toolInstance = result.data?.get("tool_instance") as? Map<*, *>
         @Suppress("UNCHECKED_CAST")
@@ -285,7 +313,7 @@ class ValidationResolver(private val context: Context) {
         if (result.status != CommandStatus.SUCCESS || config == null || tooltype == null) {
             throw IllegalStateException("Cannot read tool $toolInstanceId to know whether it asks for validation: ${result.error}")
         }
-        return com.assistant.core.tools.ToolConfigSettings.read(tooltype, config, context)
+        return tooltype to config
     }
 
     // =============================

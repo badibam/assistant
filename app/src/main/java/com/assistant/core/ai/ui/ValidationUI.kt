@@ -55,6 +55,8 @@ fun ValidationUI(
                         showWarning = action.requiresWarning,
                         validationReason = action.validationReason
                     )
+                    action.entries.forEach { entry -> ProposedEntryItem(entry) }
+                    action.entriesError?.let { UI.Text(text = it, type = TextType.CAPTION) }
                 }
             }
         },
@@ -120,6 +122,26 @@ private fun ActionItem(
                     text = "  $validationReason",
                     type = TextType.CAPTION
                 )
+            }
+        }
+    }
+}
+
+/**
+ * One entry an action proposes to write: each value under its field's label, shown by its field
+ * type's display, as everywhere else in the app.
+ */
+@Composable
+private fun ProposedEntryItem(entry: com.assistant.core.ai.validation.ProposedEntry) {
+    val context = LocalContext.current
+    UI.Card(type = com.assistant.core.ui.CardType.DEFAULT) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            entry.values.forEach { proposed ->
+                UI.Text(text = proposed.field.displayName, type = TextType.LABEL)
+                com.assistant.core.fields.FieldValue(proposed.field, proposed.value, context)
             }
         }
     }

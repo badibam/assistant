@@ -25,6 +25,7 @@ Ce que la suite de tests ne voit pas : les écrans, les migrations sur une vraie
 - Fermer l'app de force pendant une attente (validation, question, données volumineuses), la rouvrir : les boutons reviennent.
 - Rotation pendant la composition : deux blocs, un pointeur ouvert sur le second avec zone, outil, contexte et période choisis. Après la rotation, la fenêtre et les choix sont là, et le pointeur arrive dans le second bloc.
 - Demander à l'IA une question à plusieurs volets (un choix, un texte, une date) : chaque champ se saisit avec son composant, Confirmer reste grisé tant qu'un champ obligatoire est vide, et la réponse réapparaît dans le fil champ par champ, la date affichée comme telle. Une confirmation sans champ : Confirmer et Annuler seuls. Tourner l'écran en cours de saisie : les valeurs restent.
+- Validation active, faire créer deux entrées par l'IA puis en modifier une : la carte de validation montre chaque entrée champ par champ (date lisible, échelle en jauge, choix par son libellé), et pour la modification seulement les champs changés.
 - Prompt L1 modifié : rejouer `docs/ai-prompt-replay.md`.
 - Mode avion puis message CHAT : échec immédiat avec un message réseau, rien ne part (les NOTES disaient que l'appel partait quand même).
 - Interrompre pendant que l'IA réfléchit, réseau coupé ou non : le composeur revient tout de suite, avec « Round IA interrompu » et la note de coût inconnu ; le coût de la session s'affiche en « ≥ ».
