@@ -665,16 +665,6 @@ class AIEventProcessor(
 
                 messageRepository.storeMessage(sessionId, aiMessage)
 
-                // Update session tokens and cost incrementally
-                updateSessionTokensAndCost(
-                    sessionId = sessionId,
-                    inputTokens = response.inputTokens,
-                    cacheWriteTokens = response.cacheWriteTokens,
-                    cacheReadTokens = response.cacheReadTokens,
-                    outputTokens = response.tokensUsed,
-                    providerId = providerId
-                )
-
                 // Emit success → triggers parsing
                 emit(AIEvent.AIResponseReceived(response.content))
 
@@ -682,8 +672,6 @@ class AIEventProcessor(
                 val errorMessage = response.errorMessage ?: "Unknown error"
                 val failure = response.failure ?: AIFailure.REFUSED
                 LogManager.aiSession("callAI: AI provider error ($failure): $errorMessage", "ERROR")
-
-                if (failure == AIFailure.LOST) recordCallWithUnknownUsage(sessionId)
 
                 if (failure != AIFailure.NETWORK) {
                     // The provider was reached, or may have been (LOST): retrying on a timer
@@ -704,7 +692,8 @@ class AIEventProcessor(
                             formattedData = null
                         ),
                         executionMetadata = null,
-                        excludeFromPrompt = true // Excluded from prompt (audit only)
+                        excludeFromPrompt = true, // Excluded from prompt (audit only)
+                        usageUnknown = failure == AIFailure.LOST // Sent, maybe billed, usage lost
                     )
                     messageRepository.storeMessage(sessionId, systemErrorMessage)
 
@@ -737,7 +726,7 @@ class AIEventProcessor(
 
         } catch (e: CancellationException) {
             // Stop or Interrupt: whoever cancelled has already moved the session on. A request
-            // that had gone out may still be billed: say so, and count it in the session's cost.
+            // that had gone out may still be billed: say so, in a message that counts in the session's cost.
             LogManager.aiSession("callAI: AI call cancelled (request sent: ${requestSent.sent})", "INFO")
             if (requestSent.sent) {
                 withContext(NonCancellable) {
@@ -751,9 +740,9 @@ class AIEventProcessor(
                         aiMessageJson = null,
                         systemMessage = null,
                         executionMetadata = null,
-                        excludeFromPrompt = true // Audit only
+                        excludeFromPrompt = true, // Audit only
+                        usageUnknown = true
                     ))
-                    recordCallWithUnknownUsage(sessionId)
                 }
             }
             throw e
@@ -1777,134 +1766,6 @@ class AIEventProcessor(
     }
 
     /**
-     * Shutdown processor and cancel all jobs.
-     *
-     * After shutdown, initialize() can be called again to restart the processor.
-     */
-    /**
-     * Update session tokens and cost incrementally after receiving AI response
-     *
-     * Loads current tokens from DB, adds new tokens from this response,
-     * calculates costs if model prices available, and saves back to DB.
-     *
-     * @param sessionId Session to update
-     * @param inputTokens Uncached input tokens from API response
-     * @param cacheWriteTokens Cache write tokens from API response
-     * @param cacheReadTokens Cache read tokens from API response
-     * @param outputTokens Output tokens from API response
-     * @param providerId Provider ID (nullable for active provider)
-     */
-    private suspend fun updateSessionTokensAndCost(
-        sessionId: String,
-        inputTokens: Int,
-        cacheWriteTokens: Int,
-        cacheReadTokens: Int,
-        outputTokens: Int,
-        providerId: String?
-    ) {
-        try {
-            val database = com.assistant.core.database.AppDatabase.getDatabase(context)
-            val aiDao = database.aiDao()
-
-            // Load current session
-            val session = aiDao.getSession(sessionId)
-            if (session == null) {
-                LogManager.aiSession("updateSessionTokensAndCost: Session $sessionId not found", "ERROR")
-                return
-            }
-
-            // Load current tokens and add new ones
-            val currentTokens = com.assistant.core.ai.data.SessionTokens.fromJson(session.tokensJson)
-            val updatedTokens = currentTokens.addMessage(
-                inputTokens = inputTokens,
-                cacheWriteTokens = cacheWriteTokens,
-                cacheReadTokens = cacheReadTokens,
-                outputTokens = outputTokens
-            )
-
-            // Try to calculate costs (requires modelId from provider config)
-            val costJson = try {
-                // Determine which provider to use (same logic as callAI)
-                val effectiveProviderId = providerId ?: run {
-                    // Get active provider
-                    val activeProvider = aiDao.getActiveProviderConfig()
-                    activeProvider?.providerId
-                }
-
-                if (effectiveProviderId != null) {
-                    // Load provider config to get modelId
-                    val providerConfig = aiDao.getProviderConfig(effectiveProviderId)
-                    if (providerConfig != null) {
-                        val configJson = JSONObject(providerConfig.configJson)
-                        val modelId = configJson.optString("model", "")
-
-                        if (modelId.isNotEmpty()) {
-                            // Get model pricing
-                            val modelPrice = com.assistant.core.ai.utils.ModelPriceManager.getModelPrice(context, modelId)
-
-                            if (modelPrice != null) {
-                                // Calculate costs (use 0.0 if cache prices not available)
-                                val inputCost = updatedTokens.totalUncachedInputTokens * (modelPrice.inputCostPerToken ?: 0.0)
-                                val cacheWriteCost = updatedTokens.totalCacheWriteTokens * (modelPrice.cacheWriteCostPerToken ?: 0.0)
-                                val cacheReadCost = updatedTokens.totalCacheReadTokens * (modelPrice.cacheReadCostPerToken ?: 0.0)
-                                val outputCost = updatedTokens.totalOutputTokens * (modelPrice.outputCostPerToken ?: 0.0)
-                                val totalCost = inputCost + cacheWriteCost + cacheReadCost + outputCost
-
-                                // Create cost breakdown
-                                val costBreakdown = com.assistant.core.ai.data.SessionCostBreakdown(
-                                    modelId = modelId,
-                                    inputCost = inputCost,
-                                    cacheWriteCost = cacheWriteCost,
-                                    cacheReadCost = cacheReadCost,
-                                    outputCost = outputCost,
-                                    totalCost = totalCost
-                                )
-
-                                costBreakdown.toJson()
-                            } else {
-                                LogManager.aiSession("updateSessionTokensAndCost: Model price not available for $effectiveProviderId/$modelId", "DEBUG")
-                                null
-                            }
-                        } else {
-                            LogManager.aiSession("updateSessionTokensAndCost: No model in provider config", "DEBUG")
-                            null
-                        }
-                    } else {
-                        LogManager.aiSession("updateSessionTokensAndCost: Provider config not found for $effectiveProviderId", "DEBUG")
-                        null
-                    }
-                } else {
-                    LogManager.aiSession("updateSessionTokensAndCost: No provider ID available", "DEBUG")
-                    null
-                }
-            } catch (e: Exception) {
-                LogManager.aiSession("updateSessionTokensAndCost: Failed to calculate costs: ${e.message}", "WARN", e)
-                null
-            }
-
-            // Update session with new tokens and costs
-            aiDao.updateSessionTokensAndCost(
-                sessionId = sessionId,
-                tokensJson = updatedTokens.toJson(),
-                costJson = costJson
-            )
-
-            LogManager.aiSession(
-                "updateSessionTokensAndCost: Updated session $sessionId - " +
-                "tokens (input: ${updatedTokens.totalUncachedInputTokens}, " +
-                "cacheWrite: ${updatedTokens.totalCacheWriteTokens}, " +
-                "cacheRead: ${updatedTokens.totalCacheReadTokens}, " +
-                "output: ${updatedTokens.totalOutputTokens}), " +
-                "cost: ${if (costJson != null) "available" else "unavailable"}",
-                "DEBUG"
-            )
-
-        } catch (e: Exception) {
-            LogManager.aiSession("updateSessionTokensAndCost: Failed to update session: ${e.message}", "ERROR", e)
-        }
-    }
-
-    /**
      * The model and prices of the call that just answered, as they are now. Prices unknown for
      * the model are stored as unknown; no model in the provider config gives no pricing at all.
      */
@@ -1930,24 +1791,10 @@ class AIEventProcessor(
     }
 
     /**
-     * Count, in the session's tokens, a call that went out and whose usage never came back.
-     * The stored cost is left as is: it now covers the known calls only, a lower bound.
+     * Shutdown processor and cancel all jobs.
+     *
+     * After shutdown, initialize() can be called again to restart the processor.
      */
-    private suspend fun recordCallWithUnknownUsage(sessionId: String) {
-        try {
-            val aiDao = com.assistant.core.database.AppDatabase.getDatabase(context).aiDao()
-            val session = aiDao.getSession(sessionId) ?: run {
-                LogManager.aiSession("recordCallWithUnknownUsage: Session $sessionId not found", "ERROR")
-                return
-            }
-            val tokens = com.assistant.core.ai.data.SessionTokens.fromJson(session.tokensJson).addCallWithUnknownUsage()
-            aiDao.updateSessionTokensAndCost(sessionId, tokens.toJson(), session.costJson)
-            LogManager.aiSession("Session $sessionId: ${tokens.callsWithUnknownUsage} call(s) with unknown usage", "INFO")
-        } catch (e: Exception) {
-            LogManager.aiSession("recordCallWithUnknownUsage: Failed: ${e.message}", "ERROR", e)
-        }
-    }
-
     fun shutdown() {
         LogManager.aiSession(
             "AIEventProcessor.shutdown() called, canceling all jobs",

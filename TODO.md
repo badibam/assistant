@@ -4,7 +4,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 ## En cours
 
-- Coût IA par appel (`docs/design/ai-cost-per-call.md`) : conçu, à implémenter — chaque message IA garde son modèle et ses prix, la session ne stocke plus de totaux, prix copiés sur le téléphone, paliers appliqués.
 - `max_tokens` de Claude a trois valeurs par défaut : 2000 dans le commentaire (`ClaudeProviderCore.kt`, schéma de config), 8000 dans le schéma, 32000 dans le code quand le champ manque (`ClaudeExtensions.kt:42`). Choisir, en tenant compte du délai de lecture de 10 min sans streaming.
 - Conformité F-Droid (`docs/design/fdroid-compliance.md`) : reste la fiche fastlane et la grille d'anti-features, au moment de la première release candidate — pas avant, la codebase bouge.
 

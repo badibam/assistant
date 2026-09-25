@@ -68,9 +68,8 @@ fun SessionCostDisplay(sessionId: String) {
 
     // Display cost data
     costData?.let { data ->
-        val priceAvailable = data["price_available"] as? Boolean ?: false
-        // Calls that went out with unknown usage: the total only covers the others
-        val callsWithUnknownUsage = data["calls_with_unknown_usage"] as? Int ?: 0
+        // Calls of unknown cost: the costs shown only cover the others
+        val callsWithUnknownCost = data["calls_with_unknown_cost"] as? Int ?: 0
 
         UI.Card(type = CardType.DEFAULT) {
             Column(
@@ -88,89 +87,81 @@ fun SessionCostDisplay(sessionId: String) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                if (!priceAvailable) {
-                    // Price not available
-                    UI.Text(
-                        text = s.shared("ai_cost_unavailable"),
-                        type = TextType.BODY
+                // Token counts
+                val totalUncachedInputTokens = data["total_uncached_input_tokens"] as? Int ?: 0
+                val totalCacheWriteTokens = data["total_cache_write_tokens"] as? Int ?: 0
+                val totalCacheReadTokens = data["total_cache_read_tokens"] as? Int ?: 0
+                val totalOutputTokens = data["total_output_tokens"] as? Int ?: 0
+
+                // Costs (no rounding for calculations, only for display)
+                val inputCost = data["input_cost"] as? Double ?: 0.0
+                val cacheWriteCost = data["cache_write_cost"] as? Double ?: 0.0
+                val cacheReadCost = data["cache_read_cost"] as? Double ?: 0.0
+                val outputCost = data["output_cost"] as? Double ?: 0.0
+                val totalCost = data["total_cost"] as? Double ?: 0.0
+
+                // Input row (uncached tokens, only if > 0)
+                if (totalUncachedInputTokens > 0) {
+                    TokenCostRow(
+                        label = s.shared("ai_cost_input"),
+                        tokens = totalUncachedInputTokens,
+                        cost = inputCost,
+                        s = s
                     )
-                } else {
-                    // Token counts
-                    val totalUncachedInputTokens = data["total_uncached_input_tokens"] as? Int ?: 0
-                    val totalCacheWriteTokens = data["total_cache_write_tokens"] as? Int ?: 0
-                    val totalCacheReadTokens = data["total_cache_read_tokens"] as? Int ?: 0
-                    val totalOutputTokens = data["total_output_tokens"] as? Int ?: 0
-
-                    // Costs (no rounding for calculations, only for display)
-                    val inputCost = data["input_cost"] as? Double ?: 0.0
-                    val cacheWriteCost = data["cache_write_cost"] as? Double ?: 0.0
-                    val cacheReadCost = data["cache_read_cost"] as? Double ?: 0.0
-                    val outputCost = data["output_cost"] as? Double ?: 0.0
-                    val totalCost = data["total_cost"] as? Double ?: 0.0
-
-                    // Input row (uncached tokens, only if > 0)
-                    if (totalUncachedInputTokens > 0) {
-                        TokenCostRow(
-                            label = s.shared("ai_cost_input"),
-                            tokens = totalUncachedInputTokens,
-                            cost = inputCost,
-                            s = s
-                        )
-                    }
-
-                    // Cache write row (only if > 0)
-                    if (totalCacheWriteTokens > 0) {
-                        TokenCostRow(
-                            label = s.shared("ai_cost_cache_write"),
-                            tokens = totalCacheWriteTokens,
-                            cost = cacheWriteCost,
-                            s = s
-                        )
-                    }
-
-                    // Cache read row (only if > 0)
-                    if (totalCacheReadTokens > 0) {
-                        TokenCostRow(
-                            label = s.shared("ai_cost_cache_read"),
-                            tokens = totalCacheReadTokens,
-                            cost = cacheReadCost,
-                            s = s
-                        )
-                    }
-
-                    // Output row
-                    if (totalOutputTokens > 0) {
-                        TokenCostRow(
-                            label = s.shared("ai_cost_output"),
-                            tokens = totalOutputTokens,
-                            cost = outputCost,
-                            s = s
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Total cost row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        UI.Text(
-                            text = s.shared("ai_cost_total"),
-                            type = TextType.SUBTITLE
-                        )
-                        UI.Text(
-                            text = formatCost(totalCost, s).let {
-                                if (callsWithUnknownUsage > 0) s.shared("ai_cost_at_least").format(it) else it
-                            },
-                            type = TextType.SUBTITLE
-                        )
-                    }
                 }
 
-                if (callsWithUnknownUsage > 0) {
+                // Cache write row (only if > 0)
+                if (totalCacheWriteTokens > 0) {
+                    TokenCostRow(
+                        label = s.shared("ai_cost_cache_write"),
+                        tokens = totalCacheWriteTokens,
+                        cost = cacheWriteCost,
+                        s = s
+                    )
+                }
+
+                // Cache read row (only if > 0)
+                if (totalCacheReadTokens > 0) {
+                    TokenCostRow(
+                        label = s.shared("ai_cost_cache_read"),
+                        tokens = totalCacheReadTokens,
+                        cost = cacheReadCost,
+                        s = s
+                    )
+                }
+
+                // Output row
+                if (totalOutputTokens > 0) {
+                    TokenCostRow(
+                        label = s.shared("ai_cost_output"),
+                        tokens = totalOutputTokens,
+                        cost = outputCost,
+                        s = s
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Total cost row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     UI.Text(
-                        text = s.shared("ai_cost_unknown_calls").format(callsWithUnknownUsage),
+                        text = s.shared("ai_cost_total"),
+                        type = TextType.SUBTITLE
+                    )
+                    UI.Text(
+                        text = formatCost(totalCost, s).let {
+                            if (callsWithUnknownCost > 0) s.shared("ai_cost_at_least").format(it) else it
+                        },
+                        type = TextType.SUBTITLE
+                    )
+                }
+
+                if (callsWithUnknownCost > 0) {
+                    UI.Text(
+                        text = s.shared("ai_cost_unknown_calls").format(callsWithUnknownCost),
                         type = TextType.CAPTION
                     )
                 }

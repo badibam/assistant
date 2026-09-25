@@ -51,7 +51,9 @@ data class SessionMessageEntity(
     @ColumnInfo(name = "input_price") val inputPrice: Double? = null,
     @ColumnInfo(name = "cache_write_price") val cacheWritePrice: Double? = null,
     @ColumnInfo(name = "cache_read_price") val cacheReadPrice: Double? = null,
-    @ColumnInfo(name = "output_price") val outputPrice: Double? = null
+    @ColumnInfo(name = "output_price") val outputPrice: Double? = null,
+    // A call cut or lost after its request went out: billed perhaps, usage unknown
+    @ColumnInfo(name = "usage_unknown") val usageUnknown: Boolean = false
 )
 
 /**

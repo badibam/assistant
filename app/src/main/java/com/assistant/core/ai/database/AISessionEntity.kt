@@ -64,22 +64,6 @@ data class AISessionEntity(
     @ColumnInfo(name = "end_reason") val endReason: String? = null,          // SessionEndReason as string (null = crash/incomplete)
 
     /**
-     * Token usage breakdown (JSON serialized)
-     * Always available from API responses
-     * Format: {"total_uncached_input_tokens": 15234, "total_cache_write_tokens": 8932, ...}
-     * Updated incrementally as AI messages are added
-     */
-    @ColumnInfo(name = "tokens_json") val tokensJson: String? = null,
-
-    /**
-     * Cost breakdown (JSON serialized)
-     * Only available if model prices are known
-     * Format: {"model_id": "claude-sonnet-...", "input_cost": 0.0457, "total_cost": 0.1121, ...}
-     * Updated incrementally as AI messages are added
-     */
-    @ColumnInfo(name = "cost_json") val costJson: String? = null,
-
-    /**
      * APP_STATE snapshot JSON taken at first user message
      * Used for cache stability - includes zones + tool instances (minimal, without config_json)
      * Format: {"timestamp": Long, "zones": [...], "tool_instances": [...]}

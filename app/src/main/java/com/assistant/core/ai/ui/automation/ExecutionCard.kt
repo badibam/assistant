@@ -47,7 +47,7 @@ fun ExecutionCard(
     duration: Long,
     totalRoundtrips: Int,
     totalTokens: Int,
-    cost: Double?,
+    cost: Double,
     costIsLowerBound: Boolean,
     livePhase: Phase? = null, // Real-time phase from AIState if this session is active
     onViewClick: () -> Unit

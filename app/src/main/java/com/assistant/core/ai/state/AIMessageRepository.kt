@@ -231,7 +231,8 @@ class AIMessageRepository(
             inputPrice = message.pricing?.inputPrice,
             cacheWritePrice = message.pricing?.cacheWritePrice,
             cacheReadPrice = message.pricing?.cacheReadPrice,
-            outputPrice = message.pricing?.outputPrice
+            outputPrice = message.pricing?.outputPrice,
+            usageUnknown = message.usageUnknown
         )
     }
 
@@ -272,7 +273,8 @@ class AIMessageRepository(
                     cacheReadPrice = entity.cacheReadPrice,
                     outputPrice = entity.outputPrice
                 )
-            }
+            },
+            usageUnknown = entity.usageUnknown
         )
     }
 }

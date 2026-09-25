@@ -185,12 +185,6 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("last_activity", session.lastActivity)
                                 put("is_active", session.isActive)
                                 put("end_reason", session.endReason)
-                                if (session.tokensJson != null) {
-                                    put("tokens_json", session.tokensJson)
-                                }
-                                if (session.costJson != null) {
-                                    put("cost_json", session.costJson)
-                                }
                                 if (session.appStateSnapshot != null) {
                                     put("app_state_snapshot", session.appStateSnapshot)
                                 }
@@ -222,6 +216,7 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("cache_write_price", message.cacheWritePrice)
                                 put("cache_read_price", message.cacheReadPrice)
                                 put("output_price", message.outputPrice)
+                                put("usage_unknown", message.usageUnknown)
                             })
                         }
                     })
@@ -533,8 +528,6 @@ class BackupService(private val context: Context) : ExecutableService {
                         lastActivity = item.getLong("last_activity"),
                         isActive = item.getBoolean("is_active"),
                         endReason = item.optString("end_reason", null),
-                        tokensJson = item.optString("tokens_json", null),
-                        costJson = item.optString("cost_json", null),
                         appStateSnapshot = item.optString("app_state_snapshot", null)
                     )
                 )
@@ -567,7 +560,8 @@ class BackupService(private val context: Context) : ExecutableService {
                         inputPrice = item.optPrice("input_price"),
                         cacheWritePrice = item.optPrice("cache_write_price"),
                         cacheReadPrice = item.optPrice("cache_read_price"),
-                        outputPrice = item.optPrice("output_price")
+                        outputPrice = item.optPrice("output_price"),
+                        usageUnknown = item.optBoolean("usage_unknown", false)
                     )
                 )
             }

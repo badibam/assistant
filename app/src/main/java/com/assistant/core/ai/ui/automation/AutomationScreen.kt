@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.assistant.core.ai.data.SessionType
-import com.assistant.core.ai.data.SessionTokens
 import com.assistant.core.ai.domain.Phase
 import com.assistant.core.ai.orchestration.AIOrchestrator
 import com.assistant.core.ai.scheduling.AutomationScheduler
@@ -168,21 +167,6 @@ fun AutomationScreen(
 
                     sessions = sessionsList.map { sessionMap ->
                         // Parse tokens JSON
-                        val tokens = SessionTokens.fromJson(sessionMap["tokens_json"] as? String)
-
-                        // Parse cost JSON
-                        val costJson = sessionMap["cost_json"] as? String
-                        val cost = if (costJson != null) {
-                            try {
-                                val json = JSONObject(costJson)
-                                json.optDouble("total_cost", 0.0)
-                            } catch (e: Exception) {
-                                null
-                            }
-                        } else {
-                            null
-                        }
-
                         // Parse phase
                         val phaseStr = sessionMap["phase"] as? String ?: "IDLE"
                         val phase = try {
@@ -196,12 +180,6 @@ fun AutomationScreen(
                         val lastActivity = sessionMap["last_activity"] as? Long ?: createdAtValue
                         val duration = lastActivity - createdAtValue
 
-                        // Calculate total tokens
-                        val totalTokens = tokens.totalUncachedInputTokens +
-                                        tokens.totalCacheWriteTokens +
-                                        tokens.totalCacheReadTokens +
-                                        tokens.totalOutputTokens
-
                         ExecutionSummary(
                             sessionId = sessionMap["id"] as String,
                             scheduledExecutionTime = sessionMap["scheduled_execution_time"] as? Long,
@@ -210,9 +188,9 @@ fun AutomationScreen(
                             endReason = sessionMap["end_reason"] as? String,
                             duration = duration,
                             totalRoundtrips = sessionMap["total_roundtrips"] as? Int ?: 0,
-                            totalTokens = totalTokens,
-                            cost = cost,
-                            costIsLowerBound = tokens.callsWithUnknownUsage > 0
+                            totalTokens = sessionMap["total_tokens"] as? Int ?: 0,
+                            cost = sessionMap["total_cost"] as? Double ?: 0.0,
+                            costIsLowerBound = sessionMap["cost_is_lower_bound"] as? Boolean ?: false
                         )
                     }
 
@@ -485,6 +463,6 @@ data class ExecutionSummary(
     val duration: Long,
     val totalRoundtrips: Int,
     val totalTokens: Int,
-    val cost: Double?,
-    val costIsLowerBound: Boolean // Some calls went out with unknown usage
+    val cost: Double,
+    val costIsLowerBound: Boolean // Some calls have an unknown cost: cost only covers the others
 )

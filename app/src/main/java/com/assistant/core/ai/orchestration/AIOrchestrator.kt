@@ -344,9 +344,7 @@ object AIOrchestrator {
             createdAt = now,
             lastActivity = now,
             isActive = false, // Will be activated by SessionActivationRequested
-            endReason = null,
-            tokensJson = null,
-            costJson = null
+            endReason = null
         )
 
         aiDao.insertSession(session)
@@ -711,9 +709,7 @@ object AIOrchestrator {
                 createdAt = now,
                 lastActivity = now,
                 isActive = false, // Will be activated by SessionActivationRequested
-                endReason = null,
-                tokensJson = null,
-                costJson = null
+                endReason = null
             )
 
             aiDao.insertSession(session)

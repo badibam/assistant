@@ -27,7 +27,8 @@ data class SessionMessage(
     val cacheWriteTokens: Int = 0,      // Cache write tokens
     val cacheReadTokens: Int = 0,       // Cache read tokens
     val outputTokens: Int = 0,          // Output tokens generated
-    val pricing: CallPricing? = null    // AI messages: the model and prices of their call
+    val pricing: CallPricing? = null,   // AI messages: the model and prices of their call
+    val usageUnknown: Boolean = false   // Marks a call cut or lost after its request went out
 )
 
 /**

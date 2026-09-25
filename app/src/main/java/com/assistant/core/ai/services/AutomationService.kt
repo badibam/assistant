@@ -331,8 +331,7 @@ class AutomationService(private val context: Context) : ExecutableService {
             phase = "IDLE",
             totalRoundtrips = 0,
             lastEventTime = now,
-            lastUserInteractionTime = now,
-            tokensJson = null // Reset token usage for new session
+            lastUserInteractionTime = now
         )
 
         dao.insertSession(newSeedSession)

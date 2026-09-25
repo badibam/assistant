@@ -40,9 +40,6 @@ interface AIDao {
     @Query("UPDATE ai_sessions SET end_reason = :endReason WHERE id = :sessionId")
     suspend fun updateSessionEndReason(sessionId: String, endReason: String?)
 
-    @Query("UPDATE ai_sessions SET tokens_json = :tokensJson, cost_json = :costJson WHERE id = :sessionId")
-    suspend fun updateSessionTokensAndCost(sessionId: String, tokensJson: String?, costJson: String?)
-
     @Query("UPDATE ai_sessions SET app_state_snapshot = :snapshot WHERE id = :sessionId")
     suspend fun updateAppStateSnapshot(sessionId: String, snapshot: String)
 
@@ -50,6 +47,15 @@ interface AIDao {
     suspend fun deleteSession(session: AISessionEntity)
 
     // === Messages ===
+
+    /** What the messages of these sessions say about their AI calls' cost: see SessionCost */
+    @Query("""
+        SELECT session_id, input_tokens, cache_write_tokens, cache_read_tokens, output_tokens,
+               model_id, input_price, cache_write_price, cache_read_price, output_price, usage_unknown
+        FROM session_messages
+        WHERE session_id IN (:sessionIds) AND (sender = 'AI' OR usage_unknown = 1)
+    """)
+    suspend fun getCallUsages(sessionIds: List<String>): List<CallUsageRow>
 
     @Query("SELECT * FROM session_messages WHERE session_id = :sessionId ORDER BY timestamp ASC")
     suspend fun getMessagesForSession(sessionId: String): List<SessionMessageEntity>
@@ -302,4 +308,30 @@ interface AIDao {
         startTime: Long?,
         endTime: Long?
     ): Int
+}
+
+/** One message's share of its session's cost, as getCallUsages reads it */
+data class CallUsageRow(
+    @ColumnInfo(name = "session_id") val sessionId: String,
+    @ColumnInfo(name = "input_tokens") val inputTokens: Int,
+    @ColumnInfo(name = "cache_write_tokens") val cacheWriteTokens: Int,
+    @ColumnInfo(name = "cache_read_tokens") val cacheReadTokens: Int,
+    @ColumnInfo(name = "output_tokens") val outputTokens: Int,
+    @ColumnInfo(name = "model_id") val modelId: String?,
+    @ColumnInfo(name = "input_price") val inputPrice: Double?,
+    @ColumnInfo(name = "cache_write_price") val cacheWritePrice: Double?,
+    @ColumnInfo(name = "cache_read_price") val cacheReadPrice: Double?,
+    @ColumnInfo(name = "output_price") val outputPrice: Double?,
+    @ColumnInfo(name = "usage_unknown") val usageUnknown: Boolean
+) {
+    fun toCallUsage() = com.assistant.core.ai.data.CallUsage(
+        inputTokens = inputTokens,
+        cacheWriteTokens = cacheWriteTokens,
+        cacheReadTokens = cacheReadTokens,
+        outputTokens = outputTokens,
+        pricing = modelId?.let {
+            com.assistant.core.ai.data.CallPricing(it, inputPrice, cacheWritePrice, cacheReadPrice, outputPrice)
+        },
+        usageUnknown = usageUnknown
+    )
 }

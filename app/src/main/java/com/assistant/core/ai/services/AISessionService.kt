@@ -3,7 +3,6 @@ package com.assistant.core.ai.services
 import android.content.Context
 import com.assistant.core.ai.data.*
 import com.assistant.core.ai.database.AIDao
-import com.assistant.core.ai.utils.SessionCostCalculator
 import com.assistant.core.coordinator.Coordinator
 import com.assistant.core.coordinator.isSuccess
 import com.assistant.core.database.AppDatabase
@@ -294,8 +293,14 @@ class AISessionService(private val context: Context) : ExecutableService {
 
             LogManager.aiSession("Found ${sessionEntities.size} sessions for automation $automationId (total: $totalEntries, page: $page/$totalPages)", "DEBUG")
 
+            // Each session's cost, summed from its messages in one query for the page
+            val costs = dao.getCallUsages(sessionEntities.map { it.id })
+                .groupBy { it.sessionId }
+                .mapValues { (_, rows) -> SessionCost.of(rows.map { it.toCallUsage() }) }
+
             // Map sessions to result format including all necessary fields for ExecutionCard
             val sessions = sessionEntities.map { session ->
+                val cost = costs[session.id] ?: SessionCost.of(emptyList())
                 mapOf(
                     "id" to session.id,
                     "name" to session.name,
@@ -310,8 +315,9 @@ class AISessionService(private val context: Context) : ExecutableService {
                     "phase" to session.phase,
                     "end_reason" to session.endReason,
                     "total_roundtrips" to session.totalRoundtrips,
-                    "tokens_json" to session.tokensJson,
-                    "cost_json" to session.costJson
+                    "total_tokens" to cost.totalTokens,
+                    "total_cost" to cost.totalCost,
+                    "cost_is_lower_bound" to cost.isLowerBound
                 )
             }
 
@@ -771,37 +777,25 @@ class AISessionService(private val context: Context) : ExecutableService {
             val session = database.aiDao().getSession(sessionId)
                 ?: return OperationResult.error(s.shared("ai_error_session_not_found").format(sessionId))
 
-            // Calculate cost using stored tokens/cost (fast path)
-            val cost = SessionCostCalculator.calculateSessionCost(session)
+            val cost = SessionCost.of(database.aiDao().getCallUsages(listOf(sessionId)).map { it.toCallUsage() })
 
-            if (cost == null) {
-                LogManager.aiSession("Cost calculation failed for session $sessionId (tokensJson not available)", "ERROR")
-                return OperationResult.error(s.shared("error_cost_calculation_failed"))
-            }
+            LogManager.aiSession("Session cost: sessionId=$sessionId, total=\$${String.format("%.3f", cost.totalCost)}, calls with unknown cost=${cost.callsWithUnknownCost}", "DEBUG")
 
-            LogManager.aiSession("Session cost calculated: sessionId=$sessionId, total=\$${String.format("%.3f", cost.totalCost ?: 0.0)}, priceAvailable=${cost.priceAvailable}", "INFO")
-
-            // Build map without null values for costs if price unavailable
-            val resultMap = buildMap<String, Any> {
-                put("session_id", sessionId)
-                put("model_id", cost.modelId)
-                put("total_uncached_input_tokens", cost.totalUncachedInputTokens)
-                put("total_cache_write_tokens", cost.totalCacheWriteTokens)
-                put("total_cache_read_tokens", cost.totalCacheReadTokens)
-                put("total_output_tokens", cost.totalOutputTokens)
-                put("price_available", cost.priceAvailable)
-                put("calls_with_unknown_usage", cost.callsWithUnknownUsage)
-                put("currency", "USD")
-
-                // Only include cost fields if price is available
-                if (cost.priceAvailable) {
-                    cost.inputCost?.let { put("input_cost", it) }
-                    cost.cacheWriteCost?.let { put("cache_write_cost", it) }
-                    cost.cacheReadCost?.let { put("cache_read_cost", it) }
-                    cost.outputCost?.let { put("output_cost", it) }
-                    cost.totalCost?.let { put("total_cost", it) }
-                }
-            }
+            // Costs count known prices only: with calls of unknown cost, they are a lower bound
+            val resultMap = mapOf(
+                "session_id" to sessionId,
+                "total_uncached_input_tokens" to cost.uncachedInputTokens,
+                "total_cache_write_tokens" to cost.cacheWriteTokens,
+                "total_cache_read_tokens" to cost.cacheReadTokens,
+                "total_output_tokens" to cost.outputTokens,
+                "input_cost" to cost.inputCost,
+                "cache_write_cost" to cost.cacheWriteCost,
+                "cache_read_cost" to cost.cacheReadCost,
+                "output_cost" to cost.outputCost,
+                "total_cost" to cost.totalCost,
+                "calls_with_unknown_cost" to cost.callsWithUnknownCost,
+                "currency" to "USD"
+            )
 
             return OperationResult.success(resultMap)
 

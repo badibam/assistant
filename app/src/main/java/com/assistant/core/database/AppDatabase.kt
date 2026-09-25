@@ -1263,7 +1263,54 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE session_messages ADD COLUMN cache_write_price REAL")
                 database.execSQL("ALTER TABLE session_messages ADD COLUMN cache_read_price REAL")
                 database.execSQL("ALTER TABLE session_messages ADD COLUMN output_price REAL")
-                LogManager.database("MIGRATION 34->35: price columns added to session_messages", "INFO")
+                // Marks a call cut or lost after its request went out
+                database.execSQL("ALTER TABLE session_messages ADD COLUMN usage_unknown INTEGER NOT NULL DEFAULT 0")
+
+                // A session's tokens and cost are summed from its messages when read: the stored
+                // totals go. SQLite before 3.35 cannot drop a column, so the table is rebuilt.
+                database.execSQL("""
+                    CREATE TABLE ai_sessions_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        type TEXT NOT NULL,
+                        require_validation INTEGER NOT NULL,
+                        phase TEXT NOT NULL,
+                        total_roundtrips INTEGER NOT NULL,
+                        last_event_time INTEGER NOT NULL,
+                        last_user_interaction_time INTEGER NOT NULL,
+                        automation_id TEXT,
+                        seed_id TEXT,
+                        scheduled_execution_time INTEGER,
+                        provider_id TEXT NOT NULL,
+                        provider_session_id TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        last_activity INTEGER NOT NULL,
+                        is_active INTEGER NOT NULL,
+                        end_reason TEXT,
+                        app_state_snapshot TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO ai_sessions_new
+                    SELECT id, name, type, require_validation, phase, total_roundtrips,
+                           last_event_time, last_user_interaction_time, automation_id, seed_id,
+                           scheduled_execution_time, provider_id, provider_session_id, created_at,
+                           last_activity, is_active, end_reason, app_state_snapshot
+                    FROM ai_sessions
+                """)
+                // session_messages references ai_sessions and needs nothing: foreign keys are not
+                // enforced during a migration (see 30 -> 31, rebuilt the same way)
+                database.execSQL("DROP TABLE ai_sessions")
+                database.execSQL("ALTER TABLE ai_sessions_new RENAME TO ai_sessions")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_is_active ON ai_sessions(is_active)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_type ON ai_sessions(type)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_last_activity ON ai_sessions(last_activity)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_automation_id ON ai_sessions(automation_id)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_phase ON ai_sessions(phase)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_ai_sessions_end_reason ON ai_sessions(end_reason)")
+
+                LogManager.database("MIGRATION 34->35: prices and usage mark on session_messages, stored totals dropped from ai_sessions", "INFO")
             }
         }
 

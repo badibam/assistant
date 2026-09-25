@@ -338,7 +338,6 @@
     <string name="ai_cost_cache_read">Lecture cache</string>
     <string name="ai_cost_output">Sortie</string>
     <string name="ai_cost_tokens">tokens</string>
-    <string name="ai_cost_unavailable">Prix indisponible</string>
     <string name="ai_cost_unknown_calls">Appels au coût inconnu : %d</string>
     <string name="ai_cost_at_least">≥ %s</string>
     <string name="ai_cost_loading">Chargement des coûts…</string>
