@@ -155,11 +155,8 @@ fun TrackingQuickEntry(
         if (!result.isSuccess) UI.Toast(context, result.error ?: s.tool("error_entry_update_failed"), Duration.LONG)
     }
 
+    // Starting one stops the one running: the service keeps that rule (TrackingStopwatch)
     fun start(shortcut: TrackingShortcut) = save {
-        // One activity at a time in a tool: starting one stops the one running
-        running.forEach { entry ->
-            coordinator.processUserAction("tool_data.stop_duration", mapOf("id" to entry.id, "container" to "data", "field" to "value"))
-        }
         val id = create(shortcut.name, System.currentTimeMillis(), null, null) ?: return@save
         val result = coordinator.processUserAction("tool_data.start_duration", mapOf("id" to id, "container" to "data", "field" to "value"))
         if (!result.isSuccess) UI.Toast(context, result.error ?: s.tool("error_entry_saving"), Duration.LONG)

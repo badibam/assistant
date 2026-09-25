@@ -296,6 +296,9 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
      * settings (value: a scale's bounds, a choice's options...), the units a numeric value can
      * be in, the shortcuts, and the user's fields.
      */
+    override fun settleEntries(entries: List<ToolDataEntity>, writtenId: String?): List<ToolDataEntity> =
+        TrackingStopwatch.settle(entries, writtenId)
+
     override fun getRelevantConfigFieldsForData(): List<String> {
         return listOf("type", "value", "units", "items", "extra_fields")
     }
