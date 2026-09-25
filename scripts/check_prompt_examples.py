@@ -34,12 +34,11 @@ is which -- a data entry is only a data entry inside CREATE_DATA -- so it works 
   - a CREATE_DATA entry: the keys every entry schema requires, whatever its tool (the list
     EntrySchemaGenerator starts from), where a key the command's params carry counts as
     present, since the service copies tool_instance_id and tooltype into every entry;
-  - a CREATE_TOOL config: the base config schema;
-  - a custom field definition: its field type's schema, and that of its config.
+  - a CREATE_TOOL config: the base config schema.
 
 A schema's `required` is read from the Kotlin source: the least indented list in the function
-that builds it is the top level's, and a field type's config has its own, inside the braces
-of its `config` property.
+that builds it is the top level's. A field definition is not read here: its schema is generated
+from its declaration, and FieldTypeSchemasTest validates the prompt's definitions against it.
 
 Not everything is covered. Some of the prompt's brace-delimited blocks are shorthand rather
 than JSON (`{ name?, timestamp?, data }`), and three fenced examples elide part of themselves
@@ -63,7 +62,6 @@ BASE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/tools/BaseSchemas.kt
 ENTRY_FIELDS = ROOT / "app/src/main/java/com/assistant/core/fields/EntryFields.kt"
 MESSAGE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/AIMessageSchemas.kt"
 MODULE_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/ai/data/CommunicationModuleSchemas.kt"
-FIELD_SCHEMAS = ROOT / "app/src/main/java/com/assistant/core/fields/FieldTypeSchemaProvider.kt"
 ICON_INDEX = ROOT / "app/src/main/assets/icons/index.json"
 
 # A JSON type, as the schema declares it, against the Python types a parsed example yields.
@@ -176,33 +174,6 @@ def required_lists(path, name):
     return [keys for _, keys in sorted(found, key=lambda item: item[0])]
 
 
-def property_block(body, key):
-    """The braces of the property `key` in a schema's source, or "" when it has none."""
-    start = re.search(rf'"{key}"\s*:\s*\{{', body)
-    if not start:
-        return ""
-    depth = 0
-    for index in range(start.end() - 1, len(body)):
-        depth += {"{": 1, "}": -1}.get(body[index], 0)
-        if depth == 0:
-            return body[start.end() - 1:index + 1]
-    return ""
-
-
-def field_type_schemas():
-    """For each field type, (its required keys, its config's required keys)."""
-    source = FIELD_SCHEMAS.read_text(encoding="utf-8")
-    schemas = {}
-    for field_type, builder in re.findall(r"FieldType\.(\w+) -> create(\w+)Schema\(", source):
-        name = f"build{builder}SchemaJson"
-        config = re.search(r'"required"\s*:\s*\[([^\]]*)\]', property_block(function_body(FIELD_SCHEMAS, name), "config"))
-        schemas[field_type] = (
-            required_lists(FIELD_SCHEMAS, name)[0],
-            re.findall(r'"(\w+)"', config.group(1)) if config else [],
-        )
-    return schemas
-
-
 def fenced_examples(text):
     """Every fenced ```json block of the prompt, whole, parsed -- or None when it elides.
 
@@ -226,7 +197,7 @@ def missing(obj, required, supplied=()):
 def required_problems(example, schemas):
     """Every object of one whole example that lacks a field its schema requires."""
     problems = []
-    response_required, module_required, data_required, config_required, field_types = schemas
+    response_required, module_required, data_required, config_required = schemas
 
     def at(path, key):
         return f"{path}.{key}" if path else key
@@ -265,17 +236,6 @@ def required_problems(example, schemas):
                 keys = missing(params["config"], config_required)
                 if keys:
                     report(at(path, "params.config"), "CREATE_TOOL config", keys)
-
-        field_type = value.get("type")
-        if "display_name" in value and field_type in field_types:
-            own, config = field_types[field_type]
-            keys = missing(value, own)
-            if keys:
-                report(path, f"{field_type} field", keys)
-            if isinstance(value.get("config"), dict):
-                keys = missing(value["config"], config)
-                if keys:
-                    report(at(path, "config"), f"{field_type} field config", keys)
 
         for key, child in value.items():
             visit(child, at(path, key))
@@ -347,7 +307,6 @@ def main():
          for module in ("MultipleChoice", "Validation")},
         entry_required(),
         required_lists(BASE_SCHEMAS, "getBaseConfigSchema")[0],
-        field_type_schemas(),
     )
     whole_count = 0
     elided_count = 0

@@ -366,7 +366,7 @@ fun FieldDefinitionDialog(
 
             // Step 1: Schema validation (structure, types, formats)
             val schemaId = "field_type_${fieldType.name}"
-            val schema = FieldTypeSchemaProvider.getSchema(schemaId, context, null)
+            val schema = com.assistant.core.fields.settings.FieldTypeSchemas.getSchema(schemaId, context, null)
 
             if (schema != null) {
                 // Build validation map matching schema structure

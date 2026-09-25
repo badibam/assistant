@@ -19,15 +19,12 @@ sealed class SettingNode {
      * @property default The value the form prefills and the absence of the setting means, in its
      *   stored form (milliseconds for a DURATION); null when absence means "nothing"
      * @property secret Entered masked, never sent to the AI, never logged (an API key)
-     * @property systemWritten Written by the app, never by a form or the AI (a field's name,
-     *   made from its label)
      */
     data class Field(
         val definition: FieldDefinition,
         val required: Boolean = false,
         val default: Any? = null,
-        val secret: Boolean = false,
-        val systemWritten: Boolean = false
+        val secret: Boolean = false
     ) : SettingNode()
 
     /** Settings stored together as one object under [name]. */
@@ -75,4 +72,24 @@ sealed class SettingNode {
         val label: String,
         val nodes: List<SettingNode>
     ) : SettingNode()
+}
+
+/**
+ * The label of the setting named [name] anywhere in these nodes, for a validation error to name
+ * it as the screen does; null when no setting has that name.
+ */
+fun List<SettingNode>.labelOf(name: String): String? {
+    for (node in this) {
+        val found = when (node) {
+            is SettingNode.Field -> node.definition.displayName.takeIf { node.definition.name == name }
+            is SettingNode.Group -> node.label.takeIf { node.name == name } ?: node.nodes.labelOf(name)
+            is SettingNode.ListOf -> node.label.takeIf { node.name == name }
+                ?: (node.item as? SettingNode.Item.Of)?.nodes?.labelOf(name)
+            is SettingNode.Variant -> listOf(node.selector).labelOf(name)
+                ?: node.cases.values.firstNotNullOfOrNull { it.labelOf(name) }
+            is SettingNode.Section -> node.nodes.labelOf(name)
+        }
+        if (found != null) return found
+    }
+    return null
 }

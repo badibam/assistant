@@ -71,7 +71,6 @@ object SettingsSchemaGenerator {
         FieldValueSchema.forReader(field.definition, text).also { schema ->
             field.default?.let { schema.put("default", it) }
             if (field.secret) schema.put(SECRET, true)
-            if (field.systemWritten) schema.put("system_managed", true)
         }
 
     private fun listSchema(list: SettingNode.ListOf, text: (String) -> String): JSONObject {

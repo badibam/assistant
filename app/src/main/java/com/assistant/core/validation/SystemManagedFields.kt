@@ -5,7 +5,7 @@ import org.json.JSONObject
 /**
  * The fields a data schema marks "system_managed": true, whose value the app produces and no
  * caller supplies. The mark is the rule: ToolDataService drops such a field from what a caller
- * sends inside "data", then produces it itself (tracking's raw, computed from the value).
+ * sends inside "data" (a message occurrence's copies of its template are written by the scheduler).
  *
  * At the root of an entry the service reads named params only and derives the marked ones
  * itself -- tooltype from the tool, schema_id from its config, the timestamps from the clock --

@@ -588,6 +588,9 @@
     <string name="field_config_open">Open (a new value is added to the options)</string>
     <string name="field_choice_rank">%1$s. %2$s</string>
     <string name="field_choice_new_value">Other value</string>
+    <string name="field_config_option_value">Option</string>
+    <string name="field_config_option_label">Label shown</string>
+    <string name="field_config_option_color">Color</string>
     <string name="field_config_option_add">Add an option</string>
     <string name="field_config_option_delete">Delete the option</string>
     <string name="field_config_option_placeholder">New option</string>
@@ -600,9 +603,6 @@
     <string name="field_config_no_config_required">This field type needs no configuration</string>
 
     <!-- Custom Fields Validation Errors -->
-    <string name="error_custom_field_invalid_format">Custom field %1$s: invalid format</string>
-    <string name="error_custom_field_missing_type">Custom field %1$s: type missing</string>
-    <string name="error_custom_field_unknown_type">Custom field %1$s: unknown type \'%2$s\'</string>
     <string name="error_custom_field_validation_failed">Field \'%1$s\': %2$s</string>
 
     <!-- Tools CONFIG - Strings shared by the tooltypes for configuration -->

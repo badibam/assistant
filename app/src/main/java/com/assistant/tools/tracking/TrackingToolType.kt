@@ -103,9 +103,10 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             .put("type", JSONObject().put("type", "string").put("const", kind.key).put("description", s.tool("schema_config_type")))
 
         kind.valueType?.let { valueType ->
-            val fieldTypeSchema = com.assistant.core.fields.FieldTypeSchemaProvider.getSchema("field_type_${valueType.name}", context, null)
-                ?: throw IllegalStateException("No schema for field type ${valueType.name}")
-            val valueSchema = JSONObject(fieldTypeSchema.content).getJSONObject("properties").getJSONObject("config")
+            val shared = Strings.`for`(context = context)
+            val valueSchema = com.assistant.core.fields.settings.SettingsSchemaGenerator.generate(
+                com.assistant.core.fields.settings.FieldTypeSettings.configNodes(valueType, shared::shared), shared::shared
+            )
             properties.put("value", valueSchema.put("description", s.tool("schema_config_value")))
         }
 

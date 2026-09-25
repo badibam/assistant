@@ -6,7 +6,7 @@ import com.assistant.core.utils.LogManager
 import com.assistant.core.strings.Strings
 import com.assistant.core.validation.ValidationException
 import com.assistant.core.validation.FieldLimits
-import com.assistant.core.fields.FieldTypeSchemaProvider
+import com.assistant.core.fields.settings.FieldTypeSchemas
 import com.assistant.core.fields.EntrySchemaGenerator
 import com.assistant.core.fields.toFieldDefinitions
 
@@ -28,8 +28,8 @@ object BaseSchemas {
     fun getBaseConfigSchema(context: Context): String {
         val s = Strings.`for`(context = context)
 
-        // Get custom fields items schema from FieldTypeSchemaProvider (single source of truth)
-        val customFieldsItemsSchema = FieldTypeSchemaProvider.getCustomFieldsItemsSchema(context)
+        // A field definition, generated from its declaration (FieldTypeSettings)
+        val customFieldsItemsSchema = FieldTypeSchemas.anyDefinition(context)
 
         val schemaTemplate = """
         {

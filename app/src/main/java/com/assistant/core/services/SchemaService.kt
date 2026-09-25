@@ -7,7 +7,7 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.tools.ToolTypeManager
 import com.assistant.core.validation.Schema
 import com.assistant.core.schemas.ZoneSchemaProvider
-import com.assistant.core.fields.FieldTypeSchemaProvider
+import com.assistant.core.fields.settings.FieldTypeSchemas
 import com.assistant.core.ai.data.AIMessageSchemas
 import com.assistant.core.ai.data.CommunicationModuleSchemas
 import com.assistant.core.utils.LogManager
@@ -140,11 +140,7 @@ class SchemaService(private val context: Context) : ExecutableService {
                 LogManager.service("System schema requested: $schemaId - using ZoneSchemaProvider")
                 ZoneSchemaProvider.getSchema(schemaId, context)
             }
-            schemaId.startsWith("field_type_") -> {
-                // Use FieldTypeSchemaProvider for custom field type schemas
-                LogManager.service("Field type schema requested: $schemaId - using FieldTypeSchemaProvider")
-                FieldTypeSchemaProvider.getSchema(schemaId, context)
-            }
+            schemaId.startsWith("field_type_") -> FieldTypeSchemas.getSchema(schemaId, context)
             schemaId.startsWith("app_config_") -> {
                 // TODO: Get app config schemas from AppConfigService
                 LogManager.service("App config schema requested: $schemaId - STUB implementation")
@@ -235,8 +231,7 @@ class SchemaService(private val context: Context) : ExecutableService {
             "communication_module_validation"
         )
 
-        // Add field type schema IDs dynamically from FieldTypeSchemaProvider
-        schemaIds.addAll(FieldTypeSchemaProvider.getAllSchemaIds())
+        schemaIds.addAll(FieldTypeSchemas.getAllSchemaIds())
 
         return schemaIds
     }

@@ -205,17 +205,10 @@ object PromptChunks {
         return replacePlaceholders(content, context)
     }
 
-    /**
-     * Build custom field types list dynamically from FieldTypeSchemaProvider
-     * Single source of truth for supported field types
-     */
+    /** The field types, each with the description its schema carries, listed for the prompt. */
     private fun buildCustomFieldTypesList(context: Context): String {
-        val types = com.assistant.core.fields.FieldType.values()
-        val provider = com.assistant.core.fields.FieldTypeSchemaProvider
-
-        return types.joinToString("\n") { type ->
-            // Get description from schema provider (single source of truth)
-            val schema = provider.getSchema("field_type_${type.name}", context, null)
+        return com.assistant.core.fields.FieldType.entries.joinToString("\n") { type ->
+            val schema = com.assistant.core.fields.settings.FieldTypeSchemas.getSchema("field_type_${type.name}", context, null)
             val description = schema?.description ?: type.name
             "- **${type.name}** : $description"
         }

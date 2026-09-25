@@ -588,6 +588,9 @@
     <string name="field_config_open">Ouvert (une valeur nouvelle rejoint les options)</string>
     <string name="field_choice_rank">%1$s. %2$s</string>
     <string name="field_choice_new_value">Autre valeur</string>
+    <string name="field_config_option_value">Option</string>
+    <string name="field_config_option_label">Libellé affiché</string>
+    <string name="field_config_option_color">Couleur</string>
     <string name="field_config_option_add">Ajouter une option</string>
     <string name="field_config_option_delete">Supprimer l\'option</string>
     <string name="field_config_option_placeholder">Nouvelle option</string>
@@ -600,9 +603,6 @@
     <string name="field_config_no_config_required">Ce type de champ ne nécessite aucune configuration</string>
 
     <!-- Custom Fields Validation Errors -->
-    <string name="error_custom_field_invalid_format">Champ personnalisé %1$s : format invalide</string>
-    <string name="error_custom_field_missing_type">Champ personnalisé %1$s : type manquant</string>
-    <string name="error_custom_field_unknown_type">Champ personnalisé %1$s : type inconnu \'%2$s\'</string>
     <string name="error_custom_field_validation_failed">Champ \'%1$s\' : %2$s</string>
 
     <!-- Tools CONFIG - Chaînes communes aux tooltypes pour la configuration -->
