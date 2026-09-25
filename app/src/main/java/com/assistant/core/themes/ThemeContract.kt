@@ -116,6 +116,13 @@ interface ThemeContract {
     )
 
     /**
+     * A horizontal gauge filled to [fraction] (0 to 1): where a value stands between two bounds,
+     * such as a SCALE field's value on its scale.
+     */
+    @Composable
+    fun Gauge(fraction: Float)
+
+    /**
      * The actual color a tag color name takes in [paletteId], for the swatches a color is
      * chosen from. Every name of TagColor has one in every palette.
      */

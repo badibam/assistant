@@ -668,6 +668,19 @@ object DefaultTheme : ThemeContract {
         }
     }
 
+    @Composable
+    override fun Gauge(fraction: Float) {
+        LinearProgressIndicator(
+            progress = { fraction },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
+    }
+
     override fun getTagColor(color: com.assistant.core.themes.TagColor, paletteId: String): Color {
         val dark = paletteId == "default_dark"
         return when (color) {

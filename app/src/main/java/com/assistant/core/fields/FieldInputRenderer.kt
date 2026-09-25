@@ -525,13 +525,8 @@ fun CustomFieldsDisplay(
                     fillMaxWidth = true
                 )
 
-                // Field value (formatted according to type)
-                val formattedValue = field.formatValue(values[field.name], context)
-                UI.Text(
-                    text = formattedValue,
-                    type = TextType.BODY,
-                    fillMaxWidth = true
-                )
+                // Field value, drawn by its type
+                FieldValue(field, values[field.name], context)
             }
         }
     }

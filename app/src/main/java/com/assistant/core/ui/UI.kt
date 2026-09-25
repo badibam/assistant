@@ -126,6 +126,14 @@ object UI {
     ) = CurrentTheme.current.Tag(text, color)
 
     /**
+     * A horizontal gauge, filled to where a value stands between two bounds.
+     *
+     * @param fraction From 0 (empty) to 1 (full); anything outside is clamped
+     */
+    @Composable
+    fun Gauge(fraction: Float) = CurrentTheme.current.Gauge(fraction.coerceIn(0f, 1f))
+
+    /**
      * A round swatch of a tag color, as the current palette draws it, for choosing one.
      *
      * @param color The color's name
