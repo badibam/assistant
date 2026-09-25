@@ -471,6 +471,7 @@ private suspend fun loadByStatus(
 
         try {
             val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
+            val state = JsonUtils.toJSONObject(((entry["state"] as? Map<*, *>) ?: emptyMap<Any, Any>()).entries.associate { (k, v) -> k.toString() to v })
             val customFields = (entry["extra"] as? Map<*, *>)
                 ?.entries?.associate { (k, v) -> k.toString() to v }
                 ?: emptyMap()
@@ -478,14 +479,14 @@ private suspend fun loadByStatus(
             Occurrence(
                 id = id,
                 dueAt = dueAtMillis,
-                status = data.optString("status", "pending"),
+                status = state.optString("status", "pending"),
                 commonTitle = data.optString("common_title").takeIf { it.isNotEmpty() },
                 commonContent = data.optString("common_content").takeIf { it.isNotEmpty() },
                 ownTitle = data.optString("title").takeIf { it.isNotEmpty() },
                 ownContent = data.optString("content").takeIf { it.isNotEmpty() },
-                read = data.optBoolean("read", false),
-                archived = data.optBoolean("archived", false),
-                notificationSent = data.optBoolean("notification_sent", true),
+                read = state.optBoolean("read", false),
+                archived = state.optBoolean("archived", false),
+                notificationSent = state.optBoolean("notification_sent", true),
                 extra = customFields
             )
         } catch (e: Exception) {
@@ -498,8 +499,8 @@ private suspend fun loadByStatus(
 /**
  * Flips a read or archived flag on a resolved occurrence.
  *
- * A plain tool_data.update, like correcting any other entry — the occurrence is ordinary data,
- * so it needs no dedicated service operation to be marked read.
+ * A plain tool_data.update of the occurrence's state, like any other entry's, so it needs no
+ * dedicated service operation to be marked read.
  */
 private suspend fun updateFlags(
     context: android.content.Context,
@@ -509,14 +510,14 @@ private suspend fun updateFlags(
     archived: Boolean? = null,
     onError: (String) -> Unit
 ) {
-    val data = JSONObject().apply {
+    val state = JSONObject().apply {
         read?.let { put("read", it) }
         archived?.let { put("archived", it) }
     }
 
     val result = coordinator.processUserAction(
         "tool_data.update",
-        mapOf("id" to occurrence.id, "data" to data)
+        mapOf("id" to occurrence.id, "state" to state)
     )
 
     if (!result.isSuccess) {

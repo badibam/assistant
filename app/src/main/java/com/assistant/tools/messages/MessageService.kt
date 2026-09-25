@@ -86,9 +86,11 @@ class MessageService(private val context: Context) : ExecutableService {
         val now = System.currentTimeMillis()
         val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-        val data = JSONObject().apply {
+        val state = JSONObject().apply {
             put("status", "pending")
             put("triggered_by", "MANUAL")
+        }
+        val data = JSONObject().apply {
             params.optString("title").takeIf { it.isNotEmpty() }?.let { put("title", it) }
             params.optString("content").takeIf { it.isNotEmpty() }?.let { put("content", it) }
         }
@@ -99,7 +101,8 @@ class MessageService(private val context: Context) : ExecutableService {
             "schema_id" to "messages_data",
             "name" to params.optString("name", ""),
             "timestamp" to now,
-            "data" to data
+            "data" to data,
+            "state" to state
         ))
 
         if (!createResult.isSuccess) {

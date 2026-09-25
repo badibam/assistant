@@ -113,10 +113,11 @@ fun EditNoteDialog(
             val entryData = mapOf(
                 "tool_instance_id" to toolInstanceId,
                 "tooltype" to "notes",
-                "name" to "Note",
                 "timestamp" to System.currentTimeMillis(),
                 "data" to mapOf(
-                    "content" to content.trim(),
+                    "content" to content.trim()
+                ),
+                "state" to mapOf(
                     "position" to (insertPosition ?: 0)
                 )
             )

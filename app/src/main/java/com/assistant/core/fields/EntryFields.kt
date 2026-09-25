@@ -145,15 +145,17 @@ object EntrySchemaGenerator {
         // The core's fields. An ABSENT one is not declared, and additionalProperties refuses it.
         coreField(properties, required, CoreFields.name(text), declared.name)?.put("minLength", 1)
         coreField(properties, required, CoreFields.timestamp(text), declared.timestamp)
-        properties.put("created_at", CustomFieldsSchemaGenerator.valueSchema(CoreFields.createdAt(text)).put("system_managed", true))
-        properties.put("updated_at", CustomFieldsSchemaGenerator.valueSchema(CoreFields.updatedAt(text)).put("system_managed", true))
+        properties.put("created_at", FieldValueSchema.of(CoreFields.createdAt(text)).put("system_managed", true))
+        properties.put("updated_at", FieldValueSchema.of(CoreFields.updatedAt(text)).put("system_managed", true))
 
         // The tool type's fields
         val dataRequired = declared.data.filter { it.required }.map { it.definition.name }
         properties.put("data", objectOf(
             fields = declared.data.associate { fixed ->
-                fixed.definition.name to CustomFieldsSchemaGenerator.valueSchema(fixed.definition).also {
+                fixed.definition.name to FieldValueSchema.of(fixed.definition).also {
                     if (fixed.systemWritten) it.put("system_managed", true)
+                    // A required text is a text with something in it: an empty one is no answer
+                    if (fixed.required && fixed.definition.type == FieldType.TEXT) it.put("minLength", 1)
                 }
             },
             required = dataRequired,
@@ -163,14 +165,14 @@ object EntrySchemaGenerator {
 
         // The user's fields, all optional
         properties.put("extra", objectOf(
-            fields = extra.associate { it.name to CustomFieldsSchemaGenerator.valueSchema(it) },
+            fields = extra.associate { it.name to FieldValueSchema.of(it) },
             required = emptyList(),
             description = text("entry_schema_extra")
         ))
 
         // The entry's state, and the DURATION fields running now
         val state = objectOf(
-            fields = declared.state.associate { it.definition.name to CustomFieldsSchemaGenerator.valueSchema(it.definition) },
+            fields = declared.state.associate { it.definition.name to FieldValueSchema.of(it.definition) },
             required = emptyList(),
             description = text("entry_schema_state")
         )
@@ -194,7 +196,7 @@ object EntrySchemaGenerator {
     ): JSONObject? {
         if (usage == CoreFieldUsage.ABSENT) return null
         if (usage == CoreFieldUsage.REQUIRED) required.add(field.name)
-        return CustomFieldsSchemaGenerator.valueSchema(field).also { properties.put(field.name, it) }
+        return FieldValueSchema.of(field).also { properties.put(field.name, it) }
     }
 
     private fun locator(description: String, systemManaged: Boolean): JSONObject =

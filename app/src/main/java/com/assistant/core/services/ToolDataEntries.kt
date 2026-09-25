@@ -7,7 +7,7 @@ import org.json.JSONObject
 /**
  * A stored entry as the service hands it out, the same for a list and for a single entry.
  *
- * data and custom_fields leave as objects: the string form belongs to the database, not to the
+ * data, extra and state leave as objects: the string form belongs to the database, not to the
  * callers. Timestamps stay in milliseconds, as stored; the ISO the model reads is produced
  * where the model is spoken to, in CommandExecutor.
  *
@@ -24,6 +24,7 @@ internal object ToolDataEntries {
         "name" to entity.name,
         "data" to JsonUtils.toMap(JSONObject(entity.data)),
         "extra" to entity.extra?.let { JsonUtils.toMap(JSONObject(it)) },
+        "state" to entity.state?.let { JsonUtils.toMap(JSONObject(it)) },
         "created_at" to entity.createdAt,
         "updated_at" to entity.updatedAt
     )

@@ -1,99 +1,22 @@
 package com.assistant.core.fields
 
-import com.assistant.core.validation.FieldLimits
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.pow
 
 /**
- * Enriches JSON schemas with custom field definitions.
+ * The JSON schema of one field's value, from its type and config.
  *
- * Takes a base schema and a tool instance config, extracts custom_fields definitions,
- * and adds them as properties to the schema under a "extra" object.
- *
- * This is a critical component for validation - all custom field validation
- * goes through the enriched schema via SchemaValidator.
- *
- * Architecture:
- * - Generates JSON Schema for all field types based on their config
- * - Extensible with when(type) for each field type
+ * Every schema an entry is held to is built from these, whoever declared the field: the core
+ * (name, timestamp), the tool type (data, state) or the user (extra). See EntrySchemaGenerator.
  */
-object CustomFieldsSchemaGenerator {
-
-    /**
-     * Enriches a schema with custom fields from tool instance config.
-     *
-     * @param baseSchemaJson The base schema JSON string (already merged from base + specific)
-     * @param configJson The tool instance config JSON string containing custom_fields array
-     * @return Enriched schema JSON string with custom_fields properties added
- * @throws ValidationException if a field definition cannot be read
-     */
-    fun enrichSchema(baseSchemaJson: String, configJson: String): String {
-        val schemaObj = JSONObject(baseSchemaJson)
-        val configObj = JSONObject(configJson)
-
-        // Extract custom_fields array from config
-        val customFieldsArray = configObj.optJSONArray("extra_fields")
-        if (customFieldsArray == null || customFieldsArray.length() == 0) {
-            // No custom fields defined, return schema as-is
-            return schemaObj.toString()
-        }
-
-        // Parse field definitions; an unreadable one throws, so the caller sees why
-        val fieldDefinitions = customFieldsArray.toFieldDefinitions()
-
-        // Get or create the root properties object
-        val properties = schemaObj.optJSONObject("properties") ?: JSONObject().also {
-            schemaObj.put("properties", it)
-        }
-
-        // Create custom_fields schema object
-        val customFieldsSchema = createCustomFieldsSchema(fieldDefinitions)
-
-        // Add custom_fields property to schema
-        properties.put("extra", customFieldsSchema)
-
-        return schemaObj.toString()
-    }
-
-    /**
-     * Creates the JSON schema for the custom_fields object.
-     *
-     * Structure:
-     * {
-     *   "type": "object",
-     *   "properties": {
-     *     "field_name_1": { "type": "string", "description": "..." },
-     *     "field_name_2": { "type": "number", "minimum": 0 }
-     *   },
-     *   "additionalProperties": false
-     * }
-     */
-    private fun createCustomFieldsSchema(fieldDefinitions: List<FieldDefinition>): JSONObject {
-        val schema = JSONObject()
-        schema.put("type", "object")
-
-        val properties = JSONObject()
-        for (fieldDef in fieldDefinitions) {
-            val fieldSchema = valueSchema(fieldDef)
-            properties.put(fieldDef.name, fieldSchema)
-        }
-
-        schema.put("properties", properties)
-
-        // Allow only defined properties (no additional properties)
-        schema.put("additionalProperties", false)
-
-        // Note: No "required" array - all custom fields are optional
-
-        return schema
-    }
+object FieldValueSchema {
 
     /**
      * The JSON schema a value of [fieldDef] is held to, from its type and config.
      * The single place a field's value schema is written, whoever declared the field.
      */
-    fun valueSchema(fieldDef: FieldDefinition): JSONObject {
+    fun of(fieldDef: FieldDefinition): JSONObject {
         return when (fieldDef.type) {
             FieldType.TEXT -> {
                 JSONObject().apply {

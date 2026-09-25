@@ -268,12 +268,12 @@ object MessageScheduler : ToolScheduler {
         timezone: ZoneId
     ) {
         val name = config.optString("name")
-        val data = JSONObject().apply {
+        val state = JSONObject().apply {
             put("status", "pending")
             put("triggered_by", "SCHEDULE")
         }
 
-        val validation = validateOccurrence(context, toolInstanceId, name, dueAt, data)
+        val validation = validateOccurrence(context, toolInstanceId, name, dueAt, JSONObject(), state)
         if (validation != null) {
             LogManager.service("Refusing to create occurrence for $toolInstanceId: $validation", "ERROR")
             return
@@ -285,7 +285,8 @@ object MessageScheduler : ToolScheduler {
             "schema_id" to "messages_data",
             "name" to name,
             "timestamp" to dueAt,
-            "data" to data
+            "data" to JSONObject(),
+            "state" to state
         ))
 
         if (result.isSuccess) {
@@ -394,17 +395,20 @@ object MessageScheduler : ToolScheduler {
             LogManager.service("External notifications disabled for $toolInstanceId, occurrence recorded without one", "DEBUG")
         }
 
-        val data = JSONObject(occurrence.data.toString()).apply {
-            put("status", "sent")
+        // What went out is copied into the occurrence, which keeps saying it when the template changes
+        val data = JSONObject().apply {
             if (commonTitle != null) put("common_title", commonTitle)
             if (commonContent != null) put("common_content", commonContent)
             put("priority", priority)
+        }
+        val state = JSONObject().apply {
+            put("status", "sent")
             put("notification_sent", notificationSent)
             put("read", false)
             put("archived", false)
         }
 
-        updateOccurrence(coordinator, occurrence, data, "sent")
+        updateOccurrence(coordinator, occurrence, data, state, "sent")
     }
 
     /** Marks an occurrence resolved without a notification, keeping the part already written. */
@@ -413,19 +417,20 @@ object MessageScheduler : ToolScheduler {
         occurrence: PendingOccurrence,
         status: String
     ) {
-        val data = JSONObject(occurrence.data.toString()).apply { put("status", status) }
-        updateOccurrence(coordinator, occurrence, data, status)
+        updateOccurrence(coordinator, occurrence, JSONObject(), JSONObject().put("status", status), status)
     }
 
     private suspend fun updateOccurrence(
         coordinator: Coordinator,
         occurrence: PendingOccurrence,
         data: JSONObject,
+        state: JSONObject,
         status: String
     ) {
         val result = coordinator.processUserAction("tool_data.update", mapOf(
             "id" to occurrence.id,
-            "data" to data
+            "data" to data,
+            "state" to state
         ))
 
         if (result.isSuccess) {
@@ -468,13 +473,15 @@ object MessageScheduler : ToolScheduler {
             val id = entry["id"] as? String ?: return@mapNotNull null
             val dueAtMillis = (entry["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null
             val dataMap = entry["data"] as? Map<*, *> ?: return@mapNotNull null
+            val stateMap = entry["state"] as? Map<*, *> ?: emptyMap<Any, Any>()
 
             try {
                 val data = JsonUtils.toJSONObject(dataMap.entries.associate { (k, v) -> k.toString() to v })
+                val state = JsonUtils.toJSONObject(stateMap.entries.associate { (k, v) -> k.toString() to v })
                 PendingOccurrence(
                     id = id,
                     dueAt = dueAtMillis,
-                    triggeredBy = data.optString("triggered_by", "MANUAL"),
+                    triggeredBy = state.optString("triggered_by", "MANUAL"),
                     data = data
                 )
             } catch (e: Exception) {
@@ -493,7 +500,8 @@ object MessageScheduler : ToolScheduler {
         toolInstanceId: String,
         name: String,
         dueAt: Long,
-        data: JSONObject
+        data: JSONObject,
+        state: JSONObject
     ): String? {
         val toolType = ToolTypeManager.getToolType("messages") ?: return "messages tooltype not found"
         val schema = try {
@@ -509,7 +517,8 @@ object MessageScheduler : ToolScheduler {
             "schema_id" to "messages_data",
             "name" to name,
             "timestamp" to dueAt,
-            "data" to data
+            "data" to data,
+            "state" to state
         )
 
         val validation = SchemaValidator.validate(schema, entry, context)

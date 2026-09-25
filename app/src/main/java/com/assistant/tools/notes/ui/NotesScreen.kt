@@ -108,7 +108,9 @@ fun NotesScreen(
                         val parsedData = (map["data"] as? Map<String, Any>) ?: emptyMap()
 
                         val content = parsedData["content"] as? String ?: ""
-                        val position = (parsedData["position"] as? Number)?.toInt() ?: 0
+                        @Suppress("UNCHECKED_CAST")
+                        val state = (map["state"] as? Map<String, Any>) ?: emptyMap()
+                        val position = (state["position"] as? Number)?.toInt() ?: 0
 
                         // Custom fields come from their own column, not from the data object
                         @Suppress("UNCHECKED_CAST")
@@ -336,7 +338,7 @@ fun NotesScreen(
 private suspend fun moveNote(coordinator: Coordinator, note: NoteEntry, position: Int) {
     coordinator.processUserAction("tool_data.update", mapOf(
         "id" to note.id,
-        "data" to JSONObject().apply { put("position", position) }
+        "state" to JSONObject().apply { put("position", position) }
     ))
 }
 
@@ -354,10 +356,11 @@ private suspend fun createNote(
     val params = mutableMapOf<String, Any>(
         "tool_instance_id" to toolInstanceId,
         "tooltype" to "notes",
-        "name" to "Note",
         "timestamp" to System.currentTimeMillis(),
         "data" to JSONObject().apply {
             put("content", content.trim())
+        },
+        "state" to JSONObject().apply {
             put("position", position)
         }
     )

@@ -1,5 +1,13 @@
 package com.assistant.tools.messages
 
+import com.assistant.core.fields.CoreFieldUsage
+import com.assistant.core.fields.EntryFields
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.FixedField
+import com.assistant.core.fields.StateField
+import com.assistant.core.fields.TextLength
+import org.json.JSONObject
 import android.content.Context
 import androidx.compose.runtime.Composable
 import com.assistant.core.tools.ToolTypeContract
@@ -194,135 +202,77 @@ object MessageToolType : ToolTypeContract {
     }
 
     /**
-     * Creates messages data schema — one entry per occurrence (one send).
-     *
-     * An occurrence has a lifecycle, so the schema's requirements depend on its status.
-     * While pending it carries ONLY the part written for that day; the invariant part is
-     * copied in at send time. Requiring the invariant part unconditionally would leave
-     * half-empty entries with no way to tell them from complete ones.
-     *
-     * The conditional block lives inside the "data" property on purpose:
-     * BaseSchemas.createExtendedSchema merges root properties and required verbatim, so an
-     * allOf written here survives the merge untouched.
-     *
-     * The entry's timestamp IS the due time, not its creation time. Time is the only
-     * ordering axis tool_data has, so timestamping a pending occurrence at creation would
-     * pile every one of them at the same instant and scramble the inbox. The moment the
-     * entry was actually written stays in updated_at, which makes a separate scheduled_time
-     * field a pure duplicate — hence its absence.
-     *
-     * Custom field values are raw, written per occurrence, and validated through the
-     * standard enrichment (createExtendedDataSchema) like every other tooltype.
+     * The data schema of message occurrences, generated from their declared fields.
      */
     private fun createMessagesDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "messages", context = context)
-
-        // "name" is stored at ToolDataEntity level, not inside the data JSON
-        val specificSchema = """
-        {
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "Occurrence label (stored at entity level, not in data JSON)"
-                },
-                "timestamp": {
-                    "type": "number",
-                    "description": "When this occurrence is due (and, for a manual send, when it went out)"
-                },
-                "data": {
-                    "type": "object",
-                    "description": "One send of this message",
-                    "properties": {
-                        "status": {
-                            "type": "string",
-                            "enum": ["pending", "sent", "expired", "cancelled"],
-                            "description": "${s.tool("schema_data_status")}"
-                        },
-                        "title": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_title")}"
-                        },
-                        "content": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.LONG_LENGTH},
-                            "description": "${s.tool("schema_data_content")}"
-                        },
-                        "common_title": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_common_title")}"
-                        },
-                        "common_content": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.LONG_LENGTH},
-                            "description": "${s.tool("schema_data_common_content")}"
-                        },
-                        "priority": {
-                            "type": "string",
-                            "enum": ["default", "high", "low"],
-                            "description": "${s.tool("schema_data_priority")}"
-                        },
-                        "notification_sent": {
-                            "type": "boolean",
-                            "description": "${s.tool("schema_data_notification_sent")}"
-                        },
-                        "read": {
-                            "type": "boolean",
-                            "description": "${s.tool("schema_data_read")}"
-                        },
-                        "archived": {
-                            "type": "boolean",
-                            "description": "${s.tool("schema_data_archived")}"
-                        },
-                        "triggered_by": {
-                            "type": "string",
-                            "enum": ["SCHEDULE", "MANUAL"],
-                            "description": "${s.tool("schema_data_triggered_by")}"
-                        }
-                    },
-                    "required": ["status", "triggered_by"],
-                    "additionalProperties": false,
-                    "allOf": [
-                        {
-                            "if": {
-                                "properties": { "status": { "const": "sent" } },
-                                "required": ["status"]
-                            },
-                            "then": {
-                                "required": ["priority", "notification_sent", "read", "archived"]
-                            }
-                        }
-                    ]
-                }
-            },
-            "required": ["name", "data"]
-        }
-        """.trimIndent()
-
-        // Enrich with this instance's custom field definitions when we know which instance
-        val content = if (toolInstanceId != null) {
-            BaseSchemas.createExtendedDataSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema,
-                toolInstanceId,
-                context
-            )
-        } else {
-            BaseSchemas.createExtendedSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema
-            )
-        }
-
         return Schema(
             id = "messages_data",
             displayName = s.tool("schema_data_display_name"),
             description = s.tool("schema_data_description"),
             category = SchemaCategory.TOOL_DATA,
-            content = content
+            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
+        )
+    }
+
+    /**
+     * One occurrence of a message: one send.
+     *
+     * Its timestamp is the due time, not its creation time: time is the only ordering axis
+     * tool_data has, and the moment the entry was written stays in updated_at.
+     *
+     * Data holds what the occurrence says: its own title and content, written beforehand, and
+     * the template's common part and priority, copied when it goes out. The copy is a fact,
+     * since what went out does not change when the template does.
+     *
+     * State holds what the app and the user's actions produce on it: its status, whether the
+     * notification went out, read, archived, and what created it.
+     */
+    override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
+        val s = Strings.`for`(tool = "messages", context = context)
+        fun field(name: String, type: FieldType, config: Map<String, Any>? = null) = FieldDefinition(
+            name = name,
+            displayName = s.tool("field_$name"),
+            description = s.tool("schema_data_$name"),
+            type = type,
+            alwaysVisible = false,
+            config = config
+        )
+        fun choice(vararg options: Pair<String, String>) = mapOf(
+            "options" to options.map { it.first },
+            "option_labels" to options.toMap()
+        )
+        fun labels(trueLabel: String, falseLabel: String) = mapOf("true_label" to trueLabel, "false_label" to falseLabel)
+
+        return EntryFields(
+            name = CoreFieldUsage.REQUIRED,
+            timestamp = CoreFieldUsage.OPTIONAL,
+            data = listOf(
+                FixedField(field("title", FieldType.TEXT, mapOf("length" to TextLength.SHORT.name))),
+                FixedField(field("content", FieldType.TEXT, mapOf("length" to TextLength.LONG.name))),
+                FixedField(field("common_title", FieldType.TEXT, mapOf("length" to TextLength.SHORT.name))),
+                FixedField(field("common_content", FieldType.TEXT, mapOf("length" to TextLength.LONG.name))),
+                FixedField(field("priority", FieldType.CHOICE, choice(
+                    "default" to s.tool("priority_default"),
+                    "high" to s.tool("priority_high"),
+                    "low" to s.tool("priority_low")
+                )))
+            ),
+            state = listOf(
+                StateField(field("status", FieldType.CHOICE, choice(
+                    "pending" to s.tool("status_pending"),
+                    "sent" to s.tool("status_sent"),
+                    "expired" to s.tool("status_expired"),
+                    "cancelled" to s.tool("status_cancelled")
+                )), filterable = true),
+                StateField(field("notification_sent", FieldType.BOOLEAN, labels(s.tool("notification_sent_true"), s.tool("status_notification_failed"))), filterable = true),
+                StateField(field("read", FieldType.BOOLEAN, labels(s.tool("filter_read"), s.tool("filter_unread"))), filterable = true),
+                StateField(field("archived", FieldType.BOOLEAN, labels(s.tool("filter_archived"), s.tool("not_archived"))), filterable = true),
+                StateField(field("triggered_by", FieldType.CHOICE, choice(
+                    "SCHEDULE" to s.tool("triggered_by_schedule"),
+                    "MANUAL" to s.tool("triggered_by_manual")
+                )), filterable = true)
+            )
         )
     }
 

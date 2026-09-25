@@ -8,7 +8,8 @@ import org.json.JSONObject
  *
  * - A config's "custom_fields" (the user's field definitions) becomes "extra_fields".
  * - An entry's "custom_fields" column (the user's values) becomes "extra", and an entry gains a
- *   "state" object: what the app and its actions produce on it, moved out of "data".
+ *   "state" object: what the app and its actions produce on it, moved out of "data" (a note's
+ *   position; a message occurrence's status, delivery, read, archived and origin).
  *
  * An entry is rewritten with its tool's config as it stood at v35, since what a tracking entry
  * becomes depends on its tool's type. This is the single place that says so, shared by the
@@ -38,12 +39,40 @@ object FieldsAtV36 {
      * @param configAtV35 The config of the entry's tool, before [config] rewrote it
      * @return [entry] of a [tooltype] tool, as it stands at v36
      */
-    fun entry(tooltype: String, entry: Entry, configAtV35: JSONObject): Entry =
-        entry.copy(
+    fun entry(tooltype: String, entry: Entry, configAtV35: JSONObject): Entry {
+        val rewritten = when (tooltype) {
+            "notes" -> notes(entry)
+            "messages" -> messages(entry)
+            else -> entry
+        }
+        return rewritten.copy(
             // An empty object says nothing a missing one does not
-            extra = entry.extra?.takeIf { it.length() > 0 },
-            state = entry.state?.takeIf { it.length() > 0 }
+            extra = rewritten.extra?.takeIf { it.length() > 0 },
+            state = rewritten.state?.takeIf { it.length() > 0 }
         )
+    }
+
+    /**
+     * A note's position is state. Its name, "Note" on every note (the only value the schema
+     * accepted), said nothing: notes have no name from v36.
+     */
+    private fun notes(entry: Entry): Entry =
+        moveToState(entry, listOf("position")).copy(name = null)
+
+    /** An occurrence's status, delivery, read, archived and origin are state. */
+    private fun messages(entry: Entry): Entry =
+        moveToState(entry, listOf("status", "notification_sent", "read", "archived", "triggered_by"))
+
+    /** [entry] with [keys] moved from its data to its state, where present. */
+    private fun moveToState(entry: Entry, keys: List<String>): Entry {
+        val data = JSONObject(entry.data.toString())
+        val state = JSONObject(entry.state?.toString() ?: "{}")
+        keys.filter { data.has(it) }.forEach { key ->
+            state.put(key, data.get(key))
+            data.remove(key)
+        }
+        return entry.copy(data = data, state = state)
+    }
 
     /**
      * Rewrites a backup's tool instances and entries, in place. The backup's entries still carry

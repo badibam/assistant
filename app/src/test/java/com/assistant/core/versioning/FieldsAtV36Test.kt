@@ -50,4 +50,35 @@ class FieldsAtV36Test {
             .put("id", "e1").put("tool_instance_id", "gone").put("tooltype", "journal").put("data", "{}")
         )))
     }
+
+    @Test
+    fun aNote_keepsItsTextAndMovesItsPositionToState() {
+        val note = FieldsAtV36.entry(
+            "notes",
+            FieldsAtV36.Entry("Note", JSONObject("""{ "content": "Buy bread", "position": 2 }"""), null, null),
+            JSONObject()
+        )
+
+        assertEquals(null, note.name)
+        assertEquals("""{"content":"Buy bread"}""", note.data.toString())
+        assertEquals(2, note.state!!.getInt("position"))
+    }
+
+    @Test
+    fun aMessage_movesWhatTheAppWritesToState_andKeepsWhatItSays() {
+        val occurrence = FieldsAtV36.entry(
+            "messages",
+            FieldsAtV36.Entry(
+                "Reminder",
+                JSONObject("""{ "status": "sent", "title": "Today", "common_title": "Pills", "priority": "high",
+                    "notification_sent": true, "read": false, "archived": false, "triggered_by": "SCHEDULE" }"""),
+                null, null
+            ),
+            JSONObject()
+        )
+
+        assertEquals(setOf("title", "common_title", "priority"), occurrence.data.keys().asSequence().toSet())
+        assertEquals(setOf("status", "notification_sent", "read", "archived", "triggered_by"), occurrence.state!!.keys().asSequence().toSet())
+        assertEquals("Reminder", occurrence.name)
+    }
 }

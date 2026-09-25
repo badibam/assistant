@@ -12,6 +12,12 @@ import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
 import com.assistant.tools.journal.ui.JournalConfigScreen
 import com.assistant.tools.journal.ui.JournalScreen
+import com.assistant.core.fields.CoreFieldUsage
+import com.assistant.core.fields.EntryFields
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.FixedField
+import com.assistant.core.fields.TextLength
 import org.json.JSONObject
 
 /**
@@ -106,66 +112,40 @@ object JournalToolType : ToolTypeContract {
     }
 
     /**
-     * Creates journal data schema
-     * - name: Entry title (required via BaseSchemas)
-     * - timestamp: Entry date/time (modifiable, required)
-     * - data.content: Text content without length limit (optional)
-     * - custom_fields: Custom fields defined in tool instance config (if tool_instance_id provided)
+     * The data schema of journal entries, generated from their declared fields.
      */
     private fun createJournalDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "journal", context = context)
-
-        val specificSchema = """
-        {
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": ${FieldLimits.SHORT_LENGTH},
-                    "description": "${s.tool("schema_data_name")}"
-                },
-                "timestamp": {
-                    "type": "number",
-                    "description": "${s.tool("schema_data_timestamp")}"
-                },
-                "data": {
-                    "type": "object",
-                    "description": "${s.tool("schema_data_data")}",
-                    "properties": {
-                        "content": {
-                            "type": "string",
-                            "description": "${s.tool("schema_data_content")}"
-                        }
-                    },
-                    "required": [],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["name", "timestamp", "data"]
-        }
-        """.trimIndent()
-
-        // Use createExtendedDataSchema to enrich with custom fields if toolInstanceId provided
-        val content = if (toolInstanceId != null) {
-            BaseSchemas.createExtendedDataSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema,
-                toolInstanceId,
-                context
-            )
-        } else {
-            BaseSchemas.createExtendedSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema
-            )
-        }
-
         return Schema(
             id = "journal_data",
             displayName = s.tool("schema_data_display_name"),
             description = s.tool("schema_data_description"),
             category = SchemaCategory.TOOL_DATA,
-            content = content
+            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
+        )
+    }
+
+    /**
+     * A journal entry: a titled, dated text. Its date is required, since the journal is read in
+     * date order.
+     */
+    override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
+        val s = Strings.`for`(tool = "journal", context = context)
+        return EntryFields(
+            name = CoreFieldUsage.REQUIRED,
+            timestamp = CoreFieldUsage.REQUIRED,
+            data = listOf(
+                FixedField(
+                    FieldDefinition(
+                        name = "content",
+                        displayName = s.tool("field_content"),
+                        description = s.tool("schema_data_content"),
+                        type = FieldType.TEXT,
+                        alwaysVisible = false,
+                        config = mapOf("length" to TextLength.UNLIMITED.name)
+                    )
+                )
+            )
         )
     }
 

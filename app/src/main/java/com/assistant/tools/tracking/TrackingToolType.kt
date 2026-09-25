@@ -17,6 +17,12 @@ import com.assistant.core.validation.FieldLimits
 import com.assistant.core.tools.BaseSchemas
 import com.assistant.tools.tracking.ui.TrackingConfigScreen
 import com.assistant.tools.tracking.ui.TrackingScreen
+import com.assistant.core.fields.CoreFieldUsage
+import com.assistant.core.fields.EntryFields
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.FixedField
+import com.assistant.core.fields.toFieldConfig
 import org.json.JSONObject
 
 /**
@@ -67,37 +73,20 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
             }
         }
 
-        // Data schemas (with custom fields if toolInstanceId provided)
+        // Data schemas, generated from the declared fields: for the tool's own config when it is
+        // given, for a new tool of the type the schema id names otherwise
         if (schemaId.startsWith("tracking_data_")) {
-            val baseSchema = when(schemaId) {
-                "tracking_data_numeric" -> createDataNumericSchema(context)
-                "tracking_data_scale" -> createDataScaleSchema(context)
-                "tracking_data_boolean" -> createDataBooleanSchema(context)
-                "tracking_data_choice" -> createDataChoiceSchema(context)
-                "tracking_data_counter" -> createDataCounterSchema(context)
-                "tracking_data_timer" -> createDataTimerSchema(context)
-                "tracking_data_text" -> createDataTextSchema(context)
-                else -> return null
-            }
-
-            // If toolInstanceId provided, enrich with custom fields
-            if (toolInstanceId != null) {
-                val enrichedContent = BaseSchemas.createExtendedDataSchema(
-                    BaseSchemas.getBaseDataSchema(context),
-                    baseSchema.content,
-                    toolInstanceId,
-                    context
-                )
-                return Schema(
-                    id = schemaId,
-                    displayName = baseSchema.displayName,
-                    description = baseSchema.description,
-                    category = baseSchema.category,
-                    content = enrichedContent
-                )
-            }
-
-            return baseSchema
+            val kind = TrackingKind.entries.firstOrNull { it.dataSchemaId == schemaId } ?: return null
+            val config = if (toolInstanceId != null) BaseSchemas.loadToolConfig(toolInstanceId, context)
+                         else JSONObject(getDefaultConfig()).put("type", kind.key)
+            val s = Strings.`for`(tool = "tracking", context = context)
+            return Schema(
+                id = schemaId,
+                displayName = s.tool("schema_data_display_name"),
+                description = s.tool("schema_data_description"),
+                category = SchemaCategory.TOOL_DATA,
+                content = BaseSchemas.getEntrySchemaOrThrow(this, config, toolInstanceId, context)
+            )
         }
 
         return null
@@ -107,9 +96,7 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         return listOf(
             "tracking_config_numeric", "tracking_config_scale", "tracking_config_boolean",
             "tracking_config_choice", "tracking_config_counter", "tracking_config_timer", "tracking_config_text",
-            "tracking_data_numeric", "tracking_data_scale", "tracking_data_boolean",
-            "tracking_data_choice", "tracking_data_counter", "tracking_data_timer", "tracking_data_text"
-        )
+        ) + TrackingKind.entries.map { it.dataSchemaId }
     }
 
     private fun createConfigNumericSchema(context: Context): Schema {
@@ -470,363 +457,57 @@ object TrackingToolType : ToolTypeContract, SchemaProvider {
         )
     }
 
-    private fun createDataNumericSchema(context: Context): Schema {
+    /**
+     * A tracking entry: a name (the shortcut or the activity), a moment, and a main field,
+     * "value", whose field type comes from the tool's type and whose settings come from the
+     * config's "value". A numeric one also carries its unit, one of the units the config
+     * declares, so an entry keeps saying what it measured when shortcuts change. An occurrence
+     * has no value: the entry is the fact that something happened.
+     *
+     * A timer's value is absent while it runs: its start is in the entry's state until it is
+     * stopped.
+     */
+    override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
         val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "numeric",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "quantity": {
-                            "type": "number",
-                            "description": "${s.tool("schema_data_numeric_quantity")}"
-                        },
-                        "unit": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_numeric_unit")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "quantity"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
+        val kind = TrackingKind.of(config)
+        val valueType = kind.valueType
+            ?: return EntryFields(name = CoreFieldUsage.REQUIRED, timestamp = CoreFieldUsage.OPTIONAL)
+
+        val valueConfig = (config.optJSONObject("value")?.toFieldConfig() ?: emptyMap()).let {
+            // A counter counts presses: whole numbers only
+            if (kind == TrackingKind.COUNTER) it + ("decimals" to 0) else it
         }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
+        val fields = mutableListOf(
+            FixedField(
+                FieldDefinition(
+                    name = "value",
+                    displayName = s.tool("field_value"),
+                    description = s.tool("schema_data_value"),
+                    type = valueType,
+                    alwaysVisible = true,
+                    config = valueConfig.ifEmpty { null }
+                ),
+                required = kind != TrackingKind.TIMER
+            )
         )
 
-        return Schema(
-            id = "tracking_data_numeric",
-            displayName = s.tool("schema_data_numeric_display_name"),
-            description = s.tool("schema_data_numeric_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataScaleSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "scale",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "rating": {
-                            "type": "integer",
-                            "description": "${s.tool("schema_data_scale_rating")}"
-                        },
-                        "min_value": {
-                            "type": "integer",
-                            "description": "${s.tool("schema_data_scale_min_value")}"
-                        },
-                        "max_value": {
-                            "type": "integer",
-                            "description": "${s.tool("schema_data_scale_max_value")}"
-                        },
-                        "min_label": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_scale_min_label")}"
-                        },
-                        "max_label": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_scale_max_label")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "rating", "min_value", "max_value"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
+        val units = config.optJSONArray("units")?.let { array -> (0 until array.length()).map { array.getString(it) } } ?: emptyList()
+        if (kind == TrackingKind.NUMERIC && units.isNotEmpty()) {
+            fields.add(
+                FixedField(
+                    FieldDefinition(
+                        name = "unit",
+                        displayName = s.tool("field_unit"),
+                        description = s.tool("schema_data_unit"),
+                        type = FieldType.CHOICE,
+                        alwaysVisible = true,
+                        config = mapOf("options" to units)
+                    )
+                )
+            )
         }
-        """.trimIndent()
 
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_scale",
-            displayName = s.tool("schema_data_scale_display_name"),
-            description = s.tool("schema_data_scale_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataBooleanSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "boolean",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "state": {
-                            "type": "boolean",
-                            "description": "${s.tool("schema_data_boolean_state")}"
-                        },
-                        "true_label": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_boolean_true_label")}"
-                        },
-                        "false_label": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_boolean_false_label")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "state"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_boolean",
-            displayName = s.tool("schema_data_boolean_display_name"),
-            description = s.tool("schema_data_boolean_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataChoiceSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "choice",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "selected_option": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.SHORT_LENGTH},
-                            "description": "${s.tool("schema_data_choice_selected_option")}"
-                        },
-                        "available_options": {
-                            "type": "array",
-                            "description": "${s.tool("schema_data_choice_available_options")}",
-                            "items": {
-                                "type": "string",
-                                "maxLength": ${FieldLimits.SHORT_LENGTH}
-                            }
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "selected_option", "available_options"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_choice",
-            displayName = s.tool("schema_data_choice_display_name"),
-            description = s.tool("schema_data_choice_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataCounterSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "counter",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "increment": {
-                            "type": "integer",
-                            "description": "${s.tool("schema_data_counter_increment")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "increment"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_counter",
-            displayName = s.tool("schema_data_counter_display_name"),
-            description = s.tool("schema_data_counter_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataTimerSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "timer",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "duration_seconds": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "${s.tool("schema_data_timer_duration_seconds")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "duration_seconds"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_timer",
-            displayName = s.tool("schema_data_timer_display_name"),
-            description = s.tool("schema_data_timer_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
-    }
-
-    private fun createDataTextSchema(context: Context): Schema {
-        val s = Strings.`for`(tool = "tracking", context = context)
-        val specificSchema = """
-        {
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "const": "text",
-                            "description": "${s.tool("schema_data_type")}"
-                        },
-                        "text": {
-                            "type": "string",
-                            "maxLength": ${FieldLimits.LONG_LENGTH},
-                            "description": "${s.tool("schema_data_text_content")}"
-                        },
-                        "raw": {
-                            "type": "string",
-                            "system_managed": true,
-                            "description": "${s.tool("schema_data_raw")}"
-                        }
-                    },
-                    "required": ["type", "text"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["data"]
-        }
-        """.trimIndent()
-
-        val content = BaseSchemas.createExtendedSchema(
-            BaseSchemas.getBaseDataSchema(context),
-            specificSchema
-        )
-
-        return Schema(
-            id = "tracking_data_text",
-            displayName = s.tool("schema_data_text_display_name"),
-            description = s.tool("schema_data_text_description"),
-            category = SchemaCategory.TOOL_DATA,
-            content = content
-        )
+        return EntryFields(name = CoreFieldUsage.REQUIRED, timestamp = CoreFieldUsage.OPTIONAL, data = fields)
     }
 
     override fun getAvailableOperations(): List<String> {

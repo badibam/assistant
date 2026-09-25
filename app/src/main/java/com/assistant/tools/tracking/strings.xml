@@ -164,41 +164,15 @@
     <string name="schema_config_text_item_name">Name of the item</string>
     
     <!-- SCHEMAS DATA - Display names for schema identification -->
-    <string name="schema_data_numeric_display_name">Tracking data (numeric)</string>
-    <string name="schema_data_scale_display_name">Tracking data (scale)</string>
-    <string name="schema_data_boolean_display_name">Tracking data (yes/no)</string>
-    <string name="schema_data_choice_display_name">Tracking data (choice)</string>
-    <string name="schema_data_counter_display_name">Tracking data (counter)</string>
-    <string name="schema_data_timer_display_name">Tracking data (timer)</string>
-    <string name="schema_data_text_display_name">Tracking data (text)</string>
+    <string name="schema_data_display_name">Tracking entry</string>
+    <string name="schema_data_description">An entry of a tracking tool: a name, a moment, and its value</string>
+    <string name="schema_data_value">The value recorded; its type and settings come from the config of the tool</string>
+    <string name="schema_data_unit">Unit of the value, one of the units the config of the tool declares</string>
+    <string name="field_value">Value</string>
 
     <!-- SCHEMAS DATA - Descriptions for schema identification -->
-    <string name="schema_data_numeric_description">Validation schema for numeric tracking entries</string>
-    <string name="schema_data_scale_description">Validation schema for scale tracking entries</string>
-    <string name="schema_data_boolean_description">Validation schema for yes/no tracking entries</string>
-    <string name="schema_data_choice_description">Validation schema for choice tracking entries</string>
-    <string name="schema_data_counter_description">Validation schema for counter tracking entries</string>
-    <string name="schema_data_timer_description">Validation schema for timer tracking entries</string>
-    <string name="schema_data_text_description">Validation schema for text tracking entries</string>
 
     <!-- SCHEMAS DATA - Descriptions for AI validation -->
-    <string name="schema_data_type">Kind of value recorded; must match the tool\'s configuration</string>
-    <string name="schema_data_raw">Display text of the value, computed by the app on every write; never written by the AI</string>
-    <string name="schema_data_numeric_quantity">Quantity recorded</string>
-    <string name="schema_data_numeric_unit">Unit of the quantity</string>
-    <string name="schema_data_scale_rating">Rating given, between min_value and max_value</string>
-    <string name="schema_data_scale_min_value">Lowest value of the scale when the rating was given</string>
-    <string name="schema_data_scale_max_value">Highest value of the scale when the rating was given</string>
-    <string name="schema_data_scale_min_label">Label of the lowest value when the rating was given</string>
-    <string name="schema_data_scale_max_label">Label of the highest value when the rating was given</string>
-    <string name="schema_data_boolean_state">Answer recorded: true for yes, false for no</string>
-    <string name="schema_data_boolean_true_label">Label of yes when the answer was given</string>
-    <string name="schema_data_boolean_false_label">Label of no when the answer was given</string>
-    <string name="schema_data_choice_selected_option">Option chosen, one of available_options</string>
-    <string name="schema_data_choice_available_options">Options offered when the choice was made</string>
-    <string name="schema_data_counter_increment">Amount added to the count; negative to take away</string>
-    <string name="schema_data_timer_duration_seconds">Time spent, in seconds</string>
-    <string name="schema_data_text_content">Text recorded</string>
     
     <!-- VALIDATION - Field names for display -->
     <string name="field_default_increment">Step</string>

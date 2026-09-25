@@ -18,8 +18,9 @@ class NoteOrderTest {
         toolInstanceId = "notes-1",
         tooltype = "notes",
         timestamp = createdAt,
-        name = "Note",
-        data = JSONObject().put("content", id).apply { if (position != null) put("position", position) }.toString(),
+        name = null,
+        data = JSONObject().put("content", id).toString(),
+        state = position?.let { JSONObject().put("position", it).toString() },
         createdAt = createdAt,
         updatedAt = createdAt
     )
@@ -28,7 +29,7 @@ class NoteOrderTest {
     private fun orderAfter(entries: List<ToolDataEntity>, writtenId: String?): List<String> {
         val settled = NoteOrder.settle(entries, writtenId).associateBy { it.id }
         return entries.map { settled[it.id] ?: it }
-            .sortedBy { JSONObject(it.data).getInt("position") }
+            .sortedBy { JSONObject(it.state!!).getInt("position") }
             .map { it.id }
     }
 
@@ -66,7 +67,7 @@ class NoteOrderTest {
     fun aDeleteClosesTheGap() {
         val settled = NoteOrder.settle(listOf(note("a", 0, 1), note("c", 2, 3)), null)
         assertEquals(listOf("c"), settled.map { it.id })
-        assertEquals(1, JSONObject(settled.single().data).getInt("position"))
+        assertEquals(1, JSONObject(settled.single().state!!).getInt("position"))
     }
 
     @Test

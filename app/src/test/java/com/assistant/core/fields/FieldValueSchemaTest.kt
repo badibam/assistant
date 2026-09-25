@@ -13,25 +13,27 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Covers the rules a custom field's value is held to: the generator turns each field type into a
+ * Covers the rules a field's value is held to: FieldValueSchema turns each field type into a
  * JSON Schema, and every check below runs real values through the validator the app uses
  * (networknt, draft 7), so what is pinned is what an entry screen or the AI would be told.
  */
-class CustomFieldsSchemaGeneratorTest {
+class FieldValueSchemaTest {
 
     private val mapper = ObjectMapper()
-    private val baseSchema = """{ "type": "object", "properties": { "timestamp": { "type": "number" } }, "additionalProperties": false }"""
 
-    /** The schema for a tool whose only custom field is [field] (the field's JSON, without name). */
+    /** The entry schema of a tool whose only field is the user's field [field] (its JSON, without name). */
     private fun schemaFor(field: String): JsonSchema {
-        val config = """{ "extra_fields": [ ${JSONObject(field).put("name", "f").put("display_name", "F")} ] }"""
-        val enriched = CustomFieldsSchemaGenerator.enrichSchema(baseSchema, config)
-        return JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(enriched)
+        val definition = JSONObject(field).put("name", "f").put("display_name", "F").toFieldDefinition()
+        val schema = EntrySchemaGenerator.generate(
+            EntryFields(name = CoreFieldUsage.ABSENT, timestamp = CoreFieldUsage.ABSENT),
+            listOf(definition)
+        ) { it }
+        return JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7).getSchema(schema)
     }
 
-    /** Whether an entry holding [value] as the custom field passes. */
+    /** Whether an entry holding [value] as the field passes. */
     private fun JsonSchema.accepts(value: String): Boolean =
-        validate(mapper.readTree("""{ "extra": { "f": $value } }""")).isEmpty()
+        validate(mapper.readTree("""{ "tool_instance_id": "t", "tooltype": "x", "extra": { "f": $value } }""")).isEmpty()
 
     @Test
     fun text_isHeldToItsLength() {
@@ -191,22 +193,12 @@ class CustomFieldsSchemaGeneratorTest {
     fun anUndeclaredField_isRefused() {
         val schema = schemaFor("""{ "type": "BOOLEAN" }""")
 
-        assertFalse(schema.validate(mapper.readTree("""{ "extra": { "other": true } }""")).isEmpty())
+        assertFalse(schema.validate(mapper.readTree("""{ "tool_instance_id": "t", "tooltype": "x", "extra": { "other": true } }""")).isEmpty())
     }
 
-    @Test
-    fun noCustomFields_leavesTheSchemaAsItWas() {
-        val enriched = CustomFieldsSchemaGenerator.enrichSchema(baseSchema, """{ "name": "Plain" }""")
-
-        assertEquals(mapper.readTree(baseSchema), mapper.readTree(enriched))
-    }
-
-    /** A field the app cannot read fails the enrichment instead of leaving it out silently. */
+    /** A field the app cannot read fails instead of being left out silently. */
     @Test(expected = ValidationException::class)
     fun anUnreadableField_fails() {
-        CustomFieldsSchemaGenerator.enrichSchema(
-            baseSchema,
-            """{ "extra_fields": [ { "name": "f", "display_name": "F", "type": "COLOR" } ] }"""
-        )
+        JSONObject("""{ "name": "f", "display_name": "F", "type": "COLOR" }""").toFieldDefinition()
     }
 }

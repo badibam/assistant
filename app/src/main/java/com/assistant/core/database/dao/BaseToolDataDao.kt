@@ -107,14 +107,14 @@ abstract class BaseToolDataDao {
      * Ordered ascending: a scheduler processes what is due oldest first.
      * Uses SQLite's json_extract (JSON1, available since API 24; the project targets 26).
      */
-    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(data, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp ASC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(state, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime ORDER BY timestamp ASC LIMIT :limit OFFSET :offset")
     abstract suspend fun getByStatusAndTimeRangePaginated(toolInstanceId: String, status: String, startTime: Long, endTime: Long, limit: Int, offset: Int): List<ToolDataEntity>
 
     /**
      * Counts entries matching a status within a time range.
      * Counting in SQL rather than loading rows to call .size on them.
      */
-    @Query("SELECT COUNT(*) FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(data, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime")
+    @Query("SELECT COUNT(*) FROM tool_data WHERE tool_instance_id = :toolInstanceId AND json_extract(state, '$.status') = :status AND timestamp >= :startTime AND timestamp < :endTime")
     abstract suspend fun countByStatusAndTimeRange(toolInstanceId: String, status: String, startTime: Long, endTime: Long): Int
 
 }

@@ -80,6 +80,12 @@
     <!-- STATUS - Badges d'état d'une occurrence -->
     <string name="status_expired">Expiré</string>
     <string name="status_cancelled">Annulé</string>
+    <string name="status_pending">En attente</string>
+    <string name="status_sent">Envoyé</string>
+    <string name="notification_sent_true">Notification partie</string>
+    <string name="not_archived">Non archivé</string>
+    <string name="triggered_by_schedule">Planning</string>
+    <string name="triggered_by_manual">À la main</string>
     <string name="status_notification_failed">Notification non partie</string>
     <string name="badge_unread">Non lu</string>
 

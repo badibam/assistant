@@ -12,6 +12,13 @@ import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
 import com.assistant.tools.notes.ui.NotesConfigScreen
 import com.assistant.tools.notes.ui.NotesScreen
+import com.assistant.core.fields.CoreFieldUsage
+import com.assistant.core.fields.EntryFields
+import com.assistant.core.fields.FieldDefinition
+import com.assistant.core.fields.FieldType
+import com.assistant.core.fields.FixedField
+import com.assistant.core.fields.StateField
+import com.assistant.core.fields.TextLength
 import org.json.JSONObject
 
 /**
@@ -90,66 +97,56 @@ object NotesToolType : ToolTypeContract {
         )
     }
 
+    /**
+     * The data schema of notes, generated from their declared fields.
+     */
     private fun createNotesDataSchema(context: Context, toolInstanceId: String?): Schema {
         val s = Strings.`for`(tool = "notes", context = context)
-
-        val specificSchema = """
-        {
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "const": "Note",
-                    "description": "${s.tool("schema_data_name")}"
-                },
-                "timestamp": {
-                    "type": "number",
-                    "description": "${s.tool("schema_data_timestamp")}"
-                },
-                "data": {
-                    "type": "object",
-                    "description": "${s.tool("schema_data_data")}",
-                    "properties": {
-                        "content": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": ${FieldLimits.LONG_LENGTH},
-                            "description": "${s.tool("schema_data_content")}"
-                        },
-                        "position": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "${s.tool("schema_data_position")}"
-                        }
-                    },
-                    "required": ["content"],
-                    "additionalProperties": false
-                }
-            },
-            "required": ["name", "timestamp", "data"]
-        }
-        """.trimIndent()
-
-        // Use createExtendedDataSchema to enrich with custom fields if toolInstanceId provided
-        val content = if (toolInstanceId != null) {
-            BaseSchemas.createExtendedDataSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema,
-                toolInstanceId,
-                context
-            )
-        } else {
-            BaseSchemas.createExtendedSchema(
-                BaseSchemas.getBaseDataSchema(context),
-                specificSchema
-            )
-        }
-
         return Schema(
             id = "notes_data",
             displayName = s.tool("schema_data_display_name"),
             description = s.tool("schema_data_description"),
             category = SchemaCategory.TOOL_DATA,
-            content = content
+            content = BaseSchemas.getEntrySchema(this, toolInstanceId, context)
+        )
+    }
+
+    /**
+     * A note: a text, without a name (none would say anything the text does not), kept in a
+     * manual order. Its position is state: the app writes it when a note is moved, and the
+     * service keeps the order (NoteOrder).
+     */
+    override fun getEntryFields(config: JSONObject, context: Context): EntryFields {
+        val s = Strings.`for`(tool = "notes", context = context)
+        return EntryFields(
+            name = CoreFieldUsage.ABSENT,
+            timestamp = CoreFieldUsage.OPTIONAL,
+            data = listOf(
+                FixedField(
+                    FieldDefinition(
+                        name = "content",
+                        displayName = s.tool("field_content"),
+                        description = s.tool("schema_data_content"),
+                        type = FieldType.TEXT,
+                        alwaysVisible = false,
+                        config = mapOf("length" to TextLength.LONG.name)
+                    ),
+                    required = true
+                )
+            ),
+            state = listOf(
+                StateField(
+                    FieldDefinition(
+                        name = "position",
+                        displayName = s.tool("field_position"),
+                        description = s.tool("schema_data_position"),
+                        type = FieldType.NUMERIC,
+                        alwaysVisible = false,
+                        config = mapOf("min" to 0, "decimals" to 0)
+                    ),
+                    filterable = false
+                )
+            )
         )
     }
 

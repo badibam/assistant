@@ -7,6 +7,7 @@ import com.assistant.core.database.entities.ToolDataEntity
 import com.assistant.core.services.ExecutableService
 import com.assistant.core.validation.ValidationResult
 import com.assistant.core.validation.SchemaProvider
+import org.json.JSONObject
 
 /**
  * Contract for tool type implementations
@@ -109,6 +110,16 @@ interface ToolTypeContract : SchemaProvider {
         onNavigateBack: () -> Unit,
         onLongClick: () -> Unit
     )
+
+    /**
+     * The fields of this tool type's entries, for a tool instance whose config is [config]:
+     * how it uses name and timestamp, its fixed fields in data, and the fields of their state.
+     * The user's fields come from the config's extra_fields and are not declared here.
+     *
+     * The data schema of the entries is generated from it (BaseSchemas.getEntrySchema), so a
+     * tool type never writes that schema by hand.
+     */
+    fun getEntryFields(config: JSONObject, context: Context): com.assistant.core.fields.EntryFields
 
     /**
      * Enrich data before storage by calculating derived/auto-generated fields
