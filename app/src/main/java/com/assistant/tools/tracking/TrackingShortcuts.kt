@@ -58,10 +58,6 @@ object TrackingConfig {
         return next
     }
 
-    /** [config] with its shortcuts replaced by [shortcuts]. */
-    fun withShortcuts(config: JSONObject, shortcuts: List<TrackingShortcut>): JSONObject =
-        shortcuts.fold(JSONObject(config.toString()).put("items", JSONArray())) { next, shortcut -> withShortcut(next, shortcut) }
-
     /**
      * The data of an entry holding [value], and for a numeric tool [unit]: what a shortcut or
      * the entry dialog writes. An occurrence has no value, and a timer none until it stops.

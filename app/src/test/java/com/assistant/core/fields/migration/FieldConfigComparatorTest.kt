@@ -111,7 +111,7 @@ class FieldConfigComparatorTest {
         assertTrue(changes.any { it is FieldChange.Added && it.field.name == "feeling" })
 
         val strategies = MigrationPolicy.getStrategies(changes)
-        assertTrue(MigrationPolicy.requiresMigration(strategies))
+        assertTrue(strategies.values.any { it != MigrationStrategy.NONE })
         assertEquals(
             MigrationStrategy.STRIP_FIELD,
             strategies[FieldChange.Removed("mood")]
@@ -313,7 +313,7 @@ class FieldConfigComparatorTest {
         assertTrue(changes.any { it is FieldChange.ScaleRangeChanged })
 
         val strategies = MigrationPolicy.getStrategies(changes)
-        assertTrue(MigrationPolicy.requiresMigration(strategies))
+        assertTrue(strategies.values.any { it != MigrationStrategy.NONE })
     }
 
     /** With nothing but additions and retitlings, no data is touched. */
@@ -325,6 +325,6 @@ class FieldConfigComparatorTest {
         )
 
         val strategies = MigrationPolicy.getStrategies(changes)
-        assertFalse(MigrationPolicy.requiresMigration(strategies))
+        assertTrue(strategies.values.all { it == MigrationStrategy.NONE })
     }
 }

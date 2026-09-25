@@ -123,29 +123,6 @@ enum class FieldType {
     }
 
     /**
-     * Get the localized description for this field type.
-     * Uses the string system to retrieve the description.
-     *
-     * @param context Android context for string access
-     * @return Localized description for this type
-     */
-    fun getDescription(context: Context): String {
-        val s = Strings.`for`(context = context)
-        return when (this) {
-            TEXT -> s.shared("field_type_text_description")
-            NUMERIC -> s.shared("field_type_numeric_description")
-            SCALE -> s.shared("field_type_scale_description")
-            CHOICE -> s.shared("field_type_choice_description")
-            BOOLEAN -> s.shared("field_type_boolean_description")
-            RANGE -> s.shared("field_type_range_description")
-            DATE -> s.shared("field_type_date_description")
-            TIME -> s.shared("field_type_time_description")
-            DATETIME -> s.shared("field_type_datetime_description")
-            DURATION -> s.shared("field_type_duration_description")
-        }
-    }
-
-    /**
      * The config keys whose change restricts which values are allowed, without changing what a
      * stored value means. Narrowing one of them leaves the entries that still fit and takes only
      * the ones that no longer do.

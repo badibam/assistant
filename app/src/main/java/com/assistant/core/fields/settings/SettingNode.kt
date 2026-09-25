@@ -19,12 +19,15 @@ sealed class SettingNode {
      * @property default The value the form prefills and the absence of the setting means, in its
      *   stored form (milliseconds for a DURATION); null when absence means "nothing"
      * @property secret Entered masked, never sent to the AI, never logged (an API key)
+     * @property systemWritten Written by the app and sent back unchanged, never entered: the
+     *   form does not show it (a field definition's name, made from its label)
      */
     data class Field(
         val definition: FieldDefinition,
         val required: Boolean = false,
         val default: Any? = null,
-        val secret: Boolean = false
+        val secret: Boolean = false,
+        val systemWritten: Boolean = false
     ) : SettingNode()
 
     /** Settings stored together as one object under [name]. */

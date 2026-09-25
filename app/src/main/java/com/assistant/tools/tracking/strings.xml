@@ -8,10 +8,6 @@
 
     <!-- CONFIG - Labels of specific settings -->
     <string name="config_label_tracking_type">Tracking type</string>
-    <string name="config_label_default_quantity">Default quantity</string>
-    <string name="config_label_unit">Unit</string>
-    <string name="config_label_default_increment">Step (1 if empty)</string>
-    <string name="config_label_allow_decrement">Allow decrementing</string>
     
     <!-- CONFIG - Tracking type options -->
     <string name="config_option_numeric">Numeric (numeric)</string>
@@ -24,19 +20,12 @@
     <string name="config_option_occurrence">Occurrence (occurrence)</string>
     
     <!-- CONFIG - Sections -->
-    <string name="config_section_specific_params">Specific settings</string>
 
     <!-- CONFIG - Tables and lists -->
-    <string name="config_message_no_items">No item defined</string>
     
     <!-- CONFIG - Dialogs -->
-    <string name="config_dialog_create_item">Create an item</string>
-    <string name="config_dialog_edit_item">Edit the item</string>
     
     <!-- CONFIG - Warning messages -->
-    <string name="config_warning_type_change_desc">The type goes from \"%1$s\" to \"%2$s\".</string>
-    <string name="config_warning_data_deletion">Every entered piece of data will be deleted.</string>
-    <string name="config_warning_value_change">The settings of the value changed. The entries already recorded keep the value they were recorded with, even where it no longer fits the new settings. Continue?</string>
 
     <!-- CONFIG - Scale change messages -->
 
@@ -48,8 +37,6 @@
     <!-- CONFIG - Default values -->
     
     <!-- CONFIG - Screen titles -->
-    <string name="config_title_create">Create tracking</string>
-    <string name="config_title_edit">Edit tracking</string>
     
     <!-- USAGE - Usage interface -->
     <string name="usage_section_new_entry">New entry</string>

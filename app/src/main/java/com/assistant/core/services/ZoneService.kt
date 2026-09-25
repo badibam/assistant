@@ -61,7 +61,7 @@ class ZoneService(private val context: Context) : ExecutableService {
         if (icon is StoredIcon.Refused) return OperationResult.error(icon.message)
         icon as StoredIcon.Kept
 
-        // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
+        // Parse tool_groups if provided (validation already done by ActionValidator)
         val toolGroupsJson = if (params.has("tool_groups")) {
             params.optJSONArray("tool_groups")?.toString()
         } else {
@@ -152,7 +152,7 @@ class ZoneService(private val context: Context) : ExecutableService {
 
         if (token.isCancelled) return OperationResult.cancelled()
 
-        // Parse tool_groups if provided (validation already done by ActionValidator/ValidationHelper)
+        // Parse tool_groups if provided (validation already done by ActionValidator)
         val toolGroupsJson = if (params.has("tool_groups")) {
             // Allow explicit null to clear tool_groups
             val toolGroupsValue = params.opt("tool_groups")

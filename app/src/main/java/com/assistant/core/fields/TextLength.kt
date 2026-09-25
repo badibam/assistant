@@ -77,23 +77,6 @@ enum class TextLength {
         }
     }
 
-    /**
-     * Get the localized description for this text length.
-     * Uses the string system to retrieve the description.
-     *
-     * @param context Android context for string access
-     * @return Localized description for this length option
-     */
-    fun getDescription(context: Context): String {
-        val s = Strings.`for`(context = context)
-        return when (this) {
-            SHORT -> s.shared("text_length_short_description")
-            MEDIUM -> s.shared("text_length_medium_description")
-            LONG -> s.shared("text_length_long_description")
-            UNLIMITED -> s.shared("text_length_unlimited_description")
-        }
-    }
-
     companion object {
         /**
          * Get all available text length options.

@@ -30,7 +30,7 @@ object FieldTypeSettings {
         // Made by the app from the label when the field is created, then sent back unchanged to
         // name the field: its format is checked by the service (FieldConfigValidator)
         field("name", "label_name", FieldType.TEXT, text, description = "field_type_schema_name_description",
-            config = mapOf("length" to TextLength.SHORT.name)),
+            config = mapOf("length" to TextLength.SHORT.name)).copy(systemWritten = true),
         field("display_name", "custom_fields_display_name", FieldType.TEXT, text, required = true,
             description = "field_type_schema_display_name_description", config = mapOf("length" to TextLength.SHORT.name)),
         field("description", "custom_fields_description", FieldType.TEXT, text, config = mapOf("length" to TextLength.MEDIUM.name)),

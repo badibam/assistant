@@ -10,7 +10,6 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
-import com.assistant.tools.notes.ui.NotesConfigScreen
 import com.assistant.tools.notes.ui.NotesScreen
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.EntryFields
@@ -105,25 +104,6 @@ object NotesToolType : ToolTypeContract {
 
     override fun getSuggestedIcons(): List<String> {
         return listOf("sticky-note", "notepad-text", "notebook-pen")
-    }
-
-    @Composable
-    override fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit,
-        existingToolId: String?,
-        onDelete: (() -> Unit)?,
-        initialGroup: String?
-    ) {
-        NotesConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            onCancel = onCancel,
-            existingToolId = existingToolId,
-            onDelete = onDelete,
-            initialGroup = initialGroup
-        )
     }
 
     override fun getService(context: Context): ExecutableService {

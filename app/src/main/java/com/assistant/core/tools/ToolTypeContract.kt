@@ -59,25 +59,6 @@ interface ToolTypeContract {
     fun getSuggestedIcons(): List<String> = emptyList()
     
     /**
-     * Configuration screen for this tool type
-     * @param zoneId ID of the zone where the tool will be created
-     * @param onSave Called when configuration is saved with the config JSON
-     * @param onCancel Called when configuration is cancelled
-     * @param existingToolId Optional existing tool ID for editing mode
-     * @param onDelete Optional delete callback for editing mode
-     * @param initialGroup Optional pre-selected group for new tool creation
-     */
-    @Composable
-    fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit,
-        existingToolId: String?,
-        onDelete: (() -> Unit)?,
-        initialGroup: String?
-    )
-    
-    /**
      * Create service instance for this tool type
      * Returns null if this tool type doesn't have an associated service
      * @param context Android context for service creation
@@ -129,6 +110,12 @@ interface ToolTypeContract {
      * (ToolConfigSettings): the config's schema and checking are generated from them.
      */
     fun getConfigSettings(context: Context): List<com.assistant.core.fields.settings.SettingNode>
+
+    /**
+     * The parts of the config screen this tool type draws itself, by the name of the setting
+     * they edit (a schedule editor and its summary). The rest is the form of the declaration.
+     */
+    fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> = emptyMap()
 
     /**
      * [config] once [added] have joined the options of the CHOICE field [field] this tool type

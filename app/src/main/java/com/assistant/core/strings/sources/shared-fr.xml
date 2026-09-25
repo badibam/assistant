@@ -381,7 +381,6 @@
     <string name="label_description">Description</string>
     <string name="label_icon">Icône</string>
     <string name="label_page_info">Page %1$d sur %2$d</string>
-    <string name="label_enabled">Activé</string>
     <string name="label_disabled">Désactivé</string>
     <string name="label_field_generic">Champ</string>
     <string name="label_field_parameter">Paramètre</string>
@@ -565,15 +564,10 @@
     <!-- Custom Fields -->
     <string name="custom_fields_section_title">Champs supplémentaires</string>
     <string name="custom_fields_add">Ajouter un champ</string>
-    <string name="custom_fields_edit">Modifier le champ</string>
-    <string name="custom_fields_create">Créer un champ</string>
-    <string name="custom_fields_delete_confirm_title">Supprimer le champ</string>
-    <string name="custom_fields_delete_confirm_message">Ce champ sera supprimé de toutes les entrées. Continuer ?</string>
     <string name="custom_fields_display_name">Nom du champ</string>
     <string name="custom_fields_description">Description (optionnel)</string>
     <string name="custom_fields_type">Type de champ</string>
     <string name="custom_fields_always_visible">Toujours afficher (même si vide)</string>
-    <string name="custom_fields_generated_name">Nom technique : %1$s</string>
 
     <!-- Custom Fields Configuration - Field-specific config labels -->
     <string name="field_config_section_title">Configuration du champ</string>
@@ -631,10 +625,6 @@
 
     <string name="tools_config_option_manual">Manuel</string>
     <string name="tools_config_option_ai">IA</string>
-    <string name="tools_config_option_enabled">Activée</string>
-    <string name="tools_config_option_disabled">Désactivée</string>
-    <string name="tools_config_option_yes">Oui</string>
-    <string name="tools_config_option_no">Non</string>
     
     <string name="tools_config_section_general_params">Paramètres généraux</string>
     
@@ -1094,13 +1084,9 @@
 
     <!-- Text length options -->
     <string name="text_length_short_display_name">Très court</string>
-    <string name="text_length_short_description">Quelques mots (max 60 caractères)</string>
     <string name="text_length_medium_display_name">Court</string>
-    <string name="text_length_medium_description">Un paragraphe (max 250 caractères)</string>
     <string name="text_length_long_display_name">Long</string>
-    <string name="text_length_long_description">Une page (max 1500 caractères)</string>
     <string name="text_length_unlimited_display_name">Illimité</string>
-    <string name="text_length_unlimited_description">Aucune limite de longueur</string>
 
     <string name="field_type_numeric_display_name">Numérique</string>
     <string name="field_type_numeric_description">Valeur numérique avec unité et contraintes optionnelles</string>
@@ -1194,18 +1180,8 @@
 
     <!-- CUSTOM FIELDS - Migration -->
     <string name="migration_confirm_title">Confirmation des changements</string>
-    <string name="migration_confirm_message">Ces modifications affecteront les données existantes.</string>
-    <string name="migration_fields_removed">%1$d champ(s) supprimé(s) : leurs données seront effacées</string>
-    <string name="migration_choice_options_removed">%1$d option(s) CHOICE supprimée(s) : données concernées seront effacées</string>
-    <string name="migration_scale_range_changed">%1$d champ(s) SCALE avec plage modifiée : leurs données seront effacées</string>
-    <string name="migration_choice_shape_changed">%1$d champ(s) CHOICE passé(s) entre une réponse, plusieurs et un classement : leurs données seront effacées</string>
-    <string name="migration_config_restricted">%1$d champ(s) dont la configuration est plus restrictive : les valeurs qui n'y entrent plus seront effacées</string>
-    <string name="migration_in_progress">Migration en cours...</string>
-    <string name="migration_success">Migration réussie</string>
-    <string name="migration_failed">Échec de la migration</string>
-    <string name="migration_warning_note">Attention : Cette opération est irréversible. Les données effacées ne pourront pas être récupérées.</string>
-    <string name="migration_no_changes">Aucune modification détectée</string>
-    <string name="migration_type_changed">%1$d champ(s) dont le type a changé : leurs données seront effacées</string>
+    <string name="migration_confirm_counts">Cette modification retire %1$d valeur(s) des entrées enregistrées, et supprime %2$d entrée(s) restée(s) sans valeur obligatoire. C\'est irréversible.</string>
+    <string name="tools_config_error_not_found">Outil introuvable</string>
     <string name="service_error_migration_unconfirmed">Cette modification retire %1$d valeur(s) des entrées de cet outil et supprime %2$d entrée(s) restée(s) sans valeur obligatoire. Renvoie-la avec "confirm_migration": true pour l\'appliquer.</string>
     <string name="service_error_migration_missing_values">Des entrées n\'ont pas de valeur pour un champ que cette modification rend obligatoire : %1$s</string>
 
@@ -1556,7 +1532,6 @@
     <string name="label_start">Début</string>
     <string name="label_end">Fin</string>
     <string name="label_color">Couleur</string>
-    <string name="message_required">est obligatoire</string>
     <string name="message_saved">Enregistré</string>
     <string name="message_error_simple">Une erreur est survenue</string>
     <string name="error_missing_tooltype">Le paramètre tooltype est manquant</string>

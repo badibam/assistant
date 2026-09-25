@@ -52,15 +52,11 @@
 
     <!-- LABELS - UI labels -->
     <string name="label_schedule">Planning</string>
+    <string name="section_common">Partie commune</string>
+    <string name="section_channel">Canal</string>
+    <string name="section_schedule">Récurrence</string>
 
     <!-- CONFIG SCREEN - Le modèle du message -->
-    <string name="label_enabled">Actif</string>
-    <string name="label_common_title">Titre commun</string>
-    <string name="label_common_content">Corps commun</string>
-    <string name="label_external_notifications">Afficher notifications système</string>
-    <string name="label_creation_horizon_days">Occurrences créées à l\'avance (jours)</string>
-    <string name="label_validity_window_minutes">Ne plus envoyer passé un retard de (minutes)</string>
-    <string name="hint_common_parts">Ces deux champs partent sur chaque notification. Un message qui ne varie jamais n\'a besoin de rien d\'autre.</string>
 
     <!-- PRIORITY - Options de priorité -->
     <string name="priority_default">Normale</string>
@@ -103,7 +99,6 @@
     <string name="edit_occurrence_hint">Ce qui est écrit ici s\'ajoute au titre et au corps communs du message.</string>
     <string name="label_title">Titre du jour</string>
     <string name="label_content">Contenu du jour</string>
-    <string name="label_priority">Priorité</string>
     <string name="action_configure_schedule">Configurer la récurrence</string>
     <string name="occurrence_due_at">Prévu le %1$s</string>
     <string name="occurrence_nothing_written">Rien d\'écrit pour cet envoi : seule la part commune partira</string>
@@ -125,8 +120,6 @@
     <string name="delete_occurrence_confirm">Supprimer cet envoi à venir ?</string>
 
     <!-- ERROR MESSAGES - Messages d'erreur spécifiques -->
-    <string name="error_config_load">Erreur lors du chargement de la configuration</string>
-    <string name="error_config_not_found">Impossible de charger la configuration existante</string>
     <string name="error_load_occurrences">Erreur lors du chargement des envois</string>
     <string name="error_save">Erreur lors de la sauvegarde</string>
     <string name="error_mark_read">Erreur lors du changement de statut</string>

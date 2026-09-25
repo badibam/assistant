@@ -8,10 +8,6 @@
 
     <!-- CONFIG - Labels de paramètres spécifiques -->
     <string name="config_label_tracking_type">Type de tracking</string>
-    <string name="config_label_default_quantity">Quantité par défaut</string>
-    <string name="config_label_unit">Unité</string>
-    <string name="config_label_default_increment">Pas (1 si vide)</string>
-    <string name="config_label_allow_decrement">Autoriser décrémentation</string>
     
     <!-- CONFIG - Options de types de tracking -->
     <string name="config_option_numeric">Numérique (numeric)</string>
@@ -24,19 +20,12 @@
     <string name="config_option_occurrence">Occurrence (occurrence)</string>
     
     <!-- CONFIG - Sections -->
-    <string name="config_section_specific_params">Paramètres spécifiques</string>
 
     <!-- CONFIG - Tableaux et listes -->
-    <string name="config_message_no_items">Aucun élément défini</string>
     
     <!-- CONFIG - Dialogues -->
-    <string name="config_dialog_create_item">Créer un élément</string>
-    <string name="config_dialog_edit_item">Modifier l\'élément</string>
     
     <!-- CONFIG - Messages de warning -->
-    <string name="config_warning_type_change_desc">Le type passe de \"%1$s\" à \"%2$s\".</string>
-    <string name="config_warning_data_deletion">Toutes les données saisies seront supprimées.</string>
-    <string name="config_warning_value_change">Les réglages de la valeur ont changé. Les entrées déjà enregistrées gardent la valeur avec laquelle elles l\'ont été, même là où elle ne correspond plus aux nouveaux réglages. Continuer ?</string>
 
     <!-- CONFIG - Messages de modification d\'échelle -->
 
@@ -48,8 +37,6 @@
     <!-- CONFIG - Valeurs par défaut -->
     
     <!-- CONFIG - Titres d'écran -->
-    <string name="config_title_create">Créer Suivi</string>
-    <string name="config_title_edit">Modifier Suivi</string>
     
     <!-- USAGE - Interface d'utilisation -->
     <string name="usage_section_new_entry">Nouvelle entrée</string>

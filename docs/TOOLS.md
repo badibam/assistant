@@ -46,13 +46,13 @@ Dossier tools/[type]/ contient :
 - Service.kt (logique métier)
 - Dao.kt (accès données)
 - Data.kt (entité base)
-- ui/ (ConfigScreen et DisplayComponent)
+- ui/ (écran d'usage et affichage ; l'écran de config est celui du core)
 
 ### Interface ToolTypeContract
 Interface principale avec méthodes pour :
 - **Métadonnées** : getDisplayName(), getDescription(), getSuggestedIcons(), getDefaultIconName(), getDefaultDisplayMode(), getAvailableOperations()
 - **Déclarations** : getEntryFields() (champs des entrées), getConfigSettings() (réglages propres, à côté de la partie commune `ToolConfigSettings`) ; schémas, config par défaut et lecture en sont générés
-- **Interface utilisateur** : getConfigScreen() @Composable
+- **Interface utilisateur** : getUsageScreen() @Composable ; l'écran de config est généré depuis la déclaration (`ToolConfigScreen`, `SettingsForm`), et getConfigEditors() y branche les parties qu'un type dessine lui-même, par nom de réglage (la planification de Messages)
 - **Discovery pattern** : getService(), getDao(), getDatabaseEntities(), getDatabaseMigrations(), getScheduler()
 - **Enrichissement** : enrichData() (défaut identity, enrichissement automatique avant persistence)
 - **Règle entre entrées** : settleEntries() (défaut : rien à changer), voir plus bas
@@ -64,16 +64,14 @@ Interface principale avec méthodes pour :
 
 ### Ordre d'Implémentation
 1. **ToolType** avec ses déclarations (getEntryFields, getConfigSettings, défauts compris)
-2. **ConfigScreen** avec ToolGeneralConfigSection
-4. **Service** avec validation stricte
-5. **UI screens** avec parsing robuste
-6. **Enregistrement** dans ToolTypeScanner
+2. **Service** avec validation stricte
+3. **UI screens** avec parsing robuste
+4. **Enregistrement** dans ToolTypeScanner
 
 ### Points de Vérification Critiques
 - API SchemaValidator : schemaType = "config|data"
 - Services : tools.* utilise tool_instance_id, tool_data.* utilise toolInstanceId
 - LaunchedEffect : toutes variables vérifiées dans le scope = dépendances
-- ToolGeneralConfigSection : 7 champs obligatoires
 - Validation : au save uniquement, pas préventive
 
 ## Création d'un Nouvel Outil
@@ -92,7 +90,7 @@ Class implémentant ExecutableService avec :
 Class implémentant ToolTypeContract avec :
 - getDisplayName(), getDescription(), getDefaultDisplayMode()
 - getEntryFields(), getConfigSettings()
-- getConfigScreen() @Composable
+- getUsageScreen() @Composable, getConfigEditors() si besoin
 - getService(), getDao(), getDatabaseEntities()
 
 ### enrichData Pattern
@@ -229,7 +227,7 @@ Service execute() valide automatiquement via ToolType puis retourne OperationRes
 
 **Usage** : Si `always_send = true`, les données de cette tool instance sont incluses systématiquement en Level 2 des prompts IA pour contexte permanent.
 
-**Interface UI** : Toggle dans ToolGeneralConfigSection (8 champs obligatoires total).
+**Interface UI** : réglage commun, déclaré dans `ToolConfigSettings`.
 
 ## Patterns de Parsing Robuste
 

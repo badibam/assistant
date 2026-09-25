@@ -553,25 +553,6 @@ object UI {
         isEditing, onSave, onCancel, onDelete, onReset, saveEnabled
     )
     
-    // =====================================
-    // VALIDATION HELPERS
-    // =====================================
-    
-    /**
-     * Unified validation helper for all tooltypes.
-     */
-    object ValidationHelper {
-        fun validateAndSave(
-            toolTypeName: String,
-            configData: Map<String, Any>,
-            context: android.content.Context,
-            onSuccess: (String) -> Unit,
-            onError: ((String) -> Unit)? = null
-        ): Boolean = com.assistant.core.tools.ui.ValidationHelper.validateAndSave(
-            toolTypeName, configData, context, onSuccess, onError
-        )
-    }
-    
     @Composable
     fun Pagination(
         currentPage: Int,

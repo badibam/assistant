@@ -28,15 +28,7 @@ val NullableJsonObjectSaver: Saver<JSONObject?, String> = Saver(
     restore = { JSONObject(it) }
 )
 
-val JsonArraySaver: Saver<JSONArray, String> = Saver(
-    save = { it.toString() },
-    restore = { JSONArray(it) }
-)
 
-val FieldDefinitionsSaver: Saver<List<FieldDefinition>, String> = Saver(
-    save = { it.toJsonArray().toString() },
-    restore = { JSONArray(it).toFieldDefinitions() }
-)
 
 val StringListSaver: Saver<List<String>, ArrayList<String>> = Saver(
     save = { ArrayList(it) },
@@ -73,20 +65,8 @@ val PeriodSaver: Saver<com.assistant.core.ui.components.Period, String> = Saver(
     }
 )
 
-val NullableScheduleConfigSaver: Saver<com.assistant.core.utils.ScheduleConfig?, String> = Saver(
-    save = { it?.let { schedule -> kotlinx.serialization.json.Json.encodeToString(com.assistant.core.utils.ScheduleConfig.serializer(), schedule) } },
-    restore = { kotlinx.serialization.json.Json.decodeFromString(com.assistant.core.utils.ScheduleConfig.serializer(), it) }
-)
 
-val NullableFieldDefinitionSaver: Saver<FieldDefinition?, String> = Saver(
-    save = { it?.toJson()?.toString() },
-    restore = { JSONObject(it).toFieldDefinition() }
-)
 
-val NullableFieldConfigSaver: Saver<Map<String, Any>?, String> = Saver(
-    save = { it?.let { config -> JSONObject(config).toString() } },
-    restore = { JSONObject(it).toFieldConfig() }
-)
 
 /** Custom field values: nulls are kept (an emptied field differs from an untouched one). */
 val FieldValuesSaver: Saver<Map<String, Any?>, String> = Saver(

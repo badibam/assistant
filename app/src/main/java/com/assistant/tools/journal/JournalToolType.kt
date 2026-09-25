@@ -10,7 +10,6 @@ import com.assistant.core.strings.Strings
 import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
-import com.assistant.tools.journal.ui.JournalConfigScreen
 import com.assistant.tools.journal.ui.JournalScreen
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.EntryFields
@@ -109,25 +108,6 @@ object JournalToolType : ToolTypeContract {
             "heart",
             "sparkles",
             "moon"
-        )
-    }
-
-    @Composable
-    override fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit,
-        existingToolId: String?,
-        onDelete: (() -> Unit)?,
-        initialGroup: String?
-    ) {
-        JournalConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            onCancel = onCancel,
-            existingToolId = existingToolId,
-            onDelete = onDelete,
-            initialGroup = initialGroup
         )
     }
 

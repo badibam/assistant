@@ -52,15 +52,11 @@
 
     <!-- LABELS - UI labels -->
     <string name="label_schedule">Schedule</string>
+    <string name="section_common">Common part</string>
+    <string name="section_channel">Channel</string>
+    <string name="section_schedule">Recurrence</string>
 
     <!-- CONFIG SCREEN - The message template -->
-    <string name="label_enabled">Active</string>
-    <string name="label_common_title">Common title</string>
-    <string name="label_common_content">Common body</string>
-    <string name="label_external_notifications">Show system notifications</string>
-    <string name="label_creation_horizon_days">Occurrences created ahead (days)</string>
-    <string name="label_validity_window_minutes">Stop sending past a delay of (minutes)</string>
-    <string name="hint_common_parts">These two fields go out on every notification. A message that never varies needs nothing else.</string>
 
     <!-- PRIORITY - Priority options -->
     <string name="priority_default">Normal</string>
@@ -103,7 +99,6 @@
     <string name="edit_occurrence_hint">What is written here is added to the common title and body of the message.</string>
     <string name="label_title">Title of the day</string>
     <string name="label_content">Content of the day</string>
-    <string name="label_priority">Priority</string>
     <string name="action_configure_schedule">Configure the recurrence</string>
     <string name="occurrence_due_at">Due on %1$s</string>
     <string name="occurrence_nothing_written">Nothing written for this sending: only the common part will go out</string>
@@ -125,8 +120,6 @@
     <string name="delete_occurrence_confirm">Delete this upcoming sending?</string>
 
     <!-- ERROR MESSAGES - Specific error messages -->
-    <string name="error_config_load">Error while loading the configuration</string>
-    <string name="error_config_not_found">Unable to load the existing configuration</string>
     <string name="error_load_occurrences">Error while loading the sendings</string>
     <string name="error_save">Error while saving</string>
     <string name="error_mark_read">Error while changing the status</string>

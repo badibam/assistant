@@ -23,7 +23,6 @@ import com.assistant.core.validation.Schema
 import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.FieldLimits
 import com.assistant.tools.messages.scheduler.MessageScheduler
-// import com.assistant.tools.messages.ui.MessagesConfigScreen
 // import com.assistant.tools.messages.ui.MessagesScreen
 
 /**
@@ -111,21 +110,34 @@ object MessageToolType : ToolTypeContract {
                 required = required, default = default)
         val priorities = listOf("default", "high", "low")
         return listOf(
-            field("enabled", FieldType.BOOLEAN, default = true),
-            field("common_title", FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
-            field("common_content", FieldType.TEXT, config = mapOf("length" to TextLength.LONG.name)),
-            field("priority", FieldType.CHOICE, default = "default",
-                config = mapOf("options" to ChoiceSettings.storedOptions(priorities, priorities.associateWith { s.tool("priority_$it") }))),
-            field("external_notifications", FieldType.BOOLEAN, default = true),
-            // Absent: nothing fires on its own, the tool is a channel fed on demand
-            SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
-            // How far ahead occurrences are created, and how long a missed one may still go out
-            field("creation_horizon", FieldType.DURATION, default = 2 * 86_400_000L,
-                config = mapOf("precision" to "DAY", "form" to "SINGLE")),
-            field("validity_window", FieldType.DURATION, default = 3_600_000L,
-                config = mapOf("precision" to "MINUTE", "form" to "COMPOSED"))
+            // What every send carries: a reminder whose text never varies needs nothing more
+            SettingNode.Section(s.tool("section_common"), listOf(
+                field("common_title", FieldType.TEXT, config = mapOf("length" to TextLength.SHORT.name)),
+                field("common_content", FieldType.TEXT, config = mapOf("length" to TextLength.LONG.name))
+            )),
+            // How the stream is allowed to reach the user
+            SettingNode.Section(s.tool("section_channel"), listOf(
+                field("enabled", FieldType.BOOLEAN, default = true),
+                field("priority", FieldType.CHOICE, default = "default",
+                    config = mapOf("options" to ChoiceSettings.storedOptions(priorities, priorities.associateWith { s.tool("priority_$it") }))),
+                field("external_notifications", FieldType.BOOLEAN, default = true)
+            )),
+            // The recurrence and the life of the occurrences it creates
+            SettingNode.Section(s.tool("section_schedule"), listOf(
+                // Absent: nothing fires on its own, the tool is a channel fed on demand
+                SettingNode.Group("schedule", s.tool("field_schedule"), ScheduleSettings.nodes(shared::shared)),
+                // How far ahead occurrences are created, and how long a missed one may still go out
+                field("creation_horizon", FieldType.DURATION, default = 2 * 86_400_000L,
+                    config = mapOf("precision" to "DAY", "form" to "SINGLE")),
+                field("validity_window", FieldType.DURATION, default = 3_600_000L,
+                    config = mapOf("precision" to "MINUTE", "form" to "COMPOSED"))
+            ))
         )
     }
+
+    /** The recurrence is edited by the schedule editor, with a line saying what it is. */
+    override fun getConfigEditors(context: Context): Map<String, com.assistant.core.fields.settings.SettingEditor> =
+        mapOf("schedule" to com.assistant.tools.messages.ui.ScheduleSettingEditor(Strings.`for`(tool = "messages", context = context)))
 
     /**
      * One occurrence of a message: one send.
@@ -212,25 +224,6 @@ object MessageToolType : ToolTypeContract {
     // ========================================
     // UI
     // ========================================
-
-    @Composable
-    override fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit,
-        existingToolId: String?,
-        onDelete: (() -> Unit)?,
-        initialGroup: String?
-    ) {
-        com.assistant.tools.messages.ui.MessagesConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            onCancel = onCancel,
-            existingToolId = existingToolId,
-            onDelete = onDelete,
-            initialGroup = initialGroup
-        )
-    }
 
     @Composable
     override fun getUsageScreen(

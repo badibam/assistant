@@ -19,7 +19,6 @@ import com.assistant.core.validation.SchemaCategory
 import com.assistant.core.validation.SchemaProvider
 import com.assistant.core.validation.FieldLimits
 import com.assistant.core.tools.BaseSchemas
-import com.assistant.tools.tracking.ui.TrackingConfigScreen
 import com.assistant.tools.tracking.ui.TrackingScreen
 import com.assistant.core.fields.CoreFieldUsage
 import com.assistant.core.fields.EntryFields
@@ -168,24 +167,6 @@ object TrackingToolType : ToolTypeContract {
         return listOf("activity", "trending-up", "scale", "heart-pulse", "dumbbell", "droplet", "moon", "timer")
     }
     
-    @Composable
-    override fun getConfigScreen(
-        zoneId: String,
-        onSave: (config: String) -> Unit,
-        onCancel: () -> Unit,
-        existingToolId: String?,
-        onDelete: (() -> Unit)?,
-        initialGroup: String?
-    ) {
-        TrackingConfigScreen(
-            zoneId = zoneId,
-            onSave = onSave,
-            initialGroup = initialGroup,
-            onCancel = onCancel,
-            existingToolId = existingToolId,
-            onDelete = onDelete
-        )
-    }
     
     override fun getService(context: Context): ExecutableService {
         return com.assistant.core.services.ToolDataService(context)

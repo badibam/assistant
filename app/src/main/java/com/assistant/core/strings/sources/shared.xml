@@ -381,7 +381,6 @@
     <string name="label_description">Description</string>
     <string name="label_icon">Icon</string>
     <string name="label_page_info">Page %1$d of %2$d</string>
-    <string name="label_enabled">Enabled</string>
     <string name="label_disabled">Disabled</string>
     <string name="label_field_generic">Field</string>
     <string name="label_field_parameter">Parameter</string>
@@ -565,15 +564,10 @@
     <!-- Custom Fields -->
     <string name="custom_fields_section_title">Extra fields</string>
     <string name="custom_fields_add">Add a field</string>
-    <string name="custom_fields_edit">Edit the field</string>
-    <string name="custom_fields_create">Create a field</string>
-    <string name="custom_fields_delete_confirm_title">Delete the field</string>
-    <string name="custom_fields_delete_confirm_message">This field will be removed from every entry. Continue?</string>
     <string name="custom_fields_display_name">Name of the field</string>
     <string name="custom_fields_description">Description (optional)</string>
     <string name="custom_fields_type">Field type</string>
     <string name="custom_fields_always_visible">Always show (even when empty)</string>
-    <string name="custom_fields_generated_name">Technical name: %1$s</string>
 
     <!-- Custom Fields Configuration - Field-specific config labels -->
     <string name="field_config_section_title">Field configuration</string>
@@ -631,10 +625,6 @@
 
     <string name="tools_config_option_manual">Manual</string>
     <string name="tools_config_option_ai">AI</string>
-    <string name="tools_config_option_enabled">Enabled</string>
-    <string name="tools_config_option_disabled">Disabled</string>
-    <string name="tools_config_option_yes">Yes</string>
-    <string name="tools_config_option_no">No</string>
     
     <string name="tools_config_section_general_params">General settings</string>
     
@@ -1094,13 +1084,9 @@
 
     <!-- Text length options -->
     <string name="text_length_short_display_name">Very short</string>
-    <string name="text_length_short_description">A few words (max 60 characters)</string>
     <string name="text_length_medium_display_name">Short</string>
-    <string name="text_length_medium_description">A paragraph (max 250 characters)</string>
     <string name="text_length_long_display_name">Long</string>
-    <string name="text_length_long_description">A page (max 1500 characters)</string>
     <string name="text_length_unlimited_display_name">Unlimited</string>
-    <string name="text_length_unlimited_description">No length limit</string>
 
     <string name="field_type_numeric_display_name">Numeric</string>
     <string name="field_type_numeric_description">Numeric value with a unit and optional constraints</string>
@@ -1194,18 +1180,8 @@
 
     <!-- CUSTOM FIELDS - Migration -->
     <string name="migration_confirm_title">Confirmation of the changes</string>
-    <string name="migration_confirm_message">These changes will affect the existing data.</string>
-    <string name="migration_fields_removed">%1$d field(s) removed: their data will be erased</string>
-    <string name="migration_choice_options_removed">%1$d CHOICE option(s) removed: the data concerned will be erased</string>
-    <string name="migration_scale_range_changed">%1$d SCALE field(s) with a changed range: their data will be erased</string>
-    <string name="migration_choice_shape_changed">%1$d CHOICE field(s) switched between one answer, several and a ranking: their data will be erased</string>
-    <string name="migration_config_restricted">%1$d field(s) whose configuration is more restrictive: the values that no longer fit will be erased</string>
-    <string name="migration_in_progress">Migration running...</string>
-    <string name="migration_success">Migration succeeded</string>
-    <string name="migration_failed">Migration failed</string>
-    <string name="migration_warning_note">Careful: this operation cannot be undone. The erased data cannot be recovered.</string>
-    <string name="migration_no_changes">No change detected</string>
-    <string name="migration_type_changed">%1$d field(s) whose type changed: their data will be erased</string>
+    <string name="migration_confirm_counts">This change removes %1$d value(s) from the recorded entries, and deletes %2$d entr(ies) left without a required value. This cannot be undone.</string>
+    <string name="tools_config_error_not_found">Tool not found</string>
     <string name="service_error_migration_unconfirmed">This change removes %1$d value(s) from the entries of this tool and deletes %2$d entr(ies) left without a required value. Send it again with "confirm_migration": true to apply it.</string>
     <string name="service_error_migration_missing_values">Entries have no value for a field this change makes required: %1$s</string>
 
@@ -1556,7 +1532,6 @@
     <string name="label_start">Start</string>
     <string name="label_end">End</string>
     <string name="label_color">Color</string>
-    <string name="message_required">is required</string>
     <string name="message_saved">Saved</string>
     <string name="message_error_simple">An error occurred</string>
     <string name="error_missing_tooltype">The tooltype parameter is missing</string>

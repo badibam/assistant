@@ -228,47 +228,6 @@ fun ZoneScreen(
         }
     }
     
-    // Configuration callbacks
-    val onSaveConfig = { config: String ->
-        // Update or create is decided by the saved id: the tool resolved from the list is null
-        // until the list reloads, and a save meanwhile would create a duplicate
-        editingToolId?.let { toolId ->
-            // Update existing tool
-            coroutineScope.launch {
-                try {
-                    coordinator.processUserAction("tools.update", mapOf(
-                        "tool_instance_id" to toolId,
-                        "config" to JsonUtils.toMap(config),
-                        // The config screens have asked the user before saving a change that loses data
-                        "confirm_migration" to true
-                    ))
-                    editingToolId = null
-                    showingConfigFor = null
-                    preSelectedGroup = null
-                    reloadToolInstances()
-                } catch (e: Exception) {
-                    errorMessage = "Update tool error: ${e.message}"
-                }
-            }
-        } ?: showingConfigFor?.let { toolTypeId ->
-            // Create new tool
-            coroutineScope.launch {
-                try {
-                    coordinator.processUserAction("tools.create", mapOf(
-                        "zone_id" to zone.id,
-                        "tooltype" to toolTypeId,
-                        "config" to JsonUtils.toMap(config)
-                    ))
-                    showingConfigFor = null
-                    preSelectedGroup = null
-                    reloadToolInstances()
-                } catch (e: Exception) {
-                    errorMessage = "Create tool error: ${e.message}"
-                }
-            }
-        }
-    }
-    
     val onCancelConfig = {
         showingConfigFor = null
         editingToolId = null
@@ -296,31 +255,23 @@ fun ZoneScreen(
 
     // Show configuration screen if requested
     showingConfigFor?.let { toolTypeId ->
-        ToolTypeManager.getToolType(toolTypeId)?.getConfigScreen(
-            zoneId = zone.id,
-            onSave = { onSaveConfig(it) },
-            onCancel = onCancelConfig,
-            // The saved id, not the tool resolved from the list: the list reloads after a
-            // rotation, and the config screen, which loads the tool itself, would otherwise
-            // be handed null meanwhile and switch to creation
-            existingToolId = editingToolId,
-            onDelete = editingToolId?.let { toolId ->
-                {
-                    coroutineScope.launch {
-                        try {
-                            coordinator.processUserAction("tools.delete", mapOf("tool_instance_id" to toolId))
-                            editingToolId = null
-                            showingConfigFor = null
-                            preSelectedGroup = null
-                            reloadToolInstances()
-                        } catch (e: Exception) {
-                            errorMessage = "Delete tool error: ${e.message}"
-                        }
-                    }
-                }
-            },
-            initialGroup = preSelectedGroup
-        )
+        ToolTypeManager.getToolType(toolTypeId)?.let { toolType ->
+            com.assistant.core.tools.ui.ToolConfigScreen(
+                toolType = toolType,
+                tooltype = toolTypeId,
+                zoneId = zone.id,
+                // The saved id, not the tool resolved from the list: the list reloads after a
+                // rotation, and the config screen, which loads the tool itself, would otherwise
+                // be handed null meanwhile and switch to creation
+                existingToolId = editingToolId,
+                initialGroup = preSelectedGroup,
+                onDone = {
+                    onCancelConfig()
+                    reloadToolInstances()
+                },
+                onCancel = onCancelConfig
+            )
+        }
         return // Exit ZoneScreen composition when showing config
     }
     
