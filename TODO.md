@@ -16,7 +16,6 @@ Travail ouvert. Un item disparaît d'ici dès qu'il est fait — le commit en es
 
 - Les exécutions d'une automation décrites comme des entrées (champs déclarés, schéma généré, dates en ISO par ce schéma) — le jour où l'IA les lit ; ce ne sont pas des réglages.
 - Une sauvegarde emporte-t-elle la clé d'API d'un fournisseur (réglage secret) ? — à trancher avant d'ouvrir l'export à un usage partagé.
-- Cache de DeepSeek : au rejeu, la lecture en cache reste à 7 808 tokens (le système seul) quand l'entrée monte à 24 000 ; la conversation est repayée plein tarif à chaque appel, les trois quarts du coût d'une session. À mesurer : ce qui empêche le préfixe de conversation d'être repris d'un appel à l'autre.
 - Défilement saccadé à la réouverture d'une longue session CHAT — à mesurer (recompositions de la liste, défilements automatiques successifs).
 - Seuil de taille des données par automation — quand une automation légitime montre un `DATA_REFUSED` dans son historique d'exécution ; la valeur globale deviendra la valeur par défaut.
 - Marquer les lignes que les migrations 13→14 et 14→15 n'ont pas su transformer, et le dire une fois au démarrage (jamais les supprimer) — si des lignes `MIGRATION` apparaissent en « Error » dans l'écran des journaux.
