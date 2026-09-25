@@ -197,6 +197,7 @@
     <string name="field_reading_open">Other values are accepted and become options.</string>
     <string name="field_reading_ordered">A ranking: the options in the order chosen, the first ranked first.</string>
     <string name="ai_error_duration_field_path">Unreadable DURATION field: %1$s. Name it by its path, data.field_name or extra.field_name.</string>
+    <string name="ai_error_result_unformattable">The result could not be put in the form you read: %1$s</string>
     <string name="ai_error_field_invalid_pattern">Unreadable field: %1$s. A field is either a root field with no dot (id, timestamp, name), or data.field_name, or extra.field_name, or state.key. \'data\', \'extra\' and \'state\' on their own are refused: they are containers, a field inside them has to be named. A field holding an object or a list is asked for whole: extra.field_name, not extra.field_name.start.</string>
 
     <!-- AI Errors - Rejected parameters -->

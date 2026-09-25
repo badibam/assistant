@@ -197,6 +197,7 @@
     <string name="field_reading_open">D\'autres valeurs sont acceptées et deviennent des options.</string>
     <string name="field_reading_ordered">Un classement : les options dans l\'ordre choisi, la première classée en tête.</string>
     <string name="ai_error_duration_field_path">Champ DURÉE illisible : %1$s. Il se nomme par son chemin, data.nom_du_champ ou extra.nom_du_champ.</string>
+    <string name="ai_error_result_unformattable">Le résultat n\'a pas pu être mis dans la forme que tu lis : %1$s</string>
     <string name="ai_error_field_invalid_pattern">Champ illisible : %1$s. Un champ est soit un champ racine sans point (id, timestamp, name), soit data.nom_du_champ, soit extra.nom_du_champ, soit state.clé. \'data\', \'extra\' et \'state\' seuls sont refusés : ce sont des conteneurs, il faut nommer un champ dedans. Un champ qui contient un objet ou une liste se demande en entier : extra.nom_du_champ, pas extra.nom_du_champ.start.</string>
 
     <!-- AI Errors - Rejected parameters -->

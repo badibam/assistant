@@ -370,7 +370,24 @@ class CommandExecutor(private val context: Context) {
                     }
 
                     val dataTitle = generateDataTitle(command, data)
-                    val formattedData = if (command.isActionCommand) "" else formatResultData(command, data)
+                    // A result that cannot be put in the model's form fails the command out loud:
+                    // handed raw, its dates would reach the model as milliseconds, unannounced
+                    val formattedData = if (command.isActionCommand) "" else try {
+                        formatResultData(command, data)
+                    } catch (e: Exception) {
+                        LogManager.aiPrompt("Result of $commandString could not be formatted: ${e.message}", "ERROR", e)
+                        return@withContext InternalCommandResult(
+                            promptResult = PromptCommandResult("", ""),
+                            commandResult = com.assistant.core.ai.data.CommandResult(
+                                command = commandString,
+                                status = CommandStatus.FAILED,
+                                details = dataTitle.ifEmpty { null },
+                                data = null,
+                                error = s.shared("ai_error_result_unformattable").format(e.message ?: ""),
+                                isActionCommand = false
+                            )
+                        )
+                    }
 
                     // Get verbalized description for all commands
                     // - Action commands: use service verbalization (e.g., "Création de la zone \"Santé\"")
@@ -814,88 +831,77 @@ class CommandExecutor(private val context: Context) {
      * Reorganizes data to put important metadata before bulk data
      */
     private fun formatResultData(command: ExecutableCommand, data: Map<String, Any>): String {
-        return try {
-            val reordered = mutableMapOf<String, Any>()
-            val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
+        val reordered = mutableMapOf<String, Any>()
+        val timezone = AppConfigManager.getDateTimeConfig().getZoneId()
 
-            // Extract metadata keys first based on command type
-            when (command.resource) {
-                "tool_data" -> {
+        // Extract metadata keys first based on command type
+        when (command.resource) {
+            "tool_data" -> {
+                // Metadata: toolInstanceName, count
+                // Bulk data: entries (with parsed data JSON)
+                data["tool_instance_name"]?.let { reordered["tool_instance_name"] = it }
+                data["count"]?.let { reordered["count"] = it }
 
-                    // Metadata: toolInstanceName, count
-                    // Bulk data: entries (with parsed data JSON)
-                    data["tool_instance_name"]?.let { reordered["tool_instance_name"] = it }
-                    data["count"]?.let { reordered["count"] = it }
-
-                    // The entries' dates and durations in ISO 8601, found by the tool's entry
-                    // schema: its fixed fields, the user's and the core's alike
-                    data["entries"]?.let { entries ->
-                        val schema = runBlocking { loadEntrySchema(command) }
-                        reordered["entries"] = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
-                    }
-
-                    // Add pagination if present
-                    data["pagination"]?.let { reordered["pagination"] = it }
+                // The entries' dates and durations in ISO 8601, found by the tool's entry
+                // schema: its fixed fields, the user's and the core's alike
+                data["entries"]?.let { entries ->
+                    val schema = runBlocking { loadEntrySchema(command) }
+                    reordered["entries"] = (entries as List<*>).map { ModelValues.toModel(it, schema, timezone)!! }
                 }
-                "schemas" -> {
-                    // Schema data: parse content as JSON instead of keeping it as escaped string
-                    data["schema_id"]?.let { reordered["schema_id"] = it }
 
-                    // Parse content string as JSON for readable prompt formatting
-                    val contentStr = data["content"] as? String
-                    if (contentStr != null) {
-                        try {
-                            reordered["content"] = SchemaModelView.forModel(org.json.JSONObject(contentStr), timezone)
-                        } catch (e: Exception) {
-                            // If parsing fails, keep as string
-                            reordered["content"] = contentStr
-                        }
-                    }
-                }
-                "tools" -> {
-                    // Config or list
-                    data["id"]?.let { reordered["id"] = it }
-                    data["name"]?.let { reordered["name"] = it }
-                    data["tooltype"]?.let { reordered["tooltype"] = it }
+                // Add pagination if present
+                data["pagination"]?.let { reordered["pagination"] = it }
+            }
+            "schemas" -> {
+                // Schema data: parse content as JSON instead of keeping it as escaped string
+                data["schema_id"]?.let { reordered["schema_id"] = it }
 
-                    data["tool_instance"]?.let { reordered["tool_instance"] = it }
-
-                    // Add remaining fields (except tool_instance if already processed)
-                    data.forEach { (key, value) ->
-                        if (key !in reordered) reordered[key] = value
-                    }
-                }
-                "zones" -> {
-                    // List or single zone
-                    data["id"]?.let { reordered["id"] = it }
-                    data["name"]?.let { reordered["name"] = it }
-                    // Add remaining fields
-                    data.forEach { (key, value) ->
-                        if (key !in reordered) reordered[key] = value
-                    }
-                }
-                else -> {
-                    // Default: keep original order
-                    reordered.putAll(data)
+                // Parse content string as JSON for readable prompt formatting
+                val contentStr = data["content"] as? String
+                if (contentStr != null) {
+                    reordered["content"] = SchemaModelView.forModel(org.json.JSONObject(contentStr), timezone)
                 }
             }
+            "tools" -> {
+                // Config or list
+                data["id"]?.let { reordered["id"] = it }
+                data["name"]?.let { reordered["name"] = it }
+                data["tooltype"]?.let { reordered["tooltype"] = it }
 
-            // Add any remaining keys not yet added
-            data.forEach { (key, value) ->
-                if (key !in reordered) reordered[key] = value
+                data["tool_instance"]?.let { reordered["tool_instance"] = it }
+
+                // Add remaining fields (except tool_instance if already processed)
+                data.forEach { (key, value) ->
+                    if (key !in reordered) reordered[key] = value
+                }
             }
-
-            // This is where a result becomes the text the model reads, so this is where the
-            // milliseconds everything else speaks turn into the ISO 8601 the model does
-            // (docs/design/date-boundary.md). Entries were converted above by their schema;
-            // any other result carries its dates under the few names DateTimeConverter knows.
-            val json = org.json.JSONObject(reordered as Map<*, *>)
-            if (command.resource == "tool_data") json.toString(2)
-            else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
-        } catch (e: Exception) {
-            LogManager.aiPrompt("Failed to format result data: ${e.message}", "WARN")
-            org.json.JSONObject(data).toString(2)
+            "zones" -> {
+                // List or single zone
+                data["id"]?.let { reordered["id"] = it }
+                data["name"]?.let { reordered["name"] = it }
+                // Add remaining fields
+                data.forEach { (key, value) ->
+                    if (key !in reordered) reordered[key] = value
+                }
+            }
+            else -> {
+                // Default: keep original order
+                reordered.putAll(data)
+            }
         }
+
+        // Add any remaining keys not yet added
+        data.forEach { (key, value) ->
+            if (key !in reordered) reordered[key] = value
+        }
+
+        // This is where a result becomes the text the model reads, so this is where the
+        // milliseconds everything else speaks turn into the ISO 8601 the model does
+        // (docs/design/date-boundary.md). Entries were converted above by their schema;
+        // any other result carries its dates under the few names DateTimeConverter knows.
+        val json = org.json.JSONObject(reordered as Map<*, *>)
+        return if (command.resource == "tool_data") json.toString(2)
+        else DateTimeConverter.timestampsToISO(json, timezone).toString(2)
     }
 
     /**
