@@ -46,11 +46,13 @@ Même règle que `unified-fields.md` : l'app n'a pas à rester utilisable entre 
   - l'icône reste un TEXT vérifié par le service contre l'index : un CHOICE aux 1 600 options gonflerait chaque schéma lu par l'IA ;
   - v39 regroupe les réécritures de config du bloc (identifiants retirés, délais de Messages en millisecondes, `null` retirés) ;
   - les champs secrets passent au bloc D : seuls les fournisseurs d'IA en ont.
-- **C. L'écran** — prochain. Retenu en préparant :
-  - un formulaire générique `SettingsForm` (brouillon dans `tmp/SettingsForm.kt.draft`, qui compile) : un éditeur propre (`SettingEditor`) se branche par le nom du réglage, fourni par le core (icône, groupe d'outil) ou par le type d'outil (planification de Messages), et la déclaration reste sans code d'écran ; changer d'option d'une variante retire les réglages de l'ancienne et pose les défauts de la nouvelle ;
-  - un écran générique qui enregistre lui-même par le service et affiche son erreur (aujourd'hui `ZoneScreen` ignore l'échec de `tools.update`) ; `getConfigScreen` et les quatre écrans disparaissent, avec `ToolGeneralConfigSection`, `CustomFieldsEditor`, `FieldConfigEditor` si les définitions de champ passent par le formulaire générique ;
-  - la migration déduite (décisions 8 et 9) : le service compare les champs d'entrée de l'ancienne et de la nouvelle config, `data` comme `extra` ; un changement de type retire la valeur au lieu d'être refusé ; une valeur retirée d'un champ obligatoire de `data` supprime l'entrée ; toute migration qui retire des valeurs ou supprime des entrées est refusée sans `confirm_migration: true`, que l'écran envoie après l'accord de l'utilisateur et l'IA explicitement ; `FieldMigrationHelper`, `CustomFieldsMigrationHandler`, `validateNoTypeChanges` et l'opération `tool_data.remove_custom_field` disparaissent.
-- **D. Les autres réglages** : zone, fournisseurs d'IA, automations, réglages de l'app, écran d'accueil.
+- **C. L'écran** — fait : `SettingsForm` et `ToolConfigScreen` (`core/tools/ui`), éditeurs propres par `getConfigEditors` (planification de Messages, dont la déclaration a maintenant ses sections) ; migration déduite par `EntryMigration`, écrite dans la transaction de la config, `confirm_migration` et `fill_values`. Tranché en codant :
+  - les éditeurs propres ne se branchent qu'au premier niveau de la déclaration (sections ouvertes) : dans un groupe ou un élément de liste, un même nom désigne autre chose (le `name` d'une définition de champ) ;
+  - le `name` d'une définition de champ est un nœud `systemWritten`, que le formulaire ne montre pas ;
+  - changer d'option d'une variante garde de la config ce que la nouvelle option déclare, jusque dans les éléments d'une liste (les raccourcis d'un suivi perdent leur unité en passant au compteur) ;
+  - une valeur manquante se donne par `fill_values`, `{"data": {"value": 3}}`, vérifiée contre le champ ; faute de défaut porté par `FieldDefinition` (décision 12 de `unified-fields.md`), l'écran ne préremplit rien ;
+  - la zone reste hors de la config : l'écran la propose en modification et l'envoie dans le même `tools.update`.
+- **D. Les autres réglages** — prochain : zone, fournisseurs d'IA, automations, réglages de l'app, écran d'accueil.
 
 ## Écarté
 
