@@ -372,7 +372,8 @@ class AICommandProcessor(private val context: Context) {
 
     /**
      * [params] with the config's dates and durations turned into milliseconds, where the
-     * config schema of its tooltype marks them (a Messages tool's delays, its schedule's dates).
+     * config schema of its tooltype marks them (a Messages tool's delays, its schedule's dates),
+     * and those of "fill_values" where the new config's entry schema marks them.
      * The tooltype is the one injectTooltypeIfNeeded read from the tool for an update.
      */
     private fun configToStoredForm(params: Map<String, Any?>): Map<String, Any?> {
@@ -381,7 +382,18 @@ class AICommandProcessor(private val context: Context) {
         val toolType = ToolTypeManager.getToolType(tooltype) ?: return params
         val schema = JSONObject(com.assistant.core.tools.ToolConfigSettings.schema(toolType, "${tooltype}_config", context).content)
         val zone = AppConfigManager.getDateTimeConfig().getZoneId()
-        return params.toMutableMap().apply { put("config", ModelValues.fromModel(config, schema, zone)) }
+        val storedConfig = ModelValues.fromModel(config, schema, zone)
+        return params.toMutableMap().apply {
+            put("config", storedConfig)
+            // The values given for fields the change makes required are entry values: read with
+            // the schema of the entries the new config makes
+            params["fill_values"]?.let { fill ->
+                @Suppress("UNCHECKED_CAST")
+                val newConfig = JsonUtils.toJSONObject(storedConfig as Map<String, Any?>)
+                val entrySchema = JSONObject(BaseSchemas.getEntrySchemaOrThrow(toolType, newConfig, params["tool_instance_id"] as? String, context))
+                put("fill_values", ModelValues.fromModel(fill, entrySchema, zone))
+            }
+        }
     }
 
     /**

@@ -17,7 +17,8 @@ import org.json.JSONObject
  * "extra" (the user's fields) alike, and each change says which stored values keep their meaning
  * (MigrationPolicy). A value that loses it is removed; an entry that loses the value of a
  * required field of "data" is deleted, since it would no longer be a valid entry. Nothing is
- * invented: an entry lacking a value a field now requires is counted, for whoever acts to give it.
+ * invented: an entry lacking a value a field now requires takes the one whoever acts gave for
+ * that field, and is counted when none was given.
  *
  * Pure: the caller loads the entries and writes the plan.
  */
@@ -30,19 +31,24 @@ object EntryMigration {
      * @property updated The kept entries whose content changes, rewritten
      * @property deleted The entries that lost the value of a required field
      * @property removedValues The values removed from the kept entries
-     * @property missing For each field now required ("data.<name>"), the entries that have no value for it
+     * @property filledValues The values given to kept entries for a field now required
+     * @property missing For each field of "data" now required and given no value, the entries without one
      */
     data class Plan(
         val updated: List<ToolDataEntity>,
         val deleted: List<ToolDataEntity>,
         val removedValues: Int,
+        val filledValues: Int,
         val missing: Map<String, Int>
     ) {
         /** Whether applying it loses something recorded: only an explicit agreement lets it through. */
         val losesData: Boolean get() = removedValues > 0 || deleted.isNotEmpty()
     }
 
-    fun plan(old: Fields, new: Fields, entries: List<ToolDataEntity>): Plan {
+    /**
+     * @param fill For a field of "data" now required, by name, the value an entry without one takes
+     */
+    fun plan(old: Fields, new: Fields, entries: List<ToolDataEntity>, fill: Map<String, Any> = emptyMap()): Plan {
         val dataChanges = FieldConfigComparator.compare(old.data.map { it.definition }, new.data.map { it.definition })
         val extraChanges = FieldConfigComparator.compare(old.extra, new.extra)
         val dataStrategies = MigrationPolicy.getStrategies(dataChanges)
@@ -52,6 +58,7 @@ object EntryMigration {
         val updated = mutableListOf<ToolDataEntity>()
         val deleted = mutableListOf<ToolDataEntity>()
         var removedValues = 0
+        var filledValues = 0
         val missing = mutableMapOf<String, Int>()
 
         entries.forEach { entry ->
@@ -59,7 +66,7 @@ object EntryMigration {
             val data = JsonUtils.toMap(entry.data)
             val extra = JsonUtils.toMap(entry.extra?.takeIf { it.isNotBlank() })
 
-            val newData = FieldDataMigrator.applyMigrationStrategies(data, dataChanges, dataStrategies)
+            val newData = FieldDataMigrator.applyMigrationStrategies(data, dataChanges, dataStrategies).toMutableMap()
             val newExtra = FieldDataMigrator.applyMigrationStrategies(extra, extraChanges, extraStrategies)
 
             // A running DURATION holds its value in the state until stopped: it counts as a value,
@@ -74,10 +81,20 @@ object EntryMigration {
             }
             removedValues += removedData.size + removedExtra.size
 
+            var filled = false
             required.filter { name -> newData[name] == null && startedAt(newState, FieldContainer.DATA, name) == null }
-                .forEach { name -> missing.merge("${FieldContainer.DATA.key}.$name", 1, Int::plus) }
+                .forEach { name ->
+                    val given = fill[name]
+                    if (given != null) {
+                        newData[name] = given
+                        filledValues++
+                        filled = true
+                    } else {
+                        missing.merge(name, 1, Int::plus)
+                    }
+                }
 
-            if (removedData.isNotEmpty() || removedExtra.isNotEmpty()) {
+            if (removedData.isNotEmpty() || removedExtra.isNotEmpty() || filled) {
                 updated.add(entry.copy(
                     data = JsonUtils.toJSONObject(newData).toString(),
                     extra = newExtra.takeIf { it.isNotEmpty() }?.let { JsonUtils.toJSONObject(it).toString() },
@@ -86,7 +103,7 @@ object EntryMigration {
             }
         }
 
-        return Plan(updated, deleted, removedValues, missing)
+        return Plan(updated, deleted, removedValues, filledValues, missing)
     }
 
     /**

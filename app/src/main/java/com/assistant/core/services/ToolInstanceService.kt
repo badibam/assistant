@@ -193,7 +193,11 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         // What the change does to the recorded entries: refused while it loses something the
         // caller has not agreed to lose, or leaves an entry without a value it now requires
         val migration = if (configJson.isNotBlank()) {
-            planMigration(existingTool, configJson).also { plan ->
+            val fill = when (val given = readFill(existingTool, configJson, params.optJSONObject("fill_values"))) {
+                is Fill.Refused -> return OperationResult.error(given.message)
+                is Fill.Values -> given.values
+            }
+            planMigration(existingTool, configJson, fill).also { plan ->
                 refuseMigration(plan, params.optBoolean("confirm_migration", false))?.let { return it }
             }
         } else null
@@ -236,8 +240,45 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         ) + iconCheck.report() + (migration?.let { report(it) } ?: emptyMap()))
     }
 
+    /** The values given for fields a config change makes required, or why they are refused. */
+    private sealed interface Fill {
+        data class Values(val values: Map<String, Any>) : Fill
+        data class Refused(val message: String) : Fill
+    }
+
+    /**
+     * The values [given] under "data" for the fields of "data" the config [newConfigJson] of
+     * [tool] requires, each checked against its field: an entry that takes one must be valid.
+     */
+    private fun readFill(tool: ToolInstance, newConfigJson: String, given: JSONObject?): Fill {
+        val data = given?.optJSONObject("data") ?: return Fill.Values(emptyMap())
+        val toolType = ToolTypeManager.getToolType(tool.tooltype)
+            ?: return Fill.Refused(s.shared("error_tooltype_not_found").format(tool.tooltype))
+        val required = toolType.getEntryFields(JSONObject(newConfigJson), context).data.filter { it.required }.associateBy { it.definition.name }
+        val values = mutableMapOf<String, Any>()
+        JsonUtils.toMap(data).forEach { (name, given) ->
+            val field = required[name]?.definition
+                ?: return Fill.Refused(s.shared("service_error_migration_fill_unknown").format(name))
+            // Rounded to its decimals, as any value written to an entry
+            val value = com.assistant.core.fields.NumericPrecision.round(given, field) ?: return@forEach
+            val schema = com.assistant.core.validation.Schema(
+                id = "fill:$name", displayName = field.displayName, description = "",
+                category = com.assistant.core.validation.SchemaCategory.TOOL_DATA,
+                content = JSONObject().put("type", "object")
+                    .put("properties", JSONObject().put(name, com.assistant.core.fields.FieldValueSchema.of(field)))
+                    .toString()
+            )
+            val checked = SchemaValidator.validate(schema, mapOf(name to value), context)
+            val refused = checked.errorMessage.takeIf { !checked.isValid }
+                ?: com.assistant.core.fields.FieldValueValidator.validate(field, value, context).errorMessage
+            if (refused != null) return Fill.Refused(refused)
+            values[name] = value
+        }
+        return Fill.Values(values)
+    }
+
     /** What the config [newConfigJson] would do to the entries of [tool], as its config stands now. */
-    private suspend fun planMigration(tool: ToolInstance, newConfigJson: String): EntryMigration.Plan {
+    private suspend fun planMigration(tool: ToolInstance, newConfigJson: String, fill: Map<String, Any>): EntryMigration.Plan {
         val toolType = ToolTypeManager.getToolType(tool.tooltype)
             ?: throw IllegalStateException("Unknown tooltype ${tool.tooltype}")
         fun fieldsOf(config: JSONObject) = EntryMigration.Fields(
@@ -247,20 +288,22 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
         return EntryMigration.plan(
             old = fieldsOf(JSONObject(tool.config_json)),
             new = fieldsOf(JSONObject(newConfigJson)),
-            entries = database.toolDataDao().getByToolInstance(tool.id)
+            entries = database.toolDataDao().getByToolInstance(tool.id),
+            fill = fill
         )
     }
 
     /**
      * The refusal of [plan], or null when it can be applied: values it removes and entries it
      * deletes need [confirmed] (the screen asks the user, the AI says so explicitly), and an entry
-     * left without the value of a field now required is never stored.
+     * left without the value of a field now required is never stored: the caller gives one in
+     * "fill_values".
      *
      * The refusal carries the counts in "migration", for the screen to show them.
      */
     private fun refuseMigration(plan: EntryMigration.Plan, confirmed: Boolean): OperationResult? {
         if (plan.missing.isNotEmpty()) {
-            val fields = plan.missing.entries.joinToString(", ") { (field, count) -> "$field ($count)" }
+            val fields = plan.missing.entries.joinToString(", ") { (field, count) -> "data.$field ($count)" }
             return OperationResult.error(s.shared("service_error_migration_missing_values").format(fields), report(plan))
         }
         if (plan.losesData && !confirmed) {
@@ -276,7 +319,8 @@ class ToolInstanceService(private val context: Context) : ExecutableService {
     private fun report(plan: EntryMigration.Plan): Map<String, Any> = mapOf("migration" to mapOf(
         "removed_values" to plan.removedValues,
         "deleted_entries" to plan.deleted.size,
-        "missing_values" to plan.missing
+        "filled_values" to plan.filledValues,
+        "missing_values" to mapOf("data" to plan.missing)
     ))
 
     /** Writes [plan] to the entries of [tool], inside the caller's transaction. */

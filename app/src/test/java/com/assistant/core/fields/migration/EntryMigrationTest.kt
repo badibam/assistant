@@ -66,8 +66,24 @@ class EntryMigrationTest {
             entries = listOf(entry("a"), entry("b"))
         )
 
-        assertEquals(mapOf("data.value" to 2), plan.missing)
+        assertEquals(mapOf("value" to 2), plan.missing)
         assertFalse(plan.losesData)
+    }
+
+    /** The value given for a field now required goes to the entries without one, and only to them. */
+    @Test
+    fun aGivenValueFillsTheEntriesWithoutOne() {
+        val plan = EntryMigration.plan(
+            old = fields(data = listOf(FixedField(field("value", FieldType.NUMERIC, mapOf("decimals" to 0))))),
+            new = fields(data = listOf(FixedField(field("value", FieldType.NUMERIC, mapOf("decimals" to 0)), required = true))),
+            entries = listOf(entry("a"), entry("b", data = """{"value":7}""")),
+            fill = mapOf("value" to 1)
+        )
+
+        assertTrue(plan.missing.isEmpty())
+        assertEquals(1, plan.filledValues)
+        assertEquals(listOf("a"), plan.updated.map { it.id })
+        assertEquals(1, JSONObject(plan.updated.single().data).getInt("value"))
     }
 
     /** A running stopwatch is a value: it goes with a type change, out of the state too. */

@@ -76,6 +76,10 @@ fun ToolConfigScreen(
     var isSaving by remember { mutableStateOf(false) }
     // What the change costs, once the service refused it for that: values removed, entries deleted
     var pendingMigration by rememberSaveable { mutableStateOf<Pair<Int, Int>?>(null) }
+    // The fields the change makes required, with the number of entries without a value for each,
+    // once the service refused it for that; and the values the user gives them
+    var pendingFill by rememberSaveable { mutableStateOf<Map<String, Int>?>(null) }
+    var fill by rememberSaveable(stateSaver = JsonObjectSaver) { mutableStateOf(JSONObject()) }
 
     val configLoad = rememberLoadOnce(existingToolId) {
         if (existingToolId == null) return@rememberLoadOnce true
@@ -116,16 +120,21 @@ fun ToolConfigScreen(
                     put("config", configMap)
                     if (currentZoneId != zoneId) put("zone_id", currentZoneId)
                     if (confirmed) put("confirm_migration", true)
+                    if (fill.length() > 0) put("fill_values", mapOf("data" to JsonUtils.toMap(fill)))
                 })
             } else {
                 coordinator.processUserAction("tools.create", mapOf("zone_id" to currentZoneId, "tooltype" to tooltype, "config" to configMap))
             }
             isSaving = false
             val migration = result.data?.get("migration") as? Map<*, *>
+            val missing = ((migration?.get("missing_values") as? Map<*, *>)?.get("data") as? Map<*, *>).orEmpty()
+                .map { (field, count) -> field.toString() to (count as Number).toInt() }.toMap()
             when {
                 result.isSuccess -> onDone()
+                // Refused for values the user can give: asked for them
+                missing.isNotEmpty() -> pendingFill = missing
                 // Refused for what it loses, and for nothing else: the user decides
-                migration != null && (migration["missing_values"] as? Map<*, *>).isNullOrEmpty() && !confirmed ->
+                migration != null && !confirmed ->
                     pendingMigration = ((migration["removed_values"] as Number).toInt()) to ((migration["deleted_entries"] as Number).toInt())
                 else -> UI.Toast(context, result.error ?: s.shared("tools_config_error_save"), Duration.LONG)
             }
@@ -166,7 +175,8 @@ fun ToolConfigScreen(
             )
         }
 
-        SettingsForm(nodes, config, { config = it }, context, editors)
+        // Values given for a former version of the change answer nothing about this one
+        SettingsForm(nodes, config, { config = it; fill = JSONObject() }, context, editors)
 
         UI.ToolConfigActions(
             isEditing = isEditing,
@@ -184,6 +194,31 @@ fun ToolConfigScreen(
             },
             saveEnabled = !isSaving && configLoad == LoadState.LOADED
         )
+    }
+
+    pendingFill?.let { missing ->
+        // The fields as the new config makes them, for their inputs
+        val fields = remember(config) { toolType.getEntryFields(config, context).data.associateBy { it.definition.name } }
+        UI.Dialog(
+            type = com.assistant.core.ui.DialogType.CONFIRM,
+            onConfirm = {
+                pendingFill = null
+                save(confirmed = false)
+            },
+            onCancel = { pendingFill = null },
+            confirmEnabled = missing.keys.all { fill.has(it) }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                UI.Text(s.shared("migration_fill_title"), TextType.SUBTITLE)
+                missing.forEach { (name, count) ->
+                    val field = fields[name]?.definition ?: return@forEach
+                    UI.Text(s.shared("migration_fill_message").format(count, field.displayName), TextType.BODY)
+                    com.assistant.core.fields.FieldInput(field, fill.opt(name)?.takeIf { it != JSONObject.NULL }, { value ->
+                        fill = JSONObject(fill.toString()).apply { if (value == null) remove(name) else put(name, value) }
+                    }, context)
+                }
+            }
+        }
     }
 
     pendingMigration?.let { (removedValues, deletedEntries) ->

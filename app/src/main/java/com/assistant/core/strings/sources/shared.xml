@@ -1181,9 +1181,12 @@
     <!-- CUSTOM FIELDS - Migration -->
     <string name="migration_confirm_title">Confirmation of the changes</string>
     <string name="migration_confirm_counts">This change removes %1$d value(s) from the recorded entries, and deletes %2$d entr(ies) left without a required value. This cannot be undone.</string>
+    <string name="migration_fill_title">Values needed</string>
+    <string name="migration_fill_message">%1$d entr(ies) have no value for %2$s, which this change makes required. Give the value they take, or cancel.</string>
     <string name="tools_config_error_not_found">Tool not found</string>
     <string name="service_error_migration_unconfirmed">This change removes %1$d value(s) from the entries of this tool and deletes %2$d entr(ies) left without a required value. Send it again with "confirm_migration": true to apply it.</string>
-    <string name="service_error_migration_missing_values">Entries have no value for a field this change makes required: %1$s</string>
+    <string name="service_error_migration_missing_values">Entries have no value for a field this change makes required: %1$s. Give the value they take in "fill_values": {"data": {"field": value}}.</string>
+    <string name="service_error_migration_fill_unknown">"fill_values" names %1$s, which is not a required field of "data" in this config</string>
 
     <!-- CUSTOM FIELDS - Labels for form field names -->
     <string name="label_display_name">Displayed name</string>
