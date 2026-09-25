@@ -119,7 +119,6 @@ class BackupService(private val context: Context) : ExecutableService {
                                 put("name", zone.name)
                                 put("description", zone.description)
                                 put("icon_name", zone.icon_name)
-                                put("color", zone.color)
                                 put("active", zone.active)
                                 put("order_index", zone.order_index)
                                 put("created_at", zone.created_at)
@@ -444,7 +443,6 @@ class BackupService(private val context: Context) : ExecutableService {
                         name = item.getString("name"),
                         description = item.optString("description", null),
                         icon_name = item.optString("icon_name", null),
-                        color = item.optString("color", null),
                         active = item.optBoolean("active", true),
                         order_index = item.getInt("order_index"),
                         created_at = item.getLong("created_at"),

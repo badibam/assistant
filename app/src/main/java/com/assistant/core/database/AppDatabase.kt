@@ -70,7 +70,7 @@ abstract class AppDatabase : RoomDatabase() {
          * Database schema version, which the @Database annotation above reads. Backups record
          * it, and an import transforms its data from the version it records.
          */
-        const val VERSION = 39
+        const val VERSION = 40
 
         @Volatile
         private var INSTANCE: AppDatabase? = null
@@ -1357,6 +1357,39 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // zones loses color, which nothing wrote nor showed. No DROP COLUMN before SQLite
+                // 3.35 and minSdk 26 ships 3.19, so the table is recreated. The new one is created
+                // under another name and renamed last: renaming the old one instead would carry
+                // the foreign keys of tool_instances and the others over to it.
+                database.execSQL("""
+                    CREATE TABLE zones_new (
+                        id TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT,
+                        icon_name TEXT,
+                        active INTEGER NOT NULL,
+                        order_index INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        tool_groups TEXT,
+                        `group` TEXT,
+                        PRIMARY KEY(id)
+                    )
+                """)
+                database.execSQL("""
+                    INSERT INTO zones_new (id, name, description, icon_name, active, order_index, created_at, updated_at, tool_groups, `group`)
+                    SELECT id, name, description, icon_name, active, order_index, created_at, updated_at, tool_groups, `group` FROM zones
+                """)
+                database.execSQL("DROP TABLE zones")
+                database.execSQL("ALTER TABLE zones_new RENAME TO zones")
+
+                val count = database.query("SELECT COUNT(*) FROM zones").use { cursor -> if (cursor.moveToFirst()) cursor.getInt(0) else 0 }
+                LogManager.database("MIGRATION 39->40: $count zone(s) moved to a table without color", "INFO")
+            }
+        }
+
         private val MIGRATION_38_39 = object : Migration(38, 39) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Tool configs take the form their declaration describes: see ToolConfigsAtV39
@@ -1652,7 +1685,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_35_36,
                     MIGRATION_36_37,
                     MIGRATION_37_38,
-                    MIGRATION_38_39
+                    MIGRATION_38_39,
+                    MIGRATION_39_40
                     // Add future migrations here (minimum supported version: 9)
                 )
                 .addCallback(object : RoomDatabase.Callback() {

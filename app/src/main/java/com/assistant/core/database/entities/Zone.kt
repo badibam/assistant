@@ -12,7 +12,6 @@ data class Zone(
     val description: String? = null,
     /** A Lucide icon name, stored under its current name. Null until one is chosen. */
     val icon_name: String? = null,
-    val color: String? = null,
     val active: Boolean = true,
     val order_index: Int = 0,
     val created_at: Long = System.currentTimeMillis(),
